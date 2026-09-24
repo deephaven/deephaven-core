@@ -321,9 +321,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private String toParquetColumnName(@NotNull final String columnName) {
         final List<String> columnPath = getColumnPathInternal(columnName,
                 readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName));
-        return columnPath.size() == 1 && parquetSchema.containsField(columnPath.get(0))
-                ? columnPath.get(0)
-                : null;
+        if (columnPath.size() != 1 || !parquetSchema.containsField(columnPath.get(0))) {
+            return null;
+        }
+        final String parquetColumnName = columnPath.get(0);
+        // Without a resolver the default mapping is the identity, which maps a name that is not a column -- one whose
+        // parquet column the instructions give another name -- to that parquet column; a resolver is authoritative.
+        return resolver != null || columnName.equals(
+                readInstructions.getColumnNameFromParquetColumnNameOrDefault(parquetColumnName))
+                        ? parquetColumnName
+                        : null;
     }
 
     /**
@@ -355,7 +362,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
         final String mappedName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
         // A name that is in the file belongs to the column read from it, which is not this one
-        return parquetSchema.containsField(mappedName) ? null : mappedName;
+        return !parquetSchema.containsField(mappedName)
+                && columnName.equals(readInstructions.getColumnNameFromParquetColumnNameOrDefault(mappedName))
+                        ? mappedName
+                        : null;
     }
 
     /**
@@ -535,7 +545,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
         // Create a new index from the parquet table
         final Table table =
-                readDataIndexTable(getParquetKey().getURI(), indexFileMetaData, readInstructions, columns);
+                readDataIndexTable(getParquetKey().getURI(), indexFileMetaData, readInstructions, parquetColumns,
+                        columns);
         if (table == null) {
             return null;
         }
@@ -620,8 +631,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * @param parentFileURI The path to the base table
      * @param indexFileMetaData Index file metadata
      * @param parquetInstructions The instructions for reading the table. The index table is written with the parquet
-     *        column names of the table it indexes, so reading it with the same instructions names its key columns with
-     *        the Deephaven column names.
+     *        column names of the table it indexes, so reading it with the same renames names its key columns with the
+     *        Deephaven column names. A column resolver describes the indexed table's files, not the index table's, so
+     *        it is not used; the key columns are renamed instead.
+     * @param parquetKeyColumnNames The parquet names of the key columns
      * @param keyColumnNames The Deephaven names of the key columns
      *
      * @return The data index table for the specified key columns or {@code null} if none was found
@@ -631,12 +644,26 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final URI parentFileURI,
             @NotNull final ParquetTableLocation.IndexFileMetadata indexFileMetaData,
             @NotNull final ParquetInstructions parquetInstructions,
+            @NotNull final String[] parquetKeyColumnNames,
             @NotNull final String[] keyColumnNames) {
-        final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(),
-                parquetInstructions.withTableDefinitionAndLayout(null,
-                        ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
+        final ParquetInstructions indexReadInstructions = parquetInstructions.getColumnResolverFactory().isEmpty()
+                ? parquetInstructions.withTableDefinitionAndLayout(null,
+                        ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
+                : new ParquetInstructions.Builder(parquetInstructions)
+                        .setColumnResolverFactory(null)
+                        .setTableDefinition(null)
+                        .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
+                        .build();
+        final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(), indexReadInstructions);
         if (indexFileMetaData.dataIndexInfo != null) {
-            return indexTable;
+            // Name any key column the read did not rename with its Deephaven name
+            final List<Pair> renames = new ArrayList<>();
+            for (int ki = 0; ki < keyColumnNames.length; ++ki) {
+                if (!indexTable.hasColumns(keyColumnNames[ki]) && indexTable.hasColumns(parquetKeyColumnNames[ki])) {
+                    renames.add(Pair.of(ColumnName.of(parquetKeyColumnNames[ki]), ColumnName.of(keyColumnNames[ki])));
+                }
+            }
+            return renames.isEmpty() ? indexTable : indexTable.renameColumns(renames);
         }
         Assert.neqNull(indexFileMetaData.groupingColumnInfo, "indexFileMetaData.groupingColumnInfo");
         if (indexTable.hasColumns(

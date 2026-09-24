@@ -2676,6 +2676,42 @@ public abstract class SqliteCatalogBase {
         assertTableEquals(fromIceberg.select().where("A >= 50"), fromIceberg.where("A >= 50"));
     }
 
+    /**
+     * When two Deephaven columns read the sorted Iceberg field, neither can be identified as the one the sort order
+     * describes, so the sortedness is dropped rather than guessed.
+     */
+    @Test
+    void testSortedColumnsFieldReadTwice() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("A", 1, 2, 3, 4, 5, 6, 7, 8),
+                intCol("B", 50, 10, 70, 30, 80, 20, 60, 40));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.icebergTable().replaceSortOrder().asc("A").commit();
+        tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+
+        final Schema schema = tableAdapter.icebergTable().schema();
+        final IcebergTableAdapter twiceAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(Resolver.builder()
+                        .definition(TableDefinition.of(ColumnDefinition.ofInt("A"), ColumnDefinition.ofInt("A2")))
+                        .schema(schema)
+                        .putColumnInstructions("A", schemaField(schema.findField("A").fieldId()))
+                        .putColumnInstructions("A2", schemaField(schema.findField("A").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg = twiceAdapter.table();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A")).isEmpty();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A2")).isEmpty();
+        assertTableEquals(fromIceberg.select().where("A >= 5"), fromIceberg.where("A >= 5"));
+    }
+
     @Test
     void testSortedColumnsExclusions() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");

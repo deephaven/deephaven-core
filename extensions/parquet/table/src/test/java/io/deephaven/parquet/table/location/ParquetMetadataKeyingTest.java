@@ -10,6 +10,8 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -24,10 +26,12 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -350,4 +354,98 @@ public class ParquetMetadataKeyingTest {
     }
 
     // endregion data indexes
+
+    // region column resolvers
+
+    /** Sorted by {@code B}, with a data index on {@code B}. */
+    private String writeSortedIndexedTable() {
+        final String dest = path("sortedIndexed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = `b` + (int) (ii / 10)", "C = (int) ii").sort("B"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B").build());
+        return dest;
+    }
+
+    private static ParquetInstructions resolving(final TableDefinition definition, final String... dhToParquet) {
+        final ParquetColumnResolverMap.Builder resolverMap = ParquetColumnResolverMap.builder();
+        for (int ii = 0; ii < dhToParquet.length; ii += 2) {
+            resolverMap.putMap(dhToParquet[ii], List.of(dhToParquet[ii + 1]));
+        }
+        final ParquetColumnResolverMap resolver = resolverMap.build();
+        return ParquetInstructions.builder()
+                .setTableDefinition(definition)
+                .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
+                .build();
+    }
+
+    /**
+     * With a column resolver, the file's sort columns and data index key columns, which name parquet columns, are
+     * translated through the resolver to the Deephaven columns reading them.
+     */
+    @Test
+    public void metadataWithColumnResolver() {
+        final Table fromDisk = ParquetTools.readTable(writeSortedIndexedTable(), resolving(
+                TableDefinition.of(ColumnDefinition.ofString("Sym"), ColumnDefinition.ofInt("C")),
+                "Sym", "B", "C", "C"));
+        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(fromDisk, "Sym"));
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "Sym"));
+        assertEquals(10, DataIndexer.getDataIndex(fromDisk, "Sym").table().size());
+        assertFilterMatchesOracle(fromDisk, "Sym = `b3`");
+        assertFilterMatchesOracle(fromDisk, "Sym >= `b5`");
+    }
+
+    /**
+     * When two Deephaven columns read the same parquet column, neither can be identified as the one the metadata
+     * describes, so the sortedness and the data index are dropped rather than guessed.
+     */
+    @Test
+    public void metadataWithColumnResolverReadingOneColumnTwice() {
+        final Table fromDisk = ParquetTools.readTable(writeSortedIndexedTable(), resolving(
+                TableDefinition.of(ColumnDefinition.ofString("Sym"), ColumnDefinition.ofString("Sym2")),
+                "Sym", "B", "Sym2", "B"));
+        assertEquals(Optional.empty(), sortOrder(fromDisk, "Sym"));
+        assertEquals(Optional.empty(), sortOrder(fromDisk, "Sym2"));
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "Sym"));
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "Sym2"));
+        assertFilterMatchesOracle(fromDisk, "Sym = `b3`");
+    }
+
+    /**
+     * When no Deephaven column reads the sorted and indexed parquet column, the metadata describing it is dropped.
+     */
+    @Test
+    public void metadataForColumnNotRead() {
+        final Table fromDisk = ParquetTools.readTable(writeSortedIndexedTable(), resolving(
+                TableDefinition.of(ColumnDefinition.ofInt("C")),
+                "C", "C"));
+        assertEquals(Optional.empty(), sortOrder(fromDisk, "C"));
+        assertTrue(SortedColumnsAttribute.getSortedColumns(fromDisk.coalesce()).isEmpty());
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "C"));
+        assertFilterMatchesOracle(fromDisk, "C >= 50");
+    }
+
+    /**
+     * The location's data index methods take Deephaven column names; a name that reads no column of the file has no
+     * index.
+     */
+    @Test
+    public void dataIndexForUntranslatableColumn() {
+        final String dest = writeSortedIndexedTable();
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnNameMapping("B", "A")
+                .build();
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, instructions),
+                instructions);
+        assertTrue(location.hasDataIndex("A"));
+        // Deephaven B does not exist: parquet B is read as A
+        assertFalse(location.hasDataIndex("B"));
+        assertThrows(TableDataException.class, () -> location.loadDataIndex("B"));
+        assertEquals(List.of(List.of("A")),
+                location.getDataIndexColumns().stream().map(List::of).collect(Collectors.toList()));
+    }
+
+    // endregion column resolvers
 }
