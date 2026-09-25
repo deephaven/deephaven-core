@@ -367,6 +367,61 @@ snapshotInstructions = IcebergReadInstructions.builder()
     .build()
 ```
 
+#### Pruning expressions
+
+A pruning expression tells Iceberg to skip data files before Deephaven reads them. Set `pruningExpression` to an [`org.apache.iceberg.expressions.Expression`](https://iceberg.apache.org/javadoc/latest/org/apache/iceberg/expressions/Expression.html), and Deephaven discards every data file the expression proves cannot hold a matching row:
+
+```groovy docker-config=iceberg test-set=1 order=null
+import org.apache.iceberg.expressions.Expressions
+
+pruningInstructions = IcebergReadInstructions.builder()
+    .pruningExpression(Expressions.equal("store_and_fwd_flag", "Y"))
+    .build()
+
+forwardedTrips = icebergTaxis.table(pruningInstructions).where("StoreAndFwdFlag = `Y`")
+```
+
+Note the `where` in that example. Pruning is not filtering: Iceberg decides what to skip from partition values and per-file statistics, so a data file that survives is read in full, and the result is a superset of the rows that satisfy the expression. Apply an equivalent Deephaven filter whenever you need exactly the matching rows.
+
+Note also that the expression names `store_and_fwd_flag` while the filter names `StoreAndFwdFlag`. Field names in the expression are Iceberg schema names, so they are unaffected by column renames or by a resolver's table definition, and they are case-sensitive. An expression that names a field the Iceberg schema does not have is rejected when the table is read.
+
+> [!IMPORTANT]
+> Pruning on a non-partition field relies on the per-column value bounds that Iceberg records for each data file. Deephaven's Iceberg writer does not record those statistics, so an expression over a non-partition field prunes nothing on a table that Deephaven wrote. Pruning on a partition field applies in all cases, because Iceberg records partition values regardless of statistics.
+
+Iceberg accepts a Groovy numeric literal directly and widens it to the field's type. A temporal value has no such literal form and must be given as an explicit epoch offset through [`Literal`](https://iceberg.apache.org/javadoc/latest/org/apache/iceberg/expressions/Literal.html):
+
+```groovy order=null
+import io.deephaven.iceberg.util.IcebergReadInstructions
+import org.apache.iceberg.expressions.Expression
+import org.apache.iceberg.expressions.Expressions
+
+passengerInstructions = IcebergReadInstructions.builder()
+    .pruningExpression(Expressions.greaterThan("passenger_count", 2))
+    .build()
+
+// micros, millis, and nanos state the unit explicitly. Iceberg stores a timestamp column as
+// microseconds from the epoch unless the column is timestamp_ns.
+pickupInstructions = IcebergReadInstructions.builder()
+    .pruningExpression(
+        Expressions.predicate(
+            Expression.Operation.GT_EQ,
+            "tpep_pickup_datetime",
+            Expressions.micros(1704067200000000L)))
+    .build()
+```
+
+Use `Expressions.isNull` and `Expressions.notNull` to test for nulls; passing `null` as a value throws. Combine predicates with `Expressions.and`, `Expressions.or`, `Expressions.not`, and `Expressions.in`.
+
+To confirm that a pruning expression took effect, check the server log. Each time Deephaven discovers the data files of a pruned table, it logs a summary at INFO level:
+
+```
+IcebergFlatLayout[nyc.taxis]: pruning expression store_and_fwd_flag = (hash-…) skipped 3 manifest(s), could not be applied to 0 manifest(s), and accepted 2 data file(s)
+```
+
+Deephaven logs the expression through Iceberg's sanitized rendering, which keeps literal values out of the log: a string becomes an opaque `(hash-…)` fingerprint, a number becomes `(1-digit-int)`, and a timestamp becomes `(timestamp)`. Field names are printed as written.
+
+A non-zero count for "could not be applied to" means the expression referenced a field that did not yet exist when those manifests were written. Deephaven reads those manifests in full and logs a warning naming each one.
+
 ## Next steps
 
 This guide presented a basic example of interacting with an Iceberg catalog in Deephaven. These examples can be extended to include more complex queries, catalogs with multiple namespaces, snapshots, custom instructions, and more.
