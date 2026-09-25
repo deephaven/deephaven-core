@@ -1296,10 +1296,16 @@ public class AsOfJoinHelper {
 
                         final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
 
+                        // chunks and sort contexts are sized to the rows this cycle touches, clamped to the
+                        // configured maximum
+                        final long work = upstream.added().size() + upstream.removed().size()
+                                + upstream.modified().size() + upstream.shifted().getEffectiveSize();
+                        final int cycleChunkSize = (int) Math.max(1, Math.min(rightChunkSize, work));
+
                         try (final ColumnSource.FillContext fillContext =
-                                rightStampSource.makeFillContext(rightChunkSize);
+                                rightStampSource.makeFillContext(cycleChunkSize);
                                 final LongSortKernel<Values, RowKeys> sortKernel =
-                                        LongSortKernel.makeContext(stampChunkType, order, rightChunkSize, true)) {
+                                        LongSortKernel.makeContext(stampChunkType, order, cycleChunkSize, true)) {
 
                             final RowSet restampRemovals;
                             final RowSet restampAdditions;
@@ -1318,13 +1324,13 @@ public class AsOfJoinHelper {
                             // with the removed redirection to the previous key.
                             try (final RowSequence.Iterator removeit = restampRemovals.getRowSequenceIterator();
                                     final WritableLongChunk<RowKeys> priorRedirections =
-                                            WritableLongChunk.makeWritableChunk(rightChunkSize);
+                                            WritableLongChunk.makeWritableChunk(cycleChunkSize);
                                     final WritableLongChunk<RowKeys> rightKeyIndices =
-                                            WritableLongChunk.makeWritableChunk(rightChunkSize);
+                                            WritableLongChunk.makeWritableChunk(cycleChunkSize);
                                     final WritableChunk<Values> rightStampChunk =
-                                            stampChunkType.makeWritableChunk(rightChunkSize)) {
+                                            stampChunkType.makeWritableChunk(cycleChunkSize)) {
                                 while (removeit.hasMore()) {
-                                    final RowSequence chunkOk = removeit.getNextRowSequenceWithLength(rightChunkSize);
+                                    final RowSequence chunkOk = removeit.getNextRowSequenceWithLength(cycleChunkSize);
                                     rightStampSource.fillPrevChunk(fillContext, rightStampChunk, chunkOk);
                                     chunkOk.fillRowKeyChunk(rightKeyIndices);
 
@@ -1339,7 +1345,7 @@ public class AsOfJoinHelper {
 
                             if (upstream.shifted().nonempty()) {
                                 rightIncrementalApplySsaShift(upstream.shifted(), ssa, sortKernel, fillContext,
-                                        restampRemovals, rightTable, rightChunkSize, rightStampSource, chunkSsaStamp,
+                                        restampRemovals, rightTable, cycleChunkSize, rightStampSource, chunkSsaStamp,
                                         leftStampValues, leftStampKeys, rowRedirection, disallowExactMatch);
                             }
 
@@ -1350,21 +1356,21 @@ public class AsOfJoinHelper {
                             // value should be
                             // restamped with our value
                             try (final WritableChunk<Values> stampChunk =
-                                    stampChunkType.makeWritableChunk(rightChunkSize);
+                                    stampChunkType.makeWritableChunk(cycleChunkSize);
                                     final WritableChunk<Values> nextRightValue =
-                                            stampChunkType.makeWritableChunk(rightChunkSize);
+                                            stampChunkType.makeWritableChunk(cycleChunkSize);
                                     final WritableLongChunk<RowKeys> insertedIndices =
-                                            WritableLongChunk.makeWritableChunk(rightChunkSize);
+                                            WritableLongChunk.makeWritableChunk(cycleChunkSize);
                                     final WritableBooleanChunk<Any> retainStamps =
-                                            WritableBooleanChunk.makeWritableChunk(rightChunkSize)) {
-                                final int chunks = (restampAdditions.intSize() + control.rightChunkSize() - 1)
-                                        / control.rightChunkSize();
+                                            WritableBooleanChunk.makeWritableChunk(cycleChunkSize)) {
+                                final int chunks = (restampAdditions.intSize() + cycleChunkSize - 1)
+                                        / cycleChunkSize;
                                 for (int ii = 0; ii < chunks; ++ii) {
                                     final long startChunk = chunks - ii - 1;
                                     try (final RowSet chunkOk =
                                             restampAdditions.subSetByPositionRange(
-                                                    startChunk * control.rightChunkSize(),
-                                                    (startChunk + 1) * control.rightChunkSize())) {
+                                                    startChunk * cycleChunkSize,
+                                                    (startChunk + 1) * cycleChunkSize)) {
                                         rightStampSource.fillChunk(fillContext, stampChunk, chunkOk);
                                         insertedIndices.setSize(chunkOk.intSize());
                                         chunkOk.fillRowKeyChunk(insertedIndices);
@@ -1405,11 +1411,11 @@ public class AsOfJoinHelper {
                             if (!stampModified && upstream.modified().isNonempty()) {
                                 try (final RowSequence.Iterator modit = upstream.modified().getRowSequenceIterator();
                                         final WritableLongChunk<RowKeys> rightStampIndices =
-                                                WritableLongChunk.makeWritableChunk(rightChunkSize);
+                                                WritableLongChunk.makeWritableChunk(cycleChunkSize);
                                         final WritableChunk<Values> rightStampChunk =
-                                                stampChunkType.makeWritableChunk(rightChunkSize)) {
+                                                stampChunkType.makeWritableChunk(cycleChunkSize)) {
                                     while (modit.hasMore()) {
-                                        final RowSequence chunkOk = modit.getNextRowSequenceWithLength(rightChunkSize);
+                                        final RowSequence chunkOk = modit.getNextRowSequenceWithLength(cycleChunkSize);
                                         rightStampSource.fillChunk(fillContext, rightStampChunk, chunkOk);
                                         chunkOk.fillRowKeyChunk(rightStampIndices);
 
@@ -1605,11 +1611,13 @@ public class AsOfJoinHelper {
 
                                     rowRedirection.applyShift(leftTable.getRowSet().prev(), upstream.shifted());
 
-                                    try (final AsOfStampContext stampContext =
-                                            new AsOfStampContext(order, disallowExactMatch, leftStampSource,
-                                                    rightStampSource, originalRightStampSource)) {
-                                        stampContext.processEntry(restampKeys, compactedRightStampValues,
-                                                compactedRightStampKeys, rowRedirection);
+                                    if (restampKeys.isNonempty()) {
+                                        try (final AsOfStampContext stampContext =
+                                                new AsOfStampContext(order, disallowExactMatch, leftStampSource,
+                                                        rightStampSource, originalRightStampSource)) {
+                                            stampContext.processEntry(restampKeys, compactedRightStampValues,
+                                                    compactedRightStampKeys, rowRedirection);
+                                        }
                                     }
 
                                     final TableUpdateImpl downstream =
