@@ -35,22 +35,22 @@ barrage_sesh = barrage_session("localhost", 10000)
 barrage_sesh.close()
 ```
 
-The following example uses a `with` block to close the session automatically:
+The following example uses a `with` block to close both the publishing client session and the Barrage session automatically:
 
 ```python skip-test
 from deephaven.barrage import barrage_session
 from pydeephaven import Session
-from pydeephaven.session import SharedTicket
+from pydeephaven.ticket import SharedTicket
 
-# Publish a table to a shared ticket with the Python client
-client_session = Session(host="localhost", port=10000)
-client_table = client_session.empty_table(10).update(["X = i"])
-ticket = SharedTicket.random_ticket()
-client_session.publish_table(ticket, client_table)
+# Both sessions close when their with blocks exit; the snapshot is a static local copy
+with Session(host="localhost", port=10000) as client_session:
+    # Publish a table to a shared ticket with the Python client
+    client_table = client_session.empty_table(10).update(["X = i"])
+    ticket = SharedTicket.random_ticket()
+    client_session.publish_table(ticket, client_table)
 
-# The session closes when the with block exits
-with barrage_session("localhost", 10000) as barrage_sesh:
-    local_table = barrage_sesh.snapshot(ticket.bytes)
+    with barrage_session("localhost", 10000) as barrage_sesh:
+        local_table = barrage_sesh.snapshot(ticket.bytes)
 ```
 
 ## Related documentation
