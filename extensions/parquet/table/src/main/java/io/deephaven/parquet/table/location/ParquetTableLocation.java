@@ -696,8 +696,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (!isRowGroupMetadataPermitted(filterCtx)) {
                 return input.copy();
             }
-            return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(),
-                    filterCtx.filterNullBehavior(), actionCtx.columnIndices, input);
+            return pushdownRowGroupMetadata(selection, filterCtx, actionCtx.columnIndices, input);
         }
         if (action == IN_MEMORY_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -921,10 +920,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     private PushdownResult pushdownRowGroupMetadata(
             final RowSet selection,
-            final WhereFilter filter,
-            final BasePushdownFilterContext.FilterNullBehavior filterNullBehavior,
+            final RegionedPushdownFilterContext ctx,
             final List<Integer> columnIndices,
             final PushdownResult result) {
+        final WhereFilter filter = ctx.filterForMetadataFiltering();
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
@@ -942,8 +941,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 // We assume it overlaps if we cannot use the statistics.
                 maybeOverlaps = true;
             } else if (QueryTable.DISABLE_WHERE_PUSHDOWN_NULL_INCLUDING_STATISTICS
-                    && filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS
-                    && !(statistics.isNumNullsSet() && statistics.getNumNulls() == 0)) {
+                    && !(statistics.isNumNullsSet() && statistics.getNumNulls() == 0)
+                    && ctx.filterNullBehavior() == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {
                 // DH-23750 (42.x only): see QueryTable.DISABLE_WHERE_PUSHDOWN_NULL_INCLUDING_STATISTICS.
                 maybeOverlaps = true;
             } else if (filter instanceof ByteRangeFilter) {
