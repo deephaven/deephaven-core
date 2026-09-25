@@ -419,9 +419,13 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
 
     @Override
     public void releaseBlocks(final long firstKey, final long lastKey) {
+        if (firstKey > maxIndex || lastKey < firstKey) {
+            return;
+        }
         final long firstBlock = (firstKey + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
         final long allocatedBlocks = (maxIndex + 1) >> LOG_BLOCK_SIZE;
-        final long endBlock = Math.min((lastKey + 1) >> LOG_BLOCK_SIZE, allocatedBlocks);
+        // lastKey may be Long.MAX_VALUE, so it is only incremented when it lies within the capacity
+        final long endBlock = lastKey >= maxIndex ? allocatedBlocks : (lastKey + 1) >> LOG_BLOCK_SIZE;
         for (long bi = firstBlock; bi < endBlock; ++bi) {
             releaseBlock((int) bi);
         }

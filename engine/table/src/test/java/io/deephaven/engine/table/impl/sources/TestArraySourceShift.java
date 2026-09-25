@@ -287,6 +287,30 @@ public class TestArraySourceShift {
         }
     }
 
+    @Test
+    public void testReleaseBlocksThroughEnd() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final LongArraySource longs = new LongArraySource();
+        longs.ensureCapacity(4L * blockSize);
+        for (int ii = 0; ii < 4 * blockSize; ++ii) {
+            longs.set(ii, (long) ii);
+        }
+        // an unbounded range releases every block from the first one it covers, and shrinks the capacity to them
+        longs.releaseBlocks(2L * blockSize, Long.MAX_VALUE);
+        assertEquals(2L * blockSize, longs.getCapacity());
+        assertEquals(null, longs.getBlocks()[2]);
+        assertEquals(null, longs.getBlocks()[3]);
+        assertEquals(2L * blockSize - 1, longs.getLong(2L * blockSize - 1));
+
+        // a range within the capacity releases only the blocks it covers entirely
+        longs.releaseBlocks(1, blockSize - 1);
+        assertEquals(2L * blockSize, longs.getCapacity());
+        longs.releaseBlocks(0, blockSize - 1);
+        assertEquals(null, longs.getBlocks()[0]);
+        assertEquals(2L * blockSize, longs.getCapacity());
+        assertEquals(blockSize, longs.getLong(blockSize));
+    }
+
     /**
      * The move down left the last of four blocks unallocated. Once it is released through the end of the capacity,
      * after the cycle, ensuring the capacity allocates it again, null-filled.
