@@ -18,8 +18,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedChunk;
-import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.ssa.SsaSsaStamp;
@@ -242,14 +240,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     if (rightShifted.nonempty()) {
                         final RowSet prevRowSet = rightTable.getRowSet().prev();
                         try (final RowSet relevantShiftedRows = ChunkedAjUtils.relevantShiftedRows(rightShifted,
-                                prevRowSet, rightRestampRemovals);
-                                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
-                                        new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
-                                        new SizedSafeCloseable<>(
-                                                sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
-                                final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
-                                final SizedLongChunk<RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
+                                prevRowSet, rightRestampRemovals)) {
                             final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
@@ -261,19 +252,23 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                 }
 
                                 if (sit.polarityReversed()) {
-                                    final int shiftSize = rowSetToShift.intSize();
+                                    // a positive shift moves the highest row keys first, so no row is shifted onto a
+                                    // key that has yet to be shifted
+                                    final long rowsToShift = rowSetToShift.size();
+                                    for (long endPosition = rowsToShift; endPosition > 0; endPosition -=
+                                            cycleRightChunkSize) {
+                                        try (final RowSet chunkOk = rowSetToShift.subSetByPositionRange(
+                                                Math.max(0, endPosition - cycleRightChunkSize), endPosition)) {
+                                            rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
+                                            chunkOk.fillRowKeyChunk(rightStampKeys);
+                                            sortKernel.sort(rightStampKeys, rightStampValues);
 
-                                    rightStampSource.fillPrevChunk(shiftFillContext.ensureCapacity(shiftSize),
-                                            shiftRightStampValues.ensureCapacity(shiftSize), rowSetToShift);
-                                    rowSetToShift.fillRowKeyChunk(shiftRightStampKeys.ensureCapacity(shiftSize));
-                                    shiftSortContext.ensureCapacity(shiftSize).sort(shiftRightStampKeys.get(),
-                                            shiftRightStampValues.get());
-
-                                    ssaSsaStamp.applyShift(leftSsa, shiftRightStampValues.get(),
-                                            shiftRightStampKeys.get(), sit.shiftDelta(), rowRedirection,
-                                            disallowExactMatch);
-                                    rightSsa.applyShiftReverse(shiftRightStampValues.get(), shiftRightStampKeys.get(),
-                                            sit.shiftDelta());
+                                            ssaSsaStamp.applyShift(leftSsa, rightStampValues, rightStampKeys,
+                                                    sit.shiftDelta(), rowRedirection, disallowExactMatch);
+                                            rightSsa.applyShiftReverse(rightStampValues, rightStampKeys,
+                                                    sit.shiftDelta());
+                                        }
+                                    }
                                 } else {
                                     try (final RowSequence.Iterator shiftIt = rowSetToShift.getRowSequenceIterator()) {
                                         while (shiftIt.hasMore()) {

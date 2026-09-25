@@ -1473,11 +1473,6 @@ public class AsOfJoinHelper {
         final RowSet prevRowSet = table.getRowSet().prev();
         try (final RowSet relevantShiftedRows =
                 ChunkedAjUtils.relevantShiftedRows(shiftData, prevRowSet, restampRemovals);
-                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
-                        new SizedSafeCloseable<>(stampSource::makeFillContext);
-                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
-                        new SizedSafeCloseable<>(sz -> LongSortKernel.makeContext(stampSource.getChunkType(),
-                                ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, sz, true));
                 final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
                 final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
 
@@ -1491,23 +1486,24 @@ public class AsOfJoinHelper {
                     }
 
                     if (sit.polarityReversed()) {
-                        final int shiftSize = rowSetToShift.intSize();
+                        // a positive shift moves the highest row keys first, so no row is shifted onto a key that
+                        // has yet to be shifted
+                        final long rowsToShift = rowSetToShift.size();
+                        for (long endPosition = rowsToShift; endPosition > 0; endPosition -= chunkSize) {
+                            try (final RowSet chunkOk = rowSetToShift
+                                    .subSetByPositionRange(Math.max(0, endPosition - chunkSize), endPosition)) {
+                                final int shiftSize = chunkOk.intSize();
+                                stampSource.fillPrevChunk(fillContext, rightStampValues.ensureCapacity(shiftSize),
+                                        chunkOk);
+                                chunkOk.fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
+                                sortKernel.sort(rightStampKeys.get(), rightStampValues.get());
 
-                        rowSetToShift.fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
-                        if (chunkSize >= shiftSize) {
-                            stampSource.fillPrevChunk(fillContext, rightStampValues.ensureCapacity(shiftSize),
-                                    rowSetToShift);
-                            sortKernel.sort(rightStampKeys.get(), rightStampValues.get());
-                        } else {
-                            stampSource.fillPrevChunk(shiftFillContext.ensureCapacity(shiftSize),
-                                    rightStampValues.ensureCapacity(shiftSize), rowSetToShift);
-                            shiftSortKernel.ensureCapacity(shiftSize).sort(rightStampKeys.get(),
-                                    rightStampValues.get());
+                                chunkSsaStamp.applyShift(leftStampValues, leftStampKeys, rightStampValues.get(),
+                                        rightStampKeys.get(), sit.shiftDelta(), rowRedirection, disallowExactMatch);
+                                ssa.applyShiftReverse(rightStampValues.get(), rightStampKeys.get(),
+                                        sit.shiftDelta());
+                            }
                         }
-
-                        chunkSsaStamp.applyShift(leftStampValues, leftStampKeys, rightStampValues.get(),
-                                rightStampKeys.get(), sit.shiftDelta(), rowRedirection, disallowExactMatch);
-                        ssa.applyShiftReverse(rightStampValues.get(), rightStampKeys.get(), sit.shiftDelta());
                     } else {
                         if (rowSetToShift.size() > chunkSize) {
                             try (final RowSequence.Iterator shiftIt = rowSetToShift.getRowSequenceIterator()) {
