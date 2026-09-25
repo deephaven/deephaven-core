@@ -107,13 +107,15 @@ final class OutputPositionBlockTracker {
      * @param liveStates the output positions of the live states, after this cycle's additions and removals
      * @param maxShiftedStates the most states to move in this cycle
      * @param released the output positions of blocks to release, to which the emptied blocks are added
-     * @return the shifts to apply to the live states, which only move states toward lower positions
+     * @return the collapsed runs and the shifts that move their live states, which only move states toward lower
+     *         positions
      */
-    RowSetShiftData collapseSparseBlocks(final RowSet liveStates, final long maxShiftedStates,
+    Collapse collapseSparseBlocks(final RowSet liveStates, final long maxShiftedStates,
             final WritableRowSet released) {
         if (sparseBlocks.size() < 2) {
-            return RowSetShiftData.EMPTY;
+            return Collapse.NONE;
         }
+        final List<long[]> collapsedRuns = new ArrayList<>();
         final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
         final RowSetBuilderSequential releasedBuilder = RowSetFactory.builderSequential();
         long remainingShifts = maxShiftedStates;
@@ -152,6 +154,7 @@ final class OutputPositionBlockTracker {
 
             final long firstPosition = (long) run[0] << LOG_BLOCK_SIZE;
             final long lastPosition = ((long) (collapseLast + 1) << LOG_BLOCK_SIZE) - 1;
+            collapsedRuns.add(new long[] {firstPosition, lastPosition, runLive});
             try (final RowSet runStates = liveStates.subSetByKeyRange(firstPosition, lastPosition)) {
                 final MutableLong destination = new MutableLong(firstPosition);
                 runStates.forAllRowKeyRanges((first, last) -> {
@@ -181,7 +184,61 @@ final class OutputPositionBlockTracker {
         try (final RowSet newlyReleased = releasedBuilder.build()) {
             released.insert(newlyReleased);
         }
-        return shiftBuilder.build();
+        return new Collapse(shiftBuilder.build(), collapsedRuns);
+    }
+
+    /**
+     * The runs collapsed in one cycle. Within a run, the live states keep their order and are moved to occupy the run's
+     * first positions.
+     */
+    static final class Collapse {
+        static final Collapse NONE = new Collapse(RowSetShiftData.EMPTY, List.of());
+
+        /** The shifts that move the live states; nonempty exactly when some run was collapsed. */
+        final RowSetShiftData shift;
+        /** For each collapsed run, in order: its first position, its last position, and its number of live states. */
+        private final List<long[]> runs;
+
+        private Collapse(final RowSetShiftData shift, final List<long[]> runs) {
+            this.shift = shift;
+            this.runs = runs;
+        }
+
+        /**
+         * Apply the collapse to the live states and to row sets of states within them. Each run of the live states is
+         * replaced by one contiguous range, which is far cheaper than applying {@link #shift} range by range when the
+         * live states are scattered.
+         *
+         * @param liveStates the output positions of the live states, before the collapse
+         * @param subsets row sets of positions that are all in {@code liveStates}, such as the states added or modified
+         *        this cycle
+         */
+        void apply(final WritableRowSet liveStates, final WritableRowSet... subsets) {
+            for (final long[] run : runs) {
+                final long first = run[0];
+                final long last = run[1];
+                // a state's new position is the run's first position plus its rank among the run's live states
+                try (final RowSet runStates = liveStates.subSetByKeyRange(first, last)) {
+                    for (final WritableRowSet subset : subsets) {
+                        try (final RowSet moving = subset.subSetByKeyRange(first, last)) {
+                            if (moving.isEmpty()) {
+                                continue;
+                            }
+                            final RowSetBuilderSequential moved = RowSetFactory.builderSequential();
+                            moving.forAllRowKeys(key -> moved.appendKey(first + runStates.find(key)));
+                            subset.removeRange(first, last);
+                            try (final RowSet movedKeys = moved.build()) {
+                                subset.insert(movedKeys);
+                            }
+                        }
+                    }
+                }
+                liveStates.removeRange(first, last);
+                if (run[2] > 0) {
+                    liveStates.insertRange(first, first + run[2] - 1);
+                }
+            }
+        }
     }
 
     private void release(final int bi, final RowSetBuilderSequential builder) {
