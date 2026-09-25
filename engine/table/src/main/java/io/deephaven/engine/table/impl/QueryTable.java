@@ -415,6 +415,15 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWhereReorderWithBarriers", true);
 
     /**
+     * Ignore a parquet file's sorting-column metadata when a column resolver is in use or any sort column is renamed.
+     * The metadata names columns as written (parquet names), but it is consumed as Deephaven column names, so with a
+     * rename collision the table is marked sorted by the wrong column, and sorted pushdown, range-filter binary search
+     * and {@code sort()} all trust it. Wrong-answer finding PD-066; tracked for 43.x by DH-23755.
+     */
+    public static boolean DISABLE_PARQUET_SORT_METADATA_WITH_RENAMES =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableParquetSortMetadataWithRenames", true);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

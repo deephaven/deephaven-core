@@ -162,7 +162,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .orElse(TableInfo.builder().build());
             groupingColumns = tableInfo.groupingColumnMap();
             columnTypes = tableInfo.columnTypeMap();
-            sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+            sortingColumns = sortColumnsUnlessRenamed(SortColumnInfo.sortColumns(tableInfo.sortingColumns()));
 
             if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
                 // We do not have the last modified time for non-file URIs
@@ -173,6 +173,28 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
             isInitialized = true;
         }
+    }
+
+    /**
+     * DH-23750 (42.x only): the file's sorting metadata, or none when
+     * {@link QueryTable#DISABLE_PARQUET_SORT_METADATA_WITH_RENAMES} applies (a column resolver is in use, or a sort
+     * column is renamed in either direction).
+     */
+    private List<SortColumn> sortColumnsUnlessRenamed(@NotNull final List<SortColumn> fileSortColumns) {
+        if (!QueryTable.DISABLE_PARQUET_SORT_METADATA_WITH_RENAMES) {
+            return fileSortColumns;
+        }
+        if (resolver != null) {
+            return List.of();
+        }
+        for (final SortColumn sortColumn : fileSortColumns) {
+            final String name = sortColumn.column().name();
+            if (!readInstructions.getColumnNameFromParquetColumnNameOrDefault(name).equals(name)
+                    || !readInstructions.getParquetColumnNameFromColumnNameOrDefault(name).equals(name)) {
+                return List.of();
+            }
+        }
+        return fileSortColumns;
     }
 
     @Override
