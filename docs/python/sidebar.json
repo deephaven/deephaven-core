@@ -1212,6 +1212,7 @@
       },
       {
         "label": "Cheat sheets",
+        "collapsible": false,
         "items": [
           {
             "label": "Ultimate cheat sheet",
@@ -1257,67 +1258,67 @@
         ]
       },
       {
-        "label": "API documentation",
-        "items": [
-          {
-            "label": "Python (client)",
-            "href": "https://deephaven.io/core/client-api/python"
-          },
-          {
-            "label": "Python (server)",
-            "href": "https://deephaven.io/core/pydoc"
-          },
-          {
-            "label": "Java (client/server)",
-            "href": "https://deephaven.io/core/javadoc"
-          },
-          {
-            "label": "JavaScript (client)",
-            "items": [
-              {
-                "label": "Javascript API Concepts",
-                "path": "reference/js-api/concepts.md"
-              },
-              {
-                "label": "JavaScript",
-                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
-              }
-            ]
-          },
-          {
-            "label": "Go (client)",
-            "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
-          },
-          {
-            "label": "C++ (client)",
-            "href": "https://deephaven.io/core/client-api/cpp"
-          },
-          {
-            "label": "C++ (examples)",
-            "href": "https://deephaven.io/core/client-api/cpp-examples"
-          },
-          {
-            "label": "R (client)",
-            "href": "https://deephaven.io/core/client-api/r"
-          },
-          {
-            "label": "Barrage (communication)",
-            "href": "https://deephaven.io/barrage/docs/"
-          },
-          {
-            "label": "gRPC (communication)",
-            "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
-          },
-          {
-            "label": "Protobuf (communication)",
-            "href": "https://deephaven.io/core/client-api/protobuf/"
-          }
-        ]
-      },
-      {
         "label": "Reference",
         "collapsible": false,
         "items": [
+          {
+            "label": "API documentation",
+            "items": [
+              {
+                "label": "Python (client)",
+                "href": "https://deephaven.io/core/client-api/python"
+              },
+              {
+                "label": "Python (server)",
+                "href": "https://deephaven.io/core/pydoc"
+              },
+              {
+                "label": "Java (client/server)",
+                "href": "https://deephaven.io/core/javadoc"
+              },
+              {
+                "label": "JavaScript (client)",
+                "items": [
+                  {
+                    "label": "Javascript API Concepts",
+                    "path": "reference/js-api/concepts.md"
+                  },
+                  {
+                    "label": "JavaScript",
+                    "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+                  }
+                ]
+              },
+              {
+                "label": "Go (client)",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+              },
+              {
+                "label": "C++ (client)",
+                "href": "https://deephaven.io/core/client-api/cpp"
+              },
+              {
+                "label": "C++ (examples)",
+                "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "R (client)",
+                "href": "https://deephaven.io/core/client-api/r"
+              },
+              {
+                "label": "Barrage (communication)",
+                "href": "https://deephaven.io/barrage/docs/"
+              },
+              {
+                "label": "gRPC (communication)",
+                "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
+              },
+              {
+                "label": "Protobuf (communication)",
+                "href": "https://deephaven.io/core/client-api/protobuf/"
+              }
+            ]
+          },
           {
             "label": "Engine",
             "items": [
@@ -2808,6 +2809,7 @@
       },
       {
         "label": "Help and more",
+        "collapsible": false,
         "items": [
           {
             "label": "Deephaven example apps on GitHub",

@@ -1090,6 +1090,7 @@
       },
       {
         "label": "Cheat sheets",
+        "collapsible": false,
         "items": [
           {
             "label": "Ultimate cheat sheet",
@@ -1131,60 +1132,6 @@
         ]
       },
       {
-        "label": "API documentation",
-        "items": [
-          {
-            "label": "Pydoc (client)",
-            "href": "https://deephaven.io/core/client-api/python"
-          },
-          {
-            "label": "Pydoc (server)",
-            "href": "https://deephaven.io/core/pydoc"
-          },
-          {
-            "label": "Javascript API (client/server)",
-            "items": [
-              {
-                "label": "Javascript",
-                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
-              }
-            ]
-          },
-          {
-            "label": "Javadoc (client/server)",
-            "href": "https://deephaven.io/core/javadoc"
-          },
-          {
-            "label": "Godoc",
-            "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
-          },
-          {
-            "label": "C++ (client)",
-            "href": "https://deephaven.io/core/client-api/cpp"
-          },
-          {
-            "label": "C++ (examples)",
-            "href": "https://deephaven.io/core/client-api/cpp-examples"
-          },
-          {
-            "label": "R (client)",
-            "href": "https://deephaven.io/core/client-api/r"
-          },
-          {
-            "label": "Barrage (Deephaven's Arrow Flight extension",
-            "href": "https://deephaven.io/barrage/docs/"
-          },
-          {
-            "label": "gRPC",
-            "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
-          },
-          {
-            "label": "Protobuf",
-            "href": "https://deephaven.io/core/client-api/protobuf/"
-          }
-        ]
-      },
-      {
         "label": "Plugins",
         "items": [
           {
@@ -1205,6 +1152,60 @@
         "label": "Reference",
         "collapsible": false,
         "items": [
+          {
+            "label": "API documentation",
+            "items": [
+              {
+                "label": "Pydoc (client)",
+                "href": "https://deephaven.io/core/client-api/python"
+              },
+              {
+                "label": "Pydoc (server)",
+                "href": "https://deephaven.io/core/pydoc"
+              },
+              {
+                "label": "Javascript API (client/server)",
+                "items": [
+                  {
+                    "label": "Javascript",
+                    "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+                  }
+                ]
+              },
+              {
+                "label": "Javadoc (client/server)",
+                "href": "https://deephaven.io/core/javadoc"
+              },
+              {
+                "label": "Godoc",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+              },
+              {
+                "label": "C++ (client)",
+                "href": "https://deephaven.io/core/client-api/cpp"
+              },
+              {
+                "label": "C++ (examples)",
+                "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "R (client)",
+                "href": "https://deephaven.io/core/client-api/r"
+              },
+              {
+                "label": "Barrage (Deephaven's Arrow Flight extension",
+                "href": "https://deephaven.io/barrage/docs/"
+              },
+              {
+                "label": "gRPC",
+                "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
+              },
+              {
+                "label": "Protobuf",
+                "href": "https://deephaven.io/core/client-api/protobuf/"
+              }
+            ]
+          },
           {
             "label": "Engine",
             "items": [
@@ -2866,6 +2867,7 @@
       },
       {
         "label": "Help and more",
+        "collapsible": false,
         "items": [
           {
             "label": "Deephaven example apps on GitHub",
