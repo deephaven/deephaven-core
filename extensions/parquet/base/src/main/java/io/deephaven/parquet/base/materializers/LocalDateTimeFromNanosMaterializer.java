@@ -38,7 +38,10 @@ public class LocalDateTimeFromNanosMaterializer extends ObjectMaterializerBase<L
      * @return The input nanoseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
      */
     public static LocalDateTime convertValue(long value) {
-        return LocalDateTime.ofEpochSecond(value / 1_000_000_000L, (int) ((value % 1_000_000_000L) * NANO),
+        // Floor semantics, so that pre-Epoch values yield the non-negative nano-of-second that
+        // LocalDateTime.ofEpochSecond requires.
+        return LocalDateTime.ofEpochSecond(Math.floorDiv(value, 1_000_000_000L),
+                (int) (Math.floorMod(value, 1_000_000_000L) * NANO),
                 ZoneOffset.UTC);
     }
 
