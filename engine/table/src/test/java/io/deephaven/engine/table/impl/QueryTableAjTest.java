@@ -2183,6 +2183,43 @@ public class QueryTableAjTest {
     }
 
     /**
+     * With a static left table and a refreshing right table, each update reports the columns modified in that cycle
+     * alone: a modification of one added right column reports just that column, even after an earlier cycle reported
+     * every right column.
+     */
+    @Test
+    public void testRightTickingModifiedColumnSetIsPerCycle() {
+        for (final String match : new String[] {"LeftStamp>=RightStamp", "Key,LeftStamp>=RightStamp"}) {
+            final QueryTable left = testTable(i(0).toTracking(), col("Key", "K"), intCol("LeftStamp", 10));
+            final QueryTable right = testRefreshingTable(i(0).toTracking(), col("Key", "K"),
+                    intCol("RightStamp", 5), intCol("ColumnA", 1), intCol("ColumnB", 2));
+            final QueryTable result = (QueryTable) left.aj(right, match, "ColumnA,ColumnB");
+            final SimpleListener listener = new SimpleListener(result);
+            result.addUpdateListener(listener);
+
+            // an added right row reports every right column
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(right, i(1), col("Key", "K"), intCol("RightStamp", 3), intCol("ColumnA", 3),
+                        intCol("ColumnB", 4));
+                right.notifyListeners(i(1), i(), i());
+            });
+
+            listener.reset();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(right, i(0), col("Key", "K"), intCol("RightStamp", 5), intCol("ColumnA", 1),
+                        intCol("ColumnB", 20));
+                right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                        right.newModifiedColumnSet("ColumnB")));
+            });
+            assertEquals(match, 1, listener.getCount());
+            assertEquals(match, i(0), listener.getUpdate().modified());
+            assertEquals(match, result.newModifiedColumnSet("ColumnB"), listener.getUpdate().modifiedColumnSet());
+            result.removeUpdateListener(listener);
+        }
+    }
+
+    /**
      * The rows of one side of a churning bucketed join, grouped by key, along with the additions and removals staged
      * for the next cycle. Rows are appended in increasing row key order.
      */
