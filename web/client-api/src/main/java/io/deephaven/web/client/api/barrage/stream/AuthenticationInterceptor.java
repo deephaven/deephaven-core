@@ -78,8 +78,9 @@ public class AuthenticationInterceptor implements ClientInterceptor {
      * Handles the response info from the server, returning a context to signal if a session was created as a result or
      * not.
      */
-    private Context handleMetadata(@Nullable Status status, Metadata metadata) {
-        String authHeader = metadata.get(AUTHORIZATION_HEADER);
+    private Context handleMetadata(@Nullable Status status, @Nullable Metadata metadata) {
+        // metadata may be null when a stream closes before any headers/trailers arrive
+        String authHeader = metadata == null ? null : metadata.get(AUTHORIZATION_HEADER);
         if (authHeader == null && status == null) {
             // No useful response, ignore - probably looking at initial headers.
             return Context.current();
