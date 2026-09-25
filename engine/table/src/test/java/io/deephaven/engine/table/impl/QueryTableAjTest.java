@@ -2220,6 +2220,32 @@ public class QueryTableAjTest {
     }
 
     /**
+     * With both sides refreshing, the first right row of a bucket that held only left rows modifies just the left rows
+     * that it matches.
+     */
+    @Test
+    public void testFirstRightRowOfBucketModifiesOnlyMatchedLeftRows() {
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "A", "A", "A"),
+                intCol("LeftStamp", 1, 2, 3));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(), col("Key", "B"), intCol("RightStamp", 1),
+                intCol("Sentinel", 0));
+        final QueryTable result = (QueryTable) left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(10), col("Key", "A"), intCol("RightStamp", 2), intCol("Sentinel", 10));
+            right.notifyListeners(i(10), i(), i());
+        });
+
+        Asserts.assertEquals(new int[] {NULL_INT, 10, 10}, ColumnVectors.ofInt(result, "Sentinel").toArray());
+        assertEquals(1, listener.getCount());
+        assertEquals(i(1, 2), listener.getUpdate().modified());
+        result.removeUpdateListener(listener);
+    }
+
+    /**
      * Distinct String instances that compare equal to each other.
      */
     private static String freshString(final String value) {
