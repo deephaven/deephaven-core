@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.Table;
@@ -130,6 +131,28 @@ public class QueryTableAjFailureCleanupTest {
             fail("expected the join to throw");
         } catch (final RuntimeException expected) {
             // the left stamp formula throws while the join is built
+        }
+        ChunkPoolReleaseTracking.check();
+    }
+
+    /**
+     * Zero-key aj of a refreshing left against a static right with duplicate stamps copies the compacted right stamps
+     * into chunks the left listener owns. When the listener can not be registered (here, because the left table has
+     * already failed), the listener's destroy() releases those chunks exactly once.
+     */
+    @Test
+    public void testZeroKeyRightStaticListenerFailureReleasesCompactedChunks() {
+        final QueryTable left = makeTable(true, i(10, 20, 30).toTracking(), intCol("S0", 1, 5, 3));
+        final QueryTable right = makeTable(false, i(10, 20, 30).toTracking(), intCol("S0", 0, 2, 2),
+                intCol("Val", 100, 200, 300));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> left.notifyListenersOnError(new RuntimeException("failed"), null));
+        assertTrue(left.isFailed());
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            left.aj(right, "S0", "Val");
+            fail("expected the join to throw");
+        } catch (final TableAlreadyFailedException expected) {
+            // the left listener can not be registered on a failed table
         }
         ChunkPoolReleaseTracking.check();
     }
