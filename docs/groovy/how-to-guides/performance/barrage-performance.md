@@ -98,7 +98,7 @@ Here are server-side flags that change the behavior of Barrage metrics.
 
 When a client subscribes to a ticking table, the server sends an initial snapshot of the table data. For large tables, constructing this snapshot requires holding the data in memory on the server side, which can lead to out-of-memory (OOM) errors.
 
-To address this, Deephaven can break the initial snapshot into smaller chunks spread across multiple update cycles. This behavior is controlled by the following properties:
+To address this, Deephaven can break the initial snapshot into a series of smaller snapshot chunks. This behavior is controlled by the following properties:
 
 - `-DBarrageMessageProducer.subscriptionGrowthEnabled`: When `true` (the default), the server limits the size of each snapshot chunk. When `false`, the server sends the entire snapshot at once (unlimited size).
 
@@ -121,7 +121,7 @@ For systems serving very large tables to many subscribers, you can reduce publis
 -DBarrageUtil.maxSnapshotCellCount=1000000
 ```
 
-This configuration limits each snapshot chunk to at most 1 million cells — well below the 16 million default maximum. Subscribers receive the full table data incrementally over multiple update cycles rather than all at once.
+This configuration limits each snapshot chunk to at most 1 million cells — well below the 16 million default maximum. Subscribers receive the full table data as a series of snapshot chunks rather than all at once. While a subscription is still growing, the server sends the next chunk as soon as the previous one is done, without waiting for the next update interval.
 
 > [!NOTE]
 > Setting smaller snapshot sizes increases the time required for subscribers to receive the initial table state but reduces peak memory usage on the server. These settings only affect snapshots for new or changed subscriptions, such as an initial subscription or a viewport change — incremental updates are unaffected and must still be maintained in memory.
