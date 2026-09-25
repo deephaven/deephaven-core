@@ -370,6 +370,38 @@ public class QueryTable extends BaseTable<QueryTable> {
                     true);
 
     /**
+     * Disable sorted-column pushdown (table-level and parquet region-level) for float and double columns, and stop
+     * trusting an Iceberg sort order from its first float/double sort column onward. The binary search kernels treat
+     * NaN as equal to NaN where the regular filter follows IEEE 754 ({@code X == NaN}, {@code X != NaN}), and an
+     * inclusive +Inf upper bound returns the NaN rows sorted above it. Separately, Iceberg writers order
+     * {@code -MAX_VALUE} after -Infinity, but Deephaven reads it back as the null sentinel, which it orders first, so
+     * such data is not sorted in Deephaven order. Wrong-answer findings PD-026, PD-027 and PD-060; corrected in 43.x by
+     * DH-23502 and DH-23755.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedFloatingPoint",
+                    true);
+
+    /**
+     * Disable sorted-column pushdown for char match filters with more than one value including null. The kernels sort
+     * the search values with {@code Character.compare}, which orders NULL_CHAR last, while the data is sorted
+     * null-first. Wrong-answer finding PD-025; corrected in 43.x by DH-23096 and DH-23502.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_CHAR_NULL_MATCH =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedCharNullMatch",
+                    true);
+
+    /**
+     * Disable sorted-column pushdown for Object match filters on types not known to have {@code compareTo} consistent
+     * with {@code equals} (anything but String, Boolean, BigInteger and the java.time types; e.g. BigDecimal, where 1.0
+     * and 1.00 compare equal but are not equals). The kernels can skip matching rows or throw. Wrong-answer finding
+     * PD-028; corrected in 43.x by DH-23502.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_INCONSISTENT_OBJECT_MATCH =
+            Configuration.getInstance().getBooleanWithDefault(
+                    "QueryTable.disableWherePushdownSortedInconsistentObjectMatch", true);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

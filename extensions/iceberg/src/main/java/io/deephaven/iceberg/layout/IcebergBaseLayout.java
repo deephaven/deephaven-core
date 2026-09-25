@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.layout;
 
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -343,6 +344,13 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             final ColumnDefinition<?> columnDef = tableDefinition.getColumn(dhColName);
             if (columnDef == null) {
                 // Table definition provided by the user doesn't have this column, so stop here
+                break;
+            }
+            final Class<?> dataType = columnDef.getDataType();
+            if (QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT
+                    && (dataType == double.class || dataType == Double.class
+                            || dataType == float.class || dataType == Float.class)) {
+                // DH-23750 (42.x only): see QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT.
                 break;
             }
             final SortColumn sortColumn;

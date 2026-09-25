@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectRegionBinarySearchKernel;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
@@ -35,7 +36,12 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
             new RegionedPushdownAction.Region(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION,
                     PushdownResult.REGION_SORTED_DATA_COST,
-                    (ctx) -> ctx.rangeFilter() != null || ctx.matchFilter() != null,
+                    // DH-23750 (42.x only): decline filters the binary search kernels are known to answer wrongly
+                    // (wrong-answer findings PD-025/026/027/028); see isKnownIncorrectForSortedPushdown.
+                    (ctx) -> (ctx.rangeFilter() != null || ctx.matchFilter() != null)
+                            && !SortedColumnPushdownManager.isKnownIncorrectForSortedPushdown(
+                                    ctx.columnDefinitions().get(0).getDataType(), ctx.matchFilter(),
+                                    ctx.rangeFilter()),
                     (tl, cr) -> true);
     private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(SORTED_REGION_ACTION);
 
