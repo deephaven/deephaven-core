@@ -26,12 +26,16 @@ public final class ColumnEncoding {
 
         /** Maps an Arrow integer bit width to the corresponding run-end width. */
         public static RunEndWidth fromBitWidth(final int bitWidth) {
-            return switch (bitWidth) {
-                case 16 -> INT16;
-                case 32 -> INT32;
-                case 64 -> INT64;
-                default -> throw new IllegalArgumentException("Unrecognized run-end encoded bit width: " + bitWidth);
-            };
+            switch (bitWidth) {
+                case 16:
+                    return INT16;
+                case 32:
+                    return INT32;
+                case 64:
+                    return INT64;
+                default:
+                    throw new IllegalArgumentException("Unrecognized run-end encoded bit width: " + bitWidth);
+            }
         }
     }
 
@@ -41,13 +45,18 @@ public final class ColumnEncoding {
 
         /** Maps an Arrow integer bit width to the corresponding dictionary index width. */
         public static DictWidth fromBitWidth(final int bitWidth) {
-            return switch (bitWidth) {
-                case 8 -> INT8;
-                case 16 -> INT16;
-                case 32 -> INT32;
-                case 64 -> INT64;
-                default -> throw new IllegalArgumentException("Unrecognized dictionary encoded bit width: " + bitWidth);
-            };
+            switch (bitWidth) {
+                case 8:
+                    return INT8;
+                case 16:
+                    return INT16;
+                case 32:
+                    return INT32;
+                case 64:
+                    return INT64;
+                default:
+                    throw new IllegalArgumentException("Unrecognized dictionary encoded bit width: " + bitWidth);
+            }
         }
     }
 

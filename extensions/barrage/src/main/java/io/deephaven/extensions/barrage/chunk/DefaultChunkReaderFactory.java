@@ -463,12 +463,21 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         final long dictId = dictEncoding.getId();
         final ArrowType.Int indexArrowType = dictEncoding.getIndexType();
         final int indexBitWidth = indexArrowType.getBitWidth();
-        final Class<?> indexJavaType = switch (indexBitWidth) {
-            case 8 -> byte.class;
-            case 16 -> short.class;
-            case 64 -> long.class;
-            default -> int.class;
-        };
+        final Class<?> indexJavaType;
+        switch (indexBitWidth) {
+            case 8:
+                indexJavaType = byte.class;
+                break;
+            case 16:
+                indexJavaType = short.class;
+                break;
+            case 64:
+                indexJavaType = long.class;
+                break;
+            default:
+                indexJavaType = int.class;
+                break;
+        }
         final Field indexField = new Field("",
                 new org.apache.arrow.vector.types.pojo.FieldType(
                         true, new ArrowType.Int(indexBitWidth, true), null),

@@ -427,6 +427,5 @@ table_w_attributes = table.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE,
 
 ## Related documentation
 
-- [What is Barrage?](../../conceptual/what-is-barrage.md)
 - [withAttributes](../../reference/table-operations/select/withAttributes.md)
 - [Arrow Flight integration](./arrow-flight.md)
