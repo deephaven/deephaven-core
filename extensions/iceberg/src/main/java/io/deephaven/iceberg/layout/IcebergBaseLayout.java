@@ -15,7 +15,6 @@ import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.SortedColumnsExclusion;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
@@ -80,6 +79,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The {@link Snapshot} from which to discover data files.
      */
     Snapshot snapshot;
+
+    /**
+     * The Deephaven columns whose sortedness, declared by the table's sort order, is not to be trusted.
+     */
+    private final Set<String> ignoreSortedColumns;
 
     /**
      * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table.
@@ -174,10 +178,9 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             if (specialInstructions != null) {
                 builder.setSpecialInstructions(specialInstructions);
             }
-            builder.addSortedColumnsExclusions(
-                    instructions.sortedColumnsExclusions().toArray(new SortedColumnsExclusion[0]));
             this.parquetInstructions = builder.build();
         }
+        this.ignoreSortedColumns = Set.copyOf(instructions.ignoreSortedColumns());
 
         if ("s3".equals(uriScheme) || "s3a".equals(uriScheme) || "s3n".equals(uriScheme)) {
             seekableChannelsProvider =
@@ -193,6 +196,20 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final ParquetInstructions parquetInstructions,
             @NotNull final SeekableChannelsProvider seekableChannelsProvider,
             @Nullable final Snapshot snapshot) {
+        this(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot, Set.of());
+    }
+
+    /**
+     * @param ignoreSortedColumns The Deephaven columns whose sortedness, declared by the table's sort order, is not to
+     *        be trusted; see {@link IcebergReadInstructions#ignoreSortedColumns()}
+     */
+    protected IcebergBaseLayout(
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @NotNull final ParquetInstructions parquetInstructions,
+            @NotNull final SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable final Snapshot snapshot,
+            @NotNull final Set<String> ignoreSortedColumns) {
+        this.ignoreSortedColumns = Set.copyOf(ignoreSortedColumns);
         this.tableAdapter = Objects.requireNonNull(tableAdapter);
         {
             UUID uuid;
@@ -333,10 +350,19 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             sortedColumns = computeSortedColumns(icebergTable, dataFile,
                     (schema, fieldId) -> columnNamesByFieldId.get(fieldId));
         }
-        return SortedColumnsExclusion.apply(
-                parquetInstructions.getSortedColumnsExclusions(),
-                sortedColumns,
-                parquetInstructions.getTableDefinition().orElse(null));
+        if (ignoreSortedColumns.isEmpty()) {
+            return sortedColumns;
+        }
+        // The sort is a prefix -- each column is sorted within runs of the ones before it -- so a column whose
+        // sortedness is not trusted ends it
+        final List<SortColumn> trustedSortedColumns = new ArrayList<>(sortedColumns.size());
+        for (final SortColumn sortedColumn : sortedColumns) {
+            if (ignoreSortedColumns.contains(sortedColumn.column().name())) {
+                break;
+            }
+            trustedSortedColumns.add(sortedColumn);
+        }
+        return Collections.unmodifiableList(trustedSortedColumns);
     }
 
     /**

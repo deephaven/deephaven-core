@@ -5,7 +5,6 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.parquet.table.SortedColumnsExclusion;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.mapping.NameMapping;
@@ -111,13 +110,21 @@ public abstract class IcebergReadInstructions {
     }
 
     /**
-     * The declared sortedness to ignore when reading. Deephaven takes the sort order of each data file from the table's
-     * sort order and does not verify it; where the writer's order differs from Deephaven's, filters on the sorted
-     * column and sorts by it can give wrong results. Empty by default.
-     *
-     * @see SortedColumnsExclusion
+     * The Deephaven columns whose sortedness, declared by the table's sort order, the read should not trust. Names are
+     * Deephaven column names, after any renames or resolution; a name that is not a sorted column has no effect.
+     * <p>
+     * Deephaven takes the sort order of each data file from the table's sort order and does not verify it. Filters on a
+     * sorted column binary-search it, and a sort by it returns the table as it is, so both give wrong results where the
+     * writer sorted the data differently than Deephaven would. Other writers order strings by code point, where
+     * Deephaven orders them by UTF-16 code unit (the two differ where a character above U+FFFF meets one in U+E000
+     * through U+FFFF), and a stored {@code -Double.MAX_VALUE} or {@code -Float.MAX_VALUE} reads as null, which
+     * Deephaven orders before negative infinity. Ignoring a column's sortedness makes these operations correct at the
+     * cost of scanning the column.
+     * <p>
+     * Ignoring a column also ignores every sort column after it, since each is sorted only within runs of the ones
+     * before it. Empty by default.
      */
-    public abstract Set<SortedColumnsExclusion> sortedColumnsExclusions();
+    public abstract Set<String> ignoreSortedColumns();
 
     public interface Builder {
 
@@ -146,9 +153,9 @@ public abstract class IcebergReadInstructions {
 
         Builder ignoreResolvingErrors(boolean ignoreResolvingErrors);
 
-        Builder addSortedColumnsExclusions(SortedColumnsExclusion... elements);
+        Builder addIgnoreSortedColumns(String... elements);
 
-        Builder addAllSortedColumnsExclusions(Iterable<SortedColumnsExclusion> elements);
+        Builder addAllIgnoreSortedColumns(Iterable<String> elements);
 
         IcebergReadInstructions build();
     }

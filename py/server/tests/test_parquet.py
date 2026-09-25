@@ -8,7 +8,6 @@ import shutil
 import tempfile
 import unittest
 
-import jpy
 import numpy as np
 import pandas
 import pyarrow.parquet
@@ -32,7 +31,6 @@ from deephaven.parquet import (
     ColumnInstruction,
     ParquetFileLayout,
     RowGroupInfo,
-    SortedColumnsExclusion,
     UnsignedLongTarget,
     batch_write,
     delete,
@@ -1172,47 +1170,6 @@ class ParquetTestCase(BaseTestCase):
         # Fails because we don't provide a table definition and the tables have different definition
         with self.assertRaises(DHError):
             batch_write([table, table2.view(["x", "y"])], ["X.parquet", "Y.parquet"])
-
-    def test_sorted_columns_exclusions(self):
-        j_sorted_columns_attribute = jpy.get_type(
-            "io.deephaven.engine.table.impl.SortedColumnsAttribute"
-        )
-
-        def is_sorted(table, column_name):
-            return j_sorted_columns_attribute.getOrderForColumn(
-                table.j_table.coalesce(), column_name
-            ).isPresent()
-
-        source = empty_table(10).update(["S = `s` + ii", "D = (double) ii"])
-        sorted_by_s = os.path.join(self.temp_dir.name, "sorted_by_s.parquet")
-        sorted_by_d = os.path.join(self.temp_dir.name, "sorted_by_d.parquet")
-        write(source.sort("S"), sorted_by_s)
-        write(source.sort("D"), sorted_by_d)
-
-        self.assertTrue(is_sorted(read(sorted_by_s), "S"))
-        self.assertTrue(is_sorted(read(sorted_by_d), "D"))
-
-        no_strings = SortedColumnsExclusion.STRING
-        self.assertFalse(
-            is_sorted(read(sorted_by_s, sorted_columns_exclusions=no_strings), "S")
-        )
-        self.assertTrue(
-            is_sorted(read(sorted_by_d, sorted_columns_exclusions=no_strings), "D")
-        )
-
-        no_strings_or_floats = (
-            SortedColumnsExclusion.STRING | SortedColumnsExclusion.FLOATING_POINT
-        )
-        self.assertFalse(
-            is_sorted(
-                read(sorted_by_d, sorted_columns_exclusions=no_strings_or_floats), "D"
-            )
-        )
-
-        no_sorts = SortedColumnsExclusion.ALL_COLUMNS
-        self.assertFalse(
-            is_sorted(read(sorted_by_d, sorted_columns_exclusions=no_sorts), "D")
-        )
 
 
 if __name__ == "__main__":

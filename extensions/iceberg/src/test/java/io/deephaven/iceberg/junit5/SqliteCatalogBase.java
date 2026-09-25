@@ -40,7 +40,6 @@ import io.deephaven.iceberg.util.TypeInference;
 import io.deephaven.iceberg.util.UnboundResolver;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.SortedColumnsExclusion;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.GenericType;
@@ -2713,13 +2712,13 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void testSortedColumnsExclusions() {
+    void testIgnoreSortedColumns() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final Table source = TableTools.newTable(
-                stringCol("S", "d", "a", "c", "b"),
+                stringCol("S", "b", "a", "b", "a"),
                 intCol("I", 4, 1, 3, 2));
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
-        tableAdapter.icebergTable().replaceSortOrder().asc("S").commit();
+        tableAdapter.icebergTable().replaceSortOrder().asc("S").asc("I").commit();
         tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
                 .sortOrderProvider(SortOrderProvider.useTableDefault())
@@ -2728,16 +2727,29 @@ public abstract class SqliteCatalogBase {
                         .addTables(source)
                         .build());
 
-        assertThat(SortedColumnsAttribute.getOrderForColumn(tableAdapter.table().coalesce(), "S"))
-                .contains(SortingOrder.Ascending);
-        assertThat(SortedColumnsAttribute.getOrderForColumn(tableAdapter.table(IcebergReadInstructions.builder()
-                .addSortedColumnsExclusions(SortedColumnsExclusion.FLOATING_POINT)
-                .build()).coalesce(), "S"))
-                .contains(SortingOrder.Ascending);
-        assertThat(SortedColumnsAttribute.getOrderForColumn(tableAdapter.table(IcebergReadInstructions.builder()
-                .addSortedColumnsExclusions(SortedColumnsExclusion.STRING)
-                .build()).coalesce(), "S"))
-                .isEmpty();
+        final Function<String[], Table> readIgnoring = ignored -> tableAdapter
+                .table(IcebergReadInstructions.builder().addIgnoreSortedColumns(ignored).build())
+                .coalesce();
+
+        final Table trustAll = readIgnoring.apply(new String[0]);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(trustAll, "S")).contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(trustAll, "I")).contains(SortingOrder.Ascending);
+
+        // Ignoring the second sort column keeps the first
+        final Table ignoreI = readIgnoring.apply(new String[] {"I"});
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreI, "S")).contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreI, "I")).isEmpty();
+
+        // Ignoring the first also ignores the second, which is sorted only within runs of the first
+        final Table ignoreS = readIgnoring.apply(new String[] {"S"});
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreS, "S")).isEmpty();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreS, "I")).isEmpty();
+        assertTableEquals(ignoreS.select().where("S = `b`"), ignoreS.where("S = `b`"));
+
+        // A name that is not a sorted column has no effect
+        final Table ignoreOther = readIgnoring.apply(new String[] {"NotAColumn"});
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreOther, "S")).contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreOther, "I")).contains(SortingOrder.Ascending);
     }
 
     @Test

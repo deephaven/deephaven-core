@@ -26,7 +26,6 @@ import io.deephaven.iceberg.layout.IcebergTableLocationProviderBase;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.SortedColumnsExclusion;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -446,7 +445,7 @@ public final class IcebergTableAdapter {
                 snapshot,
                 readInstructions.dataInstructions().orElse(null),
                 readInstructions.ignoreResolvingErrors(),
-                readInstructions.sortedColumnsExclusions());
+                readInstructions.ignoreSortedColumns());
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             return new IcebergStaticTableLocationProvider<>(
                     tableKey,
@@ -484,7 +483,7 @@ public final class IcebergTableAdapter {
             @Nullable final Snapshot snapshot,
             @Nullable final Object dataInstructions,
             final boolean ignoreResolvingErrors,
-            @NotNull final Set<SortedColumnsExclusion> sortedColumnsExclusions) {
+            @NotNull final Set<String> ignoreSortedColumns) {
         final Object specialInstructions = dataInstructions == null
                 ? dataInstructionsProviderLoader.load(locationUri.getScheme())
                 : dataInstructions;
@@ -493,13 +492,14 @@ public final class IcebergTableAdapter {
                 .setTableDefinition(resolver.definition())
                 .setColumnResolverFactory(new ResolverFactory(resolver, nameMapping, ignoreResolvingErrors))
                 .setSpecialInstructions(specialInstructions)
-                .addSortedColumnsExclusions(sortedColumnsExclusions.toArray(new SortedColumnsExclusion[0]))
                 .build();
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
         if (partitionFields.isEmpty()) {
-            return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot);
+            return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot,
+                    ignoreSortedColumns);
         }
-        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver);
+        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver,
+                ignoreSortedColumns);
     }
 
     SeekableChannelsProvider seekableChannelsProvider(final Object specialInstructions) {

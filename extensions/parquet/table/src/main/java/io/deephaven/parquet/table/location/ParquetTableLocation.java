@@ -39,7 +39,6 @@ import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.ParquetTools;
-import io.deephaven.parquet.table.SortedColumnsExclusion;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
@@ -248,10 +247,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if ((local = sortingColumns) != null) {
                 return local;
             }
-            return sortingColumns = SortedColumnsExclusion.apply(
-                    readInstructions.getSortedColumnsExclusions(),
-                    toColumnSortColumns(SortColumnInfo.sortColumns(tableInfo.sortingColumns())),
-                    readInstructions.getTableDefinition().orElse(null));
+            return sortingColumns = toColumnSortColumns(SortColumnInfo.sortColumns(tableInfo.sortingColumns()));
         }
     }
 

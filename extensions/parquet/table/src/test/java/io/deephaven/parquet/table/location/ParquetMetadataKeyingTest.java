@@ -16,7 +16,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
-import io.deephaven.parquet.table.SortedColumnsExclusion;
 import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.junit.Rule;
@@ -260,53 +259,6 @@ public class ParquetMetadataKeyingTest {
     }
 
     // endregion sortedness
-
-    // region sortedness exclusions
-
-    private String writeSortedBy(final String sortColumn) {
-        final String dest = path("sortedBy" + sortColumn + ".parquet");
-        ParquetTools.writeTable(TableTools.emptyTable(100)
-                .update("S = String.format(`s%03d`, ii)", "D = (double) ii", "I = (int) ii")
-                .sort(sortColumn), dest);
-        return dest;
-    }
-
-    private static ParquetInstructions excluding(final SortedColumnsExclusion... exclusions) {
-        return ParquetInstructions.builder().addSortedColumnsExclusions(exclusions).build();
-    }
-
-    @Test
-    public void sortednessExclusions() {
-        final String sortedByS = writeSortedBy("S");
-        final String sortedByD = writeSortedBy("D");
-        final String sortedByI = writeSortedBy("I");
-
-        // No exclusions: every declared sort is kept
-        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(ParquetTools.readTable(sortedByS), "S"));
-        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(ParquetTools.readTable(sortedByD), "D"));
-        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(ParquetTools.readTable(sortedByI), "I"));
-
-        final ParquetInstructions noStrings = excluding(SortedColumnsExclusion.STRING);
-        assertEquals(Optional.empty(), sortOrder(ParquetTools.readTable(sortedByS, noStrings), "S"));
-        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(ParquetTools.readTable(sortedByD, noStrings), "D"));
-        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(ParquetTools.readTable(sortedByI, noStrings), "I"));
-
-        final ParquetInstructions noStringsOrFloats =
-                excluding(SortedColumnsExclusion.STRING, SortedColumnsExclusion.FLOATING_POINT);
-        assertEquals(Optional.empty(), sortOrder(ParquetTools.readTable(sortedByS, noStringsOrFloats), "S"));
-        assertEquals(Optional.empty(), sortOrder(ParquetTools.readTable(sortedByD, noStringsOrFloats), "D"));
-        assertEquals(Optional.of(SortingOrder.Ascending),
-                sortOrder(ParquetTools.readTable(sortedByI, noStringsOrFloats), "I"));
-
-        final ParquetInstructions noSorts = excluding(SortedColumnsExclusion.ALL_COLUMNS);
-        assertEquals(Optional.empty(), sortOrder(ParquetTools.readTable(sortedByI, noSorts), "I"));
-
-        // Exclusions survive copying the instructions
-        assertEquals(Optional.empty(),
-                sortOrder(ParquetTools.readTable(sortedByS, new ParquetInstructions.Builder(noStrings).build()), "S"));
-    }
-
-    // endregion sortedness exclusions
 
     // region data indexes
 

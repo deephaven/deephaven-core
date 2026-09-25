@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from enum import Enum, Flag, auto
+from enum import Enum
 from typing import Optional, Union
 
 import jpy
@@ -38,9 +38,6 @@ _JRowGroupInfo = jpy.get_type("io.deephaven.parquet.table.metadata.RowGroupInfo"
 _JUnsignedLongTarget = jpy.get_type(
     "io.deephaven.parquet.table.ParquetInstructions$UnsignedLongTarget"
 )
-_JSortedColumnsExclusion = jpy.get_type(
-    "io.deephaven.parquet.table.SortedColumnsExclusion"
-)
 
 
 class UnsignedLongTarget(Enum):
@@ -55,46 +52,6 @@ class UnsignedLongTarget(Enum):
     SIGNED_LONG = _JUnsignedLongTarget.SIGNED_LONG
     """ Read as a Java long, reinterpreting the bits as signed, so values exceeding 2**63 - 1 read as negative. Note that
     2**63 reads as Deephaven's null long, indistinguishable from an actual null. """
-
-
-class SortedColumnsExclusion(Flag):
-    """Declared sortedness that a read should ignore; combine members with ``|``.
-
-    Deephaven takes the sort order of the data from the Deephaven metadata in a parquet file's footer, or, for Iceberg,
-    from the table's sort order, and does not verify it. Filters on a sorted column binary-search it and a sort by it
-    returns the table as it is, so both give wrong results if the data is not sorted the way Deephaven sorts. Ignoring
-    the sortedness makes them correct at the cost of scanning the column. Excluding a sort column also excludes the sort
-    columns after it, since each is sorted only within runs of the ones before it."""
-
-    STRING = auto()
-    """ Ignore sortedness declared for string columns. Deephaven orders strings by UTF-16 code unit; parquet, Iceberg and
-    most other writers order them by code point. The two differ where a character above U+FFFF (most emoji) is compared
-    with one in U+E000 through U+FFFF (for example U+FE0F and the fullwidth forms). """
-
-    FLOATING_POINT = auto()
-    """ Ignore sortedness declared for float and double columns. Deephaven reads a stored -MAX_VALUE as null and orders
-    null before negative infinity, so data sorted by another writer that holds both is out of Deephaven's order. """
-
-    ALL_COLUMNS = auto()
-    """ Ignore all declared sortedness, for example when the metadata does not describe the data. """
-
-
-_J_SORTED_COLUMNS_EXCLUSIONS = {
-    SortedColumnsExclusion.STRING: _JSortedColumnsExclusion.STRING,
-    SortedColumnsExclusion.FLOATING_POINT: _JSortedColumnsExclusion.FLOATING_POINT,
-    SortedColumnsExclusion.ALL_COLUMNS: _JSortedColumnsExclusion.ALL_COLUMNS,
-}
-
-
-def _j_sorted_columns_exclusions(exclusions: SortedColumnsExclusion) -> jpy.JType:
-    return jpy.array(
-        "io.deephaven.parquet.table.SortedColumnsExclusion",
-        [
-            j_exclusion
-            for exclusion, j_exclusion in _J_SORTED_COLUMNS_EXCLUSIONS.items()
-            if exclusion in exclusions
-        ],
-    )
 
 
 @dataclass
@@ -225,7 +182,6 @@ def _build_parquet_instructions(
     index_columns: Optional[Sequence[Sequence[str]]] = None,
     row_group_info: Optional[RowGroupInfo] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
-    sorted_columns_exclusions: Optional[SortedColumnsExclusion] = None,
 ):
     if not any(
         [
@@ -244,7 +200,6 @@ def _build_parquet_instructions(
             index_columns is not None,
             row_group_info is not None,
             special_instructions is not None,
-            sorted_columns_exclusions,
         ]
     ):
         return _JParquetInstructions.EMPTY
@@ -306,11 +261,6 @@ def _build_parquet_instructions(
     if special_instructions is not None:
         builder.setSpecialInstructions(special_instructions.j_object)
 
-    if sorted_columns_exclusions:
-        builder.addSortedColumnsExclusions(
-            _j_sorted_columns_exclusions(sorted_columns_exclusions)
-        )
-
     return builder.build()
 
 
@@ -336,7 +286,6 @@ def read(
     file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Optional[TableDefinitionLike] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
-    sorted_columns_exclusions: Optional[SortedColumnsExclusion] = None,
 ) -> Table:
     """Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
@@ -354,9 +303,6 @@ def read(
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition.
         special_instructions (Optional[s3.S3Instructions]): Special instructions for reading parquet files, useful when
             reading files from a non-local file system, like S3. By default, None.
-        sorted_columns_exclusions (Optional[SortedColumnsExclusion]): declared sortedness to ignore, for example
-            ``SortedColumnsExclusion.STRING | SortedColumnsExclusion.FLOATING_POINT``. By default, None, which uses all
-            declared sortedness.
 
     Returns:
         a table
@@ -375,7 +321,6 @@ def read(
             special_instructions=special_instructions,
             file_layout=file_layout,
             table_definition=table_definition,
-            sorted_columns_exclusions=sorted_columns_exclusions,
         )
         return Table(_JParquetTools.readTable(path, read_instructions))
     except Exception as e:

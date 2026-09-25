@@ -43,26 +43,21 @@ class IcebergTestCase(BaseTestCase):
             iceberg_read_instructions.j_object.snapshotId().getAsLong() == 12345
         )
 
-    def test_instruction_create_with_sorted_columns_exclusions(self):
-        from deephaven.parquet import SortedColumnsExclusion
-
+    def test_instruction_create_with_ignore_sorted_columns(self):
         iceberg_read_instructions = iceberg.IcebergReadInstructions(
-            sorted_columns_exclusions=SortedColumnsExclusion.STRING
-            | SortedColumnsExclusion.FLOATING_POINT
+            ignore_sorted_columns=["Sym", "Price"]
         )
-        exclusions = {
-            str(e.name())
-            for e in j_list_to_list(
+        ignored = {
+            str(name)
+            for name in j_list_to_list(
                 jpy.get_type("java.util.ArrayList")(
-                    iceberg_read_instructions.j_object.sortedColumnsExclusions()
+                    iceberg_read_instructions.j_object.ignoreSortedColumns()
                 )
             )
         }
-        self.assertEqual(exclusions, {"STRING", "FLOATING_POINT"})
+        self.assertEqual(ignored, {"Sym", "Price"})
         self.assertTrue(
-            iceberg.IcebergReadInstructions()
-            .j_object.sortedColumnsExclusions()
-            .isEmpty()
+            iceberg.IcebergReadInstructions().j_object.ignoreSortedColumns().isEmpty()
         )
 
     def test_writer_options_create_default(self):
