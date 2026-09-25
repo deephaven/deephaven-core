@@ -36,7 +36,7 @@ Barrage supports two primary modes of retrieving data:
 
 - **Snapshot**: Retrieves a one-time, static copy of the table. The request completes once the data is delivered. Use this for static tables or when you need a point-in-time capture.
 
-From a Groovy server, [`ResolveTools.resolve`](../how-to-guides/use-uris.md) subscribes to a remote table by URI. `BarrageTableResolver` provides both subscriptions and snapshots:
+From a Groovy server, [`ResolveTools.resolve`](../how-to-guides/use-uris.md) subscribes to a remote table by URI. `BarrageTableResolver` provides both subscriptions and snapshots (a `BarrageTableResolver` snapshot is taken through a subscription that ends once the data arrives):
 
 ```groovy skip-test
 import static io.deephaven.uri.ResolveTools.resolve
@@ -68,9 +68,9 @@ See [Capture remote tables with Barrage](../how-to-guides/capture-tables.md) for
 
 ### Viewports
 
-A viewport defines a window over a table — a range of row positions and a subset of columns. Viewports are essential for interactive applications where users scroll through large tables. Rather than streaming millions of rows, the server sends only the data visible in the current view.
+A viewport defines a window over a table — a set of row positions (typically a contiguous range) and a subset of columns. Viewports are essential for interactive applications where users scroll through large tables. Rather than streaming millions of rows, the server sends only the data visible in the current view.
 
-Viewports are automatically managed by Deephaven's web UI and JavaScript client. When a user scrolls or resizes a table view, the client updates its viewport subscription accordingly. The Java client can also request a viewport, a subset of columns, or both when it subscribes.
+Deephaven's web UI manages viewports automatically: when a user scrolls or resizes a table view, it updates its viewport subscription accordingly. JavaScript client code sets a viewport with `setViewport`. The Java client can also request a viewport, a subset of columns, or both when it subscribes.
 
 > [!NOTE]
 > `ResolveTools.resolve` subscribes to entire tables only. To limit the rows or columns you receive, either publish a filtered or narrowed table (for example, with [`where`](../reference/table-operations/filter/where.md) or [`view`](../reference/table-operations/select/view.md)) and resolve that instead, or use the `BarrageTableResolver.subscribe` and `snapshot` overloads that accept a viewport `RowSet` and a column `BitSet`.
@@ -88,7 +88,7 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 
 ![Barrage architecture](../assets/conceptual/remote_and_local_server.png)
 
-1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), export tickets, or shared tickets for cross-session access.
+1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), application tickets, export tickets, or shared tickets for cross-session access.
 2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata.
 3. **Local server** subscribes via a URI or `BarrageTableResolver` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
 
@@ -110,7 +110,7 @@ Barrage is fully compatible with Arrow Flight — you can use a standard Flight 
 
 ## Performance considerations
 
-- **Large initial snapshots**: When subscribing to a large table, the initial snapshot can be memory-intensive. Use [subscription growth controls](../how-to-guides/performance/barrage-performance.md#control-subscription-snapshot-size) to break large snapshots into smaller chunks.
+- **Large initial snapshots**: When subscribing to a large table, the initial snapshot can be memory-intensive. By default, Barrage breaks large initial snapshots into smaller chunks; tune the chunk size with the [subscription growth controls](../how-to-guides/performance/barrage-performance.md#control-subscription-snapshot-size).
 
 - **High-frequency updates**: Tables that tick rapidly can generate significant network traffic. Consider increasing [`barrage.minUpdateInterval`](../how-to-guides/performance/barrage-performance.md#update-interval) or filtering data before subscription.
 

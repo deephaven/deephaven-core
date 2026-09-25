@@ -29,7 +29,7 @@ A static `Table` that is a snapshot of the remote table. Raises a `DHError` if t
 
 ## Examples
 
-The following example installs the Deephaven Python Client ([`pydeephaven`](/core/client-api/python/)) and creates a remote Deephaven server running on our local machine on port `9999` with [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md).
+The following example installs the Deephaven Python Client ([`pydeephaven`](/core/client-api/python/)) and connects to a second Deephaven server on port `9999` that uses [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md) (see the `docker-compose.yml` file below).
 Next, the remote server is used to create a table and a shared ticket pointing to the table that can be shared with other sessions.
 Finally, a Barrage session is started that listens to the same server at port `9999`, and a snapshot of the shared ticket's table is obtained.
 

@@ -17,12 +17,12 @@ Schema annotation is needed when:
 
 ## How it works
 
-1. Extract a base schema with `BarrageUtil.schemaFromTable`.
+1. Extract a base schema with `BarrageUtil.schemaFromTable`. With encoding auto-detection disabled (the default), this gives each column its default Arrow type.
 2. Replace the target field with explicit Arrow types (e.g., `ArrowType.Utf8`, `ArrowType.Union`, `ArrowType.Map`).
 3. Attach the schema using [`with_attributes`](../../reference/table-operations/create/withAttributes.md).
 
 > [!NOTE]
-> `with_attributes` returns a new table. Only a few operations carry the schema attribute to their result: `where`, `first_by`, `last_by`, `partition_by`, `reverse`, `sort`, and `flatten`. Other transformations, such as `select`, `view`, or `update`, drop it, and you must re-apply the schema. Apply the schema as late as possible before export.
+> `with_attributes` returns a new table. Filters (`where`, `where_in`, `where_not_in`), sorts (`sort`, `sort_descending`), `reverse`, `flatten`, `first_by`, `last_by`, and attribute-only operations such as `with_attributes` keep the schema attribute; `partition_by` copies it to each constituent table. Other transformations, such as `select`, `view`, `update`, `head`, or `agg_by`, drop it, and you must re-apply the schema. Apply the schema as late as possible before export.
 
 ## Supported types
 

@@ -9,12 +9,12 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 
 ## How it works
 
-1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. This handles basic type mapping for primitive types and collections of primitives.
+1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. It maps every column to a default Arrow type; columns whose type has no native mapping, including generic `Object` columns, default to `Utf8` (string). This assumes encoding auto-detection is disabled (the default); otherwise the base schema may already include REE or dictionary encodings.
 2. Replace the target field with explicit Arrow types.
 3. Attach the schema using `withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, newSchema))`.
 
 > [!NOTE]
-> `withAttributes(...)` returns a new table. Only a few operations carry the schema attribute to their result: `where`, `firstBy`, `lastBy`, `partitionBy`, `reverse`, `sort`, and `flatten`. Other transformations, such as `select`, `view`, or `update`, drop it, and you must re-apply the schema. Apply the schema as late as possible before export.
+> `withAttributes(...)` returns a new table. Filters (`where`, `whereIn`, `whereNotIn`), sorts (`sort`, `sortDescending`), `reverse`, `flatten`, `firstBy`, `lastBy`, and attribute-only operations such as `withAttributes` keep the schema attribute; `partitionBy` copies it to each constituent table. Other transformations, such as `select`, `view`, `update`, `head`, or `aggBy`, drop it, and you must re-apply the schema. Apply the schema as late as possible before export.
 
 ## Example: Annotate `Union<String, Double>` columns
 
@@ -296,7 +296,7 @@ def unionValueField = new Field(
 def keyField = new Field("key", new FieldType(false, ArrowType.Utf8.INSTANCE, null), null)
 
 // 4. Wrap Key and Union-Value into Map Entries
-// "entries" is the mandatory name for the inner Struct of an Arrow Map
+// "entries" is the conventional name for the inner Struct of an Arrow Map; the struct itself (key, then value) is required
 def mapEntries = new Field(
     "entries",
     new FieldType(false, new ArrowType.Struct(), null),
@@ -323,7 +323,7 @@ table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_
 
 [Run-End Encoding](https://arrow.apache.org/docs/format/Columnar.html#run-end-encoded-layout) is a wire-level optimization for columns with many repeated values. Instead of sending every value, the column is serialized as two child arrays:
 
-- `run_ends` — a non-nullable integer array of cumulative 1-based end indices, one per run. The last value always equals the logical row count.
+- `run_ends` — a non-nullable integer array of cumulative 1-based end indices, one per run. The last value always equals the number of rows in the record batch.
 - `values` — the values that will be repeated in the run.
 
 A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 `run_end` entries + 10 `value` entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization. The `run_ends` integer width is determined by the Arrow field structure you supply via `BARRAGE_SCHEMA_ATTRIBUTE`. `Int16`, `Int32`, and `Int64` are supported; use `Int32` unless you have a specific reason to use another width. Note that `Int16` `run_ends` constrain the effective batch size to at most `Short.MAX_VALUE` / 32,767 rows per record batch.
@@ -374,7 +374,7 @@ To confirm that the column really is sent run-end encoded, see [Verify the encod
 
 ## Example: Dictionary-Encoded columns
 
-[Dictionary Encoding](https://arrow.apache.org/docs/format/Columnar.html#dictionary-encoded-layout) is a wire-level optimization for low-cardinality columns. Instead of sending each value in full, Deephaven sends each unique value once (in a `DictionaryBatch` message) and replaces each row with a compact integer index.
+[Dictionary Encoding](https://arrow.apache.org/docs/format/Columnar.html#dictionary-encoded-layout) is a wire-level optimization for low-cardinality columns. Instead of sending each value in full, Deephaven sends each unique value to a subscriber once (in a `DictionaryBatch` message), until the dictionary is reset, and replaces each row with a compact integer index.
 
 A string column with 1,000 rows drawn from only 5 distinct values costs 5 full string entries (in the dictionary) + 1,000 integer indices, rather than 1,000 full strings. Deephaven stores the column flat (unchanged type); dictionary encoding is a transport-only optimization.
 
@@ -383,10 +383,10 @@ The `DictionaryEncoding` index width controls the integer type used for indices:
 - `Int32` (32-bit signed) — handles up to about 2.1 billion distinct values; suitable for almost all use cases.
 - `Int8` (8-bit signed) — the most compact option, but limits the dictionary to at most 128 distinct values.
 - `Int16` (16-bit signed) — more compact than `Int32`, but limits the dictionary to at most 32,768 distinct values.
-- `Int64` (64-bit signed) — supported, but rarely needed, since `Int32` already covers about 2.1 billion distinct values.
+- `Int64` (64-bit signed) — accepted, but indices are computed as 32-bit integers, so it adds no capacity over `Int32`.
 
 > [!CAUTION]
-> Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if a single table (or viewport) contains more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Prefer `Int32` unless you are certain the column's active cardinality stays within the smaller limit.
+> Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if the dictionary accumulated since its last reset holds more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Because an active subscription resets its dictionary only when it grows larger than the table or viewport (or when the subscription changes), a column whose values change over time can hit this limit even if it never holds that many distinct values at once. Prefer `Int32` unless the total number of distinct values the column can ever take stays within the smaller limit.
 
 ```groovy order=table,table_w_attributes
 import io.deephaven.extensions.barrage.util.BarrageUtil
@@ -406,7 +406,7 @@ def baseSchema = BarrageUtil.schemaFromTable(table)
 def fields = new ArrayList<>(baseSchema.getFields())
 
 // Build the dictionary-encoded field:
-//   type       = Utf8 (the value type of the column, so DH knows the Java column type is String)
+//   type       = Utf8 (the Arrow wire type of the dictionary values; the Java column type comes from the deephaven:type metadata)
 //   dictionary = DictionaryEncoding(id=0, ordered=false, indexType=Int32)
 // The id uniquely identifies this dictionary within the stream. If you encode multiple columns,
 // give each a distinct id (0, 1, 2, ...).
@@ -428,9 +428,9 @@ table_w_attributes = table.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE,
 
 ## Verify the encoding from a subscriber
 
-Deephaven sends the export schema to every subscriber and stores it on the resulting client-side table under the same `Table.BARRAGE_SCHEMA_ATTRIBUTE`. Reading that attribute back tells you exactly which encoding each column was sent with.
+Deephaven sends the export schema to every subscriber. A Deephaven (Java engine) subscriber, such as another server or a URI, stores it on the resulting table under the same `Table.BARRAGE_SCHEMA_ATTRIBUTE`. Reading that attribute back tells you exactly which encoding each column was sent with.
 
-Run the [Run-End Encoded example](#example-run-end-encoded-ree-columns) above so that `table_w_attributes` exists, then subscribe to it — from a second Deephaven instance, or from the same instance over a [URI](../use-uris.md):
+Run the [Run-End Encoded example](#example-run-end-encoded-ree-columns) above so that `table_w_attributes` exists, then subscribe to it — from a second Deephaven instance, or from the same instance over a [URI](../use-uris.md) (the target must allow anonymous authentication):
 
 ```groovy skip-test
 import io.deephaven.engine.table.Table
@@ -471,11 +471,11 @@ Use `println wire_schema.toJson()` to dump the entire negotiated schema, includi
 > These encodings do not change the Deephaven column type — the subscriber's `status` column is still a `String`, and the subscriber's `TableDefinition` is identical either way. Both encodings are transport-only optimizations, so the schema attribute is the only thing that tells you how the bytes were sent.
 
 > [!CAUTION]
-> Only a few operations propagate the attribute (`where`, `firstBy`, `lastBy`, `partitionBy`, `reverse`, `sort`, and `flatten`). Read it from the table returned by `resolve` rather than from a derived table.
+> Only some operations propagate the attribute (filters, sorts, `reverse`, `flatten`, `firstBy`, `lastBy`, and attribute-only operations; see the note in [How it works](#how-it-works)). Read it from the table returned by `resolve` rather than from a derived table.
 
 ### From the producer
 
-The server logs the same decision for every table it exports. Raise the level of the `io.deephaven.extensions.barrage.util.BarrageUtil` logger — in your logging configuration, or at runtime with `ch.qos.logback.classic.Logger#setLevel` — to `DEBUG` for a one-line summary per export, or to `TRACE` to also dump the complete Arrow schema:
+The server logs this decision each time it computes a table's Barrage schema. That includes every export, and also direct calls to `BarrageUtil.schemaFromTable`, so a table can appear more than once. Raise the level of the `io.deephaven.extensions.barrage.util.BarrageUtil` logger — in your logging configuration, or at runtime with `ch.qos.logback.classic.Logger#setLevel` — to `DEBUG` for a one-line summary each time, or to `TRACE` to also dump the complete Arrow schema:
 
 ```xml
 <logger name="io.deephaven.extensions.barrage.util.BarrageUtil" level="DEBUG"/>
@@ -483,7 +483,7 @@ The server logs the same decision for every table it exports. Raise the level of
 
 ```text
 DEBUG | i.d.e.b.util.BarrageUtil | Barrage schema for orders: 2 columns, encodings from explicit BarrageSchema: status=REE(INT32)
-TRACE | i.d.e.b.util.BarrageUtil | Barrage schema for orders: Schema<status: RunEndEncoded<run_ends: Int(32, true) not null, values: Utf8>, value: Int(32, true)>
+TRACE | i.d.e.b.util.BarrageUtil | Barrage schema for orders: Schema<status: RunEndEncoded<run_ends: Int(32, true) not null, values: Utf8>, value: Int(32, true)>(metadata: {...})
 ```
 
 The summary reports where the encodings came from — an explicit `BARRAGE_SCHEMA_ATTRIBUTE`, or auto-detection — which is how you confirm what the server chose for a table you did not annotate yourself. Tables are named by their `Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE` when it is set, and by the table description otherwise.

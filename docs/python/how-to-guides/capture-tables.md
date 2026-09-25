@@ -4,9 +4,9 @@ sidebar_label: Capture Python client tables
 ---
 
 > [!NOTE]
-> In this guide, "capturing" a Deephaven table refers to either subscribing to its real-time data stream or producing a static snapshot of its data. Subscribing is only appropriate for streaming tables, while snapshots can be made of static or streaming tables.
+> In this guide, "capturing" a Deephaven table refers to either subscribing to its real-time data stream or producing a static snapshot of its data. Subscribing is intended for ticking tables (it works on static tables but keeps a stream open unnecessarily), while snapshots can be made of static or ticking tables.
 
-The [Deephaven Python client](/core/client-api/python/) can create new tables and retrieve references to tables on a remote Deephaven server. However, these references cannot be used in a typical Deephaven server query, since they are not true Deephaven tables. To get true Deephaven tables from a remote server, you must subscribe to them using [Barrage](https://github.com/deephaven/barrage) shared tickets. Shared tickets are endpoints (references) for Deephaven tables that clients and servers can share.
+The [Deephaven Python client](/core/client-api/python/) can create new tables and retrieve references to tables on a remote Deephaven server. However, these references cannot be used in a typical Deephaven server query, since they are not true Deephaven tables. To turn a table you created through the Python client into a true Deephaven table, publish it to a shared ticket and capture it with a [Barrage](../conceptual/what-is-barrage.md) session. Shared tickets are endpoints (references) for Deephaven tables that clients and servers can share.
 
 > [!NOTE]
 > URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using URI with Deephaven in the [URI guide](../how-to-guides/use-uris.md).
@@ -36,7 +36,8 @@ Suppose that the "remote" Deephaven server is running locally on port `9999` wit
 ```python skip-test
 from pydeephaven import Session
 
-# this is short for Session(host="localhost", port=9999, auth_type="Anonymous")
+# this is short for Session(host="localhost", port=9999, auth_type="Anonymous"),
+# unless the DH_HOST environment variable is set
 client_session = Session(port=9999)
 ```
 
@@ -73,7 +74,7 @@ Similarly, you can use [`time_table`](/core/client-api/python/code/pydeephaven.h
 table_ref = client_session.time_table("PT1s").update(["X = i", "Y = X / 2"])
 ```
 
-If a table already exists on the remote server, you can retrieve a reference to it with the [`open_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.open_table) method:
+If a table already exists in the remote server's query scope, you can retrieve a reference to it with the [`open_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.open_table) method:
 
 ```python skip-test
 table_ref = client_session.open_table("table_on_server")
@@ -86,13 +87,13 @@ Once you have a reference to a table on the server, it's easy to publish it with
 <!--- TODO: link https://github.com/deephaven/deephaven.io/issues/3918 when complete.-->
 
 ```python skip-test
-from pydeephaven.session import SharedTicket
+from pydeephaven.ticket import SharedTicket
 
 ticket = SharedTicket.random_ticket()
 client_session.publish_table(ticket, table_ref)
 ```
 
-Next, you will need a Barrage session to subscribe to the ticket. To create the session, use the [`barrage_session`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) function. Notice that [`barrage_session`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) takes the same connection arguments as [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session):
+Next, you will need a Barrage session to subscribe to the ticket. To create the session, use the [`barrage_session`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) function. Notice that [`barrage_session`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) accepts the same core connection arguments as [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session) (`host`, `port`, `auth_type`, `auth_token`, `use_tls`, and `tls_root_certs`), except that `host` is required:
 
 ```python skip-test
 from deephaven.barrage import barrage_session
@@ -142,11 +143,11 @@ Use **snapshot** when:
 
 Each active subscription consumes resources on both the server and client:
 
-| Resource | Server Impact                                    | Client Impact                                     |
-| -------- | ------------------------------------------------ | ------------------------------------------------- |
-| Memory   | Maintains subscriber state and pending updates   | Stores table data and applies incremental updates |
-| CPU      | Aggregates and serializes updates per subscriber | Deserializes and processes incoming updates       |
-| Network  | Sends periodic update batches to each subscriber | Receives and buffers incoming data                |
+| Resource | Server Impact                                                                             | Client Impact                                     |
+| -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Memory   | Maintains subscriber state and pending updates                                            | Stores table data and applies incremental updates |
+| CPU      | Aggregates updates once per table and update interval, then writes each subscriber's view | Deserializes and processes incoming updates       |
+| Network  | Sends periodic update batches to each subscriber                                          | Receives and buffers incoming data                |
 
 For tables with frequent updates or many subscribers, these costs can add up. Monitor subscription health using the [Barrage performance tables](./performance/barrage-performance.md).
 
@@ -159,34 +160,38 @@ When you no longer need real-time updates, close the Barrage session to release 
 my_barrage_session.close()
 ```
 
-If you need to keep the session open for other subscriptions but want to release a specific table, you can drop the reference to the subscribed table. However, the underlying subscription may remain active until the session is closed.
+Dropping the Python reference to a subscribed table does not end its subscription: tables created in the console stay alive until the script session ends. To end one subscription while keeping the Barrage session open, create it inside a [`liveness_scope`](../reference/engine/liveness-scope.md) block; when the block ends, the table is released and its subscription is cancelled.
 
 ### Handle connection issues
 
 Barrage subscriptions can be affected by network interruptions. Consider these patterns for production applications:
 
-- **Reconnection**: If the session disconnects, you'll need to create a new `barrage_session` and resubscribe. The remote table must still be published to the same shared ticket.
+- **Reconnection**: Subscriptions do not resume automatically after a disconnect. Create a new `barrage_session` and resubscribe. The remote table must still be published to the same shared ticket; if the client session that published it was lost, publish the table again first.
 
 - **Ticket lifetime**: A shared ticket remains valid only while the published table is still exported by the publishing session. Closing the publishing session, closing the published table reference (`table_ref`), or letting that reference be garbage collected releases the table and invalidates the ticket. Keep a reference to the table for as long as others need the ticket.
 
-- **Authentication expiry**: If using authenticated connections, ensure tokens or credentials remain valid for the duration of long-running subscriptions.
+- **Authentication expiry**: The client refreshes its session token automatically while the session is open. Credentials are needed again only when you open a new session, for example after reconnecting, so make sure they are still valid then.
 
 ### Memory considerations for large tables
 
 When subscribing to large ticking tables:
 
-- **Initial snapshot size**: The first update contains a complete snapshot of the table. For very large tables, this can consume significant memory. The server breaks large snapshots into chunks by default (see [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size)).
+- **Initial snapshot size**: A subscription starts with a complete snapshot of the table. For very large tables, this can consume significant memory. By default, the server sends a large snapshot in several chunks (see [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size)), and the local table is returned once the whole snapshot has arrived.
 
-- **Incremental updates**: After the initial snapshot, only changed rows are transmitted. This is typically much smaller than the full table.
+- **Incremental updates**: After the initial snapshot, only changes are sent: data for added rows, the changed columns of modified rows, and row keys for removed or shifted rows. This is typically much smaller than the full table.
 
 - **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage. (Note: this is distinct from viewports, which define a scrollable window over row positions.)
 
 ```python skip-test
-# On the remote server: filter before publishing
+# The filter runs on the remote server
 filtered_ref = client_session.open_table("large_table").where("Region = `EAST`")
-client_session.publish_table(ticket, filtered_ref)
 
-# The subscriber now receives only the filtered data
+# Publish the filtered table to its own shared ticket
+filtered_ticket = SharedTicket.random_ticket()
+client_session.publish_table(filtered_ticket, filtered_ref)
+
+# The subscriber receives only the filtered rows
+local_filtered = my_barrage_session.subscribe(filtered_ticket.bytes)
 ```
 
 ## Related documentation

@@ -4,7 +4,7 @@ sidebar_label: Capture remote tables
 ---
 
 > [!NOTE]
-> In this guide, "capturing" a Deephaven table refers to either subscribing to its real-time data stream or producing a static snapshot of its data. Subscribing is only appropriate for streaming tables, while snapshots can be made of static or streaming tables.
+> In this guide, "capturing" a Deephaven table refers to either subscribing to its real-time data stream or producing a static snapshot of its data. Subscribing is intended for ticking tables (it works on static tables but keeps a stream open unnecessarily), while snapshots can be made of static or ticking tables.
 
 A Groovy Deephaven server can use the Deephaven Java client, which is included with the server, to create tables on a remote Deephaven server and capture them with [Barrage](../conceptual/what-is-barrage.md). The captured tables are true Deephaven tables on the local server, so you can use them in any query. Tables can also be published to _shared tickets_ — endpoints (references) for Deephaven tables that clients and servers can share.
 
@@ -112,7 +112,7 @@ localTStatic = barrageSession.snapshot(tableRef, snapOptions).entireTable().get(
 
 Voila! You now have _real_ Deephaven server tables called `localTStreaming` and `localTStatic`. These are not just references to Deephaven tables — they are _real_ Deephaven server tables that can be used in any Deephaven query.
 
-`subscribe` and `snapshot` also have `partialTable` variants that capture only a viewport of rows and a subset of columns. See [What is Barrage?](../conceptual/what-is-barrage.md#viewports).
+`subscribe` and `snapshot` also have `partialTable` variants that capture only a viewport of rows, a subset of columns, or both. See [What is Barrage?](../conceptual/what-is-barrage.md#viewports).
 
 ## Share a table with a shared ticket
 
@@ -131,7 +131,7 @@ Any session connected to the remote server can now capture the table from the ti
 localFromTicket = barrageSession.subscribe(sharedId.ticketId().table(), subOptions).entireTable().get()
 ```
 
-A session in another process needs the ticket's ID. The `asHexString` method of `sharedId` returns it as a hexadecimal string that you can pass along. A Python client can also publish tables to shared tickets that a Groovy server captures; see [What is Barrage?](../conceptual/what-is-barrage.md#shared-tickets).
+A session in another process needs the ticket's ID. The `asHexString` method of `sharedId` returns the 16-byte ID as a `0x`-prefixed hexadecimal string that you can pass along; the receiver decodes the hex digits after `0x` into bytes and constructs `new SharedId(bytes)`. A Python client can also publish tables to shared tickets that a Groovy server captures; see [What is Barrage?](../conceptual/what-is-barrage.md#shared-tickets).
 
 ## Subscription lifecycle management
 
@@ -156,11 +156,11 @@ Use **snapshot** when:
 
 Each active subscription consumes resources on both the server and client:
 
-| Resource | Server Impact                                    | Client Impact                                     |
-| -------- | ------------------------------------------------ | ------------------------------------------------- |
-| Memory   | Maintains subscriber state and pending updates   | Stores table data and applies incremental updates |
-| CPU      | Aggregates and serializes updates per subscriber | Deserializes and processes incoming updates       |
-| Network  | Sends periodic update batches to each subscriber | Receives and buffers incoming data                |
+| Resource | Server Impact                                                                             | Client Impact                                     |
+| -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Memory   | Maintains subscriber state and pending updates                                            | Stores table data and applies incremental updates |
+| CPU      | Aggregates updates once per table and update interval, then writes each subscriber's view | Deserializes and processes incoming updates       |
+| Network  | Sends periodic update batches to each subscriber                                          | Receives and buffers incoming data                |
 
 For tables with frequent updates or many subscribers, these costs can add up. Monitor subscription health using the [Barrage performance tables](./performance/barrage-performance.md).
 
@@ -182,19 +182,19 @@ channel.awaitTermination(10, TimeUnit.SECONDS)
 
 Barrage subscriptions can be affected by network interruptions. Consider these patterns for production applications:
 
-- **Reconnection**: If the session disconnects, you'll need to create a new Barrage session and resubscribe. To resubscribe to a shared ticket, the remote table must still be published to the same ticket.
+- **Reconnection**: Subscriptions do not resume automatically after a disconnect. Create a new Barrage session and resubscribe. If the session that published a shared ticket was lost (in this guide, the same session), its exports were released: publish the table again from the new session before resubscribing.
 
-- **Ticket lifetime**: A shared ticket remains valid only while the published table is still exported by the publishing session. Closing the publishing session, or calling `close` on the table handle you published (`tableRef`), releases the table and invalidates the ticket. The Java client keeps a handle's export alive until you close it, so garbage collection does not release it: close handles explicitly once others no longer need the ticket.
+- **Ticket lifetime**: A shared ticket remains valid only while the published table is still exported by the publishing session. Closing the publishing session releases all of its exports and invalidates the ticket. Java client handles are reference counted: the export is released only after every handle that refers to it is closed, including other handles for the same table in that session and the reference an active subscription created from the handle holds. Garbage collection never releases a handle, so close handles explicitly once others no longer need the ticket.
 
-- **Authentication expiry**: If using authenticated connections, ensure tokens or credentials remain valid for the duration of long-running subscriptions.
+- **Authentication expiry**: The client refreshes its session token automatically while the session is open. Credentials are needed again only when you open a new session, for example after reconnecting, so make sure they are still valid then.
 
 ### Memory considerations for large tables
 
 When subscribing to large ticking tables:
 
-- **Initial snapshot size**: The first update contains a complete snapshot of the table. For very large tables, this can consume significant memory. The server breaks large snapshots into chunks by default (see [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size)).
+- **Initial snapshot size**: A subscription starts with a complete snapshot of the table. For very large tables, this can consume significant memory. By default, the server sends a large snapshot in several chunks (see [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size)), and the local table is returned once the whole snapshot has arrived.
 
-- **Incremental updates**: After the initial snapshot, only changed rows are transmitted. This is typically much smaller than the full table.
+- **Incremental updates**: After the initial snapshot, only changes are sent: data for added rows, the changed columns of modified rows, and row keys for removed or shifted rows. This is typically much smaller than the full table.
 
 - **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage. (Note: this is distinct from viewports, which define a scrollable window over row positions.)
 
