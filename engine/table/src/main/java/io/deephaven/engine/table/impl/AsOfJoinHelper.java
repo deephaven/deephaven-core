@@ -304,14 +304,9 @@ public class AsOfJoinHelper {
                 rowRedirection.applyShift(leftTable.getRowSet().prev(), upstream.shifted());
 
                 if (restampKeys.isNonempty()) {
-                    final RowSetBuilderRandom foundBuilder = RowSetFactory.builderRandom();
-                    final int slotCount =
-                            asOfJoinStateManager.probeLeft(restampKeys, leftSources, updatedSlots, foundBuilder);
-
-                    try (final RowSet foundKeys = foundBuilder.build();
-                            final RowSet notFound = restampKeys.minus(foundKeys)) {
-                        rowRedirection.removeAll(notFound);
-                    }
+                    // no restamped row is redirected at this point: added rows are new, and modified rows were
+                    // removed above
+                    final int slotCount = asOfJoinStateManager.probeLeft(restampKeys, leftSources, updatedSlots);
 
                     try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch,
                             leftStampSource, rightStampSource, originalRightStampSource);

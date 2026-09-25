@@ -16,7 +16,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -343,8 +342,7 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null, true,
                     TypedAsOfJoinFactory::staticProbeDecorateLeftFound, null,
                     ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "hashSlots").build(),
-                    ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build(),
-                    ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build()));
+                    ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, true, TypedAsOfJoinFactory::staticBuildRightFound,

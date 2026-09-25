@@ -226,19 +226,15 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     private class LeftProbeHandler implements TypedHasherUtil.ProbeHandler {
         final IntegerArraySource hashSlots;
         final MutableInt hashOffset;
-        final RowSetBuilderRandom foundBuilder;
 
         private LeftProbeHandler() {
             this.hashSlots = null;
             this.hashOffset = null;
-            this.foundBuilder = null;
         }
 
-        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableInt hashOffset,
-                RowSetBuilderRandom foundBuilder) {
+        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableInt hashOffset) {
             this.hashSlots = hashSlots;
             this.hashOffset = hashOffset;
-            this.foundBuilder = foundBuilder;
         }
 
         @Override
@@ -247,7 +243,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
                 // each probed row reports at most one new slot, and there are at most numEntries slots
                 hashSlots.ensureCapacity(Math.min(hashOffset.get() + chunkOk.size(), numEntries));
             }
-            decorateLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset, foundBuilder);
+            decorateLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset);
         }
     }
 
@@ -269,14 +265,14 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final IntegerArraySource slots,
-            RowSetBuilderRandom foundBuilder) {
+    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources,
+            @NotNull final IntegerArraySource slots) {
         if (leftRowSet.isEmpty()) {
             return 0;
         }
         try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
             final MutableInt slotCount = new MutableInt();
-            probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount, foundBuilder));
+            probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount));
             return slotCount.get();
         }
     }
@@ -381,7 +377,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, MutableInt hashSlotOffset, RowSetBuilderRandom foundBuilder);
+            IntegerArraySource hashSlots, MutableInt hashSlotOffset);
 
     abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
