@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 
 import java.util.PrimitiveIterator;
+import java.util.function.IntToLongFunction;
 import java.util.function.LongConsumer;
 
 public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.BuilderRandom {
@@ -197,16 +198,7 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
      */
     public void addOrderedRowKeysChunk(final LongChunk<? extends OrderedRowKeys> keys, final int offset,
             final int length) {
-        final int end = offset + length;
-        int position = offset;
-        while (position < end) {
-            final long runStart = keys.get(position);
-            long runEnd = runStart;
-            while (++position < end && keys.get(position) == runEnd + 1) {
-                ++runEnd;
-            }
-            newRangeSafe(runStart, runEnd);
-        }
+        addOrderedRuns(keys::get, offset, length);
     }
 
     /**
@@ -219,12 +211,16 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
      */
     public void addOrderedRowKeysChunk(final IntChunk<? extends OrderedRowKeys> keys, final int offset,
             final int length) {
+        addOrderedRuns(keys::get, offset, length);
+    }
+
+    private void addOrderedRuns(final IntToLongFunction keyAt, final int offset, final int length) {
         final int end = offset + length;
         int position = offset;
         while (position < end) {
-            final long runStart = keys.get(position);
+            final long runStart = keyAt.applyAsLong(position);
             long runEnd = runStart;
-            while (++position < end && keys.get(position) == runEnd + 1) {
+            while (++position < end && keyAt.applyAsLong(position) == runEnd + 1) {
                 ++runEnd;
             }
             newRangeSafe(runStart, runEnd);
