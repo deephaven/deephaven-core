@@ -469,7 +469,9 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public boolean canReclaimStates() {
-        return true;
+        // the formula reads the group-by operator's row sets, which must follow any reclaimed state; the group-by
+        // operator may be private to this operator, so it is not otherwise consulted
+        return groupBy.canReclaimStates();
     }
 
     @Override
