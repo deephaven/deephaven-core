@@ -360,6 +360,16 @@ public class QueryTable extends BaseTable<QueryTable> {
                     "QueryTable.disableWherePushdownStatisticsMultiFileMetadataLayout", true);
 
     /**
+     * Disable parquet dictionary pushdown for columns whose Deephaven and parquet names differ. The dictionary action
+     * looks up its column location by the parquet name, but column locations are keyed by Deephaven name, so a rename
+     * swap resolves a different column and the dictionary filter runs against the wrong column's data. Wrong-answer
+     * finding PD-059; tracked for 43.x by DH-23755.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_RENAMED_COLUMN_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownRenamedColumnDictionary",
+                    true);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

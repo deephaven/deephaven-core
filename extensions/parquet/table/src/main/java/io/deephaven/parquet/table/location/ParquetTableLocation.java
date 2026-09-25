@@ -589,7 +589,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         } else if (action == IN_MEMORY_DATA_INDEX) {
             isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
         } else if (action == PARQUET_DICTIONARY) {
-            isApplicable = hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
+            isApplicable = isDictionaryPermitted(filter, filterCtx, estimateCtx.parquetColumnNames[0])
+                    && hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
         } else if (action == DEFERRED_DATA_INDEX) {
             isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
         } else {
@@ -686,7 +687,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         if (action == PARQUET_DICTIONARY) {
-            if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
+            if (!isDictionaryPermitted(filter, filterCtx, actionCtx.parquetColumnNames[0])
+                    || !hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
                 return input.copy();
             }
             return pushdownFilterDictionary(selection, filterCtx, actionCtx.parquetColumnNames, input);
@@ -700,6 +702,22 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         throw new IllegalStateException("Unexpected value: " + action);
+    }
+
+    /**
+     * DH-23750 (42.x only): whether the dictionary action may run for this filter's column, given the
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_RENAMED_COLUMN_DICTIONARY} configuration item.
+     */
+    private static boolean isDictionaryPermitted(
+            @NotNull final WhereFilter filter,
+            @NotNull final RegionedPushdownFilterContext filterCtx,
+            @NotNull final String parquetColumnName) {
+        if (!QueryTable.DISABLE_WHERE_PUSHDOWN_RENAMED_COLUMN_DICTIONARY) {
+            return true;
+        }
+        final String filterColumn = filter.getColumns().get(0);
+        final String columnName = filterCtx.filterColumnToManagerColumnName().getOrDefault(filterColumn, filterColumn);
+        return columnName.equals(parquetColumnName);
     }
 
     /**
