@@ -430,7 +430,7 @@ final Table statsTable = subscription.entireTable().get();
 To fetch a one-time snapshot without creating a subscription, use the session's `snapshot` method, which returns a `BarrageSnapshot` with `entireTable` and `partialTable` methods.
 
 > [!CAUTION]
-> Subscriptions participate in Deephaven's liveness system. The subscription ends, and the server stops sending data, once the subscribed table is no longer live. To control this explicitly, open a `LivenessScope` (for example, with `LivenessScopeStack.open` in a try-with-resources block) before subscribing; closing the scope releases the table, its listeners, and the subscription.
+> Subscriptions participate in Deephaven's liveness system. The subscription ends, and the server stops sending data, once the subscribed table is no longer live. To control this explicitly, open a `LivenessScope` (for example, with `LivenessScopeStack.open` in a try-with-resources block) and keep it open until the subscription's `Future.get` call returns, because `get` is what attaches the result table to the current scope. Closing that scope later releases the table, its listeners, and the subscription.
 
 ## Bidirectional communication
 
@@ -495,12 +495,13 @@ config = ClientConfig.builder()
         .target(DeephavenTarget.of(URI.create("dh+plain://remote-host:10000")))
         .build()
 
-barrageSession = DeephavenApiServer.getInstance()
+factory = DeephavenApiServer.getInstance()
         .sessionFactoryCreator()
         .barrageFactory(config)
-        .newBarrageSession(SessionConfig.builder()
-                .authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler <key>")
-                .build())
+
+barrageSession = factory.newBarrageSession(SessionConfig.builder()
+        .authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler <key>")
+        .build())
 
 statsTable = barrageSession.subscribe(
         TicketTable.fromQueryScopeField("last_city_by_state"),
@@ -511,6 +512,8 @@ statsTable = barrageSession.subscribe(
 
 > [!NOTE]
 > `DeephavenApiServer.getInstance` is annotated `@InternalUseOnly` and may change without notice. This example authenticates to the remote server with a pre-shared key; if the remote server uses anonymous authentication, call `newBarrageSession` with no arguments instead.
+>
+> Each `barrageFactory` call opens a new channel to the remote server. When you no longer need the subscribed table, call `barrageSession.close()` and then `factory.managedChannel().shutdown()`. Don't shut down the allocator or scheduler; they belong to the server.
 
 For the common case of fetching a remote table by name, [Deephaven URIs](./use-uris.md) are simpler: `ResolveTools.resolve("dh+plain://remote-host:10000/scope/last_city_by_state")` creates the session and subscription for you. However, URI resolution supports only anonymous authentication; if the remote server uses PSK authentication, use the `BarrageSession` approach above.
 

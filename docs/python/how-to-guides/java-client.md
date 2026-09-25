@@ -424,7 +424,7 @@ final Table statsTable = subscription.entireTable().get();
 To fetch a one-time snapshot without creating a subscription, use the session's `snapshot` method, which returns a `BarrageSnapshot` with `entireTable` and `partialTable` methods.
 
 > [!CAUTION]
-> Subscriptions participate in Deephaven's liveness system. The subscription ends, and the server stops sending data, once the subscribed table is no longer live. To control this explicitly, open a `LivenessScope` (for example, with `LivenessScopeStack.open` in a try-with-resources block) before subscribing; closing the scope releases the table, its listeners, and the subscription.
+> Subscriptions participate in Deephaven's liveness system. The subscription ends, and the server stops sending data, once the subscribed table is no longer live. To control this explicitly, open a `LivenessScope` (for example, with `LivenessScopeStack.open` in a try-with-resources block) and keep it open until the subscription's `Future.get` call returns, because `get` is what attaches the result table to the current scope. Closing that scope later releases the table, its listeners, and the subscription.
 
 ## Bidirectional communication
 
