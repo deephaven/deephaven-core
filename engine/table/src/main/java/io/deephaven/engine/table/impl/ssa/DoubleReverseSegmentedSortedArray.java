@@ -1128,9 +1128,10 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
                     if (firstLeaf == leafCount - 1) {
                         lastValueForLeaf = shiftSize - 1;
                     } else {
+                        // every value up to and including the leaf's directory entry is in this leaf
                         final double leafMaxValue = directoryValues[firstLeaf];
                         final long leafMaxRowKey = directoryRowKeys[firstLeaf];
-                        lastValueForLeaf = lowerBound(stampChunk, keyChunk, firstValuesPosition, shiftSize,
+                        lastValueForLeaf = upperBound(stampChunk, keyChunk, firstValuesPosition, shiftSize,
                                 leafMaxValue, leafMaxRowKey);
                     }
 
@@ -1141,12 +1142,6 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
 
                     shiftLeaf(leafSizes[firstLeaf], leafValues[firstLeaf], leafValuesChunk, leafRowKeys[firstLeaf],
                             leafKeyChunk, shiftDelta);
-                    final int predecessorLeaf = firstLeaf - 1;
-                    if (predecessorLeaf >= 0) {
-                        directoryValues[predecessorLeaf] = leafValues[predecessorLeaf][leafSizes[predecessorLeaf] - 1];
-                        directoryRowKeys[predecessorLeaf] =
-                                leafRowKeys[predecessorLeaf][leafSizes[predecessorLeaf] - 1];
-                    }
                     directoryValues[firstLeaf] = leafValues[firstLeaf][leafSizes[firstLeaf] - 1];
                     directoryRowKeys[firstLeaf] = leafRowKeys[firstLeaf][leafSizes[firstLeaf] - 1];
 
