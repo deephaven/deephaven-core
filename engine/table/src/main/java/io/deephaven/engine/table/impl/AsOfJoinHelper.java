@@ -765,30 +765,51 @@ public class AsOfJoinHelper {
                                                     leftStampFillContext, sortContext, leftKeyChunk, leftValuesChunk,
                                                     leftValuesCache, slot);
 
-                                            rightStampSource.fillPrevChunk(
-                                                    rightStampFillContext.ensureCapacity(shiftSize),
-                                                    rightValues.ensureCapacity(shiftSize), slotShiftRowSet);
-
                                             final SegmentedSortedArray rightSsa =
                                                     asOfJoinStateManager.getRightSsa(slot);
-
-                                            slotShiftRowSet
-                                                    .fillRowKeyChunk(rightKeyIndices.ensureCapacity(shiftSize));
-                                            sortContext.ensureCapacity(shiftSize).sort(rightKeyIndices.get(),
-                                                    rightValues.get());
+                                            final int chunkSize = Math.min(control.rightChunkSize(), shiftSize);
+                                            rightStampFillContext.ensureCapacity(chunkSize);
+                                            rightValues.ensureCapacity(chunkSize);
+                                            rightKeyIndices.ensureCapacity(chunkSize);
+                                            sortContext.ensureCapacity(chunkSize);
 
                                             if (sit.polarityReversed()) {
-                                                chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
-                                                        rightValues.get(), rightKeyIndices.get(), sit.shiftDelta(),
-                                                        rowRedirection, disallowExactMatch);
-                                                rightSsa.applyShiftReverse(rightValues.get(), rightKeyIndices.get(),
-                                                        sit.shiftDelta());
+                                                // a positive shift moves the highest row keys first, so no row is
+                                                // shifted onto a key that has yet to be shifted
+                                                for (long endPosition = shiftSize; endPosition > 0; endPosition -=
+                                                        chunkSize) {
+                                                    try (final RowSet chunkOk = slotShiftRowSet.subSetByPositionRange(
+                                                            Math.max(0, endPosition - chunkSize), endPosition)) {
+                                                        rightStampSource.fillPrevChunk(rightStampFillContext.get(),
+                                                                rightValues.get(), chunkOk);
+                                                        chunkOk.fillRowKeyChunk(rightKeyIndices.get());
+                                                        sortContext.get().sort(rightKeyIndices.get(),
+                                                                rightValues.get());
+                                                        chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
+                                                                rightValues.get(), rightKeyIndices.get(),
+                                                                sit.shiftDelta(), rowRedirection, disallowExactMatch);
+                                                        rightSsa.applyShiftReverse(rightValues.get(),
+                                                                rightKeyIndices.get(), sit.shiftDelta());
+                                                    }
+                                                }
                                             } else {
-                                                chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
-                                                        rightValues.get(), rightKeyIndices.get(), sit.shiftDelta(),
-                                                        rowRedirection, disallowExactMatch);
-                                                rightSsa.applyShift(rightValues.get(), rightKeyIndices.get(),
-                                                        sit.shiftDelta());
+                                                try (final RowSequence.Iterator shiftIt =
+                                                        slotShiftRowSet.getRowSequenceIterator()) {
+                                                    while (shiftIt.hasMore()) {
+                                                        final RowSequence chunkOk =
+                                                                shiftIt.getNextRowSequenceWithLength(chunkSize);
+                                                        rightStampSource.fillPrevChunk(rightStampFillContext.get(),
+                                                                rightValues.get(), chunkOk);
+                                                        chunkOk.fillRowKeyChunk(rightKeyIndices.get());
+                                                        sortContext.get().sort(rightKeyIndices.get(),
+                                                                rightValues.get());
+                                                        chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
+                                                                rightValues.get(), rightKeyIndices.get(),
+                                                                sit.shiftDelta(), rowRedirection, disallowExactMatch);
+                                                        rightSsa.applyShift(rightValues.get(), rightKeyIndices.get(),
+                                                                sit.shiftDelta());
+                                                    }
+                                                }
                                             }
                                         }
                                     }
