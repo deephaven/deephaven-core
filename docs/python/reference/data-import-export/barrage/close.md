@@ -25,6 +25,8 @@ This method does not take any parameters.
 
 ## Examples
 
+The following examples use anonymous authentication, so the target server must allow it (`-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`). For a server that requires credentials, pass `auth_type` and `auth_token` to [`barrage_session`](./barrage-session.md) and to `Session`.
+
 ```python skip-test
 from deephaven.barrage import barrage_session
 

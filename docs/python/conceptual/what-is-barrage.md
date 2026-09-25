@@ -39,6 +39,7 @@ Barrage supports two primary modes of retrieving data:
 ```python skip-test
 from deephaven.barrage import barrage_session
 
+# Uses anonymous authentication; pass auth_type and auth_token for a server that requires credentials
 session = barrage_session(host="remote-server", port=10000)
 
 # Subscription: receives ongoing updates

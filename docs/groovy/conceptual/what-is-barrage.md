@@ -52,6 +52,9 @@ streamingTable = resolve(uri)
 staticTable = BarrageTableResolver.get().snapshot(RemoteUri.of(URI.create(uri))).get()
 ```
 
+> [!NOTE]
+> `ResolveTools.resolve` and `BarrageTableResolver` connect without credentials, so the remote server must allow anonymous authentication. To connect to a server that requires credentials, open a Barrage session with a `SessionConfig`, as shown in [Capture remote tables with Barrage](../how-to-guides/capture-tables.md#connect-to-the-remote-deephaven-server).
+
 ### Shared tickets
 
 Shared tickets are endpoints that allow tables to be published and consumed across different sessions. A client, such as the Python client (`pydeephaven`) or the Java client, can publish a table to a shared ticket, and other clients (or servers) can subscribe to or snapshot that ticket. From a Groovy server, pass the ticket's bytes to `BarrageTableResolver`:
@@ -90,7 +93,7 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 
 1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), application tickets, export tickets, or shared tickets for cross-session access.
 2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata.
-3. **Local server** subscribes via a URI or `BarrageTableResolver` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
+3. **Local server** subscribes via a URI or `BarrageTableResolver` and receives a local copy of the data — the full table, or only the requested viewport and columns — that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
 
 > [!NOTE]
 > Only receivers that run the Deephaven engine can perform downstream computation on a subscribed table locally: a Deephaven server (Groovy or Python) that subscribes with a [URI](../how-to-guides/use-uris.md) or a Barrage session, and the Java client. Other clients (`pydeephaven`, JavaScript, C++) receive data but rely on the server for query execution.
