@@ -80,7 +80,7 @@ Viewports are automatically managed by Deephaven's web UI and JavaScript client.
 Barrage aggregates table updates before sending them to subscribers. This batching reduces network overhead when tables update frequently. The update interval is configurable:
 
 - **Server default**: Set via `-Dbarrage.minUpdateInterval` (milliseconds). Default: 1000 (1 second).
-- **Per-subscription**: The Java and JavaScript clients can request a different interval when initiating a subscription. `ResolveTools.resolve` always uses the server default; the `BarrageTableResolver.subscribe` overloads that take a `BarrageSubscriptionOptions` can set one with `minUpdateIntervalMs`.
+- **Per-subscription**: The Java and JavaScript clients can request a different interval when initiating a subscription. The interval is fixed for the life of the subscription; to use a different interval, create a new subscription. `ResolveTools.resolve` always uses the server default; the `BarrageTableResolver.subscribe` overloads that take a `BarrageSubscriptionOptions` can set one with `minUpdateIntervalMs`.
 
 A shorter interval reduces latency but increases network traffic. A longer interval reduces traffic but introduces delay.
 

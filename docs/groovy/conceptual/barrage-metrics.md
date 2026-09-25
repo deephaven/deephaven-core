@@ -23,7 +23,7 @@ Each recorded change is held as a pending delta until the next Barrage update. A
 
 2. `PeriodicUpdateGraph.targetCycleDurationMillis` versus `barrage.minUpdateInterval`
 
-The Periodic Update Graph (UG) runs a cycle at the interval set by [`PeriodicUpdateGraph.targetCycleDurationMillis`](./periodic-update-graph-configuration.md#targetcycledurationmillis). Barrage sends updates to subscribers at the interval set by [`barrage.minUpdateInterval`](../how-to-guides/performance/barrage-performance.md#update-interval) (ms), so many UG cycles can elapse between Barrage updates. Barrage records `AggregateNanos`, the time it took to coalesce pending deltas into a message. This can happen more than once per interval: Barrage may [compact pending deltas](../how-to-guides/performance/barrage-performance.md#compact-pending-deltas) before the interval elapses, and a snapshot splits the pending deltas into two ranges that are coalesced separately. Each of these aggregations is recorded.
+The Periodic Update Graph (UG) targets a cycle duration set by [`PeriodicUpdateGraph.targetCycleDurationMillis`](./periodic-update-graph-configuration.md#targetcycledurationmillis); this is a target, not a guarantee, and a cycle that runs long delays the next one. Barrage sends updates to subscribers no more often than each subscription's update interval, which defaults to [`barrage.minUpdateInterval`](../how-to-guides/performance/barrage-performance.md#update-interval) (ms) when the subscription does not request one. Many UG cycles can elapse between Barrage updates. Barrage records `AggregateNanos`, the time it took to coalesce pending deltas into a message. This can happen more than once per interval: Barrage may [compact pending deltas](../how-to-guides/performance/barrage-performance.md#compact-pending-deltas) before the interval elapses, and a snapshot splits the pending deltas into ranges before and after the snapshot, each of which is coalesced separately when it is not empty. Each of these aggregations is recorded.
 
 !["Coalesced Delta"](../assets/how-to/barrage-coalesced-delta.png)
 
@@ -72,7 +72,7 @@ Similar to subscription requests, Barrage records `WriteNanos` and `WriteBytes`,
 
 ### Hierarchical tables
 
-Subscriptions to tree and rollup tables also record statistics in the subscription metrics table, but only `SnapshotNanos`, `WriteNanos`, and `WriteBytes`.
+Subscriptions to tree and rollup tables also record statistics in the subscription metrics table, but only `SnapshotNanos`, `WriteNanos`, and `WriteBytes`. Their `TableId` identifies the subscription rather than a table.
 
 ## Related documentation
 

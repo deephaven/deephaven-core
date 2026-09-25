@@ -117,7 +117,7 @@ Alternatively, you can get a static snapshot of a table by using [`snapshot`](..
 local_t_static = my_barrage_session.snapshot(ticket.bytes)
 ```
 
-Voila! You now have _real_ Deephaven server tables called `local_t_streaming` and `local_t_static`. These are not just references to Deephaven tables - they are _real_ Deephaven server tables that can be used in any Deephaven query.
+Voila! You now have _real_ Deephaven server tables called `local_t_streaming` and `local_t_static`. These are not just references to Deephaven tables — they are _real_ Deephaven server tables that can be used in any Deephaven query.
 
 ## Subscription lifecycle management
 

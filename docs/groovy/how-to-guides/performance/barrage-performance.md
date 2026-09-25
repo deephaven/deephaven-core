@@ -68,7 +68,7 @@ Snapshot statistics are presented once per request. Each row also includes the `
 
 ## Identify a table
 
-Tables are identified by their `TableId` and `TableKey`. For sender statistics, the `TableId` is the source table's [`System.identityHashCode()`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.html#identityHashCode(java.lang.Object)), written in hexadecimal. For receiver statistics, it is the identity hash code of the subscriber's local copy of the table. The `TableKey` defaults to [`Table.getDescription()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#getDescription()) but can be overridden by setting the table attribute via [`withAttributes`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/AttributeMap.html#withAttributes(java.util.Map)).
+Tables are identified by their `TableId` and `TableKey`. For sender statistics, the `TableId` is the source table's [`System.identityHashCode`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.html#identityHashCode(java.lang.Object)), written in hexadecimal. For receiver statistics, it is the identity hash code of the subscriber's local copy of the table. For tree and rollup table subscriptions, it is the identity hash code of the subscription rather than of a table. The `TableKey` defaults to [`Table.getDescription`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#getDescription()) but can be overridden by setting the table attribute via [`withAttributes`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/AttributeMap.html#withAttributes(java.util.Map)).
 
 ```groovy order=t,:log
 t = emptyTable(0)
@@ -128,7 +128,7 @@ This configuration limits each snapshot chunk to at most 1 million cells — wel
 
 ## Compact pending deltas
 
-The server records one delta — the set of changes from a single update graph cycle — for each subscriber, then sends the accumulated deltas when that subscriber's [update interval](#update-interval) elapses. A subscriber served less often than its table ticks therefore holds every intervening cycle's data at once, even though the message it eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with the number of cycles per update interval, not with the size of the update.
+The server records one delta — the set of changes from a single update graph cycle — for each table and [update interval](#update-interval), shared by every subscriber to that table with that interval, then sends the accumulated deltas when the interval elapses. When subscribers are served less often than the table ticks, the server therefore holds every intervening cycle's data at once, even though the message it eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with the number of cycles per update interval, not with the size of the update.
 
 To limit that growth, the server combines the pending deltas in the background, before the interval elapses. Compacting costs processor time and saves memory, so the server pays for it only where there is memory to reclaim. The server never compacts blink tables, or a subscriber with fewer than two pending deltas. Otherwise, it compares the storage the pending deltas occupy against the storage they would occupy compacted, and compacts when the saving clears both of two thresholds:
 
@@ -140,7 +140,7 @@ held - compacted >= max(compactionFloorBytes, compactionMinFreedFraction * held)
 
 The two thresholds answer different questions. The fraction asks whether compacting is worthwhile at all; the floor asks whether the saving is large enough to be worth the work.
 
-- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts a subscriber's pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
+- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts a table's pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
 - `-DBarrageMessageProducer.compactionMinFreedFraction`: The fraction of the pending deltas' storage that compacting must release for the server to do it. Default: `0.5`. A higher value copies less data but lets the pending deltas grow larger — at `0.9` the server copies about a ninth as much and holds about ten times the compacted footprint.
 - `-DBarrageMessageProducer.compactionFloorBytes`: The number of bytes compacting must release, whatever fraction of the total that represents. Default: `4194304` (4 MiB). This keeps a stream of very small updates from compacting on every cycle, where the work costs the same as a compaction that reclaims far more.
 - `-DBarrageMessageProducer.deltaChunkSize`: The number of rows in each chunk a delta records. Default: `65536`, the largest pooled chunk capacity (which is itself set by `-DChunkPoolConstants.largestPooledChunkLog2Capacity`, default `16`). A value that is not a power of two rounds up to the next one.

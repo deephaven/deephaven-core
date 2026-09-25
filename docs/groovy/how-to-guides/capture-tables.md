@@ -15,7 +15,7 @@ A Groovy Deephaven server can use the Deephaven Java client, which is included w
 
 This guide covers capturing tables from a "remote" Deephaven server to a "local" Deephaven server. The servers do not need to run on different hosts, but the terminology helps distinguish the two.
 
-The local server opens a Barrage session to the remote server. The session does two jobs: it is a Java client [`Session`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/Session.html) that performs operations on the remote server, and it is a [`BarrageSession`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/BarrageSession.html) that retrieves tables from the remote server.
+The local server opens a Barrage session to the remote server. The [`BarrageSession`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/BarrageSession.html) retrieves tables from the remote server, and it wraps a Java client [`Session`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/Session.html), available through its `session` method, that performs operations on the remote server.
 
 No installation is required. The Java client classes used in this guide are part of the Deephaven server.
 
@@ -110,7 +110,7 @@ snapOptions = BarrageSnapshotOptions.builder().useDeephavenNulls(true).build()
 localTStatic = barrageSession.snapshot(tableRef, snapOptions).entireTable().get()
 ```
 
-Voila! You now have _real_ Deephaven server tables called `localTStreaming` and `localTStatic`. These are not just references to Deephaven tables - they are _real_ Deephaven server tables that can be used in any Deephaven query.
+Voila! You now have _real_ Deephaven server tables called `localTStreaming` and `localTStatic`. These are not just references to Deephaven tables — they are _real_ Deephaven server tables that can be used in any Deephaven query.
 
 `subscribe` and `snapshot` also have `partialTable` variants that capture only a viewport of rows and a subset of columns. See [What is Barrage?](../conceptual/what-is-barrage.md#viewports).
 
@@ -131,7 +131,7 @@ Any session connected to the remote server can now capture the table from the ti
 localFromTicket = barrageSession.subscribe(sharedId.ticketId().table(), subOptions).entireTable().get()
 ```
 
-A session in another process needs the ticket's ID. `sharedId.asHexString()` returns it as a hexadecimal string that you can pass along. A Python client can also publish tables to shared tickets that a Groovy server captures; see [What is Barrage?](../conceptual/what-is-barrage.md#shared-tickets).
+A session in another process needs the ticket's ID. The `asHexString` method of `sharedId` returns it as a hexadecimal string that you can pass along. A Python client can also publish tables to shared tickets that a Groovy server captures; see [What is Barrage?](../conceptual/what-is-barrage.md#shared-tickets).
 
 ## Subscription lifecycle management
 

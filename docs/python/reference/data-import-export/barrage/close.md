@@ -5,7 +5,7 @@ title: close
 The `close` method closes the [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession).
 
 > [!NOTE]
-> A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) created by [`barrage_session`](./barrage-session.md) owns its gRPC channel, so `close` shuts down the channel as well. `close` raises an error if the session or channel cannot be shut down.
+> A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) created by [`barrage_session`](./barrage-session.md) owns its gRPC channel, so `close` shuts down the channel as well. If closing the session or shutting down the channel throws an exception, `close` raises a `DHError`.
 
 `BarrageSession` is also a context manager: a `with` block closes the session when it exits.
 

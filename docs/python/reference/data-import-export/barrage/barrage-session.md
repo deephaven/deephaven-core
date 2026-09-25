@@ -50,7 +50,7 @@ If `True`, the connection will be encrypted using TLS. The default is `False`.
 </Param>
 <Param name="tls_root_certs" type="bytes" optional>
 
-The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. Any value other than `None` requires a TLS connection, so `use_tls` must also be `True`; otherwise, `barrage_session` raises an error. Defaults to `None`.
+The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. A non-empty value requires a TLS connection, so `use_tls` must also be `True`; otherwise, `barrage_session` raises an error. Defaults to `None`.
 
 </Param>
 <Param name="extra_headers" type="dict[str, str]" optional>
