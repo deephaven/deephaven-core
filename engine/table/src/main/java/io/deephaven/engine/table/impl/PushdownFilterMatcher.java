@@ -7,6 +7,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.filter.ExtractReindexingFilters;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.NoPredicatePushdown;
@@ -143,7 +144,10 @@ public interface PushdownFilterMatcher {
     }
 
     /**
-     * Check if the given filter can be pushed down.
+     * Check if the given filter can be pushed down. Filters that use virtual row variables ({@code i}, {@code ii},
+     * {@code k}) anywhere, and reindexing filters (e.g. {@code ClockFilter}), are never pushed down. A reindexing
+     * filter initializes in {@code filter()} the state it relies on in later update cycles, so any pushdown that
+     * resolves it (e.g. through a data index) would skip that call (DH-23750, wrong-answer finding PD-034).
      *
      * @param filter The {@link WhereFilter filter} to check.
      * @return {@code true} if the filter can be pushed down, {@code false} otherwise.
@@ -152,7 +156,8 @@ public interface PushdownFilterMatcher {
         return !filter.getColumns().isEmpty()
                 && !usesVirtualRowVariables(filter)
                 && filter.getColumnArrays().isEmpty()
-                && !(filter instanceof NoPredicatePushdown);
+                && !(filter instanceof NoPredicatePushdown)
+                && ExtractReindexingFilters.of(filter).isEmpty();
     }
 
     /**
