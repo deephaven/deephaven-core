@@ -44,6 +44,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
     private final WritableRowRedirection rowRedirection;
     private final ModifiedColumnSet leftStampColumn;
     private final ModifiedColumnSet rightStampColumn;
+    private final ModifiedColumnSet rightColumnsToAdd;
     private final ModifiedColumnSet allRightColumns;
     private final ModifiedColumnSet.Transformer leftTransformer;
     private final ModifiedColumnSet.Transformer rightTransformer;
@@ -98,6 +99,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
         leftStampColumn = leftTable.newModifiedColumnSet(stampPair.leftColumn());
         rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
+        rightColumnsToAdd = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
         allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         leftTransformer =
                 leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
@@ -344,8 +346,10 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                         }
                     }
 
-                    // if the stamp was not modified, then we need to figure out the responsive rows to mark as modified
-                    if (!rightStampModified && rightModified.isNonempty()) {
+                    // if the stamp was not modified, then we need to figure out the responsive rows to mark as
+                    // modified; only a modified column that the result adds changes a responsive row
+                    if (!rightStampModified && rightModified.isNonempty()
+                            && rightRecorder.getModifiedColumnSet().containsAny(rightColumnsToAdd)) {
                         try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
                             while (modit.hasMore()) {
                                 final RowSequence chunkOk = modit.getNextRowSequenceWithLength(cycleRightChunkSize);

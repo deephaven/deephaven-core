@@ -2238,6 +2238,37 @@ public class QueryTableAjTest {
     }
 
     /**
+     * With both sides refreshing and no exact match columns, modifying a right column that the join does not add leaves
+     * the left rows that match the modified right row unmodified, even when the same cycle modifies another left row.
+     */
+    @Test
+    public void testZeroKeyRightModificationOfColumnNotAdded() {
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(), intCol("LeftStamp", 1, 2, 3),
+                intCol("LeftOther", 0, 0, 0));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), intCol("RightStamp", 1, 3),
+                intCol("Sentinel", 10, 11), intCol("RightOther", 0, 0));
+        final QueryTable result = (QueryTable) left.aj(right, "LeftStamp>=RightStamp", "Sentinel");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(2), intCol("LeftStamp", 3), intCol("LeftOther", 1));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("LeftOther")));
+            // right row 0 matches left rows 0 and 1, but RightOther is not a column of the result
+            addToTable(right, i(0), intCol("RightStamp", 1), intCol("Sentinel", 10), intCol("RightOther", 1));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("RightOther")));
+        });
+
+        Asserts.assertEquals(new int[] {10, 10, 11}, ColumnVectors.ofInt(result, "Sentinel").toArray());
+        assertEquals(1, listener.getCount());
+        assertEquals(i(2), listener.getUpdate().modified());
+        result.removeUpdateListener(listener);
+    }
+
+    /**
      * With both sides refreshing, the first right row of a bucket that held only left rows modifies just the left rows
      * that it matches.
      */
