@@ -50,7 +50,7 @@ If `True`, the connection will be encrypted using TLS. The default is `False`.
 </Param>
 <Param name="tls_root_certs" type="bytes" optional>
 
-The PEM-encoded root certificates to use for TLS connection, or `None` to use the local server's outbound TLS configuration (the `outbound.ssl.*` properties, or otherwise the server's own SSL configuration) together with the JDK's default trust store. `barrage_session` has no client certificate (mutual TLS) parameters; a client identity in the local server's `outbound.ssl.*` configuration is used only when `tls_root_certs` is not passed, because passing it replaces that configuration. A non-empty value requires a TLS connection, so `use_tls` must also be `True`; otherwise, `barrage_session` raises an error. Defaults to `None`.
+The PEM-encoded root certificates to use for TLS connection, or `None` (or an empty value) to use the local server's outbound TLS configuration (the `outbound.ssl.*` properties, or otherwise the server's own SSL configuration) together with the JDK's default trust store. `barrage_session` has no client certificate (mutual TLS) parameters; a client identity in the local server's `outbound.ssl.*` configuration is used only when `tls_root_certs` is `None` or empty, because a non-empty value replaces that configuration. A non-empty value requires a TLS connection, so `use_tls` must also be `True`; otherwise, `barrage_session` raises an error. Defaults to `None`.
 
 </Param>
 <Param name="extra_headers" type="dict[str, str]" optional>
