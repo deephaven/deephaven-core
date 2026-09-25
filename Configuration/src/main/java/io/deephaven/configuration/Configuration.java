@@ -27,7 +27,7 @@ public abstract class Configuration extends PropertyFile {
 
     private static final Logger log = LoggerFactory.getLogger(Configuration.class);
 
-    private static Configuration DEFAULT;
+    private static volatile Configuration DEFAULT;
     private static final Map<String, Configuration> NAMED_CONFIGURATIONS = new ConcurrentHashMap<>();
     private final Supplier<ConfigurationContext> contextSupplier;
 
@@ -93,10 +93,16 @@ public abstract class Configuration extends PropertyFile {
      * @return the single instance of Configuration allowed in an application
      */
     public static Configuration getInstance() {
-        if (DEFAULT == null) {
-            DEFAULT = new Default(DefaultConfigurationContext::new);
+        Configuration local = DEFAULT;
+        if (local == null) {
+            synchronized (Configuration.class) {
+                local = DEFAULT;
+                if (local == null) {
+                    DEFAULT = local = new Default(DefaultConfigurationContext::new);
+                }
+            }
         }
-        return DEFAULT;
+        return local;
     }
 
     /**
@@ -125,7 +131,7 @@ public abstract class Configuration extends PropertyFile {
      * @return the unmodified input {@code configuration}.
      * @throws IllegalStateException if an existing default configuration is already present.
      */
-    public static Configuration withDefault(@NotNull final Configuration configuration) {
+    public static synchronized Configuration withDefault(@NotNull final Configuration configuration) {
         if (DEFAULT != null) {
             throw new IllegalStateException("A default configuration is already set. Use reset() first.");
         }
@@ -136,7 +142,7 @@ public abstract class Configuration extends PropertyFile {
     /**
      * Clear all currently loaded Configurations so that they may be loaded anew.
      */
-    public static void reset() {
+    public static synchronized void reset() {
         DEFAULT = null;
         NAMED_CONFIGURATIONS.clear();
     }
