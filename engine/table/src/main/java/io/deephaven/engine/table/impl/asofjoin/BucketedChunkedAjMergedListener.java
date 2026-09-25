@@ -193,100 +193,108 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     leftRestampRemovals = leftRecorder.getRemoved();
                 }
 
+                try (final SafeCloseable ignored =
+                        leftStampModified || leftKeysModified ? leftRestampRemovals : null) {
 
-                if (leftRestampRemovals.isNonempty()) {
-                    rowRedirection.removeAll(leftRestampRemovals);
+                    if (leftRestampRemovals.isNonempty()) {
+                        rowRedirection.removeAll(leftRestampRemovals);
 
-                    // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
-                    final int removedSlotCount =
-                            asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
-                                    slots, sequentialBuilders);
+                        // We first do a probe pass, adding all of the removals to a builder in the as of join state
+                        // manager
+                        final int removedSlotCount =
+                                asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
+                                        slots, sequentialBuilders);
 
-                    final MutableObject<WritableRowSet> leftIndexOutput = new MutableObject<>();
+                        final MutableObject<WritableRowSet> leftIndexOutput = new MutableObject<>();
 
-                    for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
-                        final int slot = slots.getInt(slotIndex);
-                        try (final RowSet leftRemoved = indexFromBuilder(slotIndex)) {
-                            final SegmentedSortedArray leftSsa =
-                                    asOfJoinStateManager.getLeftSsaOrRowSet(slot, leftIndexOutput);
-                            if (leftSsa == null) {
-                                leftIndexOutput.getValue().remove(leftRemoved);
-                                leftIndexOutput.setValue(null);
-                                continue;
-                            }
+                        for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
+                            final int slot = slots.getInt(slotIndex);
+                            try (final RowSet leftRemoved = indexFromBuilder(slotIndex)) {
+                                final SegmentedSortedArray leftSsa =
+                                        asOfJoinStateManager.getLeftSsaOrRowSet(slot, leftIndexOutput);
+                                if (leftSsa == null) {
+                                    leftIndexOutput.getValue().remove(leftRemoved);
+                                    leftIndexOutput.setValue(null);
+                                    continue;
+                                }
 
-                            try (final RowSequence.Iterator leftRsIt = leftRemoved.getRowSequenceIterator()) {
-                                while (leftRsIt.hasMore()) {
-                                    assert leftFillContext != null;
-                                    assert leftStampValues != null;
+                                try (final RowSequence.Iterator leftRsIt = leftRemoved.getRowSequenceIterator()) {
+                                    while (leftRsIt.hasMore()) {
+                                        assert leftFillContext != null;
+                                        assert leftStampValues != null;
 
-                                    final RowSequence chunkOk =
-                                            leftRsIt.getNextRowSequenceWithLength(cycleLeftChunkSize);
+                                        final RowSequence chunkOk =
+                                                leftRsIt.getNextRowSequenceWithLength(cycleLeftChunkSize);
 
-                                    leftStampSource.fillPrevChunk(leftFillContext, leftStampValues, chunkOk);
-                                    chunkOk.fillRowKeyChunk(leftStampKeys);
+                                        leftStampSource.fillPrevChunk(leftFillContext, leftStampValues, chunkOk);
+                                        chunkOk.fillRowKeyChunk(leftStampKeys);
 
-                                    sortKernel.sort(leftStampKeys, leftStampValues);
+                                        sortKernel.sort(leftStampKeys, leftStampValues);
 
-                                    leftSsa.remove(leftStampValues, leftStampKeys);
+                                        leftSsa.remove(leftStampValues, leftStampKeys);
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                final RowSetShiftData leftShifted = leftRecorder.getShifted();
-                if (leftShifted.nonempty()) {
+                    final RowSetShiftData leftShifted = leftRecorder.getShifted();
+                    if (leftShifted.nonempty()) {
 
-                    final RowSet prevRowSet = leftTable.getRowSet().prev();
-                    try (final RowSet relevantShift =
-                            ChunkedAjUtils.relevantShiftedRows(leftShifted, prevRowSet, leftRestampRemovals)) {
-                        // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp; every
-                        // left row that still holds a redirection and lies in a shifted range is in relevantShift
-                        rowRedirection.applyShift(relevantShift, leftShifted);
+                        final RowSet prevRowSet = leftTable.getRowSet().prev();
+                        try (final RowSet relevantShift =
+                                ChunkedAjUtils.relevantShiftedRows(leftShifted, prevRowSet, leftRestampRemovals)) {
+                            // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp;
+                            // every left row that still holds a redirection and lies in a shifted range is in
+                            // relevantShift
+                            rowRedirection.applyShift(relevantShift, leftShifted);
 
-                        if (relevantShift.isNonempty()) {
-                            try (final SizedSafeCloseable<ColumnSource.FillContext> leftShiftFillContext =
-                                    new SizedSafeCloseable<>(leftStampSource::makeFillContext);
-                                    final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
-                                            new SizedSafeCloseable<>(
-                                                    size -> LongSortKernel.makeContext(stampChunkType, order, size,
-                                                            true));
-                                    final SizedLongChunk<RowKeys> stampKeys = new SizedLongChunk<>();
-                                    final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
+                            if (relevantShift.isNonempty()) {
+                                try (final SizedSafeCloseable<ColumnSource.FillContext> leftShiftFillContext =
+                                        new SizedSafeCloseable<>(leftStampSource::makeFillContext);
+                                        final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
+                                                new SizedSafeCloseable<>(
+                                                        size -> LongSortKernel.makeContext(stampChunkType, order, size,
+                                                                true));
+                                        final SizedLongChunk<RowKeys> stampKeys = new SizedLongChunk<>();
+                                        final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
 
 
-                                final int shiftedSlotCount = asOfJoinStateManager.gatherShiftRowSet(relevantShift,
-                                        leftKeySources, slots, sequentialBuilders);
+                                    final int shiftedSlotCount = asOfJoinStateManager.gatherShiftRowSet(relevantShift,
+                                            leftKeySources, slots, sequentialBuilders);
 
-                                for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
-                                    try (final RowSet shiftedRowSet = indexFromBuilder(slotIndex)) {
-                                        final int slot = slots.getInt(slotIndex);
-                                        final byte state = asOfJoinStateManager.getState(slot);
+                                    for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
+                                        try (final RowSet shiftedRowSet = indexFromBuilder(slotIndex)) {
+                                            final int slot = slots.getInt(slotIndex);
+                                            final byte state = asOfJoinStateManager.getState(slot);
 
-                                        final RowSetShiftData shiftDataForSlot = leftShifted.intersect(shiftedRowSet);
+                                            final RowSetShiftData shiftDataForSlot =
+                                                    leftShifted.intersect(shiftedRowSet);
 
-                                        if ((state & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
-                                            // if the left is empty, we should be a RowSet entry rather than an SSA, and
-                                            // we can not be empty, because we are responsive
-                                            final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot);
-                                            shiftDataForSlot.apply(leftRowSet);
-                                            leftRowSet.compact();
-                                            continue;
-                                        }
+                                            if ((state & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
+                                                // if the left is empty, we should be a RowSet entry rather than an SSA,
+                                                // and we can not be empty, because we are responsive
+                                                final WritableRowSet leftRowSet =
+                                                        asOfJoinStateManager.getLeftRowSet(slot);
+                                                shiftDataForSlot.apply(leftRowSet);
+                                                leftRowSet.compact();
+                                                continue;
+                                            }
 
-                                        final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
+                                            final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
 
-                                        final RowSetShiftData.Iterator slotSit = shiftDataForSlot.applyIterator();
+                                            final RowSetShiftData.Iterator slotSit = shiftDataForSlot.applyIterator();
 
-                                        while (slotSit.hasNext()) {
-                                            slotSit.next();
-                                            try (final RowSet rowSetToShift = shiftedRowSet
-                                                    .subSetByKeyRange(slotSit.beginRange(), slotSit.endRange())) {
-                                                ChunkedAjUtils.applyOneShift(leftSsa, cycleLeftChunkSize,
-                                                        leftStampSource,
-                                                        leftShiftFillContext, shiftSortContext, stampKeys, stampValues,
-                                                        slotSit, rowSetToShift);
+                                            while (slotSit.hasNext()) {
+                                                slotSit.next();
+                                                try (final RowSet rowSetToShift = shiftedRowSet
+                                                        .subSetByKeyRange(slotSit.beginRange(), slotSit.endRange())) {
+                                                    ChunkedAjUtils.applyOneShift(leftSsa, cycleLeftChunkSize,
+                                                            leftStampSource,
+                                                            leftShiftFillContext, shiftSortContext, stampKeys,
+                                                            stampValues,
+                                                            slotSit, rowSetToShift);
+                                                }
                                             }
                                         }
                                     }
@@ -294,10 +302,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             }
                         }
                     }
-                }
-
-                if (leftStampModified || leftKeysModified) {
-                    leftRestampRemovals.close();
                 }
             } else {
                 downstream.added = RowSetFactory.empty();
@@ -321,149 +325,163 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     rightRestampRemovals = rightRecorder.getRemoved();
                 }
 
-                // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
-                final int removedSlotCount = asOfJoinStateManager.markForRemoval(rightRestampRemovals, rightKeySources,
-                        slots, sequentialBuilders);
+                try (final SafeCloseable ignoredAdditions =
+                        rightKeysModified || rightStampModified ? rightRestampAdditions : null;
+                        final SafeCloseable ignoredRemovals =
+                                rightKeysModified || rightStampModified ? rightRestampRemovals : null) {
 
-                final MutableObject<WritableRowSet> rowSetOutput = new MutableObject<>();
-                try (final WritableLongChunk<RowKeys> priorRedirections =
-                        WritableLongChunk.makeWritableChunk(cycleRightChunkSize);
-                        final ColumnSource.FillContext fillContext =
-                                rightStampSource.makeFillContext(cycleRightChunkSize);
-                        final WritableChunk<Values> rightStampValues =
-                                stampChunkType.makeWritableChunk(cycleRightChunkSize);
-                        final WritableLongChunk<RowKeys> rightStampKeys =
-                                WritableLongChunk.makeWritableChunk(cycleRightChunkSize)) {
-                    for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
-                        final int slot = slots.getInt(slotIndex);
+                    // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
+                    final int removedSlotCount =
+                            asOfJoinStateManager.markForRemoval(rightRestampRemovals, rightKeySources,
+                                    slots, sequentialBuilders);
 
-                        try (final RowSet rightRemoved = indexFromBuilder(slotIndex)) {
-                            final SegmentedSortedArray rightSsa =
-                                    asOfJoinStateManager.getRightSsaOrRowSet(slot, rowSetOutput);
-                            if (rightSsa == null) {
-                                rowSetOutput.getValue().remove(rightRemoved);
-                                continue;
-                            }
+                    final MutableObject<WritableRowSet> rowSetOutput = new MutableObject<>();
+                    try (final WritableLongChunk<RowKeys> priorRedirections =
+                            WritableLongChunk.makeWritableChunk(cycleRightChunkSize);
+                            final ColumnSource.FillContext fillContext =
+                                    rightStampSource.makeFillContext(cycleRightChunkSize);
+                            final WritableChunk<Values> rightStampValues =
+                                    stampChunkType.makeWritableChunk(cycleRightChunkSize);
+                            final WritableLongChunk<RowKeys> rightStampKeys =
+                                    WritableLongChunk.makeWritableChunk(cycleRightChunkSize)) {
+                        for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
+                            final int slot = slots.getInt(slotIndex);
 
-                            final byte state = asOfJoinStateManager.getState(slot);
-                            if ((state & ENTRY_LEFT_MASK) != ENTRY_LEFT_IS_SSA) {
-                                throw new IllegalStateException();
-                            }
-                            final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
+                            try (final RowSet rightRemoved = indexFromBuilder(slotIndex)) {
+                                final SegmentedSortedArray rightSsa =
+                                        asOfJoinStateManager.getRightSsaOrRowSet(slot, rowSetOutput);
+                                if (rightSsa == null) {
+                                    rowSetOutput.getValue().remove(rightRemoved);
+                                    continue;
+                                }
 
-                            try (final RowSequence.Iterator removeIt = rightRemoved.getRowSequenceIterator()) {
-                                while (removeIt.hasMore()) {
-                                    final RowSequence chunkOk =
-                                            removeIt.getNextRowSequenceWithLength(cycleRightChunkSize);
+                                final byte state = asOfJoinStateManager.getState(slot);
+                                if ((state & ENTRY_LEFT_MASK) != ENTRY_LEFT_IS_SSA) {
+                                    throw new IllegalStateException();
+                                }
+                                final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
 
-                                    rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
-                                    chunkOk.fillRowKeyChunk(rightStampKeys);
-                                    sortKernel.sort(rightStampKeys, rightStampValues);
+                                try (final RowSequence.Iterator removeIt = rightRemoved.getRowSequenceIterator()) {
+                                    while (removeIt.hasMore()) {
+                                        final RowSequence chunkOk =
+                                                removeIt.getNextRowSequenceWithLength(cycleRightChunkSize);
 
-                                    priorRedirections.setSize(cycleRightChunkSize);
-                                    rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
+                                        rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
+                                        chunkOk.fillRowKeyChunk(rightStampKeys);
+                                        sortKernel.sort(rightStampKeys, rightStampValues);
 
-                                    ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys,
-                                            priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
+                                        priorRedirections.setSize(cycleRightChunkSize);
+                                        rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
+
+                                        ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys,
+                                                priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                final RowSetShiftData rightShifted = rightRecorder.getShifted();
+                    final RowSetShiftData rightShifted = rightRecorder.getShifted();
 
-                if (rightShifted.nonempty()) {
-                    final RowSet prevRowSet = rightTable.getRowSet().prev();
-                    try (final RowSet relevantShift =
-                            ChunkedAjUtils.relevantShiftedRows(rightShifted, prevRowSet,
-                                    rightRestampRemovals)) {
+                    if (rightShifted.nonempty()) {
+                        final RowSet prevRowSet = rightTable.getRowSet().prev();
+                        try (final RowSet relevantShift =
+                                ChunkedAjUtils.relevantShiftedRows(rightShifted, prevRowSet,
+                                        rightRestampRemovals)) {
 
-                        if (relevantShift.isNonempty()) {
-                            try (final SizedSafeCloseable<ColumnSource.FillContext> rightShiftFillContext =
-                                    new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                                    final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
-                                            new SizedSafeCloseable<>(
-                                                    sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
-                                    final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>();
-                                    final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampChunkType)) {
+                            if (relevantShift.isNonempty()) {
+                                try (final SizedSafeCloseable<ColumnSource.FillContext> rightShiftFillContext =
+                                        new SizedSafeCloseable<>(rightStampSource::makeFillContext);
+                                        final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
+                                                new SizedSafeCloseable<>(
+                                                        sz -> LongSortKernel.makeContext(stampChunkType, order, sz,
+                                                                true));
+                                        final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>();
+                                        final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampChunkType)) {
 
 
-                                final int shiftedSlotCount = asOfJoinStateManager.gatherShiftRowSet(relevantShift,
-                                        rightKeySources, slots, sequentialBuilders);
+                                    final int shiftedSlotCount = asOfJoinStateManager.gatherShiftRowSet(relevantShift,
+                                            rightKeySources, slots, sequentialBuilders);
 
-                                for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
-                                    try (final RowSet shiftedRowSet = indexFromBuilder(slotIndex)) {
-                                        final int slot = slots.getInt(slotIndex);
-                                        final byte state = asOfJoinStateManager.getState(slot);
+                                    for (int slotIndex = 0; slotIndex < shiftedSlotCount; ++slotIndex) {
+                                        try (final RowSet shiftedRowSet = indexFromBuilder(slotIndex)) {
+                                            final int slot = slots.getInt(slotIndex);
+                                            final byte state = asOfJoinStateManager.getState(slot);
 
-                                        final SegmentedSortedArray leftSsa;
-                                        if ((state & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY) {
-                                            leftSsa = null;
-                                        } else {
-                                            leftSsa = asOfJoinStateManager.getLeftSsa(slot);
-                                        }
+                                            final SegmentedSortedArray leftSsa;
+                                            if ((state & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY) {
+                                                leftSsa = null;
+                                            } else {
+                                                leftSsa = asOfJoinStateManager.getLeftSsa(slot);
+                                            }
 
-                                        final RowSetShiftData shiftDataForSlot = rightShifted.intersect(shiftedRowSet);
+                                            final RowSetShiftData shiftDataForSlot =
+                                                    rightShifted.intersect(shiftedRowSet);
 
-                                        if (leftSsa == null) {
-                                            // if the left is empty, we should be a RowSet entry rather than an SSA, and
-                                            // we can not be empty, because we are responsive
-                                            final WritableRowSet rightRowSet =
-                                                    asOfJoinStateManager.getRightRowSet(slot);
-                                            shiftDataForSlot.apply(rightRowSet);
-                                            rightRowSet.compact();
-                                            continue;
-                                        }
-                                        final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot);
+                                            if (leftSsa == null) {
+                                                // if the left is empty, we should be a RowSet entry rather than an SSA,
+                                                // and we can not be empty, because we are responsive
+                                                final WritableRowSet rightRowSet =
+                                                        asOfJoinStateManager.getRightRowSet(slot);
+                                                shiftDataForSlot.apply(rightRowSet);
+                                                rightRowSet.compact();
+                                                continue;
+                                            }
+                                            final SegmentedSortedArray rightSsa =
+                                                    asOfJoinStateManager.getRightSsa(slot);
 
-                                        final RowSetShiftData.Iterator slotSit = shiftDataForSlot.applyIterator();
+                                            final RowSetShiftData.Iterator slotSit = shiftDataForSlot.applyIterator();
 
-                                        while (slotSit.hasNext()) {
-                                            slotSit.next();
+                                            while (slotSit.hasNext()) {
+                                                slotSit.next();
 
-                                            try (final RowSet rowSetToShift =
-                                                    shiftedRowSet.subSetByKeyRange(slotSit.beginRange(),
-                                                            slotSit.endRange())) {
-                                                if (slotSit.polarityReversed()) {
-                                                    final int shiftSize = rowSetToShift.intSize();
-                                                    rightStampSource.fillPrevChunk(
-                                                            rightShiftFillContext.ensureCapacity(shiftSize),
-                                                            rightStampValues.ensureCapacity(shiftSize), rowSetToShift);
-                                                    rowSetToShift
-                                                            .fillRowKeyChunk(rightStampKeys.ensureCapacity(shiftSize));
-                                                    shiftSortKernel.ensureCapacity(shiftSize).sort(rightStampKeys.get(),
-                                                            rightStampValues.get());
+                                                try (final RowSet rowSetToShift =
+                                                        shiftedRowSet.subSetByKeyRange(slotSit.beginRange(),
+                                                                slotSit.endRange())) {
+                                                    if (slotSit.polarityReversed()) {
+                                                        final int shiftSize = rowSetToShift.intSize();
+                                                        rightStampSource.fillPrevChunk(
+                                                                rightShiftFillContext.ensureCapacity(shiftSize),
+                                                                rightStampValues.ensureCapacity(shiftSize),
+                                                                rowSetToShift);
+                                                        rowSetToShift
+                                                                .fillRowKeyChunk(
+                                                                        rightStampKeys.ensureCapacity(shiftSize));
+                                                        shiftSortKernel.ensureCapacity(shiftSize).sort(
+                                                                rightStampKeys.get(),
+                                                                rightStampValues.get());
 
-                                                    ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
-                                                            rightStampKeys.get(), slotSit.shiftDelta(), rowRedirection,
-                                                            disallowExactMatch);
-                                                    rightSsa.applyShiftReverse(rightStampValues.get(),
-                                                            rightStampKeys.get(),
-                                                            slotSit.shiftDelta());
-                                                } else {
-                                                    try (final RowSequence.Iterator shiftIt =
-                                                            rowSetToShift.getRowSequenceIterator()) {
-                                                        while (shiftIt.hasMore()) {
-                                                            final RowSequence chunkOk =
-                                                                    shiftIt.getNextRowSequenceWithLength(
-                                                                            cycleRightChunkSize);
-                                                            final int shiftSize = chunkOk.intSize();
-                                                            chunkOk.fillRowKeyChunk(
-                                                                    rightStampKeys.ensureCapacity(shiftSize));
-                                                            rightStampSource.fillPrevChunk(
-                                                                    rightShiftFillContext.ensureCapacity(shiftSize),
-                                                                    rightStampValues.ensureCapacity(shiftSize),
-                                                                    chunkOk);
-                                                            sortKernel.sort(rightStampKeys.get(),
-                                                                    rightStampValues.get());
+                                                        ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
+                                                                rightStampKeys.get(), slotSit.shiftDelta(),
+                                                                rowRedirection,
+                                                                disallowExactMatch);
+                                                        rightSsa.applyShiftReverse(rightStampValues.get(),
+                                                                rightStampKeys.get(),
+                                                                slotSit.shiftDelta());
+                                                    } else {
+                                                        try (final RowSequence.Iterator shiftIt =
+                                                                rowSetToShift.getRowSequenceIterator()) {
+                                                            while (shiftIt.hasMore()) {
+                                                                final RowSequence chunkOk =
+                                                                        shiftIt.getNextRowSequenceWithLength(
+                                                                                cycleRightChunkSize);
+                                                                final int shiftSize = chunkOk.intSize();
+                                                                chunkOk.fillRowKeyChunk(
+                                                                        rightStampKeys.ensureCapacity(shiftSize));
+                                                                rightStampSource.fillPrevChunk(
+                                                                        rightShiftFillContext.ensureCapacity(shiftSize),
+                                                                        rightStampValues.ensureCapacity(shiftSize),
+                                                                        chunkOk);
+                                                                sortKernel.sort(rightStampKeys.get(),
+                                                                        rightStampValues.get());
 
-                                                            rightSsa.applyShift(rightStampValues.get(),
-                                                                    rightStampKeys.get(),
-                                                                    slotSit.shiftDelta());
-                                                            ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
-                                                                    rightStampKeys.get(), slotSit.shiftDelta(),
-                                                                    rowRedirection, disallowExactMatch);
+                                                                rightSsa.applyShift(rightStampValues.get(),
+                                                                        rightStampKeys.get(),
+                                                                        slotSit.shiftDelta());
+                                                                ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
+                                                                        rightStampKeys.get(), slotSit.shiftDelta(),
+                                                                        rowRedirection, disallowExactMatch);
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -474,173 +492,173 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             }
                         }
                     }
-                }
 
-                // next we do the additions; this build can create a bucket for a key it has not seen before
-                final int addedSlotCount = asOfJoinStateManager.buildAdditions(false, rightRestampAdditions,
-                        rightKeySources, slots, sequentialBuilders);
+                    // next we do the additions; this build can create a bucket for a key it has not seen before
+                    final int addedSlotCount = asOfJoinStateManager.buildAdditions(false, rightRestampAdditions,
+                            rightKeySources, slots, sequentialBuilders);
 
-                try (final ColumnSource.FillContext rightFillContext =
-                        rightStampSource.makeFillContext(cycleRightChunkSize);
-                        final WritableChunk<Values> stampChunk = stampChunkType.makeWritableChunk(cycleRightChunkSize);
-                        final WritableChunk<Values> nextRightValue =
-                                stampChunkType.makeWritableChunk(cycleRightChunkSize);
-                        final WritableLongChunk<RowKeys> insertedIndices =
-                                WritableLongChunk.makeWritableChunk(cycleRightChunkSize);
-                        final WritableBooleanChunk<Any> retainStamps =
-                                WritableBooleanChunk.makeWritableChunk(cycleRightChunkSize)) {
-                    for (int slotIndex = 0; slotIndex < addedSlotCount; ++slotIndex) {
-                        final int slot = slots.getInt(slotIndex);
+                    try (final ColumnSource.FillContext rightFillContext =
+                            rightStampSource.makeFillContext(cycleRightChunkSize);
+                            final WritableChunk<Values> stampChunk =
+                                    stampChunkType.makeWritableChunk(cycleRightChunkSize);
+                            final WritableChunk<Values> nextRightValue =
+                                    stampChunkType.makeWritableChunk(cycleRightChunkSize);
+                            final WritableLongChunk<RowKeys> insertedIndices =
+                                    WritableLongChunk.makeWritableChunk(cycleRightChunkSize);
+                            final WritableBooleanChunk<Any> retainStamps =
+                                    WritableBooleanChunk.makeWritableChunk(cycleRightChunkSize)) {
+                        for (int slotIndex = 0; slotIndex < addedSlotCount; ++slotIndex) {
+                            final int slot = slots.getInt(slotIndex);
 
-                        final RowSet rightAdded = indexFromBuilder(slotIndex);
+                            final RowSet rightAdded = indexFromBuilder(slotIndex);
 
-                        final byte state = asOfJoinStateManager.getState(slot);
+                            final byte state = asOfJoinStateManager.getState(slot);
 
-                        boolean makeRightIndex = false;
-                        boolean updateRightIndex = false;
-                        boolean processInitial = false;
+                            boolean makeRightIndex = false;
+                            boolean updateRightIndex = false;
+                            boolean processInitial = false;
 
-                        switch (state) {
-                            case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_EMPTY:
-                                makeRightIndex = true;
-                                break;
+                            switch (state) {
+                                case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_EMPTY:
+                                    makeRightIndex = true;
+                                    break;
 
-                            case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_ROWSET:
-                            case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER:
-                                updateRightIndex = true;
-                                break;
+                                case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_ROWSET:
+                                case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER:
+                                    updateRightIndex = true;
+                                    break;
 
-                            case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_EMPTY:
-                            case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_EMPTY:
-                            case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_EMPTY:
-                                processInitial = true;
-                                break;
+                                case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_EMPTY:
+                                case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_EMPTY:
+                                case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_EMPTY:
+                                    processInitial = true;
+                                    break;
 
-                            case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_ROWSET:
-                            case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_ROWSET:
-                            case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_ROWSET:
-                            case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_BUILDER:
-                            case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_BUILDER:
-                            case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_BUILDER:
-                            case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_SSA:
-                            case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_SSA:
-                            case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_SSA:
-                                throw new IllegalStateException();
+                                case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_ROWSET:
+                                case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_ROWSET:
+                                case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_ROWSET:
+                                case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_BUILDER:
+                                case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_BUILDER:
+                                case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_BUILDER:
+                                case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_SSA:
+                                case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_SSA:
+                                case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_SSA:
+                                    throw new IllegalStateException();
 
-                            case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_SSA:
-                                break;
-                        }
+                                case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_SSA:
+                                    break;
+                            }
 
-                        if (makeRightIndex) {
-                            // the state manager takes ownership of this row set
-                            asOfJoinStateManager.setRightRowSet(slot, rightAdded);
-                            continue;
-                        }
-
-                        try (final RowSet ownedRightAdded = rightAdded) {
-                            if (updateRightIndex) {
-                                asOfJoinStateManager.getRightRowSet(slot).insert(ownedRightAdded);
+                            if (makeRightIndex) {
+                                // the state manager takes ownership of this row set
+                                asOfJoinStateManager.setRightRowSet(slot, rightAdded);
                                 continue;
                             }
 
-
-                            final SegmentedSortedArray rightSsa =
-                                    asOfJoinStateManager.getRightSsa(slot, rightSsaFactory);
-                            final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
-
-                            if (processInitial) {
-                                ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
-                                // we've modified everything in the leftssa
-                                leftSsa.forAllKeys(modifiedBuilder::addKey);
-                            }
-
-                            final int chunks =
-                                    (ownedRightAdded.intSize() + cycleRightChunkSize - 1) / cycleRightChunkSize;
-                            for (int ii = 0; ii < chunks; ++ii) {
-                                final int startChunk = chunks - ii - 1;
-                                try (final RowSet chunkOk =
-                                        ownedRightAdded.subSetByPositionRange(startChunk * cycleRightChunkSize,
-                                                (startChunk + 1) * cycleRightChunkSize)) {
-                                    rightStampSource.fillChunk(rightFillContext, stampChunk, chunkOk);
-                                    insertedIndices.setSize(chunkOk.intSize());
-                                    chunkOk.fillRowKeyChunk(insertedIndices);
-
-                                    sortKernel.sort(insertedIndices, stampChunk);
-
-                                    final int valuesWithNext =
-                                            rightSsa.insertAndGetNextValue(stampChunk, insertedIndices, nextRightValue);
-
-                                    final boolean endsWithLastValue = valuesWithNext != stampChunk.size();
-                                    if (endsWithLastValue) {
-                                        Assert.eq(valuesWithNext, "valuesWithNext", stampChunk.size() - 1,
-                                                "stampChunk.size() - 1");
-                                        stampChunk.setSize(valuesWithNext);
-                                        stampChunkEquals.notEqual(stampChunk, nextRightValue, retainStamps);
-                                        stampCompact.compact(nextRightValue, retainStamps);
-
-                                        retainStamps.setSize(chunkOk.intSize());
-                                        retainStamps.set(valuesWithNext, true);
-                                        stampChunk.setSize(chunkOk.intSize());
-                                    } else {
-                                        // remove duplicates
-                                        stampChunkEquals.notEqual(stampChunk, nextRightValue, retainStamps);
-                                        stampCompact.compact(nextRightValue, retainStamps);
-                                    }
-                                    LongCompactKernel.compact(insertedIndices, retainStamps);
-                                    stampCompact.compact(stampChunk, retainStamps);
-
-                                    ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices, nextRightValue,
-                                            rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // if the stamp was not modified, then we need to figure out the responsive rows to mark as modified
-                if (!rightStampModified && !rightKeysModified && rightRecorder.getModified().isNonempty()) {
-
-                    final int modifiedSlotCount = asOfJoinStateManager.gatherModifications(rightRecorder.getModified(),
-                            rightKeySources, slots, sequentialBuilders);
-
-                    try (final ColumnSource.FillContext fillContext =
-                            rightStampSource.makeFillContext(cycleRightChunkSize);
-                            final WritableChunk<Values> rightStampChunk =
-                                    stampChunkType.makeWritableChunk(cycleRightChunkSize);
-                            final WritableLongChunk<RowKeys> rightStampIndices =
-                                    WritableLongChunk.makeWritableChunk(cycleRightChunkSize)) {
-                        for (int slotIndex = 0; slotIndex < modifiedSlotCount; ++slotIndex) {
-                            final int slot = slots.getInt(slotIndex);
-
-                            try (final RowSet rightModified = indexFromBuilder(slotIndex)) {
-                                final byte state = asOfJoinStateManager.getState(slot);
-                                if ((state & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY) {
+                            try (final RowSet ownedRightAdded = rightAdded) {
+                                if (updateRightIndex) {
+                                    asOfJoinStateManager.getRightRowSet(slot).insert(ownedRightAdded);
                                     continue;
                                 }
 
-                                // if we are not empty on the left, then we must already have created the SSA
-                                final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
 
-                                try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
-                                    while (modit.hasMore()) {
-                                        final RowSequence chunkOk =
-                                                modit.getNextRowSequenceWithLength(cycleRightChunkSize);
-                                        rightStampSource.fillChunk(fillContext, rightStampChunk, chunkOk);
-                                        chunkOk.fillRowKeyChunk(rightStampIndices);
-                                        sortKernel.sort(rightStampIndices, rightStampChunk);
+                                final SegmentedSortedArray rightSsa =
+                                        asOfJoinStateManager.getRightSsa(slot, rightSsaFactory);
+                                final SegmentedSortedArray leftSsa =
+                                        asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
 
-                                        ssaSsaStamp.findModified(leftSsa, rowRedirection, rightStampChunk,
-                                                rightStampIndices, modifiedBuilder, disallowExactMatch);
+                                if (processInitial) {
+                                    ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
+                                    // we've modified everything in the leftssa
+                                    leftSsa.forAllKeys(modifiedBuilder::addKey);
+                                }
+
+                                final int chunks =
+                                        (ownedRightAdded.intSize() + cycleRightChunkSize - 1) / cycleRightChunkSize;
+                                for (int ii = 0; ii < chunks; ++ii) {
+                                    final int startChunk = chunks - ii - 1;
+                                    try (final RowSet chunkOk =
+                                            ownedRightAdded.subSetByPositionRange(startChunk * cycleRightChunkSize,
+                                                    (startChunk + 1) * cycleRightChunkSize)) {
+                                        rightStampSource.fillChunk(rightFillContext, stampChunk, chunkOk);
+                                        insertedIndices.setSize(chunkOk.intSize());
+                                        chunkOk.fillRowKeyChunk(insertedIndices);
+
+                                        sortKernel.sort(insertedIndices, stampChunk);
+
+                                        final int valuesWithNext =
+                                                rightSsa.insertAndGetNextValue(stampChunk, insertedIndices,
+                                                        nextRightValue);
+
+                                        final boolean endsWithLastValue = valuesWithNext != stampChunk.size();
+                                        if (endsWithLastValue) {
+                                            Assert.eq(valuesWithNext, "valuesWithNext", stampChunk.size() - 1,
+                                                    "stampChunk.size() - 1");
+                                            stampChunk.setSize(valuesWithNext);
+                                            stampChunkEquals.notEqual(stampChunk, nextRightValue, retainStamps);
+                                            stampCompact.compact(nextRightValue, retainStamps);
+
+                                            retainStamps.setSize(chunkOk.intSize());
+                                            retainStamps.set(valuesWithNext, true);
+                                            stampChunk.setSize(chunkOk.intSize());
+                                        } else {
+                                            // remove duplicates
+                                            stampChunkEquals.notEqual(stampChunk, nextRightValue, retainStamps);
+                                            stampCompact.compact(nextRightValue, retainStamps);
+                                        }
+                                        LongCompactKernel.compact(insertedIndices, retainStamps);
+                                        stampCompact.compact(stampChunk, retainStamps);
+
+                                        ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices,
+                                                nextRightValue,
+                                                rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                if (rightStampModified || rightKeysModified) {
-                    rightRestampAdditions.close();
-                    rightRestampRemovals.close();
+                    // if the stamp was not modified, then we need to figure out the responsive rows to mark as modified
+                    if (!rightStampModified && !rightKeysModified && rightRecorder.getModified().isNonempty()) {
+
+                        final int modifiedSlotCount =
+                                asOfJoinStateManager.gatherModifications(rightRecorder.getModified(),
+                                        rightKeySources, slots, sequentialBuilders);
+
+                        try (final ColumnSource.FillContext fillContext =
+                                rightStampSource.makeFillContext(cycleRightChunkSize);
+                                final WritableChunk<Values> rightStampChunk =
+                                        stampChunkType.makeWritableChunk(cycleRightChunkSize);
+                                final WritableLongChunk<RowKeys> rightStampIndices =
+                                        WritableLongChunk.makeWritableChunk(cycleRightChunkSize)) {
+                            for (int slotIndex = 0; slotIndex < modifiedSlotCount; ++slotIndex) {
+                                final int slot = slots.getInt(slotIndex);
+
+                                try (final RowSet rightModified = indexFromBuilder(slotIndex)) {
+                                    final byte state = asOfJoinStateManager.getState(slot);
+                                    if ((state & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY) {
+                                        continue;
+                                    }
+
+                                    // if we are not empty on the left, then we must already have created the SSA
+                                    final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
+
+                                    try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
+                                        while (modit.hasMore()) {
+                                            final RowSequence chunkOk =
+                                                    modit.getNextRowSequenceWithLength(cycleRightChunkSize);
+                                            rightStampSource.fillChunk(fillContext, rightStampChunk, chunkOk);
+                                            chunkOk.fillRowKeyChunk(rightStampIndices);
+                                            sortKernel.sort(rightStampIndices, rightStampChunk);
+
+                                            ssaSsaStamp.findModified(leftSsa, rowRedirection, rightStampChunk,
+                                                    rightStampIndices, modifiedBuilder, disallowExactMatch);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (rightStampModified || rightKeysModified || rightRecorder.getAdded().isNonempty()
@@ -660,109 +678,111 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     leftRestampAdditions = leftRecorder.getAdded();
                 }
 
-                final int addedSlotCount =
-                        asOfJoinStateManager.buildAdditions(true, leftRestampAdditions, leftKeySources,
-                                slots, sequentialBuilders);
+                try (final SafeCloseable ignored =
+                        leftStampModified || leftKeysModified ? leftRestampAdditions : null) {
+                    final int addedSlotCount =
+                            asOfJoinStateManager.buildAdditions(true, leftRestampAdditions, leftKeySources,
+                                    slots, sequentialBuilders);
 
-                for (int slotIndex = 0; slotIndex < addedSlotCount; ++slotIndex) {
-                    final int slot = slots.getInt(slotIndex);
+                    for (int slotIndex = 0; slotIndex < addedSlotCount; ++slotIndex) {
+                        final int slot = slots.getInt(slotIndex);
 
-                    boolean makeLeftIndex = false;
-                    boolean updateLeftIndex = false;
-                    boolean processInitial = false;
+                        boolean makeLeftIndex = false;
+                        boolean updateLeftIndex = false;
+                        boolean processInitial = false;
 
-                    final byte state = asOfJoinStateManager.getState(slot);
-                    switch (state) {
-                        case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_EMPTY:
-                            makeLeftIndex = true;
-                            break;
+                        final byte state = asOfJoinStateManager.getState(slot);
+                        switch (state) {
+                            case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_EMPTY:
+                                makeLeftIndex = true;
+                                break;
 
-                        case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_EMPTY:
-                        case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_EMPTY:
-                            updateLeftIndex = true;
-                            break;
-                        case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_EMPTY:
-                            throw new IllegalStateException();
+                            case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_EMPTY:
+                            case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_EMPTY:
+                                updateLeftIndex = true;
+                                break;
+                            case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_EMPTY:
+                                throw new IllegalStateException();
 
-                        case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER:
-                        case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_ROWSET:
-                            processInitial = true;
-                            break;
+                            case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER:
+                            case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_ROWSET:
+                                processInitial = true;
+                                break;
 
-                        case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_BUILDER:
-                        case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_BUILDER:
-                        case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_BUILDER:
-                        case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_ROWSET:
-                        case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_ROWSET:
-                        case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_ROWSET:
-                        case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_SSA:
-                        case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_SSA:
-                        case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_SSA:
-                            throw new IllegalStateException(
-                                    "Bad state: " + state + ", slot=" + slot + ", slotIndex=" + slotIndex);
+                            case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_BUILDER:
+                            case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_BUILDER:
+                            case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_BUILDER:
+                            case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_ROWSET:
+                            case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_ROWSET:
+                            case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_ROWSET:
+                            case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_SSA:
+                            case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_SSA:
+                            case ENTRY_LEFT_IS_ROWSET | ENTRY_RIGHT_IS_SSA:
+                                throw new IllegalStateException(
+                                        "Bad state: " + state + ", slot=" + slot + ", slotIndex=" + slotIndex);
 
-                        case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_SSA:
-                            break;
-                    }
+                            case ENTRY_LEFT_IS_SSA | ENTRY_RIGHT_IS_SSA:
+                                break;
+                        }
 
-                    final RowSet leftAdded = indexFromBuilder(slotIndex);
+                        final RowSet leftAdded = indexFromBuilder(slotIndex);
 
-                    if (makeLeftIndex) {
-                        asOfJoinStateManager.setLeftRowSet(slot, leftAdded);
-                        continue;
-                    }
-                    if (updateLeftIndex) {
-                        final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot);
-                        leftRowSet.insert(leftAdded);
-                        leftAdded.close();
-                        leftRowSet.compact();
-                        continue;
-                    }
-
-
-                    final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot, rightSsaFactory);
-                    final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
-
-                    if (processInitial) {
-                        ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
-                        leftSsa.forAllKeys(modifiedBuilder::addKey);
-                    }
+                        if (makeLeftIndex) {
+                            asOfJoinStateManager.setLeftRowSet(slot, leftAdded);
+                            continue;
+                        }
+                        try (final RowSet ownedLeftAdded = leftAdded) {
+                            if (updateLeftIndex) {
+                                final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot);
+                                leftRowSet.insert(ownedLeftAdded);
+                                leftRowSet.compact();
+                                continue;
+                            }
 
 
-                    try (final RowSequence.Iterator leftRsIt = leftAdded.getRowSequenceIterator();
-                            final WritableLongChunk<RowKeys> rightKeysForLeft =
-                                    WritableLongChunk.makeWritableChunk(cycleLeftChunkSize)) {
-                        assert leftFillContext != null;
-                        assert leftStampValues != null;
+                            final SegmentedSortedArray rightSsa =
+                                    asOfJoinStateManager.getRightSsa(slot, rightSsaFactory);
+                            final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
 
-                        while (leftRsIt.hasMore()) {
-                            final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(cycleLeftChunkSize);
-                            leftStampSource.fillChunk(leftFillContext, leftStampValues, chunkOk);
-                            chunkOk.fillRowKeyChunk(leftStampKeys);
+                            if (processInitial) {
+                                ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
+                                leftSsa.forAllKeys(modifiedBuilder::addKey);
+                            }
 
-                            sortKernel.sort(leftStampKeys, leftStampValues);
 
-                            leftSsa.insert(leftStampValues, leftStampKeys);
+                            try (final RowSequence.Iterator leftRsIt = ownedLeftAdded.getRowSequenceIterator();
+                                    final WritableLongChunk<RowKeys> rightKeysForLeft =
+                                            WritableLongChunk.makeWritableChunk(cycleLeftChunkSize)) {
+                                assert leftFillContext != null;
+                                assert leftStampValues != null;
 
-                            chunkSsaStamp.processEntry(leftStampValues, leftStampKeys, rightSsa, rightKeysForLeft,
-                                    disallowExactMatch);
+                                while (leftRsIt.hasMore()) {
+                                    final RowSequence chunkOk =
+                                            leftRsIt.getNextRowSequenceWithLength(cycleLeftChunkSize);
+                                    leftStampSource.fillChunk(leftFillContext, leftStampValues, chunkOk);
+                                    chunkOk.fillRowKeyChunk(leftStampKeys);
 
-                            for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
-                                final long leftKey = leftStampKeys.get(ii);
-                                final long rightKey = rightKeysForLeft.get(ii);
-                                if (rightKey == RowSequence.NULL_ROW_KEY) {
-                                    rowRedirection.removeVoid(leftKey);
-                                } else {
-                                    rowRedirection.putVoid(leftKey, rightKey);
+                                    sortKernel.sort(leftStampKeys, leftStampValues);
+
+                                    leftSsa.insert(leftStampValues, leftStampKeys);
+
+                                    chunkSsaStamp.processEntry(leftStampValues, leftStampKeys, rightSsa,
+                                            rightKeysForLeft,
+                                            disallowExactMatch);
+
+                                    for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
+                                        final long leftKey = leftStampKeys.get(ii);
+                                        final long rightKey = rightKeysForLeft.get(ii);
+                                        if (rightKey == RowSequence.NULL_ROW_KEY) {
+                                            rowRedirection.removeVoid(leftKey);
+                                        } else {
+                                            rowRedirection.putVoid(leftKey, rightKey);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    leftAdded.close();
-                }
-
-                if (leftStampModified || leftKeysModified) {
-                    leftRestampAdditions.close();
                 }
 
                 leftTransformer.transform(leftRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet());
