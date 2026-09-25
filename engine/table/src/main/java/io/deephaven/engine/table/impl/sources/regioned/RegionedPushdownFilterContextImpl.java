@@ -18,6 +18,7 @@ public class RegionedPushdownFilterContextImpl extends BasePushdownFilterContext
         implements RegionedPushdownFilterContext {
     private final List<ColumnDefinition<?>> columnDefinitions;
     private final Map<String, String> filterColumnToManagerColumnName;
+    private final boolean supportsSortedDataFiltering;
 
     public RegionedPushdownFilterContextImpl(
             final WhereFilter filter,
@@ -27,6 +28,8 @@ public class RegionedPushdownFilterContextImpl extends BasePushdownFilterContext
         super(filter, columnSources);
         this.columnDefinitions = columnDefinitions;
         this.filterColumnToManagerColumnName = filterColumnToManagerColumnName;
+        // Computed once per filter rather than for every region that asks.
+        this.supportsSortedDataFiltering = RegionedPushdownFilterContext.super.supportsSortedDataFiltering();
     }
 
     public List<ColumnDefinition<?>> columnDefinitions() {
@@ -35,5 +38,10 @@ public class RegionedPushdownFilterContextImpl extends BasePushdownFilterContext
 
     public Map<String, String> filterColumnToManagerColumnName() {
         return filterColumnToManagerColumnName;
+    }
+
+    @Override
+    public boolean supportsSortedDataFiltering() {
+        return supportsSortedDataFiltering;
     }
 }

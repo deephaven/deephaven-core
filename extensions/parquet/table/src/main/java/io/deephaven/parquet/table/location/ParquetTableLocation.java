@@ -98,6 +98,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private ParquetFileReader parquetFileReader;
     private ParquetMetadata parquetMetadata;
     private int[] rowGroupIndices;
+    /**
+     * Whether {@code parquetMetadata.getBlocks()} lists exactly this location's row groups, in order, so that a
+     * location-local row group ordinal is also the index of that row group's statistics. See
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_STATISTICS_MULTI_FILE_METADATA_LAYOUT}.
+     */
+    private boolean rowGroupStatisticsAligned;
     private MessageType parquetSchema;
     // -----------------------------------------------------------------------
 
@@ -132,6 +138,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .map(factory -> factory.of(getTableKey(), tableLocationKey))
                     .orElse(null);
             final int rowGroupCount = rowGroupIndices.length;
+            rowGroupStatisticsAligned = rowGroupCount == parquetMetadata.getBlocks().size()
+                    && IntStream.range(0, rowGroupCount).allMatch(ii -> rowGroupIndices[ii] == ii);
             final RowGroup[] rowGroups = IntStream.of(rowGroupIndices)
                     .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
                     .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
@@ -154,7 +162,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .orElse(TableInfo.builder().build());
             groupingColumns = tableInfo.groupingColumnMap();
             columnTypes = tableInfo.columnTypeMap();
-            sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+            sortingColumns = sortColumnsUnlessRenamed(SortColumnInfo.sortColumns(tableInfo.sortingColumns()));
 
             if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
                 // We do not have the last modified time for non-file URIs
@@ -165,6 +173,28 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
             isInitialized = true;
         }
+    }
+
+    /**
+     * DH-23750 (42.x only): the file's sorting metadata, or none when
+     * {@link QueryTable#DISABLE_PARQUET_SORT_METADATA_WITH_RENAMES} applies (a column resolver is in use, or a sort
+     * column is renamed in either direction).
+     */
+    private List<SortColumn> sortColumnsUnlessRenamed(@NotNull final List<SortColumn> fileSortColumns) {
+        if (!QueryTable.DISABLE_PARQUET_SORT_METADATA_WITH_RENAMES) {
+            return fileSortColumns;
+        }
+        if (resolver != null) {
+            return List.of();
+        }
+        for (final SortColumn sortColumn : fileSortColumns) {
+            final String name = sortColumn.column().name();
+            if (!readInstructions.getColumnNameFromParquetColumnNameOrDefault(name).equals(name)
+                    || !readInstructions.getParquetColumnNameFromColumnNameOrDefault(name).equals(name)) {
+                return List.of();
+            }
+        }
+        return fileSortColumns;
     }
 
     @Override
@@ -577,11 +607,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final boolean isApplicable;
         if (action == ROW_GROUP_METADATA) {
             // Note: it should be possible to check if there are any statistics
-            isApplicable = true;
+            isApplicable = isRowGroupMetadataPermitted(filterCtx);
         } else if (action == IN_MEMORY_DATA_INDEX) {
             isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
         } else if (action == PARQUET_DICTIONARY) {
-            isApplicable = hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
+            isApplicable = isDictionaryPermitted(filter, filterCtx, estimateCtx.parquetColumnNames[0])
+                    && hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
         } else if (action == DEFERRED_DATA_INDEX) {
             isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
         } else {
@@ -662,8 +693,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         if (action == ROW_GROUP_METADATA) {
-            return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(), actionCtx.columnIndices,
-                    input);
+            if (!isRowGroupMetadataPermitted(filterCtx)) {
+                return input.copy();
+            }
+            return pushdownRowGroupMetadata(selection, filterCtx, actionCtx.columnIndices, input);
         }
         if (action == IN_MEMORY_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -675,7 +708,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         if (action == PARQUET_DICTIONARY) {
-            if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
+            if (!isDictionaryPermitted(filter, filterCtx, actionCtx.parquetColumnNames[0])
+                    || !hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
                 return input.copy();
             }
             return pushdownFilterDictionary(selection, filterCtx, actionCtx.parquetColumnNames, input);
@@ -689,6 +723,37 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         throw new IllegalStateException("Unexpected value: " + action);
+    }
+
+    /**
+     * DH-23750 (42.x only): whether the dictionary action may run for this filter's column, given the
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_RENAMED_COLUMN_DICTIONARY} configuration item.
+     */
+    private static boolean isDictionaryPermitted(
+            @NotNull final WhereFilter filter,
+            @NotNull final RegionedPushdownFilterContext filterCtx,
+            @NotNull final String parquetColumnName) {
+        if (!QueryTable.DISABLE_WHERE_PUSHDOWN_RENAMED_COLUMN_DICTIONARY) {
+            return true;
+        }
+        final String filterColumn = filter.getColumns().get(0);
+        final String columnName = filterCtx.filterColumnToManagerColumnName().getOrDefault(filterColumn, filterColumn);
+        return columnName.equals(parquetColumnName);
+    }
+
+    /**
+     * DH-23750 (42.x only): whether the row group metadata action may run for this filter's column, given the
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_STATISTICS_MULTI_FILE_METADATA_LAYOUT} and
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_FLOATING_POINT_STATISTICS} configuration items.
+     */
+    private boolean isRowGroupMetadataPermitted(@NotNull final RegionedPushdownFilterContext filterCtx) {
+        if (QueryTable.DISABLE_WHERE_PUSHDOWN_STATISTICS_MULTI_FILE_METADATA_LAYOUT && !rowGroupStatisticsAligned) {
+            return false;
+        }
+        final Class<?> dataType = filterCtx.columnDefinitions().get(0).getDataType();
+        return !QueryTable.DISABLE_WHERE_PUSHDOWN_FLOATING_POINT_STATISTICS
+                || (dataType != float.class && dataType != Float.class
+                        && dataType != double.class && dataType != Double.class);
     }
 
     /**
@@ -855,9 +920,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     private PushdownResult pushdownRowGroupMetadata(
             final RowSet selection,
-            final WhereFilter filter,
+            final RegionedPushdownFilterContext ctx,
             final List<Integer> columnIndices,
             final PushdownResult result) {
+        final WhereFilter filter = ctx.filterForMetadataFiltering();
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
@@ -873,6 +939,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // size>}, we can return "match" for the row group.
             if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
                 // We assume it overlaps if we cannot use the statistics.
+                maybeOverlaps = true;
+            } else if (QueryTable.DISABLE_WHERE_PUSHDOWN_NULL_INCLUDING_STATISTICS
+                    && !(statistics.isNumNullsSet() && statistics.getNumNulls() == 0)
+                    && ctx.filterNullBehavior() == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {
+                // DH-23750 (42.x only): see QueryTable.DISABLE_WHERE_PUSHDOWN_NULL_INCLUDING_STATISTICS.
                 maybeOverlaps = true;
             } else if (filter instanceof ByteRangeFilter) {
                 maybeOverlaps = BytePushdownHandler.maybeOverlaps((ByteRangeFilter) filter, statistics);
@@ -915,7 +986,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 } else if (dhColumnType == double.class || dhColumnType == Double.class) {
                     maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == String.class && matchFilter.getMatchOptions().caseInsensitive()) {
-                    maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                    // DH-23750 (42.x only): see QueryTable.DISABLE_WHERE_PUSHDOWN_ICASE_STRING_STATISTICS.
+                    maybeOverlaps = QueryTable.DISABLE_WHERE_PUSHDOWN_ICASE_STRING_STATISTICS
+                            || CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == Instant.class) {
                     maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else {

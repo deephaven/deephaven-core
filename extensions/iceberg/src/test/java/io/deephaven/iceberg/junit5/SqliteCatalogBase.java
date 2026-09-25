@@ -6,6 +6,7 @@ package io.deephaven.iceberg.junit5;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -2613,26 +2614,33 @@ public abstract class SqliteCatalogBase {
 
     @Test
     void testSortByDefaultSortOrder() {
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final Table source = TableTools.newTable(
-                intCol("intCol", 15, 0, 32, 33, 19),
-                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
-                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
-        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
+        // DH-23750 (42.x only): this test expects a float/double sort order to be trusted.
+        final boolean savedSortedFloatingPoint = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT = false;
+        try {
+            final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+            final Table source = TableTools.newTable(
+                    intCol("intCol", 15, 0, 32, 33, 19),
+                    doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                    longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+            final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
 
-        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
-                .tableDefinition(source.getDefinition())
-                .sortOrderProvider(SortOrderProvider.useTableDefault())
-                .build());
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(source)
-                .build());
-        final List<SortColumn> expectedSortOrder =
-                List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
-        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
-        final Table fromIceberg = tableAdapter.table();
-        final Table expected = source.sort(expectedSortOrder);
-        assertTableEquals(expected, fromIceberg);
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .sortOrderProvider(SortOrderProvider.useTableDefault())
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+            final List<SortColumn> expectedSortOrder =
+                    List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
+            verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+            final Table fromIceberg = tableAdapter.table();
+            final Table expected = source.sort(expectedSortOrder);
+            assertTableEquals(expected, fromIceberg);
+        } finally {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT = savedSortedFloatingPoint;
+        }
     }
 
     @Test
@@ -2717,54 +2725,61 @@ public abstract class SqliteCatalogBase {
 
     @Test
     void testSortByDelegatingSortOrder() {
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final Table source = TableTools.newTable(
-                intCol("intCol", 15, 0, 32, 33, 19),
-                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
-                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
-        final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
-
-        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
-        final SortOrder sortOrder = SortOrder.builderFor(icebergTable.schema())
-                .asc("doubleCol")
-                .desc("longCol")
-                .asc("intCol")
-                .build();
-
+        // DH-23750 (42.x only): this test expects a float/double sort order to be trusted.
+        final boolean savedSortedFloatingPoint = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT = false;
         try {
-            tableAdapter.tableWriter(writerOptionsBuilder()
-                    .tableDefinition(source.getDefinition())
-                    .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder))
-                    .build());
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining(
-                    "Provided sort order with id 1 is not included in the table's sort orders");
-        }
+            final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+            final Table source = TableTools.newTable(
+                    intCol("intCol", 15, 0, 32, 33, 19),
+                    doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                    longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+            final IcebergTableAdapter tableAdapter = buildTableToTestSortOrder(tableIdentifier, source.getDefinition());
 
-        try {
-            tableAdapter.tableWriter(writerOptionsBuilder()
-                    .tableDefinition(source.getDefinition())
-                    .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(1))
-                    .build());
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("does not satisfy the table's sort order with id 1");
-        }
+            final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+            final SortOrder sortOrder = SortOrder.builderFor(icebergTable.schema())
+                    .asc("doubleCol")
+                    .desc("longCol")
+                    .asc("intCol")
+                    .build();
 
-        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
-                .tableDefinition(source.getDefinition())
-                .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(2))
-                .build());
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(source)
-                .build());
-        final List<SortColumn> expectedSortOrder =
-                List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
-        verifySortOrder(tableAdapter, List.of(expectedSortOrder));
-        final Table fromIceberg = tableAdapter.table();
-        final Table expected = source.sort(expectedSortOrder);
-        assertTableEquals(expected, fromIceberg);
+            try {
+                tableAdapter.tableWriter(writerOptionsBuilder()
+                        .tableDefinition(source.getDefinition())
+                        .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder))
+                        .build());
+                failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+            } catch (IllegalArgumentException e) {
+                assertThat(e).hasMessageContaining(
+                        "Provided sort order with id 1 is not included in the table's sort orders");
+            }
+
+            try {
+                tableAdapter.tableWriter(writerOptionsBuilder()
+                        .tableDefinition(source.getDefinition())
+                        .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(1))
+                        .build());
+                failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+            } catch (IllegalArgumentException e) {
+                assertThat(e).hasMessageContaining("does not satisfy the table's sort order with id 1");
+            }
+
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
+                    .sortOrderProvider(SortOrderProvider.fromSortOrder(sortOrder).withId(2))
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
+            final List<SortColumn> expectedSortOrder =
+                    List.of(SortColumn.asc(ColumnName.of("doubleCol")), SortColumn.desc(ColumnName.of("longCol")));
+            verifySortOrder(tableAdapter, List.of(expectedSortOrder));
+            final Table fromIceberg = tableAdapter.table();
+            final Table expected = source.sort(expectedSortOrder);
+            assertTableEquals(expected, fromIceberg);
+        } finally {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT = savedSortedFloatingPoint;
+        }
     }
 
     @Test
@@ -2807,57 +2822,66 @@ public abstract class SqliteCatalogBase {
 
     @Test
     void testSortOrderWithColumnRename() {
-        final Table source = TableTools.newTable(
-                intCol("intCol", 15, 0, 32, 33, 19),
-                doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
-                longCol("longCol", 20L, 50L, 0L, 10L, 5L));
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        // DH-23750 (42.x only): this test expects a float/double sort order to be trusted.
+        final boolean savedSortedFloatingPoint = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT = false;
+        try {
+            final Table source = TableTools.newTable(
+                    intCol("intCol", 15, 0, 32, 33, 19),
+                    doubleCol("doubleCol", 10.5, 2.5, 3.5, 40.5, 0.5),
+                    longCol("longCol", 20L, 50L, 0L, 10L, 5L));
+            final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+            final IcebergTableAdapter tableAdapter =
+                    catalogAdapter.createTable(tableIdentifier, source.getDefinition());
 
-        // Update the default sort order of the underlying iceberg table
-        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
-        icebergTable.replaceSortOrder().asc("intCol").desc("doubleCol").commit();
+            // Update the default sort order of the underlying iceberg table
+            final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+            icebergTable.replaceSortOrder().asc("intCol").desc("doubleCol").commit();
 
-        // Append data to the table
-        final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
-                .tableDefinition(source.getDefinition())
-                .build());
-        tableWriterWithSorting.append(IcebergWriteInstructions.builder()
-                .addTables(source)
-                .build());
-
-        final Table expected = source.renameColumns("renamedIntCol = intCol")
-                .sort(List.of(SortColumn.asc(ColumnName.of("renamedIntCol")),
-                        SortColumn.desc(ColumnName.of("doubleCol"))));
-
-        final int intColFieldId = icebergTable.schema().findField("intCol").fieldId();
-        final int doubleColFieldId = icebergTable.schema().findField("doubleCol").fieldId();
-        final int longColFieldId = icebergTable.schema().findField("longCol").fieldId();
-
-        {
-            // Now read a table with a column rename
-            final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
-                    .id(tableIdentifier)
-                    .resolver(Resolver.builder()
-                            .definition(expected.getDefinition())
-                            .schema(icebergTable.schema())
-                            .putColumnInstructions("renamedIntCol", schemaField(intColFieldId))
-                            .putColumnInstructions("doubleCol", schemaField(doubleColFieldId))
-                            .putColumnInstructions("longCol", schemaField(longColFieldId))
-                            .build())
+            // Append data to the table
+            final IcebergTableWriter tableWriterWithSorting = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(source.getDefinition())
                     .build());
-            final Table fromIceberg = ta.table();
-            assertTableEquals(expected, fromIceberg);
-        }
+            tableWriterWithSorting.append(IcebergWriteInstructions.builder()
+                    .addTables(source)
+                    .build());
 
-        // Verify that the sort order is still applied
-        final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
-                .addColumnNameMapping("intCol", "renamedIntCol")
-                .setTableDefinition(expected.getDefinition())
-                .build();
-        verifySortOrder(tableAdapter, List.of(
-                List.of(SortColumn.asc(ColumnName.of("renamedIntCol")), SortColumn.desc(ColumnName.of("doubleCol")))),
-                parquetInstructions);
+            final Table expected = source.renameColumns("renamedIntCol = intCol")
+                    .sort(List.of(SortColumn.asc(ColumnName.of("renamedIntCol")),
+                            SortColumn.desc(ColumnName.of("doubleCol"))));
+
+            final int intColFieldId = icebergTable.schema().findField("intCol").fieldId();
+            final int doubleColFieldId = icebergTable.schema().findField("doubleCol").fieldId();
+            final int longColFieldId = icebergTable.schema().findField("longCol").fieldId();
+
+            {
+                // Now read a table with a column rename
+                final IcebergTableAdapter ta = catalogAdapter.loadTable(LoadTableOptions.builder()
+                        .id(tableIdentifier)
+                        .resolver(Resolver.builder()
+                                .definition(expected.getDefinition())
+                                .schema(icebergTable.schema())
+                                .putColumnInstructions("renamedIntCol", schemaField(intColFieldId))
+                                .putColumnInstructions("doubleCol", schemaField(doubleColFieldId))
+                                .putColumnInstructions("longCol", schemaField(longColFieldId))
+                                .build())
+                        .build());
+                final Table fromIceberg = ta.table();
+                assertTableEquals(expected, fromIceberg);
+            }
+
+            // Verify that the sort order is still applied
+            final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+                    .addColumnNameMapping("intCol", "renamedIntCol")
+                    .setTableDefinition(expected.getDefinition())
+                    .build();
+            verifySortOrder(tableAdapter, List.of(
+                    List.of(SortColumn.asc(ColumnName.of("renamedIntCol")),
+                            SortColumn.desc(ColumnName.of("doubleCol")))),
+                    parquetInstructions);
+        } finally {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT = savedSortedFloatingPoint;
+        }
     }
 
     @Test

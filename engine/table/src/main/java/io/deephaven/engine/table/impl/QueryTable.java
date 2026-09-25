@@ -261,10 +261,14 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     /**
      * Disable the usage of push-down filtering on a merged table.
+     * <p>
+     * DH-23750 (42.x only): defaults to true. When a merge includes constituents without pushdown support, the rows of
+     * those constituents are captured once at cost estimation and re-inserted into later, narrower results,
+     * re-admitting rows that earlier filters removed. Wrong-answer finding PD-041; corrected in 43.x by DH-23751.
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_MERGED_TABLES =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownMergedTables",
-                    false);
+                    true);
 
     /**
      * Disable the usage of parquet row group metadata during push-down filtering.
@@ -302,6 +306,122 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedColumn",
                     false);
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // DH-23750 (42.x only): each of the following blocks a pushdown path known to produce wrong results. They default
+    // to true (blocked); set one to false to restore the previous 42.x behavior, which includes the wrong results.
+    // Each can default to false once the corresponding 43.x correction is back-ported.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Disable parquet row group statistics pushdown for case-insensitive string matches. Case-insensitive values are
+     * tested against case-sensitive, byte-ordered min/max, which is not a valid interval test, so matching row groups
+     * can be excluded. The dictionary path still handles case-insensitive matches exactly. Wrong-answer findings PD-001
+     * and PD-002; corrected in 43.x by DH-23488.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_ICASE_STRING_STATISTICS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownIcaseStringStatistics",
+                    true);
+
+    /**
+     * Disable parquet row group statistics pushdown, for filters that include nulls (e.g. an inverted match such as
+     * {@code X != 5}), on row groups not proven free of nulls. Min/max statistics never reflect null values, so such
+     * row groups can be excluded despite holding matching null rows. Wrong-answer finding PD-003; corrected in 43.x by
+     * DH-23488.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_NULL_INCLUDING_STATISTICS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownNullIncludingStatistics",
+                    true);
+
+    /**
+     * Disable parquet row group statistics pushdown for float and double columns. Spec-conforming external writers omit
+     * NaN from float/double min/max, so the statistics do not bound the data (NaN rows match e.g. {@code F != 1.0}).
+     * Wrong-answer finding PD-004; corrected in 43.x by DH-23488.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_FLOATING_POINT_STATISTICS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownFloatingPointStatistics",
+                    true);
+
+    /**
+     * Disable parquet row group statistics pushdown for string statistics whose min or max contains a character at or
+     * above U+D800. Parquet orders strings by unsigned bytes (UTF-8, i.e. code point order) but they are compared with
+     * {@link String#compareTo} (UTF-16 order); the two disagree only for such characters, which also include the U+FFFD
+     * decoded from bounds truncated mid-character. Wrong-answer findings PD-005 and PD-010; corrected in 43.x by
+     * DH-23488.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_HIGH_CHAR_STRING_STATISTICS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownHighCharStringStatistics",
+                    true);
+
+    /**
+     * Disable parquet row group statistics pushdown for datasets read through a {@code _metadata} file spanning several
+     * parquet files, i.e. locations whose metadata block list is not exactly their own row groups. The statistics
+     * lookup would read another file's row group statistics. Single files, and directories read without
+     * {@code _metadata}, are unaffected. Wrong-answer finding PD-064; tracked for 43.x by DH-23755.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_STATISTICS_MULTI_FILE_METADATA_LAYOUT =
+            Configuration.getInstance().getBooleanWithDefault(
+                    "QueryTable.disableWherePushdownStatisticsMultiFileMetadataLayout", true);
+
+    /**
+     * Disable parquet dictionary pushdown for columns whose Deephaven and parquet names differ. The dictionary action
+     * looks up its column location by the parquet name, but column locations are keyed by Deephaven name, so a rename
+     * swap resolves a different column and the dictionary filter runs against the wrong column's data. Wrong-answer
+     * finding PD-059; tracked for 43.x by DH-23755.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_RENAMED_COLUMN_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownRenamedColumnDictionary",
+                    true);
+
+    /**
+     * Disable sorted-column pushdown (table-level and parquet region-level) for float and double columns, and stop
+     * trusting an Iceberg sort order from its first float/double sort column onward. The binary search kernels treat
+     * NaN as equal to NaN where the regular filter follows IEEE 754 ({@code X == NaN}, {@code X != NaN}), and an
+     * inclusive +Inf upper bound returns the NaN rows sorted above it. Separately, Iceberg writers order
+     * {@code -MAX_VALUE} after -Infinity, but Deephaven reads it back as the null sentinel, which it orders first, so
+     * such data is not sorted in Deephaven order. Wrong-answer findings PD-026, PD-027 and PD-060; corrected in 43.x by
+     * DH-23502 and DH-23755.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedFloatingPoint",
+                    true);
+
+    /**
+     * Disable sorted-column pushdown for char match filters with more than one value including null. The kernels sort
+     * the search values with {@code Character.compare}, which orders NULL_CHAR last, while the data is sorted
+     * null-first. Wrong-answer finding PD-025; corrected in 43.x by DH-23096 and DH-23502.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_CHAR_NULL_MATCH =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedCharNullMatch",
+                    true);
+
+    /**
+     * Disable sorted-column pushdown for Object match filters on types not known to have {@code compareTo} consistent
+     * with {@code equals} (anything but String, Boolean, BigInteger and the java.time types; e.g. BigDecimal, where 1.0
+     * and 1.00 compare equal but are not equals). The kernels can skip matching rows or throw. Wrong-answer finding
+     * PD-028; corrected in 43.x by DH-23502.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_INCONSISTENT_OBJECT_MATCH =
+            Configuration.getInstance().getBooleanWithDefault(
+                    "QueryTable.disableWherePushdownSortedInconsistentObjectMatch", true);
+
+    /**
+     * Disable cost-based reordering of where() filters while a filter that declares a barrier and a filter that
+     * respects it are both still pending; the given order, which always satisfies the barriers, is kept instead. The
+     * filter comparator mixes the barrier partial order with the cost order and is not transitive, so sorting can run a
+     * filter (and its pushdown) before the filter declaring a barrier it respects. Wrong-answer finding PD-032.
+     */
+    public static boolean DISABLE_WHERE_REORDER_WITH_BARRIERS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWhereReorderWithBarriers", true);
+
+    /**
+     * Ignore a parquet file's sorting-column metadata when a column resolver is in use or any sort column is renamed.
+     * The metadata names columns as written (parquet names), but it is consumed as Deephaven column names, so with a
+     * rename collision the table is marked sorted by the wrong column, and sorted pushdown, range-filter binary search
+     * and {@code sort()} all trust it. Wrong-answer finding PD-066; tracked for 43.x by DH-23755.
+     */
+    public static boolean DISABLE_PARQUET_SORT_METADATA_WITH_RENAMES =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableParquetSortMetadataWithRenames", true);
 
     /**
      * You can choose to enable or disable the column parallel select and update.
