@@ -36,29 +36,25 @@ public class FilterCondition {
      * a filter condition invoking a static function with the given parameters. Currently supported Deephaven static
      * functions:
      * <ul>
-     * <li>{@code inRange}: Given three comparable values, returns true if the first is less than the second but greater
-     * than the third</li>
+     * <li>{@code inRange}: Given three comparable values, returns {@code true} if the first value falls between the
+     * second and third values, which are the inclusive lower and upper bounds of the range. Returns {@code false} if
+     * the first value is null.</li>
      * <li>{@code isInf}: Returns {@code true} if the given number is <i>infinity</i>.</li>
      * <li>{@code isNaN}: Returns {@code true} if the given number is <i>not a number</i>.</li>
-     * <li>{@code isNormal}: Returns {@code true} if the given number <i>is not null</i>, <i>is not infinity</i>, and
-     * <i>is not "not a number"</i>.</li>
-     * <li>{@code startsWith}: Returns {@code true} if the first string starts with the second string.</li>
-     * <li>{@code endsWith}: Returns {@code true} if the first string ends with the second string.</li>
-     * <li>{@code matches}: Returns {@code true} if the first string argument matches the second string used as a Java
-     * regular expression.</li>
-     * <li>{@code contains}: Returns {@code true} if the first string argument contains the second string as a
-     * substring.</li>
-     * <li>{@code in}: Returns {@code true} if the first string argument can be found in the second array argument.
-     * <p>
-     * Note that the array can only be specified as a column reference at this time - typically the
-     * {@link FilterValue#in(FilterValue[])} method should be used in other cases.
-     * </p>
-     * </li>
+     * <li>{@code in}: Returns {@code true} if the first value is equal to any of the values that follow it. The
+     * candidate values are passed as individual arguments rather than as a single array. Typically the
+     * {@link FilterValue#in(FilterValue[])} method should be used instead.</li>
      * </ul>
+     * <p>
+     * Because no target value is supplied, only static functions can be invoked here. To invoke a method <i>on</i> a
+     * value - such as {@code startsWith} or {@code endsWith} on a string - use
+     * {@link FilterValue#invoke(String, FilterValue...)} instead. For regular expression and substring matching, prefer
+     * the dedicated {@link FilterValue#matches(FilterValue)} and {@link FilterValue#contains(FilterValue)} methods (or
+     * their case-insensitive variants).
      *
      * @param function
      * @param args
-     * @return dh.FilterCondition
+     * @return {@link FilterCondition}
      */
     @JsMethod(namespace = "dh.FilterCondition")
     public static FilterCondition invoke(String function, FilterValue... args) {
@@ -85,7 +81,7 @@ public class FilterCondition {
      * 
      * @param value
      * @param columns
-     * @return dh.FilterCondition
+     * @return {@link FilterCondition}
      */
     @JsMethod(namespace = "dh.FilterCondition")
     public static FilterCondition search(FilterValue value, @JsOptional @JsNullable FilterValue[] columns) {
@@ -111,7 +107,7 @@ public class FilterCondition {
     /**
      * The opposite of this condition.
      * 
-     * @return FilterCondition
+     * @return {@link FilterCondition}
      */
     public FilterCondition not() {
         NotCondition not = NotCondition.newBuilder()
@@ -136,7 +132,7 @@ public class FilterCondition {
      * A condition representing the current condition logically ANDed with the other parameters.
      * 
      * @param filters
-     * @return FilterCondition
+     * @return {@link FilterCondition}
      */
     public FilterCondition and(FilterCondition... filters) {
         AndCondition and = AndCondition.newBuilder()
@@ -156,7 +152,7 @@ public class FilterCondition {
      * A condition representing the current condition logically ORed with the other parameters.
      * 
      * @param filters
-     * @return FilterCondition.
+     * @return {@link FilterCondition}
      */
     public FilterCondition or(FilterCondition... filters) {
         OrCondition or = OrCondition.newBuilder()
