@@ -12,6 +12,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 /**
  * Covers {@link ShiftableColumnSource#shift(RowSetShiftData)} for the array sources, in both directions, with ranges
@@ -185,11 +186,22 @@ public class TestArraySourceShift {
                                 assertEquals(description + ", ii=" + ii, ii, longs.getLong(ii));
                             }
                         }
-                        // vacated positions can be written
+                        // Vacated positions hold no values: a block vacated entirely is left unallocated, and the
+                        // rest of a partly vacated block can be written.
                         for (long ii = first; ii <= last; ++ii) {
-                            if (ii < first + delta || ii > last + delta) {
-                                longs.set(ii, 7L);
-                                objects.set(ii, "seven");
+                            if (ii >= first + delta && ii <= last + delta) {
+                                continue;
+                            }
+                            final long blockFirst = ii & ~(long) (blockSize - 1);
+                            final long blockLast = blockFirst + blockSize - 1;
+                            final boolean blockVacated = blockFirst >= first && blockLast <= last
+                                    && (blockLast < first + delta || blockFirst > last + delta);
+                            final long key = ii;
+                            if (blockVacated) {
+                                assertThrows(NullPointerException.class, () -> longs.getLong(key));
+                            } else {
+                                longs.set(key, 7L);
+                                objects.set(key, "seven");
                             }
                         }
                     };
@@ -226,9 +238,6 @@ public class TestArraySourceShift {
                 for (long ii = 0; ii < 3L * blockSize; ++ii) {
                     assertEquals("ii=" + ii, ii + blockSize, longs.getLong(ii));
                 }
-                // the vacated last block can be written
-                longs.set(4L * blockSize - 1, 7L);
-                assertEquals(7L, longs.getLong(4L * blockSize - 1));
             };
             if (trackPrev) {
                 longs.startTrackingPrevValues();
@@ -237,6 +246,7 @@ public class TestArraySourceShift {
             } else {
                 shiftAndCheck.run();
             }
+            assertVacatedLastBlockReallocates(longs);
         }
     }
 
@@ -260,8 +270,6 @@ public class TestArraySourceShift {
                 for (long ii = 0; ii < 2L * blockSize; ++ii) {
                     assertEquals("ii=" + ii, ii + blockSize, longs.getLong(ii));
                 }
-                longs.set(3L * blockSize, 7L);
-                assertEquals(7L, longs.getLong(3L * blockSize));
             };
             if (trackPrev) {
                 longs.startTrackingPrevValues();
@@ -270,7 +278,28 @@ public class TestArraySourceShift {
             } else {
                 shiftAndCheck.run();
             }
+            // releasing the last block reached the end of the capacity, which shrank to exclude it
+            assertEquals(3L * blockSize, longs.getCapacity());
+            longs.ensureCapacity(4L * blockSize);
+            assertEquals(QueryConstants.NULL_LONG, longs.getLong(3L * blockSize));
+            longs.set(4L * blockSize - 1, 7L);
+            assertEquals(7L, longs.getLong(4L * blockSize - 1));
         }
+    }
+
+    /**
+     * The move down left the last of four blocks unallocated. Once it is released through the end of the capacity,
+     * after the cycle, ensuring the capacity allocates it again, null-filled.
+     */
+    private static void assertVacatedLastBlockReallocates(final LongArraySource longs) {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        assertThrows(NullPointerException.class, () -> longs.getLong(3L * blockSize));
+        longs.releaseBlocks(3L * blockSize, Long.MAX_VALUE);
+        assertEquals(3L * blockSize, longs.getCapacity());
+        longs.ensureCapacity(4L * blockSize);
+        assertEquals(QueryConstants.NULL_LONG, longs.getLong(3L * blockSize));
+        longs.set(4L * blockSize - 1, 7L);
+        assertEquals(7L, longs.getLong(4L * blockSize - 1));
     }
 
     private static void shift(final ShiftableColumnSource<?> source, final boolean trackPrev, final long delta,

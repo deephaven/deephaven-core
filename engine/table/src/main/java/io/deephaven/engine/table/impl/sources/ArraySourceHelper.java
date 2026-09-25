@@ -38,8 +38,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
 
     /**
      * Whether {@link #ensureCapacity} last allocated null-filled blocks, rather than blocks of the element type's
-     * default. A block vacated by {@link #moveWholeBlocks} is reallocated the same way, so a position reused afterward
-     * starts from the value its owner expects of a newly allocated one.
+     * default. The few blocks {@link #moveWholeBlocks} must allocate are allocated the same way, so their positions
+     * start from the value their owner expects of newly allocated ones.
      */
     private transient boolean freshBlocksNullFilled = true;
 
@@ -274,14 +274,16 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     /**
      * Move whole blocks of values, by moving the blocks themselves rather than their values where possible. Both
      * positions must be at the start of a block; any partial block at the end of the range is left for the caller.
-     * Source positions that are not also destinations are reset afterward, as {@link #ensureCapacity} last allocated
-     * blocks: to nulls, or to the element type's default.
+     * Source blocks that are not also destinations are left unallocated: the owner of the addresses assigns no values
+     * there without first releasing storage through the end of the capacity, so that {@link #ensureCapacity} allocates
+     * it again. A destination within the capacity whose source never was allocated receives a newly allocated block,
+     * since positions there may be assigned without the capacity changing.
      *
      * <p>
      * When previous values are tracked, each affected block's previous values are first made complete for this cycle: a
      * block with none recorded yet gives its current array to its previous values, and a block with some recorded has
-     * the rest copied. Each destination then receives a copy of its source block in an array of its own, so no array is
-     * both a current and a previous block.
+     * the rest copied. A destination then receives its source block's array, or a copy of it where that array now holds
+     * previous values, so no array is both a current and a previous block.
      * </p>
      *
      * @param source the first source position, at the start of a block
@@ -313,8 +315,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
             for (int bi = sourceBlock; bi < Math.min(sourceBlock + blockCount, allocatedBlocks); ++bi) {
                 final boolean isDest = bi >= destBlock && bi < destBlock + blockCount;
                 if (!isDest) {
-                    // vacated; later states may be assigned here, so it must not keep any block's values
-                    blocks[bi] = allocateFreshBlock();
+                    blocks[bi] = null;
                 }
             }
             return (long) blockCount << LOG_BLOCK_SIZE;
@@ -325,8 +326,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         final int lastBlock = Math.min(Math.max(sourceBlock, destBlock) + blockCount, allocatedBlocks) - 1;
         final UArray[] prevBlocks = getPrevBlocks();
         final SoftRecycler<UArray> recycler = getRecycler();
-        // the current values before the move, for each affected block
+        // the current values before the move, for each affected block, and whether that array now holds previous values
         final Object[] oldCurrent = new Object[Math.max(0, lastBlock - firstBlock + 1)];
+        final boolean[] givenToPrevious = new boolean[oldCurrent.length];
         for (int bi = firstBlock; bi <= lastBlock; ++bi) {
             final UArray current = blocks[bi];
             if (current == null) {
@@ -342,8 +344,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
                     prevAllocated = new IntArrayList();
                 }
                 prevAllocated.add(bi);
+                givenToPrevious[bi - firstBlock] = true;
             } else {
-                // the values are copied out below, after which this array is no longer referenced
                 completePrevious(current, prevBlocks[bi], prevInUse[bi]);
             }
             oldCurrent[bi - firstBlock] = current;
@@ -359,9 +361,11 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
                 blocks[to] = allocateFreshBlock();
                 continue;
             }
-            final Object moved = oldCurrent[from - firstBlock];
-            if (moved == null) {
-                // the source block was released, so the destination is too
+            // noinspection unchecked
+            final UArray moved = (UArray) oldCurrent[from - firstBlock];
+            if (moved == null || !givenToPrevious[from - firstBlock]) {
+                // released, so the destination is too; or the previous values have an array of their own
+                blocks[to] = moved;
                 continue;
             }
             final UArray copy = recycler.borrowItem();
@@ -369,14 +373,17 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
             System.arraycopy(moved, 0, copy, 0, BLOCK_SIZE);
             blocks[to] = copy;
         }
-        for (int bi = firstBlock; bi <= lastBlock; ++bi) {
-            final boolean isDest = bi >= destBlock && bi < destBlock + blockCount;
-            if (!isDest) {
-                // vacated, even if it was released; later states may be assigned here
-                blocks[bi] = allocateFreshBlock();
-            }
-        }
         return (long) blockCount << LOG_BLOCK_SIZE;
+    }
+
+    /**
+     * Allocate the block at {@code blockIndex} if a move left it unallocated, before values are copied into part of it.
+     */
+    final void allocateIfMissing(final int blockIndex) {
+        final UArray[] blocks = getBlocks();
+        if (blockIndex < blocks.length && blocks[blockIndex] == null) {
+            blocks[blockIndex] = allocateFreshBlock();
+        }
     }
 
     private UArray allocateFreshBlock() {
@@ -413,9 +420,14 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     @Override
     public void releaseBlocks(final long firstKey, final long lastKey) {
         final long firstBlock = (firstKey + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
-        final long endBlock = Math.min((lastKey + 1) >> LOG_BLOCK_SIZE, (maxIndex + 1) >> LOG_BLOCK_SIZE);
+        final long allocatedBlocks = (maxIndex + 1) >> LOG_BLOCK_SIZE;
+        final long endBlock = Math.min((lastKey + 1) >> LOG_BLOCK_SIZE, allocatedBlocks);
         for (long bi = firstBlock; bi < endBlock; ++bi) {
             releaseBlock((int) bi);
+        }
+        if (lastKey >= maxIndex && firstBlock < allocatedBlocks) {
+            // released through the end, so the capacity shrinks and ensureCapacity allocates these blocks again
+            maxIndex = (firstBlock << LOG_BLOCK_SIZE) - 1;
         }
     }
 
