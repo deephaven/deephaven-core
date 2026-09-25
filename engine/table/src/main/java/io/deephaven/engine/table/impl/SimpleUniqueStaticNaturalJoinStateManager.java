@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.util.hashing.ToIntFunctor;
@@ -135,7 +136,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     final long existingRight = rightRowKeys[tableLocation];
 
                     if (existingRight == DUPLICATE_RIGHT_VALUE) {
-                        throw new IllegalStateException("Natural Join found duplicate right key for "
+                        throw new DuplicateRightKeyException("Natural Join found duplicate right key for "
                                 + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));
                     }
                     leftRedirections.set(offset + ii, existingRight);

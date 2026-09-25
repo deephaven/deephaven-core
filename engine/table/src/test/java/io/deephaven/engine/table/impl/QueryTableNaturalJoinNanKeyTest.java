@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.*;
@@ -85,7 +86,7 @@ public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
         final Table left = testTable(doubleCol("K", Double.NaN), intCol("L", 1));
         final Table right = testTable(doubleCol("K", Double.NaN, Double.NaN), intCol("R", 10, 11));
 
-        final IllegalStateException err = Assert.assertThrows(IllegalStateException.class,
+        final DuplicateRightKeyException err = Assert.assertThrows(DuplicateRightKeyException.class,
                 () -> left.naturalJoin(right, "K", "R"));
         assertTrue(err.getMessage(), err.getMessage().startsWith("Natural Join found duplicate right key for "));
     }

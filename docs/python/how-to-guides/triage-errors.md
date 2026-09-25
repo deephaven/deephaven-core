@@ -338,7 +338,7 @@ result = left.natural_join(right, "DeptID")
 Because `31` appears twice in the `DeptID` column in the right table, the following error will be thrown:
 
 ```none
-Value: table natural_join operation failed. : RuntimeError: java.lang.IllegalStateException: Natural Join found duplicate right key for 31
+Value: table natural_join operation failed. : RuntimeError: io.deephaven.engine.exceptions.DuplicateRightKeyException: Natural Join found duplicate right key for 31
 ```
 
 ### Non-deterministic formulas

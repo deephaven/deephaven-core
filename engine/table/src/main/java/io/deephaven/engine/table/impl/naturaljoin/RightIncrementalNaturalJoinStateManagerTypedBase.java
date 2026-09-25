@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -313,7 +314,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             return rightRowKeyForState;
         }
         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-            throw new IllegalStateException("Natural Join found duplicate right key for "
+            throw new DuplicateRightKeyException("Natural Join found duplicate right key for "
                     + extractKeyStringFromSourceTable(leftRowKey));
         }
         final long location = duplicateLocationFromRowKey(rightRowKeyForState);

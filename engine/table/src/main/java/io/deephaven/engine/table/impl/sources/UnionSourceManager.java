@@ -1011,8 +1011,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         @Override
         public void close() {
-            pushdownKeys.close();
-            super.close();
+            // Closes pushdownKeys, then super.close() (which closes the constituent contexts) even if the first fails.
+            try (final SafeCloseable ignoredSuper = super::close) {
+                pushdownKeys.close();
+            }
         }
     }
 

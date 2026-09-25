@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -176,7 +177,7 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         for (int ii = 0; ii < size; ++ii) {
             final long rightSide = positionToRightSide.applyAsLong(ii);
             if (rightSide == DUPLICATE_RIGHT_VALUE) {
-                throw new IllegalStateException("Natural Join found duplicate right key for "
+                throw new DuplicateRightKeyException("Natural Join found duplicate right key for "
                         + extractKeyStringFromSourceTable(positionToErrorRowKey.applyAsLong(ii)));
             }
         }

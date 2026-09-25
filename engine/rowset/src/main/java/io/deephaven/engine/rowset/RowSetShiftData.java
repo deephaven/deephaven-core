@@ -718,13 +718,71 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         final Builder builder = new Builder();
 
         final int size = size();
-        for (int idx = 0; idx < size; ++idx) {
-            if (rowSet.overlapsRange(getBeginRange(idx), getEndRange(idx))) {
-                builder.shiftRange(getBeginRange(idx), getEndRange(idx), getShiftDelta(idx));
+        if (size == 0 || rowSet.isEmpty()) {
+            return builder.build();
+        }
+
+        // The shift ranges and the row set are walked together, and neither is ever revisited. Each step advances the
+        // row set to the next shift range's start, gallops the shift ranges past a run that ends before the row set's
+        // current key, or emits an overlapping shift range. A run of shift ranges that the row set skips is crossed in
+        // time logarithmic in its length, and the row set's own ranges are skipped by its iterator, so the work is
+        // driven by the overlapping shift ranges rather than by the number of shifted keys.
+        try (final RowSet.RangeIterator rangeIterator = rowSet.rangeIterator()) {
+            int idx = 0;
+            while (idx < size) {
+                if (!rangeIterator.advance(getBeginRange(idx))) {
+                    break;
+                }
+                // the first row key at or after the start of shift range idx
+                final long firstKey = rangeIterator.currentRangeStart();
+                idx = firstEndAtOrAfter(idx, size, firstKey);
+                if (idx == size) {
+                    break;
+                }
+                // no row key lies in [getBeginRange(original idx), firstKey), and shift range idx ends at or after
+                // firstKey; it overlaps when it begins within the current row set range
+                final long beginRange = getBeginRange(idx);
+                if (beginRange <= rangeIterator.currentRangeEnd()) {
+                    builder.shiftRange(beginRange, getEndRange(idx), getShiftDelta(idx));
+                    ++idx;
+                }
             }
         }
 
         return builder.build();
+    }
+
+    /**
+     * Gallops forward from {@code fromIdx} and then bisects the bracketed interval, so a result near {@code fromIdx}
+     * costs a constant number of probes and one {@code d} positions away costs O(log d).
+     *
+     * @return the first shift range index in {@code [fromIdx, size)} whose end is at or after {@code key}, or
+     *         {@code size} if there is none
+     */
+    private int firstEndAtOrAfter(final int fromIdx, final int size, final long key) {
+        if (getEndRange(fromIdx) >= key) {
+            return fromIdx;
+        }
+        // getEndRange(lo) < key holds throughout; hi is either size or an index whose end is at or after key
+        int lo = fromIdx;
+        int step = 1;
+        int hi = fromIdx + step;
+        while (hi < size && getEndRange(hi) < key) {
+            lo = hi;
+            // the step saturates at size, so doubling it can never overflow
+            step = step <= (size >>> 1) ? step << 1 : size;
+            hi = size - lo > step ? lo + step : size;
+        }
+        ++lo;
+        while (lo < hi) {
+            final int mid = (lo + hi) >>> 1;
+            if (getEndRange(mid) < key) {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        return lo;
     }
 
     /**

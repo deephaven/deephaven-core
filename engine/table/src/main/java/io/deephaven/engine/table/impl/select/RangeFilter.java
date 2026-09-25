@@ -143,6 +143,20 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return filter.getColumnArrays();
     }
 
+    @Override
+    public boolean hasVirtualRowVariables() {
+        if (filter == null) {
+            throw new IllegalStateException("Filter must be initialized to invoke hasVirtualRowVariables");
+        }
+        return filter.hasVirtualRowVariables();
+    }
+
+    @Override
+    public boolean canPushdown() {
+        // The real filter is not visible to a walk of the filter tree, so answer for it here.
+        return filter == null || filter.canPushdown();
+    }
+
     @VisibleForTesting
     public WhereFilter getRealFilter() {
         return filter;

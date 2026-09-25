@@ -41,7 +41,7 @@ import java.util.stream.LongStream;
  * Each time the set table ticks, the entire where filter is recalculated.
  */
 public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
-        implements NotificationAwareDependency, HasParentPerformanceIds, NoPredicatePushdown {
+        implements NotificationAwareDependency, HasParentPerformanceIds {
 
     private static final int CHUNK_SIZE = 1 << 16;
 
@@ -553,6 +553,19 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     private static int getChunkSize(@NotNull final RowSet selection) {
         return (int) Math.min(selection.size(), CHUNK_SIZE);
+    }
+
+    /**
+     * This filter performs its own data-index-driven evaluation (see {@link #beginOperation(Table)} and
+     * {@link #filter(RowSet, RowSet, Table, boolean)}) and its set-table subscription is bound to this instance, so an
+     * external pushdown would duplicate that work and could bypass the {@code filter()} call the subscription relies
+     * on.
+     *
+     * @return false
+     */
+    @Override
+    public boolean canPushdown() {
+        return false;
     }
 
     @Override

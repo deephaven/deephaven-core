@@ -237,7 +237,7 @@ public abstract class RowSetFactory {
             for (int ii = 1; ii < count; ++ii) {
                 accumulator.insert(rowSets[ii]);
             }
-        } catch (final RuntimeException | Error e) {
+        } catch (final Throwable e) {
             accumulator.close();
             throw e;
         }
@@ -325,7 +325,7 @@ public abstract class RowSetFactory {
                 groupCount = write;
             }
             return groups[0];
-        } catch (final RuntimeException | Error e) {
+        } catch (final Throwable e) {
             // Accumulators are parked in groups before anything is inserted into them, so everything this method
             // created is reachable from that array.
             closeAll(groups, groups.length);
@@ -411,7 +411,7 @@ public abstract class RowSetFactory {
         final WritableRowSet merged;
         try {
             merged = mergeInPasses(rowSets, large);
-        } catch (final RuntimeException | Error e) {
+        } catch (final Throwable e) {
             small.close();
             throw e;
         }
