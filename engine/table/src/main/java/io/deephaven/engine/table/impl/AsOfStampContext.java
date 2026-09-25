@@ -72,7 +72,9 @@ class AsOfStampContext implements Context {
             length = Integer.highestOneBit(length) * 2;
         }
         if (sortKernel != null) {
+            sortCapacity = -1;
             sortKernel.close();
+            sortKernel = null;
         }
         sortKernel = LongSortKernel.makeContext(stampType, order, length, true);
         sortCapacity = length;
@@ -98,17 +100,22 @@ class AsOfStampContext implements Context {
     }
 
     private void closeLeftThings() {
+        leftCapacity = -1;
         if (leftStampChunk != null) {
             leftStampChunk.close();
+            leftStampChunk = null;
         }
         if (leftFillContext != null) {
             leftFillContext.close();
+            leftFillContext = null;
         }
         if (leftKeyIndicesChunk != null) {
             leftKeyIndicesChunk.close();
+            leftKeyIndicesChunk = null;
         }
         if (leftRedirections != null) {
             leftRedirections.close();
+            leftRedirections = null;
         }
     }
 
@@ -121,7 +128,9 @@ class AsOfStampContext implements Context {
         }
         ensureSortCapacity(length);
         if (rightFillContext != null) {
+            rightFillCapacity = -1;
             rightFillContext.close();
+            rightFillContext = null;
         }
         rightFillContext = rightStampSource.makeFillContext(length);
         rightFillCapacity = length;
@@ -142,11 +151,14 @@ class AsOfStampContext implements Context {
     }
 
     private void closeRightChunks() {
+        rightCapacity = -1;
         if (rightStampChunk != null) {
             rightStampChunk.close();
+            rightStampChunk = null;
         }
         if (rightKeyIndicesChunk != null) {
             rightKeyIndicesChunk.close();
+            rightKeyIndicesChunk = null;
         }
     }
 
