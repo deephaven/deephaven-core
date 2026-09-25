@@ -7,6 +7,8 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.Pair;
+import io.deephaven.base.testing.JMockRule.Expectations;
+import io.deephaven.base.testing.JMockRule;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
@@ -27,6 +29,7 @@ import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -36,6 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
+import static org.junit.Assert.*;
 
 /**
  * Test for a {@link PartitionAwareSourceTable} that does not permit removing TableLocations. The test in
@@ -43,8 +47,11 @@ import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
  * It only focuses on testing the behavior of removed locations; filtered [which should work] and unfiltered [which
  * should deliver an error].
  */
-@SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase", "AnonymousInnerClassMayBeStatic"})
+@SuppressWarnings({"AutoBoxing", "AnonymousInnerClassMayBeStatic"})
 public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestCase {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
 
     private static class TestKeySupplier extends ReferenceCountedLivenessNode
             implements LiveSupplier<ImmutableTableLocationKey> {
@@ -114,11 +121,11 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        componentFactory = mock(SourceTableComponentFactory.class);
-        columnSourceManager = mock(ColumnSourceManager.class);
+        componentFactory = jmock.mock(SourceTableComponentFactory.class);
+        columnSourceManager = jmock.mock(ColumnSourceManager.class);
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
-            final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
-            checking(new Expectations() {
+            final ColumnSource<?> mocked = jmock.mock(ColumnSource.class, cd.getName());
+            jmock.checking(new Expectations() {
                 {
                     allowing(mocked).getType();
                     will(returnValue(cd.getDataType()));
@@ -130,8 +137,8 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
             });
             return mocked;
         }).toArray(ColumnSource[]::new);
-        locationProvider = mock(TableLocationProvider.class);
-        checking(new Expectations() {
+        locationProvider = jmock.mock(TableLocationProvider.class);
+        jmock.checking(new Expectations() {
             {
                 allowing(locationProvider).getUpdateMode();
                 will(returnValue(TableUpdateMode.ADD_ONLY));
@@ -147,14 +154,14 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
             return new SimpleTableLocationKey(partitions);
         }).toArray(ImmutableTableLocationKey[]::new);
         tableLocations = new TableLocation[] {
-                mock(TableLocation.class, "TL0"),
-                mock(TableLocation.class, "TL1"),
-                mock(TableLocation.class, "TL2"),
-                mock(TableLocation.class, "TL3"),
-                mock(TableLocation.class, "TL4"),
-                mock(TableLocation.class, "TL5")
+                jmock.mock(TableLocation.class, "TL0"),
+                jmock.mock(TableLocation.class, "TL1"),
+                jmock.mock(TableLocation.class, "TL2"),
+                jmock.mock(TableLocation.class, "TL3"),
+                jmock.mock(TableLocation.class, "TL4"),
+                jmock.mock(TableLocation.class, "TL5")
         };
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 allowing(locationProvider).supportsSubscriptions();
                 will(returnValue(true));
@@ -169,9 +176,9 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
                 }
             }
         });
-        listener = mock(TableUpdateListener.class);
+        listener = jmock.mock(TableUpdateListener.class);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(false),
                         with(ColumnToCodecMappings.EMPTY),
@@ -198,7 +205,7 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
         SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider,
                 ExecutionContext.getContext().getUpdateGraph(), partDef,
                 WhereFilter.of(FilterComparison.eq(ColumnName.of("Date"), Literal.of("D3"))));
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @After
@@ -216,7 +223,7 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
     }
 
     private void allowLivenessRelease() {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 allowing(locationProvider).supportsSubscriptions();
                 allowing(locationProvider).unsubscribe(with(any(TableLocationProvider.Listener.class)));
@@ -280,7 +287,7 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
                 RowSetFactory.fromRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT).toTracking();
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(locationProvider).subscribe(with(any(TableLocationProvider.Listener.class)));
                 will(new CustomAction("Supply locations") {
@@ -298,7 +305,7 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
                 will(returnValue(getIncludedColumnsMap(0, 1, 2, 3, 4)));
             }
         });
-        expectPassFilters.forEach(tl -> checking(new Expectations() {
+        expectPassFilters.forEach(tl -> jmock.checking(new Expectations() {
             {
                 oneOf(columnSourceManager).addLocation(tl);
             }
@@ -309,7 +316,7 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
             coalesced = SUT.coalesce();
             coalesced.retainReference();
             coalesced.addUpdateListener(listener);
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
             assertRowSetEquals(expectedRowSet, SUT.getRowSet());
         }
     }
@@ -318,12 +325,12 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
         final RowSet toAdd =
                 RowSetFactory.fromRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
                 will(returnValue(new TableUpdateImpl(toAdd.copy(), RowSetFactory.empty(), RowSetFactory.empty(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.ALL)));
-                checking(new Expectations() {
+                jmock.checking(new Expectations() {
                     {
                         oneOf(listener).getNotification(with(any(TableUpdateImpl.class)));
                         will(new CustomAction("check added") {
@@ -352,14 +359,14 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
         } finally {
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         notification.assertInvoked();
         expectedRowSet.insert(toAdd);
         assertRowSetEquals(expectedRowSet, SUT.getRowSet());
     }
 
     private void doBadRefreshCheck() {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 // the notification that emanates from the deliverError is delayed, because sources are always
                 // satisfied. The way the delayed machinery works is that it adds a new source to the update graph,
@@ -377,7 +384,7 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
         } finally {
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         notification.assertNotInvoked();
     }
 

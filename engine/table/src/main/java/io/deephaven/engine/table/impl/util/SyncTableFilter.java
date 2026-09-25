@@ -244,7 +244,7 @@ public class SyncTableFilter {
 
                     removed = removedBatch.build();
                     added = addedBatch.build();
-                } catch (final RuntimeException | Error e) {
+                } catch (final Throwable e) {
                     SafeCloseable.closeAll(removed, added);
                     throw e;
                 }

@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
-import io.deephaven.api.Strings;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -154,7 +153,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 
-    public static class DataIndexPushdownContext extends BasePushdownFilterContextImpl {
+    public static class DataIndexPushdownContext extends ForwardingPushdownFilterContext {
         private final Map<String, String> renameMap;
         private final PushdownFilterContext wrappedContext;
 
@@ -165,6 +164,9 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                 final PushdownFilterContext wrappedContext) {
             super(filter, columnSources);
             this.wrappedContext = wrappedContext;
+            if (wrappedContext != null) {
+                addChildContext(wrappedContext);
+            }
 
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
@@ -188,14 +190,6 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                 }
             }
         }
-
-        @Override
-        public void close() {
-            if (wrappedContext != null) {
-                wrappedContext.close();
-            }
-            super.close();
-        }
     }
 
     @Override
@@ -205,7 +199,13 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         final PushdownFilterContext wrappedContext = wrappedMatcher != null
                 ? wrappedMatcher.makePushdownFilterContext(filter, filterSources)
                 : null;
-        return new DataIndexPushdownContext(this, filter, filterSources, wrappedContext);
+        try {
+            return new DataIndexPushdownContext(this, filter, filterSources, wrappedContext);
+        } catch (final Throwable e) {
+            // Nothing owns the wrapped context until the outer one exists, so close it rather than leak it.
+            SafeCloseable.closeAllDuringFailure(e, wrappedContext);
+            throw e;
+        }
     }
 
     /**
@@ -245,7 +245,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     }
                 } catch (final Exception e) {
                     throw new TableInitializationException(
-                            "Error applying filter " + Strings.of(copiedFilter) + " to data index table", e);
+                            "Error applying filter " + copiedFilter + " to data index table", e);
                 }
             }
             matching = batcher.build();

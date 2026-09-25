@@ -15,7 +15,8 @@ import org.junit.Test;
 
 import java.util.Random;
 
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.*;
+
 
 public class TestCharacterSparseArraySource extends AbstractCharacterColumnSourceTest {
     @NotNull

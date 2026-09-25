@@ -3,16 +3,19 @@
 //
 package io.deephaven.function;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.vector.ObjectVectorDirect;
+import org.junit.Test;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.function.Logic.*;
+import static org.junit.Assert.*;
 
 /**
  * Test Logic.
  */
-public class TestLogic extends BaseArrayTestCase {
+public class TestLogic {
 
+    @Test
     public void testAnd() {
         assertTrue(and(new Boolean[] {true, true, true}));
         assertFalse(and(new Boolean[] {false, true, true}));
@@ -50,6 +53,7 @@ public class TestLogic extends BaseArrayTestCase {
         assertFalse(and(new ObjectVectorDirect<>(false, false, null), false));
     }
 
+    @Test
     public void testOr() {
         assertTrue(or(new Boolean[] {true, true, true}));
         assertTrue(or(new Boolean[] {false, true, true}));
@@ -73,6 +77,7 @@ public class TestLogic extends BaseArrayTestCase {
         assertFalse(or(new boolean[] {false, false, false}));
     }
 
+    @Test
     public void testNot() {
         // noinspection ConstantValue
         assertNull(not((boolean[]) null));

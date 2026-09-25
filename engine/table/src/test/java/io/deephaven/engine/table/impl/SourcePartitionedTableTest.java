@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class SourcePartitionedTableTest extends RefreshingTableTestCase {

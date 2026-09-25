@@ -10,10 +10,11 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import junit.framework.TestCase;
 
 import java.util.Random;
 import java.util.function.IntFunction;
+
+import static org.junit.Assert.*;
 
 public class TestSourceSink {
     /**
@@ -67,6 +68,6 @@ public class TestSourceSink {
             final Chunk<Values> actual, final int actualFirst, final int actualLast) {
         final Chunk<Values> actualSlice = actual.slice(actualFirst, actualLast - actualFirst + 1);
         final boolean equals = ce.equalReduce(expected, actualSlice);
-        TestCase.assertTrue(what, equals);
+        assertTrue(what, equals);
     }
 }

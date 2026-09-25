@@ -50,10 +50,10 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
@@ -81,6 +81,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static org.junit.Assert.*;
 
 /**
  * Barrage round-trip coverage for column-type serialization: chunk types, non-Java-serializable types, nested arrays
@@ -89,10 +90,12 @@ import static io.deephaven.engine.util.TableTools.col;
 @Category(OutOfBandTest.class)
 public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTestBase {
 
+    @Test
     public void testAllUniqueChunkTypeColumnSourcesWithValidityBuffers() {
         testAllUniqueChunkTypeColumnSources(false);
     }
 
+    @Test
     public void testAllUniqueChunkTypeColumnSourcesWithDeephavenNulls() {
         testAllUniqueChunkTypeColumnSources(true);
     }
@@ -158,10 +161,12 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
         }
     }
 
+    @Test
     public void testAllUniqueNonJavaSerRoundTripTypesWithValidityBuffers() {
         testAllUniqueNonJavaSerRoundTripTypes(false);
     }
 
+    @Test
     public void testAllUniqueNonJavaSerRoundTripTypesWithDeephavenNulls() {
         testAllUniqueNonJavaSerRoundTripTypes(true);
     }
@@ -240,6 +245,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
         }
     }
 
+    @Test
     public void testNestedArrays() {
         // Two cases that aren't expected to work in the java client, since it doesn't have enough type info:
         // * triply nested groupBy(), where we have ObjectVector of ObjectVector of some vector
@@ -288,6 +294,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
         remoteNugget.validate("snapshot");
     }
 
+    @Test
     public void testFailingNestedVectors() {
         // Same as testNestedArrays, except we verify that we get expected exceptions for cases where BarrageTable can't
         // handle the type
@@ -402,6 +409,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
      * this exercises the nested dictionary's delta batches (new distinct values shipped as append-only DictionaryBatch
      * messages preceding each RecordBatch) and the reader's run-expansion of dictionary indices.
      */
+    @Test
     public void testReeDictionaryEncodedFullSubscriptionTicking() {
         final int steps = 20;
         final int size = 100;
@@ -430,6 +438,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
      * Two full subscribers on the same producer share a single {@code DictionaryWriterRegistry}; the nested dictionary
      * of a {@code RunEndEncoded<Dictionary<...>>} column must still round-trip for both.
      */
+    @Test
     public void testReeDictionaryEncodedSharedProducer() {
         final int steps = 20;
         final int size = 100;
@@ -470,6 +479,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
      * {@code ChunkWriter.getEmptyInputStream(options, dictionaryRegistry)} (and its callers), the initial flush
      * contains no DictionaryBatch at all and this test fails.
      */
+    @Test
     public void testReeDictionaryEncodedEmptyInitialSnapshot() {
         final int steps = 10;
         final int size = 100;
@@ -569,6 +579,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
         return table;
     }
 
+    @Test
     public void testDictionaryEncodedFullSubscriptionTicking() {
         final int steps = 20;
         final int size = 100;
@@ -593,6 +604,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
         }
     }
 
+    @Test
     public void testDictionaryEncodedSharedDictionaryAcrossFullSubscribers() {
         final int steps = 20;
         final int size = 100;
@@ -625,6 +637,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
      * emit exactly one {@code DictionaryBatch} per id per update even though two columns reference it, and both columns
      * must decode to their correct values.
      */
+    @Test
     public void testDictionaryEncodedSharedIdAcrossColumns() {
         final int steps = 20;
         final int size = 100;
@@ -649,6 +662,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
         }
     }
 
+    @Test
     public void testDictionaryEncodedViewportSubscriptionTicking() {
         final int steps = 20;
         final int size = 100;
@@ -674,6 +688,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
         }
     }
 
+    @Test
     public void testDictionaryEncodedGrowingSubscription() {
         final int steps = 20;
         final int size = 100;
@@ -718,6 +733,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
      * Verifies that when the cumulative dictionary size exceeds the live row count, the server resets the dictionary
      * (emitting {@code isDelta=false}) so the client stays consistent. Tests both full and viewport subscriptions.
      */
+    @Test
     public void testDictionaryEncodedOverflowCompaction() {
         // Use 50 distinct values so the dictionary fills up quickly.
         final String[] symValues = new String[50];
@@ -789,6 +805,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
      * {@link io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry}, which must emit a fresh
      * {@code isDelta=false} DictionaryBatch for the new window of values.
      */
+    @Test
     public void testDictionaryEncodedViewportChange() {
         final int steps = 20;
         final int size = 100;

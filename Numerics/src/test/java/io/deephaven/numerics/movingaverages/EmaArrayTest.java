@@ -3,13 +3,16 @@
 //
 package io.deephaven.numerics.movingaverages;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Test EmaArray.
  */
-public class EmaArrayTest extends TestCase {
+public class EmaArrayTest {
 
+    @Test
     public void testLevelTick() {
         double dt = 1;
         double[] timeScales = {3, 4};
@@ -34,6 +37,7 @@ public class EmaArrayTest extends TestCase {
         assertEquals(x1 * alphas[1] + x2 * (1 - alphas[1]), emas.getCurrent()[1], tol);
     }
 
+    @Test
     public void testLevelTime() {
         double dt = 10;
         double[] timeScales = {3, 4};
@@ -58,6 +62,7 @@ public class EmaArrayTest extends TestCase {
         assertEquals(x1 * alphas[1] + x2 * (1 - alphas[1]), emas.getCurrent()[1], tol);
     }
 
+    @Test
     public void testDifferenceTick() {
         double dt = 1;
         double[] timeScales = {3, 4};
@@ -86,6 +91,7 @@ public class EmaArrayTest extends TestCase {
      * Make sure that smaller timescales correspond to faster moving averages. The smallest double should correspond to
      * no averaging.
      */
+    @Test
     public void testTimescales() {
         double[] timeScales = {Double.MIN_VALUE};
         double tol = 1e-10;
@@ -108,6 +114,7 @@ public class EmaArrayTest extends TestCase {
     /**
      * Make sure that it returns the right size.
      */
+    @Test
     public void testSize() {
         double[] timeScales = {1, 2, 3, 4, 5};
 

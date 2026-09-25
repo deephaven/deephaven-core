@@ -47,7 +47,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.datastructures.CachingSupplier;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -71,6 +70,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
+import java.util.function.LongSupplier;
+import java.util.function.LongUnaryOperator;
+import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -78,7 +80,6 @@ import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simu
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public abstract class QueryTableWhereTest {
     private final Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
@@ -90,6 +91,7 @@ public abstract class QueryTableWhereTest {
     private boolean oldDisable;
     private int oldSegments;
     private long oldSize;
+    private boolean oldUseDataIndex;
 
     @Before
     public void setUp() throws Exception {
@@ -97,6 +99,7 @@ public abstract class QueryTableWhereTest {
         oldDisable = QueryTable.DISABLE_PARALLEL_WHERE;
         oldSegments = QueryTable.PARALLEL_WHERE_SEGMENTS;
         oldSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
+        oldUseDataIndex = QueryTable.USE_DATA_INDEX_FOR_WHERE;
     }
 
     @After
@@ -105,6 +108,7 @@ public abstract class QueryTableWhereTest {
         QueryTable.DISABLE_PARALLEL_WHERE = oldDisable;
         QueryTable.PARALLEL_WHERE_SEGMENTS = oldSegments;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = oldSize;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = oldUseDataIndex;
     }
 
     @Test
@@ -323,7 +327,7 @@ public abstract class QueryTableWhereTest {
                 validate(en);
             }
         } catch (Exception e) {
-            TestCase.fail(e.getMessage());
+            fail(e.getMessage());
         }
     }
 
@@ -419,15 +423,26 @@ public abstract class QueryTableWhereTest {
     }
 
     private static class TestChunkFilter implements ChunkFilter {
-        final CountDownLatch latch = new CountDownLatch(1);
         final ChunkFilter actualFilter;
-        final long sleepDurationNanos;
+        /** The invocation, counting from one, that interrupts the filtering thread; zero never interrupts. */
+        final long interruptAtInvocation;
         long invokes;
         long invokedValues;
 
-        private TestChunkFilter(ChunkFilter actualFilter, long sleepDurationNanos) {
+        private TestChunkFilter(ChunkFilter actualFilter) {
+            this(actualFilter, 0);
+        }
+
+        private TestChunkFilter(ChunkFilter actualFilter, long interruptAtInvocation) {
             this.actualFilter = actualFilter;
-            this.sleepDurationNanos = sleepDurationNanos;
+            this.interruptAtInvocation = interruptAtInvocation;
+        }
+
+        private void beforeFilter(final int size) {
+            if (++invokes == interruptAtInvocation) {
+                Thread.currentThread().interrupt();
+            }
+            invokedValues += size;
         }
 
         @Override
@@ -435,17 +450,7 @@ public abstract class QueryTableWhereTest {
                 final Chunk<? extends Values> values,
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long start = System.nanoTime();
-                final long end = start + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < end);
-            }
+            beforeFilter(values.size());
             actualFilter.filter(values, keys, results);
         }
 
@@ -453,17 +458,7 @@ public abstract class QueryTableWhereTest {
         public int filter(
                 final Chunk<? extends Values> values,
                 final WritableBooleanChunk<Values> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long timeStart = System.nanoTime();
-                final long timeEnd = timeStart + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < timeEnd);
-            }
+            beforeFilter(values.size());
             return actualFilter.filter(values, results);
         }
 
@@ -471,17 +466,7 @@ public abstract class QueryTableWhereTest {
         public int filterAnd(
                 final Chunk<? extends Values> values,
                 final WritableBooleanChunk<Values> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long timeStart = System.nanoTime();
-                final long timeEnd = timeStart + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < timeEnd);
-            }
+            beforeFilter(values.size());
             return actualFilter.filterAnd(values, results);
         }
 
@@ -578,58 +563,91 @@ public abstract class QueryTableWhereTest {
     @Test
     public void testChunkFilterInterruption() {
         final Table tableToFilter = TableTools.emptyTable(2_000_000).update("X=i");
+        final ColumnSource<?> columnSource = tableToFilter.getColumnSource("X");
 
-        final TestChunkFilter slowCounter =
-                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false), 100);
+        final TestChunkFilter counter =
+                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false));
+        try (final RowSet result =
+                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), columnSource, false, counter)) {
+            assertEquals(RowSetFactory.fromRange(0, 999_999), result);
+        }
+        assertEquals(2_000_000, counter.invokedValues);
 
-        QueryScope.addParam("slowCounter", slowCounter);
+        // The filter interrupts its own thread while filtering the first chunk, which the first interruption
+        // check observes one INITIAL_INTERRUPTION_SIZE of rows later.
+        final TestChunkFilter interrupting =
+                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false), 1);
+        assertThrows(CancellationException.class,
+                () -> ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), columnSource, false, interrupting));
 
-        final long start = System.currentTimeMillis();
-        final RowSet result =
-                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
-                        false, slowCounter);
-        final long end = System.currentTimeMillis();
-        log.debug().append("Duration: " + (end - start)).endl();
+        System.out.println("Invoked Values: " + interrupting.invokedValues);
+        assertEquals(ChunkFilter.INITIAL_INTERRUPTION_SIZE, interrupting.invokedValues);
+    }
 
-        assertEquals(RowSetFactory.fromRange(0, 999_999), result);
+    private static final long FIRST_WINDOW_CHUNKS =
+            ChunkFilter.INITIAL_INTERRUPTION_SIZE / ChunkFilter.FILTER_CHUNK_SIZE;
 
-        assertEquals(2_000_000, slowCounter.invokedValues);
-        slowCounter.reset();
+    /**
+     * Filter {@code totalChunks} chunks of rows, against a clock that reports {@code chunksToMillis} of the chunks
+     * filtered so far, and return the number of chunks filtered between successive interruption checks.
+     */
+    private static long[] interruptionWindows(final long totalChunks, final LongUnaryOperator chunksToMillis) {
+        // Nothing reads the values, so an empty column source and a filter that rejects everything suffice.
+        final TestChunkFilter counter = new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1, true, false));
 
-        final MutableObject<Exception> caught = new MutableObject<>();
-        final ExecutionContext executionContext = ExecutionContext.getContext();
-        final Thread t = new Thread(() -> {
-            final long start1 = System.currentTimeMillis();
-            try (final SafeCloseable ignored = executionContext.open()) {
-                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"), false,
-                        slowCounter);
-            } catch (Exception e) {
-                caught.setValue(e);
-            }
-            final long end1 = System.currentTimeMillis();
-            log.debug().append("Duration: " + (end1 - start1)).endl();
-        });
-        t.start();
+        // The clock is read once before filtering begins, and once per interruption check.
+        final LongArrayList checkedAfterChunks = new LongArrayList();
+        final LongSupplier clockMillis = () -> {
+            checkedAfterChunks.add(counter.invokes);
+            return chunksToMillis.applyAsLong(counter.invokes);
+        };
 
-        waitForLatch(slowCounter.latch);
-
-        t.interrupt();
-
-        try {
-            t.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        try (final RowSet selection = RowSetFactory.flat(totalChunks * ChunkFilter.FILTER_CHUNK_SIZE);
+                final RowSet result = ChunkFilter.applyChunkFilter(selection,
+                        NullValueColumnSource.getInstance(int.class, null), false, counter, clockMillis)) {
+            assertTrue(result.isEmpty());
+            assertEquals(totalChunks, counter.invokes);
         }
 
-        log.debug().append("Invoked Values: " + slowCounter.invokedValues).endl();
-        log.debug().append("Invokes: " + slowCounter.invokes).endl();
+        final long[] windows = new long[checkedAfterChunks.size() - 1];
+        for (int ii = 0; ii < windows.length; ++ii) {
+            windows[ii] = checkedAfterChunks.getLong(ii + 1) - checkedAfterChunks.getLong(ii);
+        }
+        return windows;
+    }
 
-        assertTrue(slowCounter.invokedValues < 2_000_000L);
-        assertEquals(1 << 20, slowCounter.invokedValues);
-        assertNotNull(caught.getValue());
-        assertEquals(CancellationException.class, caught.getValue().getClass());
+    @Test
+    public void testInterruptionIntervalDoublesWhenChecksAreInstantaneous() {
+        // A clock that never advances leaves nothing to measure, so the interval simply doubles.
+        final long[] windows = interruptionWindows(7 * FIRST_WINDOW_CHUNKS + 1, chunks -> 0);
+        assertArrayEquals(
+                new long[] {FIRST_WINDOW_CHUNKS, 2 * FIRST_WINDOW_CHUNKS, 4 * FIRST_WINDOW_CHUNKS},
+                windows);
+    }
 
-        QueryScope.addParam("slowCounter", null);
+    @Test
+    public void testInterruptionIntervalGrowthIsCappedAtDoubling() {
+        // The first window takes a quarter of the goal duration, which asks for four times as many chunks; the
+        // interval may only double.
+        final long[] windows = interruptionWindows(3 * FIRST_WINDOW_CHUNKS + 1,
+                chunks -> chunks * ChunkFilter.INTERRUPTION_GOAL_MILLIS / (4 * FIRST_WINDOW_CHUNKS));
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, 2 * FIRST_WINDOW_CHUNKS}, windows);
+    }
+
+    @Test
+    public void testInterruptionIntervalConvergesOnTheGoalDuration() {
+        // A millisecond per chunk: the first window overshoots the goal, and one retune lands on it exactly.
+        final long[] windows = interruptionWindows(
+                FIRST_WINDOW_CHUNKS + 2 * ChunkFilter.INTERRUPTION_GOAL_MILLIS + 1, chunks -> chunks);
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, ChunkFilter.INTERRUPTION_GOAL_MILLIS,
+                ChunkFilter.INTERRUPTION_GOAL_MILLIS}, windows);
+    }
+
+    @Test
+    public void testInterruptionIntervalNeverShrinksBelowOneChunk() {
+        // A second per chunk: a single chunk already overshoots the goal, so the interval bottoms out at one.
+        final long[] windows = interruptionWindows(FIRST_WINDOW_CHUNKS + 3, chunks -> chunks * 1000);
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, 1, 1}, windows);
     }
 
     @ReflexiveUse(referrers = "QueryTableWhereTest.class")
@@ -1760,6 +1778,283 @@ public abstract class QueryTableWhereTest {
         Assert.eqTrue(sourceA.getEncounterOrder() == 0, "sourceA.getEncounterOrder()");
         Assert.eqTrue(sourceC.getEncounterOrder() == 1, "sourceC.getEncounterOrder()");
         Assert.eqTrue(sourceB.getEncounterOrder() == 2, "sourceB.getEncounterOrder()");
+    }
+
+    /**
+     * An {@link AbstractColumnSource} -- so it resolves as its own pushdown matcher -- whose pushdown context
+     * construction fails.
+     */
+    private static final class ThrowingPushdownContextSource extends IntegerArraySource {
+        static final String MESSAGE = "injected pushdown context construction failure";
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            throw new IllegalStateException(MESSAGE);
+        }
+    }
+
+    private static QueryTable makePushdownContextTable(final IntegerArraySource source) {
+        final int size = 100;
+        source.ensureCapacity(size, false);
+        for (int ii = 0; ii < size; ii++) {
+            source.set(ii, ii);
+        }
+        return new QueryTable(RowSetFactory.flat(size).toTracking(), Map.of("X", source));
+    }
+
+    private static void assertInjectedPushdownFailure(final Throwable thrown) {
+        for (Throwable t = thrown; t != null; t = t.getCause()) {
+            if (t instanceof IllegalStateException && ThrowingPushdownContextSource.MESSAGE.equals(t.getMessage())) {
+                return;
+            }
+        }
+        throw new AssertionError("injected failure not found in cause chain of " + thrown, thrown);
+    }
+
+    /**
+     * A failure while constructing a filter's pushdown context is a broken engine invariant, so it must fail the
+     * {@code where()} loudly, with the failure as the cause, rather than silently degrade to plain filtering.
+     */
+    @Test
+    public void testPushdownContextConstructionFailureFailsTheOperation() {
+        final QueryTable table = makePushdownContextTable(new ThrowingPushdownContextSource());
+
+        final TableInitializationException thrown =
+                assertThrows(TableInitializationException.class, () -> table.where("X >= 50"));
+        assertInjectedPushdownFailure(thrown);
+    }
+
+    /** An {@link Error} that {@link ErrorPushdownContextSource} throws, distinguishable from any other. */
+    private static final class InjectedPushdownError extends Error {
+        InjectedPushdownError() {
+            super("injected pushdown context construction error");
+        }
+    }
+
+    /** An {@link AbstractColumnSource} whose pushdown context construction throws an {@link Error}. */
+    private static final class ErrorPushdownContextSource extends IntegerArraySource {
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            throw new InjectedPushdownError();
+        }
+    }
+
+    /** An {@link AbstractColumnSource} whose pushdown contexts record whether they were closed. */
+    private static final class CloseTrackingPushdownContextSource extends IntegerArraySource {
+        final List<MutableBoolean> contextsClosed = Collections.synchronizedList(new ArrayList<>());
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            final MutableBoolean closed = new MutableBoolean(false);
+            contextsClosed.add(closed);
+            return new BasePushdownFilterContextImpl(filter, filterSources) {
+                @Override
+                public void close() {
+                    closed.setTrue();
+                    super.close();
+                }
+            };
+        }
+    }
+
+    /**
+     * An {@link Error} while constructing one filter's pushdown context must not leak the contexts already built for
+     * the filters before it.
+     */
+    @Test
+    public void testPushdownContextConstructionErrorClosesEarlierContexts() {
+        final int size = 100;
+        final CloseTrackingPushdownContextSource tracking = new CloseTrackingPushdownContextSource();
+        final ErrorPushdownContextSource failing = new ErrorPushdownContextSource();
+        for (final IntegerArraySource source : List.of(tracking, failing)) {
+            source.ensureCapacity(size, false);
+            for (int ii = 0; ii < size; ii++) {
+                source.set(ii, ii);
+            }
+        }
+        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(),
+                Map.of("X", tracking, "Y", failing));
+
+        final Throwable thrown = assertThrows(Throwable.class, () -> table.where("X >= 50", "Y >= 50"));
+        boolean found = false;
+        for (Throwable t = thrown; t != null; t = t.getCause()) {
+            found |= t instanceof InjectedPushdownError;
+        }
+        assertTrue("injected error not found in cause chain of " + thrown, found);
+
+        assertFalse("sanity: the first filter built a context", tracking.contextsClosed.isEmpty());
+        for (final MutableBoolean closed : tracking.contextsClosed) {
+            assertTrue("the first filter's context must be closed", closed.booleanValue());
+        }
+    }
+
+    /**
+     * A fresh 100-row table with {@code A = ii % 3}. Only the instances the caller indexes carry a data index. The
+     * modulus matters: with {@code % 10} the index table would have 10 rows in {@code A} order, and {@code ii % 2 == 0}
+     * evaluated against it would coincidentally agree with the source predicate.
+     */
+    private static QueryTable makeVirtualRowVariableTable() {
+        return (QueryTable) testRefreshingTable(RowSetFactory.flat(100).toTracking()).update("A = (int) (ii % 3)");
+    }
+
+    /**
+     * Runs {@code A = 1 || ii % 2 == 0}, a disjunction {@code where()} cannot split, against an indexed table and
+     * against an unindexed oracle, and requires the two to agree. If the composed filter were pushed down to the data
+     * index, {@code ii} would be evaluated against the 3-row index table and select whole {@code A} groups instead of
+     * the even source rows.
+     */
+    private void assertVirtualRowVariableDisjunctionNotPushedDown(final UnaryOperator<Filter> wrapper) {
+        assertIndexedWhereMatchesUnindexed(
+                wrapper.apply(Filter.or(RawString.of("A = 1"), RawString.of("ii % 2 == 0"))));
+    }
+
+    /**
+     * Returns a fresh {@link #makeVirtualRowVariableTable()} with a cached data index on {@code A}. where() only uses
+     * fully-populated indexes (WhereListener.extractFilterDataIndexMap checks tableIsCached()), so the index table is
+     * materialized; otherwise the table would take the plain filtering path.
+     */
+    private static QueryTable makeIndexedVirtualRowVariableTable() {
+        final QueryTable indexedTable = makeVirtualRowVariableTable();
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(indexedTable, "A");
+        dataIndex.table();
+        assertTrue("the data index must be cached for where() to consider it", dataIndex.tableIsCached());
+        return indexedTable;
+    }
+
+    /**
+     * Runs {@code filter} against an indexed {@link #makeVirtualRowVariableTable()} and against an unindexed oracle,
+     * and requires the two to agree.
+     */
+    private void assertIndexedWhereMatchesUnindexed(final Filter filter) {
+        final QueryTable indexedTable = makeIndexedVirtualRowVariableTable();
+
+        // Pin the flag on both sides so the comparison holds whatever the test JVM's configured default is; tearDown
+        // restores it.
+        final Table oracle;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = false;
+        oracle = makeVirtualRowVariableTable().where(filter).coalesce();
+
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = true;
+        assertTableEquals(oracle, indexedTable.where(filter).coalesce());
+    }
+
+    /**
+     * A composed filter that uses virtual row variables must not be pushed down to a data index (see
+     * {@code ComposedFilter#hasVirtualRowVariables()}).
+     */
+    @Test
+    public void testVirtualRowVariableDisjunctionNotPushedDownToDataIndex() {
+        assertVirtualRowVariableDisjunctionNotPushedDown(UnaryOperator.identity());
+    }
+
+    /**
+     * The same through a barrier wrapper, which must report the wrapped filter's virtual row variables (see
+     * {@code WhereFilterDelegatingBase#hasVirtualRowVariables()}).
+     */
+    @Test
+    public void testBarrierWrappedVirtualRowVariableDisjunctionNotPushedDownToDataIndex() {
+        assertVirtualRowVariableDisjunctionNotPushedDown(f -> f.withDeclaredBarriers("VIRTUAL_ROW_VARIABLE_BARRIER"));
+    }
+
+    /**
+     * {@code A >= ii} parses to a {@link RangeFilter} whose value cannot be converted, so it falls back to a
+     * {@link ConditionFilter} that uses {@code ii}. The {@link RangeFilter} must report that, or it is pushed down to
+     * the data index and {@code ii} selects index-table positions: every {@code A} group passes instead of the three
+     * source rows where {@code A >= ii}.
+     */
+    @Test
+    public void testRangeFilterWithVirtualRowVariableNotPushedDownToDataIndex() {
+        final WhereFilter filter = WhereFilter.of(RawString.of("A >= ii"));
+        filter.init(makeVirtualRowVariableTable().getDefinition());
+        assertTrue("sanity: parses to a RangeFilter, was " + filter.getClass(), filter instanceof RangeFilter);
+        assertTrue("sanity: falls back to a ConditionFilter",
+                ((RangeFilter) filter).getRealFilter() instanceof ConditionFilter);
+
+        assertIndexedWhereMatchesUnindexed(RawString.of("A >= ii"));
+    }
+
+    /**
+     * {@code A == ii} parses to a {@link MatchFilter} that fails over to a {@link ConditionFilter} that uses
+     * {@code ii}. The {@link MatchFilter} must report that, or it is pushed down to the data index.
+     */
+    @Test
+    public void testMatchFilterWithVirtualRowVariableNotPushedDownToDataIndex() {
+        final WhereFilter filter = WhereFilter.of(RawString.of("A == ii"));
+        filter.init(makeVirtualRowVariableTable().getDefinition());
+        assertTrue("sanity: parses to a MatchFilter, was " + filter.getClass(), filter instanceof MatchFilter);
+        assertNotNull("sanity: fails over to a ConditionFilter", ((MatchFilter) filter).getFailoverFilterIfCached());
+
+        assertIndexedWhereMatchesUnindexed(RawString.of("A == ii"));
+    }
+
+    /**
+     * A filter on {@code A} that fails when it is evaluated against any table with other columns -- in particular the
+     * data index table, which adds the row set column -- and otherwise accepts every row.
+     */
+    private static final class IndexTableRejectingFilter extends WhereFilterImpl {
+        static final String MESSAGE = "injected failure evaluating against the data index table";
+
+        @Override
+        public List<String> getColumns() {
+            return List.of("A");
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {}
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection, @NotNull final RowSet fullSet, @NotNull final Table table,
+                final boolean usePrev) {
+            if (!table.getDefinition().getColumnNames().equals(List.of("A"))) {
+                throw new IllegalStateException(MESSAGE);
+            }
+            return selection.copy();
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return true;
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener result) {}
+
+        @Override
+        public WhereFilter copy() {
+            return new IndexTableRejectingFilter();
+        }
+    }
+
+    /**
+     * A failure while applying a filter to the data index table must reach the caller with the original failure in its
+     * cause chain. The error message must not be built from something that can itself throw and mask it.
+     */
+    @Test
+    public void testDataIndexFilterFailureKeepsCause() {
+        final QueryTable indexedTable = makeIndexedVirtualRowVariableTable();
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = true;
+
+        final TableInitializationException thrown = assertThrows(TableInitializationException.class,
+                () -> indexedTable.where(new IndexTableRejectingFilter()));
+        for (Throwable t = thrown; t != null; t = t.getCause()) {
+            if (t instanceof IllegalStateException && IndexTableRejectingFilter.MESSAGE.equals(t.getMessage())) {
+                return;
+            }
+        }
+        throw new AssertionError("injected failure not found in cause chain of " + thrown, thrown);
     }
 
     /**
@@ -3190,6 +3485,31 @@ public abstract class QueryTableWhereTest {
             final Table t3 = fromDisk.where("Value = `2`").coalesce();
             // make sure we have the same behavior for the regioned column sources
             assertTableEquals(t1.view("Partition=`p0`", "Key", "Value", "Sentinel").head(0), t3);
+        } finally {
+            FileUtils.deleteRecursively(tmpDir);
+        }
+    }
+
+    /**
+     * A filter on a partitioned table that uses virtual row variables must not be applied to the location table, where
+     * {@code i} and {@code ii} are location positions: it would keep or drop whole partitions instead of rows.
+     */
+    @Test
+    public void testVirtualRowVariableFilterNotAppliedToPartitions() throws IOException {
+        final File tmpDir = Files.createTempDirectory("QueryTableWhereTest-PartitionVirtualRowVariables").toFile();
+        try {
+            for (final String partition : List.of("A", "B", "C")) {
+                ParquetTools.writeTable(emptyTable(4).update("V = (int) ii"),
+                        tmpDir + "/PC=" + partition + "/data.parquet");
+            }
+            final Table fromDisk = ParquetTools.readTable(tmpDir.getPath());
+            assertTrue("sanity: a partitioned table, was " + fromDisk.getClass(),
+                    fromDisk instanceof PartitionAwareSourceTable);
+            final Table inMemory = fromDisk.select();
+
+            for (final String filter : List.of("ii % 2 == 0", "i % 2 == 0", "PC == `A` || ii % 2 == 0")) {
+                assertTableEquals(filter, inMemory.where(filter), fromDisk.where(filter).coalesce());
+            }
         } finally {
             FileUtils.deleteRecursively(tmpDir);
         }

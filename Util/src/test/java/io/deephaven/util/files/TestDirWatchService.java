@@ -4,7 +4,9 @@
 package io.deephaven.util.files;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -19,7 +21,9 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
-public class TestDirWatchService extends BaseArrayTestCase {
+import static org.junit.Assert.*;
+
+public class TestDirWatchService {
     final private static String TEST_DIR = "TestDirWatchService";
 
     private LinkedList<String> addedFiles;
@@ -40,9 +44,8 @@ public class TestDirWatchService extends BaseArrayTestCase {
     private final static String FILE_NOT_FOUND_5 = "test_file2.stats.oof.file";
     private File dir;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
         FileUtils.deleteRecursively(new File(TEST_DIR));
         dir = new File(TEST_DIR);
         addedFiles = new LinkedList<>();
@@ -52,9 +55,8 @@ public class TestDirWatchService extends BaseArrayTestCase {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    @Override
+    @After
     public void tearDown() throws Exception {
-        super.tearDown();
         new File(TEST_DIR + File.separator + STARTSWITH_FILE).delete();
         new File(TEST_DIR + File.separator + STARTSWITH_FILE2).delete();
         new File(TEST_DIR + File.separator + ENDSWITH_FILE).delete();
@@ -69,6 +71,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
         dir.delete();
     }
 
+    @Test
     public void testBasicFilesJavaFileWatch() throws Exception {
 
         final String[] expectedResults = {STARTSWITH_FILE, STARTSWITH_FILE2, ENDSWITH_FILE, EXACT_MATCH_FILE,
@@ -173,6 +176,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testBasicFilesPollFileWatch() throws Exception {
 
         final String[] expectedResults = {STARTSWITH_FILE, STARTSWITH_FILE2, ENDSWITH_FILE, EXACT_MATCH_FILE,
@@ -278,6 +282,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testStopJava() throws Exception {
         final DirWatchService service = new DirWatchService(dir.toString(),
                 this::watcherExceptionOccurred,
@@ -306,6 +311,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
         assertFalse(exceptionOccurred);
     }
 
+    @Test
     public void testStopPoll() throws Exception {
         final DirWatchService service = new DirWatchService(dir.toString(),
                 this::watcherExceptionOccurred,

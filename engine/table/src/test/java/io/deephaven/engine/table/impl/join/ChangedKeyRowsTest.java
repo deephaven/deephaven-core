@@ -13,6 +13,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,9 +21,11 @@ import java.util.List;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 public class ChangedKeyRowsTest extends RefreshingTableTestCase {
 
+    @Test
     public void testFindChanged() {
         final QueryTable table = testRefreshingTable(i(0, 1, 2, 3).toTracking(), intCol("I", 1, 2, 3, 4),
                 col("S", "a", "b", "c", "d"));

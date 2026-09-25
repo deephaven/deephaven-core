@@ -3,13 +3,17 @@
 //
 package io.deephaven.base;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class ArrayUtilTest extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
+public class ArrayUtilTest {
+
+    @Test
     public void testPushArray() {
         String[] sa = ArrayUtil.pushArray("foo", null, String.class);
         assertFalse(sa == null);
@@ -34,6 +38,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals("bar", sa3[2]);
     }
 
+    @Test
     public void testDeleteArrayPos() {
         String[] sa;
 
@@ -126,6 +131,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals(2.0, da[1]);
     }
 
+    @Test
     public void testAddToArray() {
         String[] sa = ArrayUtil.addToArray("foo", null, String.class);
         assertFalse(sa == null);
@@ -144,6 +150,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals("bar", sa3[1]);
     }
 
+    @Test
     public void testInsert() {
         String[] sa = ArrayUtil.insert(new String[0], 0, "foo", String.class);
         assertFalse(sa == null);
@@ -312,6 +319,7 @@ public class ArrayUtilTest extends TestCase {
         }
     }
 
+    @Test
     public void testAddToArrayIdentity() {
         StringWrapper sw1 = new StringWrapper("foo");
         StringWrapper sw2 = new StringWrapper("foo");
@@ -336,6 +344,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals(sw3, sa3[1]);
     }
 
+    @Test
     public void testRemoveFromArray() {
         String sa[] = new String[] {"foo", "bar", "zot"};
 
@@ -365,6 +374,7 @@ public class ArrayUtilTest extends TestCase {
         assertNull(sa2);
     }
 
+    @Test
     public void testReplaceInArray() {
         StringWrapper foo = new StringWrapper("foo");
         StringWrapper bar = new StringWrapper("bar");
@@ -386,6 +396,7 @@ public class ArrayUtilTest extends TestCase {
         assertTrue(sa[1] == bar);
     }
 
+    @Test
     public void testAddUnlessUnary() {
         StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class, new StringWrapper.UnaryEquals("foo"),
                 new StringWrapper.NullaryFactory("foo"));
@@ -409,6 +420,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals("bar", sa3[1].s);
     }
 
+    @Test
     public void testAddUnlessBinary() {
         StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class, new StringWrapper.BinaryEquals(),
                 new StringWrapper.UnaryFactory(), "foo");
@@ -432,6 +444,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals("bar", sa3[1].s);
     }
 
+    @Test
     public void testReplaceOrAdd() {
         StringWrapper[] sa = ArrayUtil.replaceOrAdd(null, StringWrapper.class, new StringWrapper.BinaryEquals(),
                 new StringWrapper.UnaryFactory(), "foo");
@@ -456,6 +469,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals("bar", sa3[1].s);
     }
 
+    @Test
     public void testRemoveIfUnary() {
         StringWrapper foo = new StringWrapper("foo");
         StringWrapper bar = new StringWrapper("bar");
@@ -488,6 +502,7 @@ public class ArrayUtilTest extends TestCase {
         assertNull(sa2);
     }
 
+    @Test
     public void testRemoveIfBinary() {
         StringWrapper foo = new StringWrapper("foo");
         StringWrapper bar = new StringWrapper("bar");
@@ -545,6 +560,7 @@ public class ArrayUtilTest extends TestCase {
         checkRange(ans, ss1.length, ss2, 0, ss2.length);
     }
 
+    @Test
     public void testMerge() {
         final String[] ss1 = {"a", "b", "c"};
         final String[] ss2 = {"d", "c", "e", "f", "g"};
@@ -557,6 +573,7 @@ public class ArrayUtilTest extends TestCase {
         checkMerge(ss1, one);
     }
 
+    @Test
     public void testContainsObject() {
         String[] strings = null;
         assertFalse(ArrayUtil.contains(strings, "a"));
@@ -591,6 +608,7 @@ public class ArrayUtilTest extends TestCase {
         }
     }
 
+    @Test
     public void testContainsInt() {
         int[] ints = null;
         assertFalse(ArrayUtil.contains(ints, 5));
@@ -605,6 +623,7 @@ public class ArrayUtilTest extends TestCase {
         assertTrue(ArrayUtil.contains(ints, 5));
     }
 
+    @Test
     public void testMergeMulti() {
         String[] s1 = {"a", "b", "c"};
         String[] s2 = {"d", "e", "f", "g"};
@@ -614,6 +633,7 @@ public class ArrayUtilTest extends TestCase {
         checkEquals(m1, m2);
     }
 
+    @Test
     public void testIsSorted() {
         // ints
         assertTrue(ArrayUtil.isSorted(new int[] {1, 2, 3, 5}));

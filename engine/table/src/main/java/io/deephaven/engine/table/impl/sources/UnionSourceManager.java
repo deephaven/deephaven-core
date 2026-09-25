@@ -886,8 +886,11 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     // by appending.
                     try (final WritableRowSet match = RowSetFactory.union(matches);
                             final WritableRowSet maybeMatch = RowSetFactory.union(maybeMatches)) {
-                        // Insert the rows from the constituents that don't support pushdown.
-                        maybeMatch.insert(ctx.maybeMatch);
+                        // Selected rows outside every pushdown constituent are "maybe" rows: those of constituents
+                        // that cannot push down, and of any the context did not see when it was initialized.
+                        try (final WritableRowSet uncovered = selection.minus(ctx.pushdownKeys)) {
+                            maybeMatch.subsume(uncovered);
+                        }
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
                     }
                 },
@@ -898,16 +901,27 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 onError);
     }
 
-    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContextImpl {
+    /**
+     * Pushdown context for a filter over {@link UnionColumnSource union sources}. The context is initialized once, by
+     * the first {@link #estimatePushdownFilterCost estimate} or {@link #pushdownFilter pushdown} call, and caches only
+     * the constituents that overlapped that selection and support pushdown, with the key ranges they occupy. Every call
+     * derives the rows it reports from the selection it was given; selected rows outside the cached ranges are always
+     * "maybe", so a selection the context has not seen is answered correctly, if less selectively.
+     */
+    public static class UnionSourcePushdownFilterContext extends ForwardingPushdownFilterContext {
         final UnionSourceManager manager;
-        final WritableRowSet maybeMatch;
         final Map<String, String> renameMap;
 
         boolean initialized = false;
-        List<PushdownFilterMatcher> matchers;
-        LongArrayList firstRowKeys;
-        LongArrayList lastRowKeys;
-        List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
+
+        /** Per constituent that supports pushdown: its matcher, its key range in the union, and its own context. */
+        final ArrayList<PushdownFilterMatcher> matchers = new ArrayList<>();
+        final LongArrayList firstRowKeys = new LongArrayList();
+        final LongArrayList lastRowKeys = new LongArrayList();
+        final ArrayList<io.deephaven.engine.table.impl.PushdownFilterContext> contexts = new ArrayList<>();
+
+        /** The union of the key ranges in {@link #firstRowKeys} and {@link #lastRowKeys}. */
+        final WritableRowSet pushdownKeys = RowSetFactory.empty();
 
         public UnionSourcePushdownFilterContext(
                 @NotNull final WhereFilter filter,
@@ -915,7 +929,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 @NotNull final UnionSourceManager manager) {
             super(filter, columnSources);
             this.manager = Require.neqNull(manager, "manager");
-            maybeMatch = RowSetFactory.empty();
 
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
@@ -927,7 +940,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         /**
          * Initialize the context with the selection and whether to use previous values. This must be called before
-         * using the context.
+         * using the context to estimate or execute a filter; a context that is never initialized can still be
+         * {@link #close() closed}.
          *
          * @param selection The selection of row keys to filter
          * @param usePrev Whether to use previous values for filtering
@@ -943,11 +957,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
             final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
             final int constituentCount = rowSetToUse.intSize();
-
-            matchers = new ArrayList<>(constituentCount);
-            contexts = new ArrayList<>(constituentCount);
-            firstRowKeys = new LongArrayList(constituentCount);
-            lastRowKeys = new LongArrayList(constituentCount);
+            matchers.ensureCapacity(constituentCount);
+            contexts.ensureCapacity(constituentCount);
+            firstRowKeys.ensureCapacity(constituentCount);
+            lastRowKeys.ensureCapacity(constituentCount);
 
             // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
             // row-key-indexed). Slot positions diverge from constituentRows row keys when
@@ -955,6 +968,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
             try (final ObjectColumnIterator<Table> constituents = usePrev
                     ? manager.prevConstituentIter(rowSetToUse)
                     : manager.currConstituentIter(rowSetToUse)) {
+                // Slots are visited in key order, so the pushdown ranges arrive ordered and non-overlapping.
+                final RowSetBuilderSequential pushdownKeysBuilder = RowSetFactory.builderSequential();
                 int slot = 0;
                 while (constituents.hasNext()) {
                     final Table constituent = constituents.next();
@@ -974,27 +989,32 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         final PushdownFilterMatcher matcher =
                                 PushdownFilterMatcher.getPushdownFilterMatcher(filter(), filterSources);
 
+                        // A constituent that cannot push the filter down is left out; pushdownFilter reports its rows.
                         if (matcher != null) {
+                            final io.deephaven.engine.table.impl.PushdownFilterContext constituentContext =
+                                    matcher.makePushdownFilterContext(filter(), filterSources);
+                            addChildContext(constituentContext);
                             matchers.add(matcher);
-                            contexts.add(matcher.makePushdownFilterContext(filter(), filterSources));
+                            contexts.add(constituentContext);
                             firstRowKeys.add(firstKey);
                             lastRowKeys.add(lastKey);
-                        } else {
-                            // Skip this table, but save the rows from this constituent as "maybe"
-                            try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
-                                maybeMatch.subsume(localSelection);
-                            }
+                            pushdownKeysBuilder.appendRange(firstKey, lastKey);
                         }
                     }
                     ++slot;
+                }
+                try (final WritableRowSet built = pushdownKeysBuilder.build()) {
+                    pushdownKeys.subsume(built);
                 }
             }
         }
 
         @Override
         public void close() {
-            contexts.forEach(io.deephaven.engine.table.impl.PushdownFilterContext::close);
-            super.close();
+            // Closes pushdownKeys, then super.close() (which closes the constituent contexts) even if the first fails.
+            try (final SafeCloseable ignoredSuper = super::close) {
+                pushdownKeys.close();
+            }
         }
     }
 

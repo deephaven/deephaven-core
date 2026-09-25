@@ -1363,10 +1363,6 @@
                   {
                     "label": "removeBlink",
                     "path": "reference/table-operations/create/remove-blink.md"
-                  },
-                  {
-                    "label": "toBlink",
-                    "path": "reference/table-operations/create/toBlink.md"
                   }
                 ]
               },

@@ -874,6 +874,12 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             // noinspection unchecked
             return (ColumnSource<ORIGINAL_TYPE>) originalSource;
         }
+
+        @Override
+        public PushdownPredicateManager pushdownManager() {
+            // The manager knows the original sources by name, not their reinterpretations, so decline pushdown.
+            return null;
+        }
     }
 
     private static class ReinterpretedClassKey extends KeyedObjectKey.Basic<Class, ReinterpretReference> {
@@ -933,6 +939,10 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
     }
 
+    /**
+     * The manager to route pushdown through, or {@code null} to decline it. The pushdown methods below consult this, so
+     * the disable flag and the reinterpreted subclass both decline in one place.
+     */
     @Override
     public PushdownPredicateManager pushdownManager() {
         if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
@@ -950,13 +960,12 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
+        final PushdownPredicateManager manager = pushdownManager();
+        if (manager == null) {
             onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
             return;
         }
-        // Delegate to the manager.
-        unionSourceManager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler,
-                onComplete, onError);
+        manager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler, onComplete, onError);
     }
 
     @Override
@@ -969,23 +978,22 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
+        final PushdownPredicateManager manager = pushdownManager();
+        if (manager == null) {
             onComplete.accept(PushdownResult.allMaybeMatch(selection));
             return;
         }
-        // Delegate to the manager.
-        unionSourceManager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler,
-                onComplete, onError);
+        manager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
     }
 
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
-        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
+        final PushdownPredicateManager manager = pushdownManager();
+        if (manager == null) {
             return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
         }
-        // Delegate to the manager.
-        return unionSourceManager.makePushdownFilterContext(filter, filterSources);
+        return manager.makePushdownFilterContext(filter, filterSources);
     }
 }
