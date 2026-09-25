@@ -184,13 +184,9 @@ public class SessionState {
      */
     @VisibleForTesting
     protected void initializeExpiration(@NotNull final SessionService.TokenExpiration expiration) {
-        if (expiration.session != this) {
-            throw new IllegalArgumentException("mismatched session for expiration token");
-        }
-
-        if (!EXPIRATION_UPDATER.compareAndSet(this, null, expiration)) {
-            throw new IllegalStateException("session already initialized");
-        }
+        Assert.eq(expiration.session, "expiration.session", this, "this");
+        Assert.assertion(EXPIRATION_UPDATER.compareAndSet(this, null, expiration),
+                "EXPIRATION_UPDATER.compareAndSet(this, null, expiration)", "session already initialized");
 
         log.debug().append(logPrefix)
                 .append("token initialized to '").append(expiration.token.toString())
@@ -205,9 +201,7 @@ public class SessionState {
      */
     @VisibleForTesting
     protected void updateExpiration(@NotNull final SessionService.TokenExpiration expiration) {
-        if (expiration.session != this) {
-            throw new IllegalArgumentException("mismatched session for expiration token");
-        }
+        Assert.eq(expiration.session, "expiration.session", this, "this");
 
         SessionService.TokenExpiration prevToken = this.expiration;
         while (prevToken != null) {
