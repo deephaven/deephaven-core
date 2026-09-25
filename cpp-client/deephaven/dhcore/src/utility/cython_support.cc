@@ -328,6 +328,18 @@ CythonSupport::ContainerToColumnSource(std::shared_ptr<ContainerBase> data) {
 }
 
 namespace {
+// C++20 deleted operator<<(std::ostream&, char16_t) (P1423R3), since a UTF-16
+// code unit cannot meaningfully be written to a char stream. C++17 promoted
+// it to int and printed the numeric value; keep exactly that output.
+template<typename T>
+void StreamValue(std::ostream &os, const T &value) {
+  os << value;
+}
+
+void StreamValue(std::ostream &os, char16_t value) {
+  os << static_cast<int>(value);
+}
+
 struct ContainerPrinter final : public ContainerVisitor {
   explicit ContainerPrinter(std::ostream *output) : output_(output) {}
 
@@ -389,7 +401,7 @@ struct ContainerPrinter final : public ContainerVisitor {
       if (container->IsNull(i)) {
         *output_ << "null";
       } else {
-        *output_ << (*container)[i];
+        StreamValue(*output_, (*container)[i]);
       }
     }
     *output_ << ']';
@@ -485,7 +497,7 @@ struct ColumnSourcePrinter final : public ColumnSourceVisitor {
       if (nulls[i]) {
         *output_ << "(null)";
       } else {
-        *output_ << data[i];
+        StreamValue(*output_, data[i]);
       }
     }
   }
