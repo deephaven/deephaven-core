@@ -14,7 +14,7 @@ import jpy
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.experimental import s3
-from deephaven.jcompat import j_hashmap
+from deephaven.jcompat import j_array_list, j_hashmap
 from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 if TYPE_CHECKING:
@@ -130,6 +130,7 @@ class IcebergReadInstructions(JObjectWrapper):
         update_mode: Optional[IcebergUpdateMode] = None,
         snapshot_id: Optional[int] = None,
         ignore_resolving_errors: bool = False,
+        ignore_sorted_columns: Optional[Sequence[str]] = None,
     ):
         """
         Initializes the instructions using the provided parameters.
@@ -147,6 +148,12 @@ class IcebergReadInstructions(JObjectWrapper):
                 null data for columns that can't be resolved in DataFiles where they should be present. These errors may
                 be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
                 `False`.
+            ignore_sorted_columns (Optional[Sequence[str]]): the Deephaven columns whose sortedness, declared by the
+                table's sort order, should not be trusted. Deephaven does not verify declared sortedness, and other
+                writers can order data differently than Deephaven would (strings by code point rather than UTF-16 code
+                unit, for example), which makes filters on the column and sorts by it wrong. Ignoring a column also
+                ignores the sort columns after it. A name that is not a sorted column has no effect. By default, None,
+                which trusts all declared sortedness.
         Raises:
             DHError: If unable to build the instructions object.
         """
@@ -178,6 +185,9 @@ class IcebergReadInstructions(JObjectWrapper):
                 builder.snapshotId(snapshot_id)
 
             builder.ignoreResolvingErrors(ignore_resolving_errors)
+
+            if ignore_sorted_columns:
+                builder.addAllIgnoreSortedColumns(j_array_list(ignore_sorted_columns))
 
             self._j_object = builder.build()
         except Exception as e:

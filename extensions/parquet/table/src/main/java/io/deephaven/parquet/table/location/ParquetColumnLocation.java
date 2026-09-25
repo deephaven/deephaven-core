@@ -311,6 +311,24 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     }
 
     /**
+     * Whether any row group of this column might have a dictionary that this column's type can use, judged from
+     * metadata alone, without reading any dictionary. {@code false} means none has one; {@code true} means reading the
+     * dictionaries is needed to know.
+     *
+     * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
+     * @return Whether any row group might have a usable dictionary
+     */
+    boolean mayHaveDictionaryPages(@NotNull final ColumnDefinition<?> columnDefinition) {
+        if (!exists()) {
+            return false;
+        }
+        initializePages(columnDefinition);
+        // The dictionary keys page store is absent for types that cannot use a dictionary
+        return Arrays.stream(dictionaryKeysPageStores)
+                .anyMatch(pageStore -> pageStore != null && pageStore.mayHaveDictionaryPage());
+    }
+
+    /**
      * Get the {@link ColumnChunkPageStore page stores} backing the indices for this column location. Only usable when
      * there are dictionaries. The entries may be null if the corresponding row group does not have a dictionary.
      *

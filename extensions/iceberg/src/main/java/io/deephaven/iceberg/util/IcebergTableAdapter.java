@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -443,7 +444,8 @@ public final class IcebergTableAdapter {
         final IcebergBaseLayout keyFinder = keyFinder(
                 snapshot,
                 readInstructions.dataInstructions().orElse(null),
-                readInstructions.ignoreResolvingErrors());
+                readInstructions.ignoreResolvingErrors(),
+                readInstructions.ignoreSortedColumns());
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             return new IcebergStaticTableLocationProvider<>(
                     tableKey,
@@ -480,7 +482,8 @@ public final class IcebergTableAdapter {
     private @NotNull IcebergBaseLayout keyFinder(
             @Nullable final Snapshot snapshot,
             @Nullable final Object dataInstructions,
-            final boolean ignoreResolvingErrors) {
+            final boolean ignoreResolvingErrors,
+            @NotNull final Set<String> ignoreSortedColumns) {
         final Object specialInstructions = dataInstructions == null
                 ? dataInstructionsProviderLoader.load(locationUri.getScheme())
                 : dataInstructions;
@@ -492,9 +495,11 @@ public final class IcebergTableAdapter {
                 .build();
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
         if (partitionFields.isEmpty()) {
-            return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot);
+            return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot,
+                    ignoreSortedColumns);
         }
-        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver);
+        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver,
+                ignoreSortedColumns);
     }
 
     SeekableChannelsProvider seekableChannelsProvider(final Object specialInstructions) {

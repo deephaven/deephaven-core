@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 
 /**
  * This class provides instructions intended for reading Iceberg catalogs and tables. The default values documented in
@@ -108,6 +109,23 @@ public abstract class IcebergReadInstructions {
         return false;
     }
 
+    /**
+     * The Deephaven columns whose sortedness, declared by the table's sort order, the read should not trust. Names are
+     * Deephaven column names, after any renames or resolution; a name that is not a sorted column has no effect.
+     * <p>
+     * Deephaven takes the sort order of each data file from the table's sort order and does not verify it. Filters on a
+     * sorted column binary-search it, and a sort by it returns the table as it is, so both give wrong results where the
+     * writer sorted the data differently than Deephaven would. Other writers order strings by code point, where
+     * Deephaven orders them by UTF-16 code unit (the two differ where a character above U+FFFF meets one in U+E000
+     * through U+FFFF), and a stored {@code -Double.MAX_VALUE} or {@code -Float.MAX_VALUE} reads as null, which
+     * Deephaven orders before negative infinity. Ignoring a column's sortedness makes these operations correct at the
+     * cost of scanning the column.
+     * <p>
+     * Ignoring a column also ignores every sort column after it, since each is sorted only within runs of the ones
+     * before it. Empty by default.
+     */
+    public abstract Set<String> ignoreSortedColumns();
+
     public interface Builder {
 
         @Deprecated
@@ -134,6 +152,10 @@ public abstract class IcebergReadInstructions {
         Builder snapshot(Snapshot snapshot);
 
         Builder ignoreResolvingErrors(boolean ignoreResolvingErrors);
+
+        Builder addIgnoreSortedColumns(String... elements);
+
+        Builder addAllIgnoreSortedColumns(Iterable<String> elements);
 
         IcebergReadInstructions build();
     }

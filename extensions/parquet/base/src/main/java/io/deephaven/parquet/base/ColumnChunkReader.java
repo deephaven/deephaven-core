@@ -98,6 +98,14 @@ public interface ColumnChunkReader {
     boolean usesDictionaryOnEveryPage();
 
     /**
+     * Whether this column chunk might have a dictionary page, judged from its metadata alone, without reading the
+     * chunk. {@code false} means it has none; {@code true} means reading the dictionary is needed to know.
+     *
+     * @return Whether this column chunk might have a dictionary page
+     */
+    boolean mayHaveDictionaryPage();
+
+    /**
      * @return Supplier for a Parquet dictionary for this column chunk
      * @apiNote The result will never return {@code null}. It will instead supply {@link #NULL_DICTIONARY}.
      */
