@@ -3,20 +3,18 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import it.unimi.dsi.fastutil.ints.IntIterator;
-import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
-import it.unimi.dsi.fastutil.ints.IntSortedSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 
 /**
@@ -42,7 +40,9 @@ final class OutputPositionBlockTracker {
     /** A closed block with at most this many live states is sparse, and may be collapsed. */
     private final int sparseLiveLimit;
     /** The closed blocks that hold live states, but no more than {@link #sparseLiveLimit}. */
-    private final IntSortedSet sparseBlocks = new IntRBTreeSet();
+    private final BitSet sparseBlocks = new BitSet();
+    /** The number of blocks in {@link #sparseBlocks}. */
+    private int sparseBlockCount;
 
     /**
      * @param initialStates the output positions of the live states after the initial build
@@ -72,31 +72,53 @@ final class OutputPositionBlockTracker {
     WritableRowSet update(final RowSet added, final RowSet removed, final int nextOutputPosition) {
         ensureCapacity(nextOutputPosition);
         adjust(added, 1);
-        adjust(removed, -1);
 
-        // a block's live count can only reach zero through a removal, or be zero already when it closes
+        // A block's live count can only reach zero through a removal, or be zero already when it closes. The removed
+        // positions are visited in increasing order, so each block they touch is finished once the walk moves past
+        // it; blocks that closed this cycle are finished afterward, which keeps the released blocks in order.
+        final int oldClosedBlocks = closedBlocks;
         final int newClosedBlocks = nextOutputPosition >> LOG_BLOCK_SIZE;
-        final IntSortedSet candidates = new IntRBTreeSet();
-        removed.forAllRowKeyRanges((first, last) -> {
-            final int lastBlock = Math.min((int) (last >> LOG_BLOCK_SIZE), newClosedBlocks - 1);
-            for (int bi = (int) (first >> LOG_BLOCK_SIZE); bi <= lastBlock; ++bi) {
-                candidates.add(bi);
-            }
-        });
-        for (int bi = closedBlocks; bi < newClosedBlocks; ++bi) {
-            candidates.add(bi);
-        }
         closedBlocks = newClosedBlocks;
-
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        candidates.forEach((int bi) -> {
-            if (liveCounts[bi] == 0) {
-                release(bi, builder);
-            } else {
-                updateSparse(bi);
+        final MutableInt currentBlock = new MutableInt(-1);
+        removed.forAllRowKeyRanges((first, last) -> {
+            long rangeFirst = first;
+            while (rangeFirst <= last) {
+                final int bi = (int) (rangeFirst >> LOG_BLOCK_SIZE);
+                final long rangeLast = Math.min(last, ((long) bi << LOG_BLOCK_SIZE) + BLOCK_SIZE - 1);
+                if (bi != currentBlock.get()) {
+                    finishRemovedBlock(currentBlock.get(), oldClosedBlocks, builder);
+                    currentBlock.set(bi);
+                }
+                assert liveCounts[bi] != RELEASED;
+                liveCounts[bi] -= (int) (rangeLast - rangeFirst + 1);
+                assert liveCounts[bi] >= 0;
+                rangeFirst = rangeLast + 1;
             }
         });
+        finishRemovedBlock(currentBlock.get(), oldClosedBlocks, builder);
+        for (int bi = oldClosedBlocks; bi < newClosedBlocks; ++bi) {
+            finishClosedBlock(bi, builder);
+        }
         return builder.build();
+    }
+
+    /**
+     * Finish a block whose states were removed this cycle, unless it closed this cycle, in which case it is finished
+     * with the other newly closed blocks.
+     */
+    private void finishRemovedBlock(final int bi, final int oldClosedBlocks, final RowSetBuilderSequential builder) {
+        if (bi >= 0 && bi < oldClosedBlocks) {
+            finishClosedBlock(bi, builder);
+        }
+    }
+
+    private void finishClosedBlock(final int bi, final RowSetBuilderSequential builder) {
+        if (liveCounts[bi] == 0) {
+            release(bi, builder);
+        } else {
+            updateSparse(bi);
+        }
     }
 
     /**
@@ -112,7 +134,7 @@ final class OutputPositionBlockTracker {
      */
     Collapse collapseSparseBlocks(final RowSet liveStates, final long maxShiftedStates,
             final WritableRowSet released) {
-        if (sparseBlocks.size() < 2) {
+        if (sparseBlockCount < 2) {
             return Collapse.NONE;
         }
         final List<long[]> collapsedRuns = new ArrayList<>();
@@ -124,8 +146,7 @@ final class OutputPositionBlockTracker {
         final List<int[]> runs = new ArrayList<>();
         int runFirst = -1;
         int runLast = -1;
-        for (final IntIterator it = sparseBlocks.iterator(); it.hasNext();) {
-            final int bi = it.nextInt();
+        for (int bi = sparseBlocks.nextSetBit(0); bi >= 0; bi = sparseBlocks.nextSetBit(bi + 1)) {
             if (runFirst >= 0 && bi == runLast + 1) {
                 runLast = bi;
                 continue;
@@ -166,7 +187,7 @@ final class OutputPositionBlockTracker {
             }
 
             for (int bi = run[0]; bi <= collapseLast; ++bi) {
-                sparseBlocks.remove(bi);
+                clearSparse(bi);
                 final long blockLive =
                         Math.max(0, Math.min(BLOCK_SIZE, runLive - ((long) (bi - run[0]) << LOG_BLOCK_SIZE)));
                 liveCounts[bi] = (int) blockLive;
@@ -243,16 +264,26 @@ final class OutputPositionBlockTracker {
 
     private void release(final int bi, final RowSetBuilderSequential builder) {
         liveCounts[bi] = RELEASED;
-        sparseBlocks.remove(bi);
+        clearSparse(bi);
         final long first = (long) bi << LOG_BLOCK_SIZE;
         builder.appendRange(first, first + BLOCK_SIZE - 1);
     }
 
     private void updateSparse(final int bi) {
         if (liveCounts[bi] > 0 && liveCounts[bi] <= sparseLiveLimit) {
-            sparseBlocks.add(bi);
+            if (!sparseBlocks.get(bi)) {
+                sparseBlocks.set(bi);
+                ++sparseBlockCount;
+            }
         } else {
-            sparseBlocks.remove(bi);
+            clearSparse(bi);
+        }
+    }
+
+    private void clearSparse(final int bi) {
+        if (sparseBlocks.get(bi)) {
+            sparseBlocks.clear(bi);
+            --sparseBlockCount;
         }
     }
 
@@ -270,9 +301,9 @@ final class OutputPositionBlockTracker {
                 final int bi = (int) (rangeFirst >> LOG_BLOCK_SIZE);
                 final long blockLast = ((long) bi << LOG_BLOCK_SIZE) + BLOCK_SIZE - 1;
                 final long rangeLast = Math.min(last, blockLast);
-                Assert.neq(liveCounts[bi], "liveCounts[bi]", RELEASED, "RELEASED");
+                assert liveCounts[bi] != RELEASED;
                 liveCounts[bi] += delta * (int) (rangeLast - rangeFirst + 1);
-                Assert.geqZero(liveCounts[bi], "liveCounts[bi]");
+                assert liveCounts[bi] >= 0;
                 rangeFirst = rangeLast + 1;
             }
         });
