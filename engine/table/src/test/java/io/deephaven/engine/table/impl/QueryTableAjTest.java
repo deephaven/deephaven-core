@@ -116,6 +116,21 @@ public class QueryTableAjTest {
     }
 
     @Test
+    public void testAjEmptyMatch() {
+        final Table left = TableTools.newTable(intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(intCol("RightStamp", 1), intCol("Sentinel", 1));
+
+        for (final String match : new String[] {"", " ", " , "}) {
+            final IllegalArgumentException ajEmpty =
+                    assertThrows(IllegalArgumentException.class, () -> left.aj(right, match, "Sentinel"));
+            assertEquals("aj() requires at least one column to match!", ajEmpty.getMessage());
+            final IllegalArgumentException rajEmpty =
+                    assertThrows(IllegalArgumentException.class, () -> left.raj(right, match));
+            assertEquals("raj() requires at least one column to match!", rajEmpty.getMessage());
+        }
+    }
+
+    @Test
     public void testAjMismatchedTypesWithEmptyLeft() {
         final Table right = TableTools.newTable(longCol("Key", 1L), longCol("RightStamp", 1L), intCol("Sentinel", 1));
         final Table emptyIntKeyLeft = TableTools.newTable(intCol("Key"), longCol("LeftStamp"));
