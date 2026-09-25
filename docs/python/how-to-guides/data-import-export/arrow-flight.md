@@ -58,5 +58,6 @@ Please see the [Groovy documentation](/core/groovy/docs/how-to-guides/data-impor
 
 ## Related documentation
 
+- [What is Barrage?](../../conceptual/what-is-barrage.md)
 - [Barrage Extensions Package Summary](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/package-summary.html)
 - [Arrow Flight Package Summary](https://docs.deephaven.io/core/javadoc/org/apache/arrow/flight/package-summary.html)

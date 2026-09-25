@@ -11,7 +11,7 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 > URIs can be used to share tables across Groovy and Python instances interchangeably. For how to use URIs in Python, see [the equivalent guide](/core/docs/how-to-guides/use-uris).
 
 > [!NOTE]
-> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](./capture-tables.md).
+> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access through a client session. Learn more in [Capture remote tables with Barrage](./capture-tables.md).
 
 > [!IMPORTANT]
 > URI resolution in Deephaven Community (Core) requires **anonymous authentication**. PSK (pre-shared key) authentication is not currently supported — attempting to resolve a URI when PSK is enabled will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
@@ -296,10 +296,11 @@ When using URIs to share tables across instances, particularly over networks, th
 
 ## Related documentation
 
+- [What is Barrage?](../conceptual/what-is-barrage.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`timeTable`](../reference/table-operations/create/timeTable.md)
 - [`update`](../reference/table-operations/select/update.md)
-- [Capture Python client tables](./capture-tables.md)
+- [Capture remote tables with Barrage](./capture-tables.md)
 - [Application Mode](./application-mode.md)
 - [URI cheat sheet](../reference/cheat-sheets/uri-cheat-sheet.md)
 - [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-groovy/#uris)

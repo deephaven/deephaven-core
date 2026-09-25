@@ -2,21 +2,28 @@
 title: Interpret Barrage metrics
 ---
 
-This guide covers the statistics Deephaven records on [Barrage](/barrage/docs) activity. Barrage is an extension of Apache Arrow Flight, with a particular focus on incrementally updating data sets.
+This guide explains what each statistic Deephaven records about [Barrage](./what-is-barrage.md) activity measures, and where in the life of an update or snapshot it is recorded. Barrage is Deephaven's extension of Apache Arrow Flight for incrementally updating data sets. To query these statistics, see [Barrage metrics](../how-to-guides/performance/barrage-performance.md).
 
 ## Metrics overview
 
+Barrage records statistics in two places:
+
+- **The publisher** (the server that owns the table) records the time it takes to capture, coalesce, snapshot, propagate, and write updates.
+- **The receiver** records the time it takes to deserialize and apply updates, but only when the receiver runs the Deephaven engine: the Java client, or a Deephaven server that subscribes with [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) or a [URI](../how-to-guides/use-uris.md). Receiver statistics appear in the receiving process's own metrics tables, not the publisher's. Clients that do not run the engine, such as `pydeephaven` and the JavaScript client, record no receiver statistics.
+
 ### Life of a Barrage update
 
-1. UpdateGraph Source Table Updates
+1. UpdateGraph source table updates
 
-Barrage listens to UpdateGraph changes from the source table. Whenever the source table ticks, Barrage records `EnqueueNanos`, the time it took to record relevant information.
+Barrage listens to UpdateGraph changes from the source table. Whenever the source table ticks, Barrage records `EnqueueNanos`, the time it took to record the changes that occurred during that update graph cycle.
 
 ![Diagram reading "Delta -> Delta -> Delta"](../assets/how-to/barrage-deltas.png)
 
+Each recorded change is held as a pending delta until the next Barrage update. After adding a delta, Barrage records two gauges: `PendingDeltaCount`, the number of pending deltas it is holding, and `PendingDeltaBytes`, the approximate memory those deltas' chunks occupy.
+
 2. `PeriodicUpdateGraph.targetCycleDurationMillis` versus `barrage.minUpdateInterval`
 
-The Periodic Update Graph (UG) ticks at an interval specified by the parameter `-DPeriodicUpdateGraph.targetCycleDurationMillis`. Barrage ticks at an interval specified by the parameter `-Dbarrage.minUpdateInterval` (ms). Barrage records `AggregateNanos`, the time it took to coalesce all upstream updates into a single update.
+The Periodic Update Graph (UG) runs a cycle at the interval set by [`PeriodicUpdateGraph.targetCycleDurationMillis`](./periodic-update-graph-configuration.md#targetcycledurationmillis). Barrage sends updates to subscribers at the interval set by [`barrage.minUpdateInterval`](../how-to-guides/performance/barrage-performance.md#update-interval) (ms), so many UG cycles can elapse between Barrage updates. Barrage records `AggregateNanos`, the time it took to coalesce pending deltas into a message. This can happen more than once per interval: Barrage may [compact pending deltas](../how-to-guides/performance/barrage-performance.md#compact-pending-deltas) before the interval elapses, and a snapshot splits the pending deltas into two ranges that are coalesced separately. Each of these aggregations is recorded.
 
 !["Coalesced Delta"](../assets/how-to/barrage-coalesced-delta.png)
 
@@ -28,30 +35,30 @@ New subscriptions and subscription changes require initializing table state buil
 
 4. Propagation to gRPC listeners
 
-Each delta and snapshot is then propagated to subscribers. Barrage records `PropagateNanos`, the time it took to pass the message to the list of listeners.
+Each delta and snapshot is then propagated to subscribers. Barrage records `PropagateNanos`, the time it took to pass the message to the list of subscribers. Because each subscriber's message is written to its gRPC stream during propagation, `PropagateNanos` includes the write time described in the next step.
 
 > [!NOTE]
 > Barrage also records `UpdateJobNanos`, the aggregate time it took to coalesce deltas, fetch the snapshot, propagate, and housekeep.
 
-5. Writing to the OutputStream
+5. Writing to the gRPC stream
 
-Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteNanos`, the time it took to drain the subscriber-specific filtered view of the update (including coalesced and snapshots) to the OutputStream. Barrage records `WriteBytes`, the number of bytes that were written on a single message. To compare against the bandwidth allowed by the connected hardware, convert to megabits in a query: `Megabits = WriteBytes * 8 / 1e6`.
+For each subscriber, Barrage writes the subscriber-specific filtered view of the update (including coalesced deltas and snapshots) to the subscriber's gRPC stream. Barrage records `WriteNanos`, the time it took to write that view, and `WriteBytes`, the number of bytes written for that update to that subscriber. A single update may be split across several gRPC messages. To compare against the bandwidth allowed by the connected hardware, convert to megabits in a query: `Megabits = WriteBytes * 8 / 1e6`.
 
-6. Receiver bundles gRPC messages into an update (coalesced or snapshot)
+6. Receiver deserializes gRPC messages into an update (coalesced or snapshot)
 
-Barrage records `DeserializationNanos`, the time it took to read and parse the data from the InputStream to assemble an entire Barrage message.
+On the receiver, Barrage records `DeserializationNanos`, the time it took to read and parse the data from the InputStream to assemble an entire Barrage message.
 
 !["Deserialized Delta -> Deserialized Delta -> Deserialized Delta"](../assets/how-to/barrage-deserialized-deltas.png)
 
-7. Receiver bundles gRPC messages into an update (coalesced or snapshot)
+7. Receiver applies updates to the local table
 
 Barrage records `ProcessUpdateNanos`, the amount of time it took to apply a single deserialized delta.
 
-The Barrage table refreshes once per the `-DPeriodicUpdateGraph.targetCycleDurationMillis` interval. Potentially, many messages have arrived over the wire during this time. Barrage records `RefreshNanos`, the amount of time it took to coalesce deltas and to propagate the result to any receiver-side table listeners.
+The receiver's Barrage table refreshes once per update graph cycle on the receiver, which targets the receiver's `PeriodicUpdateGraph.targetCycleDurationMillis` interval. Potentially, many messages have arrived over the wire during this time. Barrage records `RefreshNanos`, the amount of time it took to apply all queued deltas and to propagate the result to any receiver-side table listeners.
 
 ### Life of a snapshot
 
-In addition to subscribing to ticking data, we support fetching a full synchronized snapshot of a table. This enables functionality such as Arrow FlightService's `DoGet`.
+In addition to subscribing to ticking data, Barrage supports fetching a full synchronized snapshot of a table, either through a Barrage snapshot request or through Arrow Flight's `DoGet`. These statistics are recorded in the publisher's snapshot metrics table.
 
 1. Request is received and queued
 
@@ -59,10 +66,18 @@ The snapshot request is queued for processing. Barrage records `QueueNanos`, the
 
 2. The snapshot is constructed
 
-The snapshot request is then fulfilled. The process typically occurs concurrently with the UG, but larger snapshots may require holding the UG exclusive lock. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener.
+The snapshot request is then fulfilled. Barrage first tries to build the snapshot concurrently with the UG, without taking a lock. If those attempts cannot produce a consistent snapshot — for example, because the table keeps changing while a large snapshot is being read — Barrage makes a final attempt while holding the UG shared lock. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener.
 
 Similar to subscription requests, Barrage records `WriteNanos` and `WriteBytes`, the time it took to write, and how many bytes were written.
 
+### Hierarchical tables
+
+Subscriptions to tree and rollup tables also record statistics in the subscription metrics table, but only `SnapshotNanos`, `WriteNanos`, and `WriteBytes`.
+
 ## Related documentation
 
-- [How to use Barrage metrics for performance monitoring](../how-to-guides/performance/barrage-performance.md)
+- [What is Barrage?](./what-is-barrage.md)
+- [Barrage metrics](../how-to-guides/performance/barrage-performance.md)
+- [Periodic Update Graph configuration](./periodic-update-graph-configuration.md)
+- [Incremental update model](./table-update-model.md)
+- [Barrage protocol documentation](/barrage/docs)

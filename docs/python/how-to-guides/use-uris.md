@@ -299,6 +299,7 @@ When using URIs to share tables across instances, particularly over networks, th
 
 ## Related documentation
 
+- [What is Barrage?](../conceptual/what-is-barrage.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
 - [`update`](../reference/table-operations/select/update.md)

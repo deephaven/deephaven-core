@@ -218,5 +218,6 @@ The examples and considerations throughout this document provide a framework for
 
 ## Related documentation
 
+- [What is Barrage?](./what-is-barrage.md)
 - [Core API design](./deephaven-core-api.md)
 - [URIs in Deephaven](../how-to-guides/use-uris.md)

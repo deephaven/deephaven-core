@@ -89,7 +89,7 @@ Once you have a reference to a table on the server, it's easy to publish it with
 from pydeephaven.session import SharedTicket
 
 ticket = SharedTicket.random_ticket()
-client.publish_table(ticket, table_ref)
+client_session.publish_table(ticket, table_ref)
 ```
 
 Next, you will need a Barrage session to subscribe to the ticket. To create the session, use the [`barrage_session`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) function. Notice that [`barrage_session`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) takes the same connection arguments as [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session):
@@ -105,13 +105,13 @@ my_barrage_session = barrage_session(
 )
 ```
 
-By subscribing to the ticket, you can create a local table that updates in real time when the remote table changes:
+By [subscribing](../reference/data-import-export/barrage/subscribe.md) to the ticket, you can create a local table that updates in real time when the remote table changes:
 
 ```python skip-test
 local_t_streaming = my_barrage_session.subscribe(ticket.bytes)
 ```
 
-Alternatively, you can get a static snapshot of a table by using [snapshot](../reference/table-operations/snapshot/snapshot.md). This is the recommended approach if the table is static or if you want a static representation of a ticking table:
+Alternatively, you can get a static snapshot of a table by using [`snapshot`](../reference/data-import-export/barrage/snapshot-barrage.md). This is the recommended approach if the table is static or if you want a static representation of a ticking table:
 
 ```python skip-test
 local_t_static = my_barrage_session.snapshot(ticket.bytes)
@@ -193,6 +193,8 @@ client_session.publish_table(ticket, filtered_ref)
 
 <!--- TODO: link https://github.com/deephaven/deephaven.io/issues/3918 when complete.-->
 
+- [What is Barrage?](../conceptual/what-is-barrage.md)
+- [Barrage metrics](./performance/barrage-performance.md)
 - [Python client Quickstart](../getting-started/pyclient-quickstart.md)
 - [Share tables with URIs](./use-uris.md)
 - [Anonymous authentication](./authentication/auth-anon.md)

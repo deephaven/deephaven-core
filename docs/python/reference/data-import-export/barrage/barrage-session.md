@@ -2,7 +2,7 @@
 title: barrage_session
 ---
 
-The `barrage_session` method returns a cached Deephaven gRPC session ([`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession)) to a remote server if one is available; otherwise, it creates a new [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession).
+The `barrage_session` method creates a new Deephaven gRPC session ([`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession)) to a remote server. Each call opens its own connection. Use the session's [`subscribe`](./subscribe.md) and [`snapshot`](./snapshot-barrage.md) methods to retrieve remote tables, and [`close`](./close.md) it when you are done.
 
 <!--TODO: Add information about client mutual TLS authentication when it's added. -->
 
@@ -15,7 +15,8 @@ barrage_session(
   auth_type: str = 'Anonymous',
   auth_token: str = '',
   use_tls: bool = False,
-  tls_root_certs: bytes = None
+  tls_root_certs: bytes = None,
+  extra_headers: dict[str, str] = None
 ) -> BarrageSession
 ```
 
@@ -49,7 +50,12 @@ If `True`, the connection will be encrypted using TLS. The default is `False`.
 </Param>
 <Param name="tls_root_certs" type="bytes" optional>
 
-The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. `True` implies the use of a TLS connection and the `use_tls` argument should be passed as `True`. Defaults to `None`.
+The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. Any value other than `None` requires a TLS connection, so `use_tls` must also be `True`; otherwise, `barrage_session` raises an error. Defaults to `None`.
+
+</Param>
+<Param name="extra_headers" type="dict[str, str]" optional>
+
+Extra headers to set when configuring the gRPC channel. Defaults to `None`.
 
 </Param>
 </ParamTable>
@@ -99,4 +105,9 @@ barrage_sesh = barrage_session(
 
 ## Related documentation
 
+- [What is Barrage?](../../../conceptual/what-is-barrage.md)
+- [Capture Python client tables](../../../how-to-guides/capture-tables.md)
+- [`subscribe`](./subscribe.md)
+- [`snapshot`](./snapshot-barrage.md)
+- [`close`](./close.md)
 - [Pydoc](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session)

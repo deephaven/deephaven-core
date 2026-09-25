@@ -133,8 +133,7 @@ def barrage_session(
     tls_root_certs: Optional[bytes] = None,
     extra_headers: Optional[dict[str, str]] = None,
 ) -> BarrageSession:
-    """Returns a Deephaven gRPC session to a remote server if a cached session is available; otherwise, creates a new
-    session.
+    """Creates a new Deephaven gRPC session to a remote server.
 
     Note: client authentication is not supported yet.
 

@@ -5,7 +5,7 @@ sidebar_label: Barrage schema annotation
 
 Deephaven tables support Object-typed columns that can hold arbitrary Java objects. When exporting these tables over Flight using the Barrage format, Deephaven uses Apache Arrow schemas to describe the data. By default, if a column is typed as `Object`, the Arrow schema may not capture the intended structure of the data, which can lead to inefficient serialization or loss of type information. Use the `Table.BARRAGE_SCHEMA_ATTRIBUTE` to inject explicit Arrow schema information, which ensures that the Flight export uses the correct wire format.
 
-Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`), or when you want to opt into a wire-level compression such as Run-End Encoding. This guide includes examples of the `Union`, `Map`, and `RunEndEncoded` types, which are supported by Deephaven.
+Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`), or when you want to opt into a wire-level compression such as Run-End Encoding. This guide includes examples of the `Union`, `Map`, and `RunEndEncoded` types and of dictionary encoding, all of which are supported by Deephaven.
 
 ## How it works
 
@@ -14,7 +14,7 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 3. Attach the schema using `withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, newSchema))`.
 
 > [!NOTE]
-> `withAttributes(...)` returns a new table. If you later transform the table (for example, with `select`, `view`, or `update`), attributes may not be preserved and you may need to re-apply the schema. Ideally, you would apply the schema as late as possible before export to minimize this risk.
+> `withAttributes(...)` returns a new table. Only a few operations carry the schema attribute to their result: `where`, `firstBy`, `lastBy`, `partitionBy`, `reverse`, `sort`, and `flatten`. Other transformations, such as `select`, `view`, or `update`, drop it, and you must re-apply the schema. Apply the schema as late as possible before export.
 
 ## Example: Annotate `Union<String, Double>` columns
 
@@ -251,7 +251,7 @@ QueryScope.addParam("rndObject", () -> {
             return (Object)rndString(5);
     }
 })
-QueryScope.addParam("rndMapStringUnion", (len) -> {
+QueryScope.addParam("rndMapStringUnion", () -> {
     return Map.of(
         rndString(5), rndObject(),
         rndString(5), rndObject(),
@@ -326,7 +326,7 @@ table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_
 - `run_ends` — a non-nullable integer array of cumulative 1-based end indices, one per run. The last value always equals the logical row count.
 - `values` — the values that will be repeated in the run.
 
-A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 `run_end` entries + 10 `value` entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization. The `run_ends` integer width is determined by the Arrow field structure you supply via `BARRAGE_SCHEMA_ATTRIBUTE`. Use `Int32` unless you have a specific reason to use `Int16`. Note that `Int16` `run_ends` constrain the effective batch size to at most `Short.MAX_VALUE` / 32,767 rows per record batch.
+A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 `run_end` entries + 10 `value` entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization. The `run_ends` integer width is determined by the Arrow field structure you supply via `BARRAGE_SCHEMA_ATTRIBUTE`. `Int16`, `Int32`, and `Int64` are supported; use `Int32` unless you have a specific reason to use another width. Note that `Int16` `run_ends` constrain the effective batch size to at most `Short.MAX_VALUE` / 32,767 rows per record batch.
 
 ```groovy order=table,table_w_attributes
 import io.deephaven.engine.table.Table
@@ -380,10 +380,10 @@ A string column with 1,000 rows drawn from only 5 distinct values costs 5 full s
 
 The `DictionaryEncoding` index width controls the integer type used for indices:
 
-- `Int32` (32-bit signed) — handles up to about 1 billion distinct values; suitable for almost all use cases.
+- `Int32` (32-bit signed) — handles up to about 2.1 billion distinct values; suitable for almost all use cases.
 - `Int8` (8-bit signed) — the most compact option, but limits the dictionary to at most 128 distinct values.
 - `Int16` (16-bit signed) — more compact than `Int32`, but limits the dictionary to at most 32,768 distinct values.
-- `Int64` (64-bit signed) — rarely needed; use only when distinct values exceed 1 billion.
+- `Int64` (64-bit signed) — supported, but rarely needed, since `Int32` already covers about 2.1 billion distinct values.
 
 > [!CAUTION]
 > Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if a single table (or viewport) contains more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Prefer `Int32` unless you are certain the column's active cardinality stays within the smaller limit.

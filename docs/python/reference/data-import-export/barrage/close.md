@@ -5,7 +5,9 @@ title: close
 The `close` method closes the [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession).
 
 > [!NOTE]
-> If the [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) is initialized with a managed channel, `close` will cut down the channel as well.
+> A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) created by [`barrage_session`](./barrage-session.md) owns its gRPC channel, so `close` shuts down the channel as well. `close` raises an error if the session or channel cannot be shut down.
+
+`BarrageSession` is also a context manager: a `with` block closes the session when it exits.
 
 ## Syntax
 
@@ -19,7 +21,7 @@ This method does not take any parameters.
 
 ## Returns
 
-Closes the [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession).
+`None`.
 
 ## Examples
 
@@ -31,6 +33,18 @@ barrage_sesh = barrage_session("localhost", 10000)
 barrage_sesh.close()
 ```
 
+The following example uses a `with` block to close the session automatically:
+
+```python skip-test
+from deephaven.barrage import barrage_session
+
+with barrage_session("localhost", 10000) as barrage_sesh:
+    local_table = barrage_sesh.snapshot(ticket_bytes)
+```
+
 ## Related documentation
 
+- [What is Barrage?](../../../conceptual/what-is-barrage.md)
+- [Capture Python client tables](../../../how-to-guides/capture-tables.md)
+- [`barrage_session`](./barrage-session.md)
 - [Pydoc](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession.close)
