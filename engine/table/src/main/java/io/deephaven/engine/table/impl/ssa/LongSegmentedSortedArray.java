@@ -1390,7 +1390,7 @@ public final class LongSegmentedSortedArray implements SegmentedSortedArray {
             final long nextValue = leafValues[leaf + 1][0];
             final long nextKey = leafRowKeys[leaf + 1][0];
             Assert.assertion(leq(lastValue, nextValue), lastValue + " < " + nextValue);
-            if (lastValue == nextValue) {
+            if (eq(lastValue, nextValue)) {
                 Assert.lt(lastKey, "lastRowKey (" + leaf + ")", nextKey, "nextKey");
             }
         }
@@ -1628,7 +1628,7 @@ public final class LongSegmentedSortedArray implements SegmentedSortedArray {
         public void advanceToBeforeFirst(long value) {
             advanceToInternal(value, false);
             if (disallowExactMatch) {
-                if (hasNext() && nextValue() == value) {
+                if (hasNext() && eq(nextValue(), value)) {
                     next();
                     advanceWhileEqual();
                 }
@@ -1730,7 +1730,7 @@ public final class LongSegmentedSortedArray implements SegmentedSortedArray {
                 if (indexWithinLeaf < leafSizes[leafIndex] - 1) {
                     return;
                 }
-                if (leafValues[leafIndex + 1][0] != value) {
+                if (!eq(leafValues[leafIndex + 1][0], value)) {
                     return;
                 }
                 leafIndex++;

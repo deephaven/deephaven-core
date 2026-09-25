@@ -2183,6 +2183,92 @@ public class QueryTableAjTest {
     }
 
     /**
+     * Distinct String instances that compare equal to each other.
+     */
+    private static String freshString(final String value) {
+        return new String(value.toCharArray());
+    }
+
+    /**
+     * An exact aj takes the last right row of a run of equal stamps, including when the run is longer than an SSA leaf
+     * and every stamp is a distinct instance of an equal String.
+     */
+    @Test
+    public void testAjEqualStringStampRunAcrossLeaves() {
+        final int runLength = 5000;
+        final String[] rightStamps = new String[runLength];
+        for (int ii = 0; ii < runLength; ++ii) {
+            rightStamps[ii] = freshString("B");
+        }
+        final QueryTable right = testRefreshingTable(RowSetFactory.flat(runLength).toTracking(),
+                col("RightStamp", rightStamps), intCol("Sentinel", IntStream.range(0, runLength).toArray()));
+        final QueryTable staticLeft = testTable(i(0).toTracking(), col("LeftStamp", freshString("B")));
+        final QueryTable refreshingLeft = testRefreshingTable(i(0).toTracking(), col("LeftStamp", freshString("B")));
+
+        for (final QueryTable left : new QueryTable[] {staticLeft, refreshingLeft}) {
+            final Table result = left.aj(right, "LeftStamp>=RightStamp", "Sentinel");
+            assertEquals(runLength - 1, result.getColumnSource("Sentinel", int.class).getInt(0));
+        }
+    }
+
+    /**
+     * A raj orders NaN stamps as equal to each other and takes the first right row of a run of NaN stamps, including
+     * when the run is longer than an SSA leaf.
+     */
+    @Test
+    public void testRajNaNStampRunAcrossLeaves() {
+        final int runLength = 5000;
+        final double[] rightStamps = new double[runLength];
+        Arrays.fill(rightStamps, Double.NaN);
+        final QueryTable right = testRefreshingTable(RowSetFactory.flat(runLength).toTracking(),
+                doubleCol("RightStamp", rightStamps), intCol("Sentinel", IntStream.range(0, runLength).toArray()));
+        final QueryTable staticLeft = testTable(i(0).toTracking(), doubleCol("LeftStamp", Double.NaN));
+        final QueryTable refreshingLeft = testRefreshingTable(i(0).toTracking(), doubleCol("LeftStamp", Double.NaN));
+
+        for (final QueryTable left : new QueryTable[] {staticLeft, refreshingLeft}) {
+            final Table result = left.raj(right, "LeftStamp<=RightStamp", "Sentinel");
+            assertEquals(0, result.getColumnSource("Sentinel", int.class).getInt(0));
+        }
+    }
+
+    /**
+     * With both sides refreshing, a strict aj never matches a left row to a right row with an equal stamp. Adding a
+     * right row whose stamp equals a left stamp leaves that left row matched to the preceding right row, and removing
+     * the right row a left row matched moves the left row to the next preceding right row.
+     */
+    @Test
+    public void testStrictAjEqualStampsBothTicking() {
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(),
+                col("LeftStamp", freshString("a"), freshString("b"), freshString("c")),
+                doubleCol("LeftDouble", 1.0, Double.NaN, Double.NaN));
+        final QueryTable stringRight = testRefreshingTable(i(0).toTracking(),
+                col("RightStamp", freshString("a")), intCol("Sentinel", 0));
+        final QueryTable doubleRight = testRefreshingTable(i(0).toTracking(),
+                doubleCol("RightDouble", 0.5), intCol("Sentinel", 0));
+
+        final Table stringResult = left.aj(stringRight, "LeftStamp>RightStamp", "Sentinel");
+        final Table doubleResult = left.aj(doubleRight, "LeftDouble>RightDouble", "Sentinel");
+        Asserts.assertEquals(new int[] {NULL_INT, 0, 0}, ColumnVectors.ofInt(stringResult, "Sentinel").toArray());
+        Asserts.assertEquals(new int[] {0, 0, 0}, ColumnVectors.ofInt(doubleResult, "Sentinel").toArray());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(stringRight, i(1), col("RightStamp", freshString("b")), intCol("Sentinel", 1));
+            stringRight.notifyListeners(i(1), i(), i());
+            addToTable(doubleRight, i(1), doubleCol("RightDouble", Double.NaN), intCol("Sentinel", 1));
+            doubleRight.notifyListeners(i(1), i(), i());
+        });
+        Asserts.assertEquals(new int[] {NULL_INT, 0, 1}, ColumnVectors.ofInt(stringResult, "Sentinel").toArray());
+        Asserts.assertEquals(new int[] {0, 0, 0}, ColumnVectors.ofInt(doubleResult, "Sentinel").toArray());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(stringRight, i(1));
+            stringRight.notifyListeners(i(), i(1), i());
+        });
+        Asserts.assertEquals(new int[] {NULL_INT, 0, 0}, ColumnVectors.ofInt(stringResult, "Sentinel").toArray());
+    }
+
+    /**
      * The rows of one side of a churning bucketed join, grouped by key, along with the additions and removals staged
      * for the next cycle. Rows are appended in increasing row key order.
      */
