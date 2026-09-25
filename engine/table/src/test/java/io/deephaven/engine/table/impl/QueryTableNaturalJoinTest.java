@@ -2637,6 +2637,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
      * An exact join of a static left table to a refreshing right table fails with an ExactJoinMissingKeyException when
      * the right row of a matched key is removed.
      */
+    @Test
     public void testExactJoinRightRemovalStaticLeft() {
         final Table left = testTable(col("Key", "a", "b"), intCol("L", 1, 2));
         final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "a", "b"), intCol("R", 10, 20));
@@ -3916,6 +3917,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
      * reaches the unmatched key first when it applies the modified slots, so each path reports the violation it meets
      * first, with that violation's exception.
      */
+    @Test
     public void testExactJoinSameCycleRemoveAndDuplicateReportDedicatedExceptions() {
         for (final boolean leftRefreshing : new boolean[] {false, true}) {
             final QueryTable left = leftRefreshing
