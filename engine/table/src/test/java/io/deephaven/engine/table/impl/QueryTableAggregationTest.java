@@ -1993,7 +1993,7 @@ public class QueryTableAggregationTest {
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").avgBy()),
-                EvalNugget.from(() -> queryTable.sort("Sym").avgBy("Sym")),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").avgBy("Sym"), "Sym"),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").avgBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").avgBy("Sym", "intCol").sort("Sym", "intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym").update("x=intCol+1").avgBy("Sym").sort("Sym")),
@@ -2004,8 +2004,8 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").avgBy("Sym").sort("Sym")),
                 new TableComparator(queryTable.dropColumns("Sym").avgBy(),
                         queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updates))),
-                new TableComparator(queryTable.avgBy("Sym"),
-                        queryTable.groupBy("Sym").update(Selectable.from(updates))),
+                new TableComparator(queryTable.avgBy("Sym").sort("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updates)).sort("Sym")),
         };
         TstUtils.validate(en);
         for (int i = 0; i < 50; i++) {
@@ -2054,9 +2054,9 @@ public class QueryTableAggregationTest {
         final Table bigAsDouble = queryTable
                 .view("Sym", "bigI", "bigD", "doubleI=bigI.doubleValue()", "doubleD=bigD.doubleValue()").sort("Sym");
         final Table bigVsDoubleVar = bigAsDouble.varBy("Sym");
-        final Table doubleComparisonVar = bigVsDoubleVar.view("Sym", integerCmp, decimalCmp);
+        final Table doubleComparisonVar = bigVsDoubleVar.view("Sym", integerCmp, decimalCmp).sort("Sym");
         final Table bigVsDoubleStd = bigAsDouble.stdBy("Sym");
-        final Table doubleComparisonStd = bigVsDoubleStd.view("Sym", integerCmp, decimalCmp);
+        final Table doubleComparisonStd = bigVsDoubleStd.view("Sym", integerCmp, decimalCmp).sort("Sym");
 
         final List<String> updateStd =
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
@@ -2068,16 +2068,8 @@ public class QueryTableAggregationTest {
                         .collect(Collectors.toList());
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.sort("Sym").stdBy("Sym");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.sort("Sym").varBy("Sym");
-                    }
-                },
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").stdBy("Sym"), "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").varBy("Sym"), "Sym"),
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.dropColumns("Sym").stdBy();
@@ -2108,12 +2100,12 @@ public class QueryTableAggregationTest {
                 },
                 new TableComparator(queryTable.dropColumns("Sym").stdBy(),
                         queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updateStd))),
-                new TableComparator(queryTable.stdBy("Sym"),
-                        queryTable.groupBy("Sym").update(Selectable.from(updateStd))),
+                new TableComparator(queryTable.stdBy("Sym").sort("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updateStd)).sort("Sym")),
                 new TableComparator(queryTable.dropColumns("Sym").varBy(),
                         queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updateVar))),
-                new TableComparator(queryTable.varBy("Sym"),
-                        queryTable.groupBy("Sym").update(Selectable.from(updateVar))),
+                new TableComparator(queryTable.varBy("Sym").sort("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updateVar)).sort("Sym")),
         };
         for (int i = 0; i < 50; i++) {
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
@@ -4516,6 +4508,15 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testReleaseBlocksSlidingWindow() {
+        final boolean originalRelease = ChunkedOperatorAggregationHelper.RELEASE_BLOCKS;
+        try (final SafeCloseable ignored =
+                () -> ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = originalRelease) {
+            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = true;
+            doTestReleaseBlocksSlidingWindow();
+        }
+    }
+
+    private void doTestReleaseBlocksSlidingWindow() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final int window = 3 * blockSize;
         // not a multiple of the block size, so that blocks empty part way through a cycle

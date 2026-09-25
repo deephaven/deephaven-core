@@ -162,8 +162,6 @@ class CountAggregationOperator extends BasicStateChangeRecorder implements Itera
 
     @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
-        for (long ii = firstOutputPosition; ii <= lastOutputPosition; ++ii) {
-            countColumnSource.set(ii, 0L);
-        }
+        NonNullCounter.zeroRange(countColumnSource, firstOutputPosition, lastOutputPosition);
     }
 }

@@ -189,7 +189,7 @@ class BigIntegerChunkedVarOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public boolean canReclaimStates() {
-        return false;
+        return true;
     }
 
     @Override
