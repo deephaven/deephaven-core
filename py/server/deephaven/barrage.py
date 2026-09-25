@@ -135,7 +135,8 @@ def barrage_session(
 ) -> BarrageSession:
     """Creates a new Deephaven gRPC session to a remote server.
 
-    Note: client certificate (mutual TLS) authentication is not supported yet.
+    Note: this function has no client certificate (mutual TLS) parameters. A client identity configured in the local
+    server's outbound.ssl.* properties is used only when tls_root_certs is not passed.
 
     Args:
         host (str): the host name or IP address of the Deephaven server.
