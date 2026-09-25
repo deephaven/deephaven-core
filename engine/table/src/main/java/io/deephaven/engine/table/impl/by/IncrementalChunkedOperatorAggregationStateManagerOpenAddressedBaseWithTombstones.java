@@ -480,8 +480,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         // ranges may cover positions that hold no state, whose entries in outputPositionToHashSlot are stale
         for (int ri = 0; ri < shiftData.size(); ++ri) {
             final long delta = shiftData.getShiftDelta(ri);
-            try (final RowSet moving =
-                    liveStates.subSetByKeyRange(shiftData.getBeginRange(ri), shiftData.getEndRange(ri))) {
+            try (final RowSequence moving =
+                    liveStates.getRowSequenceByKeyRange(shiftData.getBeginRange(ri), shiftData.getEndRange(ri))) {
                 moving.forAllRowKeys(outputPosition -> {
                     final int hashSlot = outputPositionToHashSlot.getUnsafe(outputPosition);
                     final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
