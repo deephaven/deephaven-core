@@ -53,6 +53,32 @@ public class TestBitmapRandomBuilder {
     }
 
     @Test
+    public void testDenseRuns() {
+        final Random random = new Random(1);
+        final BitmapRandomBuilder builder = new BitmapRandomBuilder(0);
+        for (int round = 0; round < 100; ++round) {
+            final int maxKey = 64 * (1 + random.nextInt(40));
+            builder.reset(maxKey);
+            final RowSetBuilderRandom expectedBuilder = RowSetFactory.builderRandom();
+            // runs that fill whole words, cross word boundaries, and end on the last bit of a word
+            for (int ii = 0; ii < 6; ++ii) {
+                final int first = random.nextInt(maxKey);
+                final int last = Math.min(maxKey - 1, first + random.nextInt(150));
+                for (int key = first; key <= last; ++key) {
+                    builder.addKey(key);
+                }
+                expectedBuilder.addRange(first, last);
+            }
+            builder.addKey(maxKey - 1);
+            expectedBuilder.addKey(maxKey - 1);
+            try (final RowSet expected = expectedBuilder.build();
+                    final RowSet built = builder.build()) {
+                assertEquals("round=" + round, expected, built);
+            }
+        }
+    }
+
+    @Test
     public void testResetDiscardsUnbuiltKeys() {
         final BitmapRandomBuilder builder = new BitmapRandomBuilder(1000);
         builder.addKey(5);

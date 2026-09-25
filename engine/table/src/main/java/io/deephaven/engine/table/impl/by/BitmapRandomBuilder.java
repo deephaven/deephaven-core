@@ -110,10 +110,16 @@ public class BitmapRandomBuilder implements RowSetBuilderRandom {
             }
             bitset[ii] = 0;
             final long wordFirstKey = ii * 64L;
+            // append each run of set bits as a range, so that dense words cost one append per run rather than per key
             while (word != 0) {
-                seqBuilder.appendKey(wordFirstKey + Long.numberOfTrailingZeros(word));
-                // clear the lowest set bit
-                word &= word - 1;
+                final int runStart = Long.numberOfTrailingZeros(word);
+                final int runLength = Long.numberOfTrailingZeros(~(word >>> runStart));
+                seqBuilder.appendRange(wordFirstKey + runStart, wordFirstKey + runStart + runLength - 1);
+                if (runStart + runLength >= 64) {
+                    break;
+                }
+                // clear the run's bits
+                word &= -1L << (runStart + runLength);
             }
         }
         firstUsed = Integer.MAX_VALUE;

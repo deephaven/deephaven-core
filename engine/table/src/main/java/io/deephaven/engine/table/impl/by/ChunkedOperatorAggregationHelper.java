@@ -302,8 +302,10 @@ public class ChunkedOperatorAggregationHelper {
 
                 final StateChangeRecorder stateChangeRecorder =
                         preserveEmpty ? null : ac.getStateChangeRecorder();
-                // reused by every update, so that its bitset is allocated once and grows with the output positions
+                // reused by every update, so that their bitsets are allocated once and grow with the output positions
                 final BitmapRandomBuilder modifiedStatesBuilder = new BitmapRandomBuilder(0);
+                final BitmapRandomBuilder reincarnatedStatesBuilder = new BitmapRandomBuilder(0);
+                final BitmapRandomBuilder emptiedStatesBuilder = new BitmapRandomBuilder(0);
 
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
@@ -320,7 +322,8 @@ public class ChunkedOperatorAggregationHelper {
                     try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
                             reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
                             operatorInputModifiedColumnSets, stateChangeRecorder, upstreamToUse,
-                            outputPosition, modifiedStatesBuilder)) {
+                            outputPosition, modifiedStatesBuilder, reincarnatedStatesBuilder,
+                            emptiedStatesBuilder)) {
                         downstream = kuc.computeDownstreamIndicesAndCopyKeys(input.getRowSet(),
                                 resultRowset,
                                 keyColumnsRaw,
@@ -482,7 +485,9 @@ public class ChunkedOperatorAggregationHelper {
                 @Nullable final StateChangeRecorder stateChangeRecorder,
                 @NotNull final TableUpdate upstream,
                 @NotNull final MutableInt outputPosition,
-                @NotNull final BitmapRandomBuilder modifiedStatesBuilder) {
+                @NotNull final BitmapRandomBuilder modifiedStatesBuilder,
+                @NotNull final BitmapRandomBuilder reincarnatedStatesBuilder,
+                @NotNull final BitmapRandomBuilder emptiedStatesBuilder) {
             this.ac = ac;
             this.incrementalStateManager = incrementalStateManager;
             this.reinterpretedKeySources = reinterpretedKeySources;
@@ -514,12 +519,16 @@ public class ChunkedOperatorAggregationHelper {
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
 
             if (stateChangeRecorder != null) {
-                reincarnatedStatesBuilder = RowSetFactory.builderRandom();
-                emptiedStatesBuilder = RowSetFactory.builderRandom();
+                // Only states that exist when the cycle starts can empty, or come back after emptying; a new state
+                // recorded as reincarnated is past the maximum key and ignored, and is added with the new states.
+                reincarnatedStatesBuilder.reset(outputPosition.get());
+                emptiedStatesBuilder.reset(outputPosition.get());
+                this.reincarnatedStatesBuilder = reincarnatedStatesBuilder;
+                this.emptiedStatesBuilder = emptiedStatesBuilder;
                 stateChangeRecorder.startRecording(reincarnatedStatesBuilder::addKey, emptiedStatesBuilder::addKey);
             } else {
-                reincarnatedStatesBuilder = new EmptyRandomBuilder();
-                emptiedStatesBuilder = new EmptyRandomBuilder();
+                this.reincarnatedStatesBuilder = new EmptyRandomBuilder();
+                this.emptiedStatesBuilder = new EmptyRandomBuilder();
             }
             this.modifiedStatesBuilder = modifiedStatesBuilder;
             modifiedStatesBuilder.reset(outputPosition.get());
@@ -837,13 +846,25 @@ public class ChunkedOperatorAggregationHelper {
         /**
          * Apply a block shift to a row set, moving each range's keys as a whole: a block shift has few ranges but may
          * move many scattered keys, so this avoids appending every moved range of keys to a builder, as
-         * {@link RowSetShiftData#apply(WritableRowSet)} does. Every range moves down, so applying them in order never
-         * moves keys onto keys still to be moved.
+         * {@link RowSetShiftData#apply(WritableRowSet)} does. Each range's keys are taken through a view, which shares
+         * the row set's storage, rather than a subset, which would be compacted only to be inserted again. Every range
+         * moves down, so applying them in order never moves keys onto keys still to be moved.
          */
         private void applyBlockShift(@NotNull final RowSetShiftData shift, @NotNull final WritableRowSet rowSet) {
             for (int ri = 0; ri < shift.size(); ++ri) {
-                RowSetShiftData.applyShift(rowSet, shift.getBeginRange(ri), shift.getEndRange(ri),
-                        shift.getShiftDelta(ri));
+                final long first = shift.getBeginRange(ri);
+                final long last = shift.getEndRange(ri);
+                final RowSet moving;
+                try (final RowSequence inRange = rowSet.getRowSequenceByKeyRange(first, last)) {
+                    if (inRange.isEmpty()) {
+                        continue;
+                    }
+                    moving = inRange.asRowSet();
+                }
+                try (final RowSet ignored = moving) {
+                    rowSet.removeRange(first, last);
+                    rowSet.insertWithShift(shift.getShiftDelta(ri), moving);
+                }
             }
         }
 
