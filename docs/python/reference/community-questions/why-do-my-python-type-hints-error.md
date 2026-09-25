@@ -1,6 +1,6 @@
 ---
-title: Why
-sidebar_label: Why are my table operations producing incorrect results?
+title: Why does my function with type hints throw an error on null values?
+sidebar_label: Why does my function with type hints throw an error on null values?
 ---
 
 <em>My query that uses type hints now fails to calculate and throws an error. How do I fix it?</em>
