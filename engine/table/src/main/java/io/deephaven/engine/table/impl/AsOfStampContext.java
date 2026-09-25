@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.MathUtil;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
@@ -69,7 +70,7 @@ class AsOfStampContext implements Context {
             return;
         }
         if (length < 1 << 16) {
-            length = Integer.highestOneBit(length) * 2;
+            length = MathUtil.roundUpPowerOf2(length);
         }
         if (sortKernel != null) {
             sortCapacity = -1;
@@ -85,7 +86,7 @@ class AsOfStampContext implements Context {
             return;
         }
         if (length < 1 << 16) {
-            length = Integer.highestOneBit(length) * 2;
+            length = MathUtil.roundUpPowerOf2(length);
         }
         ensureSortCapacity(length);
 
@@ -124,7 +125,7 @@ class AsOfStampContext implements Context {
             return;
         }
         if (length < 1 << 16) {
-            length = Integer.highestOneBit(length) * 2;
+            length = MathUtil.roundUpPowerOf2(length);
         }
         ensureSortCapacity(length);
         if (rightFillContext != null) {
@@ -141,7 +142,7 @@ class AsOfStampContext implements Context {
             return;
         }
         if (length < 1 << 16) {
-            length = Integer.highestOneBit(length) * 2;
+            length = MathUtil.roundUpPowerOf2(length);
         }
         closeRightChunks();
 
