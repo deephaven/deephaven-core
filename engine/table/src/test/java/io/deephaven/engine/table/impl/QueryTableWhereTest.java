@@ -2281,6 +2281,132 @@ public abstract class QueryTableWhereTest {
         assertEquals(5_000, numRowsFiltered(postFilter));
     }
 
+    /**
+     * DH-23750: a table whose columns A, B and C (each {@code 0..99_999}) report pushdown costs 100, 90 and 80, so cost
+     * reordering would run filters on C before B before A.
+     */
+    private static QueryTable costOrderedPushdownTable() {
+        final int[] columnData = new int[100_000];
+        for (int ii = 0; ii < columnData.length; ++ii) {
+            columnData[ii] = ii;
+        }
+        final WritableRowSet rowSet = RowSetFactory.flat(columnData.length);
+        final Map<String, ColumnSource<?>> csMap = Map.of(
+                "A", new PushdownIntTestSource(rowSet, 100L, 1.0, columnData),
+                "B", new PushdownIntTestSource(rowSet, 90L, 1.0, columnData),
+                "C", new PushdownIntTestSource(rowSet, 80L, 1.0, columnData));
+        final QueryTable sourceWithData = (QueryTable) new QueryTable(rowSet.toTracking(), csMap).update("I = ii");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "I");
+        return sourceWithData;
+    }
+
+    /**
+     * DH-23750 (PD-032): with QueryTable.DISABLE_WHERE_REORDER_WITH_BARRIERS at its default, filters linked by a
+     * barrier run in their declared order even though a later one is cheaper, while filters with no barrier
+     * relationship are still reordered by cost.
+     */
+    @Test
+    public void testDeclaredOrderKeptWithBarriersByDefault() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable sourceWithData = costOrderedPushdownTable();
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A >= 20000"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("C < 25000"));
+        final ArrayList<RowSetCapturingFilter> allFilters =
+                Lists.newArrayList(preFilter, midFilter, postFilter, filter1, filter2);
+
+        // No barriers: cost reordering still runs filter2, then filter1, then the rest.
+        sourceWithData.where(Filter.and(preFilter, filter1, midFilter, filter2, postFilter));
+        assertEquals(5_000, numRowsFiltered(preFilter));
+        assertEquals(25_000, numRowsFiltered(filter1));
+        assertEquals(5_000, numRowsFiltered(midFilter));
+        assertEquals(100_000, numRowsFiltered(filter2));
+        assertEquals(5_000, numRowsFiltered(postFilter));
+
+        // filter2 respects a barrier declared by filter1: until filter1 has run, the declared order is kept, so
+        // preFilter and filter1 run first; the remaining filters are then reordered by cost.
+        allFilters.forEach(RowSetCapturingFilter::reset);
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withDeclaredBarriers(barrier),
+                midFilter,
+                filter2.withRespectedBarriers(barrier),
+                postFilter));
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(80_000, numRowsFiltered(filter2));
+        assertEquals(5_000, numRowsFiltered(midFilter));
+        assertEquals(5_000, numRowsFiltered(postFilter));
+    }
+
+    /**
+     * DH-23750 (PD-032): transitive barriers at the default setting run in their declared order, though each later
+     * filter is cheaper than the one before it.
+     */
+    @Test
+    public void testDeclaredOrderKeptWithTransitiveBarriersByDefault() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable sourceWithData = costOrderedPushdownTable();
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A >= 20000"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("B < 50000"));
+        final RowSetCapturingFilter filter3 = new RowSetCapturingFilter(RawString.of("C < 25000"));
+
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withDeclaredBarriers("1"),
+                filter2.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                filter3.withRespectedBarriers("2"),
+                postFilter));
+        // pre, f1, f2, f3 in declared order; post last
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(80_000, numRowsFiltered(filter2));
+        assertEquals(30_000, numRowsFiltered(filter3));
+        assertEquals(5_000, numRowsFiltered(postFilter));
+    }
+
+    /**
+     * DH-23750 (PD-032): with a data index, the barrier's declarer still runs before a cheaper filter that respects it
+     * at the default setting; after that, the respecting index filter is reordered ahead of the others.
+     */
+    @Test
+    public void testDataIndexDeclaredOrderKeptWithBarriersByDefault() {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("A < 25"));
+
+        sourceWithData.where(Filter.and(
+                preFilter,
+                filter1.withDeclaredBarriers(barrier),
+                midFilter.withRespectedBarriers(barrier),
+                filter2.withRespectedBarriers(barrier),
+                postFilter));
+
+        assertEquals(100_000, numRowsFiltered(preFilter));
+        assertEquals(25_000, numRowsFiltered(midFilter));
+        assertEquals(25_000, numRowsFiltered(postFilter));
+        assertEquals(100, filter1.numRowsProcessed()); // index table size
+        assertEquals(100, filter2.numRowsProcessed()); // index table size
+    }
+
     @Test
     public void testPushdownTransitiveBarriers() {
         // DH-23750 (42.x only): this test exercises cost reordering of barrier-linked filters, which is disabled by
