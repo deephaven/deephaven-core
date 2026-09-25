@@ -411,10 +411,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             if (relevantShift.isNonempty()) {
                                 try (final SizedSafeCloseable<ColumnSource.FillContext> rightShiftFillContext =
                                         new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                                        final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
-                                                new SizedSafeCloseable<>(
-                                                        sz -> LongSortKernel.makeContext(stampChunkType, order, sz,
-                                                                true));
                                         final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>();
                                         final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampChunkType)) {
 
@@ -458,25 +454,34 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                         shiftedRowSet.subSetByKeyRange(slotSit.beginRange(),
                                                                 slotSit.endRange())) {
                                                     if (slotSit.polarityReversed()) {
-                                                        final int shiftSize = rowSetToShift.intSize();
-                                                        rightStampSource.fillPrevChunk(
-                                                                rightShiftFillContext.ensureCapacity(shiftSize),
-                                                                rightStampValues.ensureCapacity(shiftSize),
-                                                                rowSetToShift);
-                                                        rowSetToShift
-                                                                .fillRowKeyChunk(
+                                                        // a positive shift moves the highest row keys first, so no row
+                                                        // is shifted onto a key that has yet to be shifted
+                                                        final long rowsToShift = rowSetToShift.size();
+                                                        for (long endPosition =
+                                                                rowsToShift; endPosition > 0; endPosition -=
+                                                                        cycleRightChunkSize) {
+                                                            try (final RowSet chunkOk =
+                                                                    rowSetToShift.subSetByPositionRange(
+                                                                            Math.max(0,
+                                                                                    endPosition - cycleRightChunkSize),
+                                                                            endPosition)) {
+                                                                final int shiftSize = chunkOk.intSize();
+                                                                rightStampSource.fillPrevChunk(
+                                                                        rightShiftFillContext.ensureCapacity(shiftSize),
+                                                                        rightStampValues.ensureCapacity(shiftSize),
+                                                                        chunkOk);
+                                                                chunkOk.fillRowKeyChunk(
                                                                         rightStampKeys.ensureCapacity(shiftSize));
-                                                        shiftSortKernel.ensureCapacity(shiftSize).sort(
-                                                                rightStampKeys.get(),
-                                                                rightStampValues.get());
+                                                                sortKernel.sort(rightStampKeys.get(),
+                                                                        rightStampValues.get());
 
-                                                        ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
-                                                                rightStampKeys.get(), slotSit.shiftDelta(),
-                                                                rowRedirection,
-                                                                disallowExactMatch);
-                                                        rightSsa.applyShiftReverse(rightStampValues.get(),
-                                                                rightStampKeys.get(),
-                                                                slotSit.shiftDelta());
+                                                                ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
+                                                                        rightStampKeys.get(), slotSit.shiftDelta(),
+                                                                        rowRedirection, disallowExactMatch);
+                                                                rightSsa.applyShiftReverse(rightStampValues.get(),
+                                                                        rightStampKeys.get(), slotSit.shiftDelta());
+                                                            }
+                                                        }
                                                     } else {
                                                         try (final RowSequence.Iterator shiftIt =
                                                                 rowSetToShift.getRowSequenceIterator()) {

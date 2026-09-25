@@ -38,6 +38,8 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.testutil.QueryTableTestBase.JoinIncrement;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.sources.TestColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -2258,6 +2260,112 @@ public class QueryTableAjTest {
         assertEquals(1, listener.getCount());
         assertEquals(i(1, 2), listener.getUpdate().modified());
         result.removeUpdateListener(listener);
+    }
+
+    /**
+     * Shifts a range of rows of a refreshing test table by a positive delta, which may move rows onto keys that other
+     * rows of the same range vacate, and notifies listeners.
+     */
+    private static void shiftTestTable(final QueryTable table, final long start, final long end, final long delta) {
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(start, end, delta);
+        final RowSetShiftData shifted = shiftBuilder.build();
+        shifted.apply((beginRange, endRange, shiftDelta) -> {
+            for (final ColumnSource<?> column : table.getColumnSources()) {
+                ((TestColumnSource<?>) column).shift(beginRange, endRange, shiftDelta);
+            }
+        });
+        shifted.apply(table.getRowSet().writableCast());
+        table.notifyListeners(new TableUpdateImpl(i(), i(), i(), shifted, ModifiedColumnSet.EMPTY));
+    }
+
+    /**
+     * Positive shifts of more rows than the join's chunk size are applied a chunk at a time, from the highest row keys
+     * down. Each shift moves every row of a range onto the key that the next row of its bucket vacates, on the right
+     * and the left side, for zero-key and bucketed joins with a static or refreshing left table.
+     */
+    @Test
+    public void testPositiveShiftLargerThanChunk() {
+        final int chunkSize = 4;
+        final JoinControl control = new JoinControl() {
+            @Override
+            int rightSsaNodeSize() {
+                return chunkSize;
+            }
+
+            @Override
+            int leftSsaNodeSize() {
+                return chunkSize;
+            }
+
+            @Override
+            public int rightChunkSize() {
+                return chunkSize;
+            }
+        };
+
+        final int rightSize = 40;
+        final long[] rightKeys = new long[rightSize];
+        final String[] rightBuckets = new String[rightSize];
+        final int[] rightStamps = new int[rightSize];
+        for (int ii = 0; ii < rightSize; ++ii) {
+            rightKeys[ii] = 2L * ii;
+            rightBuckets[ii] = ii % 2 == 0 ? "A" : "B";
+            // stamps decrease as the row key increases, so the left rows matched to a right row sit just after those
+            // matched to the right row whose key it is shifted onto
+            rightStamps[ii] = (rightSize - ii) * 5;
+        }
+        final int leftSize = 80;
+        final long[] leftKeys = new long[leftSize];
+        final String[] leftBuckets = new String[leftSize];
+        final int[] leftStamps = new int[leftSize];
+        for (int ii = 0; ii < leftSize; ++ii) {
+            leftKeys[ii] = 2L * ii;
+            leftBuckets[ii] = ii % 2 == 0 ? "A" : "B";
+            leftStamps[ii] = (ii / 2) * 5;
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (final boolean keyed : new boolean[] {false, true}) {
+            for (final boolean leftRefreshing : new boolean[] {false, true}) {
+                for (final boolean disallowExactMatch : new boolean[] {false, true}) {
+                    final QueryTable left = leftRefreshing
+                            ? testRefreshingTable(i(leftKeys).toTracking(), col("Bucket", leftBuckets),
+                                    intCol("LeftStamp", leftStamps))
+                            : testTable(i(leftKeys).toTracking(), col("Bucket", leftBuckets),
+                                    intCol("LeftStamp", leftStamps));
+                    final QueryTable right = testRefreshingTable(i(rightKeys).toTracking(),
+                            col("Bucket", rightBuckets), intCol("RightStamp", rightStamps),
+                            intCol("Sentinel", IntStream.range(0, rightSize).toArray()));
+
+                    final MatchPair stamp = new MatchPair("LeftStamp", "RightStamp");
+                    final MatchPair[] matches = keyed ? new MatchPair[] {new MatchPair("Bucket", "Bucket"), stamp}
+                            : new MatchPair[] {stamp};
+                    final String matchString = (keyed ? "Bucket," : "") + "LeftStamp"
+                            + (disallowExactMatch ? ">" : ">=") + "RightStamp";
+                    final Table result = AsOfJoinHelper.asOfJoin(control, left, right, matches,
+                            MatchPairFactory.getExpressions("RightStamp", "Sentinel"), SortingOrder.Ascending,
+                            disallowExactMatch);
+                    final String description = matchString + ", leftRefreshing=" + leftRefreshing;
+                    // each row moves onto the key of the next row of its bucket
+                    final long shiftDelta = keyed ? 4 : 2;
+                    assertTableEquals(description, left.snapshot().aj(right.snapshot(), matchString, "Sentinel"),
+                            result);
+
+                    updateGraph
+                            .runWithinUnitTestCycle(() -> shiftTestTable(right, 0, 2L * (rightSize - 1), shiftDelta));
+                    assertTableEquals(description, left.snapshot().aj(right.snapshot(), matchString, "Sentinel"),
+                            result);
+
+                    if (leftRefreshing) {
+                        updateGraph
+                                .runWithinUnitTestCycle(() -> shiftTestTable(left, 0, 2L * (leftSize - 1), shiftDelta));
+                        assertTableEquals(description, left.snapshot().aj(right.snapshot(), matchString, "Sentinel"),
+                                result);
+                    }
+                }
+            }
+        }
     }
 
     /**

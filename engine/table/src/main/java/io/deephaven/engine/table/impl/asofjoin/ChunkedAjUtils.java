@@ -59,24 +59,28 @@ public class ChunkedAjUtils {
             SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext,
             SizedLongChunk<RowKeys> stampKeys, SizedChunk<Values> stampValues, RowSetShiftData.Iterator sit,
             RowSet rowSetToShift) {
+        final long rowsToShift = rowSetToShift.size();
+        final int chunkSize = (int) Math.min(nodeSize, rowsToShift);
+        shiftFillContext.ensureCapacity(chunkSize);
+        shiftSortContext.ensureCapacity(chunkSize);
+        stampValues.ensureCapacity(chunkSize);
+        stampKeys.ensureCapacity(chunkSize);
         if (sit.polarityReversed()) {
-            final int shiftSize = rowSetToShift.intSize();
-
-            stampSource.fillPrevChunk(shiftFillContext.ensureCapacity(shiftSize), stampValues.ensureCapacity(shiftSize),
-                    rowSetToShift);
-            rowSetToShift.fillRowKeyChunk(stampKeys.ensureCapacity(shiftSize));
-
-            shiftSortContext.ensureCapacity(shiftSize).sort(stampKeys.get(), stampValues.get());
-
-            leftSsa.applyShiftReverse(stampValues.get(), stampKeys.get(), sit.shiftDelta());
+            // a positive shift moves the highest row keys first, so no row is shifted onto a key that has yet to be
+            // shifted
+            for (long endPosition = rowsToShift; endPosition > 0; endPosition -= chunkSize) {
+                try (final RowSet chunkOk =
+                        rowSetToShift.subSetByPositionRange(Math.max(0, endPosition - chunkSize), endPosition)) {
+                    stampSource.fillPrevChunk(shiftFillContext.get(), stampValues.get(), chunkOk);
+                    chunkOk.fillRowKeyChunk(stampKeys.get());
+                    shiftSortContext.get().sort(stampKeys.get(), stampValues.get());
+                    leftSsa.applyShiftReverse(stampValues.get(), stampKeys.get(), sit.shiftDelta());
+                }
+            }
         } else {
             try (final RowSequence.Iterator shiftIt = rowSetToShift.getRowSequenceIterator()) {
-                shiftFillContext.ensureCapacity(nodeSize);
-                shiftSortContext.ensureCapacity(nodeSize);
-                stampValues.ensureCapacity(nodeSize);
-                stampKeys.ensureCapacity(nodeSize);
                 while (shiftIt.hasMore()) {
-                    final RowSequence chunkOk = shiftIt.getNextRowSequenceWithLength(nodeSize);
+                    final RowSequence chunkOk = shiftIt.getNextRowSequenceWithLength(chunkSize);
                     stampSource.fillPrevChunk(shiftFillContext.get(), stampValues.get(), chunkOk);
                     chunkOk.fillRowKeyChunk(stampKeys.get());
                     shiftSortContext.get().sort(stampKeys.get(), stampValues.get());
