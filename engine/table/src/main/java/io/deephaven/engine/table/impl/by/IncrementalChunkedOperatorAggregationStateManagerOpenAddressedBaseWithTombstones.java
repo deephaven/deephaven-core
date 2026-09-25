@@ -8,7 +8,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -35,19 +34,6 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
 
 public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones
         implements IncrementalOperatorAggregationStateManager {
-    private static final double MAX_PERMITTED_FREE_PERCENTAGE =
-            Configuration.getInstance().getDoubleForClassWithDefault(
-                    IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
-                    "maxPermittedFreePercentage", 0.1);
-
-    /**
-     * Whether to migrate a live entry from the alternate table for each tombstone created in the main table while a
-     * rehash is in progress, so that removals drain the alternate as well as inserts.
-     */
-    public static boolean MIGRATE_ON_TOMBSTONE = Configuration.getInstance().getBooleanForClassWithDefault(
-            IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
-            "migrateOnTombstone", false);
-
     /** The number of rehashes begun by all instances, for benchmarking. */
     public static final java.util.concurrent.atomic.LongAdder REHASH_COUNT =
             new java.util.concurrent.atomic.LongAdder();
@@ -485,18 +471,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     @Override
     public void tombstoneStates(final RowSet removed) {
         liveEntries -= removed.intSize();
-        final MutableInt mainTombstones = new MutableInt();
-        removed.forAllRowKeys(outputPosition -> {
-            if (tombstone(outputPosition)) {
-                mainTombstones.increment();
-            }
-        });
-        if (MIGRATE_ON_TOMBSTONE && rehashPointer > 0 && mainTombstones.get() > 0) {
-            rehashInternalPartial(mainTombstones.get());
-            if (rehashPointer == 0) {
-                clearAlternate();
-            }
-        }
+        removed.forAllRowKeys(this::tombstone);
     }
 
     @Override
@@ -545,19 +520,15 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         outputPositionToHashSlot.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 
-    /**
-     * @return true if the tombstone was placed in the main table, false if in the alternate
-     */
-    private boolean tombstone(final long outputPosition) {
+    private void tombstone(final long outputPosition) {
         // we never actually delete anything from the output position table; the state is live, so it is in range
         final int hashSlot = outputPositionToHashSlot.getUnsafe(outputPosition);
         final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             mainOutputPosition.set(slot, TOMBSTONE_STATE);
-            return true;
+            return;
         }
         alternateOutputPosition.set(slot, TOMBSTONE_STATE);
-        return false;
     }
 
     @Override
@@ -585,16 +556,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         // no longer free, we'll just use them as necessary
         freeOutputPositions.removeRange(nextOutputPosition.get(), Long.MAX_VALUE);
 
-        // long totalRows = nextOutputPosition.get();
-        // long zombieRows = freeOutputPositions.size();
-        // long permittedZombies = Math.max((long)(MAX_PERMITTED_FREE_PERCENTAGE * totalRows),
-        // ArrayBackedColumnSource.BLOCK_SIZE);
-        // if (permittedZombies > zombieRows) {
-        // return;
-        // }
-
-        // we should only bother with freeing empty slots if we are actually wasting space; and we should be willing
-        // to do it up to the number of rows that were modified in our input
+        // move no more states than the input rows added, modified, and removed this cycle
         final MutableLong shiftedValues = new MutableLong();
         final MutableLong firstFreeKey = new MutableLong(freeOutputPositions.firstRowKey());
 

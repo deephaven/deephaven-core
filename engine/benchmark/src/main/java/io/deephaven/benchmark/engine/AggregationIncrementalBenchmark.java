@@ -91,10 +91,6 @@ public class AggregationIncrementalBenchmark {
     @Param({"-1"})
     private double frontShift;
 
-    /** Whether removals migrate entries during a hash table rehash. */
-    @Param({"false"})
-    private boolean migrateOnTombstone;
-
     /** The initial size for {@link #addOnly()}, and the constant size for the other benchmarks. */
     @Param({"1000000"})
     private int windowSize;
@@ -134,7 +130,6 @@ public class AggregationIncrementalBenchmark {
         updateGraph.resetForUnitTests(false);
         AggregationStateBenchSupport.setReclaimMode(reclaim);
         AggregationStateBenchSupport.setCollapseFreeFraction(collapse);
-        AggregationStateBenchSupport.setMigrateOnTombstone(migrateOnTombstone);
         AggregationStateBenchSupport.setFrontShiftFraction(frontShift);
         if (params.getBenchmark().endsWith(".randomChurn")) {
             randomRemovals = chooseRandomRemovals();

@@ -86,24 +86,6 @@ final class AggregationStateBenchSupport {
             "io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones";
 
     /**
-     * Select whether removals migrate entries during a rehash; a build without the setting supports only false.
-     *
-     * @param migrateOnTombstone whether to migrate a live entry for each tombstone created in the main table
-     */
-    static void setMigrateOnTombstone(final boolean migrateOnTombstone) {
-        try {
-            Class.forName(TOMBSTONE_STATE_MANAGER).getField("MIGRATE_ON_TOMBSTONE").setBoolean(null,
-                    migrateOnTombstone);
-        } catch (ClassNotFoundException | NoSuchFieldException e) {
-            if (migrateOnTombstone) {
-                throw new IllegalStateException("This build cannot migrate on tombstones", e);
-            }
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    /**
      * @return the number of hash table rehashes begun so far, or -1 if the build does not count them
      */
     static long rehashCount() {
