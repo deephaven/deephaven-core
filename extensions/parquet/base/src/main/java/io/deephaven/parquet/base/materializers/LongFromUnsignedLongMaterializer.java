@@ -3,10 +3,9 @@
 //
 package io.deephaven.parquet.base.materializers;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 /**
  * Materializes an unsigned 64-bit parquet int as a primitive {@code long}, rejecting values that exceed
@@ -16,34 +15,23 @@ public class LongFromUnsignedLongMaterializer extends LongMaterializerBase imple
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new LongFromUnsignedLongMaterializer(dataReader, (long) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new LongFromUnsignedLongMaterializer(dataReader, numValues);
         }
     };
 
-    /**
-     * An unsigned value exceeds {@link Long#MAX_VALUE} exactly when its signed bit pattern is negative.
-     */
-    public static long convertValue(long value) {
-        if (value < 0) {
-            throw new UncheckedDeephavenException("Unsigned long value " + Long.toUnsignedString(value)
-                    + " is too large to be represented as a long");
-        }
-        return value;
-    }
+    private final PageValueReader dataReader;
 
-    private final ValuesReader dataReader;
-
-    private LongFromUnsignedLongMaterializer(ValuesReader dataReader, int numValues) {
+    private LongFromUnsignedLongMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
     }
 
-    private LongFromUnsignedLongMaterializer(ValuesReader dataReader, long nullValue, int numValues) {
+    private LongFromUnsignedLongMaterializer(PageValueReader dataReader, long nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }
@@ -51,7 +39,7 @@ public class LongFromUnsignedLongMaterializer extends LongMaterializerBase imple
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = PageValueConversions.longFromUnsignedLong(dataReader.readLong());
         }
     }
 }

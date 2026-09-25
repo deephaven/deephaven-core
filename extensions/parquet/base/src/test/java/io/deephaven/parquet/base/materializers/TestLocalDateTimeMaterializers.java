@@ -18,7 +18,7 @@ class TestLocalDateTimeMaterializers {
         final long nanos = 123456789123456789L;
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        assertThat(LocalDateTimeFromNanosMaterializer.convertValue(nanos)).isEqualTo(ldt);
+        assertThat(PageValueConversions.localDateTimeFromEpochNanos(nanos)).isEqualTo(ldt);
     }
 
     @Test
@@ -28,7 +28,7 @@ class TestLocalDateTimeMaterializers {
         nanos = DateTimeUtils.microsToNanos(micros);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        assertThat(LocalDateTimeFromMicrosMaterializer.convertValue(micros)).isEqualTo(ldt);
+        assertThat(PageValueConversions.localDateTimeFromEpochMicros(micros)).isEqualTo(ldt);
     }
 
     @Test
@@ -38,6 +38,6 @@ class TestLocalDateTimeMaterializers {
         nanos = DateTimeUtils.millisToNanos(millis);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        assertThat(LocalDateTimeFromMillisMaterializer.convertValue(millis)).isEqualTo(ldt);
+        assertThat(PageValueConversions.localDateTimeFromEpochMillis(millis)).isEqualTo(ldt);
     }
 }
