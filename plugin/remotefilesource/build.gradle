@@ -1,0 +1,27 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    implementation project(':plugin')
+    implementation project(':engine-base')
+    // The server loads this plugin via ServiceLoader, so it is always present at runtime. Depending on it only at
+    // compile time keeps the published runtime dependencies acyclic, since :server declares this project runtimeOnly.
+    compileOnly project(':server')
+    implementation project(':proto:proto-backplane-grpc')
+    implementation project(':proto:proto-backplane-grpc-flight')
+
+    compileOnly libs.autoservice
+    compileOnly libs.jetbrains.annotations
+    annotationProcessor libs.autoservice.compiler
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+    testRuntimeOnly project(':log-to-slf4j')
+}
+
+test {
+    useJUnitPlatform()
+}
