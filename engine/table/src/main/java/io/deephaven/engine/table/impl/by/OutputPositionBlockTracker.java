@@ -311,7 +311,7 @@ final class OutputPositionBlockTracker {
             return BlockShift.NONE;
         }
         final long available = Math.max(0, budget) + carriedShiftBudget;
-        final int blocksInUse = (nextOutputPosition + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
+        final int blocksInUse = blocksInUse(nextOutputPosition);
         final int firstReleased = sweepBlock >= 0 ? sweepBlock : releasedBlocks.nextSetBit(0);
         assert liveCounts[firstReleased] == RELEASED;
         final List<int[]> ranges = new ArrayList<>();
@@ -559,8 +559,16 @@ final class OutputPositionBlockTracker {
         }
     }
 
+    /**
+     * @return the blocks holding the positions below {@code nextOutputPosition}, rounding up in {@code long} so that
+     *         positions near {@link Integer#MAX_VALUE} do not overflow
+     */
+    private static int blocksInUse(final int nextOutputPosition) {
+        return (int) (((long) nextOutputPosition + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE);
+    }
+
     private void ensureCapacity(final int nextOutputPosition) {
-        final int blocksNeeded = (nextOutputPosition + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
+        final int blocksNeeded = blocksInUse(nextOutputPosition);
         if (blocksNeeded > liveCounts.length) {
             liveCounts = Arrays.copyOf(liveCounts, Math.max(blocksNeeded, liveCounts.length * 2));
         }
