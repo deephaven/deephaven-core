@@ -180,6 +180,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         leftAdditionsOrRemovals ? stampChunkType.makeWritableChunk(cycleLeftChunkSize) : null;
                 final WritableLongChunk<RowKeys> leftStampKeys =
                         leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(cycleLeftChunkSize) : null;
+                final WritableLongChunk<RowKeys> rightKeysForLeft =
+                        leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(cycleLeftChunkSize) : null;
                 final LongSortKernel<Values, RowKeys> sortKernel = LongSortKernel.makeContext(stampChunkType, order,
                         Math.max(cycleLeftChunkSize, cycleRightChunkSize), true)) {
 
@@ -766,11 +768,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             }
 
 
-                            try (final RowSequence.Iterator leftRsIt = ownedLeftAdded.getRowSequenceIterator();
-                                    final WritableLongChunk<RowKeys> rightKeysForLeft =
-                                            WritableLongChunk.makeWritableChunk(cycleLeftChunkSize)) {
+                            try (final RowSequence.Iterator leftRsIt = ownedLeftAdded.getRowSequenceIterator()) {
                                 assert leftFillContext != null;
                                 assert leftStampValues != null;
+                                assert rightKeysForLeft != null;
 
                                 while (leftRsIt.hasMore()) {
                                     final RowSequence chunkOk =
