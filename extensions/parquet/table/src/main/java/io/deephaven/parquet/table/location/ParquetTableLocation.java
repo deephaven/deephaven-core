@@ -98,6 +98,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private ParquetFileReader parquetFileReader;
     private ParquetMetadata parquetMetadata;
     private int[] rowGroupIndices;
+    /**
+     * Whether {@code parquetMetadata.getBlocks()} lists exactly this location's row groups, in order, so that a
+     * location-local row group ordinal is also the index of that row group's statistics. See
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_STATISTICS_MULTI_FILE_METADATA_LAYOUT}.
+     */
+    private boolean rowGroupStatisticsAligned;
     private MessageType parquetSchema;
     // -----------------------------------------------------------------------
 
@@ -132,6 +138,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .map(factory -> factory.of(getTableKey(), tableLocationKey))
                     .orElse(null);
             final int rowGroupCount = rowGroupIndices.length;
+            rowGroupStatisticsAligned = rowGroupCount == parquetMetadata.getBlocks().size()
+                    && IntStream.range(0, rowGroupCount).allMatch(ii -> rowGroupIndices[ii] == ii);
             final RowGroup[] rowGroups = IntStream.of(rowGroupIndices)
                     .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
                     .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
@@ -577,7 +585,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final boolean isApplicable;
         if (action == ROW_GROUP_METADATA) {
             // Note: it should be possible to check if there are any statistics
-            isApplicable = true;
+            isApplicable = isRowGroupMetadataPermitted(filterCtx);
         } else if (action == IN_MEMORY_DATA_INDEX) {
             isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
         } else if (action == PARQUET_DICTIONARY) {
@@ -662,8 +670,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         if (action == ROW_GROUP_METADATA) {
-            return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(), actionCtx.columnIndices,
-                    input);
+            if (!isRowGroupMetadataPermitted(filterCtx)) {
+                return input.copy();
+            }
+            return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(),
+                    filterCtx.filterNullBehavior(), actionCtx.columnIndices, input);
         }
         if (action == IN_MEMORY_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -689,6 +700,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         throw new IllegalStateException("Unexpected value: " + action);
+    }
+
+    /**
+     * DH-23750 (42.x only): whether the row group metadata action may run for this filter's column, given the
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_STATISTICS_MULTI_FILE_METADATA_LAYOUT} and
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_FLOATING_POINT_STATISTICS} configuration items.
+     */
+    private boolean isRowGroupMetadataPermitted(@NotNull final RegionedPushdownFilterContext filterCtx) {
+        if (QueryTable.DISABLE_WHERE_PUSHDOWN_STATISTICS_MULTI_FILE_METADATA_LAYOUT && !rowGroupStatisticsAligned) {
+            return false;
+        }
+        final Class<?> dataType = filterCtx.columnDefinitions().get(0).getDataType();
+        return !QueryTable.DISABLE_WHERE_PUSHDOWN_FLOATING_POINT_STATISTICS
+                || (dataType != float.class && dataType != Float.class
+                        && dataType != double.class && dataType != Double.class);
     }
 
     /**
@@ -856,6 +882,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private PushdownResult pushdownRowGroupMetadata(
             final RowSet selection,
             final WhereFilter filter,
+            final BasePushdownFilterContext.FilterNullBehavior filterNullBehavior,
             final List<Integer> columnIndices,
             final PushdownResult result) {
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
@@ -873,6 +900,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // size>}, we can return "match" for the row group.
             if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
                 // We assume it overlaps if we cannot use the statistics.
+                maybeOverlaps = true;
+            } else if (QueryTable.DISABLE_WHERE_PUSHDOWN_NULL_INCLUDING_STATISTICS
+                    && filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS
+                    && !(statistics.isNumNullsSet() && statistics.getNumNulls() == 0)) {
+                // DH-23750 (42.x only): see QueryTable.DISABLE_WHERE_PUSHDOWN_NULL_INCLUDING_STATISTICS.
                 maybeOverlaps = true;
             } else if (filter instanceof ByteRangeFilter) {
                 maybeOverlaps = BytePushdownHandler.maybeOverlaps((ByteRangeFilter) filter, statistics);
@@ -915,7 +947,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 } else if (dhColumnType == double.class || dhColumnType == Double.class) {
                     maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == String.class && matchFilter.getMatchOptions().caseInsensitive()) {
-                    maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                    // DH-23750 (42.x only): see QueryTable.DISABLE_WHERE_PUSHDOWN_ICASE_STRING_STATISTICS.
+                    maybeOverlaps = QueryTable.DISABLE_WHERE_PUSHDOWN_ICASE_STRING_STATISTICS
+                            || CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == Instant.class) {
                     maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else {

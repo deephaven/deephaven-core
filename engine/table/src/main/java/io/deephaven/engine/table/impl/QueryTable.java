@@ -303,6 +303,62 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedColumn",
                     false);
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // DH-23750 (42.x only): each of the following blocks a pushdown path known to produce wrong results. They default
+    // to true (blocked); set one to false to restore the previous 42.x behavior, which includes the wrong results.
+    // Each can default to false once the corresponding 43.x correction is back-ported.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Disable parquet row group statistics pushdown for case-insensitive string matches. Case-insensitive values are
+     * tested against case-sensitive, byte-ordered min/max, which is not a valid interval test, so matching row groups
+     * can be excluded. The dictionary path still handles case-insensitive matches exactly. Wrong-answer findings PD-001
+     * and PD-002; corrected in 43.x by DH-23488.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_ICASE_STRING_STATISTICS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownIcaseStringStatistics",
+                    true);
+
+    /**
+     * Disable parquet row group statistics pushdown, for filters that include nulls (e.g. an inverted match such as
+     * {@code X != 5}), on row groups not proven free of nulls. Min/max statistics never reflect null values, so such
+     * row groups can be excluded despite holding matching null rows. Wrong-answer finding PD-003; corrected in 43.x by
+     * DH-23488.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_NULL_INCLUDING_STATISTICS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownNullIncludingStatistics",
+                    true);
+
+    /**
+     * Disable parquet row group statistics pushdown for float and double columns. Spec-conforming external writers omit
+     * NaN from float/double min/max, so the statistics do not bound the data (NaN rows match e.g. {@code F != 1.0}).
+     * Wrong-answer finding PD-004; corrected in 43.x by DH-23488.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_FLOATING_POINT_STATISTICS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownFloatingPointStatistics",
+                    true);
+
+    /**
+     * Disable parquet row group statistics pushdown for string statistics whose min or max contains a character at or
+     * above U+D800. Parquet orders strings by unsigned bytes (UTF-8, i.e. code point order) but they are compared with
+     * {@link String#compareTo} (UTF-16 order); the two disagree only for such characters, which also include the U+FFFD
+     * decoded from bounds truncated mid-character. Wrong-answer findings PD-005 and PD-010; corrected in 43.x by
+     * DH-23488.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_HIGH_CHAR_STRING_STATISTICS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownHighCharStringStatistics",
+                    true);
+
+    /**
+     * Disable parquet row group statistics pushdown for datasets read through a {@code _metadata} file spanning several
+     * parquet files, i.e. locations whose metadata block list is not exactly their own row groups. The statistics
+     * lookup would read another file's row group statistics. Single files, and directories read without
+     * {@code _metadata}, are unaffected. Wrong-answer finding PD-064; tracked for 43.x by DH-23755.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_STATISTICS_MULTI_FILE_METADATA_LAYOUT =
+            Configuration.getInstance().getBooleanWithDefault(
+                    "QueryTable.disableWherePushdownStatisticsMultiFileMetadataLayout", true);
+
     /**
      * You can choose to enable or disable the column parallel select and update.
      */

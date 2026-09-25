@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
@@ -397,9 +398,27 @@ final class MinMaxFromStatistics {
             verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.BINARY);
             final String minString = statistics.minAsString();
             final String maxString = statistics.maxAsString();
+            if (QueryTable.DISABLE_WHERE_PUSHDOWN_HIGH_CHAR_STRING_STATISTICS
+                    && (hasCharAtOrAboveSurrogates(minString) || hasCharAtOrAboveSurrogates(maxString))) {
+                // DH-23750 (42.x only): see QueryTable.DISABLE_WHERE_PUSHDOWN_HIGH_CHAR_STRING_STATISTICS.
+                return false;
+            }
             minSetter.accept(minString);
             maxSetter.accept(maxString);
             return true;
+        }
+        return false;
+    }
+
+    /**
+     * DH-23750 (42.x only): whether {@code value} contains any char at or above {@code U+D800}; see
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_HIGH_CHAR_STRING_STATISTICS}.
+     */
+    private static boolean hasCharAtOrAboveSurrogates(final String value) {
+        for (int ii = 0; ii < value.length(); ++ii) {
+            if (value.charAt(ii) >= Character.MIN_SURROGATE) {
+                return true;
+            }
         }
         return false;
     }
