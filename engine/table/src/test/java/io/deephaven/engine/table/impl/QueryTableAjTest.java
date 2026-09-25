@@ -27,6 +27,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
@@ -2277,6 +2278,54 @@ public class QueryTableAjTest {
         });
         shifted.apply(table.getRowSet().writableCast());
         table.notifyListeners(new TableUpdateImpl(i(), i(), i(), shifted, ModifiedColumnSet.EMPTY));
+    }
+
+    /**
+     * A refreshing left table joined to a static right table reads each bucket's right stamps once and keeps them
+     * cached. Left rows added later to buckets that already hold left rows and to buckets that do not stamp as a static
+     * join would, with and without a right data index, and the index's row sets are left intact.
+     */
+    @Test
+    public void testLeftRefreshingStaticRightStampsBucketsOnce() {
+        for (final boolean rightIndexed : new boolean[] {false, true}) {
+            final QueryTable right = testTable(RowSetFactory.flat(8).toTracking(),
+                    col("Key", "A", "B", "C", "A", "B", "C", "A", "B"), intCol("RightStamp", 1, 2, 3, 4, 5, 6, 7, 8),
+                    intCol("Sentinel", 0, 1, 2, 3, 4, 5, 6, 7));
+            final BasicDataIndex rightIndex =
+                    rightIndexed ? DataIndexer.getOrCreateDataIndex(right, "Key") : null;
+            final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), col("Key", "A", "B"),
+                    intCol("LeftStamp", 5, 3));
+
+            final String match = "Key,LeftStamp>=RightStamp";
+            final Table result = left.aj(right, match, "Sentinel");
+            assertTableEquals(left.snapshot().aj(right, match, "Sentinel"), result);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            // bucket A already holds left rows, bucket C does not
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(2, 3), col("Key", "A", "C"), intCol("LeftStamp", 8, 4));
+                left.notifyListeners(i(2, 3), i(), i());
+            });
+            assertTableEquals(left.snapshot().aj(right, match, "Sentinel"), result);
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(4, 5), col("Key", "C", "B"), intCol("LeftStamp", 7, 9));
+                left.notifyListeners(i(4, 5), i(), i());
+            });
+            assertTableEquals(left.snapshot().aj(right, match, "Sentinel"), result);
+
+            if (rightIndex != null) {
+                final Table indexTable = rightIndex.table();
+                final ColumnSource<RowSet> rowSets = rightIndex.rowSetColumn();
+                long indexedRows = 0;
+                try (final RowSet.Iterator indexRows = indexTable.getRowSet().iterator()) {
+                    while (indexRows.hasNext()) {
+                        indexedRows += rowSets.get(indexRows.nextLong()).size();
+                    }
+                }
+                assertEquals(right.size(), indexedRows);
+            }
+        }
     }
 
     /**

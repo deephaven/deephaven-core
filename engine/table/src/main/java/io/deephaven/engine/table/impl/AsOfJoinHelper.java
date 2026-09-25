@@ -268,6 +268,8 @@ public class AsOfJoinHelper {
                     } else {
                         stampContext.processEntry(leftRowSet, rightRowSet, rowRedirection);
                     }
+                    // the slot's right stamps are now either consumed or cached, so its row set is no longer read
+                    asOfJoinStateManager.releaseRightRowSet(slot);
                 }
             }
         }
@@ -322,6 +324,7 @@ public class AsOfJoinHelper {
                                 assert arrayValuesCache != null;
                                 processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
                                         rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
+                                asOfJoinStateManager.releaseRightRowSet(slot);
                             }
                         }
                     }

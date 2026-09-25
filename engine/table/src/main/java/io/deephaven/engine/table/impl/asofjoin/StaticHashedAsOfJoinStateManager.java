@@ -32,7 +32,19 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
 
     public abstract RowSet getLeftRowSet(int slot);
 
+    /**
+     * @param slot the slot in the table
+     * @return the right row set of the slot, or null if the slot has no right rows or its row set has been released
+     */
     public abstract RowSet getRightRowset(int slot);
+
+    /**
+     * Release the right row set of a slot once the caller no longer needs it. Afterwards {@link #getRightRowset(int)}
+     * returns null for the slot, which remains in the table for probing.
+     *
+     * @param slot the slot in the table
+     */
+    public abstract void releaseRightRowSet(int slot);
 
     public abstract void convertRightBuildersToRowSet(IntegerArraySource slots, int slotCount);
 

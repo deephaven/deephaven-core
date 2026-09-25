@@ -29,6 +29,11 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
     public static final Object EMPTY_RIGHT_STATE = null;
 
+    /**
+     * The right state of an occupied slot whose right row set has been released; the slot stays occupied for probing.
+     */
+    private static final Object RELEASED_RIGHT_STATE = new Object();
+
     // the number of slots in our table
     protected int tableSize;
 
@@ -50,6 +55,12 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
      * put the sequential builders into rightRowSetSource. After the conversion, the sources store actual rowsets.
      */
     private boolean rightBuildersConverted = false;
+
+    /**
+     * Whether the right row sets were built here and are closed on release, rather than supplied by a data index that
+     * owns them.
+     */
+    private boolean rightRowSetsOwned;
 
     protected final ImmutableObjectArraySource<Object> rightRowSetSource;
 
@@ -314,16 +325,29 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     @Override
     public RowSet getRightRowset(int slot) {
         if (rightBuildersConverted) {
-            return (RowSet) rightRowSetSource.getUnsafe(slot);
+            final Object rightState = rightRowSetSource.getUnsafe(slot);
+            return rightState == RELEASED_RIGHT_STATE ? null : (RowSet) rightState;
         }
         throw new IllegalStateException(
                 "getRightRowset() may not be called before convertRightBuildersToRowSet() or populateRightRowSetsFromIndex()");
     }
 
     @Override
+    public void releaseRightRowSet(int slot) {
+        final Object rightState = rightRowSetSource.getUnsafe(slot);
+        if (rightState instanceof RowSet) {
+            if (rightRowSetsOwned) {
+                ((RowSet) rightState).close();
+            }
+            rightRowSetSource.set(slot, RELEASED_RIGHT_STATE);
+        }
+    }
+
+    @Override
     public void convertRightBuildersToRowSet(@NotNull final IntegerArraySource slots, final int slotCount) {
         Assert.eqFalse(rightBuildersConverted, "rightBuildersConverted");
         rightBuildersConverted = true;
+        rightRowSetsOwned = true;
 
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final int slot = slots.getInt(slotIndex);
@@ -362,9 +386,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
                 if (rs.isEmpty()) {
                     rightRowSetSource.set(slot, EMPTY_RIGHT_STATE);
                 } else if (rs.size() == 1) {
-                    // The index cannot be modified, since the right table must be static, but make a defensive copy
-                    // anyway in case the index is cleaned up aggressively in the future.
-                    rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
+                    // the right table is static, so its index row sets never change; they belong to the index
+                    rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()));
                 } else {
                     throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
                 }
