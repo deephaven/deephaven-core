@@ -331,8 +331,14 @@ public class SessionService {
 
         synchronized (this) {
             if (!cleanupJobInstalled) {
-                cleanupJobInstalled = true;
-                scheduler.runAtTime(expiration.deadlineMillis, sessionCleanupJob);
+                // schedule for the earliest outstanding deadline, which is not necessarily ours: another caller may
+                // have added an earlier token and lost the race to this lock, or our own token may have been forgotten
+                // just above
+                final TokenExpiration next = peekNextExpiration();
+                if (next != null) {
+                    cleanupJobInstalled = true;
+                    scheduler.runAtTime(next.deadlineMillis, sessionCleanupJob);
+                }
             }
         }
 

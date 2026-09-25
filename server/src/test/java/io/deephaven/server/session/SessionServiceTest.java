@@ -275,8 +275,8 @@ public class SessionServiceTest {
     }
 
     /**
-     * Every token ever issued maps to its session for as long as the SessionService lives. Once the session has expired
-     * and all of its tokens are past their deadline, nothing in the service may keep the session reachable.
+     * A token maps to its session only until it passes its deadline or the session is closed. Once the session has
+     * expired and all of its tokens have aged out, nothing in the service may keep the session reachable.
      */
     @Test
     public void testExpiredSessionIsNotRetainedAfterItsTokensExpire() throws InterruptedException {
