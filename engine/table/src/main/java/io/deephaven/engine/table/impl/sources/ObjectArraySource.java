@@ -662,11 +662,13 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                     // moving down: the whole blocks first, then the partial block after them
                     moveWholeBlocks(source, dest, wholeBlocks);
                     if (wholeBlocks < length) {
+                        allocateIfMissing((int) ((dest + wholeBlocks) >> LOG_BLOCK_SIZE));
                         move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
                     }
                 } else {
                     // moving up: the partial block at the end first, then the whole blocks
                     if (wholeBlocks < length) {
+                        allocateIfMissing((int) ((dest + wholeBlocks) >> LOG_BLOCK_SIZE));
                         move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
                     }
                     moveWholeBlocks(source, dest, wholeBlocks);

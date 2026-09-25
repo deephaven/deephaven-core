@@ -334,14 +334,6 @@ final class OutputPositionBlockTracker {
             ++bi;
         }
         final boolean reachedEnd = stop == blocksInUse;
-        if (reachedEnd) {
-            // The positions given back at the end must have storage for the states assigned there next, so move the
-            // unassigned blocks after the end down onto them too; the array sources give blocks never allocated fresh
-            // storage at their destinations.
-            for (int bi = blocksInUse; bi < blocksInUse + gap; ++bi) {
-                addBlockToRanges(ranges, bi, gap);
-            }
-        }
         carriedShiftBudget = reachedEnd ? 0 : Math.min(BLOCK_SIZE, available - moved);
         if (ranges.isEmpty()) {
             return BlockShift.NONE;
@@ -364,12 +356,10 @@ final class OutputPositionBlockTracker {
      * @param plan the plan returned by {@link #planBlockShift}, whose moves have been made
      */
     void applyBlockShift(final BlockShift plan) {
-        // The count of every block past those in use is zero. When the shift reaches the end, the unassigned blocks
-        // after the end move onto the blocks given back, so their counts become zero too.
         for (final int[] range : plan.blockRanges) {
             for (int bi = range[0]; bi <= range[1]; ++bi) {
                 final int destination = bi - range[2];
-                liveCounts[destination] = bi < liveCounts.length ? liveCounts[bi] : 0;
+                liveCounts[destination] = liveCounts[bi];
                 if (sparseBlocks.get(bi)) {
                     sparseBlocks.clear(bi);
                     sparseBlocks.set(destination);
@@ -378,6 +368,8 @@ final class OutputPositionBlockTracker {
         }
         releasedBlocks.clear(plan.firstReleasedBlock, plan.stopBlock);
         if (plan.reachedEnd) {
+            // the blocks given back are unassigned again, like every block past those in use
+            Arrays.fill(liveCounts, plan.stopBlock - plan.gapBlocks, plan.stopBlock, 0);
             releasedBlockCount -= plan.gapBlocks;
             closedBlocks -= plan.gapBlocks;
             sweepBlock = -1;
@@ -432,15 +424,20 @@ final class OutputPositionBlockTracker {
         }
 
         /**
-         * @return the positions, after the shift, of the released blocks left before the first block not moved, whose
-         *         storage may be released; empty if the released blocks were given back at the end
+         * @return the positions, after the shift, whose storage may be released: the released blocks left before the
+         *         first block not moved, or, if they were given back at the end, every position from the new end on, so
+         *         that the storage is allocated again when states are assigned there
          */
         RowSet remainingReleased() {
-            if (reachedEnd || gapBlocks == 0) {
+            if (gapBlocks == 0) {
                 return RowSetFactory.empty();
             }
-            return RowSetFactory.fromRange((long) (stopBlock - gapBlocks) << LOG_BLOCK_SIZE,
-                    ((long) stopBlock << LOG_BLOCK_SIZE) - 1);
+            final long first = (long) (stopBlock - gapBlocks) << LOG_BLOCK_SIZE;
+            if (reachedEnd) {
+                // output positions are ints, so this reaches every position that may have storage
+                return RowSetFactory.fromRange(first, Integer.MAX_VALUE);
+            }
+            return RowSetFactory.fromRange(first, ((long) stopBlock << LOG_BLOCK_SIZE) - 1);
         }
 
         /**
