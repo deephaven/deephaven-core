@@ -3,13 +3,17 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 
 import java.util.PrimitiveIterator;
+import java.util.function.IntToLongFunction;
 import java.util.function.LongConsumer;
 
 public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.BuilderRandom {
@@ -182,6 +186,45 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
             addRange(start, end);
             return true;
         });
+    }
+
+    /**
+     * Add the row keys in positions {@code [offset, offset + length)} of {@code keys}, which must be in increasing
+     * order. Each run of consecutive keys is added as one range.
+     *
+     * @param keys the ordered row keys
+     * @param offset the position of the first key to add
+     * @param length the number of keys to add
+     */
+    public void addOrderedRowKeysChunk(final LongChunk<? extends OrderedRowKeys> keys, final int offset,
+            final int length) {
+        addOrderedRuns(keys::get, offset, length);
+    }
+
+    /**
+     * Add the row keys in positions {@code [offset, offset + length)} of {@code keys}, which must be in increasing
+     * order. Each run of consecutive keys is added as one range.
+     *
+     * @param keys the ordered row keys
+     * @param offset the position of the first key to add
+     * @param length the number of keys to add
+     */
+    public void addOrderedRowKeysChunk(final IntChunk<? extends OrderedRowKeys> keys, final int offset,
+            final int length) {
+        addOrderedRuns(keys::get, offset, length);
+    }
+
+    private void addOrderedRuns(final IntToLongFunction keyAt, final int offset, final int length) {
+        final int end = offset + length;
+        int position = offset;
+        while (position < end) {
+            final long runStart = keyAt.applyAsLong(position);
+            long runEnd = runStart;
+            while (++position < end && keyAt.applyAsLong(position) == runEnd + 1) {
+                ++runEnd;
+            }
+            newRangeSafe(runStart, runEnd);
+        }
     }
 
     @Override
