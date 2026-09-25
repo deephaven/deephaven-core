@@ -81,6 +81,26 @@ public class AsOfStampContextTest {
         checkGrowthFailure(leftStamps, rightStamps, false);
     }
 
+    /**
+     * Buffers are sized to the smallest power of two that holds a bucket, so a bucket of exactly the capacity limit
+     * fits in a fill context of that capacity.
+     */
+    @Test
+    public void testPowerOfTwoBucketUsesExactCapacity() {
+        final ColumnSource<?> leftStamps = new CapacityLimitedIntSource(ascendingStamps());
+        final ColumnSource<?> rightStamps = new CapacityLimitedIntSource(ascendingStamps());
+        final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(LARGE_SIZE);
+        try (final WritableRowSet bucket = RowSetFactory.flat(CAPACITY_LIMIT);
+                final AsOfStampContext stampContext =
+                        new AsOfStampContext(SortingOrder.Ascending, false, leftStamps, rightStamps, rightStamps)) {
+            stampContext.processEntry(bucket, bucket, rowRedirection);
+        }
+        for (int ii = 0; ii < CAPACITY_LIMIT; ++ii) {
+            assertEquals(ii, rowRedirection.get(ii));
+        }
+        ChunkPoolReleaseTracking.check();
+    }
+
     private static void checkGrowthFailure(final ColumnSource<?> leftStamps, final ColumnSource<?> rightStamps,
             final boolean growLeft) {
         final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(LARGE_SIZE);
