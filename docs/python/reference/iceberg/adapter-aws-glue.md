@@ -1,5 +1,5 @@
 ---
-title: adapater_aws_glue
+title: adapter_aws_glue
 ---
 
 The `adapter_aws_glue` method creates a catalog adapter using an [AWS Glue](https://aws.amazon.com/glue/) catalog.
