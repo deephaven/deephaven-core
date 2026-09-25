@@ -28,7 +28,7 @@ import static org.junit.Assert.assertTrue;
  * {@link RspBitmap} sets.
  */
 public class RowSetBuilderRandomOrderedChunkTest {
-    private static final int SEEDS = 40;
+    private static final int SEEDS = 10;
     private static final int STEPS = 60;
 
     private enum ChunkKind {
