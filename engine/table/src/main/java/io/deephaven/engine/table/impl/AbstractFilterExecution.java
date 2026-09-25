@@ -339,25 +339,15 @@ abstract class AbstractFilterExecution {
 
     /**
      * DH-23750 (42.x only): whether any filter in {@code filters[startIndex..]} respects a barrier declared by another
-     * filter in that range. See {@link #scheduleAndSortCostEstimates}.
+     * filter in that range. See {@link QueryTable#DISABLE_WHERE_REORDER_WITH_BARRIERS}.
      */
     private static boolean hasBarrierDependency(final StatelessFilter[] filters, final int startIndex) {
         for (int ii = startIndex; ii < filters.length; ++ii) {
-            if (mustFollowAnother(filters[ii], Arrays.asList(filters).subList(startIndex, filters.length))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * DH-23750 (42.x only): whether {@code filter} respects a barrier declared by some other filter in {@code others},
-     * and so must run after it.
-     */
-    private static boolean mustFollowAnother(final StatelessFilter filter, final List<StatelessFilter> others) {
-        for (final StatelessFilter other : others) {
-            if (other != filter && other.declaredBarriers.stream().anyMatch(filter.respectedBarriers::contains)) {
-                return true;
+            for (int jj = startIndex; jj < filters.length; ++jj) {
+                if (ii != jj
+                        && filters[jj].declaredBarriers.stream().anyMatch(filters[ii].respectedBarriers::contains)) {
+                    return true;
+                }
             }
         }
         return false;
