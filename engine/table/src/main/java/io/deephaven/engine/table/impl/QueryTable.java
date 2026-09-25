@@ -406,6 +406,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                     "QueryTable.disableWherePushdownSortedInconsistentObjectMatch", true);
 
     /**
+     * Disable cost-based reordering of where() filters while a filter that declares a barrier and a filter that
+     * respects it are both still pending; the given order, which always satisfies the barriers, is kept instead. The
+     * filter comparator mixes the barrier partial order with the cost order and is not transitive, so sorting can run a
+     * filter (and its pushdown) before the filter declaring a barrier it respects. Wrong-answer finding PD-032.
+     */
+    public static boolean DISABLE_WHERE_REORDER_WITH_BARRIERS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWhereReorderWithBarriers", true);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

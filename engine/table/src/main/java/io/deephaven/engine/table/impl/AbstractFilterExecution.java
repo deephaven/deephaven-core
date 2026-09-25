@@ -323,12 +323,44 @@ abstract class AbstractFilterExecution {
                 },
                 () -> {
                     // Sort the filters by non-descending cost, starting at the given index.
-                    Arrays.sort(filters, startIndex, filters.length);
+                    // DH-23750 (42.x only): see QueryTable.DISABLE_WHERE_REORDER_WITH_BARRIERS. The current order
+                    // satisfies every barrier, because a respected barrier must be declared by an earlier filter (see
+                    // QueryTable) and a range is only ever reordered when it holds no declarer/respecter pair.
+                    if (!(QueryTable.DISABLE_WHERE_REORDER_WITH_BARRIERS
+                            && hasBarrierDependency(filters, startIndex))) {
+                        Arrays.sort(filters, startIndex, filters.length);
+                    }
                     onComplete.run();
                 },
                 () -> {
                 },
                 onError);
+    }
+
+    /**
+     * DH-23750 (42.x only): whether any filter in {@code filters[startIndex..]} respects a barrier declared by another
+     * filter in that range. See {@link #scheduleAndSortCostEstimates}.
+     */
+    private static boolean hasBarrierDependency(final StatelessFilter[] filters, final int startIndex) {
+        for (int ii = startIndex; ii < filters.length; ++ii) {
+            if (mustFollowAnother(filters[ii], Arrays.asList(filters).subList(startIndex, filters.length))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * DH-23750 (42.x only): whether {@code filter} respects a barrier declared by some other filter in {@code others},
+     * and so must run after it.
+     */
+    private static boolean mustFollowAnother(final StatelessFilter filter, final List<StatelessFilter> others) {
+        for (final StatelessFilter other : others) {
+            if (other != filter && other.declaredBarriers.stream().anyMatch(filter.respectedBarriers::contains)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
