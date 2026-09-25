@@ -8,6 +8,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.filter.ExtractAllFilters;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
@@ -412,13 +413,15 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     /**
      * Whether {@code whereFilter} may be applied to the location keys before coalescing, rather than to the rows after.
      * Location discovery applies such filters once per discovered key, with no listener, so a refreshing filter cannot
-     * be one: it is deferred like any other row filter.
+     * be one: it is deferred like any other row filter. Nor can a filter that uses virtual row variables, which would
+     * be evaluated against positions in the location table rather than in the coalesced table.
      *
      * @param whereFilter The filter to test, already {@link WhereFilter#init(TableDefinition) initialized}
      * @return Whether {@code whereFilter} may be applied before coalescing
      */
     private boolean isPrioritizablePartitioningFilter(@NotNull final WhereFilter whereFilter) {
-        return !(whereFilter instanceof ReindexingFilter)
+        return ExtractAllFilters.stream(whereFilter)
+                .noneMatch(f -> f instanceof ReindexingFilter || f.hasVirtualRowVariables())
                 && !whereFilter.isRefreshing()
                 && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays());
     }

@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.Strings;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -191,8 +190,17 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table nullTestDummyTable = TableTools.newTable(1, columnSourceMap);
             final TrackingRowSet rowSet = nullTestDummyTable.getRowSet();
-            try (final RowSet result = filter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
-                return result.isEmpty() ? FilterNullBehavior.EXCLUDES_NULLS : FilterNullBehavior.INCLUDES_NULLS;
+            try {
+                // Probe a copy rather than this context's own filter. filter() is not guaranteed to be free of side
+                // effects, so probing the live object would initialize any state the filter carries against the dummy
+                // table instead of the real one. The copy is init'ed against the dummy definition because copy() is
+                // not required to preserve initialization. The engine's own filters do preserve it, so for them init()
+                // is a no-op and the probe costs one shallow copy per context.
+                final WhereFilter probeFilter = filter.copy();
+                probeFilter.init(nullTestDummyTable.getDefinition());
+                try (final RowSet result = probeFilter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
+                    return result.isEmpty() ? FilterNullBehavior.EXCLUDES_NULLS : FilterNullBehavior.INCLUDES_NULLS;
+                }
             } catch (final Exception e) {
                 return FilterNullBehavior.FAILS_ON_NULLS;
             }
@@ -210,7 +218,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
     @Override
     public final UnifiedChunkFilter createChunkFilter(final int maxChunkSize) {
         if (!supportsChunkFiltering) {
-            throw new IllegalStateException("Filter does not support chunk filtering: " + Strings.of(filter));
+            throw new IllegalStateException("Filter does not support chunk filtering: " + filter);
         }
         final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(filter);
         if (chunkFilter.isPresent()) {
@@ -230,7 +238,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
             }
         } else {
             throw new UnsupportedOperationException(
-                    "Filter does not support chunk filtering: " + Strings.of(filter));
+                    "Filter does not support chunk filtering: " + filter);
         }
     }
 
