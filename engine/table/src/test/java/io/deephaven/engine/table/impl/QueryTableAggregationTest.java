@@ -4512,7 +4512,14 @@ public class QueryTableAggregationTest {
         try (final SafeCloseable ignored =
                 () -> ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = originalRelease) {
             ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = true;
-            doTestReleaseBlocksSlidingWindow();
+            // the test checks that the first block is released, which a shift down would fill again
+            final double originalFront = ChunkedOperatorAggregationHelper.FRONT_SHIFT_FRACTION;
+            ChunkedOperatorAggregationHelper.FRONT_SHIFT_FRACTION = -1;
+            try {
+                doTestReleaseBlocksSlidingWindow();
+            } finally {
+                ChunkedOperatorAggregationHelper.FRONT_SHIFT_FRACTION = originalFront;
+            }
         }
     }
 
@@ -4657,6 +4664,62 @@ public class QueryTableAggregationTest {
             });
             assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
         }
+    }
+
+    @Test
+    public void testFrontShiftReusesOutputPositions() {
+        final double originalFraction = ChunkedOperatorAggregationHelper.FRONT_SHIFT_FRACTION;
+        final boolean originalRelease = ChunkedOperatorAggregationHelper.RELEASE_BLOCKS;
+        try (final SafeCloseable ignored = () -> {
+            ChunkedOperatorAggregationHelper.FRONT_SHIFT_FRACTION = originalFraction;
+            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = originalRelease;
+        }) {
+            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = true;
+            for (final double fraction : new double[] {0, 0.5}) {
+                ChunkedOperatorAggregationHelper.FRONT_SHIFT_FRACTION = fraction;
+                testFrontShiftReusesOutputPositions(fraction);
+            }
+        }
+    }
+
+    private void testFrontShiftReusesOutputPositions(final double fraction) {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int window = 3 * blockSize;
+        // not a multiple of the block size, so that blocks empty part way through a cycle
+        final int step = blockSize / 2 + 7;
+        final int cycles = 60;
+
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
+                stringCol("Key", windowKeys(0, window)), longCol("x", windowValues(0, window)));
+        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggMin("Min=x"),
+                AggAvg("Avg=x"), AggCountDistinct("CD=x"), AggDistinct("D=x"), AggFirst("First=x"), AggLast("Last=x"),
+                AggUnique("U=x"), AggMed("Med=x")), "Key");
+        final Table aggregated = aggregation.get();
+
+        final TableUpdateValidator validated = TableUpdateValidator.make(
+                "testFrontShiftReusesOutputPositions-" + fraction, (QueryTable) aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int cycle = 0; cycle < cycles; ++cycle) {
+            final long firstRemoved = (long) cycle * step;
+            final long firstAdded = firstRemoved + window;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, step)),
+                        longCol("x", windowValues(firstAdded, step)));
+                table.notifyListeners(added, removed, i());
+            });
+            assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+        }
+
+        // every key was new, so without shifting the positions would reach window + cycles * step
+        final long positionsWithoutShifting = window + (long) cycles * step;
+        assertTrue("fraction=" + fraction + ", lastRowKey=" + aggregated.getRowSet().lastRowKey(),
+                aggregated.getRowSet().lastRowKey() < positionsWithoutShifting / 2);
     }
 
     private static String[] windowKeys(final long firstRowKey, final int count) {

@@ -36,6 +36,10 @@ final class OutputPositionBlockTracker {
     private int[] liveCounts = new int[0];
     /** Every position in the blocks below this one has been assigned. */
     private int closedBlocks;
+    /** The blocks below this one have all been released. */
+    private int releasedPrefixBlocks;
+    /** The rows added to and removed from the input since the states were last shifted down. */
+    private long inputRowsSinceFrontShift;
 
     /** A closed block with at most this many live states is sparse, and may be collapsed. */
     private final int sparseLiveLimit;
@@ -262,9 +266,58 @@ final class OutputPositionBlockTracker {
         }
     }
 
+    /**
+     * @param frontShiftFraction shift the states down once the released blocks at the start of the output positions are
+     *        at least this fraction of the positions assigned; zero shifts for any released block at the start, and a
+     *        negative fraction never shifts
+     * @param nextOutputPosition the next output position that will be assigned
+     * @return the number of positions, a multiple of the block size, by which to shift every state down; zero for none
+     */
+    long frontShiftAmount(final double frontShiftFraction, final int nextOutputPosition) {
+        if (frontShiftFraction < 0 || releasedPrefixBlocks == 0) {
+            return 0;
+        }
+        final long prefixPositions = (long) releasedPrefixBlocks << LOG_BLOCK_SIZE;
+        if (prefixPositions < frontShiftFraction * nextOutputPosition) {
+            return 0;
+        }
+        // a shift's work is proportional to the positions it moves; waiting until the input rows since the last shift
+        // pay for them keeps the total work linear in the input
+        return inputRowsSinceFrontShift >= nextOutputPosition - prefixPositions ? prefixPositions : 0;
+    }
+
+    /**
+     * @param inputRows the rows added to and removed from the input in this cycle
+     */
+    void recordInputRows(final long inputRows) {
+        inputRowsSinceFrontShift += inputRows;
+    }
+
+    /**
+     * Account for every state having moved down by {@code shiftPositions}, the released blocks at the start.
+     *
+     * @param shiftPositions the positions every state moved down, as returned by {@link #frontShiftAmount}
+     * @param nextOutputPosition the next output position that would have been assigned before the shift
+     */
+    void shiftDown(final long shiftPositions, final int nextOutputPosition) {
+        final int shiftBlocks = (int) (shiftPositions >> LOG_BLOCK_SIZE);
+        final int blocksInUse = (nextOutputPosition + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
+        System.arraycopy(liveCounts, shiftBlocks, liveCounts, 0, blocksInUse - shiftBlocks);
+        Arrays.fill(liveCounts, blocksInUse - shiftBlocks, blocksInUse, 0);
+        closedBlocks -= shiftBlocks;
+        final BitSet shiftedSparse = sparseBlocks.get(shiftBlocks, Math.max(shiftBlocks, sparseBlocks.length()));
+        sparseBlocks.clear();
+        sparseBlocks.or(shiftedSparse);
+        releasedPrefixBlocks = 0;
+        inputRowsSinceFrontShift = 0;
+    }
+
     private void release(final int bi, final RowSetBuilderSequential builder) {
         liveCounts[bi] = RELEASED;
         clearSparse(bi);
+        while (releasedPrefixBlocks < closedBlocks && liveCounts[releasedPrefixBlocks] == RELEASED) {
+            ++releasedPrefixBlocks;
+        }
         final long first = (long) bi << LOG_BLOCK_SIZE;
         builder.appendRange(first, first + BLOCK_SIZE - 1);
     }

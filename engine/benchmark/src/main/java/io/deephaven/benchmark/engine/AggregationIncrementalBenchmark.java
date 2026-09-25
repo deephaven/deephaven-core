@@ -84,6 +84,13 @@ public class AggregationIncrementalBenchmark {
     @Param({"1"})
     private double collapse;
 
+    /**
+     * The fraction of the output positions that released blocks at the start must reach before every state is shifted
+     * down to reuse them; 0 shifts for any released block, and a negative fraction never shifts.
+     */
+    @Param({"-1"})
+    private double frontShift;
+
     /** Whether removals migrate entries during a hash table rehash. */
     @Param({"false"})
     private boolean migrateOnTombstone;
@@ -128,6 +135,7 @@ public class AggregationIncrementalBenchmark {
         AggregationStateBenchSupport.setReclaimMode(reclaim);
         AggregationStateBenchSupport.setCollapseFreeFraction(collapse);
         AggregationStateBenchSupport.setMigrateOnTombstone(migrateOnTombstone);
+        AggregationStateBenchSupport.setFrontShiftFraction(frontShift);
         if (params.getBenchmark().endsWith(".randomChurn")) {
             randomRemovals = chooseRandomRemovals();
         }
