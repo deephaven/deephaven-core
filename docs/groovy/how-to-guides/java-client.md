@@ -31,7 +31,7 @@ The application is broken up into three major parts:
 
 ## Running the Python weather server
 
-At this point, you should have a running Deephaven IDE. You first need to configure and run the Python Weather Server script. This is broken down into three major segments.
+At this point, you should have a running Deephaven IDE. You first need to configure and run the Python Weather Server script. This is broken down into five steps.
 
 1. Import the libraries needed into the worker.
 
@@ -196,9 +196,7 @@ def geoLocate(cityName) -> Location:
         params={"address": cityName, "key": API_KEY},
     )
     if geoResp.status_code != 200:
-        raise ValueError(
-            cityName + " is not a valid place -> " + geoJson["error_message"]
-        )
+        raise ValueError(cityName + " is not a valid place -> " + geoResp.text)
     geoJson = geoResp.json()
 
     # Process the response JSON and look for the City and State (typically locality and administrative_area_level_1)
@@ -219,7 +217,7 @@ def geoLocate(cityName) -> Location:
         if "administrative_area_level_1" in val["types"]:
             localState = val["long_name"]
 
-    if localCity is None or localState is None:
+    if not localCity or not localState:
         raise ValueError("Unable to determine city and state for " + cityName)
 
     geom = resultsEl["geometry"]
@@ -320,7 +318,9 @@ def beginWatch(cityName):
 
 def periodicFetchRealData():
     while True:
-        for lc in trackedCities:
+        with CITY_LOCK:
+            cities = list(trackedCities)
+        for lc in cities:
             updateObservation(lc)
         time.sleep(60)
 
@@ -384,7 +384,7 @@ final BarrageSession session = factory.newBarrageSession();
 
 Use the `dh+plain` scheme for a plaintext connection and `dh` for a TLS connection. If the server requires authentication, pass a `SessionConfig` to `newBarrageSession` — for example, `SessionConfig.builder().authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler <key>").build()` for [pre-shared key authentication](./authentication/auth-psk.md).
 
-Closing the session does not close the underlying channel. When the application is done, close the session and call `factory.managedChannel().shutdown()`.
+Closing the session does not close the underlying channel. When the application is done, close the session, call `factory.managedChannel().shutdown()`, and shut down the scheduler.
 
 ### Prepare the client-side engine
 
@@ -462,12 +462,12 @@ The last piece of the puzzle is to process the data from the table. You can, of 
 statsTable.addUpdateListener(listener = new InstrumentedTableUpdateListenerAdapter(statsTable, false) {
     @Override
     public void onUpdate(TableUpdate upstream) {
-        // Process the update as needed. The TableUpdate contains RowSets that describe
-        // 1) What rows have been added
-        // 2) What rows have been removed
-        // 3) What rows have been modified
-        // 4) What rows have been structurally shifted in row key space, but without changes to column data
-        // 5) What columns were affected by the changes
+        // Process the update as needed. The TableUpdate describes
+        // 1) What rows have been added: upstream.added()
+        // 2) What rows have been removed: upstream.removed()
+        // 3) What rows have been modified: upstream.modified()
+        // 4) What rows have been shifted in row key space, without changes to column data: upstream.shifted()
+        // 5) What columns were modified: upstream.modifiedColumnSet()
     }
 });
 ```
@@ -500,6 +500,9 @@ statsTable = barrageSession.subscribe(
         .entireTable()
         .get()
 ```
+
+> [!NOTE]
+> `DeephavenApiServer.getInstance()` is annotated `@InternalUseOnly` and may change without notice.
 
 For the common case of fetching a remote table by name, [Deephaven URIs](./use-uris.md) are simpler: `ResolveTools.resolve("dh+plain://remote-host:10000/scope/last_city_by_state")` creates the session and subscription for you.
 
