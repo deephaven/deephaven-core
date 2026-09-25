@@ -342,15 +342,17 @@ At this point, you have a completely functional Deephaven application that is re
 
 ## The Java client
 
-The final, and most interesting, part of this example is the Java client. It connects to the Deephaven server, subscribes to the `last_city_by_state` statistics table, and displays it in a simple Java Swing UI. It also communicates with the server to request that additional cities be tracked.
+The final, and most interesting, part of this example is the Java client. It connects to the Deephaven server, subscribes to the `last_city_by_state` statistics table, and displays it. It also communicates with the server to request that additional cities be tracked.
+
+The repository doesn't include a complete client application for this example. The screenshots below illustrate what a simple Java Swing client built from the API pieces in this guide might look like.
 
 ![The Java client UI](../assets/tutorials/java-client/java-app.png)
 
-After a city is added, the UI shows live weather data for it:
+After a city is added, such a UI shows live weather data for it:
 
 ![The Java client UI, now displaying live weather data for the city the user entered](../assets/tutorials/java-client/java-app-data.png)
 
-The sections below walk through the pieces of the Deephaven Java client that such an application uses. Complete, runnable Barrage client examples are in the repository's `java-client/barrage-examples` directory — for example, `SubscribeTable`.
+The sections below walk through the pieces of the Deephaven Java client that you use to build such an application. Complete, runnable Barrage client examples are in the repository's `java-client/barrage-examples` directory — for example, `SubscribeTable`.
 
 ## How it works
 
@@ -384,7 +386,7 @@ final BarrageSession session = factory.newBarrageSession();
 
 Use the `dh+plain` scheme for a plaintext connection and `dh` for a TLS connection. If the server requires authentication, pass a `SessionConfig` to `newBarrageSession` — for example, `SessionConfig.builder().authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler <key>").build()` for [pre-shared key authentication](./authentication/auth-psk.md).
 
-Closing the session does not close the underlying channel. When the application is done, close the session, call `factory.managedChannel().shutdown()`, and shut down the scheduler.
+Closing the session does not close the underlying channel. When the application is done, close the session, call `factory.managedChannel().shutdown()`, shut down the scheduler, and close the `RootAllocator`.
 
 ### Prepare the client-side engine
 
@@ -418,17 +420,17 @@ final BarrageSubscription subscription = session.subscribe(
 final Table statsTable = subscription.entireTable().get();
 ```
 
-`entireTable()` returns a `Future` that completes once all rows of the table have arrived. At that point, `statsTable` is a live, ticking, local instance of the table created in the server script. This application simply displays the contents of that table, but a more sophisticated app could use this table data in any way it likes.
+`entireTable` returns a `Future` that completes once all rows of the table have arrived. At that point, `statsTable` is a live, ticking, local instance of the table created in the server script. This application simply displays the contents of that table, but a more sophisticated app could use this table data in any way it likes.
 
 `BarrageSubscription` also supports narrower requests:
 
-- `partialTable(viewport, columns)` subscribes to only the rows in a position-space `RowSet` viewport and the columns set in a `BitSet`. Pass `null` for `columns` to subscribe to all columns. An overload with a `reverseViewport` argument treats the viewport as offsets from the end of the table.
-- `snapshotEntireTable()` and `snapshotPartialTable(...)` fetch a static snapshot instead of a ticking table.
+- `partialTable` takes a position-space `RowSet` viewport and a `BitSet` of columns, and subscribes to only those rows and columns. Pass `null` for `columns` to subscribe to all columns. An overload with a `reverseViewport` argument treats the viewport as offsets from the end of the table.
+- `snapshotEntireTable` and `snapshotPartialTable` fetch a static snapshot instead of a ticking table.
 
-To fetch a one-time snapshot without creating a subscription, use `session.snapshot(...)`, which returns a `BarrageSnapshot` with `entireTable()` and `partialTable(...)` methods.
+To fetch a one-time snapshot without creating a subscription, use the session's `snapshot` method, which returns a `BarrageSnapshot` with `entireTable` and `partialTable` methods.
 
 > [!CAUTION]
-> Subscriptions participate in Deephaven's liveness system. The subscription ends, and the server stops sending data, once the subscribed table is no longer live. To control this explicitly, open a `LivenessScope` (for example, `LivenessScopeStack.open()` in a try-with-resources block) before subscribing; closing the scope releases the table, its listeners, and the subscription.
+> Subscriptions participate in Deephaven's liveness system. The subscription ends, and the server stops sending data, once the subscribed table is no longer live. To control this explicitly, open a `LivenessScope` (for example, with `LivenessScopeStack.open` in a try-with-resources block) before subscribing; closing the scope releases the table, its listeners, and the subscription.
 
 ## Bidirectional communication
 
@@ -438,7 +440,10 @@ This example gives the user the ability to add cities to the set of monitored lo
 
 ```java
 try (final ConsoleSession console = session.session().console("python").get()) {
-    final Changes c = console.executeCode("beginWatch(\"" + escapeString(place) + "\")");
+    // Base64-encode the user's text so it can't break out of the Python string literal
+    final String encoded = Base64.getEncoder().encodeToString(place.getBytes(StandardCharsets.UTF_8));
+    final Changes c = console.executeCode(
+            "import base64; beginWatch(base64.b64decode('" + encoded + "').decode('utf-8'))");
     if (c.errorMessage().isPresent()) {
         System.err.println("Error adding " + place + ": " + c.errorMessage().get());
     } else {
@@ -449,10 +454,10 @@ try (final ConsoleSession console = session.session().console("python").get()) {
 }
 ```
 
-This sends a Python command to the server (`beginWatch(place)`) and checks for an error response. The server returns a `Changes` object, which allows the application to determine what has changed in the server's scope (for example, tables being created or variables being changed).
+This sends a Python command to the server that calls `beginWatch` with the user's text, and checks for an error response. The server returns a `Changes` object, which allows the application to determine what has changed in the server's scope (for example, tables being created or variables being changed).
 
 > [!WARNING]
-> This example embeds a user string into a command. Be extremely careful to escape quotes and other special characters within the string to prevent script injection attacks.
+> Never concatenate raw user input into a script. The example above Base64-encodes the text first; the Base64 alphabet contains no quotes, backslashes, or control characters, so the encoded value can't escape the Python string literal and inject code.
 
 ## Listening to Deephaven tables
 
@@ -479,8 +484,9 @@ Keep a reference to the listener (here, the `listener` field) for as long as it 
 A Groovy script running on one Deephaven server can subscribe to a table on another server the same way. The server already has an update graph and execution context, and it can create the `BarrageSession` for you with its own allocator, scheduler, and channel settings:
 
 ```groovy skip-test
-import io.deephaven.client.impl.BarrageSubscriptionOptions
 import io.deephaven.client.impl.ClientConfig
+import io.deephaven.client.impl.SessionConfig
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions
 import io.deephaven.qst.table.TicketTable
 import io.deephaven.server.runner.DeephavenApiServer
 import io.deephaven.uri.DeephavenTarget
@@ -492,7 +498,9 @@ config = ClientConfig.builder()
 barrageSession = DeephavenApiServer.getInstance()
         .sessionFactoryCreator()
         .barrageFactory(config)
-        .newBarrageSession()
+        .newBarrageSession(SessionConfig.builder()
+                .authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler <key>")
+                .build())
 
 statsTable = barrageSession.subscribe(
         TicketTable.fromQueryScopeField("last_city_by_state"),
@@ -502,9 +510,9 @@ statsTable = barrageSession.subscribe(
 ```
 
 > [!NOTE]
-> `DeephavenApiServer.getInstance()` is annotated `@InternalUseOnly` and may change without notice.
+> `DeephavenApiServer.getInstance` is annotated `@InternalUseOnly` and may change without notice. This example authenticates to the remote server with a pre-shared key; if the remote server uses anonymous authentication, call `newBarrageSession` with no arguments instead.
 
-For the common case of fetching a remote table by name, [Deephaven URIs](./use-uris.md) are simpler: `ResolveTools.resolve("dh+plain://remote-host:10000/scope/last_city_by_state")` creates the session and subscription for you.
+For the common case of fetching a remote table by name, [Deephaven URIs](./use-uris.md) are simpler: `ResolveTools.resolve("dh+plain://remote-host:10000/scope/last_city_by_state")` creates the session and subscription for you. However, URI resolution supports only anonymous authentication; if the remote server uses PSK authentication, use the `BarrageSession` approach above.
 
 ## Related documentation
 
