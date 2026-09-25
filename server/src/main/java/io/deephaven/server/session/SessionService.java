@@ -309,7 +309,7 @@ public class SessionService {
                 } else {
                     session.updateExpiration(expiration);
                 }
-            } catch (final RuntimeException err) {
+            } catch (final StatusRuntimeException err) {
                 // the session expired before the new token could be installed; a token that never reaches
                 // outstandingCookies would otherwise retain the session for the life of this service
                 tokenToSession.remove(newUUID, expiration);
