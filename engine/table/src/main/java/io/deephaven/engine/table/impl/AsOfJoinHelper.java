@@ -1293,6 +1293,8 @@ public class AsOfJoinHelper {
         }
         final ModifiedColumnSet rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
         final ModifiedColumnSet allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
+        final ModifiedColumnSet rightColumnsToAdd =
+                rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
         final ModifiedColumnSet.Transformer rightTransformer =
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
         final ChunkEquals stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
@@ -1425,8 +1427,9 @@ public class AsOfJoinHelper {
                             }
 
                             // if the stamp was not modified, then we need to figure out the responsive rows to mark as
-                            // modified
-                            if (!stampModified && upstream.modified().isNonempty()) {
+                            // modified; only a modified column that the result adds changes a responsive row
+                            if (!stampModified && upstream.modified().isNonempty()
+                                    && upstream.modifiedColumnSet().containsAny(rightColumnsToAdd)) {
                                 try (final RowSequence.Iterator modit = upstream.modified().getRowSequenceIterator();
                                         final WritableLongChunk<RowKeys> rightStampIndices =
                                                 WritableLongChunk.makeWritableChunk(cycleChunkSize);
