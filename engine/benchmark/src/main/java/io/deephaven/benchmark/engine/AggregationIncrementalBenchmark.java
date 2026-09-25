@@ -85,11 +85,11 @@ public class AggregationIncrementalBenchmark {
     private double collapse;
 
     /**
-     * The fraction of the output positions that released blocks at the start must reach before every state is shifted
-     * down to reuse them; 0 shifts for any released block, and a negative fraction never shifts.
+     * The fraction of the output positions that released blocks anywhere must reach before the blocks after them are
+     * shifted down to reuse them; 0 shifts for any released block, and a negative fraction never shifts.
      */
     @Param({"-1"})
-    private double frontShift;
+    private double blockShift;
 
     /** The initial size for {@link #addOnly()}, and the constant size for the other benchmarks. */
     @Param({"1000000"})
@@ -130,7 +130,7 @@ public class AggregationIncrementalBenchmark {
         updateGraph.resetForUnitTests(false);
         AggregationStateBenchSupport.setReclaimMode(reclaim);
         AggregationStateBenchSupport.setCollapseFreeFraction(collapse);
-        AggregationStateBenchSupport.setFrontShiftFraction(frontShift);
+        AggregationStateBenchSupport.setBlockShiftFraction(blockShift);
         if (params.getBenchmark().endsWith(".randomChurn")) {
             randomRemovals = chooseRandomRemovals();
         }

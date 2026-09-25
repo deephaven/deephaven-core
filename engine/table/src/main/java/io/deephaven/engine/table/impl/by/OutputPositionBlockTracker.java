@@ -22,9 +22,11 @@ import java.util.List;
  * assigned and whose states have all been removed can be released as a whole.
  *
  * <p>
- * Output positions are assigned in increasing order and never reused, and a state that is empty at the end of a cycle
- * is removed, so once every position in a block has been assigned and the block's live count reaches zero, nothing will
- * ever read or write the block again.
+ * Output positions are assigned in increasing order, and a state that is empty at the end of a cycle is removed, so
+ * once every position in a block has been assigned and the block's live count reaches zero, no state will be assigned
+ * to the block again. New states are only ever assigned after every existing one. Released blocks can still be
+ * reclaimed by moves that keep the states in order: collapsing runs of sparse blocks, and shifting the blocks after
+ * released ones down over them.
  * </p>
  */
 final class OutputPositionBlockTracker {
@@ -36,10 +38,21 @@ final class OutputPositionBlockTracker {
     private int[] liveCounts = new int[0];
     /** Every position in the blocks below this one has been assigned. */
     private int closedBlocks;
-    /** The blocks below this one have all been released. */
-    private int releasedPrefixBlocks;
-    /** The rows added to and removed from the input since the states were last shifted down. */
-    private long inputRowsSinceFrontShift;
+    /** The blocks whose live count is {@link #RELEASED}. */
+    private final BitSet releasedBlocks = new BitSet();
+    /** The number of blocks in {@link #releasedBlocks}. */
+    private int releasedBlockCount;
+    /**
+     * The budget a block shift left unspent because the next block had more live states than it could move, carried to
+     * the next cycle so that small cycles still make progress; at most a block's worth.
+     */
+    private long carriedShiftBudget;
+    /**
+     * The first of the released blocks a block shift left in the middle, from which the next one resumes; negative when
+     * the last block shift reached the end. Resuming rather than starting over from the first released block keeps a
+     * sweep moving toward the end: blocks released before it, often those it just moved, wait for the next sweep.
+     */
+    private int sweepBlock = -1;
 
     /** A closed block with at most this many live states is sparse, and may be collapsed. */
     private final int sparseLiveLimit;
@@ -230,6 +243,17 @@ final class OutputPositionBlockTracker {
         }
 
         /**
+         * @return the live states in the collapsed runs, which bounds the states the collapse moves
+         */
+        long movedStates() {
+            long moved = 0;
+            for (final long[] run : runs) {
+                moved += run[2];
+            }
+            return moved;
+        }
+
+        /**
          * Apply the collapse to the live states and to row sets of states within them. Each run of the live states is
          * replaced by one contiguous range, which is far cheaper than applying {@link #shift} range by range when the
          * live states are scattered.
@@ -267,57 +291,252 @@ final class OutputPositionBlockTracker {
     }
 
     /**
-     * @param frontShiftFraction shift the states down once the released blocks at the start of the output positions are
-     *        at least this fraction of the positions assigned; zero shifts for any released block at the start, and a
-     *        negative fraction never shifts
-     * @param nextOutputPosition the next output position that will be assigned
-     * @return the number of positions, a multiple of the block size, by which to shift every state down; zero for none
-     */
-    long frontShiftAmount(final double frontShiftFraction, final int nextOutputPosition) {
-        if (frontShiftFraction < 0 || releasedPrefixBlocks == 0) {
-            return 0;
-        }
-        final long prefixPositions = (long) releasedPrefixBlocks << LOG_BLOCK_SIZE;
-        if (prefixPositions < frontShiftFraction * nextOutputPosition) {
-            return 0;
-        }
-        // a shift's work is proportional to the positions it moves; waiting until the input rows since the last shift
-        // pay for them keeps the total work linear in the input
-        return inputRowsSinceFrontShift >= nextOutputPosition - prefixPositions ? prefixPositions : 0;
-    }
-
-    /**
-     * @param inputRows the rows added to and removed from the input in this cycle
-     */
-    void recordInputRows(final long inputRows) {
-        inputRowsSinceFrontShift += inputRows;
-    }
-
-    /**
-     * Account for every state having moved down by {@code shiftPositions}, the released blocks at the start.
+     * Plan to shift blocks down over the released blocks, keeping the states in order, once the released blocks are at
+     * least {@code blockShiftFraction} of the positions assigned. Starting at the released blocks the last shift left,
+     * or else at the first released block, each block of live states after it moves down by the number of released
+     * blocks passed over, as whole blocks, until the budget of live states to move runs out. The released blocks passed
+     * over become one run of released blocks just before the first block not moved, from which the next cycle resumes;
+     * if every block moves, they are given back at the end instead, and the next output position moves down by them.
      *
-     * @param shiftPositions the positions every state moved down, as returned by {@link #frontShiftAmount}
-     * @param nextOutputPosition the next output position that would have been assigned before the shift
+     * @param blockShiftFraction the fraction of the positions assigned that the released blocks must reach; zero shifts
+     *        for any released block, and a negative fraction never shifts
+     * @param nextOutputPosition the next output position that will be assigned
+     * @param budget the most live states to move in this cycle, before any carried from the last one
+     * @return the plan, which {@link #applyBlockShift} records once the moves are made
      */
-    void shiftDown(final long shiftPositions, final int nextOutputPosition) {
-        final int shiftBlocks = (int) (shiftPositions >> LOG_BLOCK_SIZE);
+    BlockShift planBlockShift(final double blockShiftFraction, final int nextOutputPosition, final long budget) {
+        if (blockShiftFraction < 0 || releasedBlockCount == 0
+                || ((long) releasedBlockCount << LOG_BLOCK_SIZE) < blockShiftFraction * nextOutputPosition) {
+            carriedShiftBudget = 0;
+            return BlockShift.NONE;
+        }
+        final long available = Math.max(0, budget) + carriedShiftBudget;
         final int blocksInUse = (nextOutputPosition + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
-        System.arraycopy(liveCounts, shiftBlocks, liveCounts, 0, blocksInUse - shiftBlocks);
-        Arrays.fill(liveCounts, blocksInUse - shiftBlocks, blocksInUse, 0);
-        closedBlocks -= shiftBlocks;
-        final BitSet shiftedSparse = sparseBlocks.get(shiftBlocks, Math.max(shiftBlocks, sparseBlocks.length()));
-        sparseBlocks.clear();
-        sparseBlocks.or(shiftedSparse);
-        releasedPrefixBlocks = 0;
-        inputRowsSinceFrontShift = 0;
+        final int firstReleased = sweepBlock >= 0 ? sweepBlock : releasedBlocks.nextSetBit(0);
+        assert liveCounts[firstReleased] == RELEASED;
+        final List<int[]> ranges = new ArrayList<>();
+        int gap = 0;
+        long moved = 0;
+        int stop = blocksInUse;
+        for (int bi = firstReleased; bi < blocksInUse;) {
+            if (liveCounts[bi] == RELEASED) {
+                final int releasedEnd = Math.min(releasedBlocks.nextClearBit(bi), blocksInUse);
+                gap += releasedEnd - bi;
+                bi = releasedEnd;
+                continue;
+            }
+            if (moved + liveCounts[bi] > available) {
+                stop = bi;
+                break;
+            }
+            moved += liveCounts[bi];
+            addBlockToRanges(ranges, bi, gap);
+            ++bi;
+        }
+        final boolean reachedEnd = stop == blocksInUse;
+        if (reachedEnd) {
+            // The positions given back at the end must have storage for the states assigned there next, so move the
+            // unassigned blocks after the end down onto them too; the array sources give blocks never allocated fresh
+            // storage at their destinations.
+            for (int bi = blocksInUse; bi < blocksInUse + gap; ++bi) {
+                addBlockToRanges(ranges, bi, gap);
+            }
+        }
+        carriedShiftBudget = reachedEnd ? 0 : Math.min(BLOCK_SIZE, available - moved);
+        if (ranges.isEmpty()) {
+            return BlockShift.NONE;
+        }
+        return new BlockShift(ranges, firstReleased, stop, gap, reachedEnd, moved);
+    }
+
+    private static void addBlockToRanges(final List<int[]> ranges, final int bi, final int gap) {
+        final int[] last = ranges.isEmpty() ? null : ranges.get(ranges.size() - 1);
+        if (last != null && last[1] == bi - 1 && last[2] == gap) {
+            last[1] = bi;
+        } else {
+            ranges.add(new int[] {bi, bi, gap});
+        }
+    }
+
+    /**
+     * Account for the moves of a planned block shift.
+     *
+     * @param plan the plan returned by {@link #planBlockShift}, whose moves have been made
+     */
+    void applyBlockShift(final BlockShift plan) {
+        // The count of every block past those in use is zero. When the shift reaches the end, the unassigned blocks
+        // after the end move onto the blocks given back, so their counts become zero too.
+        for (final int[] range : plan.blockRanges) {
+            for (int bi = range[0]; bi <= range[1]; ++bi) {
+                final int destination = bi - range[2];
+                liveCounts[destination] = bi < liveCounts.length ? liveCounts[bi] : 0;
+                if (sparseBlocks.get(bi)) {
+                    sparseBlocks.clear(bi);
+                    sparseBlocks.set(destination);
+                }
+            }
+        }
+        releasedBlocks.clear(plan.firstReleasedBlock, plan.stopBlock);
+        if (plan.reachedEnd) {
+            releasedBlockCount -= plan.gapBlocks;
+            closedBlocks -= plan.gapBlocks;
+            sweepBlock = -1;
+        } else {
+            Arrays.fill(liveCounts, plan.stopBlock - plan.gapBlocks, plan.stopBlock, RELEASED);
+            releasedBlocks.set(plan.stopBlock - plan.gapBlocks, plan.stopBlock);
+            sweepBlock = plan.stopBlock - plan.gapBlocks;
+        }
+    }
+
+    /**
+     * A shift of whole blocks down over released blocks, keeping the states in order.
+     */
+    static final class BlockShift {
+        static final BlockShift NONE = new BlockShift(List.of(), 0, 0, 0, false, 0);
+
+        /** The moves, as whole blocks; empty for no shift. */
+        final RowSetShiftData shift;
+        /** For each run of blocks moved by the same amount: its first block, its last block, and the blocks moved. */
+        private final List<int[]> blockRanges;
+        private final int firstReleasedBlock;
+        /** The first block not moved, or the number of blocks in use if every block after a released one moved. */
+        private final int stopBlock;
+        /** The released blocks passed over, which the blocks after them moved down by. */
+        private final int gapBlocks;
+        /** Whether every block after the first released one moved, giving the released blocks back at the end. */
+        private final boolean reachedEnd;
+        /** The live states moved. */
+        final long movedStates;
+
+        private BlockShift(final List<int[]> blockRanges, final int firstReleasedBlock, final int stopBlock,
+                final int gapBlocks, final boolean reachedEnd, final long movedStates) {
+            this.blockRanges = blockRanges;
+            this.firstReleasedBlock = firstReleasedBlock;
+            this.stopBlock = stopBlock;
+            this.gapBlocks = gapBlocks;
+            this.reachedEnd = reachedEnd;
+            this.movedStates = movedStates;
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            for (final int[] range : blockRanges) {
+                builder.shiftRange((long) range[0] << LOG_BLOCK_SIZE, ((long) (range[1] + 1) << LOG_BLOCK_SIZE) - 1,
+                        -((long) range[2] << LOG_BLOCK_SIZE));
+            }
+            shift = builder.build();
+        }
+
+        /**
+         * @return the positions given back at the end, by which the next output position moves down
+         */
+        long reclaimedPositions() {
+            return reachedEnd ? (long) gapBlocks << LOG_BLOCK_SIZE : 0;
+        }
+
+        /**
+         * @return the positions, after the shift, of the released blocks left before the first block not moved, whose
+         *         storage may be released; empty if the released blocks were given back at the end
+         */
+        RowSet remainingReleased() {
+            if (reachedEnd || gapBlocks == 0) {
+                return RowSetFactory.empty();
+            }
+            return RowSetFactory.fromRange((long) (stopBlock - gapBlocks) << LOG_BLOCK_SIZE,
+                    ((long) stopBlock << LOG_BLOCK_SIZE) - 1);
+        }
+
+        /**
+         * @return the first position, before the shift, that this shift leaves in place
+         */
+        long firstUnmovedPosition() {
+            return (long) stopBlock << LOG_BLOCK_SIZE;
+        }
+
+        /** The amount this shift moves {@code position} by, zero if it does not move it. */
+        private long deltaAt(final long position) {
+            final int bi = (int) (position >> LOG_BLOCK_SIZE);
+            int low = 0;
+            int high = blockRanges.size() - 1;
+            while (low <= high) {
+                final int mid = (low + high) >>> 1;
+                final int[] range = blockRanges.get(mid);
+                if (range[1] < bi) {
+                    low = mid + 1;
+                } else if (range[0] > bi) {
+                    high = mid - 1;
+                } else {
+                    return -((long) range[2] << LOG_BLOCK_SIZE);
+                }
+            }
+            return 0;
+        }
+
+        /**
+         * The shift that collapses {@code collapse}'s runs and then makes this shift's moves, as one shift from the
+         * positions before either. Both keep the states in order, so their composition does too. A state in a collapsed
+         * run moves by its collapse delta plus this shift's delta where the collapse put it; every other position this
+         * shift moves keeps its delta. Within a run only the live states are named, since the positions they vacate
+         * would otherwise land among them. This describes the moves to downstream listeners; the storage takes
+         * {@code collapse.shift} and then {@link #shift}.
+         *
+         * @param collapse the collapse made in the same cycle, before this shift
+         * @param liveStates the output positions of the live states, before the collapse
+         */
+        RowSetShiftData composedWith(final Collapse collapse, final RowSet liveStates) {
+            if (collapse.runs.isEmpty()) {
+                return shift;
+            }
+            final List<long[]> pieces = new ArrayList<>();
+            // this shift's ranges, less the collapsed runs, which are named state by state below
+            for (final int[] range : blockRanges) {
+                long first = (long) range[0] << LOG_BLOCK_SIZE;
+                final long last = ((long) (range[1] + 1) << LOG_BLOCK_SIZE) - 1;
+                final long delta = -((long) range[2] << LOG_BLOCK_SIZE);
+                for (final long[] run : collapse.runs) {
+                    if (run[1] < first || run[0] > last) {
+                        continue;
+                    }
+                    if (first < run[0]) {
+                        pieces.add(new long[] {first, run[0] - 1, delta});
+                    }
+                    first = run[1] + 1;
+                }
+                if (first <= last) {
+                    pieces.add(new long[] {first, last, delta});
+                }
+            }
+            for (final long[] run : collapse.runs) {
+                try (final RowSet runStates = liveStates.subSetByKeyRange(run[0], run[1])) {
+                    final MutableLong destination = new MutableLong(run[0]);
+                    runStates.forAllRowKeyRanges((rangeFirst, rangeLast) -> {
+                        // split where this shift's delta at the destinations changes, which is only at a block
+                        long sourceFirst = rangeFirst;
+                        while (sourceFirst <= rangeLast) {
+                            final long destinationFirst = destination.get();
+                            final long blockEnd = (destinationFirst | (BLOCK_SIZE - 1));
+                            final long count = Math.min(rangeLast - sourceFirst + 1, blockEnd - destinationFirst + 1);
+                            final long delta = destinationFirst - sourceFirst + deltaAt(destinationFirst);
+                            if (delta != 0) {
+                                pieces.add(new long[] {sourceFirst, sourceFirst + count - 1, delta});
+                            }
+                            destination.add(count);
+                            sourceFirst += count;
+                        }
+                    });
+                }
+            }
+            pieces.sort((a, b) -> Long.compare(a[0], b[0]));
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            for (final long[] piece : pieces) {
+                builder.shiftRange(piece[0], piece[1], piece[2]);
+            }
+            return builder.build();
+        }
     }
 
     private void release(final int bi, final RowSetBuilderSequential builder) {
         liveCounts[bi] = RELEASED;
         clearSparse(bi);
-        while (releasedPrefixBlocks < closedBlocks && liveCounts[releasedPrefixBlocks] == RELEASED) {
-            ++releasedPrefixBlocks;
-        }
+        releasedBlocks.set(bi);
+        ++releasedBlockCount;
         final long first = (long) bi << LOG_BLOCK_SIZE;
         builder.appendRange(first, first + BLOCK_SIZE - 1);
     }

@@ -65,16 +65,16 @@ final class AggregationStateBenchSupport {
     }
 
     /**
-     * Set the fraction of the output positions that released blocks at the start must reach before every state is
-     * shifted down to reuse them; negative, which is all that a build without the setting supports, never shifts.
+     * Set the fraction of the output positions that released blocks anywhere must reach before the blocks after them
+     * are shifted down to reuse them; negative, which is all that a build without the setting supports, never shifts.
      *
-     * @param frontShiftFraction the fraction at which to shift, zero for any released block, negative for never
+     * @param blockShiftFraction the fraction at which to shift, zero for any released block, negative for never
      */
-    static void setFrontShiftFraction(final double frontShiftFraction) {
+    static void setBlockShiftFraction(final double blockShiftFraction) {
         try {
-            ChunkedOperatorAggregationHelper.class.getField("FRONT_SHIFT_FRACTION").setDouble(null, frontShiftFraction);
+            ChunkedOperatorAggregationHelper.class.getField("BLOCK_SHIFT_FRACTION").setDouble(null, blockShiftFraction);
         } catch (NoSuchFieldException e) {
-            if (frontShiftFraction >= 0) {
+            if (blockShiftFraction >= 0) {
                 throw new IllegalStateException("This build cannot shift states down", e);
             }
         } catch (IllegalAccessException e) {
