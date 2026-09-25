@@ -14,6 +14,7 @@
       },
       {
         "label": "Getting Started",
+        "collapsible": false,
         "items": [
           {
             "label": "Quickstart",
@@ -93,6 +94,7 @@
       },
       {
         "label": "User Guide",
+        "collapsible": false,
         "items": [
           {
             "label": "Architectural Details",
@@ -1201,6 +1203,7 @@
       },
       {
         "label": "Reference",
+        "collapsible": false,
         "items": [
           {
             "label": "Engine",
