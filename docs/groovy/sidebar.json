@@ -24,7 +24,7 @@
             "label": "A Crash Course in Deephaven",
             "items": [
               {
-                "label": "Overview",
+                "label": "Crash Course Overview",
                 "path": "getting-started/crash-course/overview.md"
               },
               {
@@ -305,6 +305,10 @@
                 "path": "how-to-guides/iterate-table-vectors.md"
               },
               {
+                "label": "Extract table values",
+                "path": "how-to-guides/extract-table-value.md"
+              },
+              {
                 "label": "Replay",
                 "path": "how-to-guides/replay-data.md"
               }
@@ -376,6 +380,19 @@
                   {
                     "label": "Rolling aggregations",
                     "path": "how-to-guides/rolling-aggregations.md"
+                  }
+                ]
+              },
+              {
+                "label": "Hierarchical tables",
+                "items": [
+                  {
+                    "label": "Rollup tables",
+                    "path": "how-to-guides/rollup-table.md"
+                  },
+                  {
+                    "label": "Tree tables",
+                    "path": "how-to-guides/tree-table.md"
                   }
                 ]
               },
@@ -557,6 +574,10 @@
             "label": "Plot",
             "items": [
               {
+                "label": "Plot without writing queries",
+                "path": "how-to-guides/user-interface/chart-builder.md"
+              },
+              {
                 "label": "Built-in plotting API",
                 "path": "how-to-guides/plotting/api-plotting.md"
               }
@@ -591,12 +612,7 @@
                   {
                     "label": "Markdown widgets",
                     "path": "how-to-guides/user-interface/markdown-widget.md"
-                  }
-                ]
-              },
-              {
-                "label": "Customize the GUI",
-                "items": [
+                  },
                   {
                     "label": "Real-time dashboards",
                     "items": [
@@ -605,44 +621,27 @@
                         "path": "how-to-guides/user-interface/formatting-tables.md"
                       },
                       {
-                        "label": "Plot without writing queries",
-                        "path": "how-to-guides/user-interface/chart-builder.md"
-                      },
-                      {
                         "label": "Filter without writing queries",
                         "path": "how-to-guides/user-interface/filters.md"
                       },
                       {
                         "label": "Clickable links",
                         "path": "how-to-guides/user-interface/add-clickable-links.md"
-                      },
-                      {
-                        "label": "Rollup and tree tables",
-                        "items": [
-                          {
-                            "label": "Tree tables",
-                            "path": "how-to-guides/tree-table.md"
-                          },
-                          {
-                            "label": "Rollup tables",
-                            "path": "how-to-guides/rollup-table.md"
-                          }
-                        ]
                       }
                     ]
+                  }
+                ]
+              },
+              {
+                "label": "Customize the GUI",
+                "items": [
+                  {
+                    "label": "Custom themes",
+                    "path": "how-to-guides/custom-themes.md"
                   },
                   {
-                    "label": "GUI customizations",
-                    "items": [
-                      {
-                        "label": "Custom themes",
-                        "path": "how-to-guides/custom-themes.md"
-                      },
-                      {
-                        "label": "Use IFrames",
-                        "path": "how-to-guides/use-iframes.md"
-                      }
-                    ]
+                    "label": "Use IFrames",
+                    "path": "how-to-guides/use-iframes.md"
                   }
                 ]
               }
@@ -828,6 +827,23 @@
             ]
           },
           {
+            "label": "Plugins",
+            "items": [
+              {
+                "label": "Install and use plugins",
+                "path": "how-to-guides/install-use-plugins.md"
+              },
+              {
+                "label": "Create your own plugin",
+                "path": "how-to-guides/create-plugins.md"
+              },
+              {
+                "label": "Create a JavaScript plugin",
+                "path": "how-to-guides/create-js-plugins.md"
+              }
+            ]
+          },
+          {
             "label": "Development tools",
             "items": [
               {
@@ -901,15 +917,6 @@
                 ]
               },
               {
-                "label": "Configuration",
-                "items": [
-                  {
-                    "label": "Application Mode configuration",
-                    "path": "reference/app-mode/application-mode-config.md"
-                  }
-                ]
-              },
-              {
                 "label": "Errors and troubleshooting",
                 "items": [
                   {
@@ -950,10 +957,6 @@
                     ]
                   }
                 ]
-              },
-              {
-                "label": "Extract table values",
-                "path": "how-to-guides/extract-table-value.md"
               }
             ]
           },
@@ -968,10 +971,6 @@
                 "label": "Authentication",
                 "items": [
                   {
-                    "label": "Pre-shared key",
-                    "path": "how-to-guides/authentication/auth-psk.md"
-                  },
-                  {
                     "label": "Anonymous",
                     "path": "how-to-guides/authentication/auth-anon.md"
                   },
@@ -982,6 +981,10 @@
                   {
                     "label": "mTLS",
                     "path": "how-to-guides/authentication/auth-mtls.md"
+                  },
+                  {
+                    "label": "Pre-shared key",
+                    "path": "how-to-guides/authentication/auth-psk.md"
                   },
                   {
                     "label": "Username/password",
@@ -1123,23 +1126,6 @@
           {
             "label": "Time operations",
             "path": "reference/cheat-sheets/datetime-cheat-sheet.md"
-          }
-        ]
-      },
-      {
-        "label": "Plugins",
-        "items": [
-          {
-            "label": "Install and use plugins",
-            "path": "how-to-guides/install-use-plugins.md"
-          },
-          {
-            "label": "Create your own plugin",
-            "path": "how-to-guides/create-plugins.md"
-          },
-          {
-            "label": "Create a JavaScript plugin",
-            "path": "how-to-guides/create-js-plugins.md"
           }
         ]
       },
@@ -2732,10 +2718,6 @@
                     "path": "reference/query-language/types/periods.md"
                   },
                   {
-                    "label": "SelectableDataSetOneClick",
-                    "path": "reference/query-language/types/SelectableDataSetOneClick.md"
-                  },
-                  {
                     "label": "Strings",
                     "path": "reference/query-language/types/strings.md"
                   }
@@ -2789,6 +2771,19 @@
               {
                 "label": "plotStyle",
                 "path": "reference/plot/plotStyle.md"
+              },
+              {
+                "label": "SelectableDataSetOneClick",
+                "path": "reference/query-language/types/SelectableDataSetOneClick.md"
+              }
+            ]
+          },
+          {
+            "label": "Configuration",
+            "items": [
+              {
+                "label": "Application Mode configuration",
+                "path": "reference/app-mode/application-mode-config.md"
               }
             ]
           },
