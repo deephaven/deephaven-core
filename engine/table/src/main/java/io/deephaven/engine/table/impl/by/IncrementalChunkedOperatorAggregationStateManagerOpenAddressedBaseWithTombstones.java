@@ -284,17 +284,15 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
 
         // Every slot in the main table is filled by a migration or an insert, so it holds at most the live entries plus
-        // the entries inserted since the rehash began; a tombstone marks a slot that was already counted. Choosing a
-        // size at which the live entries fill at most half of the permitted load means the main table cannot need
-        // another rehash until the inserts alone reach half of the permitted load. Each insert is preceded by
-        // examining three alternate slots (see the generated rehashInternalPartial), so by then the whole alternate,
-        // which is at most the size of the main table, has been migrated. When tombstones alone crossed the load
-        // factor, that
-        // may be the current size, and the rehash simply leaves the tombstones behind. A full rehash, used while
-        // building the initial state, completes immediately, so it only needs room for the live entries.
-        final double targetLoadFactor = fullRehash ? maximumLoadFactor : maximumLoadFactor / 2;
+        // the entries inserted since the rehash began; a tombstone marks a slot that was already counted. Each insert
+        // is preceded by examining REHASH_SLOTS_PER_ENTRY alternate slots (see the generated rehashInternalPartial), so
+        // the alternate drains before the main table needs another rehash if the inserts that fit under the load factor
+        // pay for examining every alternate slot. Doubling always satisfies that when live entries force the rehash.
+        // When tombstones alone crossed the load factor, the current size may satisfy it, and the rehash leaves the
+        // tombstones behind. A full rehash, used while building the initial state, completes immediately, so it only
+        // needs room for the live entries.
         final int oldTableSize = tableSize;
-        while (liveEntries + nextChunkSize > tableSize * targetLoadFactor) {
+        while (!alternateDrainsInTime(oldTableSize, nextChunkSize)) {
             tableSize *= 2;
 
             if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
@@ -328,6 +326,22 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         adviseNewAlternate();
 
         return true;
+    }
+
+    /** The alternate slots a partial rehash examines for each entry inserted; matches the generated hashers. */
+    private static final int REHASH_SLOTS_PER_ENTRY = 3;
+
+    /**
+     * @param alternateSize the size the alternate table will have
+     * @param nextChunkSize the size of the chunk about to be built
+     * @return whether, at the current {@link #tableSize}, the alternate is migrated before the main table fills
+     */
+    private boolean alternateDrainsInTime(final int alternateSize, final int nextChunkSize) {
+        final double insertsBeforeFull = tableSize * maximumLoadFactor - liveEntries - nextChunkSize;
+        if (fullRehash) {
+            return insertsBeforeFull >= 0;
+        }
+        return insertsBeforeFull * REHASH_SLOTS_PER_ENTRY >= alternateSize;
     }
 
     /**
@@ -645,6 +659,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         // the alternate table.
         if (rehashPointer > 0) {
             rehashInternalPartial(CHUNK_SIZE);
+            if (rehashPointer == 0) {
+                clearAlternate();
+            }
         }
     }
 

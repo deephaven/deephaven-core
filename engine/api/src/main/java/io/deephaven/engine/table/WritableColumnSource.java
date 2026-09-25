@@ -52,8 +52,15 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
     }
 
     default void setNull(long firstKey, long lastKey) {
-        for (long ii = firstKey; ii <= lastKey; ++ii) {
+        if (lastKey < firstKey) {
+            return;
+        }
+        // stop at lastKey explicitly, so that a range ending at Long.MAX_VALUE terminates
+        for (long ii = firstKey;; ++ii) {
             setNull(ii);
+            if (ii == lastKey) {
+                return;
+            }
         }
     }
 
