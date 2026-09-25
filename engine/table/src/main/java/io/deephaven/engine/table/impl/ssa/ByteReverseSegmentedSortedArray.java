@@ -928,7 +928,8 @@ public final class ByteReverseSegmentedSortedArray implements SegmentedSortedArr
                 int firstValuesPosition = 0;
                 int totalCount = 0;
 
-                final IntList leavesToRemove = new IntArrayList();
+                // allocated when the first leaf is removed, which most removals never do
+                IntList leavesToRemove = null;
 
                 while (firstValuesPosition < removeSize) {
                     // we need to find out where our valuesToRemove should go using a binary search of the directory
@@ -953,6 +954,9 @@ public final class ByteReverseSegmentedSortedArray implements SegmentedSortedArr
                         // we are going to remove the whole leaf
                         final long firstPrior =
                                 priorRedirections == null ? RowSequence.NULL_ROW_KEY : getFirstPrior(firstLeaf);
+                        if (leavesToRemove == null) {
+                            leavesToRemove = new IntArrayList();
+                        }
                         leavesToRemove.add(firstLeaf);
                         leafSizes[firstLeaf] = 0;
                         if (priorRedirections != null) {
@@ -975,7 +979,7 @@ public final class ByteReverseSegmentedSortedArray implements SegmentedSortedArr
                         directoryValues[firstLeaf] = leafValues[firstLeaf][leafSizes[firstLeaf] - 1];
                         directoryRowKeys[firstLeaf] = leafRowKeys[firstLeaf][leafSizes[firstLeaf] - 1];
 
-                        final boolean hasLeft = firstLeaf > 0 && (leavesToRemove.isEmpty()
+                        final boolean hasLeft = firstLeaf > 0 && (leavesToRemove == null || leavesToRemove.isEmpty()
                                 || (leavesToRemove.getInt(leavesToRemove.size() - 1) != (firstLeaf - 1)));
                         final boolean hasRight = firstLeaf < leafCount - 1;
 
@@ -989,6 +993,9 @@ public final class ByteReverseSegmentedSortedArray implements SegmentedSortedArr
                         final boolean leftMerge = !threeWay && leftSize + middleSize < leafSize;
                         final boolean rightMerge = !threeWay && rightSize + middleSize < leafSize;
 
+                        if ((threeWay || leftMerge || rightMerge) && leavesToRemove == null) {
+                            leavesToRemove = new IntArrayList();
+                        }
                         if (threeWay) {
                             mergeThreeLeaves(firstLeaf - 1, leavesToRemove);
                         } else if (leftMerge) {
@@ -999,12 +1006,14 @@ public final class ByteReverseSegmentedSortedArray implements SegmentedSortedArr
                     }
                     firstValuesPosition += count;
 
-                    if (leafCount - leavesToRemove.size() > 1) {
+                    if (leafCount - (leavesToRemove == null ? 0 : leavesToRemove.size()) > 1) {
                         if (SEGMENTED_SORTED_ARRAY_VALIDATION) {
                             Assert.eq(computeLeafSizes(), "computeLeafSizes()", size - totalCount, "size - totalCount");
                         }
                     } else if (firstValuesPosition < removeSize) {
-                        leavesToRemove.clear();
+                        if (leavesToRemove != null) {
+                            leavesToRemove.clear();
+                        }
                         // we need to promote the last remaining leaf to the directory values, because there is only a
                         // single leaf left
                         promoteLastLeafToDirectory();
@@ -1027,7 +1036,7 @@ public final class ByteReverseSegmentedSortedArray implements SegmentedSortedArr
                     }
                 }
 
-                if (!leavesToRemove.isEmpty()) {
+                if (leavesToRemove != null && !leavesToRemove.isEmpty()) {
 
                     int destIdx = leavesToRemove.getInt(0);
                     int srcIdx = destIdx + 1;
