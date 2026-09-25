@@ -90,6 +90,8 @@ public abstract class QueryTableWhereTest {
     private boolean oldDisable;
     private int oldSegments;
     private long oldSize;
+    private boolean oldDisableMergedTables;
+    private boolean oldDisableReorderWithBarriers;
 
     @Before
     public void setUp() throws Exception {
@@ -97,6 +99,8 @@ public abstract class QueryTableWhereTest {
         oldDisable = QueryTable.DISABLE_PARALLEL_WHERE;
         oldSegments = QueryTable.PARALLEL_WHERE_SEGMENTS;
         oldSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
+        oldDisableMergedTables = QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES;
+        oldDisableReorderWithBarriers = QueryTable.DISABLE_WHERE_REORDER_WITH_BARRIERS;
     }
 
     @After
@@ -105,6 +109,8 @@ public abstract class QueryTableWhereTest {
         QueryTable.DISABLE_PARALLEL_WHERE = oldDisable;
         QueryTable.PARALLEL_WHERE_SEGMENTS = oldSegments;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = oldSize;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = oldDisableMergedTables;
+        QueryTable.DISABLE_WHERE_REORDER_WITH_BARRIERS = oldDisableReorderWithBarriers;
     }
 
     @Test
@@ -1905,6 +1911,9 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testDataIndexPrioritizesBarriersAndDependees() {
+        // DH-23750 (42.x only): this test exercises cost reordering of barrier-linked filters, which is disabled by
+        // default.
+        QueryTable.DISABLE_WHERE_REORDER_WITH_BARRIERS = false;
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
@@ -2180,6 +2189,9 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testPushdownBarriersAndSerial() {
+        // DH-23750 (42.x only): this test exercises cost reordering of barrier-linked filters, which is disabled by
+        // default.
+        QueryTable.DISABLE_WHERE_REORDER_WITH_BARRIERS = false;
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
 
@@ -2271,6 +2283,9 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testPushdownTransitiveBarriers() {
+        // DH-23750 (42.x only): this test exercises cost reordering of barrier-linked filters, which is disabled by
+        // default.
+        QueryTable.DISABLE_WHERE_REORDER_WITH_BARRIERS = false;
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
 
@@ -2693,6 +2708,8 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testMergedTableSources() {
+        // DH-23750 (42.x only): this test exercises merged-table pushdown, which is disabled by default.
+        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = false;
         final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
                 .update("A = ii");
         final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
@@ -2738,6 +2755,8 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testMergedTableSourcesWithRenames() {
+        // DH-23750 (42.x only): this test exercises merged-table pushdown, which is disabled by default.
+        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = false;
         final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
                 .update("A = ii");
         final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
@@ -2766,6 +2785,8 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testMergedTableSourcesWithRenames2() {
+        // DH-23750 (42.x only): this test exercises merged-table pushdown, which is disabled by default.
+        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = false;
         final Table source1 = testRefreshingTable(RowSetFactory.flat(5).toTracking())
                 .update("A = 4", "B=42", "C=1");
         final Table source2 = testRefreshingTable(RowSetFactory.flat(5).toTracking())
@@ -2800,6 +2821,8 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testInterestingMergedTableSources() {
+        // DH-23750 (42.x only): this test exercises merged-table pushdown, which is disabled by default.
+        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = false;
         // Filter the merged table sources before merging
         final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
                 .update("A = ii").where("ii % 3 == 0");
@@ -2843,6 +2866,8 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testNestedMergedTables() {
+        // DH-23750 (42.x only): this test exercises merged-table pushdown, which is disabled by default.
+        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = false;
         final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
                 .update("A = ii");
         final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
@@ -2899,6 +2924,8 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testNoPushdownWrapperMergedTables() {
+        // DH-23750 (42.x only): this test exercises merged-table pushdown, which is disabled by default.
+        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = false;
         final Table source1_raw = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
                 .update("A = ii");
 
