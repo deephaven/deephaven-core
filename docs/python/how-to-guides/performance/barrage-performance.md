@@ -35,31 +35,31 @@ Sender statistics are recorded by the server that publishes the table. Receiver 
 
 These are the values of `StatType`:
 
-| `StatType`           | Sender / Receiver | Description                                                                                                                                                             |
-| -------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle                                                                                     |
-| AggregateNanos       | Sender            | The time it took to aggregate pending updates into a message; recorded for every compaction and for every range a propagation packages, even a range of one update      |
-| PropagateNanos       | Sender            | The time it took to deliver one message: an aggregated update to all subscribers, or a snapshot to one subscription                                                     |
-| SnapshotNanos        | Sender            | The time it took to take one snapshot step for a new or changed subscription; for tree and rollup subscriptions, every update is sent as a snapshot and records a value |
-| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                              |
-| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                                                                                                             |
-| WriteBytes           | Sender            | The size in bytes of the record batches written for an update to a single subscriber (dictionary messages are not counted, except in a message that carries no rows)    |
-| PendingDeltaCount    | Sender            | How many pending updates the server was holding, un-propagated, after recording an update graph cycle's changes; a compacted update stands for every cycle it coalesced |
-| PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                                    |
-| DeserializationNanos | Receiver          | The time it took to read and deserialize one incoming gRPC message; an update split across several messages records one value per message                               |
-| ProcessUpdateNanos   | Receiver          | The time it took to apply a single message (update or snapshot): during an update graph cycle for a subscription, or as the message arrives for a snapshot              |
-| RefreshNanos         | Receiver          | The time it took to apply all queued messages during a single update graph cycle; recorded only for subscriptions, once per cycle, even when nothing is queued          |
+| `StatType`           | Sender / Receiver | Description                                                                                                                                                                                         |
+| -------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle                                                                                                                 |
+| AggregateNanos       | Sender            | The time it took to aggregate pending updates into a message; recorded for every compaction and for every range a propagation packages, even a range of one update                                  |
+| PropagateNanos       | Sender            | The time it took to deliver one message: an aggregated update to all subscribers, or a snapshot to one subscription                                                                                 |
+| SnapshotNanos        | Sender            | The time it took to take one snapshot step for a new or changed subscription; for tree and rollup subscriptions, every update is sent as a snapshot and records a value                             |
+| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                                                          |
+| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                                                                                                                                         |
+| WriteBytes           | Sender            | The size in bytes of the record batches written for an update to a single subscriber (dictionary messages are not counted, except in a message that carries no rows)                                |
+| PendingDeltaCount    | Sender            | How many pending updates the server was holding, un-propagated, after recording an update graph cycle's changes; a compacted update counts once, even though it stands for every cycle it coalesced |
+| PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                                                                |
+| DeserializationNanos | Receiver          | The time it took to read and deserialize one incoming gRPC message; an update split across several messages records one value per message                                                           |
+| ProcessUpdateNanos   | Receiver          | The time it took to apply a single message (update or snapshot): during an update graph cycle for a subscription, or as the message arrives for a snapshot                                          |
+| RefreshNanos         | Receiver          | The time it took to apply all queued messages during a single update graph cycle; recorded only for subscriptions, once per cycle, even when nothing is queued                                      |
 
 ### Barrage snapshot metrics summary
 
 Snapshot statistics are recorded for snapshots requested with a Barrage snapshot request or Arrow Flight `DoGet`. Each row also includes the `TableId` and `TableKey` of the table and the `RequestTime` at which the request was received. A refreshing table produces one row per request. A static table is sent in chunks and produces one row per chunk, all with the same `RequestTime`: `SnapshotNanos` is the total so far, and `WriteNanos` and `WriteBytes` are for that chunk.
 
-| Column        | Description                                                                                                                        |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| QueueNanos    | The time from receiving the request until work on it began, including waiting for the requested table to be ready and for a thread |
-| SnapshotNanos | The time it took to construct a consistent snapshot of the source table                                                            |
-| WriteNanos    | The time it took to write the snapshot (or chunk)                                                                                  |
-| WriteBytes    | The size of the snapshot (or chunk) record batches in bytes                                                                        |
+| Column        | Description                                                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| QueueNanos    | The time from receiving the request until work on it began, including waiting for the requested table to be ready and for a thread          |
+| SnapshotNanos | The time it took to construct a consistent snapshot of the source table                                                                     |
+| WriteNanos    | The time it took to write the snapshot (or chunk)                                                                                           |
+| WriteBytes    | The size of the snapshot (or chunk) record batches in bytes (dictionary messages are not counted, except in a message that carries no rows) |
 
 > [!NOTE]
 > `PendingDeltaCount` and `PendingDeltaBytes` are gauges rather than durations: each is sampled once per update graph cycle in which the table changes while it has at least one subscriber, so the useful value over a reporting window is the maximum rather than the average. They measure what the server is holding on behalf of subscribers it has not yet served, which rises with the number of update graph cycles that elapse per update interval and with the size of each cycle's changes. The byte figure is approximate: it counts the capacity of the chunks a pending update owns, which is what the server allocated, not the rows actually stored in them. It also counts those chunks alone. A `String` or other object column is charged eight bytes per row — the widest a reference can be, which overstates it wherever the JVM uses compressed references — and never the object that reference points at. For a subscription carrying object columns, `PendingDeltaBytes` therefore measures the chunk storage rather than the memory those rows retain, and can fall on either side of it.

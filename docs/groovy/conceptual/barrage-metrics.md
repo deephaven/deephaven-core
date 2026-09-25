@@ -66,7 +66,7 @@ The snapshot request is queued for processing. Barrage records `QueueNanos`, the
 
 2. The snapshot is constructed
 
-The snapshot request is then fulfilled. For a refreshing table, Barrage first tries to build the snapshot concurrently with the UG, without taking a lock. If those attempts cannot produce a consistent snapshot — for example, because the table keeps changing while a large snapshot is being read — Barrage makes a final attempt while holding the UG shared lock. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener, and `WriteNanos` and `WriteBytes`, the time it took to write, and how many bytes were written.
+The snapshot request is then fulfilled. For a refreshing table, Barrage first tries to build the snapshot concurrently with the UG, without taking a lock. If those attempts cannot produce a consistent snapshot — for example, because the table keeps changing while a large snapshot is being read — Barrage makes a final attempt while holding the UG shared lock. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener, and `WriteNanos` and `WriteBytes`, the time it took to write, and the size of the record batches written (dictionary messages are not counted, except in a message that carries no rows).
 
 A static table is snapshotted in chunks, without locking. Each chunk that is written produces its own row, with that chunk's `WriteNanos` and `WriteBytes` and the `SnapshotNanos` accumulated so far, so a large static snapshot can produce several rows.
 
