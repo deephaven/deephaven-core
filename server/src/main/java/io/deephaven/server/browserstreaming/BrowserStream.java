@@ -350,12 +350,18 @@ public class BrowserStream<T> implements Closeable {
     }
 
     /**
-     * Marks this stream as ended, so that no further message is delivered to it. Idempotent, like the release and
-     * notification steps at each call site above: {@link SessionState.ExportObject#cancel} tolerates redundant calls,
-     * and {@code removeOnCloseCallback} only succeeds once, so the marshaller is notified at most once regardless.
+     * Marks this stream as ended, so that no further message is delivered to it, and drops anything still queued.
+     * Idempotent, like the release and notification steps at each call site above:
+     * {@link SessionState.ExportObject#cancel} tolerates redundant calls, and {@code removeOnCloseCallback} only
+     * succeeds once, so the marshaller is notified at most once regardless.
      */
     private synchronized void markEnded() {
         ended = true;
+        // nothing queued will be delivered now; drop it so that an ended stream retains only itself for as long as
+        // the call that opened it keeps a reference to it
+        pendingSeq = null;
+        queuedMessage = null;
+        queuedStreamData = null;
     }
 
     private void releaseExport() {
