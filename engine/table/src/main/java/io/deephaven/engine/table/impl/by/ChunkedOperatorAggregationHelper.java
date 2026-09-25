@@ -726,21 +726,20 @@ public class ChunkedOperatorAggregationHelper {
                 resultRowset.insert(downstream.added());
                 final WritableRowSet releasable =
                         blockTracker.update(downstream.added(), downstream.removed(), outputPosition.get());
-                final RowSetShiftData collapse = blockTracker.collapseSparseBlocks(resultRowset,
+                final OutputPositionBlockTracker.Collapse collapse = blockTracker.collapseSparseBlocks(resultRowset,
                         upstream.added().size() + upstream.modified().size() + upstream.removed().size(),
                         releasable);
-                if (collapse.nonempty()) {
-                    incrementalStateManager.shiftOutputPositions(collapse);
-                    collapse.apply(resultRowset);
+                if (collapse.shift.nonempty()) {
+                    incrementalStateManager.shiftOutputPositions(collapse.shift);
                     // a block that closed this cycle may hold this cycle's new states and still be collapsed
-                    collapse.apply(downstream.added().writableCast());
-                    collapse.apply(downstream.modified().writableCast());
-                    downstream.shifted = collapse;
+                    collapse.apply(resultRowset, downstream.added().writableCast(),
+                            downstream.modified().writableCast());
+                    downstream.shifted = collapse.shift;
                     for (final IterativeChunkedAggregationOperator operator : ac.operators) {
-                        operator.shift(collapse);
+                        operator.shift(collapse.shift);
                     }
                     for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
-                        keyColumn.shift(collapse);
+                        keyColumn.shift(collapse.shift);
                     }
                 }
                 releaseEmptyBlocks(releasable, keyColumnsCopied);
