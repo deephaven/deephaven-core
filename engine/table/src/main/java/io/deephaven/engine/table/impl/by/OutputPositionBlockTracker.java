@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -193,7 +194,7 @@ final class OutputPositionBlockTracker {
             final long firstPosition = (long) run[0] << LOG_BLOCK_SIZE;
             final long lastPosition = ((long) (collapseLast + 1) << LOG_BLOCK_SIZE) - 1;
             collapsedRuns.add(new long[] {firstPosition, lastPosition, runLive});
-            try (final RowSet runStates = liveStates.subSetByKeyRange(firstPosition, lastPosition)) {
+            try (final RowSequence runStates = liveStates.getRowSequenceByKeyRange(firstPosition, lastPosition)) {
                 final MutableLong destination = new MutableLong(firstPosition);
                 runStates.forAllRowKeyRanges((first, last) -> {
                     if (first != destination.get()) {
@@ -243,6 +244,14 @@ final class OutputPositionBlockTracker {
         }
 
         /**
+         * @return the number of positions in {@code rowSet} before {@code key}
+         */
+        private static long rankOf(final RowSet rowSet, final long key) {
+            final long found = rowSet.find(key);
+            return found >= 0 ? found : -found - 1;
+        }
+
+        /**
          * @return the live states in the collapsed runs, which bounds the states the collapse moves
          */
         long movedStates() {
@@ -267,19 +276,18 @@ final class OutputPositionBlockTracker {
                 final long first = run[0];
                 final long last = run[1];
                 // a state's new position is the run's first position plus its rank among the run's live states
-                try (final RowSet runStates = liveStates.subSetByKeyRange(first, last)) {
-                    for (final WritableRowSet subset : subsets) {
-                        try (final RowSet moving = subset.subSetByKeyRange(first, last)) {
-                            if (moving.isEmpty()) {
-                                continue;
-                            }
-                            final RowSetBuilderSequential moved = RowSetFactory.builderSequential();
-                            moving.forAllRowKeys(key -> moved.appendKey(first + runStates.find(key)));
-                            subset.removeRange(first, last);
-                            try (final RowSet movedKeys = moved.build()) {
-                                subset.insert(movedKeys);
-                            }
+                final long firstRank = rankOf(liveStates, first);
+                for (final WritableRowSet subset : subsets) {
+                    final RowSetBuilderSequential moved = RowSetFactory.builderSequential();
+                    try (final RowSequence moving = subset.getRowSequenceByKeyRange(first, last)) {
+                        if (moving.isEmpty()) {
+                            continue;
                         }
+                        moving.forAllRowKeys(key -> moved.appendKey(first + liveStates.find(key) - firstRank));
+                    }
+                    subset.removeRange(first, last);
+                    try (final RowSet movedKeys = moved.build()) {
+                        subset.insert(movedKeys);
                     }
                 }
                 liveStates.removeRange(first, last);
@@ -501,7 +509,7 @@ final class OutputPositionBlockTracker {
                 }
             }
             for (final long[] run : collapse.runs) {
-                try (final RowSet runStates = liveStates.subSetByKeyRange(run[0], run[1])) {
+                try (final RowSequence runStates = liveStates.getRowSequenceByKeyRange(run[0], run[1])) {
                     final MutableLong destination = new MutableLong(run[0]);
                     runStates.forAllRowKeyRanges((rangeFirst, rangeLast) -> {
                         // split where this shift's delta at the destinations changes, which is only at a block

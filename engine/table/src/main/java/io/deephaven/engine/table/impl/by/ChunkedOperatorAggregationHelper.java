@@ -811,9 +811,9 @@ public class ChunkedOperatorAggregationHelper {
             }
             final RowSetShiftData shift = blockShift.shift;
             incrementalStateManager.shiftAllOutputPositions(resultRowset, shift);
-            shift.apply(resultRowset);
-            shift.apply(downstream.added().writableCast());
-            shift.apply(downstream.modified().writableCast());
+            applyBlockShift(shift, resultRowset);
+            applyBlockShift(shift, downstream.added().writableCast());
+            applyBlockShift(shift, downstream.modified().writableCast());
             for (final IterativeChunkedAggregationOperator operator : ac.operators) {
                 operator.shift(shift);
             }
@@ -830,6 +830,19 @@ public class ChunkedOperatorAggregationHelper {
             }
             blockTracker.applyBlockShift(blockShift);
             outputPosition.subtract(Math.toIntExact(blockShift.reclaimedPositions()));
+        }
+
+        /**
+         * Apply a block shift to a row set, moving each range's keys as a whole: a block shift has few ranges but may
+         * move many scattered keys, so this avoids appending every moved range of keys to a builder, as
+         * {@link RowSetShiftData#apply(WritableRowSet)} does. Every range moves down, so applying them in order never
+         * moves keys onto keys still to be moved.
+         */
+        private void applyBlockShift(@NotNull final RowSetShiftData shift, @NotNull final WritableRowSet rowSet) {
+            for (int ri = 0; ri < shift.size(); ++ri) {
+                RowSetShiftData.applyShift(rowSet, shift.getBeginRange(ri), shift.getEndRange(ri),
+                        shift.getShiftDelta(ri));
+            }
         }
 
         /**
