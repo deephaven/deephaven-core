@@ -252,11 +252,12 @@ public class BrowserStreamExportLifetimeTest {
     }
 
     /**
-     * The export that retains a stream is defined inside the stream's constructor, and a {@code Next} call that arrived
-     * out of order may already be waiting on that export: it runs as soon as the export's work does - in production on
-     * another thread, before the constructor has returned - and may end the stream right there. The export and the
-     * close callback must both be in place by then, or the export leaks and the service never hears that the stream
-     * ended. A scheduler that runs work inline reproduces that interleaving deterministically.
+     * The export that retains a stream is published inside the stream's constructor, and a {@code Next} call that
+     * arrived out of order may already be waiting on it: it runs as soon as the export's work does - in production on
+     * another thread, before the constructor has returned, and before the open request itself is delivered. The export
+     * and the close callback must both be in place by then, or the export leaks and the service never hears that the
+     * stream ended; and the Next must queue behind the open request by sequence, not run ahead of it. A scheduler that
+     * runs work inline reproduces that interleaving deterministically.
      */
     @Test
     public void testStreamEndedByOutOfOrderNextDuringOpenReleasesItsExport() {
@@ -284,22 +285,55 @@ public class BrowserStreamExportLifetimeTest {
             final int rpcTicketId = 12;
             final Ticket rpcTicket = ExportTicketHelper.wrapExportIdInTicket(rpcTicketId);
 
-            // a (malformed) half-close at the open's own sequence arrives first and waits on the undefined export
-            inStreamContext(inlineSession, new StreamData(rpcTicket, 0, true),
+            // the half-close arrives before the open and waits on the undefined export
+            inStreamContext(inlineSession, new StreamData(rpcTicket, 1, true),
                     () -> method.invokeNext("close", new NoopObserver<>()));
             final SessionState.ExportObject<?> streamExport = inlineSession.getExportIfExists(rpcTicketId);
             Assert.neqNull(streamExport, "streamExport");
 
-            // the open defines the export; the waiting Next runs inside the stream's constructor and ends the stream
+            // the open publishes the export from its constructor; the waiting Next runs right there and queues behind
+            // sequence 0, which the open then delivers, after which the queued half-close ends the stream
             inStreamContext(inlineSession, new StreamData(rpcTicket, 0, false),
                     () -> method.invokeOpen("first", new CapturingServerCallObserver<>()));
 
+            Assert.equals(delegate.received, "delegate.received", List.of("first"), "List.of(\"first\")");
             Assert.eqTrue(delegate.completed, "delegate.completed");
-            Assert.eq(delegate.received.size(), "delegate.received.size()", 0);
             Assert.eq(streamExport.getState(), "streamExport.getState()", ExportNotification.State.RELEASED);
         } finally {
             inlineSessionService.closeSession(inlineSession);
         }
+    }
+
+    /**
+     * Sequence 0 is the open request and every Next must follow it; the ordering above relies on that, so both ends are
+     * checked at the boundary rather than left to wait forever or be delivered in the open's place.
+     */
+    @Test
+    public void testSequenceInvariantsAreEnforced() {
+        final RecordingDelegate delegate = new RecordingDelegate();
+        final GrpcServiceOverrideBuilder.BrowserStreamMethod<String, String, Object> method =
+                new GrpcServiceOverrideBuilder.BrowserStreamMethod<>(log, BrowserStream.Mode.IN_ORDER, delegate,
+                        sessionService);
+        final int rpcTicketId = 13;
+        final Ticket rpcTicket = ExportTicketHelper.wrapExportIdInTicket(rpcTicketId);
+
+        try {
+            inStreamContext(new StreamData(rpcTicket, 1, false),
+                    () -> method.invokeOpen("first", new CapturingServerCallObserver<>()));
+            Assert.statementNeverExecuted("an open request must have sequence 0");
+        } catch (final StatusRuntimeException expected) {
+            Assert.eq(expected.getStatus().getCode(), "expected.getStatus().getCode()", Status.Code.INVALID_ARGUMENT);
+        }
+        try {
+            inStreamContext(new StreamData(rpcTicket, 0, false),
+                    () -> method.invokeNext("second", new NoopObserver<>()));
+            Assert.statementNeverExecuted("a next request must have a positive sequence");
+        } catch (final StatusRuntimeException expected) {
+            Assert.eq(expected.getStatus().getCode(), "expected.getStatus().getCode()", Status.Code.INVALID_ARGUMENT);
+        }
+        // neither request reached the session: no stream was built, and no export was defined or waited on
+        Assert.eq(delegate.received.size(), "delegate.received.size()", 0);
+        Assert.eqNull(session.getExportIfExists(rpcTicketId), "session.getExportIfExists(rpcTicketId)");
     }
 
     /**

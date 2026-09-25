@@ -235,6 +235,12 @@ public class GrpcServiceOverrideBuilder {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "no x-deephaven-stream headers, cannot handle open request");
             }
+            if (streamData.getSequence() != 0) {
+                // the stream is delivered in sequence order starting at zero, so an Open with any other sequence
+                // would wait forever for a message that cannot come
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "open request must have sequence 0, received " + streamData.getSequence());
+            }
 
             final OpenCallObserver<RespT> openCall = responseObserver instanceof ServerCallStreamObserver
                     ? new OpenCallObserver<>((ServerCallStreamObserver<RespT>) responseObserver)
@@ -392,6 +398,11 @@ public class GrpcServiceOverrideBuilder {
             if (streamData == null || streamData.getRpcTicket() == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "no x-deephaven-stream headers, cannot handle next request");
+            }
+            if (streamData.getSequence() <= 0) {
+                // sequence 0 is the open request; a next request that claims it could be delivered in its place
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "next request must have a positive sequence, received " + streamData.getSequence());
             }
             final SessionState session = sessionService.getCurrentSession();
 
