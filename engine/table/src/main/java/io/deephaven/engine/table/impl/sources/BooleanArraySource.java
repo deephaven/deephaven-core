@@ -236,6 +236,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
     }
 
     @Override
+    byte[][] getBlocks() {
+        return blocks;
+    }
+
+    @Override
     Object getPrevBlock(int blockIndex) {
         return blocks[blockIndex];
     }
@@ -773,7 +778,23 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
             return;
         }
         if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
-            // TODO (#3359): we can move full blocks!
+            final long wholeBlocks = length & ~(long) INDEX_MASK;
+            if (wholeBlocks > 0) {
+                if (dest < source) {
+                    // moving down: the whole blocks first, then the partial block after them
+                    moveWholeBlocks(source, dest, wholeBlocks);
+                    if (wholeBlocks < length) {
+                        move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
+                    }
+                } else {
+                    // moving up: the partial block at the end first, then the whole blocks
+                    if (wholeBlocks < length) {
+                        move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
+                    }
+                    moveWholeBlocks(source, dest, wholeBlocks);
+                }
+                return;
+            }
         }
         if (prevBlocks != null) {
             // This is a slower path that is doing one element at a time, but handles the previous values. We can
