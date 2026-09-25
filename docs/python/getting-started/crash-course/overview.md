@@ -56,6 +56,14 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 </CoreTutorialCard>
 
+<CoreTutorialCard to="/core/docs/getting-started/crash-course/parallelization/">
+
+## Query parallelization
+
+Learn how Deephaven automatically uses multiple CPU cores to improve query performance, and how to write queries that leverage parallelization effectively.
+
+</CoreTutorialCard>
+
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/vectorization-vs-loops/">
 
 ## Recipes, not loops!
@@ -90,7 +98,7 @@ Data I/O is mission-critical for any real-time data analysis platform. Deephaven
 
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/configure/">
 
-## Configure your Deephaven Instance
+## Configure your Deephaven instance
 
 This section covers configuration details needed to take your Deephaven instance beyond the defaults.
 
@@ -98,7 +106,7 @@ This section covers configuration details needed to take your Deephaven instance
 
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/crash-course-wrap-up/">
 
-## Wrapping Up
+## Wrapping up
 
 Where to go from here.
 

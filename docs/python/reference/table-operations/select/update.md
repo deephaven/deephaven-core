@@ -14,7 +14,7 @@ When using `update`, the new columns are evaluated and stored in memory. Existin
 > 3. cells are accessed many times, and/or
 > 4. a large amount of memory is available.
 >
-> When memory usage or computation needs to be reduced, consider using `select`, `view`, `update_view`, or `lazy_update`. These methods have different memory and computation expenses.
+> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`view`](./view.md), [`update_view`](./update-view.md), or [`lazy_update`](./lazy-update.md). These methods have different memory and computation expenses.
 
 ## Syntax
 
@@ -55,9 +55,35 @@ source = new_table(
 result = source.update(formulas=["A", "X = B", "Y = sqrt(C)"])
 ```
 
+## Serial execution
+
+By default, Deephaven parallelizes `update` calculations across multiple CPU cores. If your formula has side effects or depends on row order, use `with_serial` to force sequential processing.
+
+```python order=result
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+counter = 0
+
+
+def get_next_id() -> int:
+    global counter
+    counter += 1
+    return counter
+
+
+col = Selectable.parse("ID = get_next_id()").with_serial()
+result = empty_table(10).update(col)
+```
+
+For more information, see [Parallelization](../../../conceptual/query-engine/parallelization.md).
+
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Selectable](../../query-language/types/Selectable.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update)

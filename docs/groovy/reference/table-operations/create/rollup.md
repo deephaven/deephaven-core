@@ -2,7 +2,7 @@
 title: rollup
 ---
 
-The deephaven `rollup` method creates a rollup table from a source table given zero or more aggregations and zero or more grouping columns to create a hierarchy from.
+The Deephaven `rollup` method creates a rollup table from a source table given zero or more aggregations and zero or more grouping columns to create a hierarchy from.
 
 ## Syntax
 
@@ -67,9 +67,8 @@ One or more columns to group on and create hierarchy from.
 - `makeNodeOperationsRecorder(nodeType)` - Get a [`recorder`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeOperationsRecorder.html) for per-node operations to apply during snapshots of the requested [`NodeType`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeType.html).
 - `translateAggregatedNodeOperationsForConstituentNodes(aggregatedNodeOperationsToTranslate)` - Translate node operations for aggregated nodes to the closest equivalent for a constituent node.
 - `withFilter(filter)` - Create a new rollup table that will apply a filter to the Group By or Constituent columns of the rollup table.
-- `withNodeOperations(nodeOperations...)` - Create a new rollup table that will apply the [`recorded`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeOperationsRecorder.html) operations to nodes when gathering snapshots.
-- `withUpdateView(columns...)` - Create a new rollup table that applies a set of `updateView` operations to the `groupByColumns` of the rollup table.
 - `withNodeOperations(nodeOperations...)` - Create a new rollup table that applies the [`recorded`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeOperationsRecorder.html) operations to nodes when gathering snapshots.
+- `withUpdateView(columns...)` - Create a new rollup table that applies a set of `updateView` operations to the `groupByColumns` of the rollup table.
 
 ## Returns
 
@@ -126,7 +125,7 @@ result = source.rollup(aggList, false, "N", "M")
 
 ![The above `result` rollup table](../../../assets/how-to/rollup-table-realtime.gif)
 
-## Formula Aggregations in Rollups
+## Formula aggregations in rollups
 
 When a rollup includes a formula aggregation, care should be taken with the function being applied. On each tick, the formula is evaluated for every changed row in the output table. Since the aggregated rows include numerous source rows, the input vectors for a formula aggregation can become very large — encompassing the entire source table at the root level. If the formula is inefficient when handling large input vectors, it may negatively impact the rollup's performance.
 
@@ -141,7 +140,7 @@ simpleSum = source.rollup(List.of(AggGroup("Value"), AggFormula("Sum = sum(Value
 
 To calculate the sum for the root row, every row in the source table is read. The Deephaven engine provides detailed update information for rows in the table (i.e., which rows are added, removed, modified, or shifted). Even though a vector contains many values, it is contained within a single row; therefore, the Deephaven engine does not provide detailed update information for a vector. Every time the table ticks, the formula is completely re-evaluated.
 
-### Formula Reaggregation
+### Formula reaggregation
 
 Formula reaggregation can be used to limit the size of input vectors while evaluating changes to a rollup. When writing your query, be mindful of the requirement that your formula must be applicable to each level of the rollup and produce the same output type.
 
@@ -175,12 +174,12 @@ We instead get an Exception message indicating that the formula cannot be applie
 Error running script: io.deephaven.engine.table.impl.select.FormulaCompilationException: Formula compilation error for: sum(Value)
 ...
 Full expression           : sum(Value)
-Expression having trouble : 
+Expression having trouble :
 Exception type            : io.deephaven.engine.table.impl.lang.QueryLanguageParser$ParserResolutionFailure
 Exception message         : Cannot find variable or class Value
 ```
 
-### Formula Depth and Keys
+### Formula depth and keys
 
 Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) containing the keys of the rows at the current level of the rollup. The following formulas demonstrate the values of depth and keys:
 
@@ -237,5 +236,4 @@ cappedSum = source.rollup(List.of(AggFormula("Value = __FORMULA_KEYS__.get(__FOR
 - [`join`](../join/join.md)
 - [`timeTable`](./timeTable.md)
 - [`treeTable`](./tree.md)
-- [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.rollup)
 - [Javadoc](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.html)

@@ -14,10 +14,13 @@ When using `view`, the data being requested is not stored in memory. Rather, a f
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> When memory usage or computation needs to be reduced, consider using `select`, `update_view`, `update`, or `lazy_update`. These methods have different memory and computation expenses.
+> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`update_view`](./update-view.md), [`update`](./update.md), or [`lazy_update`](./lazy-update.md). These methods have different memory and computation expenses.
 
 > [!CAUTION]
 > When using `view` or [`update_view`](./update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
+
+> [!CAUTION]
+> Serial execution and respecting barriers are not supported for `view` or [`update_view`](./update-view.md). Because these operations compute results lazily (on-demand when cells are accessed), rows may be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. If your formula requires serial evaluation or must wait for another operation to complete, use [`select`](./select.md) or [`update`](./update.md) instead. See [Parallelizing queries](../../../conceptual/query-engine/parallelization.md#serialization) for more information.
 
 ## Syntax
 
@@ -99,5 +102,7 @@ result = source.view(formulas=["A", "X = B", "Y = sqrt(C)"])
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
+- [Parallelizing queries](../../../conceptual/query-engine/parallelization.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#view(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.view)

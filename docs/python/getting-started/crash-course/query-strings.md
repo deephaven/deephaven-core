@@ -563,47 +563,6 @@ result2 = compute(source, 3)
 
 For more information, see [scoping rules](../../how-to-guides/query-scope.md).
 
-Be mindful of whether or not Python functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+### Parallel-safety of query-string functions
 
-```python test-set=2
-my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-
-def get_element_stateless(idx) -> int:
-    return my_list[idx]
-
-
-t_stateless = empty_table(10).update("X = get_element_stateless(ii)")
-```
-
-`get_element` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
-
-Stateful functions modify objects outside their local scope - they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
-
-```python test-set=2
-my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-idx = 0
-
-
-def get_element_stateful() -> int:
-    global idx
-    idx += 1  # This modifies idx!
-    return my_list[idx - 1]
-
-
-t_stateful = empty_table(10).update("X = get_element_stateful()")
-```
-
-Print `idx` to verify it's been changed.
-
-```python test-set=2
-print(idx)
-```
-
-Now that `get_element` is stateful, it must be evaluated in the correct order to give the correct result.
-
-Queries should use stateless functions whenever possible because:
-
-- They minimize side effects when called.
-- They are deterministic.
-- They can be efficiently parallelized.
+When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. Whether a function you call from a query string is safe under that comes down to whether it's **stateless** (output depends only on its inputs, like `my_list[idx]`) or **stateful** (reads or modifies mutable external state that changes between calls, like a counter). See [Query parallelization](./parallelization.md) for the full picture, including a worked example of a stateful function producing corrupted output when parallelized, and how to force sequential execution with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).

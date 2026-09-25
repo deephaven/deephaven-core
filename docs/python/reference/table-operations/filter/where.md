@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine will address filters in series, consistent with the ordering of arguments. It is _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded. Additionally, match filters are highly optimized and should usually come before conditional filters.
+> The engine does not guarantee it evaluates filters in argument order: stateless filters (the default) are scheduled by estimated pushdown cost, so a cheaper-to-evaluate filter can run before one that appears earlier in the argument list. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized and typically evaluated before conditional filters. If your query depends on filters running in a specific order, use [`with_serial`](../../query-language/types/Filter.md#with_serial) or barriers to guarantee it.
 
 ## Syntax
 
@@ -116,7 +116,7 @@ source = new_table(
 result = source.where_one_of(filters=["Color = `blue`", "Number > 3"])
 ```
 
-The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)`.
+The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required whenever the engine cannot statically determine the function's return type, which is the case here because `my_filter` has no return type hint. A function annotated `-> bool` does not need the cast.
 
 ```python order=source,result_filtered,result_not_filtered
 from deephaven import new_table
@@ -133,15 +133,45 @@ result_filtered = source.where(filters=["(boolean)my_filter(IntegerColumn)"])
 result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn))"])
 ```
 
+## Serial execution
+
+By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
+
+This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and, for a Python-backed filter, a free-threaded Python build; a standard GIL-enabled build never invokes it concurrently. This is a narrower guarantee than `with_serial` provides, though: without `with_serial`, the engine can still evaluate this filter out of row-set order on any Python build — so use `with_serial` to protect a filter like this regardless of build. The example below uses 100 rows for clarity.
+
+```python order=source,result
+from deephaven.filters import Filter
+from deephaven import empty_table
+
+rows_checked = 0
+
+
+def check_value(x) -> bool:
+    global rows_checked
+    rows_checked += 1  # Side effect: modifies external state
+    return x > 5
+
+
+source = empty_table(100).update("X = i")
+
+# Use with_serial because the filter has side effects
+f = Filter.from_("check_value(X)").with_serial()
+result = source.where(f)
+```
+
+See [Parallelization](../../../conceptual/query-engine/parallelization.md) for more details.
+
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create a new table](../../../how-to-guides/new-and-empty-table.md)
 - [How to use filters](../../../how-to-guides/use-filters.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Filter](../../query-language/types/Filter.md)
 - [equals](../../query-language/match-filters/equals.md)
-- [not equals (`!=`)](../../query-language/match-filters/not-equals.md)
-- [`icase in`](../..//query-language/match-filters/icase-in.md)
+- [`icase in`](../../query-language/match-filters/icase-in.md)
 - [`icase not in`](../../query-language/match-filters/icase-not-in.md)
 - [`in`](../../query-language/match-filters/in.md)
+- [not equals (`!=`)](../../query-language/match-filters/not-equals.md)
 - [`not in`](../../query-language/match-filters/not-in.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#where(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.where)

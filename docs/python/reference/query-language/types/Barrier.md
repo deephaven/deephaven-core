@@ -10,7 +10,7 @@ By default, Deephaven is free to parallelize column calculations and filters tha
 
 A barrier alone does not force either operation to run serially. If an operation has shared mutable state that could race across its own rows, you typically need **both** [`with_serial`](./ConcurrencyControl.md#with_serial) (for sequential row processing within that operation) **and** a barrier (for ordering between operations).
 
-## Creating a barrier
+## Creating a Barrier
 
 ```python syntax
 from deephaven.concurrency_control import Barrier
@@ -22,7 +22,7 @@ Create one `Barrier` instance per ordering constraint you need. Reusing the same
 
 ## Using a barrier
 
-One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (used by [`where`](../../table-operations/filter/where.md)) both implement:
+One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](./Selectable.md) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](./Filter.md) (used by [`where`](../../table-operations/filter/where.md)) both implement:
 
 - [`with_declared_barriers(barriers)`](./ConcurrencyControl.md#with_declared_barriers) — this operation declares the given barrier(s); it runs to completion before any operation that respects the same barrier.
 - [`with_respected_barriers(barriers)`](./ConcurrencyControl.md#with_respected_barriers) — this operation respects the given barrier(s); it does not start until every operation that declares the barrier has finished.
@@ -74,7 +74,7 @@ t = empty_table(10).update([col_a, col_b])
 
 ### Example: coordinating two filters
 
-Barriers work the same way for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `with_serial`: on the common GIL-enabled build, the GIL already serializes the underlying `dict` writes; on a free-threaded build, `dict`'s own internal per-object locking keeps a simple assignment to a distinct key thread-safe without extra synchronization (free-threaded CPython only requires an explicit lock for compound operations or invariants spanning more than one dict access). Either way, the barrier — not `with_serial` — is what enforces that the cache is fully populated before it is read:
+Barriers work the same way for [`Filter`](./Filter.md) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `with_serial`: on the common GIL-enabled build, the GIL already serializes the underlying `dict` writes; on a free-threaded build, `dict`'s own internal per-object locking keeps a simple assignment to a distinct key thread-safe without extra synchronization (free-threaded CPython only requires an explicit lock for compound operations or invariants spanning more than one dict access). Either way, the barrier — not `with_serial` — is what enforces that the cache is fully populated before it is read:
 
 ```python order=result
 from deephaven.concurrency_control import Barrier
@@ -141,6 +141,6 @@ Execution order:
 ## Related documentation
 
 - [ConcurrencyControl](./ConcurrencyControl.md) — The interface that provides `with_declared_barriers` and `with_respected_barriers`
+- [Selectable](./Selectable.md) — Uses barriers to coordinate column calculations
+- [Filter](./Filter.md) — Uses barriers to coordinate filters
 - [Barrier Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)
-- [Selectable Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) — Uses barriers to coordinate column calculations
-- [Filter Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) — Uses barriers to coordinate filters

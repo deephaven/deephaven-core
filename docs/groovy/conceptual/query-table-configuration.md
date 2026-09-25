@@ -34,13 +34,17 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSort`                                | true       |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.minimumParallelSortRows`                     | `1L << 20` |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSortSegmentSize`                     | `1L << 18` |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
 | [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
-| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
-| [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | false      |
+| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | true       |
+| [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | true       |
+| [Stateless select by default](#stateless-by-default)                | `QueryTable.serialSelectImplicitBarriers`                | false      |
 
 Each property is described below, roughly categorized by similarity.
 
@@ -98,18 +102,18 @@ For more details, see [Predicate pushdown filtering](../how-to-guides/predicate-
 
 ## Parallel processing with `where`
 
-Parallelism for `where` operations is not enabled until the parent's size exceeds `QueryTable.parallelWhereRowsPerSegment` rows. This avoids the overhead of using threads for small operations. For tables larger than this threshold, the `where` operation uses a fixed number of parallel segments defined by `QueryTable.parallelWhereSegments`. These parameters can be tuned to avoid unnecessary parallelism when the overhead exceeds potential gains.
+Parallelism for `where` operations is not enabled until the filter's input size exceeds twice `QueryTable.parallelWhereRowsPerSegment` (about 131,072 rows with defaults) — the engine needs enough rows to fill more than one segment before splitting the work. For a table's initial filtering, that input is the whole parent table; for filtering a refreshing table's updates, it's just that cycle's added and modified rows, so a large table receiving small ticks may not parallelize its per-update filtering even though its initial filtering did. This avoids the overhead of using threads for small operations. By default (`QueryTable.parallelWhereSegments` at its default of `-1`), the number of segments is derived from available worker threads rather than a fixed count — from the operation initializer for a table's initial (static) filtering, and from the update graph for filtering on a refreshing table's updates; set `QueryTable.parallelWhereSegments` to a positive number to use a fixed number of segments instead. These parameters can be tuned to avoid unnecessary parallelism when the overhead exceeds potential gains.
 
-| Property Name                                  | Default Value | Description                                                                                                               |
-| ---------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `QueryTable.enableParallelWhere`               | false         | Enables parallelized optimizations for `QueryTable#where` operations                                                      |
-| `QueryTable.parallelWhereRowsPerSegment`       | `1 << 16`     | The number of rows per segment when the number of segments is not fixed                                                   |
-| `QueryTable.parallelWhereSegments`             | -1            | The number of segments to use when dividing all work equally into a fixed number of tasks; -1 implies one thread per core |
-| `QueryTable.forceParallelWhere` (test-focused) | false         | Forces Where operations to parallelize even when row requirements are not met                                             |
+| Property Name                                  | Default Value | Description                                                                                                                                                                                                                                        |
+| ---------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `QueryTable.disableParallelWhere`              | false         | Disables parallelized optimizations for `QueryTable#where` operations                                                                                                                                                                              |
+| `QueryTable.parallelWhereRowsPerSegment`       | `1 << 16`     | The number of rows per segment when the number of segments is not fixed                                                                                                                                                                            |
+| `QueryTable.parallelWhereSegments`             | -1            | The number of segments to use when dividing all work equally into a fixed number of tasks; -1 derives the count from available worker threads (the operation initializer for initial filtering, the update graph for updates on refreshing tables) |
+| `QueryTable.forceParallelWhere` (test-focused) | false         | Forces Where operations to parallelize even when row requirements are not met                                                                                                                                                                      |
 
 ## Parallel processing with `select`
 
-The `QueryTable` operations `select` and `update` have performance enhancements that try to take advantage of parallelism during two separate phases of each table operation invocation. The first opportunity for parallelism is on the initial creation of the table. The engine will parallelize the initial computation of the resulting table state. The second opportunity for parallelism is when the operation's parent-table listener is notified that the parent was updated.
+The `QueryTable` operations `select` and `update` have performance enhancements that try to take advantage of parallelism during two separate phases of each table operation invocation. The first opportunity for parallelism is on the initial creation of the table. The engine parallelizes the initial computation of the resulting table state. The second opportunity for parallelism is when the operation's parent-table listener is notified that the parent was updated.
 
 Parallelism for `select` operations is not enabled until the parent's size exceeds `QueryTable.minimumParallelSelectRows` rows. This can be tuned to avoid unnecessary parallelism (e.g., when the overhead exceeds potential gains).
 
@@ -119,9 +123,21 @@ Parallelism for `select` operations is not enabled until the parent's size excee
 | `QueryTable.minimumParallelSelectRows`                   | `1L << 22`    | The minimum number of rows required to enable parallel select and update operations           |
 | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false         | Forces Select and Update operations to parallelize even when row requirements are not met     |
 
+## Parallel sorting
+
+[`sort`](../reference/table-operations/sort/sort.md) can parallelize filling the value chunks that feed the sort kernels, sorting segments with pairwise merges, and gathering the permuted row keys.
+
+Parallelism for `sort` is not enabled until the table's size reaches `QueryTable.minimumParallelSortRows` rows; below that, dividing the work into segments costs more than the work itself, so the sort runs entirely on the calling thread. Set `QueryTable.parallelSort` to `false` to disable sort parallelization entirely, regardless of table size. The number of segments is capped by `QueryTable.parallelSortSegmentSize`, which biases toward fewer, larger segments rather than splitting into more segments than that minimum size allows.
+
+| Property Name                        | Default Value | Description                                                                    |
+| ------------------------------------ | ------------- | ------------------------------------------------------------------------------ |
+| `QueryTable.parallelSort`            | true          | Whether the engine may parallelize sorts at all                                |
+| `QueryTable.minimumParallelSortRows` | `1L << 20`    | The minimum number of rows in a sort for which the engine may parallelize work |
+| `QueryTable.parallelSortSegmentSize` | `1L << 18`    | The minimum number of rows in each segment of a parallel sort                  |
+
 ## Parallel snapshotting
 
-Barrage clients, including our JavaScript implementation used on the web, fulfill subscription requests by snapshotting the required rows and columns in addition to listening for relevant changes when the table is refreshing. Parallel snapshotting is a feature that parallelizes this process across columns. If those columns are slow to access then parallel snapshotting will greatly reduce latency. However, parallel snapshotting may open many file handles to the same data source.
+Barrage clients, including our JavaScript implementation used on the web, fulfill subscription requests by snapshotting the required rows and columns in addition to listening for relevant changes when the table is refreshing. Parallel snapshotting is a feature that parallelizes this process across columns. If those columns are slow to access, parallel snapshotting greatly reduces latency. However, parallel snapshotting may open many file handles to the same data source.
 
 Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable.minimumParallelSnapshotRows` rows. This can be tuned to avoid unnecessary parallelism when the overhead exceeds potential gains.
 
@@ -140,7 +156,7 @@ The `ungroup` table operation can expand one row into multiple rows. `QueryTable
 
 ## `SoftRecycler` configuration
 
-Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These column sources must maintain previous values during an update graph cycle. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
+Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources on refreshing tables that track previous values. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values for a modified block it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
 
 The capacity of these recyclers (how many arrays each recycler holds) can be configured on a per-type basis, allowing you to tune memory usage based on your workload characteristics.
 
@@ -160,7 +176,7 @@ Array-backed column sources (dense arrays) use SoftRecyclers to manage blocks of
 | `array.recycler.capacity.long`    | 1024                    | Recycler capacity for long array blocks                                                               |
 | `array.recycler.capacity.short`   | 1024                    | Recycler capacity for short array blocks                                                              |
 | `array.recycler.capacity.object`  | 1024                    | Recycler capacity for object array blocks                                                             |
-| `array.recycler.capacity.inuse`   | 9216 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
+| `array.recycler.capacity.inuse`   | 1024 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
 
 ### Sparse array column source recyclers
 
@@ -206,9 +222,9 @@ Sparse array column sources use a multi-level hierarchical structure and maintai
 | `sparsearray.recycler.capacity.short.0`   | 1024                         | Level 0 (top) recycler capacity for short sparse arrays          |
 | `sparsearray.recycler.capacity.object.0`  | 1024                         | Level 0 (top) recycler capacity for object sparse arrays         |
 | `sparsearray.recycler.capacity.inuse`     | 9216 (sum of all base types) | Recycler capacity for "in use" bitmap blocks at the lowest level |
-| `sparsearray.recycler.capacity.inuse.2`   | 9216 (max of level 2)        | Recycler capacity for "in use" bitmap blocks at level 2          |
-| `sparsearray.recycler.capacity.inuse.1`   | 9216 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
-| `sparsearray.recycler.capacity.inuse.0`   | 9216 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
+| `sparsearray.recycler.capacity.inuse.2`   | 1024 (max of level 2)        | Recycler capacity for "in use" bitmap blocks at level 2          |
+| `sparsearray.recycler.capacity.inuse.1`   | 1024 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
+| `sparsearray.recycler.capacity.inuse.0`   | 1024 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
 
 #### Tuning `SoftRecycler` capacity
 
@@ -219,12 +235,15 @@ The recycler capacity determines how many array blocks are kept in memory for po
 
 ## Stateless by default
 
-These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
+Starting in Deephaven Core 41, the engine assumes that filter and select operations can be executed in parallel by default. To force sequential execution, use the [`Filter`](../reference/query-language/types/Filter.md) or [`Selectable`](../reference/query-language/types/Selectable.md) classes with [serialization methods](./query-engine/parallelization.md#serialization).
 
-| Property Name                          | Default Value | Description                                                                                             |
-| -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
-| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations     |
-| `QueryTable.statelessSelectByDefault`  | true          | Enables the engine to assume that Selectables are stateless by default, allowing for more optimizations |
+| Property Name                             | Default Value | Description                                                                                                                                                                                                                                                                                           |
+| ----------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `QueryTable.statelessFiltersByDefault`    | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations                                                                                                                                                                                                   |
+| `QueryTable.statelessSelectByDefault`     | true          | Enables the engine to assume that select operations are stateless by default, allowing for more optimizations                                                                                                                                                                                         |
+| `QueryTable.serialSelectImplicitBarriers` | false         | Whether independent serial `Selectable` expressions in the same `select`/`update` automatically get implicit barriers ordering them one after another. Defaults to the opposite of `statelessSelectByDefault` — `false` (no implicit ordering) when stateless-by-default is on, `true` when it's off. |
+
+For more details, see the Javadoc on [io.deephaven.api.ConcurrencyControl](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html).
 
 ## Related documentation
 

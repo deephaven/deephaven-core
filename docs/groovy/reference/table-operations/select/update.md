@@ -14,7 +14,7 @@ When using `update`, the new columns are evaluated and stored in memory. Existin
 > 3. cells are accessed many times, and/or
 > 4. a large amount of memory is available.
 >
-> When memory usage or computation needs to be reduced, consider using `select`, `view`, `updateView`, or `lazyUpdate`. These methods have different memory and computation expenses.
+> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`view`](./view.md), [`updateView`](./update-view.md), or [`lazyUpdate`](./lazy-update.md). These methods have different memory and computation expenses.
 
 ## Syntax
 
@@ -55,9 +55,27 @@ source = newTable(
 result = source.update("A", "X = B", "Y = sqrt(C)")
 ```
 
+## Serial execution
+
+By default, Deephaven parallelizes `update` calculations across multiple CPU cores. If your formula has side effects or depends on row order, use `withSerial` to force sequential processing.
+
+```groovy order=result
+import io.deephaven.api.Selectable
+import java.util.concurrent.atomic.AtomicInteger
+
+counter = new AtomicInteger(0)
+
+col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
+result = emptyTable(10).update([col])
+```
+
+For more information, see [Parallelization](../../../conceptual/query-engine/parallelization.md).
+
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
+- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Selectable](../../query-language/types/Selectable.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...))
