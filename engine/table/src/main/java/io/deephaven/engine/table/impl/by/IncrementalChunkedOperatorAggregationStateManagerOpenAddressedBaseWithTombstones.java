@@ -532,8 +532,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
      * @return true if the tombstone was placed in the main table, false if in the alternate
      */
     private boolean tombstone(final long outputPosition) {
-        // we never actually delete anything from the output position table
-        final int hashSlot = outputPositionToHashSlot.getInt(outputPosition);
+        // we never actually delete anything from the output position table; the state is live, so it is in range
+        final int hashSlot = outputPositionToHashSlot.getUnsafe(outputPosition);
         final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             mainOutputPosition.set(slot, TOMBSTONE_STATE);
