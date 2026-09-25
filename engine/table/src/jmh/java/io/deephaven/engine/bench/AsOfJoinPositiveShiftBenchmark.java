@@ -60,6 +60,7 @@ import java.util.function.LongUnaryOperator;
  * <ul>
  * <li>{@code ZERO_KEY_STATIC_LEFT}: zero-key join of a static left table; the right side shifts.</li>
  * <li>{@code ZERO_KEY_RIGHT} and {@code ZERO_KEY_LEFT}: zero-key join of two refreshing tables.</li>
+ * <li>{@code BUCKETED_STATIC_LEFT}: bucketed join of a static left table; the right side shifts.</li>
  * <li>{@code BUCKETED_RIGHT} and {@code BUCKETED_LEFT}: bucketed join of two refreshing tables.</li>
  * </ul>
  *
@@ -81,11 +82,13 @@ public class AsOfJoinPositiveShiftBenchmark {
     }
 
     public enum Path {
-        ZERO_KEY_STATIC_LEFT, ZERO_KEY_RIGHT, ZERO_KEY_LEFT, BUCKETED_RIGHT, BUCKETED_LEFT
+        ZERO_KEY_STATIC_LEFT, ZERO_KEY_RIGHT, ZERO_KEY_LEFT, BUCKETED_STATIC_LEFT, BUCKETED_RIGHT, BUCKETED_LEFT
     }
 
-    @Param({"ZERO_KEY_STATIC_LEFT", "ZERO_KEY_RIGHT", "ZERO_KEY_LEFT", "BUCKETED_RIGHT", "BUCKETED_LEFT"})
+    @Param({"ZERO_KEY_STATIC_LEFT", "ZERO_KEY_RIGHT", "ZERO_KEY_LEFT", "BUCKETED_STATIC_LEFT", "BUCKETED_RIGHT",
+            "BUCKETED_LEFT"})
     public Path path;
+
 
     @Param({"1000000"})
     public int rows;
@@ -191,8 +194,9 @@ public class AsOfJoinPositiveShiftBenchmark {
         engine.setUp();
         updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        final boolean leftRefreshing = path != Path.ZERO_KEY_STATIC_LEFT;
-        final boolean keyed = path == Path.BUCKETED_RIGHT || path == Path.BUCKETED_LEFT;
+        final boolean leftRefreshing = path != Path.ZERO_KEY_STATIC_LEFT && path != Path.BUCKETED_STATIC_LEFT;
+        final boolean keyed =
+                path == Path.BUCKETED_STATIC_LEFT || path == Path.BUCKETED_RIGHT || path == Path.BUCKETED_LEFT;
         final boolean shiftLeft = path == Path.ZERO_KEY_LEFT || path == Path.BUCKETED_LEFT;
 
         scope = new LivenessScope();
