@@ -11,6 +11,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
@@ -216,7 +217,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return new BuildContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
+    @Override
+    public ProbeContext makeProbeContext(ColumnSource<?>[] buildSources, long maxSize) {
         return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
@@ -411,6 +413,12 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return accumulateRowSets(restampAdditions, sources, slots, sequentialBuilders, true);
     }
 
+    @Override
+    public int gatherShiftRowSet(Context probeContext, RowSet rowSet, ColumnSource<?>[] sources,
+            IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+        return accumulateRowSets((ProbeContext) probeContext, rowSet, sources, slots, sequentialBuilders, true);
+    }
+
     public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateRowSets(restampAdditions, sources, slots, sequentialBuilders, false);
@@ -477,6 +485,17 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
     private int accumulateRowSets(RowSet rowSet, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
+        if (rowSet.isEmpty()) {
+            resetCookie();
+            return 0;
+        }
+        try (final ProbeContext pc = makeProbeContext(sources, rowSet.size())) {
+            return accumulateRowSets(pc, rowSet, sources, slots, sequentialBuilders, usePrev);
+        }
+    }
+
+    private int accumulateRowSets(ProbeContext pc, RowSet rowSet, ColumnSource<?>[] sources,
+            IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
         resetCookie();
 
         if (rowSet.isEmpty()) {
@@ -485,7 +504,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
         // store this for access by the hashing methods
         this.hashSlots = slots;
-        try (final ProbeContext pc = makeProbeContext(sources, rowSet.size())) {
+        try {
             probeTable(pc, rowSet, usePrev, sources, new RightProbeHandler(sequentialBuilders));
         } finally {
             this.hashSlots = null;

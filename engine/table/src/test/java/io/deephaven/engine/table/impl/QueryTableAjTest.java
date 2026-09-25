@@ -2280,6 +2280,61 @@ public class QueryTableAjTest {
     }
 
     /**
+     * A static left table joined to a refreshing right table on two key columns, when one right update shifts several
+     * ranges of rows, restamps every shifted right row with the same result as a static join.
+     */
+    @Test
+    public void testLeftStaticKeyedAjSeveralRightShiftRanges() {
+        final int rightSize = 12;
+        final String[] rightFirstKeys = new String[rightSize];
+        final int[] rightSecondKeys = new int[rightSize];
+        final int[] rightStamps = new int[rightSize];
+        for (int ii = 0; ii < rightSize; ++ii) {
+            rightFirstKeys[ii] = ii % 2 == 0 ? "A" : "B";
+            rightSecondKeys[ii] = ii % 3;
+            rightStamps[ii] = ii * 10;
+        }
+        final QueryTable right = testRefreshingTable(RowSetFactory.flat(rightSize).toTracking(),
+                col("First", rightFirstKeys), intCol("Second", rightSecondKeys), intCol("RightStamp", rightStamps),
+                intCol("Sentinel", IntStream.range(0, rightSize).toArray()));
+
+        final int leftSize = 36;
+        final String[] leftFirstKeys = new String[leftSize];
+        final int[] leftSecondKeys = new int[leftSize];
+        final int[] leftStamps = new int[leftSize];
+        for (int ii = 0; ii < leftSize; ++ii) {
+            leftFirstKeys[ii] = ii % 2 == 0 ? "A" : "B";
+            leftSecondKeys[ii] = ii % 3;
+            leftStamps[ii] = ii * 4;
+        }
+        final QueryTable left = testTable(RowSetFactory.flat(leftSize).toTracking(), col("First", leftFirstKeys),
+                intCol("Second", leftSecondKeys), intCol("LeftStamp", leftStamps));
+
+        final String match = "First,Second,LeftStamp>=RightStamp";
+        final Table result = left.aj(right, match, "Sentinel");
+        assertTableEquals(left.aj(right.snapshot(), match, "Sentinel"), result);
+
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(0, 3, 100);
+        shiftBuilder.shiftRange(4, 7, 200);
+        shiftBuilder.shiftRange(8, 11, 300);
+        final RowSetShiftData shifted = shiftBuilder.build();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            shifted.apply((beginRange, endRange, shiftDelta) -> {
+                for (final ColumnSource<?> column : right.getColumnSources()) {
+                    ((TestColumnSource<?>) column).shift(beginRange, endRange, shiftDelta);
+                }
+            });
+            shifted.apply(right.getRowSet().writableCast());
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(), shifted, ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(i(100, 101, 102, 103, 204, 205, 206, 207, 308, 309, 310, 311), right.getRowSet());
+        assertTableEquals(left.aj(right.snapshot(), match, "Sentinel"), result);
+    }
+
+    /**
      * Positive shifts of more rows than the join's chunk size are applied a chunk at a time, from the highest row keys
      * down. Each shift moves every row of a range onto the key that the next row of its bucket vacates, on the right
      * and the left side, for zero-key and bucketed joins with a static or refreshing left table.

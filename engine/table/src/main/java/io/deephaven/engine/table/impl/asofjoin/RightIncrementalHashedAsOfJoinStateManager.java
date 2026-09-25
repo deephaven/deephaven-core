@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.asofjoin;
 
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.RightIncrementalAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -127,6 +128,24 @@ public abstract class RightIncrementalHashedAsOfJoinStateManager extends RightIn
 
     public abstract int gatherShiftRowSet(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+
+    /**
+     * Make a probe context for
+     * {@link #gatherShiftRowSet(Context, RowSet, ColumnSource[], IntegerArraySource, ObjectArraySource)}.
+     *
+     * @param probeSources the key sources that will be probed
+     * @param maxSize the largest row set that will be probed with the context
+     * @return a context the caller must close
+     */
+    public abstract Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
+
+    /**
+     * Gather the rows of {@code rowSet} by slot, as
+     * {@link #gatherShiftRowSet(RowSet, ColumnSource[], IntegerArraySource, ObjectArraySource)} does, reusing a context
+     * from {@link #makeProbeContext} so that a caller probing many row sets in one cycle allocates it once.
+     */
+    public abstract int gatherShiftRowSet(Context probeContext, RowSet rowSet, ColumnSource<?>[] sources,
+            IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
     public abstract int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources,
             IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);

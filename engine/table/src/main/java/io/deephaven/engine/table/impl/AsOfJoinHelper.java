@@ -717,23 +717,26 @@ public class AsOfJoinHelper {
                     try (final RowSet relevantShiftedRows = ChunkedAjUtils.relevantShiftedRows(upstream.shifted(),
                             prevRowSet, restampRemovals)) {
                         if (relevantShiftedRows.isNonempty()) {
+                            // every row set probed below is a subset of relevantShiftedRows
                             try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
                                     final ResettableWritableChunk<Values> leftValuesChunk =
-                                            rightStampSource.getChunkType().makeResettableWritableChunk()) {
+                                            rightStampSource.getChunkType().makeResettableWritableChunk();
+                                    final Context shiftProbeContext = asOfJoinStateManager
+                                            .makeProbeContext(rightSources, relevantShiftedRows.size())) {
                                 final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                                 while (sit.hasNext()) {
                                     sit.next();
-                                    final RowSet rowSetToShift =
-                                            relevantShiftedRows.subSetByKeyRange(sit.beginRange(), sit.endRange());
-                                    if (rowSetToShift.isEmpty()) {
-                                        rowSetToShift.close();
-                                        continue;
-                                    }
+                                    final int shiftedSlots;
+                                    try (final RowSet rowSetToShift =
+                                            relevantShiftedRows.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
+                                        if (rowSetToShift.isEmpty()) {
+                                            continue;
+                                        }
 
-                                    final int shiftedSlots = asOfJoinStateManager.gatherShiftRowSet(rowSetToShift,
-                                            rightSources, slots, sequentialBuilders);
-                                    rowSetToShift.close();
+                                        shiftedSlots = asOfJoinStateManager.gatherShiftRowSet(shiftProbeContext,
+                                                rowSetToShift, rightSources, slots, sequentialBuilders);
+                                    }
 
                                     for (int slotIndex = 0; slotIndex < shiftedSlots; ++slotIndex) {
                                         final int slot = slots.getInt(slotIndex);
