@@ -261,10 +261,14 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     /**
      * Disable the usage of push-down filtering on a merged table.
+     * <p>
+     * DH-23750 (42.x only): defaults to true. When a merge includes constituents without pushdown support, the rows of
+     * those constituents are captured once at cost estimation and re-inserted into later, narrower results,
+     * re-admitting rows that earlier filters removed. Wrong-answer finding PD-041; corrected in 43.x by DH-23751.
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_MERGED_TABLES =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownMergedTables",
-                    false);
+                    true);
 
     /**
      * Disable the usage of parquet row group metadata during push-down filtering.
