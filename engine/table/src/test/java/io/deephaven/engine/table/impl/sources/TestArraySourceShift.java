@@ -127,6 +127,152 @@ public class TestArraySourceShift {
         }
     }
 
+    @Test
+    public void testWholeBlockShifts() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int size = 8 * blockSize;
+        // whole blocks plus a partial block at the end of the range
+        final long first = 2L * blockSize;
+        final long last = 5L * blockSize + 100;
+        for (final boolean trackPrev : new boolean[] {false, true}) {
+            for (final boolean partlyRecorded : new boolean[] {false, true}) {
+                if (partlyRecorded && !trackPrev) {
+                    continue;
+                }
+                for (final long delta : new long[] {-2L * blockSize, -blockSize, blockSize, 2L * blockSize}) {
+                    final LongArraySource longs = new LongArraySource();
+                    final ObjectArraySource<String> objects = new ObjectArraySource<>(String.class);
+                    longs.ensureCapacity(size);
+                    objects.ensureCapacity(size);
+                    for (int ii = 0; ii < size; ++ii) {
+                        longs.set(ii, (long) ii);
+                        objects.set(ii, Long.toString(ii));
+                    }
+                    final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+                    builder.shiftRange(first, last, delta);
+                    final RowSetShiftData shiftData = builder.build();
+                    final String description = "trackPrev=" + trackPrev + ", partlyRecorded=" + partlyRecorded
+                            + ", delta=" + delta;
+                    final Runnable shiftAndCheck = () -> {
+                        if (partlyRecorded) {
+                            // previous values recorded for part of a block before it moves
+                            for (long ii = first + 10; ii < first + 20; ++ii) {
+                                longs.set(ii, -ii);
+                                objects.set(ii, "changed" + ii);
+                            }
+                        }
+                        longs.shift(shiftData);
+                        objects.shift(shiftData);
+                        for (long ii = first + delta; ii <= last + delta; ++ii) {
+                            final long original = ii - delta;
+                            final boolean changed = partlyRecorded && original >= first + 10 && original < first + 20;
+                            assertEquals(description + ", ii=" + ii, changed ? -original : original, longs.getLong(ii));
+                            assertEquals(description + ", ii=" + ii,
+                                    changed ? "changed" + original : Long.toString(original), objects.get(ii));
+                        }
+                        if (trackPrev) {
+                            // every position's previous value is its value before this cycle
+                            for (long ii = 0; ii < size; ++ii) {
+                                assertEquals(description + ", ii=" + ii, ii, longs.getPrevLong(ii));
+                                assertEquals(description + ", ii=" + ii, Long.toString(ii), objects.getPrev(ii));
+                            }
+                        }
+                        // positions outside both ranges keep their values
+                        for (long ii = 0; ii < size; ++ii) {
+                            final boolean inSource = ii >= first && ii <= last;
+                            final boolean inDest = ii >= first + delta && ii <= last + delta;
+                            if (!inSource && !inDest) {
+                                assertEquals(description + ", ii=" + ii, ii, longs.getLong(ii));
+                            }
+                        }
+                        // vacated positions can be written
+                        for (long ii = first; ii <= last; ++ii) {
+                            if (ii < first + delta || ii > last + delta) {
+                                longs.set(ii, 7L);
+                                objects.set(ii, "seven");
+                            }
+                        }
+                    };
+                    if (trackPrev) {
+                        longs.startTrackingPrevValues();
+                        objects.startTrackingPrevValues();
+                        final ControlledUpdateGraph updateGraph =
+                                ExecutionContext.getContext().getUpdateGraph().cast();
+                        updateGraph.runWithinUnitTestCycle(shiftAndCheck::run);
+                    } else {
+                        shiftAndCheck.run();
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testWholeBlockShiftFromReleasedBlock() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        for (final boolean trackPrev : new boolean[] {false, true}) {
+            final LongArraySource longs = new LongArraySource();
+            longs.ensureCapacity(4L * blockSize);
+            for (int ii = 0; ii < 4 * blockSize; ++ii) {
+                longs.set(ii, (long) ii);
+            }
+            // the first block is released, then the rest of the source moves down over it
+            longs.releaseBlocks(0, blockSize - 1);
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(blockSize, 4L * blockSize - 1, -blockSize);
+            final RowSetShiftData shiftData = builder.build();
+            final Runnable shiftAndCheck = () -> {
+                longs.shift(shiftData);
+                for (long ii = 0; ii < 3L * blockSize; ++ii) {
+                    assertEquals("ii=" + ii, ii + blockSize, longs.getLong(ii));
+                }
+                // the vacated last block can be written
+                longs.set(4L * blockSize - 1, 7L);
+                assertEquals(7L, longs.getLong(4L * blockSize - 1));
+            };
+            if (trackPrev) {
+                longs.startTrackingPrevValues();
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(shiftAndCheck::run);
+            } else {
+                shiftAndCheck.run();
+            }
+        }
+    }
+
+    @Test
+    public void testWholeBlockShiftVacatesReleasedBlock() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        for (final boolean trackPrev : new boolean[] {false, true}) {
+            final LongArraySource longs = new LongArraySource();
+            longs.ensureCapacity(4L * blockSize);
+            for (int ii = 0; ii < 4 * blockSize; ++ii) {
+                longs.set(ii, (long) ii);
+            }
+            // the last block is released as well as the first, so the block the move vacates holds no array
+            longs.releaseBlocks(0, blockSize - 1);
+            longs.releaseBlocks(3L * blockSize, 4L * blockSize - 1);
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(blockSize, 4L * blockSize - 1, -blockSize);
+            final RowSetShiftData shiftData = builder.build();
+            final Runnable shiftAndCheck = () -> {
+                longs.shift(shiftData);
+                for (long ii = 0; ii < 2L * blockSize; ++ii) {
+                    assertEquals("ii=" + ii, ii + blockSize, longs.getLong(ii));
+                }
+                longs.set(3L * blockSize, 7L);
+                assertEquals(7L, longs.getLong(3L * blockSize));
+            };
+            if (trackPrev) {
+                longs.startTrackingPrevValues();
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(shiftAndCheck::run);
+            } else {
+                shiftAndCheck.run();
+            }
+        }
+    }
+
     private static void shift(final ShiftableColumnSource<?> source, final boolean trackPrev, final long delta,
             final Runnable check) {
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
