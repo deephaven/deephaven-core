@@ -181,7 +181,8 @@ public class TypedHasherFactory {
             configureAggregation(builder);
             builder.supportTombstones(true);
             builder.tombstoneStateName("TOMBSTONE_STATE");
-            // see IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.doRehash
+            // must match
+            // IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.REHASH_SLOTS_PER_ENTRY
             builder.rehashSlotsPerEntry(3);
             builder.classPrefix("IncrementalAggOpenHasherWithTombstone").packageMiddle("incopenaggts");
             builder.overflowOrAlternateStateName("alternateOutputPosition");
