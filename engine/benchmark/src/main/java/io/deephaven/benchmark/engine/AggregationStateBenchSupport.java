@@ -64,6 +64,24 @@ final class AggregationStateBenchSupport {
         }
     }
 
+    /**
+     * Set the fraction of the output positions that released blocks at the start must reach before every state is
+     * shifted down to reuse them; negative, which is all that a build without the setting supports, never shifts.
+     *
+     * @param frontShiftFraction the fraction at which to shift, zero for any released block, negative for never
+     */
+    static void setFrontShiftFraction(final double frontShiftFraction) {
+        try {
+            ChunkedOperatorAggregationHelper.class.getField("FRONT_SHIFT_FRACTION").setDouble(null, frontShiftFraction);
+        } catch (NoSuchFieldException e) {
+            if (frontShiftFraction >= 0) {
+                throw new IllegalStateException("This build cannot shift states down", e);
+            }
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private static final String TOMBSTONE_STATE_MANAGER =
             "io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones";
 

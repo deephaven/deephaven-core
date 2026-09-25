@@ -76,6 +76,13 @@ public class ChunkedOperatorAggregationHelper {
      */
     public static double COLLAPSE_FREE_FRACTION = Configuration.getInstance()
             .getDoubleWithDefault("ChunkedOperatorAggregationHelper.collapseFreeFraction", 1.0);
+    /**
+     * When releasing blocks, shift every state down, by whole blocks, once the released blocks at the start of the
+     * output positions are at least this fraction of the positions assigned, so that output positions are reused. Zero
+     * shifts for any released block at the start; negative never shifts.
+     */
+    public static double FRONT_SHIFT_FRACTION = Configuration.getInstance()
+            .getDoubleWithDefault("ChunkedOperatorAggregationHelper.frontShiftFraction", -1.0);
 
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
@@ -726,6 +733,7 @@ public class ChunkedOperatorAggregationHelper {
                 resultRowset.insert(downstream.added());
                 final WritableRowSet releasable =
                         blockTracker.update(downstream.added(), downstream.removed(), outputPosition.get());
+                blockTracker.recordInputRows(upstream.added().size() + upstream.removed().size());
                 final OutputPositionBlockTracker.Collapse collapse = blockTracker.collapseSparseBlocks(resultRowset,
                         upstream.added().size() + upstream.modified().size() + upstream.removed().size(),
                         releasable);
@@ -741,6 +749,8 @@ public class ChunkedOperatorAggregationHelper {
                     for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
                         keyColumn.shift(collapse.shift);
                     }
+                } else {
+                    shiftFront(blockTracker, resultRowset, downstream, releasable, keyColumnsCopied);
                 }
                 releaseEmptyBlocks(releasable, keyColumnsCopied);
                 return downstream;
@@ -762,6 +772,54 @@ public class ChunkedOperatorAggregationHelper {
             }
 
             return downstream;
+        }
+
+        /**
+         * Shift every state down by the released blocks at the start of the output positions, if they are large enough
+         * to reclaim, so that output positions are reused. The move is by whole blocks, which the array sources make by
+         * moving blocks rather than values.
+         */
+        private void shiftFront(
+                @NotNull final OutputPositionBlockTracker blockTracker,
+                @NotNull final TrackingWritableRowSet resultRowset,
+                @NotNull final TableUpdateImpl downstream,
+                @NotNull final WritableRowSet releasable,
+                @NotNull final ShiftableColumnSource<?>[] keyColumnsCopied) {
+            final long shiftPositions = blockTracker.frontShiftAmount(FRONT_SHIFT_FRACTION, outputPosition.get());
+            if (shiftPositions == 0) {
+                return;
+            }
+            // Shift through the end of the last block, including its unassigned positions, so that only whole blocks
+            // move: a partial block would be copied rather than moved, leaving stale values at the positions it
+            // vacates, and those positions are assigned to new states after the shift. When the released prefix is
+            // longer than what follows it, shift at least as far as twice the prefix, so that the destinations reach
+            // the start of the source: otherwise the released blocks between them, now past the end, would stay
+            // unallocated when new states are assigned there.
+            final long blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+            final long lastShifted = Math.max((outputPosition.get() + blockSize - 1) / blockSize * blockSize - 1,
+                    2 * shiftPositions - 1);
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(shiftPositions, lastShifted, -shiftPositions);
+            final RowSetShiftData shift = shiftBuilder.build();
+
+            incrementalStateManager.shiftAllOutputPositions(resultRowset, shift);
+            shift.apply(resultRowset);
+            shift.apply(downstream.added().writableCast());
+            shift.apply(downstream.modified().writableCast());
+            downstream.shifted = shift;
+            for (final IterativeChunkedAggregationOperator operator : ac.operators) {
+                operator.shift(shift);
+            }
+            for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                keyColumn.shift(shift);
+            }
+            // blocks released this cycle below the shift were overwritten by the move; the rest moved down with it
+            try (final RowSet stillReleasable = releasable.subSetByKeyRange(shiftPositions, Long.MAX_VALUE)) {
+                releasable.clear();
+                releasable.insertWithShift(-shiftPositions, stillReleasable);
+            }
+            blockTracker.shiftDown(shiftPositions, outputPosition.get());
+            outputPosition.subtract(Math.toIntExact(shiftPositions));
         }
 
         /**
