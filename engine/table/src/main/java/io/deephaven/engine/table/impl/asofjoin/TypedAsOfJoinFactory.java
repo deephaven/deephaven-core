@@ -33,7 +33,6 @@ public class TypedAsOfJoinFactory {
         builder.addStatement("final long indexKey = rowKeyChunk.get(chunkPosition)");
         builder.beginControlFlow("if (addLeftKey(tableLocation, indexKey) && hashSlots != null)");
         builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), tableLocation)");
-        builder.addStatement("foundBuilder.addKey(indexKey)");
         builder.endControlFlow();
     }
 

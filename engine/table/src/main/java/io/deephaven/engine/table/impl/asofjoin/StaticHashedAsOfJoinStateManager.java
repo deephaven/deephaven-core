@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.asofjoin;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.StaticAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
@@ -25,8 +24,7 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
 
     public abstract void probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources);
 
-    public abstract int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, IntegerArraySource slots,
-            RowSetBuilderRandom foundBuilder);
+    public abstract int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, IntegerArraySource slots);
 
     public abstract void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources);
 
