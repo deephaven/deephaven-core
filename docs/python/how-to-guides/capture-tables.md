@@ -167,7 +167,7 @@ Barrage subscriptions can be affected by network interruptions. Consider these p
 
 - **Reconnection**: If the session disconnects, you'll need to create a new `barrage_session` and resubscribe. The remote table must still be published to the same shared ticket.
 
-- **Ticket lifetime**: Shared tickets remain valid as long as the publishing session is active. If the publishing session closes, the ticket becomes invalid and subscribers will lose their connection.
+- **Ticket lifetime**: A shared ticket remains valid only while the published table is still exported by the publishing session. Closing the publishing session, closing the published table reference (`table_ref`), or letting that reference be garbage collected releases the table and invalidates the ticket. Keep a reference to the table for as long as others need the ticket.
 
 - **Authentication expiry**: If using authenticated connections, ensure tokens or credentials remain valid for the duration of long-running subscriptions.
 
