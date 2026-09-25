@@ -12,6 +12,7 @@ import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.parquet.base.materializers.IntMaterializer;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
@@ -26,6 +27,7 @@ import org.apache.parquet.format.DataPageHeaderV2;
 import org.apache.parquet.format.PageHeader;
 import org.apache.parquet.format.PageType;
 import org.apache.parquet.io.ParquetDecodingException;
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -645,13 +647,33 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         return factory.makeMaterializerNonNull(dataReader, numberOfValues).fillAll();
     }
 
-    private ValuesReader getDataReader(
+    /**
+     * Whether a factory may be offered this page. Encoding is per page, not per column, and offering a dictionary page
+     * would be a correctness bug rather than a missed optimization. Page buffers are heap-backed today, so the
+     * {@code hasArray} term never fires; it is what lets the factory hook be total.
+     *
+     * @param dataEncoding this page's encoding
+     * @param primitiveTypeName the column's parquet primitive type
+     * @param in the page buffer
+     */
+    private static boolean isPlainBinaryPage(
+            final Encoding dataEncoding, final PrimitiveTypeName primitiveTypeName, final ByteBuffer in) {
+        return dataEncoding == Encoding.PLAIN && primitiveTypeName == PrimitiveTypeName.BINARY && in.hasArray();
+    }
+
+    @VisibleForTesting
+    ValuesReader getDataReader(
             final Encoding dataEncoding,
             final ByteBuffer in,
             final int valueCount,
             @NotNull final SeekableChannelContext channelContext) {
         if (dataEncoding == Encoding.DELTA_BYTE_ARRAY) {
             throw new RuntimeException("DELTA_BYTE_ARRAY encoding not supported");
+        }
+        if (pageMaterializerFactory instanceof PlainBinaryPageReaderFactory plainBinaryFactory
+                && isPlainBinaryPage(dataEncoding, path.getPrimitiveType().getPrimitiveTypeName(), in)) {
+            // `in` is already positioned past the repetition and definition levels.
+            return plainBinaryFactory.makePlainBinaryValuesReader(in);
         }
         final ValuesReader dataReader;
         if (dataEncoding.usesDictionary()) {
