@@ -373,6 +373,15 @@ public final class NullAwareCharReverseSegmentedSortedArray implements Segmented
         System.arraycopy(leafRowKeys, srcPos, leafRowKeys, destPos, length);
     }
 
+    /**
+     * Clears positions [from, to) of a values array that hold no live entries, so that they do not keep stamp objects
+     * reachable. Primitive values need no clearing.
+     */
+    private static void clearValues(char[] values, int from, int to) {
+        // region clearValues
+        // endregion clearValues
+    }
+
     private void promoteDirectory(int newLeafCount) {
         leafSizes = new int[newLeafCount];
         leafValues = new char[newLeafCount][];
@@ -429,7 +438,8 @@ public final class NullAwareCharReverseSegmentedSortedArray implements Segmented
 
     private void distributeValues(int targetSize, int startingLeaf, int distributionSlots,
             CharChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeys) {
-        final int totalInsertions = valuesToInsert.size() + leafSizes[startingLeaf];
+        final int startingLeafSize = leafSizes[startingLeaf];
+        final int totalInsertions = valuesToInsert.size() + startingLeafSize;
         final int shortLeaves = (distributionSlots * targetSize) - totalInsertions;
         final int lastFullSlot = startingLeaf + shortLeaves;
 
@@ -495,6 +505,10 @@ public final class NullAwareCharReverseSegmentedSortedArray implements Segmented
             directoryRowKeys[workingSlot] = leafRowKeys[workingSlot][leafSize - 1];
             leafSizes[workingSlot] = leafSize;
             insertedValues += leafSize;
+        }
+
+        if (leafSizes[startingLeaf] < startingLeafSize) {
+            clearValues(leafValues[startingLeaf], leafSizes[startingLeaf], startingLeafSize);
         }
 
         Assert.eq(totalInsertions, "totalInsertions", insertedValues, "insertedValues");
@@ -755,6 +769,7 @@ public final class NullAwareCharReverseSegmentedSortedArray implements Segmented
                 }
             }
         }
+        clearValues(leafValues, leafSize - removeSize, leafSize);
     }
 
 
@@ -963,6 +978,9 @@ public final class NullAwareCharReverseSegmentedSortedArray implements Segmented
                         removeFromLeaf(leafSizes[firstLeaf], leafValues[firstLeaf], leafValuesRemoveChunk,
                                 leafRowKeys[firstLeaf], leafKeysRemoveChunk, priorRedirectionsSlice, firstPrior);
                         leafSizes[firstLeaf] -= count;
+                        // the directory holds the leaf's last value rather than a stamp that has been removed
+                        directoryValues[firstLeaf] = leafValues[firstLeaf][leafSizes[firstLeaf] - 1];
+                        directoryRowKeys[firstLeaf] = leafRowKeys[firstLeaf][leafSizes[firstLeaf] - 1];
 
                         final boolean hasLeft = firstLeaf > 0 && (leavesToRemove.isEmpty()
                                 || (leavesToRemove.getInt(leavesToRemove.size() - 1) != (firstLeaf - 1)));
@@ -1046,6 +1064,7 @@ public final class NullAwareCharReverseSegmentedSortedArray implements Segmented
                         Arrays.fill(leafValues, destIdx, leafCount, null);
                         Arrays.fill(leafRowKeys, destIdx, leafCount, null);
                         Arrays.fill(leafSizes, destIdx, leafCount, 0);
+                        clearValues(directoryValues, destIdx, leafCount);
                     }
                     leafCount = destIdx;
                 }

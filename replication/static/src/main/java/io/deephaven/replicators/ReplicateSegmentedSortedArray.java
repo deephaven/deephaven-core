@@ -208,8 +208,9 @@ public class ReplicateSegmentedSortedArray {
     private static void fixupObjectSsa(String objectPath, boolean ascending) throws IOException {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, ReplicationUtils.simpleFixup(
+        FileUtils.writeLines(objectFile, ReplicationUtils.replaceRegion(ReplicationUtils.simpleFixup(
                 ReplicateSortKernel.fixupObjectComparisons(ReplicationUtils.fixupChunkAttributes(lines), ascending),
-                "fillValue", "Object.MIN_VALUE", "null"));
+                "fillValue", "Object.MIN_VALUE", "null"),
+                "clearValues", List.of("        Arrays.fill(values, from, to, null);")));
     }
 }
