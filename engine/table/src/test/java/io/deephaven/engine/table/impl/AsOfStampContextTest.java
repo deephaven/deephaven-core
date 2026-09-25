@@ -1,0 +1,105 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.engine.table.impl;
+
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+/**
+ * An {@link AsOfStampContext} grows its buffers as it is handed larger buckets. When growing a buffer fails, closing
+ * the context releases every pooled chunk and context exactly once.
+ */
+public class AsOfStampContextTest {
+
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
+
+    private static final int CAPACITY_LIMIT = 8;
+    private static final int LARGE_SIZE = 100;
+
+    /**
+     * An int column source whose fill contexts are limited in capacity, standing in for any failure (for example an
+     * OutOfMemoryError) while the stamp context grows a buffer. Its fill contexts fail when closed twice.
+     */
+    private static final class CapacityLimitedIntSource extends ImmutableIntArraySource {
+        private CapacityLimitedIntSource(final int[] data) {
+            super(data);
+        }
+
+        @Override
+        public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+            if (chunkCapacity > CAPACITY_LIMIT) {
+                throw new IllegalStateException("fill context capacity " + chunkCapacity + " exceeds "
+                        + CAPACITY_LIMIT);
+            }
+            return new CloseOnceFillContext();
+        }
+    }
+
+    private static final class CloseOnceFillContext implements ChunkSource.FillContext {
+        private boolean closed;
+
+        @Override
+        public void close() {
+            if (closed) {
+                throw new AssertionError("fill context closed twice");
+            }
+            closed = true;
+        }
+    }
+
+    private static int[] ascendingStamps() {
+        return IntStream.range(0, LARGE_SIZE).toArray();
+    }
+
+    @Test
+    public void testLeftBufferGrowthFailureReleasesOnce() {
+        final ColumnSource<?> leftStamps = new CapacityLimitedIntSource(ascendingStamps());
+        final ColumnSource<?> rightStamps = new ImmutableIntArraySource(ascendingStamps());
+        checkGrowthFailure(leftStamps, rightStamps, true);
+    }
+
+    @Test
+    public void testRightBufferGrowthFailureReleasesOnce() {
+        final ColumnSource<?> leftStamps = new ImmutableIntArraySource(ascendingStamps());
+        final ColumnSource<?> rightStamps = new CapacityLimitedIntSource(ascendingStamps());
+        checkGrowthFailure(leftStamps, rightStamps, false);
+    }
+
+    private static void checkGrowthFailure(final ColumnSource<?> leftStamps, final ColumnSource<?> rightStamps,
+            final boolean growLeft) {
+        final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(LARGE_SIZE);
+        try (final WritableRowSet small = RowSetFactory.flat(1);
+                final WritableRowSet large = RowSetFactory.flat(LARGE_SIZE)) {
+            final AsOfStampContext stampContext =
+                    new AsOfStampContext(SortingOrder.Ascending, false, leftStamps, rightStamps, rightStamps);
+            try {
+                stampContext.processEntry(small, small, rowRedirection);
+                try {
+                    stampContext.processEntry(growLeft ? large : small, growLeft ? small : large, rowRedirection);
+                    fail("expected the buffer growth to fail");
+                } catch (final IllegalStateException expected) {
+                    assertEquals("fill context capacity 128 exceeds " + CAPACITY_LIMIT, expected.getMessage());
+                }
+            } finally {
+                stampContext.close();
+            }
+        }
+        ChunkPoolReleaseTracking.check();
+    }
+}
