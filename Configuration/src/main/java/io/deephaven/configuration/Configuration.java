@@ -118,7 +118,7 @@ public abstract class Configuration extends PropertyFile {
     }
 
     /**
-     * Set the current global default Configuration to the specified item.  Configuration must not yet have been
+     * Set the current global default Configuration to the specified item. Configuration must not yet have been
      * initialized with {@link #getInstance()}, or {@link #reset()} must be called first.
      *
      * @param configuration The configuration to use as global default.
@@ -126,7 +126,7 @@ public abstract class Configuration extends PropertyFile {
      * @throws IllegalStateException if an existing default configuration is already present.
      */
     public static Configuration withDefault(@NotNull final Configuration configuration) {
-        if(DEFAULT != null) {
+        if (DEFAULT != null) {
             throw new IllegalStateException("A default configuration is already set. Use reset() first.");
         }
         DEFAULT = configuration;
