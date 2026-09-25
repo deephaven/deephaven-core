@@ -208,6 +208,22 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     }
 
     @Override
+    public boolean hasVirtualRowVariables() {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke hasVirtualRowVariables");
+        }
+        final WhereFilter failover = getFailoverFilterIfCached();
+        return failover != null && failover.hasVirtualRowVariables();
+    }
+
+    @Override
+    public boolean canPushdown() {
+        // The failover is not visible to a walk of the filter tree, so answer for it here.
+        final WhereFilter failover = getFailoverFilterIfCached();
+        return failover == null || failover.canPushdown();
+    }
+
+    @Override
     public void init(@NotNull TableDefinition tableDefinition) {
         init(tableDefinition, QueryCompilerRequestProcessor.immediate());
     }
@@ -924,9 +940,28 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     public WhereFilter copy() {
         final MatchFilter copy;
         if (strValues != null) {
-            copy = new MatchFilter(
-                    failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
-                    matchOptions, columnName, strValues, null);
+            if (!initialized) {
+                // Wrap the failover filter supplier if it exists.
+                final CachingSupplier<ConditionFilter> copiedSupplier =
+                        failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy());
+                copy = new MatchFilter(copiedSupplier, matchOptions, columnName, strValues, null);
+            } else {
+                final ConditionFilter cachedFilter = getFailoverFilterIfCached();
+                if (cachedFilter == null) {
+                    // Not failing over, we will do normal matching. The supplier is never invoked by the copy, but it
+                    // is provided so that a renameFilter() of the copy can still fail over.
+                    copy = new MatchFilter(
+                            failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
+                            matchOptions, columnName, strValues, null);
+                } else {
+                    // Already in failover mode. The cached filter is copied and wrapped in a new supplier for the copy.
+                    final ConditionFilter copiedFilter = cachedFilter.copy();
+                    final CachingSupplier<ConditionFilter> copiedSupplier = new CachingSupplier<>(() -> copiedFilter);
+                    // Force the copied supplier to populate the cache.
+                    copiedSupplier.get();
+                    copy = new MatchFilter(copiedSupplier, matchOptions, columnName, strValues, null);
+                }
+            }
         } else {
             // when we're constructed with values then there is no failover filter
             copy = new MatchFilter(matchOptions, columnName, values);
