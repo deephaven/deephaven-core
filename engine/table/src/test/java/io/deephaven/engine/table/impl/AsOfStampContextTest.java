@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -10,14 +11,17 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -97,6 +101,36 @@ public class AsOfStampContextTest {
         }
         for (int ii = 0; ii < CAPACITY_LIMIT; ++ii) {
             assertEquals(ii, rowRedirection.get(ii));
+        }
+        ChunkPoolReleaseTracking.check();
+    }
+
+    /**
+     * A stamp whose comparison is not a total order: every stamp compares greater than every other.
+     */
+    private static final class AlwaysGreater implements Comparable<AlwaysGreater> {
+        @Override
+        public int compareTo(@NotNull final AlwaysGreater other) {
+            return 1;
+        }
+    }
+
+    /**
+     * Stamps are compacted right after they are sorted, so a stamp that is still out of order means the stamp type does
+     * not define a total order; the stamp context fails rather than stamping from a partly compacted chunk.
+     */
+    @Test
+    public void testStampsThatAreNotTotallyOrderedFail() {
+        final ColumnSource<?> stamps = new ImmutableObjectArraySource<>(AlwaysGreater.class, null,
+                new Object[] {new AlwaysGreater(), new AlwaysGreater()});
+        final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(2);
+        try (final WritableRowSet rows = RowSetFactory.flat(2);
+                final AsOfStampContext stampContext =
+                        new AsOfStampContext(SortingOrder.Ascending, false, stamps, stamps, stamps)) {
+            stampContext.processEntry(rows, rows, rowRedirection);
+            fail("expected the out of order stamps to fail");
+        } catch (final AssertionFailure expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("firstOutOfOrderPosition"));
         }
         ChunkPoolReleaseTracking.check();
     }

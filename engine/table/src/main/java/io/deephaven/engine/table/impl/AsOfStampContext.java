@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.MathUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
@@ -206,7 +207,10 @@ class AsOfStampContext implements Context {
 
         sortKernel.sort(rightKeyIndicesChunk, rightStampChunk);
 
-        rightDupCompact.compactDuplicates(rightStampChunk, rightKeyIndicesChunk);
+        // the stamps were just sorted with the comparison the kernel uses, so only a stamp whose comparison is not a
+        // total order can leave one out of order
+        final int firstOutOfOrderPosition = rightDupCompact.compactDuplicates(rightStampChunk, rightKeyIndicesChunk);
+        Assert.eq(firstOutOfOrderPosition, "firstOutOfOrderPosition", -1);
     }
 
     /**
