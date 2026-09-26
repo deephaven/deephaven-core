@@ -235,16 +235,159 @@ public class GrpcServiceOverrideBuilder {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "no x-deephaven-stream headers, cannot handle open request");
             }
+            if (streamData.getSequence() != 0) {
+                // the stream is delivered in sequence order starting at zero, so an Open with any other sequence
+                // would wait forever for a message that cannot come
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "open request must have sequence 0, received " + streamData.getSequence());
+            }
 
-            BrowserStream<ReqT> browserStream = factory.create(session, responseObserver);
-            browserStream.onMessageReceived(request, streamData);
+            final OpenCallObserver<RespT> openCall = responseObserver instanceof ServerCallStreamObserver
+                    ? new OpenCallObserver<>((ServerCallStreamObserver<RespT>) responseObserver)
+                    : null;
+            // the stream retains its own export (if any) as part of construction - see BrowserStream's constructor -
+            // so there is no separate export-creation step here. If that fails, the constructor itself notifies the
+            // marshaller before propagating; there is nothing further to do here, since the stream never exists for
+            // anything else to reach.
+            final BrowserStream<ReqT> browserStream =
+                    factory.create(session, streamData, openCall != null ? openCall : responseObserver);
+            if (openCall != null) {
+                openCall.setStreamOnCancel(browserStream::onCancel);
+            }
+            try {
+                browserStream.onMessageReceived(request, streamData);
+            } catch (final RuntimeException err) {
+                browserStream.onError(err);
+                throw err;
+            }
+        }
 
-            if (!streamData.isHalfClose()) {
-                // if this isn't a half-close, we should export it for later calls - if it is, the client won't send
-                // more messages
-                session.newExport(streamData.getRpcTicket(), "rpcTicket")
-                        // not setting an onError here, failure can only happen if the session ends
-                        .submit(() -> browserStream);
+        /**
+         * Wraps the observer of the call that opened an emulated stream, so that a client abort ends the browser stream
+         * in addition to running whatever cancel handler the underlying service installs.
+         */
+        private static final class OpenCallObserver<RespT> extends ServerCallStreamObserver<RespT> {
+            private final ServerCallStreamObserver<RespT> delegate;
+            /** cancellation is one-shot: a handler registered after it runs at once instead of never */
+            private boolean cancelled;
+            private Runnable serviceOnCancel;
+            private Runnable streamOnCancel;
+
+            private OpenCallObserver(final ServerCallStreamObserver<RespT> delegate) {
+                this.delegate = delegate;
+                delegate.setOnCancelHandler(this::onCancel);
+            }
+
+            private void setStreamOnCancel(final Runnable onCancel) {
+                final boolean runNow;
+                synchronized (this) {
+                    runNow = cancelled;
+                    if (!runNow) {
+                        streamOnCancel = onCancel;
+                    }
+                }
+                if (runNow) {
+                    onCancel.run();
+                }
+            }
+
+            @Override
+            public void setOnCancelHandler(final Runnable onCancelHandler) {
+                final boolean runNow;
+                synchronized (this) {
+                    runNow = cancelled;
+                    if (!runNow) {
+                        serviceOnCancel = onCancelHandler;
+                    }
+                }
+                if (runNow) {
+                    onCancelHandler.run();
+                }
+            }
+
+            private void onCancel() {
+                final Runnable service;
+                final Runnable stream;
+                synchronized (this) {
+                    if (cancelled) {
+                        return;
+                    }
+                    cancelled = true;
+                    service = serviceOnCancel;
+                    stream = streamOnCancel;
+                    serviceOnCancel = null;
+                    streamOnCancel = null;
+                }
+                // the service's handler is arbitrary cleanup code; the stream must end even if that handler throws
+                try {
+                    if (service != null) {
+                        service.run();
+                    }
+                } finally {
+                    if (stream != null) {
+                        stream.run();
+                    }
+                }
+            }
+
+            @Override
+            public void onNext(final RespT value) {
+                delegate.onNext(value);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                delegate.onError(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                delegate.onCompleted();
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return delegate.isCancelled();
+            }
+
+            @Override
+            public void setCompression(final String compression) {
+                delegate.setCompression(compression);
+            }
+
+            @Override
+            public boolean isReady() {
+                return delegate.isReady();
+            }
+
+            @Override
+            public void setOnReadyHandler(final Runnable onReadyHandler) {
+                delegate.setOnReadyHandler(onReadyHandler);
+            }
+
+            @Override
+            public void setOnReadyThreshold(final int numBytes) {
+                delegate.setOnReadyThreshold(numBytes);
+            }
+
+            @Override
+            public void setOnCloseHandler(final Runnable onCloseHandler) {
+                delegate.setOnCloseHandler(onCloseHandler);
+            }
+
+            @Override
+            public void disableAutoInboundFlowControl() {
+                delegate.disableAutoInboundFlowControl();
+            }
+
+            @Override
+            public void request(final int count) {
+                delegate.request(count);
+            }
+
+            @Override
+            public void setMessageCompression(final boolean enable) {
+                delegate.setMessageCompression(enable);
             }
         }
 
@@ -255,6 +398,11 @@ public class GrpcServiceOverrideBuilder {
             if (streamData == null || streamData.getRpcTicket() == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "no x-deephaven-stream headers, cannot handle next request");
+            }
+            if (streamData.getSequence() <= 0) {
+                // sequence 0 is the open request; a next request that claims it could be delivered in its place
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "next request must have a positive sequence, received " + streamData.getSequence());
             }
             final SessionState session = sessionService.getCurrentSession();
 
