@@ -315,6 +315,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     private void cleanup() {
+        barrageMessageReader.close();
         tableHandle.close();
     }
 

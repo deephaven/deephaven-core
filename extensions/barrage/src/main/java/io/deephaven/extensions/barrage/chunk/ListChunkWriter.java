@@ -110,8 +110,24 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
             @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        return getInputStream(context, subset, options, null);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Forwards {@code dictionaryRegistry} to the component writer so that a dictionary-encoded component (a
+     * {@code List<Dictionary<...>>} column) can resolve and register its dictionary state.
+     */
+    @Override
+    public DrainableColumn getInputStream(
+            @NotNull final ChunkWriter.Context context,
+            @Nullable final RowSet subset,
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
         // noinspection unchecked
-        return new ListChunkInputStream((Context) context, subset, options);
+        return new ListChunkInputStream((Context) context, subset, options, dictionaryRegistry);
     }
 
     private class ListChunkInputStream extends BaseChunkInputStream<Context> {
@@ -123,14 +139,15 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
         private ListChunkInputStream(
                 @NotNull final Context context,
                 @Nullable final RowSet mySubset,
-                @NotNull final BarrageOptions options) throws IOException {
+                @NotNull final BarrageOptions options,
+                @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
             super(context, mySubset, options);
 
             final int limit = LongSizedDataStructure.intSize(DEBUG_NAME, options.previewListLengthLimit());
             if ((subset == null || subset.size() == context.size()) && limit == 0) {
                 // we are writing everything
                 myOffsets = null;
-                innerColumn = componentWriter.getInputStream(context.innerContext, null, options);
+                innerColumn = componentWriter.getInputStream(context.innerContext, null, options, dictionaryRegistry);
             } else {
                 if (fixedSizeLength != 0) {
                     myOffsets = null;
@@ -168,7 +185,9 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
                     toUse.close();
                 }
                 try (final RowSet innerSubset = innerSubsetBuilder.build()) {
-                    innerColumn = componentWriter.getInputStream(context.innerContext, innerSubset, options);
+                    innerColumn =
+                            componentWriter.getInputStream(context.innerContext, innerSubset, options,
+                                    dictionaryRegistry);
                 }
             }
         }

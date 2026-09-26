@@ -82,7 +82,24 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
             @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
-        return new RunEndEncodedChunkInputStream(context, subset, options);
+        return new RunEndEncodedChunkInputStream(context, subset, options, null);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Forwards {@code dictionaryRegistry} to the {@code values} child writer so that a dictionary-encoded values child
+     * (yielding a {@code RunEndEncoded<Dictionary<...>>} column) can resolve and register its dictionary state. The
+     * {@code run_ends} child is never dictionary-encoded, so it ignores the registry.
+     */
+    @Override
+    public DrainableColumn getInputStream(
+            @NotNull final ChunkWriter.Context context,
+            @Nullable final RowSet subset,
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
+        return new RunEndEncodedChunkInputStream(context, subset, options, dictionaryRegistry);
     }
 
     private class RunEndEncodedChunkInputStream extends BaseChunkInputStream<ChunkWriter.Context> {
@@ -97,7 +114,8 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         RunEndEncodedChunkInputStream(
                 @NotNull final ChunkWriter.Context context,
                 @Nullable final RowSet mySubset,
-                @NotNull final BarrageOptions options) throws IOException {
+                @NotNull final BarrageOptions options,
+                @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
             super(context, mySubset, options);
 
             final int logicalSize = subset.intSize(DEBUG_NAME);
@@ -109,7 +127,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
                 this.runEndsCtx = runEndsWriter.makeContext(emptyRunEnds, 0);
                 this.valuesCtx = valuesWriter.makeContext(emptyValues, 0);
                 this.runEndsColumn = runEndsWriter.getInputStream(runEndsCtx, null, options);
-                this.valuesColumn = valuesWriter.getInputStream(valuesCtx, null, options);
+                this.valuesColumn = valuesWriter.getInputStream(valuesCtx, null, options, dictionaryRegistry);
                 return;
             }
 
@@ -126,7 +144,8 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
             this.runEndsCtx = runEndsWriter.makeContext(tempRunEnds, 0);
             this.valuesCtx = valuesWriter.makeContext(tempRunValues, 0);
             this.runEndsColumn = runEndsWriter.getInputStream(runEndsCtx, null, options);
-            this.valuesColumn = valuesWriter.getInputStream(valuesCtx, null, options);
+            // Forward the registry so a dictionary-encoded values child (REE<Dictionary<...>>) registers its state.
+            this.valuesColumn = valuesWriter.getInputStream(valuesCtx, null, options, dictionaryRegistry);
         }
 
         @Override
