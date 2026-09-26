@@ -51,6 +51,19 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
         orderedKeys.forAllRowKeys(this::setNull);
     }
 
+    default void setNull(long firstKey, long lastKey) {
+        if (lastKey < firstKey) {
+            return;
+        }
+        // stop at lastKey explicitly, so that a range ending at Long.MAX_VALUE terminates
+        for (long ii = firstKey;; ++ii) {
+            setNull(ii);
+            if (ii == lastKey) {
+                return;
+            }
+        }
+    }
+
     /**
      * Equivalent to {@code ensureCapacity(capacity, true)}.
      */

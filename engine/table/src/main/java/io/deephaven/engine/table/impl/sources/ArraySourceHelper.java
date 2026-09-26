@@ -36,6 +36,13 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      */
     protected transient long ensurePreviousClockCycle = -1;
 
+    /**
+     * Whether {@link #ensureCapacity} last allocated null-filled blocks, rather than blocks of the element type's
+     * default. The few blocks {@link #moveWholeBlocks} must allocate are allocated the same way, so their positions
+     * start from the value their owner expects of newly allocated ones.
+     */
+    private transient boolean freshBlocksNullFilled = true;
+
     ArraySourceHelper(Class<T> type) {
         super(type);
     }
@@ -85,6 +92,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      * This method supports the 'ensureCapacity' method for all of this class' inheritors.
      */
     final void ensureCapacity(final long capacity, UArray[] blocks, UArray[] prevBlocks, boolean nullFilled) {
+        freshBlocksNullFilled = nullFilled;
         // Convert requested capacity to requestedMaxIndex and requestedNumBlocks, but leave early if the requested
         // maxIndex is <= the current maxIndex.
         //
@@ -257,6 +265,175 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     abstract void resetBlocks(UArray[] newBlocks, UArray[] newPrev);
 
     abstract UArray[] getPrevBlocks();
+
+    /**
+     * @return the array of current-value blocks, whose elements may be replaced
+     */
+    abstract UArray[] getBlocks();
+
+    /**
+     * Move whole blocks of values, by moving the blocks themselves rather than their values where possible. Both
+     * positions must be at the start of a block; any partial block at the end of the range is left for the caller.
+     * Source blocks that are not also destinations are left unallocated: the owner of the addresses assigns no values
+     * there without first releasing storage through the end of the capacity, so that {@link #ensureCapacity} allocates
+     * it again. A destination within the capacity whose source never was allocated receives a newly allocated block,
+     * since positions there may be assigned without the capacity changing.
+     *
+     * <p>
+     * When previous values are tracked, each affected block's previous values are first made complete for this cycle: a
+     * block with none recorded yet gives its current array to its previous values, and a block with some recorded has
+     * the rest copied. A destination then receives its source block's array, or a copy of it where that array now holds
+     * previous values, so no array is both a current and a previous block.
+     * </p>
+     *
+     * @param source the first source position, at the start of a block
+     * @param dest the first destination position, at the start of a block
+     * @param length the number of positions to move
+     * @return the number of positions moved, a multiple of the block size
+     */
+    final long moveWholeBlocks(final long source, final long dest, final long length) {
+        final int blockCount = (int) (length >> LOG_BLOCK_SIZE);
+        if (blockCount == 0 || source == dest) {
+            return 0;
+        }
+        final int sourceBlock = (int) (source >> LOG_BLOCK_SIZE);
+        final int destBlock = (int) (dest >> LOG_BLOCK_SIZE);
+        // blocks at or past this one have never been allocated; their positions hold no values
+        final int allocatedBlocks = (int) ((maxIndex + 1) >> LOG_BLOCK_SIZE);
+        final UArray[] blocks = getBlocks();
+        final boolean down = destBlock < sourceBlock;
+        if (prevFlusher == null) {
+            // move blocks in the order that never overwrites a block still to be moved
+            for (int step = 0; step < blockCount; ++step) {
+                final int offset = down ? step : blockCount - 1 - step;
+                final int from = sourceBlock + offset;
+                final int to = destBlock + offset;
+                if (to < allocatedBlocks) {
+                    blocks[to] = from < allocatedBlocks ? blocks[from] : allocateFreshBlock();
+                }
+            }
+            for (int bi = sourceBlock; bi < Math.min(sourceBlock + blockCount, allocatedBlocks); ++bi) {
+                final boolean isDest = bi >= destBlock && bi < destBlock + blockCount;
+                if (!isDest) {
+                    blocks[bi] = null;
+                }
+            }
+            return (long) blockCount << LOG_BLOCK_SIZE;
+        }
+
+        prevFlusher.maybeActivate();
+        final int firstBlock = Math.min(sourceBlock, destBlock);
+        final int lastBlock = Math.min(Math.max(sourceBlock, destBlock) + blockCount, allocatedBlocks) - 1;
+        final UArray[] prevBlocks = getPrevBlocks();
+        final SoftRecycler<UArray> recycler = getRecycler();
+        // the current values before the move, for each affected block, and whether that array now holds previous values
+        final Object[] oldCurrent = new Object[Math.max(0, lastBlock - firstBlock + 1)];
+        final boolean[] givenToPrevious = new boolean[oldCurrent.length];
+        for (int bi = firstBlock; bi <= lastBlock; ++bi) {
+            final UArray current = blocks[bi];
+            if (current == null) {
+                // a released block holds no live values, so it has no previous values to keep
+                continue;
+            }
+            if (prevBlocks[bi] == null) {
+                prevBlocks[bi] = current;
+                final long[] inUse = inUseRecycler.borrowItem();
+                Arrays.fill(inUse, -1L);
+                prevInUse[bi] = inUse;
+                if (prevAllocated == null) {
+                    prevAllocated = new IntArrayList();
+                }
+                prevAllocated.add(bi);
+                givenToPrevious[bi - firstBlock] = true;
+            } else {
+                completePrevious(current, prevBlocks[bi], prevInUse[bi]);
+            }
+            oldCurrent[bi - firstBlock] = current;
+            blocks[bi] = null;
+        }
+        for (int offset = 0; offset < blockCount; ++offset) {
+            final int from = sourceBlock + offset;
+            final int to = destBlock + offset;
+            if (to >= allocatedBlocks) {
+                continue;
+            }
+            if (from >= allocatedBlocks) {
+                blocks[to] = allocateFreshBlock();
+                continue;
+            }
+            // noinspection unchecked
+            final UArray moved = (UArray) oldCurrent[from - firstBlock];
+            if (moved == null || !givenToPrevious[from - firstBlock]) {
+                // released, so the destination is too; or the previous values have an array of their own
+                blocks[to] = moved;
+                continue;
+            }
+            final UArray copy = recycler.borrowItem();
+            // noinspection SuspiciousSystemArraycopy
+            System.arraycopy(moved, 0, copy, 0, BLOCK_SIZE);
+            blocks[to] = copy;
+        }
+        return (long) blockCount << LOG_BLOCK_SIZE;
+    }
+
+    /**
+     * Allocate the block at {@code blockIndex} if a move left it unallocated, before values are copied into part of it.
+     */
+    final void allocateIfMissing(final int blockIndex) {
+        final UArray[] blocks = getBlocks();
+        if (blockIndex < blocks.length && blocks[blockIndex] == null) {
+            blocks[blockIndex] = allocateFreshBlock();
+        }
+    }
+
+    private UArray allocateFreshBlock() {
+        return freshBlocksNullFilled ? allocateNullFilledBlock(BLOCK_SIZE) : allocateBlock(BLOCK_SIZE);
+    }
+
+    /**
+     * Copy into {@code prev} every value of {@code current} whose previous value has not been recorded this cycle, and
+     * mark the whole block recorded.
+     */
+    private static void completePrevious(final Object current, final Object prev, final long[] inUse) {
+        for (int word = 0; word < inUse.length; ++word) {
+            long missing = ~inUse[word];
+            while (missing != 0) {
+                // copy each run of unrecorded values
+                final int start = Long.numberOfTrailingZeros(missing);
+                final int end = Math.min(Long.SIZE, start + Long.numberOfTrailingZeros(~(missing >>> start)));
+                final int first = (word << LOG_INUSE_BITSET_SIZE) + start;
+                // noinspection SuspiciousSystemArraycopy
+                System.arraycopy(current, first, prev, first, end - start);
+                missing = end >= Long.SIZE ? 0 : missing & (-1L << end);
+            }
+            inUse[word] = -1L;
+        }
+    }
+
+    /**
+     * Drop the current-value storage for a block. Previous-value storage is left for {@link #commitBlocks()}.
+     *
+     * @param blockIndex the block to release
+     */
+    abstract void releaseBlock(int blockIndex);
+
+    @Override
+    public void releaseBlocks(final long firstKey, final long lastKey) {
+        if (firstKey > maxIndex || lastKey < firstKey) {
+            return;
+        }
+        final long firstBlock = (firstKey + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
+        final long allocatedBlocks = (maxIndex + 1) >> LOG_BLOCK_SIZE;
+        // lastKey may be Long.MAX_VALUE, so it is only incremented when it lies within the capacity
+        final long endBlock = lastKey >= maxIndex ? allocatedBlocks : (lastKey + 1) >> LOG_BLOCK_SIZE;
+        for (long bi = firstBlock; bi < endBlock; ++bi) {
+            releaseBlock((int) bi);
+        }
+        if (lastKey >= maxIndex && firstBlock < allocatedBlocks) {
+            // released through the end, so the capacity shrinks and ensureCapacity allocates these blocks again
+            maxIndex = (firstBlock << LOG_BLOCK_SIZE) - 1;
+        }
+    }
 
     abstract SoftRecycler<UArray> getRecycler();
 

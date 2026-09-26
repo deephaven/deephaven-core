@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.snapshot.SnapshotUtils;
@@ -38,7 +39,7 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
     /**
      * Result columns, parallel to {@link #inputColumns} and {@link #outputColumns}.
      */
-    private final Map<String, WritableColumnSource<?>> resultColumns;
+    private final Map<String, ShiftableColumnSource<?>> resultColumns;
     /**
      * <p>
      * Input columns, parallel to {@link #outputColumns} and {@link #resultColumns}.
@@ -69,11 +70,11 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
         numResultColumns = resultPairs.length;
         inputColumns = new ChunkSource.WithPrev[numResultColumns];
         outputColumns = new WritableColumnSource[numResultColumns];
-        final Map<String, WritableColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
+        final Map<String, ShiftableColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
         for (int ci = 0; ci < numResultColumns; ++ci) {
             final MatchPair resultPair = resultPairs[ci];
             final ColumnSource<?> streamSource = blinkTable.getColumnSource(resultPair.rightColumn());
-            final WritableColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
+            final ShiftableColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
                     streamSource.getType(), streamSource.getComponentType());
             resultColumnsMutable.put(resultPair.leftColumn(), resultSource);
             inputColumns[ci] = SnapshotUtils.maybeWrapVector(ReinterpretUtils.maybeConvertToPrimitive(streamSource));
@@ -168,5 +169,25 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
     public final boolean modifyRowKeys(SingletonContext context, LongChunk<? extends RowKeys> rowKeys,
             long destination) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumns.values().forEach(cs -> cs.shift(shiftData));
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        resultColumns.values().forEach(cs -> cs.releaseBlocks(firstOutputPosition, lastOutputPosition));
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultColumns.values().forEach(cs -> cs.setNull(firstOutputPosition, lastOutputPosition));
     }
 }

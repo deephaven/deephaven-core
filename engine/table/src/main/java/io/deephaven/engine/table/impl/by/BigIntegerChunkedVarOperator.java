@@ -7,6 +7,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
@@ -184,5 +185,34 @@ class BigIntegerChunkedVarOperator implements IterativeChunkedAggregationOperato
             sum2Source.startTrackingPrevValues();
             nonNullCounter.startTrackingPrevValues();
         }
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumn.shift(shiftData);
+        sumSource.shift(shiftData);
+        sum2Source.shift(shiftData);
+        nonNullCounter.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        sumSource.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        sum2Source.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        nonNullCounter.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        sumSource.setNull(firstOutputPosition, lastOutputPosition);
+        sum2Source.setNull(firstOutputPosition, lastOutputPosition);
+        nonNullCounter.clear(firstOutputPosition, lastOutputPosition);
     }
 }

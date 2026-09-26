@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
@@ -127,6 +128,8 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         set(key, null);
     }
 
+
+
     @Override
     public void set(long key, T value) {
         final int block = (int) (key >> LOG_BLOCK_SIZE);
@@ -213,6 +216,16 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     @Override
     Object getBlock(int blockIndex) {
         return blocks[blockIndex];
+    }
+
+    @Override
+    void releaseBlock(int blockIndex) {
+        blocks[blockIndex] = null;
+    }
+
+    @Override
+    T[][] getBlocks() {
+        return blocks;
     }
 
     @Override
@@ -639,14 +652,48 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     }
 
     public void move(long source, long dest, long length) {
-        if (prevBlocks != null) {
-            throw new UnsupportedOperationException();
-        }
         if (source == dest) {
             return;
         }
         if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
-            // TODO (#3359): we can move full blocks!
+            final long wholeBlocks = length & ~(long) INDEX_MASK;
+            if (wholeBlocks > 0) {
+                if (dest < source) {
+                    // moving down: the whole blocks first, then the partial block after them
+                    moveWholeBlocks(source, dest, wholeBlocks);
+                    if (wholeBlocks < length) {
+                        allocateIfMissing((int) ((dest + wholeBlocks) >> LOG_BLOCK_SIZE));
+                        move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
+                    }
+                } else {
+                    // moving up: the partial block at the end first, then the whole blocks
+                    if (wholeBlocks < length) {
+                        allocateIfMissing((int) ((dest + wholeBlocks) >> LOG_BLOCK_SIZE));
+                        move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
+                    }
+                    moveWholeBlocks(source, dest, wholeBlocks);
+                }
+                return;
+            }
+        }
+        if (prevBlocks != null) {
+            // This is a slower path that is doing one element at a time, but handles the previous values. We can
+            // eventually do better.
+            if (source < dest && source + length >= dest) {
+                // we need to be careful about overwriting things
+                for (long ii = length - 1; ii >= 0; --ii) {
+                    final long sourceKey = source + ii;
+                    final long destKey = dest + ii;
+                    set(destKey, getUnsafe(sourceKey));
+                }
+            } else {
+                for (long ii = 0; ii < length; ++ii) {
+                    final long sourceKey = source + ii;
+                    final long destKey = dest + ii;
+                    set(destKey, getUnsafe(sourceKey));
+                }
+            }
+            return;
         }
         if (source < dest && source + length >= dest) {
             for (long ii = length - 1; ii >= 0;) {
@@ -682,6 +729,43 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                         toMove);
                 ii += toMove;
             }
+        }
+    }
+
+    public void shift(RowSetShiftData shiftData) {
+        if (shiftData.empty()) {
+            return;
+        }
+        // Ranges are applied in an order in which no range reads the positions an earlier one vacated, though it may
+        // write them, so each range's vacated positions can be cleared as soon as it has moved.
+        shiftData.apply((s, e, d) -> {
+            move(s, s + d, e - s + 1);
+            clearVacated(s, e, d);
+        });
+    }
+
+    /**
+     * Clear the positions a move of {@code first} through {@code last} by {@code delta} left behind, so that they no
+     * longer hold references to the moved objects, or to the objects of states no longer present. Blocks a whole-block
+     * move left unallocated need no clearing.
+     */
+    private void clearVacated(final long first, final long last, final long delta) {
+        final long vacatedFirst = delta < 0 ? Math.max(first, last + delta + 1) : first;
+        final long vacatedLast = Math.min(delta < 0 ? last : Math.min(last, first + delta - 1), maxIndex);
+        for (long blockFirst = vacatedFirst; blockFirst <= vacatedLast;) {
+            final int blockIndex = (int) (blockFirst >> LOG_BLOCK_SIZE);
+            final long blockLast = Math.min(vacatedLast, ((long) blockIndex << LOG_BLOCK_SIZE) + BLOCK_SIZE - 1);
+            if (blocks[blockIndex] != null) {
+                if (prevFlusher != null) {
+                    for (long key = blockFirst; key <= blockLast; ++key) {
+                        set(key, null);
+                    }
+                } else {
+                    Arrays.fill(blocks[blockIndex], (int) (blockFirst & INDEX_MASK), (int) (blockLast & INDEX_MASK) + 1,
+                            null);
+                }
+            }
+            blockFirst = blockLast + 1;
         }
     }
 }

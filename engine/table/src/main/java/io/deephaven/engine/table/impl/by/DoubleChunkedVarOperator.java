@@ -11,6 +11,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
@@ -236,5 +237,33 @@ final class DoubleChunkedVarOperator extends FpChunkedNonNormalCounter implement
             nonNullCounter.startTrackingPrevValues();
             startTrackingPrevFpCounterValues();
         }
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        super.shift(shiftData);
+        resultColumn.shift(shiftData);
+        sumSource.shift(shiftData);
+        sum2Source.shift(shiftData);
+        nonNullCounter.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        super.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        sumSource.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        sum2Source.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        nonNullCounter.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        super.clear(firstOutputPosition, lastOutputPosition);
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        sumSource.setNull(firstOutputPosition, lastOutputPosition);
+        sum2Source.setNull(firstOutputPosition, lastOutputPosition);
+        nonNullCounter.clear(firstOutputPosition, lastOutputPosition);
     }
 }

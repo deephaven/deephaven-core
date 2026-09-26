@@ -49,7 +49,7 @@ import java.util.Collection;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractColumnSource<T>
-        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource,
+        implements FillUnordered<Values>, ShiftableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
     /**
@@ -371,7 +371,7 @@ public abstract class ArrayBackedColumnSource<T>
      * @param <T> the type parameter for the ColumnSource's type
      * @return an in-memory column source of the requested type
      */
-    public static <T> WritableColumnSource<T> getMemoryColumnSource(final long size,
+    public static <T> ShiftableColumnSource<T> getMemoryColumnSource(final long size,
             @NotNull final Class<T> dataType) {
         return getMemoryColumnSource(size, dataType, null);
     }
@@ -390,9 +390,9 @@ public abstract class ArrayBackedColumnSource<T>
      * @param <T> the type parameter for the ColumnSource's type
      * @return an in-memory column source of the requested type
      */
-    public static <T> WritableColumnSource<T> getMemoryColumnSource(final long size,
+    public static <T> ShiftableColumnSource<T> getMemoryColumnSource(final long size,
             @NotNull final Class<T> dataType, @Nullable final Class<?> componentType) {
-        final WritableColumnSource<?> result;
+        final ShiftableColumnSource<?> result;
         if (dataType == byte.class || dataType == Byte.class) {
             result = new ByteArraySource();
         } else if (dataType == char.class || dataType == Character.class) {
@@ -422,7 +422,7 @@ public abstract class ArrayBackedColumnSource<T>
             result.ensureCapacity(size);
         }
         // noinspection unchecked
-        return (WritableColumnSource<T>) result;
+        return (ShiftableColumnSource<T>) result;
     }
 
     /**
@@ -681,5 +681,32 @@ public abstract class ArrayBackedColumnSource<T>
     @Override
     public boolean providesFillUnordered() {
         return true;
+    }
+
+    /**
+     * Null the values for a range of row keys by filling them from a chunk of nulls, one block at a time.
+     *
+     * @param firstKey the first row key to null
+     * @param lastKey the last row key to null, inclusive
+     */
+    @Override
+    public void setNull(final long firstKey, final long lastKey) {
+        // positions past the capacity hold no values, and an unbounded range is limited to the positions that do
+        final long last = Math.min(lastKey, maxIndex);
+        if (last < firstKey) {
+            return;
+        }
+        final int chunkCapacity = (int) Math.min(BLOCK_SIZE - 1, last - firstKey) + 1;
+        try (final FillFromContext fillFromContext = makeFillFromContext(chunkCapacity);
+                final WritableChunk<Values> nullChunk = getChunkType().makeWritableChunk(chunkCapacity);
+                final RowSequence range = RowSequenceFactory.forRange(firstKey, last);
+                final RowSequence.Iterator rangeIterator = range.getRowSequenceIterator()) {
+            nullChunk.fillWithNullValue(0, chunkCapacity);
+            while (rangeIterator.hasMore()) {
+                final RowSequence slice = rangeIterator.getNextRowSequenceWithLength(chunkCapacity);
+                nullChunk.setSize(slice.intSize());
+                fillFromChunk(fillFromContext, nullChunk, slice);
+            }
+        }
     }
 }

@@ -8,6 +8,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 
@@ -158,5 +159,25 @@ class RecordingInternalOperator implements IterativeChunkedAggregationOperator {
     @Override
     public SingletonContext makeSingletonContext(final int size) {
         return new Context(size);
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        // nothing to do, because we don't actually have any output
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        // nothing to do, because we don't actually have any output
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        // nothing to do, because we don't actually have any output
     }
 }

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.ColumnSource;
@@ -414,5 +415,40 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
     @Override
     public SingletonContext makeSingletonContext(int size) {
         return new Context(size);
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        normalCount.shift(shiftData);
+        if (nanCount != null) {
+            nanCount.shift(shiftData);
+        }
+        weightedSum.shift(shiftData);
+        resultColumn.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        normalCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        if (nanCount != null) {
+            nanCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
+        weightedSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        normalCount.setNull(firstOutputPosition, lastOutputPosition);
+        if (nanCount != null) {
+            nanCount.setNull(firstOutputPosition, lastOutputPosition);
+        }
+        weightedSum.setNull(firstOutputPosition, lastOutputPosition);
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

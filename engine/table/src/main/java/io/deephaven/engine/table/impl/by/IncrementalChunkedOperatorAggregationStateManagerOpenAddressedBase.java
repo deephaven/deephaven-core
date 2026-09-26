@@ -9,9 +9,12 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
@@ -19,7 +22,6 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.util.QueryConstants;
@@ -430,4 +432,22 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void startTrackingPrevValues() {}
+
+    @Override
+    public boolean canReclaim() {
+        return false;
+    }
+
+    @Override
+    public void removeStates(RowSet removed) {
+        // we never actually delete anything from the output position table
+    }
+
+    @Override
+    public void reclaimFreedRows(TrackingWritableRowSet resultRowset, TableUpdateImpl downstream,
+            MutableInt outputPosition, long maxShiftedStates, IterativeChunkedAggregationOperator[] operators) {
+        // we never actually delete anything, so there is no need to reclaim anything, but we do need to update the
+        // resultRowset
+        resultRowset.update(downstream.added(), downstream.removed());
+    }
 }

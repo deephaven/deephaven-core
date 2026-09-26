@@ -176,6 +176,24 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
                     true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
+        } else if (baseClass
+                .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class)) {
+            configureAggregation(builder);
+            builder.supportTombstones(true);
+            builder.tombstoneStateName("TOMBSTONE_STATE");
+            // must match
+            // IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.REHASH_SLOTS_PER_ENTRY
+            builder.rehashSlotsPerEntry(3);
+            builder.classPrefix("IncrementalAggOpenHasherWithTombstone").packageMiddle("incopenaggts");
+            builder.overflowOrAlternateStateName("alternateOutputPosition");
+            builder.moveMainFull(TypedAggregationFactory::incAggMoveMain);
+            builder.moveMainAlternate(TypedAggregationFactory::incAggMoveMain);
+            builder.alwaysMoveMain(true);
+            builder.addProbe(new HasherConfig.ProbeSpec("probe", "outputPosition", false,
+                    TypedAggregationFactory::probeFound, TypedAggregationFactory::probeMissing));
+
+            builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
+                    true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
         } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticNaturalJoinHasher").packageGroup("naturaljoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -531,6 +549,14 @@ public class TypedHasherFactory {
                     return pregeneratedHasher;
                 }
             } else if (hasherConfig.baseClass
+                    .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenaggts.gen.TypedHashDispatcher
+                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
                     .equals(StaticAsOfJoinStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher =
@@ -858,9 +884,7 @@ public class TypedHasherFactory {
         builder.addStatement("break");
         builder.endControlFlow();
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, "destinationTableLocation",
-                "destinationTableLocation",
-                "firstDestinationTableLocation", "firstDestinationTableLocation");
+        builder.add(wrapAroundCheck("destinationTableLocation", "firstDestinationTableLocation"));
         builder.endControlFlow();
 
         builder.endControlFlow();
@@ -877,17 +901,30 @@ public class TypedHasherFactory {
     private static MethodSpec createRehashInternalPartialMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        // ensure the capacity for everything
-        builder.addStatement("int rehashedEntries = 0");
-        builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
         final String extraParamNames = getExtraMigrateParams(hasherConfig.extraPartialRehashParameters);
         final String deletedParam = hasherConfig.supportTombstones ? ", false" : "";
-
-        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + deletedParam + extraParamNames + "))");
-        builder.addStatement("rehashedEntries++");
-        builder.endControlFlow();
-        builder.endControlFlow();
-        builder.addStatement("return rehashedEntries");
+        if (hasherConfig.rehashSlotsPerEntry > 0) {
+            // bound the slots examined, so that tombstones and empty slots cannot make one call scan the whole table
+            builder.addStatement("final long slotsToExamine = (long) entriesToRehash * $L",
+                    hasherConfig.rehashSlotsPerEntry);
+            builder.addStatement("long examinedSlots = 0");
+            builder.beginControlFlow("while (rehashPointer > 0 && examinedSlots < slotsToExamine)");
+            builder.addStatement("migrateOneLocation(--rehashPointer" + deletedParam + extraParamNames + ")");
+            builder.addStatement("++examinedSlots");
+            builder.endControlFlow();
+            builder.beginControlFlow("if (rehashPointer == 0)");
+            builder.addStatement("return entriesToRehash");
+            builder.endControlFlow();
+            builder.addStatement("return (int) (examinedSlots / $L)", hasherConfig.rehashSlotsPerEntry);
+        } else {
+            builder.addStatement("int rehashedEntries = 0");
+            builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
+            builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + deletedParam + extraParamNames + "))");
+            builder.addStatement("rehashedEntries++");
+            builder.endControlFlow();
+            builder.endControlFlow();
+            builder.addStatement("return rehashedEntries");
+        }
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("rehashInternalPartial")
                 .returns(int.class).addModifiers(Modifier.PROTECTED).addParameter(int.class, "entriesToRehash")
@@ -1191,8 +1228,7 @@ public class TypedHasherFactory {
         } else {
             builder.addStatement("$L = nextTableLocation($L)", tableLocationName, tableLocationName);
         }
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
-                firstTableLocationName, firstTableLocationName);
+        builder.add(wrapAroundCheck(tableLocationName, firstTableLocationName));
         builder.endControlFlow();
         builder.endControlFlow();
     }
@@ -1350,8 +1386,7 @@ public class TypedHasherFactory {
         builder.addStatement("break");
         builder.endControlFlow();
         builder.addStatement("$L = $L($L)", tableLocationName, nextTableLocationName(alternate), tableLocationName);
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
-                firstTableLocationName, firstTableLocationName);
+        builder.add(wrapAroundCheck(tableLocationName, firstTableLocationName));
         builder.endControlFlow();
         if (alternate) {
             builder.endControlFlow();
@@ -1460,4 +1495,18 @@ public class TypedHasherFactory {
                 return Object.class;
         }
     }
+
+    /**
+     * The check, after a probe steps to the next location, that the probe has not come back to where it started, which
+     * the load factor makes impossible. The comparison is inline, so a probe step makes no call; only the failure does.
+     */
+    static CodeBlock wrapAroundCheck(final String locationName, final String firstLocationName) {
+        return CodeBlock.builder()
+                .beginControlFlow("if ($L == $L)", locationName, firstLocationName)
+                .addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
+                        locationName + " wraps around to " + firstLocationName)
+                .endControlFlow()
+                .build();
+    }
+
 }

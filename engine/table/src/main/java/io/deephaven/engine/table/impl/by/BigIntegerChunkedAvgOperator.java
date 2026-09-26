@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
@@ -145,5 +146,31 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
             runningSum.startTrackingPrevValues();
             nonNullCount.startTrackingPrevValues();
         }
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumn.shift(shiftData);
+        runningSum.shift(shiftData);
+        nonNullCount.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        runningSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        runningSum.setNull(firstOutputPosition, lastOutputPosition);
+        nonNullCount.clear(firstOutputPosition, lastOutputPosition);
     }
 }

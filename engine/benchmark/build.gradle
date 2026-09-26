@@ -70,6 +70,8 @@ createJmhTask('jmhRunNaturalJoinIncrementalUpdate', 'NaturalJoinIncrementalUpdat
 createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
 createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
 createJmhTask('jmhRunBy', 'ByBenchmark')
+createJmhTask('jmhRunAggregationBuild', 'AggregationBuildBenchmark')
+createJmhTask('jmhRunAggregationIncremental', 'AggregationIncrementalBenchmark')
 createJmhTask('jmhRunUnion', 'UnionBenchmark', [], '12g')
 createJmhTask('jmhRunBuilder', 'RowSetBuilderBenchmark')
 createJmhTask('jmhRunMatchHistorical',
@@ -83,6 +85,7 @@ createJmhTask('jmhRunRowSetSubsetOf', 'RowSetSubsetOfBench')
 createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
 createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
 createJmhTask('jmhRunRowSetSubsume', 'RowSetSubsumeBench')
+createJmhTask('jmhRunRowSetShiftApply', 'RowSetShiftApplyBench')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->

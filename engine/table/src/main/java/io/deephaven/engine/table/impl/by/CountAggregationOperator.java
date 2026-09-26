@@ -7,6 +7,9 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
@@ -140,5 +143,25 @@ class CountAggregationOperator extends BasicStateChangeRecorder implements Itera
         if (exposesResult()) {
             countColumnSource.startTrackingPrevValues();
         }
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        countColumnSource.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        countColumnSource.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        NonNullCounter.zeroRange(countColumnSource, firstOutputPosition, lastOutputPosition);
     }
 }

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.ColumnSource;
@@ -120,5 +121,25 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator
     @Override
     public boolean requiresRowKeys() {
         return true;
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        redirections.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        redirections.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        redirections.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

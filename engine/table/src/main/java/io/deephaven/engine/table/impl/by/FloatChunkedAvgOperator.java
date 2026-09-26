@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
@@ -190,5 +191,29 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
             nonNullCounter.startTrackingPrevValues();
             startTrackingPrevFpCounterValues();
         }
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        super.shift(shiftData);
+        resultColumn.shift(shiftData);
+        runningSum.shift(shiftData);
+        nonNullCounter.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        super.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        runningSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        nonNullCounter.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        super.clear(firstOutputPosition, lastOutputPosition);
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        runningSum.setNull(firstOutputPosition, lastOutputPosition);
+        nonNullCounter.clear(firstOutputPosition, lastOutputPosition);
     }
 }

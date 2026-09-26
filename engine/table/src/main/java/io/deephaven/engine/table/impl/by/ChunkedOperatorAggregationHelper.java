@@ -29,6 +29,8 @@ import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.IntIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.ShiftableColumnSource;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
@@ -60,6 +62,29 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", false);
     static final boolean HASHED_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
+    public static boolean RECLAIM_STATES =
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.reclaimStates", true);
+    /**
+     * When reclaiming states, whether to release whole blocks of empty states in place ({@code true}) rather than
+     * compacting the result by shifting states into the positions of removed ones ({@code false}).
+     */
+    public static boolean RELEASE_BLOCKS =
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.releaseBlocks", true);
+    /**
+     * When releasing blocks, a block of output positions at least this fraction free is sparse, and runs of adjacent
+     * sparse blocks are collapsed so that their emptied blocks can be released. 1 or more disables collapsing.
+     */
+    public static double COLLAPSE_FREE_FRACTION = Configuration.getInstance()
+            .getDoubleWithDefault("ChunkedOperatorAggregationHelper.collapseFreeFraction", 1.0);
+    /**
+     * When releasing blocks, shift the blocks after released ones down over them, as whole blocks and keeping the
+     * states in order, once the released blocks anywhere in the output positions are at least this fraction of the
+     * positions assigned, so that output positions are reused. Zero shifts for any released block; negative never
+     * shifts. Each cycle moves no more live states than its input rows added, modified, and removed, less those the
+     * collapse moved.
+     */
+    public static double BLOCK_SHIFT_FRACTION = Configuration.getInstance()
+            .getDoubleWithDefault("ChunkedOperatorAggregationHelper.blockShiftFraction", -1.0);
 
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
@@ -68,7 +93,7 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         return aggregation(AggregationControl.DEFAULT,
-                aggregationContextFactory, input, preserveEmpty, initialKeys, groupByColumns);
+                aggregationContextFactory, input, preserveEmpty, initialKeys, true, groupByColumns);
     }
 
     private static void checkGroupByColumns(String context, TableDefinition tableDefinition, String[] keyNames) {
@@ -90,6 +115,7 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final QueryTable input,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
+            final boolean removeUnusedStates,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
         checkGroupByColumns("input table", input.getDefinition(), keyNames);
@@ -128,7 +154,7 @@ public class ChunkedOperatorAggregationHelper {
                     "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                     (usePrev, beforeClockValue) -> {
                         resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
-                                input, dataIndex, preserveEmpty, initialKeys, keyNames, usePrev));
+                                input, dataIndex, preserveEmpty, initialKeys, removeUnusedStates, keyNames, usePrev));
                         return true;
                     });
             return resultHolder.getValue();
@@ -143,6 +169,7 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final BasicDataIndex dataIndex,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
+            boolean removeUnusedStates,
             @NotNull final String[] keyNames,
             final boolean usePrev) {
         if (keyNames.length == 0) {
@@ -188,7 +215,10 @@ public class ChunkedOperatorAggregationHelper {
         final MutableInt outputPosition = new MutableInt();
         final Supplier<OperatorAggregationStateManager> stateManagerSupplier =
                 () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac,
-                        useSymbolTable ? symbolTable : null);
+                        useSymbolTable ? symbolTable : null,
+                        // Preserved empty groups are never removed, so there is nothing to reclaim. Initial groups
+                        // reserve output positions that are not in the result, which compaction does not model.
+                        removeUnusedStates && !preserveEmpty && initialKeys == null);
         final OperatorAggregationStateManager stateManager;
         if (initialKeys == null) {
             stateManager = stateManagerSupplier.get();
@@ -213,8 +243,8 @@ public class ChunkedOperatorAggregationHelper {
 
         // Gather the result key columns
         final ColumnSource[] keyColumnsRaw = new ColumnSource[keyHashTableSources.length];
-        final WritableColumnSource[] keyColumnsCopied =
-                input.isRefreshing() ? new WritableColumnSource[keyHashTableSources.length] : null;
+        final ShiftableColumnSource[] keyColumnsCopied =
+                input.isRefreshing() ? new ShiftableColumnSource[keyHashTableSources.length] : null;
         for (int kci = 0; kci < keyHashTableSources.length; ++kci) {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keySources[kci] != reinterpretedKeySources[kci]) {
@@ -238,6 +268,12 @@ public class ChunkedOperatorAggregationHelper {
                 : initialRowsBuilder.build()).toTracking();
         if (input.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
+            if (removeUnusedStates) {
+                // noinspection DataFlowIssue
+                for (ShiftableColumnSource<?> shiftableColumnSource : keyColumnsCopied) {
+                    shiftableColumnSource.startTrackingPrevValues();
+                }
+            }
         }
 
         // Construct the result table
@@ -251,6 +287,9 @@ public class ChunkedOperatorAggregationHelper {
             final IncrementalOperatorAggregationStateManager incrementalStateManager =
                     (IncrementalOperatorAggregationStateManager) stateManager;
             incrementalStateManager.startTrackingPrevValues();
+            final OutputPositionBlockTracker blockTracker = RELEASE_BLOCKS && incrementalStateManager.canReclaim()
+                    ? new OutputPositionBlockTracker(resultRowSet, outputPosition.get(), COLLAPSE_FREE_FRACTION)
+                    : null;
 
             final boolean isBlink = input.isBlink();
             final TableUpdateListener listener = new BaseTable.ListenerImpl(
@@ -263,6 +302,10 @@ public class ChunkedOperatorAggregationHelper {
 
                 final StateChangeRecorder stateChangeRecorder =
                         preserveEmpty ? null : ac.getStateChangeRecorder();
+                // reused by every update, so that their bitsets are allocated once and grow with the output positions
+                final BitmapRandomBuilder modifiedStatesBuilder = new BitmapRandomBuilder(0);
+                final BitmapRandomBuilder reincarnatedStatesBuilder = new BitmapRandomBuilder(0);
+                final BitmapRandomBuilder emptiedStatesBuilder = new BitmapRandomBuilder(0);
 
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
@@ -272,14 +315,20 @@ public class ChunkedOperatorAggregationHelper {
                     if (upstreamToUse.empty()) {
                         return;
                     }
+
+                    final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
+
                     final TableUpdate downstream;
                     try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
                             reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
                             operatorInputModifiedColumnSets, stateChangeRecorder, upstreamToUse,
-                            outputPosition)) {
+                            outputPosition, modifiedStatesBuilder, reincarnatedStatesBuilder,
+                            emptiedStatesBuilder)) {
                         downstream = kuc.computeDownstreamIndicesAndCopyKeys(input.getRowSet(),
+                                resultRowset,
                                 keyColumnsRaw,
                                 keyColumnsCopied,
+                                blockTracker,
                                 result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
                     }
 
@@ -288,7 +337,13 @@ public class ChunkedOperatorAggregationHelper {
                         return;
                     }
 
-                    result.getRowSet().writableCast().update(downstream.added(), downstream.removed());
+                    if (blockTracker == null && incrementalStateManager.canReclaim()
+                            && resultRowset.lastRowKey() + 1 != outputPosition.get()) {
+                        throw new IllegalStateException(
+                                "nextOutputPosition: " + outputPosition.get() + ", lastRowKey: "
+                                        + resultRowset.lastRowKey());
+                    }
+
                     result.notifyListeners(downstream);
                 }
 
@@ -316,14 +371,25 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final AggregationControl control, @NotNull final QueryTable input,
             @NotNull final ColumnSource<?>[] keySources, @NotNull final ColumnSource<?>[] reinterpretedKeySources,
             @NotNull final AggregationContext ac,
-            @Nullable final Table symbolTableToUse) {
+            @Nullable final Table symbolTableToUse,
+            final boolean removeUnusedStates) {
         final OperatorAggregationStateManager stateManager;
         if (input.isRefreshing()) {
-            stateManager = TypedHasherFactory.make(
-                    IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
-                    reinterpretedKeySources,
-                    keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                    control.getTargetLoadFactor());
+            final boolean canReclaim = RECLAIM_STATES &&
+                    Arrays.stream(ac.operators).allMatch(IterativeChunkedAggregationOperator::canReclaimStates);
+            if (removeUnusedStates && canReclaim) {
+                stateManager = TypedHasherFactory.make(
+                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
+                        reinterpretedKeySources,
+                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            } else {
+                stateManager = TypedHasherFactory.make(
+                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
+                        reinterpretedKeySources,
+                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            }
         } else {
             if (symbolTableToUse != null) {
                 stateManager = new StaticSymbolTableChunkedOperatorAggregationStateManager(reinterpretedKeySources[0],
@@ -370,7 +436,7 @@ public class ChunkedOperatorAggregationHelper {
 
         private final RowSetBuilderRandom reincarnatedStatesBuilder;
         private final RowSetBuilderRandom emptiedStatesBuilder;
-        private final RowSetBuilderRandom modifiedStatesBuilder;
+        private final BitmapRandomBuilder modifiedStatesBuilder;
         private final boolean[] modifiedOperators;
 
         private final SafeCloseableList toClose;
@@ -418,7 +484,10 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final ModifiedColumnSet[] operatorInputUpstreamModifiedColumnSets,
                 @Nullable final StateChangeRecorder stateChangeRecorder,
                 @NotNull final TableUpdate upstream,
-                @NotNull final MutableInt outputPosition) {
+                @NotNull final MutableInt outputPosition,
+                @NotNull final BitmapRandomBuilder modifiedStatesBuilder,
+                @NotNull final BitmapRandomBuilder reincarnatedStatesBuilder,
+                @NotNull final BitmapRandomBuilder emptiedStatesBuilder) {
             this.ac = ac;
             this.incrementalStateManager = incrementalStateManager;
             this.reinterpretedKeySources = reinterpretedKeySources;
@@ -450,14 +519,19 @@ public class ChunkedOperatorAggregationHelper {
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
 
             if (stateChangeRecorder != null) {
-                reincarnatedStatesBuilder = RowSetFactory.builderRandom();
-                emptiedStatesBuilder = RowSetFactory.builderRandom();
+                // Only states that exist when the cycle starts can empty, or come back after emptying; a new state
+                // recorded as reincarnated is past the maximum key and ignored, and is added with the new states.
+                reincarnatedStatesBuilder.reset(outputPosition.get());
+                emptiedStatesBuilder.reset(outputPosition.get());
+                this.reincarnatedStatesBuilder = reincarnatedStatesBuilder;
+                this.emptiedStatesBuilder = emptiedStatesBuilder;
                 stateChangeRecorder.startRecording(reincarnatedStatesBuilder::addKey, emptiedStatesBuilder::addKey);
             } else {
-                reincarnatedStatesBuilder = new EmptyRandomBuilder();
-                emptiedStatesBuilder = new EmptyRandomBuilder();
+                this.reincarnatedStatesBuilder = new EmptyRandomBuilder();
+                this.emptiedStatesBuilder = new EmptyRandomBuilder();
             }
-            modifiedStatesBuilder = new BitmapRandomBuilder(outputPosition.get());
+            this.modifiedStatesBuilder = modifiedStatesBuilder;
+            modifiedStatesBuilder.reset(outputPosition.get());
             modifiedOperators = new boolean[ac.size()];
 
             toClose = new SafeCloseableList();
@@ -532,8 +606,10 @@ public class ChunkedOperatorAggregationHelper {
 
         private TableUpdate computeDownstreamIndicesAndCopyKeys(
                 @NotNull final RowSet upstreamIndex,
+                TrackingWritableRowSet resultRowset,
                 @NotNull final ColumnSource<?>[] keyColumnsRaw,
-                @NotNull final WritableColumnSource<?>[] keyColumnsCopied,
+                @NotNull final ShiftableColumnSource<?>[] keyColumnsCopied,
+                @Nullable final OutputPositionBlockTracker blockTracker,
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                 @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
             final int firstStateToAdd = outputPosition.get();
@@ -642,14 +718,21 @@ public class ChunkedOperatorAggregationHelper {
                     downstream.added().writableCast().remove(addedBack);
                     downstream.removed().writableCast().remove(addedBack);
 
+                    if (downstream.removed.isNonempty()) {
+                        // states that are still empty at the end of the cycle leave the hash table now
+                        if (blockTracker == null) {
+                            incrementalStateManager.removeStates(downstream.removed);
+                        } else {
+                            incrementalStateManager.tombstoneStates(downstream.removed);
+                        }
+                    }
+
                     if (newStates.isNonempty()) {
                         downstream.added().writableCast().insert(newStates);
                         copyKeyColumns(keyColumnsRaw, keyColumnsCopied, newStates);
                     }
 
-                    downstream.modified = modifiedStatesBuilder.build();
-                    downstream.modified().writableCast().remove(downstream.added());
-                    downstream.modified().writableCast().remove(downstream.removed());
+                    downstream.modified = modifiedStatesBuilder.build(downstream.added(), downstream.removed());
                 }
 
                 ac.propagateChangesToOperators(downstream, newStates);
@@ -658,7 +741,163 @@ public class ChunkedOperatorAggregationHelper {
             extractDownstreamModifiedColumnSet(downstream, resultModifiedColumnSet, modifiedOperators,
                     updateUpstreamModifiedColumnSet, resultModifiedColumnSetFactories);
 
+            if (blockTracker != null) {
+                resultRowset.remove(downstream.removed());
+                resultRowset.insert(downstream.added());
+                final WritableRowSet releasable =
+                        blockTracker.update(downstream.added(), downstream.removed(), outputPosition.get());
+                // the collapse and the block shift together move no more states than this cycle's input rows
+                final long inputRows =
+                        upstream.added().size() + upstream.modified().size() + upstream.removed().size();
+                final OutputPositionBlockTracker.Collapse collapse =
+                        blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
+                final OutputPositionBlockTracker.BlockShift blockShift = blockTracker.planBlockShift(
+                        BLOCK_SHIFT_FRACTION, outputPosition.get(), inputRows - collapse.movedStates());
+                if (blockShift.shift.nonempty()) {
+                    shiftBlocks(blockTracker, collapse, blockShift, resultRowset, downstream, releasable,
+                            keyColumnsCopied);
+                } else if (collapse.shift.nonempty()) {
+                    incrementalStateManager.shiftOutputPositions(collapse.shift);
+                    // a block that closed this cycle may hold this cycle's new states and still be collapsed
+                    collapse.apply(resultRowset, downstream.added().writableCast(),
+                            downstream.modified().writableCast());
+                    downstream.shifted = collapse.shift;
+                    for (final IterativeChunkedAggregationOperator operator : ac.operators) {
+                        operator.shift(collapse.shift);
+                    }
+                    for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                        keyColumn.shift(collapse.shift);
+                    }
+                }
+                releaseEmptyBlocks(releasable, keyColumnsCopied);
+                return downstream;
+            }
+
+            final int outputPositionsBeforeReclaim = outputPosition.get();
+            incrementalStateManager.reclaimFreedRows(resultRowset, downstream, outputPosition,
+                    upstream.added().size() + upstream.modified().size() + upstream.removed().size(), ac.operators);
+            if (downstream.shifted.nonempty()) {
+                for (ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                    keyColumn.shift(downstream.shifted());
+                }
+            }
+            if (outputPosition.get() < outputPositionsBeforeReclaim) {
+                // release the keys of the positions past the end of the compacted result
+                for (ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                    keyColumn.setNull(outputPosition.get(), outputPositionsBeforeReclaim - 1);
+                }
+            }
+
             return downstream;
+        }
+
+        /**
+         * Shift blocks down over released ones, keeping the states in order, so that output positions are reused. The
+         * moves are by whole blocks, which the array sources make by moving blocks rather than values. A collapse in
+         * the same cycle is composed with the shift, so that downstream sees one shift.
+         */
+        private void shiftBlocks(
+                @NotNull final OutputPositionBlockTracker blockTracker,
+                @NotNull final OutputPositionBlockTracker.Collapse collapse,
+                @NotNull final OutputPositionBlockTracker.BlockShift blockShift,
+                @NotNull final TrackingWritableRowSet resultRowset,
+                @NotNull final TableUpdateImpl downstream,
+                @NotNull final WritableRowSet releasable,
+                @NotNull final ShiftableColumnSource<?>[] keyColumnsCopied) {
+            // downstream sees the collapse and the block shift as one shift, from the positions before either
+            downstream.shifted = blockShift.composedWith(collapse, resultRowset);
+
+            // The storage takes them in turn: the collapse within its runs, then the whole blocks, which move the
+            // collapsed runs too. The composition names only the live states within the runs, so applied to the
+            // storage it would leave the runs' destinations unallocated where they fall on released blocks.
+            if (collapse.shift.nonempty()) {
+                incrementalStateManager.shiftOutputPositions(collapse.shift);
+                for (final IterativeChunkedAggregationOperator operator : ac.operators) {
+                    operator.shift(collapse.shift);
+                }
+                for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                    keyColumn.shift(collapse.shift);
+                }
+                collapse.apply(resultRowset, downstream.added().writableCast(), downstream.modified().writableCast());
+            }
+            final RowSetShiftData shift = blockShift.shift;
+            incrementalStateManager.shiftAllOutputPositions(resultRowset, shift);
+            applyBlockShift(shift, resultRowset);
+            applyBlockShift(shift, downstream.added().writableCast());
+            applyBlockShift(shift, downstream.modified().writableCast());
+            for (final IterativeChunkedAggregationOperator operator : ac.operators) {
+                operator.shift(shift);
+            }
+            for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                keyColumn.shift(shift);
+            }
+
+            // The blocks released this cycle before the first block not moved were passed over, and blocks moved onto
+            // them; the released blocks left in their place, just before that block, are released instead. Nothing at
+            // or after that block moved.
+            releasable.removeRange(0, blockShift.firstUnmovedPosition() - 1);
+            try (final RowSet remaining = blockShift.remainingReleased()) {
+                releasable.insert(remaining);
+            }
+            blockTracker.applyBlockShift(blockShift);
+            outputPosition.subtract(Math.toIntExact(blockShift.reclaimedPositions()));
+        }
+
+        /**
+         * Apply a block shift to a row set, moving each range's keys as a whole: a block shift has few ranges but may
+         * move many scattered keys, so this avoids appending every moved range of keys to a builder, as
+         * {@link RowSetShiftData#apply(WritableRowSet)} does. Each range's keys are taken through a view, which shares
+         * the row set's storage, rather than a subset, which would be compacted only to be inserted again. Every range
+         * moves down, so applying them in order never moves keys onto keys still to be moved.
+         */
+        private void applyBlockShift(@NotNull final RowSetShiftData shift, @NotNull final WritableRowSet rowSet) {
+            for (int ri = 0; ri < shift.size(); ++ri) {
+                final long first = shift.getBeginRange(ri);
+                final long last = shift.getEndRange(ri);
+                final RowSet moving;
+                try (final RowSequence inRange = rowSet.getRowSequenceByKeyRange(first, last)) {
+                    if (inRange.isEmpty()) {
+                        continue;
+                    }
+                    moving = inRange.asRowSet();
+                }
+                try (final RowSet ignored = moving) {
+                    rowSet.removeRange(first, last);
+                    rowSet.insertWithShift(shift.getShiftDelta(ri), moving);
+                }
+            }
+        }
+
+        /**
+         * Release the storage for blocks of output positions whose states have all been removed, once the update cycle
+         * has completed and their values can no longer be read. The hash table is not involved: the states' entries
+         * were removed at the end of the cycle that emptied them.
+         */
+        private void releaseEmptyBlocks(
+                @NotNull final WritableRowSet releasable,
+                @NotNull final ShiftableColumnSource<?>[] keyColumnsCopied) {
+            if (releasable.isEmpty()) {
+                releasable.close();
+                return;
+            }
+            final IterativeChunkedAggregationOperator[] operators = ac.operators;
+            final IncrementalOperatorAggregationStateManager stateManager = incrementalStateManager;
+            ExecutionContext.getContext().getUpdateGraph().addNotification(new TerminalNotification() {
+                @Override
+                public void run() {
+                    try (final RowSet ignored = releasable) {
+                        releasable.forAllRowKeyRanges((first, last) -> {
+                            for (final IterativeChunkedAggregationOperator operator : operators) {
+                                operator.releaseBlocks(first, last);
+                            }
+                            for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                                keyColumn.releaseBlocks(first, last);
+                            }
+                            stateManager.releaseOutputPositionBlocks(first, last);
+                        });
+                    }
+                }
+            });
         }
 
         private void doRemoves(@NotNull final RowSequence keyIndicesToRemove) {

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util.freezeby;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -22,7 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 public class FreezeByOperator implements IterativeChunkedAggregationOperator {
-    private final WritableColumnSource<?> resultSource;
+    private final ShiftableColumnSource<?> resultSource;
     private final String name;
     private final FreezeByHelper helper;
 
@@ -133,5 +134,25 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
         void addChunk(Chunk<? extends Values> values, long destination);
 
         void clearIndex(RowSequence removed);
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultSource.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        resultSource.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultSource.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

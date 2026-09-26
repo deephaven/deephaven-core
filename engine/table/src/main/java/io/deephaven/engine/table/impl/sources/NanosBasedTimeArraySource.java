@@ -9,6 +9,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -22,7 +23,8 @@ import java.time.*;
 
 public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
         implements FillUnordered<Values>, WritableColumnSource<TIME_TYPE>,
-        InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertibleTimeSource {
+        InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertibleTimeSource,
+        ShiftableColumnSource<TIME_TYPE> {
 
     protected final LongArraySource nanoSource;
 
@@ -219,4 +221,20 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractColum
         return nanoSource;
     }
     // endregion
+
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        nanoSource.shift(shiftData);
+    }
+
+    @Override
+    public void setNull(final long firstKey, final long lastKey) {
+        nanoSource.setNull(firstKey, lastKey);
+    }
+
+    @Override
+    public void releaseBlocks(final long firstKey, final long lastKey) {
+        nanoSource.releaseBlocks(firstKey, lastKey);
+    }
 }

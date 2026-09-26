@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.util.PrintListener;
@@ -344,8 +345,6 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
             columnInfos.add(columnInfo);
         }
 
-        final MutableBoolean sortResult = new MutableBoolean(false);
-
         final List<Table> lastByInputs = new ArrayList<>();
 
         for (int tt = 0; tt < inputTables.size(); ++tt) {
@@ -373,7 +372,6 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
                         System.out.println("Table " + tt + " lastBy()");
                     }
                 } else {
-                    sortResult.setTrue();
                     out = lastByKeys.sort(lastByKeys.getDefinition().getColumnNames().get(1));
                     if (printTableUpdates()) {
                         System.out.println("Table " + tt + " lastBy().sort()");
@@ -443,11 +441,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
                 TableTools.showWithRowSet(result, 20);
             }
 
-            if (sortResult.booleanValue()) {
-                TstUtils.assertTableEquals(expected.sort(keys), result.sort(keys));
-            } else {
-                TstUtils.assertTableEquals(expected, result);
-            }
+            TstUtils.assertTableEquals(expected.sort(keys), result.sort(keys));
         }
     }
 

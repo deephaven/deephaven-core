@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -21,6 +22,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ShiftableColumnSource;
 import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.SafeCloseable;
@@ -46,7 +48,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     private final FormulaColumn[] formulaColumns;
     private final ChunkSource<Values>[] formulaDataSources;
-    private final WritableColumnSource<?>[] resultColumns;
+    private final ShiftableColumnSource<?>[] resultColumns;
     private final ModifiedColumnSet[] resultColumnModifiedColumnSets;
 
     /**
@@ -85,7 +87,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         formulaColumns = new DhFormulaColumn[resultColumnPairs.length];
         // noinspection unchecked
         formulaDataSources = new ChunkSource[resultColumnPairs.length]; // Not populated until propagateInitialState
-        resultColumns = new WritableColumnSource[resultColumnPairs.length];
+        resultColumns = new ShiftableColumnSource[resultColumnPairs.length];
         resultColumnModifiedColumnSets = new ModifiedColumnSet[resultColumnPairs.length]; // Not populated until
                                                                                           // initializeRefreshing
         final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();
@@ -499,5 +501,27 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     public void updateGroupBy(GroupByChunkedOperator groupBy, boolean delegateToBy) {
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        // the group by operator does not reclaim states, so we cannot either
+        return groupBy.canReclaimStates();
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        // for (ArrayBackedColumnSource<?> resultColumn : resultColumns) {
+        // resultColumn.shift(shiftData);
+        // }
+        throw new UnsupportedOperationException("Formulas cannot reclaim states.");
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        // for (ArrayBackedColumnSource<?> resultColumn : resultColumns) {
+        // resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        // }
+        throw new UnsupportedOperationException("Formulas cannot reclaim states.");
     }
 }

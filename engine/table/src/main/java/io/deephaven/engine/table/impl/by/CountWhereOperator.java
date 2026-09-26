@@ -585,4 +585,24 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
     public SingletonContext makeSingletonContext(int size) {
         return new CountWhereSingletonContext(size, filters);
     }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumnSource.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        resultColumnSource.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultColumnSource.setNull(firstOutputPosition, lastOutputPosition);
+    }
 }

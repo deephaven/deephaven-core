@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -364,4 +365,25 @@ public interface IterativeChunkedAggregationOperator {
      */
     interface SingletonContext extends SafeCloseable {
     }
+
+    /**
+     * Can this operator reclaim states (i.e. does it support shift and clear).
+     * 
+     * @return true if this operator can reclaim states, false otherwise
+     */
+    boolean canReclaimStates();
+
+    void shift(RowSetShiftData shiftData);
+
+    void clear(long firstOutputPosition, long lastOutputPosition);
+
+    /**
+     * Release the storage for every block of output positions that lies entirely within the given range. The positions
+     * belong to states that have been removed and will never be reused; this is called once the update cycle that
+     * removed them has completed, so their values, current or previous, will not be read again.
+     *
+     * @param firstOutputPosition the first output position of the range
+     * @param lastOutputPosition the last output position of the range, inclusive
+     */
+    default void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {}
 }

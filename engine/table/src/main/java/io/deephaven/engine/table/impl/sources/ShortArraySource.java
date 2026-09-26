@@ -12,6 +12,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -194,14 +195,48 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
     }
 
     public void move(long source, long dest, long length) {
-        if (prevBlocks != null) {
-            throw new UnsupportedOperationException();
-        }
         if (source == dest) {
             return;
         }
         if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
-            // TODO (#3359): we can move full blocks!
+            final long wholeBlocks = length & ~(long) INDEX_MASK;
+            if (wholeBlocks > 0) {
+                if (dest < source) {
+                    // moving down: the whole blocks first, then the partial block after them
+                    moveWholeBlocks(source, dest, wholeBlocks);
+                    if (wholeBlocks < length) {
+                        allocateIfMissing((int) ((dest + wholeBlocks) >> LOG_BLOCK_SIZE));
+                        move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
+                    }
+                } else {
+                    // moving up: the partial block at the end first, then the whole blocks
+                    if (wholeBlocks < length) {
+                        allocateIfMissing((int) ((dest + wholeBlocks) >> LOG_BLOCK_SIZE));
+                        move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
+                    }
+                    moveWholeBlocks(source, dest, wholeBlocks);
+                }
+                return;
+            }
+        }
+        if (prevBlocks != null) {
+            // This is a slower path that is doing one element at a time, but handles the previous values.  We can
+            // eventually do better.
+            if (source < dest && source + length >= dest) {
+                // we need to be careful about overwriting things
+                for (long ii = length - 1; ii >= 0; --ii) {
+                    final long sourceKey = source + ii;
+                    final long destKey = dest + ii;
+                    set(destKey, getUnsafe(sourceKey));
+                }
+            } else {
+                for (long ii = 0; ii < length; ++ii) {
+                    final long sourceKey = source + ii;
+                    final long destKey = dest + ii;
+                    set(destKey, getUnsafe(sourceKey));
+                }
+            }
+            return;
         }
         if (source < dest && source + length >= dest) {
             for (long ii = length - 1; ii >= 0; ) {
@@ -269,6 +304,16 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
     @Override
     Object getBlock(int blockIndex) {
         return blocks[blockIndex];
+    }
+
+    @Override
+    void releaseBlock(int blockIndex) {
+        blocks[blockIndex] = null;
+    }
+
+    @Override
+    short[][] getBlocks() {
+        return blocks;
     }
 
     @Override
@@ -796,4 +841,11 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
 
     // region reinterpretation
     // endregion reinterpretation
+
+    public void shift(RowSetShiftData shiftData) {
+        if (shiftData.empty()) {
+            return;
+        }
+        shiftData.apply((s, e, d) -> move(s, s + d, e - s + 1));
+    }
 }

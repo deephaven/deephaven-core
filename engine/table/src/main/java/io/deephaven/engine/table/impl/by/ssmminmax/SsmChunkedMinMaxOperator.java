@@ -7,6 +7,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
@@ -14,6 +15,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
+import io.deephaven.engine.table.impl.sources.ShiftableColumnSource;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 
@@ -28,7 +30,7 @@ import java.util.function.Supplier;
 public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOperator {
     private static final int NODE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("SsmChunkedMinMaxOperator.nodeSize", 4096);
-    private final WritableColumnSource resultColumn;
+    private final ShiftableColumnSource<?> resultColumn;
     private final ObjectArraySource<SegmentedSortedMultiSet> ssms;
     private final String name;
     private final CompactKernel compactAndCountKernel;
@@ -45,7 +47,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         this.name = name;
         this.ssms = new ObjectArraySource<>(SegmentedSortedMultiSet.class);
         // region resultColumn initialization
-        this.resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(0, type);
+        this.resultColumn = (ShiftableColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(0, type);
         // endregion resultColumn initialization
         if (type == Instant.class) {
             chunkType = ChunkType.Long;
@@ -404,13 +406,13 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     private class SecondaryOperator implements IterativeChunkedAggregationOperator {
-        private final WritableColumnSource resultColumn;
+        private final ShiftableColumnSource<?> resultColumn;
         private final String resultName;
         private final SetResult setResult;
 
         private SecondaryOperator(boolean isMinimum, String resultName) {
             // noinspection unchecked
-            this.resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(0,
+            this.resultColumn = (ShiftableColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(0,
                     SsmChunkedMinMaxOperator.this.resultColumn.getType());
             setResult = makeSetResult(chunkType, resultColumn.getType(), isMinimum, resultColumn);
             this.resultName = resultName;
@@ -488,5 +490,48 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         public void startTrackingPrevValues() {
             resultColumn.startTrackingPrevValues();
         }
+
+        @Override
+        public boolean canReclaimStates() {
+            return true;
+        }
+
+        @Override
+        public void shift(RowSetShiftData shiftData) {
+            resultColumn.shift(shiftData);
+        }
+
+        @Override
+        public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+            resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
+
+        @Override
+        public void clear(long firstOutputPosition, long lastOutputPosition) {
+            resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        }
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumn.shift(shiftData);
+        ssms.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        ssms.setNull(firstOutputPosition, lastOutputPosition);
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

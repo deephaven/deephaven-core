@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -366,5 +367,29 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter
     @Override
     public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
         return resultColumn.makeGetContext(chunkCapacity, sharedContext);
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        super.shift(shiftData);
+        resultColumn.shift(shiftData);
+        runningSum.shift(shiftData);
+        nonNullCount.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        super.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        runningSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        super.clear(firstOutputPosition, lastOutputPosition);
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        runningSum.setNull(firstOutputPosition, lastOutputPosition);
+        nonNullCount.clear(firstOutputPosition, lastOutputPosition);
     }
 }

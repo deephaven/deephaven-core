@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
@@ -97,5 +98,17 @@ public class ByteSsmBackedSource extends AbstractColumnSource<ByteVector>
             }
             return true;
         });
+    }
+
+    public void shift(RowSetShiftData shiftData) {
+        underlying.shift(shiftData);
+    }
+
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        underlying.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    public void clear(long firstKey, long lastKey) {
+        underlying.setNull(firstKey, lastKey);
     }
 }
