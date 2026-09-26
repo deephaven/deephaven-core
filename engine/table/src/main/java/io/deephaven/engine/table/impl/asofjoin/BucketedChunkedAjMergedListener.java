@@ -301,10 +301,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                 try (final RowSet rowSetToShift = shiftedRowSet
                                                         .subSetByKeyRange(slotSit.beginRange(), slotSit.endRange())) {
                                                     ChunkedAjUtils.applyOneShift(leftSsa, cycleLeftChunkSize,
-                                                            leftStampSource,
-                                                            leftShiftFillContext, shiftSortContext, stampKeys,
-                                                            stampValues,
-                                                            slotSit, rowSetToShift);
+                                                            leftStampSource, leftShiftFillContext, shiftSortContext,
+                                                            stampKeys, stampValues, slotSit, rowSetToShift);
                                                 }
                                             }
                                         }
@@ -458,15 +456,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                     if (slotSit.polarityReversed()) {
                                                         // a positive shift moves the highest row keys first, so no row
                                                         // is shifted onto a key that has yet to be shifted
-                                                        final long rowsToShift = rowSetToShift.size();
-                                                        for (long endPosition =
-                                                                rowsToShift; endPosition > 0; endPosition -=
-                                                                        cycleRightChunkSize) {
-                                                            try (final RowSet chunkOk =
-                                                                    rowSetToShift.subSetByPositionRange(
-                                                                            Math.max(0,
-                                                                                    endPosition - cycleRightChunkSize),
-                                                                            endPosition)) {
+                                                        long chunkEnd = rowSetToShift.size();
+                                                        while (chunkEnd > 0) {
+                                                            final long chunkStart =
+                                                                    Math.max(0, chunkEnd - cycleRightChunkSize);
+                                                            try (final RowSet chunkOk = rowSetToShift
+                                                                    .subSetByPositionRange(chunkStart, chunkEnd)) {
                                                                 final int shiftSize = chunkOk.intSize();
                                                                 rightStampSource.fillPrevChunk(
                                                                         rightShiftFillContext.ensureCapacity(shiftSize),
@@ -483,6 +478,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                                 rightSsa.applyShiftReverse(rightStampValues.get(),
                                                                         rightStampKeys.get(), slotSit.shiftDelta());
                                                             }
+                                                            chunkEnd = chunkStart;
                                                         }
                                                     } else {
                                                         try (final RowSequence.Iterator shiftIt =
@@ -604,9 +600,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                                         sortKernel.sort(insertedIndices, stampChunk);
 
-                                        final int valuesWithNext =
-                                                rightSsa.insertAndGetNextValue(stampChunk, insertedIndices,
-                                                        nextRightValue);
+                                        final int valuesWithNext = rightSsa.insertAndGetNextValue(stampChunk,
+                                                insertedIndices, nextRightValue);
 
                                         final boolean endsWithLastValue = valuesWithNext != stampChunk.size();
                                         if (endsWithLastValue) {
@@ -628,8 +623,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                         stampCompact.compact(stampChunk, retainStamps);
 
                                         ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices,
-                                                nextRightValue,
-                                                rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                                                nextRightValue, rowRedirection, modifiedBuilder, endsWithLastValue,
+                                                disallowExactMatch);
                                     }
                                 }
                             }
@@ -784,8 +779,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     leftSsa.insert(leftStampValues, leftStampKeys);
 
                                     chunkSsaStamp.processEntry(leftStampValues, leftStampKeys, rightSsa,
-                                            rightKeysForLeft,
-                                            disallowExactMatch);
+                                            rightKeysForLeft, disallowExactMatch);
 
                                     for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
                                         final long leftKey = leftStampKeys.get(ii);
