@@ -79,6 +79,19 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
     void removeAndGetPrior(Chunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> indicesToRemove,
             WritableLongChunk<? extends RowKeys> priorRedirections);
 
+    /**
+     * Insert valuesToInsert into this SSA, and fill nextValue with the value that follows each inserted value in this
+     * SSA after the insertion. The valuesToInsert must be sorted, with ties broken by the row key.
+     * <p>
+     * Only the last inserted value can lack a next value, which happens when it becomes the last value of this SSA; its
+     * position in nextValue is left unchanged.
+     *
+     * @param valuesToInsert the values to insert
+     * @param indicesToInsert the corresponding row keys
+     * @param nextValue the output next values, parallel to valuesToInsert
+     * @return the number of leading positions of nextValue that were filled, which is the size of valuesToInsert, or
+     *         one less when the last inserted value has no next value
+     */
     <T extends Any> int insertAndGetNextValue(Chunk<T> valuesToInsert, LongChunk<? extends RowKeys> indicesToInsert,
             WritableChunk<T> nextValue);
 

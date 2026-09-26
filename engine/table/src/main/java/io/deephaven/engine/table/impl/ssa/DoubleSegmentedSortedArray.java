@@ -72,77 +72,23 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
     @Override
     public <T extends Any> int insertAndGetNextValue(Chunk<T> valuesToInsert,
             LongChunk<? extends RowKeys> rowKeysToInsert, WritableChunk<T> nextValue) {
-        insert(valuesToInsert.asDoubleChunk(), rowKeysToInsert);
-        // TODO: Integrate this into insert, so we do not need to do a double binary search
-        return findNext(valuesToInsert.asDoubleChunk(), rowKeysToInsert, nextValue.asWritableDoubleChunk());
-    }
-
-    /**
-     * Find the next value for each stamp.
-     *
-     * @param stampValues the stamp values to search for (must be sorted, with ties broken by the row key)
-     * @param stampRowKeys the stamp rowKeys to search for (parallel to stampValues)
-     * @param nextValues the next value after a given stamp
-     * @param <T> the type of our chunks
-     * @return how many next values we found (the last value has no next if less than stampValues.size())
-     */
-    private <T extends Any> int findNext(DoubleChunk<T> stampValues, LongChunk<? extends RowKeys> stampRowKeys,
-            WritableDoubleChunk<T> nextValues) {
-        if (stampValues.size() == 0) {
+        final int insertSize = valuesToInsert.size();
+        if (insertSize == 0) {
             return 0;
         }
-
-        Assert.gtZero(leafCount, "leafCount");
-
-        if (leafCount == 1) {
-            return findNextOneLeaf(0, stampValues, stampRowKeys, nextValues, size, directoryValues, directoryRowKeys);
+        final DoubleChunk<T> insertChunk = valuesToInsert.asDoubleChunk();
+        if (leafCount == 0
+                || (leafCount == 1 ? isAfterLeaf(size, directoryValues, insertChunk, directoryRowKeys, rowKeysToInsert)
+                        : isAfterLeaf(leafSizes[leafCount - 1], leafValues[leafCount - 1], insertChunk,
+                                leafRowKeys[leafCount - 1], rowKeysToInsert))) {
+            // every value follows this SSA, so each is followed by the next inserted value and the last by nothing
+            insert(insertChunk, rowKeysToInsert, null);
+            nextValue.asWritableDoubleChunk().copyFromTypedChunk(insertChunk, 1, 0, insertSize - 1);
+            return insertSize - 1;
         }
-
-        int stampsFound = 0;
-        int currentLeaf = 0;
-        while (stampsFound < stampValues.size()) {
-            Assert.lt(currentLeaf, "currentLeaf", leafCount, "leafCount");
-            final double searchValue = stampValues.get(stampsFound);
-            final long searchKey = stampRowKeys.get(stampsFound);
-            // we need to check the last value in the leaf
-            if (leafRowKeys[currentLeaf][leafSizes[currentLeaf] - 1] == searchKey) {
-                if (currentLeaf == leafCount - 1) {
-                    return stampsFound;
-                }
-                nextValues.set(stampsFound, leafValues[currentLeaf + 1][0]);
-                stampsFound++;
-                continue;
-            }
-
-            currentLeaf = bound(directoryValues, directoryRowKeys, searchValue, searchKey, currentLeaf, leafCount);
-            final int found = findNextOneLeaf(stampsFound, stampValues, stampRowKeys, nextValues,
-                    leafSizes[currentLeaf], leafValues[currentLeaf], leafRowKeys[currentLeaf]);
-            stampsFound += found;
-        }
-
-        return stampsFound;
-    }
-
-    private static <T extends Any> int findNextOneLeaf(int offset, DoubleChunk<T> stampValues,
-            LongChunk<? extends RowKeys> stampRowKeys, WritableDoubleChunk<T> nextValues, int leafSize, double[] leafValues,
-            long[] leafKeys) {
-        int lo = 0;
-
-        for (int ii = offset; ii < stampValues.size(); ++ii) {
-            final double searchValue = stampValues.get(ii);
-            final long searchKey = stampRowKeys.get(ii);
-
-            lo = bound(leafValues, leafKeys, searchValue, searchKey, lo, leafSize);
-
-            if (lo < leafSize - 1) {
-                nextValues.set(ii, leafValues[lo + 1]);
-            } else {
-                // if lo == leafSize - 1 it is the caller's responsibility to use the first value of the next leaf
-                return ii - offset;
-            }
-        }
-
-        return stampValues.size() - offset;
+        insert(insertChunk, rowKeysToInsert, WritableDoubleChunk.upcast(nextValue.asWritableDoubleChunk()));
+        // only the last inserted value can lack a next value, when it is the last value of this SSA
+        return getLast() == rowKeysToInsert.get(insertSize - 1) ? insertSize - 1 : insertSize;
     }
 
     /**
@@ -152,6 +98,21 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
      * @param rowKeysToInsert the corresponding rowKeysToInsert
      */
     void insert(DoubleChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeysToInsert) {
+        insert(valuesToInsert, rowKeysToInsert, null);
+    }
+
+    /**
+     * Insert new valuesToInsert into this SSA, optionally recording the value that follows each inserted value. The
+     * valuesToInsert to insert must be sorted.
+     *
+     * @param valuesToInsert the valuesToInsert to insert (must be sorted, with ties broken by the row key)
+     * @param rowKeysToInsert the corresponding rowKeysToInsert
+     * @param nextValues if non-null, receives at each position the value that follows the corresponding inserted value
+     *        in this SSA after the insertion; the position of an inserted value that becomes the last value of this SSA
+     *        is left unchanged. Must be null when this SSA is empty.
+     */
+    private void insert(DoubleChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeysToInsert,
+            @Nullable WritableDoubleChunk<Any> nextValues) {
         final int insertSize = valuesToInsert.size();
         validate();
 
@@ -161,6 +122,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
 
         if (leafCount == 0) {
             // we are creating something brand new
+            Assert.eqNull(nextValues, "nextValues");
             makeLeavesInitial(valuesToInsert, rowKeysToInsert);
         } else if (leafCount == 1) {
             final int newSize = insertSize + size;
@@ -169,13 +131,15 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
                     directoryValues = Arrays.copyOf(directoryValues, Math.min(leafSize, newSize * 2));
                     directoryRowKeys = Arrays.copyOf(directoryRowKeys, Math.min(leafSize, newSize * 2));
                 }
-                insertIntoLeaf(size, directoryValues, valuesToInsert, directoryRowKeys, rowKeysToInsert);
+                insertIntoLeaf(size, directoryValues, valuesToInsert, directoryRowKeys, rowKeysToInsert, nextValues,
+                        0);
                 validateLeaf(directoryValues, directoryRowKeys, insertSize + size);
             } else {
                 // we must split the leaf
                 final int newLeafCount = getDesiredLeafCount(newSize);
                 promoteDirectory(newLeafCount);
-                distributeValues(newSize / newLeafCount + 1, 0, newLeafCount, valuesToInsert, rowKeysToInsert);
+                distributeValues(newSize / newLeafCount + 1, 0, newLeafCount, valuesToInsert, rowKeysToInsert,
+                        nextValues, 0);
                 for (int ii = 0; ii < newLeafCount; ++ii) {
                     validateLeaf(ii);
                 }
@@ -214,10 +178,13 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
                     final int sizeForThisLeaf = count + leafSizes[firstLeaf];
                     if (sizeForThisLeaf <= leafSize) {
                         insertIntoLeaf(leafSizes[firstLeaf], leafValues[firstLeaf], leafValuesInsertChunk,
-                                leafRowKeys[firstLeaf], leafKeysInsertChunk);
+                                leafRowKeys[firstLeaf], leafKeysInsertChunk, nextValues, firstValuesPosition);
                         leafSizes[firstLeaf] += count;
                         directoryValues[firstLeaf] = leafValues[firstLeaf][leafSizes[firstLeaf] - 1];
                         directoryRowKeys[firstLeaf] = leafRowKeys[firstLeaf][leafSizes[firstLeaf] - 1];
+                        if (nextValues != null) {
+                            recordNextLeafFirst(firstLeaf, rowKeysToInsert, lastValueForLeaf, nextValues);
+                        }
                         validateLeafRange(firstLeaf, 1);
                     } else {
                         // else make an appropriate sized hole
@@ -244,9 +211,18 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
                                 offset += copyLimit;
                                 copyLimit = Math.min(leafSize, leafValuesInsertChunk.size() - offset);
                             }
+                            if (nextValues != null) {
+                                // the appended values are consecutive, and the last of them ends this SSA
+                                nextValues.copyFromTypedChunk(valuesToInsert, firstValuesPosition + 1,
+                                        firstValuesPosition, count - 1);
+                            }
                         } else {
                             distributeValues(valuesPerLeaf(sizeForThisLeaf, newLeafCount), firstLeaf, newLeafCount,
-                                    leafValuesInsertChunk, leafKeysInsertChunk);
+                                    leafValuesInsertChunk, leafKeysInsertChunk, nextValues, firstValuesPosition);
+                            if (nextValues != null) {
+                                recordNextLeafFirst(firstLeaf + newLeafCount - 1, rowKeysToInsert, lastValueForLeaf,
+                                        nextValues);
+                            }
                         }
                         validateLeafRange(firstLeaf, newLeafCount);
                     }
@@ -263,6 +239,18 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
 
         size += insertSize;
         validate();
+    }
+
+    /**
+     * If the last value of a leaf is the inserted value at insertPosition, record the first value of the following leaf
+     * as its next value. Values inserted later in the same call all follow the first value of the following leaf, so
+     * that first value is final.
+     */
+    private void recordNextLeafFirst(int leaf, LongChunk<? extends RowKeys> rowKeysToInsert, int insertPosition,
+            WritableDoubleChunk<Any> nextValues) {
+        if (leaf < leafCount - 1 && leafRowKeys[leaf][leafSizes[leaf] - 1] == rowKeysToInsert.get(insertPosition)) {
+            nextValues.set(insertPosition, leafValues[leaf + 1][0]);
+        }
     }
 
     private int getDesiredLeafCount(int newSize) {
@@ -429,8 +417,17 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
         return Math.max(minimumSize, leafSizes.length * 2);
     }
 
+    /**
+     * Merge valuesToInsert with the values of startingLeaf into distributionSlots leaves starting at startingLeaf.
+     *
+     * @param nextValues if non-null, receives at nextOffset plus each position the value that follows the corresponding
+     *        inserted value; the caller records the next value of an inserted value that ends the last slot
+     * @param nextOffset the position in nextValues that corresponds to the first of valuesToInsert
+     */
     private void distributeValues(int targetSize, int startingLeaf, int distributionSlots,
-            DoubleChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeys) {
+            DoubleChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeys,
+            @Nullable WritableDoubleChunk<Any> nextValues, int nextOffset) {
+        final int lastSlot = startingLeaf + distributionSlots - 1;
         final int startingLeafSize = leafSizes[startingLeaf];
         final int totalInsertions = valuesToInsert.size() + startingLeafSize;
         final int shortLeaves = (distributionSlots * targetSize) - totalInsertions;
@@ -441,6 +438,10 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
 
         int insertedValues = 0;
 
+        // the starting leaf keeps its arrays, and is both the source of the leaf values and the lowest slot
+        final double[] sourceValues = leafValues[startingLeaf];
+        final long[] sourceRowKeys = leafRowKeys[startingLeaf];
+
         // we are distributing our values from right to left (i.e. higher slots to lower slots), this way we can keep
         // the values in the starting leaf, and will not overwrite them until they have already been consumed
         for (int workingSlot = startingLeaf + distributionSlots - 1; workingSlot >= startingLeaf; workingSlot--) {
@@ -448,6 +449,8 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
                 leafValues[workingSlot] = new double[leafSize];
                 leafRowKeys[workingSlot] = new long[leafSize];
             }
+            final double[] slotValues = leafValues[workingSlot];
+            final long[] slotRowKeys = leafRowKeys[workingSlot];
 
             final int leafSize;
             if (workingSlot < lastFullSlot) {
@@ -474,22 +477,38 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
                     Assert.geqZero(rposi, "rposi");
                     copyToLeaf(0, leafValues[workingSlot], valuesToInsert, leafRowKeys[workingSlot], rowKeys,
                             rposi - wpos, wpos + 1);
+                    if (nextValues != null) {
+                        nextValues.copyFromTypedArray(slotValues, 1, nextOffset + rposi - wpos, wpos);
+                        if (wpos < leafSize - 1) {
+                            nextValues.set(nextOffset + rposi, slotValues[wpos + 1]);
+                        } else if (workingSlot < lastSlot) {
+                            nextValues.set(nextOffset + rposi, leafValues[workingSlot + 1][0]);
+                        }
+                    }
                     rposi -= (wpos + 1);
                     break;
                 }
 
-                final double vall = leafValues[startingLeaf][rposl];
-                final long idxl = leafRowKeys[startingLeaf][rposl];
+                final double vall = sourceValues[rposl];
+                final long idxl = sourceRowKeys[rposl];
                 final double vali = valuesToInsert.get(rposi);
                 final long idxi = rowKeys.get(rposi);
                 final boolean takeFromLeaf = eq(vall, vali) ? idxl > idxi : gt(vall, vali);
                 if (takeFromLeaf) {
-                    leafValues[workingSlot][wpos] = vall;
-                    leafRowKeys[workingSlot][wpos] = idxl;
+                    slotValues[wpos] = vall;
+                    slotRowKeys[wpos] = idxl;
                     rposl--;
                 } else {
-                    leafValues[workingSlot][wpos] = vali;
-                    leafRowKeys[workingSlot][wpos] = idxi;
+                    slotValues[wpos] = vali;
+                    slotRowKeys[wpos] = idxi;
+                    if (nextValues != null) {
+                        // higher positions and slots are already written; the caller handles the end of lastSlot
+                        if (wpos < leafSize - 1) {
+                            nextValues.set(nextOffset + rposi, slotValues[wpos + 1]);
+                        } else if (workingSlot < lastSlot) {
+                            nextValues.set(nextOffset + rposi, leafValues[workingSlot + 1][0]);
+                        }
+                    }
                     rposi--;
                 }
             }
@@ -546,18 +565,31 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
         }
     }
 
-    // the caller is responsible for updating the directoryValues and directoryRowKeys if required
+    /**
+     * Merge insertValues into a leaf. The caller is responsible for updating the directoryValues and directoryRowKeys
+     * if required.
+     *
+     * @param nextValues if non-null, receives at nextOffset plus each position the value that follows the corresponding
+     *        inserted value within this leaf; the caller records the next value of an inserted value that becomes the
+     *        last value of the leaf
+     * @param nextOffset the position in nextValues that corresponds to the first of insertValues
+     */
     private void insertIntoLeaf(int leafSize, double[] leafValues, DoubleChunk<? extends Any> insertValues,
-            long[] leafRowKeys, LongChunk<? extends RowKeys> insertRowKeys) {
+            long[] leafRowKeys, LongChunk<? extends RowKeys> insertRowKeys,
+            @Nullable WritableDoubleChunk<Any> nextValues, int nextOffset) {
         final int insertSize = insertValues.size();
 
         // if we are at the end; we can just copy to the end
         if (isAfterLeaf(leafSize, leafValues, insertValues, leafRowKeys, insertRowKeys)) {
             copyToLeaf(leafSize, leafValues, insertValues, leafRowKeys, insertRowKeys);
+            if (nextValues != null) {
+                nextValues.copyFromTypedChunk(insertValues, 1, nextOffset, insertSize - 1);
+            }
             return;
         }
 
-        int wpos = leafSize + insertSize - 1;
+        final int lastPosition = leafSize + insertSize - 1;
+        int wpos = lastPosition;
         int rposl = leafSize - 1;
         int rposi = insertSize - 1;
 
@@ -573,6 +605,10 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
             if (rposl < 0) {
                 // we should just copy everything remaining, there is no need to test anymore
                 copyToLeaf(0, leafValues, insertValues, leafRowKeys, insertRowKeys, 0, rposi + 1);
+                if (nextValues != null) {
+                    // a leaf value or an earlier merged insert value occupies position rposi + 1
+                    nextValues.copyFromTypedArray(leafValues, 1, nextOffset, rposi + 1);
+                }
                 break;
             }
 
@@ -593,6 +629,9 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
                 iwins++;
                 leafValues[wpos] = vali;
                 leafRowKeys[wpos] = idxi;
+                if (nextValues != null && wpos < lastPosition) {
+                    nextValues.set(nextOffset + rposi, leafValues[wpos + 1]);
+                }
                 rposi--;
             }
             wpos--;
@@ -626,6 +665,11 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
                     // copy from the insert values into the leaf
                     copyToLeaf(wpos - (gallopLength - 1), leafValues, insertValues, leafRowKeys, insertRowKeys,
                             rposi - (gallopLength - 1), gallopLength);
+                    if (nextValues != null) {
+                        // the insert winning streak has already written position wpos + 1
+                        nextValues.copyFromTypedArray(leafValues, wpos - gallopLength + 2,
+                                nextOffset + rposi - gallopLength + 1, gallopLength);
+                    }
                     rposi -= gallopLength;
                     wpos -= gallopLength;
                 }
@@ -665,6 +709,10 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
                     wpos -= gallopLength;
                 }
 
+                if (nextValues != null) {
+                    // the leaf winning streak has already written position wpos + 1
+                    nextValues.set(nextOffset + rposi, leafValues[wpos + 1]);
+                }
                 leafValues[wpos] = searchValue;
                 leafRowKeys[wpos--] = searchKey;
                 rposi--;
@@ -681,6 +729,18 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
         }
     }
 
+    /**
+     * Determine whether every value to insert sorts after every value in a leaf, so that the insertion appends to it.
+     * Values are ordered by this SSA's comparison, with ties broken by the row key. Only the first value to insert and
+     * the last value of the leaf are compared, because both are sorted.
+     *
+     * @param leafSize the number of values in the leaf, which must be positive
+     * @param leafValues the values of the leaf
+     * @param insertValues the sorted values to insert, which must not be empty
+     * @param leafRowKeys the row keys of the leaf, parallel to leafValues
+     * @param insertRowKeys the row keys to insert, parallel to insertValues
+     * @return true if the first value to insert sorts after the last value of the leaf
+     */
     private boolean isAfterLeaf(int leafSize, double[] leafValues, DoubleChunk<? extends Any> insertValues,
             long[] leafRowKeys, LongChunk<? extends RowKeys> insertRowKeys) {
         final double firstInsertValue = insertValues.get(0);
