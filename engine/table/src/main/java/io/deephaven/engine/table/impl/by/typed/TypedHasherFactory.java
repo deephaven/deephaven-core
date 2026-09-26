@@ -884,9 +884,7 @@ public class TypedHasherFactory {
         builder.addStatement("break");
         builder.endControlFlow();
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, "destinationTableLocation",
-                "destinationTableLocation",
-                "firstDestinationTableLocation", "firstDestinationTableLocation");
+        builder.add(wrapAroundCheck("destinationTableLocation", "firstDestinationTableLocation"));
         builder.endControlFlow();
 
         builder.endControlFlow();
@@ -1230,8 +1228,7 @@ public class TypedHasherFactory {
         } else {
             builder.addStatement("$L = nextTableLocation($L)", tableLocationName, tableLocationName);
         }
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
-                firstTableLocationName, firstTableLocationName);
+        builder.add(wrapAroundCheck(tableLocationName, firstTableLocationName));
         builder.endControlFlow();
         builder.endControlFlow();
     }
@@ -1389,8 +1386,7 @@ public class TypedHasherFactory {
         builder.addStatement("break");
         builder.endControlFlow();
         builder.addStatement("$L = $L($L)", tableLocationName, nextTableLocationName(alternate), tableLocationName);
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
-                firstTableLocationName, firstTableLocationName);
+        builder.add(wrapAroundCheck(tableLocationName, firstTableLocationName));
         builder.endControlFlow();
         if (alternate) {
             builder.endControlFlow();
@@ -1499,4 +1495,18 @@ public class TypedHasherFactory {
                 return Object.class;
         }
     }
+
+    /**
+     * The check, after a probe steps to the next location, that the probe has not come back to where it started, which
+     * the load factor makes impossible. The comparison is inline, so a probe step makes no call; only the failure does.
+     */
+    static CodeBlock wrapAroundCheck(final String locationName, final String firstLocationName) {
+        return CodeBlock.builder()
+                .beginControlFlow("if ($L == $L)", locationName, firstLocationName)
+                .addStatement("throw $T.statementNeverExecuted($S)", Assert.class,
+                        locationName + " wraps around to " + firstLocationName)
+                .endControlFlow()
+                .build();
+    }
+
 }

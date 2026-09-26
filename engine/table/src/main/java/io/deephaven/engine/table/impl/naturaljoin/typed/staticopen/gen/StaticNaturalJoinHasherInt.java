@@ -67,7 +67,9 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -102,7 +104,9 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -131,7 +135,9 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 leftRedirections.set(redirectionOffset++, RowSet.NULL_ROW_KEY);
@@ -168,7 +174,9 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
         }
     }
@@ -207,7 +215,9 @@ final class StaticNaturalJoinHasherInt extends StaticNaturalJoinStateManagerType
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
-                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+                if (destinationTableLocation == firstDestinationTableLocation) {
+                    throw Assert.statementNeverExecuted("destinationTableLocation wraps around to firstDestinationTableLocation");
+                }
             }
         }
     }

@@ -69,7 +69,9 @@ final class StaticAggOpenHasherDoubleDouble extends StaticChunkedOperatorAggrega
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -118,7 +120,9 @@ final class StaticAggOpenHasherDoubleDouble extends StaticChunkedOperatorAggrega
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
-                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+                if (destinationTableLocation == firstDestinationTableLocation) {
+                    throw Assert.statementNeverExecuted("destinationTableLocation wraps around to firstDestinationTableLocation");
+                }
             }
         }
     }
@@ -140,7 +144,9 @@ final class StaticAggOpenHasherDoubleDouble extends StaticChunkedOperatorAggrega
                 return positionValue;
             }
             tableLocation = nextTableLocation(tableLocation);
-            Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+            if (tableLocation == firstTableLocation) {
+                throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+            }
         }
     }
 }
