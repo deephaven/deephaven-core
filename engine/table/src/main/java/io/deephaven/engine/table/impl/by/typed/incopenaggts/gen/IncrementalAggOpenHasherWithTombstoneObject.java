@@ -84,7 +84,7 @@ final class IncrementalAggOpenHasherWithTombstoneObject extends IncrementalChunk
                     }
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = allocateOutputPosition();
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
@@ -94,7 +94,7 @@ final class IncrementalAggOpenHasherWithTombstoneObject extends IncrementalChunk
                         tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
-                        outputPosition = nextOutputPosition.getAndIncrement();
+                        outputPosition = allocateOutputPosition();
                         outputPositions.set(chunkPosition, outputPosition);
                         mainOutputPosition.set(tableLocation, outputPosition);
                         outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);

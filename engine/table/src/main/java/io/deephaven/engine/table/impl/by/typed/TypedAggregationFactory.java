@@ -38,7 +38,12 @@ public class TypedAggregationFactory {
     }
 
     private static void buildInsertCommon(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("outputPosition = nextOutputPosition.getAndIncrement()");
+        if (hasherConfig.supportTombstones) {
+            // output positions are never reused, so the allocation checks for running out
+            builder.addStatement("outputPosition = allocateOutputPosition()");
+        } else {
+            builder.addStatement("outputPosition = nextOutputPosition.getAndIncrement()");
+        }
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
         builder.addStatement("$L.set(tableLocation, outputPosition)", hasherConfig.mainStateName);
     }

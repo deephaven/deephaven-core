@@ -99,7 +99,7 @@ final class IncrementalAggOpenHasherWithTombstoneByteObject extends IncrementalC
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainKeySource1.set(tableLocation, k1);
-                    outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = allocateOutputPosition();
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
@@ -110,7 +110,7 @@ final class IncrementalAggOpenHasherWithTombstoneByteObject extends IncrementalC
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
                         mainKeySource1.set(tableLocation, k1);
-                        outputPosition = nextOutputPosition.getAndIncrement();
+                        outputPosition = allocateOutputPosition();
                         outputPositions.set(chunkPosition, outputPosition);
                         mainOutputPosition.set(tableLocation, outputPosition);
                         outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
