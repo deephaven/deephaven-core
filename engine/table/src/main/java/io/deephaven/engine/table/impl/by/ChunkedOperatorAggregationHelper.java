@@ -763,7 +763,7 @@ public class ChunkedOperatorAggregationHelper {
                         blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
                 final OutputPositionBlockTracker.BlockShift blockShift =
                         blockTracker.planBlockShift(outputPosition.get(), inputRows - collapse.movedStates());
-                if (blockShift.shift.nonempty()) {
+                if (!blockShift.isEmpty()) {
                     shiftBlocks(blockTracker, collapse, blockShift, resultRowset, downstream, releasable,
                             keyColumnsCopied);
                 } else if (collapse.shift.nonempty()) {
@@ -808,7 +808,8 @@ public class ChunkedOperatorAggregationHelper {
         /**
          * Shift blocks down over released ones, keeping the states in order, so that output positions are reused. The
          * moves are by whole blocks, which the array sources make by moving blocks rather than values. A collapse in
-         * the same cycle is composed with the shift, so that downstream sees one shift.
+         * the same cycle is composed with the shift, so that downstream sees one shift. Released blocks at the end are
+         * given back even when no block moves.
          */
         private void shiftBlocks(
                 @NotNull final OutputPositionBlockTracker blockTracker,

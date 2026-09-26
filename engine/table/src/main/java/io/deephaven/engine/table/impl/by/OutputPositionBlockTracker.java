@@ -310,7 +310,8 @@ final class OutputPositionBlockTracker {
      * else at the first released block, each block of live states after it moves down by the number of released blocks
      * passed over, as whole blocks, until the budget of live states to move runs out. The released blocks passed over
      * become one run of released blocks just before the first block not moved, from which the next cycle resumes; if
-     * every block moves, they are given back at the end instead, and the next output position moves down by them.
+     * every block moves, including when no live block follows the released ones, they are given back at the end
+     * instead, and the next output position moves down by them.
      *
      * @param nextOutputPosition the next output position that will be assigned
      * @param budget the most live states to move in this cycle, before any carried from the last one
@@ -347,7 +348,8 @@ final class OutputPositionBlockTracker {
         }
         final boolean reachedEnd = stop == blocksInUse;
         carriedShiftBudget = reachedEnd ? 0 : Math.min(BLOCK_SIZE, available - moved);
-        if (ranges.isEmpty()) {
+        // released blocks with no live block after them are given back without moving anything
+        if (ranges.isEmpty() && !reachedEnd) {
             return BlockShift.NONE;
         }
         return new BlockShift(ranges, firstReleased, stop, gap, reachedEnd, moved);
@@ -426,6 +428,13 @@ final class OutputPositionBlockTracker {
                         -((long) range[2] << LOG_BLOCK_SIZE));
             }
             shift = builder.build();
+        }
+
+        /**
+         * @return whether this plan neither moves blocks nor gives positions back
+         */
+        boolean isEmpty() {
+            return shift.empty() && reclaimedPositions() == 0;
         }
 
         /**

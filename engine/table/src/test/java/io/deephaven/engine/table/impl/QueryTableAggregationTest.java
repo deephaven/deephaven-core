@@ -4776,6 +4776,45 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testBlockShiftGivesBackReleasedBlocksAtEnd() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int size = 3 * blockSize;
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
+                stringCol("Key", windowKeys(0, size)), longCol("x", windowValues(0, size)));
+        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(List.of(AggSum("Sum=x"))),
+                false, null, ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, 0));
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testBlockShiftGivesBackReleasedBlocksAtEnd", aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        // the last two blocks empty, and no live block follows them to move down
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet removed = RowSetFactory.fromRange(blockSize, size - 1);
+            removeRows(table, removed);
+            table.notifyListeners(i(), removed, i());
+        });
+        assertTableEquals(table.aggBy(AggSum("Sum=x"), "Key").sort("Key"), aggregated.sort("Key"));
+
+        // Their positions were given back, so a new group is assigned the position after the first block, rather
+        // than one past the released blocks that a later block shift would move down.
+        final SimpleListener listener = new SimpleListener(aggregated);
+        aggregated.addUpdateListener(listener);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(size), stringCol("Key", "New"), longCol("x", 5));
+            table.notifyListeners(i(size), i(), i());
+        });
+        assertTableEquals(table.aggBy(AggSum("Sum=x"), "Key").sort("Key"), aggregated.sort("Key"));
+        assertEquals(1, listener.getCount());
+        assertEquals(i(blockSize), listener.getUpdate().added());
+        assertTrue(listener.getUpdate().shifted().empty());
+        assertEquals(5, aggregated.getColumnSource("Sum").getLong(blockSize));
+        aggregated.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    @Test
     public void testFirstNonFiniteValueAfterBlocksReleased() {
         // The NaN and infinity counters are created on the first such value, with storage only for the blocks the
         // operator still has, so the first ones arrive after the sliding window has released blocks.
