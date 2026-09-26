@@ -2826,24 +2826,29 @@
             "path": "reference/cheat-sheets/cheat-sheet.md"
           },
           {
-            "label": "Simple table constructors",
-            "path": "reference/cheat-sheets/simple-table-constructors.md"
-          },
-          {
-            "label": "CSV",
-            "path": "reference/cheat-sheets/csv.md"
-          },
-          {
-            "label": "Kafka",
-            "path": "reference/cheat-sheets/kafka.md"
-          },
-          {
-            "label": "Parquet",
-            "path": "reference/cheat-sheets/parquet.md"
-          },
-          {
-            "label": "URI",
-            "path": "reference/cheat-sheets/uri-cheat-sheet.md"
+            "label": "Data import / export",
+            "items": [
+              {
+                "label": "Simple table constructors",
+                "path": "reference/cheat-sheets/simple-table-constructors.md"
+              },
+              {
+                "label": "CSV",
+                "path": "reference/cheat-sheets/csv.md"
+              },
+              {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
+                "label": "Parquet",
+                "path": "reference/cheat-sheets/parquet.md"
+              },
+              {
+                "label": "URI",
+                "path": "reference/cheat-sheets/uri-cheat-sheet.md"
+              }
+            ]
           },
           {
             "label": "Performance tables",
