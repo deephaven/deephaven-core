@@ -1092,44 +1092,6 @@
         ]
       },
       {
-        "label": "Cheat sheets",
-        "collapsible": false,
-        "items": [
-          {
-            "label": "Ultimate cheat sheet",
-            "path": "reference/cheat-sheets/cheat-sheet.md"
-          },
-          {
-            "label": "Simple table constructors",
-            "path": "reference/cheat-sheets/simple-table-constructors.md"
-          },
-          {
-            "label": "CSV",
-            "path": "reference/cheat-sheets/csv.md"
-          },
-          {
-            "label": "Kafka",
-            "path": "reference/cheat-sheets/kafka.md"
-          },
-          {
-            "label": "Parquet",
-            "path": "reference/cheat-sheets/parquet.md"
-          },
-          {
-            "label": "URI",
-            "path": "reference/cheat-sheets/uri-cheat-sheet.md"
-          },
-          {
-            "label": "Performance tables",
-            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
-          },
-          {
-            "label": "Time operations",
-            "path": "reference/cheat-sheets/datetime-cheat-sheet.md"
-          }
-        ]
-      },
-      {
         "label": "Reference",
         "collapsible": false,
         "items": [
@@ -2852,6 +2814,44 @@
                 "path": "reference/groovy/backend-imports.md"
               }
             ]
+          }
+        ]
+      },
+      {
+        "label": "Cheat sheets",
+        "collapsible": false,
+        "items": [
+          {
+            "label": "Ultimate cheat sheet",
+            "path": "reference/cheat-sheets/cheat-sheet.md"
+          },
+          {
+            "label": "Simple table constructors",
+            "path": "reference/cheat-sheets/simple-table-constructors.md"
+          },
+          {
+            "label": "CSV",
+            "path": "reference/cheat-sheets/csv.md"
+          },
+          {
+            "label": "Kafka",
+            "path": "reference/cheat-sheets/kafka.md"
+          },
+          {
+            "label": "Parquet",
+            "path": "reference/cheat-sheets/parquet.md"
+          },
+          {
+            "label": "URI",
+            "path": "reference/cheat-sheets/uri-cheat-sheet.md"
+          },
+          {
+            "label": "Performance tables",
+            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
+          },
+          {
+            "label": "Time operations",
+            "path": "reference/cheat-sheets/datetime-cheat-sheet.md"
           }
         ]
       },
