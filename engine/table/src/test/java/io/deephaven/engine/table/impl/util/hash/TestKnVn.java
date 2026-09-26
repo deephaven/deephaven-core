@@ -89,17 +89,22 @@ public class TestKnVn {
                 "Expected hashtable to reject a 'put' as it got close to being full, but it accepted %d elements", ii),
                 putFailed);
 
-        // resetToNullRetainingCapacity must remember the maximum-capacity sizing, so that the next allocation comes
-        // back at that capacity with its nearly-full rehash threshold and a refill of the entries this generation
-        // absorbed would not trigger another maximum-sized rehash.
-        final long entriesAbsorbed = ii;
+        // Whatever shape the map was born with, it reaches the ceiling wide: the policy widens the array built at the
+        // last doubling, where no further growth is possible and occupancy can only climb to the size limit.
         final HashMapLockFreeKnVn base = (HashMapLockFreeKnVn) ht;
+        assertEquals(Shape.K4V4, base.shape());
+
+        // resetToNullRetainingCapacity must remember the maximum-capacity sizing — and the widened shape — so that the
+        // next allocation comes back at that capacity with its nearly-full rehash threshold and a refill of the
+        // entries this generation absorbed would not trigger another maximum-sized rehash.
+        final long entriesAbsorbed = ii;
         final int capacityAtMax = ht.capacity();
         ht.resetToNullRetainingCapacity();
         assertEquals(0, ht.capacity());
         // resetToNullRetainingCapacity() is not a cursor operation: reset the invalidated binding.
         scalarAccess.reset(ht);
         scalarAccess.put(0, 0);
+        assertEquals(Shape.K4V4, base.shape());
         assertEquals(capacityAtMax, ht.capacity());
         assertTrue(
                 String.format("rehashThreshold (%d) > entriesAbsorbed (%d)", base.rehashThreshold, entriesAbsorbed),

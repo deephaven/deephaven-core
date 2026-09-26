@@ -4,11 +4,10 @@
 package io.deephaven.engine.table.impl.util.hash;
 
 /**
- * The one way to construct a {@link NullableLongLongMap}, and the one place where "which shape?" decisions live, so
- * that owners do not each re-derive them. Callers name a {@link Shape}, never a class: every implementation class in
- * this package is package-private, and the shape a map was built with is an implementation detail behind the interface.
- * (If shape-shifting ever moves inside the maps themselves — a rehash that changes the array's shape — this policy
- * moves with it.)
+ * The one way to construct a {@link NullableLongLongMap}, and the one place where "which shape?" decisions live: a map
+ * consults {@link #shapeForRebuild} whenever it builds an array, so no owner ever decides — or even notices — when a
+ * map widens. Callers name a {@link Shape}, never a class: every implementation class in this package is
+ * package-private, and the shape a map was built with is an implementation detail behind the interface.
  */
 public final class NullableLongLongMaps {
     /**
@@ -77,7 +76,8 @@ public final class NullableLongLongMaps {
      * latency, not just DRAM latency, so the real boundary is near L2, not the last-level cache. At 100K entries
      * (1.6MB) the two strategies measured as parity. The crossover therefore lies between 100K and 2M, and this value
      * sits inside that bracket, bounded below by parity and above by a measured win. Re-sweep before trusting it on
-     * hardware with a materially larger L2.
+     * hardware with a materially larger L2. The same size is where a dense narrow map widens itself into the K4V4 shape
+     * (see {@link #shapeForRebuild}): an array big enough to want the window is built wide.
      */
     public static final int DEFAULT_AMAC_THRESHOLD_ENTRIES = 1 << 20;
 
@@ -106,16 +106,6 @@ public final class NullableLongLongMaps {
      * The floor sits above the measured wash and below the measured win.
      */
     public static final double AMAC_LOAD_FACTOR_FLOOR = 0.8;
-
-    /**
-     * Entry count at and above which a map is within reach of the absolute capacity ceiling (~1.07 billion entries),
-     * where the configured load factor stops mattering: once doubling is no longer possible (past ~537M entries for
-     * K1V1), rehash clamps to the maximum table, the threshold jumps to the nearly-full load factor, and occupancy can
-     * only climb until the hard size limit throws. At 750M entries occupancy is already ~0.70 — the measured
-     * wash-to-win crossover for the windowed shape — and rising, so the upgrade fires here regardless of the configured
-     * load factor.
-     */
-    public static final int DEFAULT_CEILING_CUTOVER_ENTRIES = 750_000_000;
 
     private NullableLongLongMaps() {}
 
@@ -170,42 +160,37 @@ public final class NullableLongLongMaps {
     }
 
     /**
-     * If {@code map} is not already a wide-bucket K4V4-shaped map and is dense — deliberately (grown to
-     * {@code amacThresholdEntries} entries or more, to be rebuilt at a {@code loadFactor} at or above
-     * {@link #AMAC_LOAD_FACTOR_FLOOR}) or forcibly (within reach of the absolute capacity ceiling,
-     * {@link #DEFAULT_CEILING_CUTOVER_ENTRIES}, where the configured load factor no longer matters) — returns a
-     * presized {@link Shape#K4V4} map holding the same mappings and the same noEntryValue; otherwise returns
-     * {@code map} unchanged. This is a LAYOUT change only (four entries per bucket, one cache line, at density); that
-     * map's reads then adapt to the AMAC window by footprint on their own (see {@link #wantWindowedReads}). The
-     * replacement is presized, so the drain performs no rehashes.
-     *
-     * <p>
-     * The caller owns the swap: it must be the map's single writer, it must publish the returned map through the same
-     * field every reader loads per operation (a captured or aliased reference would keep serving the abandoned map),
-     * and it must never mutate the old map again. The old map then stays internally consistent forever, so a concurrent
-     * reader that loaded the field before the swap simply sees the pre-swap state, under the usual clock discipline.
+     * When a map becomes K4V4. A map builds a new array in three situations — its first allocation, every rehash, and a
+     * reset that retains capacity — and each time it asks this function which shape to build. The answer depends on
+     * exactly three things: the shape it has now ({@code current}), its configured load factor, and the entry capacity
+     * the new array will have ({@code newEntryCapacity}, counted after prime rounding), plus whether that array is the
+     * largest its shape can build ({@code atCeiling}). The rule, in order:
+     * <ol>
+     * <li>A K4V4 map stays K4V4. Widening is a one-way door: a K4V4 map's reads adapt to its footprint on their own
+     * (see {@link #wantWindowedReads}), so there is nothing to go back for.</li>
+     * <li>Deliberately dense maps widen: a configured load factor at or above {@link #AMAC_LOAD_FACTOR_FLOOR} and a new
+     * array with room for at least {@link #DEFAULT_AMAC_THRESHOLD_ENTRIES} entries is built K4V4. At load factor 0.9
+     * that is the doubling triggered somewhere between about 470,000 and 940,000 entries, depending on where the
+     * doubling sequence falls; a map presized that large is born K4V4.</li>
+     * <li>Maps at the ceiling widen: a new array that is the largest the current shape can build (see
+     * {@code HashMapLockFreeKnVn.getMaxBucketCapacity}) is built K4V4, because no further growth is possible and
+     * occupancy will climb whatever the load factor says (the rehash threshold moves to the nearly-full load factor).
+     * For the default map, K1V1 at 0.5, that is the doubling triggered at about 268 million entries; it comes out K4V4
+     * with room for about 1.07 billion and holds at most {@code HashMapLockFreeKnVn.SIZE_LIMIT4} entries.</li>
+     * <li>Otherwise the map keeps the shape it was born with.</li>
+     * </ol>
+     * What does not trigger widening: the current occupancy (below the ceiling a map at 0.5 never passes half full; it
+     * doubles instead), the entry count on its own (a K1V1 map at 0.5 with 100 million entries is still K1V1), a load
+     * factor below the floor such as 0.75, and the read pattern. The map asks this wherever it builds an array, where
+     * the rebuild is free; no owner mediates, and the map's identity never changes.
      */
-    public static NullableLongLongMap maybeUpgrade(final NullableLongLongMap map, final double loadFactor,
-            final int amacThresholdEntries) {
-        return maybeUpgrade(map, loadFactor, amacThresholdEntries, DEFAULT_CEILING_CUTOVER_ENTRIES);
-    }
-
-    // Package-visible so tests can exercise the ceiling trigger without building a 750M-entry map.
-    static NullableLongLongMap maybeUpgrade(final NullableLongLongMap map, final double loadFactor,
-            final int amacThresholdEntries, final int ceilingCutoverEntries) {
-        if (!(map instanceof HashMapLockFreeKnVn) || ((HashMapLockFreeKnVn) map).shape() == Shape.K4V4) {
-            return map;
+    static Shape shapeForRebuild(final Shape current, final double loadFactor, final int newEntryCapacity,
+            final boolean atCeiling) {
+        if (current == Shape.K4V4) {
+            return Shape.K4V4;
         }
         final boolean deliberatelyDense =
-                map.size() >= amacThresholdEntries && loadFactor >= AMAC_LOAD_FACTOR_FLOOR;
-        final boolean forcedDense = map.size() >= ceilingCutoverEntries;
-        if (!deliberatelyDense && !forcedDense) {
-            return map;
-        }
-        final NullableLongLongMap upgraded =
-                ofExpectedSize(Shape.K4V4, map.size(), loadFactor, map.defaultReturnValue());
-        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(upgraded);
-        map.forEach(cursor::put);
-        return upgraded;
+                loadFactor >= AMAC_LOAD_FACTOR_FLOOR && newEntryCapacity >= DEFAULT_AMAC_THRESHOLD_ENTRIES;
+        return deliberatelyDense || atCeiling ? Shape.K4V4 : current;
     }
 }

@@ -311,11 +311,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            // Size the map so the initial population completes without any rehashing. K4V4 unconditionally: no
-            // size-based shape choice is needed, because K4V4's reads switch to the windowed (AMAC) strategy by
-            // footprint on their own (see NullableLongLongMaps.wantWindowedReads). Nor is any dynamic layout upgrade
-            // wanted here — getSingle's operator captures the map reference, and swapping a field under a captured
-            // alias would leave the alias serving the abandoned map.
+            // Size the map so the initial population completes without any rehashing. K4V4 outright: the reverse
+            // lookup is built dense (load factor 0.75) and read-heavy, and K4V4's reads switch to the windowed (AMAC)
+            // strategy by footprint on their own (see NullableLongLongMaps.wantWindowedReads).
             final NullableLongLongMap reverseLookup =
                     NullableLongLongMaps.ofExpectedSize(Shape.K4V4, sortedKeys.length, 0.75, -3);
 

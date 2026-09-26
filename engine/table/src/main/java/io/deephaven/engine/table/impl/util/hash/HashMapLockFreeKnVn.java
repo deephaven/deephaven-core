@@ -29,6 +29,10 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * <p>
  * One writer, any number of unsynchronized readers: readers work on a snapshot of the array, the writer publishes a
  * rebuilt array with one volatile store, and every piece of state a reader needs to probe travels inside the array.
+ *
+ * <p>
+ * A map may change shape when it builds an array, and only then: the exact conditions under which it becomes K4V4 are
+ * stated once, on {@link NullableLongLongMaps#shapeForRebuild}.
  */
 final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     static final int DEFAULT_INITIAL_CAPACITY = 10;
@@ -110,14 +114,17 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     // in for "no buckets". Every operation takes one volatile read of this field and works on that snapshot; put
     // re-reads it per element, because a put may rehash.
     private volatile long[] keysAndValues;
-    // The shape the first allocation takes. Until then the sentinel's tag says EMPTY, so this is the only place the
-    // requested width lives; afterwards the array's own tag is authoritative.
-    private final Shape initialShape;
+    // The shape the next allocation starts from: the shape requested at construction, raised by
+    // resetToNullRetainingCapacityImpl() to the width the map had reached (widening is a one-way door, across resets
+    // too) and widened further by the policy if the allocation is dense and big. While the map is empty the
+    // sentinel's tag says EMPTY, so this is the only place the width lives; afterwards the array's own tag is
+    // authoritative.
+    private Shape nextShape;
     private final ReadMode readMode;
 
     HashMapLockFreeKnVn(Shape initialShape, int desiredInitialCapacity, double loadFactor, long noEntryValue,
             ReadMode readMode) {
-        this.initialShape = initialShape;
+        this.nextShape = initialShape;
         this.desiredInitialCapacity = desiredInitialCapacity;
         this.loadFactor = loadFactor;
         this.noEntryValue = noEntryValue;
@@ -216,10 +223,29 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     }
 
     /**
-     * The first allocation, at the requested initial shape; replaces the empty sentinel.
+     * The width an array of {@code desiredEntryCapacity} entries is built at, starting from {@code currentWidth}: the
+     * policy's answer ({@link NullableLongLongMaps#shapeForRebuild}), which never narrows.
+     */
+    private int widthForArray(int currentWidth, int desiredEntryCapacity) {
+        // Judge the capacity the array would actually have at this width — after prime rounding, which can add
+        // several percent — not the request: the same map must reach the same answer whether it is allocating for
+        // the first time or reallocating at a capacity it retained across a reset.
+        final int numBuckets =
+                roundedBucketCapacity(desiredBucketCount(desiredEntryCapacity, currentWidth), currentWidth);
+        // "At the ceiling" means the array being built is the largest possible one: no further growth can follow,
+        // so occupancy will climb to the size limit whatever the load factor says.
+        final boolean atCeiling = numBuckets >= getMaxBucketCapacity(currentWidth);
+        return NullableLongLongMaps
+                .shapeForRebuild(Shape.forBucketWidth(currentWidth), loadFactor, numBuckets * currentWidth, atCeiling)
+                .bucketWidth();
+    }
+
+    /**
+     * The first allocation, replacing the empty sentinel: at the requested initial shape, unless the policy widens a
+     * request that is dense and big from the start.
      */
     private long[] allocateKeysAndValuesArray() {
-        final int entriesPerBucket = initialShape.bucketWidth();
+        final int entriesPerBucket = widthForArray(nextShape.bucketWidth(), desiredInitialCapacity);
         final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
         final int dataLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         final long[] keysAndValues = new long[dataLongs + HEADER_LONGS];
@@ -230,17 +256,22 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     }
 
     /**
-     * Rebuilds the array — at double the bucket count if {@code wantResize}, else the same — and publishes it. The
-     * array says what shape it is, and the rebuilt array keeps that shape.
+     * Rebuilds the array — at double the entry capacity if {@code wantResize}, else the same — and publishes it. The
+     * array says what shape it is; the rebuilt array keeps that shape unless the policy widens it
+     * ({@link NullableLongLongMaps#shapeForRebuild}): a dense map grows into the wide-bucket shape here, where the
+     * rebuild is free, with no owner involved and no change of identity. Capacity is reckoned in entries across the
+     * change, so widening changes the bucket count, not the room.
      */
     void rehash(long[] oldKeysAndValues, boolean wantResize) {
-        final int entriesPerBucket = shapeTagOf(oldKeysAndValues);
+        final int oldEntriesPerBucket = shapeTagOf(oldKeysAndValues);
         final int oldDataLongs = oldKeysAndValues.length - HEADER_LONGS;
+        final int oldEntryCapacity = oldDataLongs / 2;
+        final int desiredEntryCapacity = wantResize ? grownEntryCapacity(oldEntryCapacity) : oldEntryCapacity;
+        final int entriesPerBucket = widthForArray(oldEntriesPerBucket, desiredEntryCapacity);
 
         final int newDataLongs;
-        if (wantResize) {
-            final int oldBucketCapacity = oldDataLongs / (entriesPerBucket * 2);
-            final int desiredNumBuckets = grownBucketCount(oldBucketCapacity, entriesPerBucket);
+        if (wantResize || entriesPerBucket != oldEntriesPerBucket) {
+            final int desiredNumBuckets = desiredBucketCount(desiredEntryCapacity, entriesPerBucket);
             newDataLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         } else {
             newDataLongs = oldDataLongs;
@@ -282,21 +313,28 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     }
 
     /**
-     * The bucket count a growing rehash asks for: double the current one, saturating at the width's maximum bucket
-     * capacity. Doubling in int arithmetic overflowed once the map sat at that maximum — and a growing rehash can be
-     * asked for there, because deleted slots count toward the rehash threshold while only live entries count toward the
-     * size limit — so the prime finder was handed a negative count and answered with a handful of buckets for a billion
-     * entries.
+     * The entry capacity a growing rehash asks for: double the current one, saturating at {@link Integer#MAX_VALUE}
+     * (the request is then rounded to buckets and clamped to the width's maximum by {@link #roundedBucketCapacity}).
+     * Saturating matters: doubling in int arithmetic overflowed once a map sat at its maximum capacity, and a growing
+     * rehash can be asked for there — deleted slots count toward the rehash threshold while only live entries count
+     * toward the size limit.
      */
-    static int grownBucketCount(int oldBucketCapacity, int entriesPerBucket) {
-        return (int) Math.min(getMaxBucketCapacity(entriesPerBucket), 2L * oldBucketCapacity);
+    static int grownEntryCapacity(int oldEntryCapacity) {
+        return (int) Math.min(Integer.MAX_VALUE, 2L * oldEntryCapacity);
+    }
+
+    /**
+     * The bucket count an array is actually built with for a desired one: the next prime the finder offers, clamped to
+     * the width's maximum.
+     */
+    private static int roundedBucketCapacity(int desiredNumBuckets, int entriesPerBucket) {
+        return Math.min(PrimeFinder.nextPrime(desiredNumBuckets), getMaxBucketCapacity(entriesPerBucket));
     }
 
     private int setRehashThresholdAndCalcLongCapacity(int desiredNumBuckets, int entriesPerBucket) {
         // Because we want the number of buckets to be prime
-        final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
         final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
-        final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
+        final int newBucketCapacity = roundedBucketCapacity(desiredNumBuckets, entriesPerBucket);
         Assert.leq((long) newBucketCapacity * entriesPerBucket * 2 + HEADER_LONGS,
                 "(long)newBucketCapacity * entriesPerBucket * 2 + HEADER_LONGS",
                 Integer.MAX_VALUE, "Integer.MAX_VALUE");
@@ -352,8 +390,12 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         if (!isEmptyArray(keysAndValues)) {
             // Remember the capacity, in entries, so that the next allocation lands back at this size directly rather
             // than regrowing from the construction-time capacity through successive rehashes. We remember the size
-            // rather than holding the array itself so that the storage is reclaimable while the map sits empty.
+            // rather than holding the array itself so that the storage is reclaimable while the map sits empty. The
+            // shape comes back too: a map that widened stays wide, so the same entries refill into the same array
+            // (a narrower array of the same entry count would be a different bucket count, and a different capacity
+            // after prime rounding).
             desiredInitialCapacity = Math.max(desiredInitialCapacity, (keysAndValues.length - HEADER_LONGS) / 2);
+            nextShape = Shape.forBucketWidth(shapeTagOf(keysAndValues));
         }
         resetToNullImpl();
     }
@@ -791,7 +833,9 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
      */
     Shape shape() {
         final long[] localKvs = keysAndValues;
-        return isEmptyArray(localKvs) ? initialShape : Shape.forBucketWidth(shapeTagOf(localKvs));
+        return Shape.forBucketWidth(isEmptyArray(localKvs)
+                ? widthForArray(nextShape.bucketWidth(), desiredInitialCapacity)
+                : shapeTagOf(localKvs));
     }
 
     @Override

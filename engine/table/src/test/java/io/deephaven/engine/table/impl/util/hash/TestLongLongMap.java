@@ -42,6 +42,9 @@ public class TestLongLongMap {
     @Parameterized.Parameters(name = "map={0}, cap={1}, load={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> result = new ArrayList<>();
+        // K1V1 and K2V2 are the shapes the maps are BORN with. Where the policy says so — capacity 1M at load factor
+        // 0.9 — the map builds the K4V4 shape from its first allocation, so those cells exercise a wide map and the
+        // narrow kernels are covered by the other cells.
         final Factory[] factories = {
                 referenceFactory,
                 new Factory("K1V1", 1, shaped(Shape.K1V1, ReadMode.ADAPTIVE)),

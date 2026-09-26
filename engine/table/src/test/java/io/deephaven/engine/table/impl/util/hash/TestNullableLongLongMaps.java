@@ -3,12 +3,16 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongUnaryOperator;
 import static org.junit.Assert.*;
 
 public class TestNullableLongLongMaps {
@@ -18,74 +22,187 @@ public class TestNullableLongLongMaps {
     private static final long NO_ENTRY_VALUE = -7;
 
     @Test
-    public void upgradePreservesEverything() {
-        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K2V2, 16, DENSE, NO_ENTRY_VALUE);
-        final Map<Long, Long> reference = new HashMap<>();
-        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
-        for (long key = 0; key < 10_000; ++key) {
-            cursor.put(key, key + 1_000_000);
-            reference.put(key, key + 1_000_000);
+    public void shapeForRebuildNeverNarrowsAndWidensWhenDenseOrAtTheCeiling() {
+        final int big = NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES;
+        for (final Shape narrow : new Shape[] {Shape.K1V1, Shape.K2V2}) {
+            // Dense and big: widen.
+            assertEquals(Shape.K4V4, NullableLongLongMaps.shapeForRebuild(narrow, DENSE, big, false));
+            // Dense but not yet big, or big but sparse: stay.
+            assertEquals(narrow, NullableLongLongMaps.shapeForRebuild(narrow, DENSE, big - 1, false));
+            assertEquals(narrow, NullableLongLongMaps.shapeForRebuild(narrow, SPARSE, big, false));
+            assertEquals(narrow, NullableLongLongMaps.shapeForRebuild(narrow, SPARSE, 16, false));
+            // At the ceiling: widen whatever the load factor says.
+            assertEquals(Shape.K4V4, NullableLongLongMaps.shapeForRebuild(narrow, SPARSE, 16, true));
         }
-        for (long key = 0; key < 10_000; key += 3) {
-            cursor.remove(key);
-            reference.remove(key);
-        }
-        final NullableLongLongMap upgraded = NullableLongLongMaps.maybeUpgrade(map, DENSE, 1);
-        assertEquals(Shape.K4V4, ((HashMapLockFreeKnVn) upgraded).shape());
-        assertEquals(NO_ENTRY_VALUE, upgraded.defaultReturnValue());
-        assertEquals(reference.size(), upgraded.size());
-        cursor.reset(upgraded);
-        for (long key = 0; key < 10_000; ++key) {
-            assertEquals((long) reference.getOrDefault(key, NO_ENTRY_VALUE), cursor.get(key));
-        }
+        // Never narrower.
+        assertEquals(Shape.K4V4, NullableLongLongMaps.shapeForRebuild(Shape.K4V4, SPARSE, 16, false));
+        assertEquals(Shape.K4V4, NullableLongLongMaps.shapeForRebuild(Shape.K4V4, DENSE, big, true));
     }
 
-    @Test
-    public void belowThresholdReturnsTheSameMap() {
-        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, DENSE, NO_ENTRY_VALUE);
-        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
-        for (long key = 0; key < 100; ++key) {
-            cursor.put(key, key);
-        }
-        assertSame(map, NullableLongLongMaps.maybeUpgrade(map, DENSE, 1000));
+    private static long valueFor(final long key) {
+        return key * 3 + 1;
     }
 
+    /**
+     * A narrow map at a dense load factor widens itself at some rehash on the way past the threshold, keeping every
+     * mapping and every tombstone's effect, and keeps working as the wide map it has become.
+     */
     @Test
-    public void sparseLoadFactorReturnsTheSameMap() {
-        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, SPARSE, NO_ENTRY_VALUE);
-        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
-        for (long key = 0; key < 100; ++key) {
-            cursor.put(key, key);
-        }
-        assertSame(map, NullableLongLongMaps.maybeUpgrade(map, SPARSE, 1));
-    }
-
-    @Test
-    public void ceilingTriggerOverridesSparseLoadFactor() {
-        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, SPARSE, NO_ENTRY_VALUE);
-        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
-        for (long key = 0; key < 100; ++key) {
-            cursor.put(key, key + 1);
-        }
-        final NullableLongLongMap upgraded = NullableLongLongMaps.maybeUpgrade(map, SPARSE, 1000, 50);
-        assertEquals(Shape.K4V4, ((HashMapLockFreeKnVn) upgraded).shape());
-        assertEquals(100, upgraded.size());
-        cursor.reset(upgraded);
-        for (long key = 0; key < 100; ++key) {
-            assertEquals(key + 1, cursor.get(key));
-        }
-    }
-
-    @Test
-    public void alreadyWideReturnsTheSameMap() {
-        for (final NullableLongLongMap map : new NullableLongLongMap[] {
-                NullableLongLongMaps.of(Shape.K4V4, 16, DENSE, NO_ENTRY_VALUE),
-                NullableLongLongMaps.of(Shape.K4V4, 16, DENSE, NO_ENTRY_VALUE, ReadMode.WINDOW)}) {
+    public void denseMapsWidenAsTheyGrowAndKeepEverything() {
+        final int n = 1_200_000;
+        for (final Shape born : new Shape[] {Shape.K1V1, Shape.K2V2}) {
+            final NullableLongLongMap map = NullableLongLongMaps.of(born, 16, DENSE, NO_ENTRY_VALUE);
+            final HashMapLockFreeKnVn knVn = (HashMapLockFreeKnVn) map;
+            assertEquals(born, knVn.shape());
             final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
-            for (long key = 0; key < 100; ++key) {
-                cursor.put(key, key);
+            int expectedSize = 0;
+            for (long key = 0; key < n; ++key) {
+                cursor.put(key, valueFor(key));
+                ++expectedSize;
+                if (key % 7 == 3) {
+                    // Tombstones along the way, on both sides of the transition.
+                    cursor.remove(key - 3);
+                    --expectedSize;
+                }
             }
-            assertSame(map, NullableLongLongMaps.maybeUpgrade(map, DENSE, 1));
+            assertEquals(born.name(), Shape.K4V4, knVn.shape());
+            assertEquals(born.name(), expectedSize, map.size());
+            assertEquals(born.name(), 4, HashMapLockFreeKnVn.shapeTagOf(knVn.keysAndValuesSnapshot()));
+            checkContents(map, n, key -> key % 7 == 0 ? NO_ENTRY_VALUE : valueFor(key));
+            // Still a working map afterwards: more puts, more removes.
+            for (long key = n; key < n + 10_000; ++key) {
+                cursor.put(key, valueFor(key));
+            }
+            for (long key = 0; key < 10_000; ++key) {
+                cursor.remove(key);
+            }
+            assertEquals(born.name(), expectedSize + 10_000 - (10_000 - 10_000 / 7 - 1), map.size());
+        }
+    }
+
+    @Test
+    public void sparseMapsStayNarrowAndWideMapsStayWide() {
+        final int n = 1_200_000;
+        for (final Shape born : Shape.values()) {
+            final NullableLongLongMap map = NullableLongLongMaps.of(born, 16, SPARSE, NO_ENTRY_VALUE);
+            final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
+            for (long key = 0; key < n; ++key) {
+                cursor.put(key, valueFor(key));
+            }
+            assertEquals(born.name(), born, ((HashMapLockFreeKnVn) map).shape());
+            assertEquals(born.name(), n, map.size());
+            checkContents(map, n, TestNullableLongLongMaps::valueFor);
+        }
+    }
+
+    @Test
+    public void presizedDenseMapsAreBuiltWide() {
+        final int big = NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES;
+        for (final Shape born : new Shape[] {Shape.K1V1, Shape.K2V2}) {
+            final HashMapLockFreeKnVn wide =
+                    (HashMapLockFreeKnVn) NullableLongLongMaps.of(born, 2 * big, DENSE, NO_ENTRY_VALUE);
+            assertEquals(Shape.K4V4, wide.shape());
+            final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(wide);
+            cursor.put(1, 2);
+            assertEquals(Shape.K4V4, wide.shape());
+            assertEquals(4, HashMapLockFreeKnVn.shapeTagOf(wide.keysAndValuesSnapshot()));
+            // Small, or sparse: as requested.
+            assertEquals(born,
+                    ((HashMapLockFreeKnVn) NullableLongLongMaps.of(born, 1000, DENSE, NO_ENTRY_VALUE)).shape());
+            assertEquals(born,
+                    ((HashMapLockFreeKnVn) NullableLongLongMaps.of(born, 2 * big, SPARSE, NO_ENTRY_VALUE)).shape());
+        }
+    }
+
+    /**
+     * Widening is a one-way door across resets too: a map that has widened comes back wide from a capacity-retaining
+     * reset (the same entries must refill into the same array) and stays wide after a plain reset as well.
+     */
+    @Test
+    public void widenedMapsComeBackWideFromResets() {
+        final int n = 1_200_000;
+        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, DENSE, NO_ENTRY_VALUE);
+        final HashMapLockFreeKnVn knVn = (HashMapLockFreeKnVn) map;
+        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
+        for (long key = 0; key < n; ++key) {
+            cursor.put(key, valueFor(key));
+        }
+        assertEquals(Shape.K4V4, knVn.shape());
+        final int capacityWhenWide = map.capacity();
+        map.resetToNullRetainingCapacity();
+        assertEquals(Shape.K4V4, knVn.shape());
+        cursor.reset(map);
+        cursor.put(1, 2);
+        assertEquals(Shape.K4V4, knVn.shape());
+        assertEquals(capacityWhenWide, map.capacity());
+        map.resetToNull();
+        cursor.reset(map);
+        cursor.put(1, 2);
+        assertEquals(Shape.K4V4, knVn.shape());
+    }
+
+    /**
+     * A reader taking chunked snapshots while a single writer grows a narrow map through the widening rehash: every key
+     * the writer published before a read began is present and correct in the snapshot that read took, whichever shape
+     * that snapshot has. (Keys beyond the published mark are the writer's business, and the reader ignores them.)
+     */
+    @Test
+    public void readersSeeCompleteSnapshotsThroughWidening() throws InterruptedException {
+        final int n = 1_500_000;
+        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, DENSE, NO_ENTRY_VALUE);
+        final HashMapLockFreeKnVn knVn = (HashMapLockFreeKnVn) map;
+        // Keys [0, written) are fully inserted; the volatile write publishes them, the volatile read acquires them.
+        final AtomicInteger written = new AtomicInteger();
+        final Thread writer = new Thread(() -> {
+            final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
+            for (int key = 0; key < n; ++key) {
+                cursor.put(key, valueFor(key));
+                if ((key & 1023) == 1023) {
+                    written.set(key + 1);
+                }
+            }
+            written.set(n);
+        }, "writer");
+        writer.start();
+        final int chunkSize = 4096;
+        final long[] keys = new long[chunkSize];
+        final WritableLongChunk<Any> values = WritableLongChunk.writableChunkWrap(new long[chunkSize]);
+        final Random rng = new Random(20260926);
+        do {
+            final int limit = written.get();
+            if (limit == 0) {
+                continue;
+            }
+            final int begin = rng.nextInt(Math.max(1, limit - chunkSize + 1));
+            final int count = Math.min(chunkSize, limit - begin);
+            for (int ii = 0; ii < count; ++ii) {
+                keys[ii] = begin + ii;
+            }
+            map.get(LongChunk.chunkWrap(keys, 0, count), values);
+            assertEquals(count, values.size());
+            for (int ii = 0; ii < count; ++ii) {
+                assertEquals("key " + keys[ii], valueFor(keys[ii]), values.get(ii));
+            }
+        } while (writer.isAlive());
+        writer.join();
+        assertEquals(Shape.K4V4, knVn.shape());
+        assertEquals(n, map.size());
+        checkContents(map, n, TestNullableLongLongMaps::valueFor);
+    }
+
+    private static void checkContents(final NullableLongLongMap map, final int n, final LongUnaryOperator expected) {
+        final int chunkSize = 4096;
+        final long[] keys = new long[chunkSize];
+        final WritableLongChunk<Any> values = WritableLongChunk.writableChunkWrap(new long[chunkSize]);
+        for (int begin = 0; begin < n; begin += chunkSize) {
+            final int count = Math.min(chunkSize, n - begin);
+            for (int ii = 0; ii < count; ++ii) {
+                keys[ii] = begin + ii;
+            }
+            map.get(LongChunk.chunkWrap(keys, 0, count), values);
+            for (int ii = 0; ii < count; ++ii) {
+                assertEquals("key " + keys[ii], expected.applyAsLong(keys[ii]), values.get(ii));
+            }
         }
     }
 
