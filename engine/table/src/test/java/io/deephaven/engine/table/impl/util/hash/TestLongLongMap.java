@@ -40,7 +40,8 @@ public class TestLongLongMap {
                 new Factory("K1V1", 1, HashMapLockFreeK1V1::new),
                 new Factory("K2V2", 2, HashMapLockFreeK2V2::new),
                 new Factory("K4V4", 4, HashMapLockFreeK4V4::new),
-                new Factory("K4V4WithAMAC", 4, HashMapLockFreeK4V4WithAMAC::new)
+                new Factory("K4V4/WINDOW", 4, (capacity, loadFactor) -> HashMapLockFreeK4V4.of(capacity, loadFactor,
+                        HashMapBase.DEFAULT_NO_ENTRY_VALUE, HashMapLockFreeK4V4.ReadMode.WINDOW))
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};

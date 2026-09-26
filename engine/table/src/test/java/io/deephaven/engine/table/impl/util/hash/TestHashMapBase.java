@@ -66,9 +66,6 @@ public class TestHashMapBase {
                         expected, loadFactor);
                 checkPresizedMapDoesNotRehash("K4V4", HashMapLockFreeK4V4.ofExpectedSize(expected, loadFactor, -1),
                         expected, loadFactor);
-                checkPresizedMapDoesNotRehash("K4V4WithAMAC",
-                        HashMapLockFreeK4V4WithAMAC.ofExpectedSize(expected, loadFactor, -1),
-                        expected, loadFactor);
             }
         }
     }

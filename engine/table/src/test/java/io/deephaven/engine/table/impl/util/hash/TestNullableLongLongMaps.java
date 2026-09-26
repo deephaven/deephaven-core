@@ -78,7 +78,7 @@ public class TestNullableLongLongMaps {
     public void alreadyWideReturnsTheSameMap() {
         for (final NullableLongLongMap map : new NullableLongLongMap[] {
                 HashMapLockFreeK4V4.of(16, DENSE, NO_ENTRY_VALUE),
-                HashMapLockFreeK4V4WithAMAC.of(16, DENSE, NO_ENTRY_VALUE)}) {
+                HashMapLockFreeK4V4.of(16, DENSE, NO_ENTRY_VALUE, HashMapLockFreeK4V4.ReadMode.WINDOW)}) {
             final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
             for (long key = 0; key < 100; ++key) {
                 cursor.put(key, key);

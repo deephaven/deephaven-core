@@ -16,6 +16,7 @@ import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
  */
 public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
+    private final ReadMode readMode;
 
     /**
      * Creates a map presized so that {@code expectedSize} entries at {@code loadFactor} fit without a rehash.
@@ -30,7 +31,30 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
      * find no mapping).
      */
     public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue);
+        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
+    }
+
+    /**
+     * How chunked gets choose between the serial probe loop and the AMAC window. Production code uses
+     * {@link #ADAPTIVE}; the pinned modes exist so the yardstick can price the adaptive gate against each pure
+     * strategy, and so tests can exercise the window kernel at sizes where the gate would choose serial.
+     */
+    public enum ReadMode {
+        /** The footprint gate decides per chunk (see NullableLongLongMaps#wantWindowedReads). */
+        ADAPTIVE,
+        /** Always the AMAC window, regardless of footprint. */
+        WINDOW,
+        /** Always the serial probe loop, regardless of footprint. */
+        SERIAL
+    }
+
+    /**
+     * As {@link #of(int, double, long)}, with the read strategy pinned. For pricing and tests; production code should
+     * let the map adapt.
+     */
+    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue,
+            ReadMode readMode) {
+        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, readMode);
     }
 
     HashMapLockFreeK4V4() {
@@ -46,7 +70,12 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     }
 
     HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
+        this(desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
+    }
+
+    HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue, ReadMode readMode) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
+        this.readMode = readMode;
         this.keysAndValues = null;
     }
 
@@ -130,9 +159,13 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         // overlapping the misses that a cache-resident table simply does not have — service the chunk through the
         // AMAC window; otherwise use the serial loop, which ties or wins when the table is cache-resident. Footprint
         // is a function of the snapshot's own length, so the choice is stable between rehashes and flips exactly when
-        // the array grows past the cache. (Occupancy is deliberately not consulted; see wantWindowedReads.) Reads are
+        // the array grows past the cache. (Occupancy is deliberately not consulted; see wantWindowedReads.) A pinned
+        // ReadMode overrides the gate, for pricing and tests only. Reads are
         // pure, so the windowed path may resolve lookups out of index order, invisibly to the caller.
-        if (NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2)) {
+        final boolean windowed = readMode == ReadMode.ADAPTIVE
+                ? NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2)
+                : readMode == ReadMode.WINDOW;
+        if (windowed) {
             getBatchImpl(localKvs, reciprocalOf(localKvs), keys, result);
         } else {
             final long numBucketsReciprocal = reciprocalOf(localKvs);
