@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
-public abstract class HashMapK1V1 extends HashMapBase {
+abstract class HashMapK1V1 extends HashMapBase {
     HashMapK1V1(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
     }

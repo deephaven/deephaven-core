@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import org.junit.Test;
 
 import java.util.Random;
@@ -60,12 +61,10 @@ public class TestHashMapBase {
         final int[] expectedCounts = {1, 2, 10, 1000, 12345};
         for (final double loadFactor : LOAD_FACTORS) {
             for (final int expected : expectedCounts) {
-                checkPresizedMapDoesNotRehash("K1V1", HashMapLockFreeK1V1.ofExpectedSize(expected, loadFactor, -1),
-                        expected, loadFactor);
-                checkPresizedMapDoesNotRehash("K2V2", HashMapLockFreeK2V2.ofExpectedSize(expected, loadFactor, -1),
-                        expected, loadFactor);
-                checkPresizedMapDoesNotRehash("K4V4", HashMapLockFreeK4V4.ofExpectedSize(expected, loadFactor, -1),
-                        expected, loadFactor);
+                for (final Shape shape : Shape.values()) {
+                    checkPresizedMapDoesNotRehash(shape.name(),
+                            NullableLongLongMaps.ofExpectedSize(shape, expected, loadFactor, -1), expected, loadFactor);
+                }
             }
         }
     }

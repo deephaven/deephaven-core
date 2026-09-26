@@ -7,6 +7,8 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 import org.junit.Test;
@@ -32,16 +34,20 @@ public class TestLongLongMap {
         return new TestNullableLongLongMap(initialCapacity, loadFactor);
     }
 
+    private static BiFunction<Integer, Float, NullableLongLongMap> shaped(final Shape shape, final ReadMode readMode) {
+        return (capacity, loadFactor) -> NullableLongLongMaps.of(shape, capacity, loadFactor,
+                HashMapBase.DEFAULT_NO_ENTRY_VALUE, readMode);
+    }
+
     @Parameterized.Parameters(name = "map={0}, cap={1}, load={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> result = new ArrayList<>();
         final Factory[] factories = {
                 referenceFactory,
-                new Factory("K1V1", 1, HashMapLockFreeK1V1::new),
-                new Factory("K2V2", 2, HashMapLockFreeK2V2::new),
-                new Factory("K4V4", 4, HashMapLockFreeK4V4::new),
-                new Factory("K4V4/WINDOW", 4, (capacity, loadFactor) -> HashMapLockFreeK4V4.of(capacity, loadFactor,
-                        HashMapBase.DEFAULT_NO_ENTRY_VALUE, HashMapLockFreeK4V4.ReadMode.WINDOW))
+                new Factory("K1V1", 1, shaped(Shape.K1V1, ReadMode.ADAPTIVE)),
+                new Factory("K2V2", 2, shaped(Shape.K2V2, ReadMode.ADAPTIVE)),
+                new Factory("K4V4", 4, shaped(Shape.K4V4, ReadMode.ADAPTIVE)),
+                new Factory("K4V4/WINDOW", 4, shaped(Shape.K4V4, ReadMode.WINDOW))
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};

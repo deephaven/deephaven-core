@@ -4,11 +4,70 @@
 package io.deephaven.engine.table.impl.util.hash;
 
 /**
- * Construction and upgrade policy for {@link NullableLongLongMap}s: the one place where "which shape?" decisions live,
- * so that owners do not each re-derive them. (If shape-shifting ever moves inside the maps themselves — a rehash that
- * changes the array's shape — this policy moves with it.)
+ * The one way to construct a {@link NullableLongLongMap}, and the one place where "which shape?" decisions live, so
+ * that owners do not each re-derive them. Callers name a {@link Shape}, never a class: every implementation class in
+ * this package is package-private, and the shape a map was built with is an implementation detail behind the interface.
+ * (If shape-shifting ever moves inside the maps themselves — a rehash that changes the array's shape — this policy
+ * moves with it.)
  */
 public final class NullableLongLongMaps {
+    /**
+     * The bucket width of a map: how many keys (followed by that many values) each hash bucket holds. Wider buckets
+     * mean fewer cache lines per probe chain at density and more bytes per bucket when sparse. K4V4 is one 64-byte
+     * cache line per bucket, and the only shape with an AMAC window kernel (see {@link ReadMode}).
+     */
+    public enum Shape {
+        /** One key and one value per bucket. */
+        K1V1(1),
+        /** Two keys followed by two values per bucket. */
+        K2V2(2),
+        /** Four keys followed by four values per bucket: one cache line. */
+        K4V4(4);
+
+        private final int bucketWidth;
+
+        Shape(final int bucketWidth) {
+            this.bucketWidth = bucketWidth;
+        }
+
+        /**
+         * The number of keys (equally, values) per bucket.
+         */
+        public int bucketWidth() {
+            return bucketWidth;
+        }
+
+        /**
+         * The shape with the given bucket width, for configuration that speaks in widths (1, 2 or 4).
+         *
+         * @throws IllegalArgumentException for any other width
+         */
+        public static Shape forBucketWidth(final int bucketWidth) {
+            for (final Shape shape : values()) {
+                if (shape.bucketWidth == bucketWidth) {
+                    return shape;
+                }
+            }
+            throw new IllegalArgumentException("Unsupported bucket width " + bucketWidth + " (supported: 1, 2, 4)");
+        }
+    }
+
+    /**
+     * How a {@link Shape#K4V4} map's chunked gets choose between the serial probe loop and the AMAC window. Production
+     * code uses {@link #ADAPTIVE}; the pinned modes exist so the yardstick can price the adaptive gate against each
+     * pure strategy, and so tests can exercise the window kernel at sizes where the gate would choose serial. The
+     * narrow shapes have no window kernel: their reads are serial whatever the mode, and {@link #WINDOW} is rejected
+     * for them.
+     */
+    public enum ReadMode {
+        /** The footprint gate decides per chunk (see {@link NullableLongLongMaps#wantWindowedReads}). */
+        ADAPTIVE,
+        /** Always the AMAC window, regardless of footprint. {@link Shape#K4V4} only. */
+        WINDOW,
+        /** Always the serial probe loop, regardless of footprint. */
+        SERIAL
+    }
+
     /**
      * Entry capacity at and above which a K4V4 map services chunked gets through the AMAC window (16 bytes per entry,
      * so 1M entries is a 16MB array). This is a FOOTPRINT threshold. The footprint sweep on a Ryzen 9 9950X3D2 (1MB L2,
@@ -46,6 +105,48 @@ public final class NullableLongLongMaps {
     private NullableLongLongMaps() {}
 
     /**
+     * Creates a map of the given {@link Shape} with the given initial capacity, load factor, and noEntryValue (the
+     * value returned by reads that find no mapping). A K4V4 map's reads adapt by footprint ({@link ReadMode#ADAPTIVE}).
+     */
+    public static NullableLongLongMap of(final Shape shape, final int desiredInitialCapacity, final double loadFactor,
+            final long noEntryValue) {
+        return of(shape, desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
+    }
+
+    /**
+     * As {@link #of(Shape, int, double, long)}, with the read strategy pinned. For pricing and tests; production code
+     * should let the map adapt.
+     *
+     * @throws IllegalArgumentException for {@link ReadMode#WINDOW} with a shape other than {@link Shape#K4V4}
+     */
+    public static NullableLongLongMap of(final Shape shape, final int desiredInitialCapacity, final double loadFactor,
+            final long noEntryValue, final ReadMode readMode) {
+        if (readMode == ReadMode.WINDOW && shape != Shape.K4V4) {
+            throw new IllegalArgumentException("ReadMode.WINDOW requires Shape.K4V4, not " + shape);
+        }
+        switch (shape) {
+            case K1V1:
+                return new HashMapLockFreeK1V1(desiredInitialCapacity, loadFactor, noEntryValue);
+            case K2V2:
+                return new HashMapLockFreeK2V2(desiredInitialCapacity, loadFactor, noEntryValue);
+            case K4V4:
+                return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, readMode);
+            default:
+                throw new IllegalStateException("Unknown shape " + shape);
+        }
+    }
+
+    /**
+     * Creates a map of the given {@link Shape}, presized so that {@code expectedSize} entries at {@code loadFactor} fit
+     * without a rehash.
+     */
+    public static NullableLongLongMap ofExpectedSize(final Shape shape, final int expectedSize,
+            final double loadFactor, final long noEntryValue) {
+        final int desiredInitialCapacity = HashMapBase.capacityForExpectedEntries(expectedSize, loadFactor);
+        return of(shape, desiredInitialCapacity, loadFactor, noEntryValue);
+    }
+
+    /**
      * Should a K4V4-shaped map service chunked gets through the AMAC window right now? Yes exactly when its FOOTPRINT
      * is past the measured crossover — entry capacity at or above {@link #DEFAULT_AMAC_THRESHOLD_ENTRIES}, which the
      * footprint sweep above puts near L2, well inside the last-level cache — because the window's whole job is
@@ -66,7 +167,7 @@ public final class NullableLongLongMaps {
      * {@code amacThresholdEntries} entries or more, to be rebuilt at a {@code loadFactor} at or above
      * {@link #AMAC_LOAD_FACTOR_FLOOR}) or forcibly (within reach of the absolute capacity ceiling,
      * {@link #DEFAULT_CEILING_CUTOVER_ENTRIES}, where the configured load factor no longer matters) — returns a
-     * presized {@link HashMapLockFreeK4V4} holding the same mappings and the same noEntryValue; otherwise returns
+     * presized {@link Shape#K4V4} map holding the same mappings and the same noEntryValue; otherwise returns
      * {@code map} unchanged. This is a LAYOUT change only (four entries per bucket, one cache line, at density); that
      * map's reads then adapt to the AMAC window by footprint on their own (see {@link #wantWindowedReads}). The
      * replacement is presized, so the drain performs no rehashes.
@@ -95,7 +196,7 @@ public final class NullableLongLongMaps {
             return map;
         }
         final NullableLongLongMap upgraded =
-                HashMapLockFreeK4V4.ofExpectedSize(map.size(), loadFactor, map.defaultReturnValue());
+                ofExpectedSize(Shape.K4V4, map.size(), loadFactor, map.defaultReturnValue());
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(upgraded);
         map.forEach(cursor::put);
         return upgraded;

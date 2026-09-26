@@ -6,74 +6,19 @@ package io.deephaven.engine.table.impl.util.hash;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 import java.util.Objects;
 
 /**
  * The K4V4 implementation of {@link NullableLongLongMap}: each hash bucket holds four keys followed by their four
- * values. The concrete type is an implementation detail — callers construct maps through the static factories and hold
- * the interface. The factory is the seam where implementation choice lives (and where, in a future change, a map may
- * choose or change its own shape).
+ * values. The concrete type is an implementation detail — callers construct maps through {@link NullableLongLongMaps}
+ * (naming {@link NullableLongLongMaps.Shape#K4V4}) and hold the interface.
  */
-public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongMapTestAccessors {
+final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
     private final ReadMode readMode;
-
-    /**
-     * Creates a map presized so that {@code expectedSize} entries at {@code loadFactor} fit without a rehash.
-     */
-    public static NullableLongLongMap ofExpectedSize(int expectedSize, double loadFactor, long noEntryValue) {
-        final int desiredInitialCapacity = capacityForExpectedEntries(expectedSize, loadFactor);
-        return of(desiredInitialCapacity, loadFactor, noEntryValue);
-    }
-
-    /**
-     * Creates a map with the given initial capacity, load factor, and noEntryValue (the value returned by reads that
-     * find no mapping).
-     */
-    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
-    }
-
-    /**
-     * How chunked gets choose between the serial probe loop and the AMAC window. Production code uses
-     * {@link #ADAPTIVE}; the pinned modes exist so the yardstick can price the adaptive gate against each pure
-     * strategy, and so tests can exercise the window kernel at sizes where the gate would choose serial.
-     */
-    public enum ReadMode {
-        /** The footprint gate decides per chunk (see NullableLongLongMaps#wantWindowedReads). */
-        ADAPTIVE,
-        /** Always the AMAC window, regardless of footprint. */
-        WINDOW,
-        /** Always the serial probe loop, regardless of footprint. */
-        SERIAL
-    }
-
-    /**
-     * As {@link #of(int, double, long)}, with the read strategy pinned. For pricing and tests; production code should
-     * let the map adapt.
-     */
-    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue,
-            ReadMode readMode) {
-        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, readMode);
-    }
-
-    HashMapLockFreeK4V4() {
-        this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK4V4(int desiredInitialCapacity) {
-        this(desiredInitialCapacity, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor) {
-        this(desiredInitialCapacity, loadFactor, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        this(desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
-    }
 
     HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue, ReadMode readMode) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);

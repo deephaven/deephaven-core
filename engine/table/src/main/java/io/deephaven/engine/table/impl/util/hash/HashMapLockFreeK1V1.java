@@ -10,40 +10,11 @@ import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 /**
  * The K1V1 implementation of {@link NullableLongLongMap}: each hash bucket holds one key and its value. The concrete
- * type is an implementation detail — callers construct maps through the static factories and hold the interface. The
- * factory is the seam where implementation choice lives (and where, in a future change, a map may choose or change its
- * own shape).
+ * type is an implementation detail — callers construct maps through {@link NullableLongLongMaps} (naming
+ * {@link NullableLongLongMaps.Shape#K1V1}) and hold the interface.
  */
-public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLongLongMapTestAccessors {
+final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
-
-    /**
-     * Creates a map presized so that {@code expectedSize} entries at {@code loadFactor} fit without a rehash.
-     */
-    public static NullableLongLongMap ofExpectedSize(int expectedSize, double loadFactor, long noEntryValue) {
-        final int desiredInitialCapacity = capacityForExpectedEntries(expectedSize, loadFactor);
-        return of(desiredInitialCapacity, loadFactor, noEntryValue);
-    }
-
-    /**
-     * Creates a map with the given initial capacity, load factor, and noEntryValue (the value returned by reads that
-     * find no mapping).
-     */
-    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        return new HashMapLockFreeK1V1(desiredInitialCapacity, loadFactor, noEntryValue);
-    }
-
-    HashMapLockFreeK1V1() {
-        this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK1V1(int desiredInitialCapacity) {
-        this(desiredInitialCapacity, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK1V1(int desiredInitialCapacity, double loadFactor) {
-        this(desiredInitialCapacity, loadFactor, DEFAULT_NO_ENTRY_VALUE);
-    }
 
     HashMapLockFreeK1V1(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);

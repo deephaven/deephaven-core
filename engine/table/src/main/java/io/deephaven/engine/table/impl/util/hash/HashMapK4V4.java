@@ -7,7 +7,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 
-public abstract class HashMapK4V4 extends HashMapBase {
+abstract class HashMapK4V4 extends HashMapBase {
     HashMapK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
     }

@@ -6,10 +6,10 @@ package io.deephaven.benchmark.engine.util;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK1V1;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK2V2;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -100,17 +100,17 @@ public class NullableLongLongMapBench {
     }
 
     public enum Impl {
-        // The third factory argument is the noEntryValue; -1 is the maps' default.
+        // The -1 is the noEntryValue, the maps' default.
         // K4V4's reads adapt by footprint (array size vs cache); K4V4_WINDOW and K4V4_SERIAL pin each strategy (the
         // pricing controls).
         // @formatter:off
-        K1V1((desiredEntries, loadFactor) -> HashMapLockFreeK1V1.of(desiredEntries, loadFactor, -1)),
-        K2V2((desiredEntries, loadFactor) -> HashMapLockFreeK2V2.of(desiredEntries, loadFactor, -1)),
-        K4V4((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1)),
-        K4V4_WINDOW((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1,
-                HashMapLockFreeK4V4.ReadMode.WINDOW)),
-        K4V4_SERIAL((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1,
-                HashMapLockFreeK4V4.ReadMode.SERIAL)),
+        K1V1((desiredEntries, loadFactor) -> NullableLongLongMaps.of(Shape.K1V1, desiredEntries, loadFactor, -1)),
+        K2V2((desiredEntries, loadFactor) -> NullableLongLongMaps.of(Shape.K2V2, desiredEntries, loadFactor, -1)),
+        K4V4((desiredEntries, loadFactor) -> NullableLongLongMaps.of(Shape.K4V4, desiredEntries, loadFactor, -1)),
+        K4V4_WINDOW((desiredEntries, loadFactor) ->
+                NullableLongLongMaps.of(Shape.K4V4, desiredEntries, loadFactor, -1, ReadMode.WINDOW)),
+        K4V4_SERIAL((desiredEntries, loadFactor) ->
+                NullableLongLongMaps.of(Shape.K4V4, desiredEntries, loadFactor, -1, ReadMode.SERIAL)),
         FASTUTIL(FastutilAdapter::new);
         // @formatter:on
 

@@ -18,11 +18,9 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK1V1;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK2V2;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -475,8 +473,12 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
      */
     private static final int REMOVAL_CHUNK_SIZE = 4096;
 
-    private static final int hashBucketWidth = Configuration.getInstance()
-            .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "hashBucketWidth", 1);
+    /**
+     * The shape of the maps this redirection builds, configured as a bucket width (1, 2 or 4; see
+     * {@link Shape#forBucketWidth}).
+     */
+    private static final Shape HASH_SHAPE = Shape.forBucketWidth(Configuration.getInstance()
+            .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "hashBucketWidth", 1));
 
     /**
      * Entry count at which commitUpdates() upgrades the baseline map to the windowed (AMAC) shape.
@@ -498,15 +500,6 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     @NotNull
     private static NullableLongLongMap createMapWithCapacity(int initialCapacity, double loadFactor,
             long noEntryValue) {
-        switch (hashBucketWidth) {
-            case 1:
-                return HashMapLockFreeK1V1.of(initialCapacity, loadFactor, noEntryValue);
-            case 2:
-                return HashMapLockFreeK2V2.of(initialCapacity, loadFactor, noEntryValue);
-            case 4:
-                return HashMapLockFreeK4V4.of(initialCapacity, loadFactor, noEntryValue);
-            default:
-                throw new UnsupportedOperationException("Unsupported hashBucketWidth setting: " + hashBucketWidth);
-        }
+        return NullableLongLongMaps.of(HASH_SHAPE, initialCapacity, loadFactor, noEntryValue);
     }
 }

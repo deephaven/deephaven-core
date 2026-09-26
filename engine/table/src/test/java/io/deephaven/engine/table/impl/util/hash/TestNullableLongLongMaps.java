@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -17,7 +19,7 @@ public class TestNullableLongLongMaps {
 
     @Test
     public void upgradePreservesEverything() {
-        final NullableLongLongMap map = HashMapLockFreeK2V2.of(16, DENSE, NO_ENTRY_VALUE);
+        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K2V2, 16, DENSE, NO_ENTRY_VALUE);
         final Map<Long, Long> reference = new HashMap<>();
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         for (long key = 0; key < 10_000; ++key) {
@@ -40,7 +42,7 @@ public class TestNullableLongLongMaps {
 
     @Test
     public void belowThresholdReturnsTheSameMap() {
-        final NullableLongLongMap map = HashMapLockFreeK1V1.of(16, DENSE, NO_ENTRY_VALUE);
+        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, DENSE, NO_ENTRY_VALUE);
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         for (long key = 0; key < 100; ++key) {
             cursor.put(key, key);
@@ -50,7 +52,7 @@ public class TestNullableLongLongMaps {
 
     @Test
     public void sparseLoadFactorReturnsTheSameMap() {
-        final NullableLongLongMap map = HashMapLockFreeK1V1.of(16, SPARSE, NO_ENTRY_VALUE);
+        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, SPARSE, NO_ENTRY_VALUE);
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         for (long key = 0; key < 100; ++key) {
             cursor.put(key, key);
@@ -60,7 +62,7 @@ public class TestNullableLongLongMaps {
 
     @Test
     public void ceilingTriggerOverridesSparseLoadFactor() {
-        final NullableLongLongMap map = HashMapLockFreeK1V1.of(16, SPARSE, NO_ENTRY_VALUE);
+        final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, SPARSE, NO_ENTRY_VALUE);
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         for (long key = 0; key < 100; ++key) {
             cursor.put(key, key + 1);
@@ -77,8 +79,8 @@ public class TestNullableLongLongMaps {
     @Test
     public void alreadyWideReturnsTheSameMap() {
         for (final NullableLongLongMap map : new NullableLongLongMap[] {
-                HashMapLockFreeK4V4.of(16, DENSE, NO_ENTRY_VALUE),
-                HashMapLockFreeK4V4.of(16, DENSE, NO_ENTRY_VALUE, HashMapLockFreeK4V4.ReadMode.WINDOW)}) {
+                NullableLongLongMaps.of(Shape.K4V4, 16, DENSE, NO_ENTRY_VALUE),
+                NullableLongLongMaps.of(Shape.K4V4, 16, DENSE, NO_ENTRY_VALUE, ReadMode.WINDOW)}) {
             final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
             for (long key = 0; key < 100; ++key) {
                 cursor.put(key, key);
@@ -97,5 +99,46 @@ public class TestNullableLongLongMaps {
         // Below it (cache-resident): serial.
         assertFalse(NullableLongLongMaps.wantWindowedReads(threshold - 1));
         assertFalse(NullableLongLongMaps.wantWindowedReads(0));
+    }
+
+    @Test
+    public void factoryBuildsTheRequestedShape() {
+        final Map<Shape, Class<?>> expectedClasses = new HashMap<>();
+        expectedClasses.put(Shape.K1V1, HashMapLockFreeK1V1.class);
+        expectedClasses.put(Shape.K2V2, HashMapLockFreeK2V2.class);
+        expectedClasses.put(Shape.K4V4, HashMapLockFreeK4V4.class);
+        for (final Shape shape : Shape.values()) {
+            final NullableLongLongMap map = NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE);
+            assertEquals(shape.name(), expectedClasses.get(shape), map.getClass());
+            assertEquals(NO_ENTRY_VALUE, map.defaultReturnValue());
+            assertEquals(shape, Shape.forBucketWidth(shape.bucketWidth()));
+        }
+    }
+
+    @Test
+    public void windowModeRequiresK4V4() {
+        for (final Shape shape : new Shape[] {Shape.K1V1, Shape.K2V2}) {
+            try {
+                NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE, ReadMode.WINDOW);
+                fail("expected IllegalArgumentException for " + shape);
+            } catch (final IllegalArgumentException expected) {
+                // The narrow shapes have no window kernel.
+            }
+            // SERIAL is truthful for every shape.
+            assertNotNull(NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE, ReadMode.SERIAL));
+        }
+        assertNotNull(NullableLongLongMaps.of(Shape.K4V4, 16, DENSE, NO_ENTRY_VALUE, ReadMode.WINDOW));
+    }
+
+    @Test
+    public void forBucketWidthRejectsUnsupportedWidths() {
+        for (final int width : new int[] {0, 3, 8, -1}) {
+            try {
+                Shape.forBucketWidth(width);
+                fail("expected IllegalArgumentException for width " + width);
+            } catch (final IllegalArgumentException expected) {
+                // Only 1, 2 and 4 are shapes.
+            }
+        }
     }
 }
