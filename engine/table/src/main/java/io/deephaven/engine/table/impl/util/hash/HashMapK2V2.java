@@ -9,7 +9,7 @@ abstract class HashMapK2V2 extends HashMapBase {
     }
 
     final long putImpl(long[] kvs, long numBucketsReciprocal, long key, long value, boolean insertOnly) {
-        if (kvs == null) {
+        if (kvs == EMPTY_KEYS_AND_VALUES) {
             kvs = allocateKeysAndValuesArray(2);
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -55,9 +55,6 @@ abstract class HashMapK2V2 extends HashMapBase {
     }
 
     final long getImpl(long[] kvs, long numBucketsReciprocal, long key) {
-        if (kvs == null) {
-            return defaultReturnValue();
-        }
         key = fixKey(key);
         final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
@@ -67,9 +64,6 @@ abstract class HashMapK2V2 extends HashMapBase {
     }
 
     final long removeImpl(long[] kvs, long numBucketsReciprocal, long key) {
-        if (kvs == null) {
-            return defaultReturnValue();
-        }
         key = fixKey(key);
         final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {

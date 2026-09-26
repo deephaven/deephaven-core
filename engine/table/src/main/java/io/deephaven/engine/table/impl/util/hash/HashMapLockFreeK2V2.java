@@ -18,7 +18,7 @@ final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongM
 
     HashMapLockFreeK2V2(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
-        this.keysAndValues = null;
+        this.keysAndValues = EMPTY_KEYS_AND_VALUES;
     }
 
     @Override
@@ -35,10 +35,10 @@ final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongM
         // from the new array's own header whenever the array changes (a load, not a divide: every array carries
         // its reciprocal).
         long[] kvs = keysAndValues;
-        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
+        long numBucketsReciprocal = reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), false));
-            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            // Hot reads: cheap, and free of a stale-check branch (the array is never null).
             kvs = keysAndValues;
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -51,10 +51,10 @@ final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongM
         final int size = keys.size();
         // Same volatile-read and reciprocal-memo discipline as put.
         long[] kvs = keysAndValues;
-        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
+        long numBucketsReciprocal = reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), true));
-            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            // Hot reads: cheap, and free of a stale-check branch (the array is never null).
             kvs = keysAndValues;
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -93,7 +93,7 @@ final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongM
         final long[] localKvs = keysAndValues;
         // The reciprocal comes from the snapshot's own header — published with the array and immutable
         // thereafter, so it cannot tear against it.
-        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
         final int size = keys.size();
         if (localKvs == null) {
             // Never populated, or reset: every key is a miss, and we need not probe to know it.
@@ -113,7 +113,7 @@ final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongM
         // rehashes, so no element can replace the array a later element must see.
         final long[] localKvs = keysAndValues;
         // Same header-borne reciprocal as get.
-        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
         final int size = keys.size();
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, removeImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
@@ -132,13 +132,13 @@ final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongM
 
     public void resetToNull() {
         resetToNullImpl();
-        keysAndValues = null;
+        keysAndValues = EMPTY_KEYS_AND_VALUES;
     }
 
     @Override
     public void resetToNullRetainingCapacity() {
         resetToNullRetainingCapacityImpl(keysAndValues);
-        keysAndValues = null;
+        keysAndValues = EMPTY_KEYS_AND_VALUES;
     }
 
     @Override

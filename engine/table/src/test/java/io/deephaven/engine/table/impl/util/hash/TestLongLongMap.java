@@ -917,6 +917,52 @@ public class TestLongLongMap {
         assertEquals(0, count.get());
     }
 
+    @Test
+    public void emptyMapReadsAreOrdinaryMisses() {
+        // The reference fastutil implementation doesn't have resetToNull
+        if (factory == referenceFactory) {
+            return;
+        }
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final long noEntryValue = map.defaultReturnValue();
+        final long[] probes = {Long.MIN_VALUE, -1, 0, 1, 12345, Long.MAX_VALUE};
+        final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
+        for (int round = 0; round < 3; ++round) {
+            // Round 0 sees a fresh map; rounds 1 and 2 see it emptied by resetToNull and resetToNullRetainingCapacity.
+            // Every read of an empty map is an ordinary miss, through every entry point, with no storage allocated.
+            assertTrue(map.isEmpty());
+            assertEquals(0, map.size());
+            assertEquals(0, map.capacity());
+            checkChunkedGet(map, probes, probes.length, key -> noEntryValue);
+            final WritableLongChunk<Any> removed = WritableLongChunk.writableChunkWrap(new long[probes.length]);
+            map.remove(LongChunk.chunkWrap(probes), removed);
+            assertEquals(probes.length, removed.size());
+            for (int ii = 0; ii < probes.length; ++ii) {
+                assertEquals(noEntryValue, removed.get(ii));
+            }
+            map.forEach((key, value) -> fail("an empty map produced " + key));
+            assertEquals(0, ((NullableLongLongMapTestAccessors) map).keyArray().length);
+            assertEquals(0, ((NullableLongLongMapTestAccessors) map).valueArray().length);
+            map.clear();
+            assertEquals(0, map.capacity());
+            // The first put allocates real storage, and the map works normally from there.
+            scalarAccess.reset(map);
+            for (final long key : probes) {
+                scalarAccess.put(key, key ^ 0x5555);
+            }
+            assertEquals(probes.length, map.size());
+            assertTrue(map.capacity() > 0);
+            for (final long key : probes) {
+                assertEquals(key ^ 0x5555, scalarAccess.get(key));
+            }
+            if (round == 0) {
+                map.resetToNull();
+            } else {
+                map.resetToNullRetainingCapacity();
+            }
+        }
+    }
+
     static class Factory {
         private final String name;
         private final int entriesPerBucket;
