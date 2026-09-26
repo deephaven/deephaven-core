@@ -1414,9 +1414,8 @@ public class AsOfJoinHelper {
                                                 WritableLongChunk.makeWritableChunk(cycleChunkSize);
                                         final WritableBooleanChunk<Any> retainStamps =
                                                 WritableBooleanChunk.makeWritableChunk(cycleChunkSize)) {
-                                    final int chunks = (restampAdditions.intSize() + cycleChunkSize - 1)
-                                            / cycleChunkSize;
-                                    for (int ii = 0; ii < chunks; ++ii) {
+                                    final long chunks = (restampAdditions.size() + cycleChunkSize - 1) / cycleChunkSize;
+                                    for (long ii = 0; ii < chunks; ++ii) {
                                         final long startChunk = chunks - ii - 1;
                                         try (final RowSet chunkOk =
                                                 restampAdditions.subSetByPositionRange(

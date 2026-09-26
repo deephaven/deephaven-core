@@ -587,10 +587,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 final SegmentedSortedArray leftSsa =
                                         asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
 
-                                final int chunks =
-                                        (ownedRightAdded.intSize() + cycleRightChunkSize - 1) / cycleRightChunkSize;
-                                for (int ii = 0; ii < chunks; ++ii) {
-                                    final int startChunk = chunks - ii - 1;
+                                final long chunks =
+                                        (ownedRightAdded.size() + cycleRightChunkSize - 1) / cycleRightChunkSize;
+                                for (long ii = 0; ii < chunks; ++ii) {
+                                    final long startChunk = chunks - ii - 1;
                                     try (final RowSet chunkOk =
                                             ownedRightAdded.subSetByPositionRange(startChunk * cycleRightChunkSize,
                                                     (startChunk + 1) * cycleRightChunkSize)) {
