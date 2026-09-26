@@ -32,10 +32,10 @@ The Deephaven artifacts are attached to each [Deephaven release](https://github.
 - The server artifact in tar format.
 - The Python artifact in wheel format.
 
-It's recommended that you set your preferred version with an environment variable. The shell commands in this guide set and use the `DH_VERSION` environment variable:
+It's recommended that you set your preferred version with an environment variable. The shell commands in this guide set and use the `DH_VERSION` environment variable. Replace `LATEST_VERSION_HERE` with the version number of the [latest release](https://github.com/deephaven/deephaven-core/releases/latest), without the leading `v`:
 
 ```bash
-export DH_VERSION=0.39.2
+export DH_VERSION=LATEST_VERSION_HERE
 ```
 
 You can download release artifacts from your browser of choice or via the command line:
