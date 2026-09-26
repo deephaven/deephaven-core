@@ -233,6 +233,19 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
     }
 
     /**
+     * Wait for {@code thread} to consume a pending interrupt. A parallel column snapshot clears the interrupt when its
+     * wait for the column jobs throws, and restores it only once those jobs are done, so a cleared flag means the
+     * interrupt has been seen while the jobs are still running.
+     */
+    private static void awaitInterruptConsumed(@NotNull final Thread thread) throws InterruptedException {
+        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+        while (thread.isInterrupted()) {
+            assertTrue("interrupt not consumed within " + TIMEOUT_SECONDS + "s", System.nanoTime() < deadline);
+            Thread.sleep(1);
+        }
+    }
+
+    /**
      * Regression test for DH-23460.
      *
      * <p>
@@ -404,6 +417,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
      * fails the test if it does. The failure the caller sees wraps one thrown from the fill site on the thread that
      * read the column, which names that column and keeps the original exception as its cause.
      */
+    @Test
     public void testParallelColumnSnapshotFailureNamesColumnAndReleasesChunk() {
         final RuntimeException failure = new IllegalStateException("Deliberate column fill failure");
         final QueryTable table = tableWithInterceptedColumn(() -> {
@@ -426,6 +440,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
      * Companion to {@link #testParallelColumnSnapshotFailureNamesColumnAndReleasesChunk()} for the serial path, which
      * names the failing column from the same fill site and releases the in-flight chunk.
      */
+    @Test
     public void testSerialColumnSnapshotFailureNamesColumnAndReleasesChunk() {
         final RuntimeException failure = new IllegalStateException("Deliberate column fill failure");
         final QueryTable table = tableWithInterceptedColumn(() -> {
@@ -451,6 +466,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
      * filling chunks into the {@link BarrageMessage}, which the caller closes as the failure propagates. The snapshot
      * waits for them to finish, then propagates a {@link CancellationException} with the interrupt restored.
      */
+    @Test
     public void testParallelColumnSnapshotWaitsForJobsWhenInterrupted() throws InterruptedException {
         final CountDownLatch fillStarted = new CountDownLatch(1);
         final CountDownLatch releaseFill = new CountDownLatch(1);
@@ -484,6 +500,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
         try {
             assertTrue(fillStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
             snapshotThread.interrupt();
+            awaitInterruptConsumed(snapshotThread);
             // Give an unfixed snapshot time to abandon the still-running job and return.
             snapshotThread.join(500);
             assertTrue("snapshotThread.isAlive()", snapshotThread.isAlive());
@@ -509,6 +526,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
      * asked for and is what it gets, but the column that could not be read is reported alongside it rather than
      * dropped.
      */
+    @Test
     public void testInterruptedParallelColumnSnapshotReportsJobFailure() throws InterruptedException {
         final RuntimeException failure = new IllegalStateException("Deliberate column fill failure");
         final CountDownLatch fillStarted = new CountDownLatch(1);
@@ -539,6 +557,9 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
         try {
             assertTrue(fillStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
             snapshotThread.interrupt();
+            // A failure that completes the future before the waiting thread notices the interrupt would be reported by
+            // CompletableFuture.get in place of the interrupt, so let the interrupt land first.
+            awaitInterruptConsumed(snapshotThread);
         } finally {
             releaseFill.countDown();
             snapshotThread.join(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
@@ -567,6 +588,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
      * locked one. A cancelled attempt must not reach that fallback: taking the update graph lock and snapshotting again
      * on behalf of a caller that has gone away is exactly what cancellation is asking us not to do.
      */
+    @Test
     public void testCancelledRefreshingSnapshotIsNotRetriedUnderLock() throws InterruptedException {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final CountDownLatch fillStarted = new CountDownLatch(1);
