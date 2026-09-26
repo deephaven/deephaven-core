@@ -234,42 +234,54 @@ public class AsOfJoinHelper {
         final ColumnSource<RowSet> leftDataIndexRowSetColumn = leftDataIndexTable != null
                 ? leftDataIndex.rowSetColumn()
                 : null;
-        try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
-                rightStampSource, originalRightStampSource);
-                final ResettableWritableLongChunk<RowKeys> keyChunk =
-                        ResettableWritableLongChunk.makeResettableChunk();
-                final ResettableWritableChunk<Values> valuesChunk =
-                        rightStampSource.getChunkType().makeResettableWritableChunk()) {
-            for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
-                final int slot = slots.getInt(slotIndex);
-                try (final RowSet slotLeftRowSet = asOfJoinStateManager.getLeftRowSet(slot)) {
-                    if (slotLeftRowSet == null || slotLeftRowSet.isEmpty()) {
-                        continue;
-                    }
+        // a static left table never reads a right row set again, and a failed build discards them all; a refreshing
+        // left table keeps the right row sets of buckets it may stamp later
+        boolean initialStampsComplete = false;
+        try {
+            try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
+                    rightStampSource, originalRightStampSource);
+                    final ResettableWritableLongChunk<RowKeys> keyChunk =
+                            ResettableWritableLongChunk.makeResettableChunk();
+                    final ResettableWritableChunk<Values> valuesChunk =
+                            rightStampSource.getChunkType().makeResettableWritableChunk()) {
+                for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
+                    final int slot = slots.getInt(slotIndex);
+                    try (final RowSet slotLeftRowSet = asOfJoinStateManager.getLeftRowSet(slot)) {
+                        if (slotLeftRowSet == null || slotLeftRowSet.isEmpty()) {
+                            continue;
+                        }
 
-                    final RowSet rightRowSet = asOfJoinStateManager.getRightRowset(slot);
-                    if (rightRowSet == null || rightRowSet.isEmpty()) {
-                        continue;
-                    }
+                        final RowSet rightRowSet = asOfJoinStateManager.getRightRowset(slot);
+                        if (rightRowSet == null || rightRowSet.isEmpty()) {
+                            continue;
+                        }
 
-                    // the slot's row set is built here and owned by this loop; a data index row set belongs to the
-                    // index and outlives it
-                    final RowSet leftRowSet;
-                    if (leftDataIndexRowSetColumn != null) {
-                        Assert.eq(slotLeftRowSet.size(), "Indexed left row set size", 1);
-                        leftRowSet = leftDataIndexRowSetColumn.get(slotLeftRowSet.get(0));
-                    } else {
-                        leftRowSet = slotLeftRowSet;
-                    }
+                        // the slot's row set is built here and owned by this loop; a data index row set belongs to the
+                        // index and outlives it
+                        final RowSet leftRowSet;
+                        if (leftDataIndexRowSetColumn != null) {
+                            Assert.eq(slotLeftRowSet.size(), "Indexed left row set size", 1);
+                            leftRowSet = leftDataIndexRowSetColumn.get(slotLeftRowSet.get(0));
+                        } else {
+                            leftRowSet = slotLeftRowSet;
+                        }
 
-                    if (arrayValuesCache != null) {
-                        processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
-                                rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
-                    } else {
-                        stampContext.processEntry(leftRowSet, rightRowSet, rowRedirection);
+                        if (arrayValuesCache != null) {
+                            processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
+                                    rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
+                        } else {
+                            stampContext.processEntry(leftRowSet, rightRowSet, rowRedirection);
+                        }
+                        // the slot's right stamps are now either consumed or cached, so its row set is no longer read
+                        asOfJoinStateManager.releaseRightRowSet(slot);
                     }
-                    // the slot's right stamps are now either consumed or cached, so its row set is no longer read
-                    asOfJoinStateManager.releaseRightRowSet(slot);
+                }
+            }
+            initialStampsComplete = true;
+        } finally {
+            if (!initialStampsComplete || !leftTable.isRefreshing()) {
+                for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
+                    asOfJoinStateManager.releaseRightRowSet(slots.getInt(slotIndex));
                 }
             }
         }
