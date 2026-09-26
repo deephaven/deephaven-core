@@ -218,48 +218,14 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
 
     public void move(long source, long dest, long length) {
+        if (prevBlocks != null) {
+            throw new UnsupportedOperationException();
+        }
         if (source == dest) {
             return;
         }
         if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
-            final long wholeBlocks = length & ~(long) INDEX_MASK;
-            if (wholeBlocks > 0) {
-                if (dest < source) {
-                    // moving down: the whole blocks first, then the partial block after them
-                    moveWholeBlocks(source, dest, wholeBlocks);
-                    if (wholeBlocks < length) {
-                        allocateIfMissing((int) ((dest + wholeBlocks) >> LOG_BLOCK_SIZE));
-                        move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
-                    }
-                } else {
-                    // moving up: the partial block at the end first, then the whole blocks
-                    if (wholeBlocks < length) {
-                        allocateIfMissing((int) ((dest + wholeBlocks) >> LOG_BLOCK_SIZE));
-                        move(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
-                    }
-                    moveWholeBlocks(source, dest, wholeBlocks);
-                }
-                return;
-            }
-        }
-        if (prevBlocks != null) {
-            // This is a slower path that is doing one element at a time, but handles the previous values.  We can
-            // eventually do better.
-            if (source < dest && source + length >= dest) {
-                // we need to be careful about overwriting things
-                for (long ii = length - 1; ii >= 0; --ii) {
-                    final long sourceKey = source + ii;
-                    final long destKey = dest + ii;
-                    set(destKey, getUnsafe(sourceKey));
-                }
-            } else {
-                for (long ii = 0; ii < length; ++ii) {
-                    final long sourceKey = source + ii;
-                    final long destKey = dest + ii;
-                    set(destKey, getUnsafe(sourceKey));
-                }
-            }
-            return;
+            // TODO (#3359): we can move full blocks!
         }
         if (source < dest && source + length >= dest) {
             for (long ii = length - 1; ii >= 0; ) {
@@ -292,6 +258,52 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
 
                 System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock, blocks[destBlock], destIndexWithinBlock, toMove);
                 ii += toMove;
+            }
+        }
+    }
+
+    /**
+     * Move the values of {@code length} positions from {@code source} to {@code dest} for {@link #shift}. Unlike
+     * {@link #move}, the positions moved from hold no values afterward: where both positions are at the start of a
+     * block, whole blocks move by reference, and source blocks that are not also destinations are left unallocated. A
+     * destination block that an earlier move left unallocated is allocated before values are copied into it.
+     */
+    private void shiftRange(long source, long dest, long length) {
+        if (source == dest) {
+            return;
+        }
+        if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
+            final long wholeBlocks = length & ~(long) INDEX_MASK;
+            if (wholeBlocks > 0) {
+                if (dest < source) {
+                    // moving down: the whole blocks first, then the partial block after them
+                    moveWholeBlocks(source, dest, wholeBlocks);
+                    shiftRange(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
+                } else {
+                    // moving up: the partial block at the end first, then the whole blocks
+                    shiftRange(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
+                    moveWholeBlocks(source, dest, wholeBlocks);
+                }
+                return;
+            }
+        }
+        if (length == 0) {
+            return;
+        }
+        allocateMissingBlocks(dest, dest + length - 1);
+        if (prevBlocks == null) {
+            move(source, dest, length);
+            return;
+        }
+        // one element at a time, so that each destination's previous value is recorded
+        if (source < dest && source + length >= dest) {
+            // moving up over the source, so start from the end
+            for (long ii = length - 1; ii >= 0; --ii) {
+                set(dest + ii, getUnsafe(source + ii));
+            }
+        } else {
+            for (long ii = 0; ii < length; ++ii) {
+                set(dest + ii, getUnsafe(source + ii));
             }
         }
     }
@@ -1398,6 +1410,6 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         if (shiftData.empty()) {
             return;
         }
-        shiftData.apply((s, e, d) -> move(s, s + d, e - s + 1));
+        shiftData.apply((s, e, d) -> shiftRange(s, s + d, e - s + 1));
     }
 }

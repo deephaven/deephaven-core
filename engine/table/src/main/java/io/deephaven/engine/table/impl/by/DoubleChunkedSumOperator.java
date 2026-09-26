@@ -18,6 +18,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
@@ -313,6 +314,11 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter
                     chunkInfinityCount, chunkMinusInfinityCount);
         }
         return sum;
+    }
+
+    @Override
+    ArrayBackedColumnSource<?> blockTemplate() {
+        return resultColumn;
     }
 
     @Override

@@ -14,6 +14,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -203,6 +204,11 @@ final class DoubleChunkedVarOperator extends FpChunkedNonNormalCounter implement
         return true;
     }
 
+
+    @Override
+    ArrayBackedColumnSource<?> blockTemplate() {
+        return resultColumn;
+    }
 
     @Override
     public void ensureCapacity(long tableSize) {

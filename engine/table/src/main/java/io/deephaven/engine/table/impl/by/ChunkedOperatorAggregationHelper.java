@@ -62,6 +62,12 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", false);
     static final boolean HASHED_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
+    /**
+     * Whether an aggregation reclaims the states of groups whose rows have all been removed, unless its caller chooses
+     * a {@link StateReclaimMode}. This and the three properties after it are read by
+     * {@link StateReclaimMode#configured()} as each aggregation is created, so changing them affects only aggregations
+     * created afterward.
+     */
     public static boolean RECLAIM_STATES =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.reclaimStates", true);
     /**
@@ -93,7 +99,8 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         return aggregation(AggregationControl.DEFAULT,
-                aggregationContextFactory, input, preserveEmpty, initialKeys, true, groupByColumns);
+                aggregationContextFactory, input, preserveEmpty, initialKeys, StateReclaimMode.configured(),
+                groupByColumns);
     }
 
     private static void checkGroupByColumns(String context, TableDefinition tableDefinition, String[] keyNames) {
@@ -115,7 +122,7 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final QueryTable input,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
-            final boolean removeUnusedStates,
+            @NotNull final StateReclaimMode reclaimMode,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
         checkGroupByColumns("input table", input.getDefinition(), keyNames);
@@ -154,7 +161,7 @@ public class ChunkedOperatorAggregationHelper {
                     "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                     (usePrev, beforeClockValue) -> {
                         resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
-                                input, dataIndex, preserveEmpty, initialKeys, removeUnusedStates, keyNames, usePrev));
+                                input, dataIndex, preserveEmpty, initialKeys, reclaimMode, keyNames, usePrev));
                         return true;
                     });
             return resultHolder.getValue();
@@ -169,7 +176,7 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final BasicDataIndex dataIndex,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
-            boolean removeUnusedStates,
+            @NotNull final StateReclaimMode reclaimMode,
             @NotNull final String[] keyNames,
             final boolean usePrev) {
         if (keyNames.length == 0) {
@@ -212,13 +219,15 @@ public class ChunkedOperatorAggregationHelper {
             useSymbolTable = false;
         }
 
+        // Preserved empty groups are never removed, so there is nothing to reclaim. Initial groups reserve output
+        // positions that are not in the result, which compaction does not model.
+        final boolean reclaimStates = input.isRefreshing() && reclaimMode.reclaims() && !preserveEmpty
+                && initialKeys == null
+                && Arrays.stream(ac.operators).allMatch(IterativeChunkedAggregationOperator::canReclaimStates);
         final MutableInt outputPosition = new MutableInt();
         final Supplier<OperatorAggregationStateManager> stateManagerSupplier =
                 () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac,
-                        useSymbolTable ? symbolTable : null,
-                        // Preserved empty groups are never removed, so there is nothing to reclaim. Initial groups
-                        // reserve output positions that are not in the result, which compaction does not model.
-                        removeUnusedStates && !preserveEmpty && initialKeys == null);
+                        useSymbolTable ? symbolTable : null, reclaimStates);
         final OperatorAggregationStateManager stateManager;
         if (initialKeys == null) {
             stateManager = stateManagerSupplier.get();
@@ -268,7 +277,8 @@ public class ChunkedOperatorAggregationHelper {
                 : initialRowsBuilder.build()).toTracking();
         if (input.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
-            if (removeUnusedStates) {
+            if (reclaimStates && reclaimMode.movesStates()) {
+                // a moved state's key is read at its old position as a previous value
                 // noinspection DataFlowIssue
                 for (ShiftableColumnSource<?> shiftableColumnSource : keyColumnsCopied) {
                     shiftableColumnSource.startTrackingPrevValues();
@@ -287,9 +297,11 @@ public class ChunkedOperatorAggregationHelper {
             final IncrementalOperatorAggregationStateManager incrementalStateManager =
                     (IncrementalOperatorAggregationStateManager) stateManager;
             incrementalStateManager.startTrackingPrevValues();
-            final OutputPositionBlockTracker blockTracker = RELEASE_BLOCKS && incrementalStateManager.canReclaim()
-                    ? new OutputPositionBlockTracker(resultRowSet, outputPosition.get(), COLLAPSE_FREE_FRACTION)
-                    : null;
+            final OutputPositionBlockTracker blockTracker =
+                    reclaimMode.releasesBlocks() && incrementalStateManager.canReclaim()
+                            ? new OutputPositionBlockTracker(resultRowSet, outputPosition.get(),
+                                    reclaimMode.collapseFreeFraction(), reclaimMode.blockShiftFraction())
+                            : null;
 
             final boolean isBlink = input.isBlink();
             final TableUpdateListener listener = new BaseTable.ListenerImpl(
@@ -372,12 +384,10 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final ColumnSource<?>[] keySources, @NotNull final ColumnSource<?>[] reinterpretedKeySources,
             @NotNull final AggregationContext ac,
             @Nullable final Table symbolTableToUse,
-            final boolean removeUnusedStates) {
+            final boolean reclaimStates) {
         final OperatorAggregationStateManager stateManager;
         if (input.isRefreshing()) {
-            final boolean canReclaim = RECLAIM_STATES &&
-                    Arrays.stream(ac.operators).allMatch(IterativeChunkedAggregationOperator::canReclaimStates);
-            if (removeUnusedStates && canReclaim) {
+            if (reclaimStates) {
                 stateManager = TypedHasherFactory.make(
                         IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
                         reinterpretedKeySources,
@@ -751,8 +761,8 @@ public class ChunkedOperatorAggregationHelper {
                         upstream.added().size() + upstream.modified().size() + upstream.removed().size();
                 final OutputPositionBlockTracker.Collapse collapse =
                         blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
-                final OutputPositionBlockTracker.BlockShift blockShift = blockTracker.planBlockShift(
-                        BLOCK_SHIFT_FRACTION, outputPosition.get(), inputRows - collapse.movedStates());
+                final OutputPositionBlockTracker.BlockShift blockShift =
+                        blockTracker.planBlockShift(outputPosition.get(), inputRows - collapse.movedStates());
                 if (blockShift.shift.nonempty()) {
                     shiftBlocks(blockTracker, collapse, blockShift, resultRowset, downstream, releasable,
                             keyColumnsCopied);
@@ -786,6 +796,10 @@ public class ChunkedOperatorAggregationHelper {
                 for (ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
                     keyColumn.setNull(outputPosition.get(), outputPositionsBeforeReclaim - 1);
                 }
+                // Whole blocks moved down leave their old blocks unallocated, and new states are assigned from the new
+                // end, so the storage from there on is released for ensureCapacity to allocate again. Output positions
+                // are ints, so this reaches every position that may have storage.
+                releaseEmptyBlocks(RowSetFactory.fromRange(outputPosition.get(), Integer.MAX_VALUE), keyColumnsCopied);
             }
 
             return downstream;
@@ -832,10 +846,11 @@ public class ChunkedOperatorAggregationHelper {
                 keyColumn.shift(shift);
             }
 
-            // The blocks released this cycle before the first block not moved were passed over, and blocks moved onto
-            // them; the released blocks left in their place, just before that block, are released instead. Nothing at
-            // or after that block moved.
-            releasable.removeRange(0, blockShift.firstUnmovedPosition() - 1);
+            // The blocks released this cycle from the first block the shift passed over up to the first block not
+            // moved had blocks moved onto them; the released blocks left in their place, just before that block, are
+            // released instead. Blocks released before the shift's start, which a sweep resumed past, stay releasable:
+            // nothing moved onto them. Nothing at or after the first block not moved moved.
+            releasable.removeRange(blockShift.firstPassedPosition(), blockShift.firstUnmovedPosition() - 1);
             try (final RowSet remaining = blockShift.remainingReleased()) {
                 releasable.insert(remaining);
             }

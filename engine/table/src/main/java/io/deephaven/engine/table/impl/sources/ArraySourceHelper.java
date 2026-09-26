@@ -7,8 +7,10 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
@@ -18,6 +20,7 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -92,6 +95,14 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      * This method supports the 'ensureCapacity' method for all of this class' inheritors.
      */
     final void ensureCapacity(final long capacity, UArray[] blocks, UArray[] prevBlocks, boolean nullFilled) {
+        ensureCapacity(capacity, blocks, prevBlocks, nullFilled, null);
+    }
+
+    /**
+     * Allocate blocks up to {@code capacity}, but where {@code onlyAllocated} is given, only those it holds.
+     */
+    private void ensureCapacity(final long capacity, UArray[] blocks, UArray[] prevBlocks, boolean nullFilled,
+            @Nullable final Object[] onlyAllocated) {
         freshBlocksNullFilled = nullFilled;
         // Convert requested capacity to requestedMaxIndex and requestedNumBlocks, but leave early if the requested
         // maxIndex is <= the current maxIndex.
@@ -128,6 +139,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         // double, but we only allocate the minimum number of blocks needed. Put another way, we only allocate blocks up
         // to the requested capacity, not all the way up to (the capacity rounded to the next power of two).
         for (int ii = allocatedNumBlocks; ii < requestedNumBlocks; ++ii) {
+            if (onlyAllocated != null && onlyAllocated[ii] == null) {
+                continue;
+            }
             if (nullFilled) {
                 blocks[ii] = allocateNullFilledBlock(BLOCK_SIZE);
             } else {
@@ -136,6 +150,22 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         }
         // Note: if we get this far, requestedMaxIndex > maxIndex, so this will always increase maxIndex.
         maxIndex = requestedMaxIndex;
+    }
+
+    /**
+     * Allocate storage for exactly the blocks that {@code template} has allocated, with the same capacity, rather than
+     * for every block up to that capacity as {@link #ensureCapacity(long, boolean)} would. A source created after its
+     * siblings have released blocks thereby holds no storage for positions that hold no values. This source must not
+     * have any capacity yet.
+     *
+     * @param template an array-backed source with the block size of this one, whose allocated blocks to copy
+     * @param nullFilled whether the blocks allocated are filled with nulls, rather than the element type's default
+     */
+    public final void ensureCapacityLike(@NotNull final ArrayBackedColumnSource<?> template, final boolean nullFilled) {
+        Assert.eq(maxIndex, "maxIndex", INITIAL_MAX_INDEX, "INITIAL_MAX_INDEX");
+        final Object[] templateBlocks =
+                template instanceof ArraySourceHelper ? ((ArraySourceHelper<?, ?>) template).getBlocks() : null;
+        ensureCapacity(template.maxIndex + 1, getBlocks(), getPrevBlocks(), nullFilled, templateBlocks);
     }
 
     /**
@@ -377,12 +407,19 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     /**
-     * Allocate the block at {@code blockIndex} if a move left it unallocated, before values are copied into part of it.
+     * Allocate each block holding a position from {@code firstKey} through {@code lastKey} that a move left
+     * unallocated, before values are copied into those positions.
+     *
+     * @param firstKey the first position to be written
+     * @param lastKey the last position to be written, inclusive, within the capacity
      */
-    final void allocateIfMissing(final int blockIndex) {
+    final void allocateMissingBlocks(final long firstKey, final long lastKey) {
+        Assert.leq(lastKey, "lastKey", maxIndex, "maxIndex");
         final UArray[] blocks = getBlocks();
-        if (blockIndex < blocks.length && blocks[blockIndex] == null) {
-            blocks[blockIndex] = allocateFreshBlock();
+        for (int bi = (int) (firstKey >> LOG_BLOCK_SIZE); bi <= (int) (lastKey >> LOG_BLOCK_SIZE); ++bi) {
+            if (blocks[bi] == null) {
+                blocks[bi] = allocateFreshBlock();
+            }
         }
     }
 
@@ -432,6 +469,56 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         if (lastKey >= maxIndex && firstBlock < allocatedBlocks) {
             // released through the end, so the capacity shrinks and ensureCapacity allocates these blocks again
             maxIndex = (firstBlock << LOG_BLOCK_SIZE) - 1;
+        }
+    }
+
+    /**
+     * Null the values for a range of row keys. Positions past the capacity, and blocks a move left unallocated, hold no
+     * values and are left alone.
+     *
+     * @param firstKey the first row key to null
+     * @param lastKey the last row key to null, inclusive
+     */
+    @Override
+    public void setNull(final long firstKey, final long lastKey) {
+        final long last = Math.min(lastKey, maxIndex);
+        if (last < firstKey) {
+            return;
+        }
+        final int chunkCapacity = (int) Math.min(BLOCK_SIZE - 1, last - firstKey) + 1;
+        try (final WritableChunk<Values> nullChunk = getChunkType().makeWritableChunk(chunkCapacity)) {
+            nullChunk.fillWithNullValue(0, chunkCapacity);
+            fillRange(firstKey, last, nullChunk);
+        }
+    }
+
+    /**
+     * Set every value in a range of row keys to one value, one block at a time. Positions past the capacity, and blocks
+     * a move left unallocated, hold no values and are left alone.
+     *
+     * @param firstKey the first row key to set
+     * @param lastKey the last row key to set, inclusive
+     * @param values a chunk holding the value at each of its first {@code min(BLOCK_SIZE, lastKey - firstKey + 1)}
+     *        positions; its size is changed
+     */
+    public final void fillRange(final long firstKey, final long lastKey, @NotNull final WritableChunk<Values> values) {
+        final long last = Math.min(lastKey, maxIndex);
+        if (last < firstKey) {
+            return;
+        }
+        final UArray[] blocks = getBlocks();
+        try (final FillFromContext fillFromContext =
+                makeFillFromContext((int) Math.min(BLOCK_SIZE - 1, last - firstKey) + 1)) {
+            for (long blockFirst = firstKey; blockFirst <= last;) {
+                final long blockLast = Math.min(last, blockFirst | INDEX_MASK);
+                if (blocks[(int) (blockFirst >> LOG_BLOCK_SIZE)] != null) {
+                    values.setSize((int) (blockLast - blockFirst + 1));
+                    try (final RowSequence slice = RowSequenceFactory.forRange(blockFirst, blockLast)) {
+                        fillFromChunk(fillFromContext, values, slice);
+                    }
+                }
+                blockFirst = blockLast + 1;
+            }
         }
     }
 

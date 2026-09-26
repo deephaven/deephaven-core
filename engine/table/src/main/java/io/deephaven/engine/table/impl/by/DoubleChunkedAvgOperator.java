@@ -12,6 +12,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -163,6 +164,11 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
         } else {
             resultColumn.set(destination, runningSum.getUnsafe(destination) / totalNormal);
         }
+    }
+
+    @Override
+    ArrayBackedColumnSource<?> blockTemplate() {
+        return resultColumn;
     }
 
     @Override

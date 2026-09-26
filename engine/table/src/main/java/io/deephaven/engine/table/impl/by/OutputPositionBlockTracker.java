@@ -62,14 +62,20 @@ final class OutputPositionBlockTracker {
     /** The number of blocks in {@link #sparseBlocks}. */
     private int sparseBlockCount;
 
+    /** The fraction of the positions assigned that the released blocks must reach before blocks shift. */
+    private final double blockShiftFraction;
+
     /**
      * @param initialStates the output positions of the live states after the initial build
      * @param nextOutputPosition the next output position that will be assigned
      * @param collapseFreeFraction a closed block at least this fraction free is sparse, and runs of adjacent sparse
      *        blocks are collapsed; 1 or more disables collapsing
+     * @param blockShiftFraction the fraction of the positions assigned that the released blocks must reach before
+     *        {@link #planBlockShift} shifts blocks; zero shifts for any released block, and negative never shifts
      */
     OutputPositionBlockTracker(final RowSet initialStates, final int nextOutputPosition,
-            final double collapseFreeFraction) {
+            final double collapseFreeFraction, final double blockShiftFraction) {
+        this.blockShiftFraction = blockShiftFraction;
         sparseLiveLimit = collapseFreeFraction >= 1 ? 0 : (int) (BLOCK_SIZE * (1 - collapseFreeFraction));
         ensureCapacity(nextOutputPosition);
         adjust(initialStates, 1);
@@ -300,19 +306,17 @@ final class OutputPositionBlockTracker {
 
     /**
      * Plan to shift blocks down over the released blocks, keeping the states in order, once the released blocks are at
-     * least {@code blockShiftFraction} of the positions assigned. Starting at the released blocks the last shift left,
-     * or else at the first released block, each block of live states after it moves down by the number of released
-     * blocks passed over, as whole blocks, until the budget of live states to move runs out. The released blocks passed
-     * over become one run of released blocks just before the first block not moved, from which the next cycle resumes;
-     * if every block moves, they are given back at the end instead, and the next output position moves down by them.
+     * least the block shift fraction of the positions assigned. Starting at the released blocks the last shift left, or
+     * else at the first released block, each block of live states after it moves down by the number of released blocks
+     * passed over, as whole blocks, until the budget of live states to move runs out. The released blocks passed over
+     * become one run of released blocks just before the first block not moved, from which the next cycle resumes; if
+     * every block moves, they are given back at the end instead, and the next output position moves down by them.
      *
-     * @param blockShiftFraction the fraction of the positions assigned that the released blocks must reach; zero shifts
-     *        for any released block, and a negative fraction never shifts
      * @param nextOutputPosition the next output position that will be assigned
      * @param budget the most live states to move in this cycle, before any carried from the last one
      * @return the plan, which {@link #applyBlockShift} records once the moves are made
      */
-    BlockShift planBlockShift(final double blockShiftFraction, final int nextOutputPosition, final long budget) {
+    BlockShift planBlockShift(final int nextOutputPosition, final long budget) {
         if (blockShiftFraction < 0 || releasedBlockCount == 0
                 || ((long) releasedBlockCount << LOG_BLOCK_SIZE) < blockShiftFraction * nextOutputPosition) {
             carriedShiftBudget = 0;
@@ -446,6 +450,14 @@ final class OutputPositionBlockTracker {
                 return RowSetFactory.fromRange(first, Integer.MAX_VALUE);
             }
             return RowSetFactory.fromRange(first, ((long) stopBlock << LOG_BLOCK_SIZE) - 1);
+        }
+
+        /**
+         * @return the first position the shift passes over: the start of the first released block it moves blocks onto
+         *         or past. Positions before it are neither moved nor moved onto.
+         */
+        long firstPassedPosition() {
+            return (long) firstReleasedBlock << LOG_BLOCK_SIZE;
         }
 
         /**

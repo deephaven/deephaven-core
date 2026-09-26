@@ -33,8 +33,6 @@ abstract class FpChunkedNonNormalCounter {
     private LongArraySource nanCount;
     private LongArraySource positiveInfinityCount;
     private LongArraySource negativeInfinityCount;
-    // how many states, recorded so we can lazily ensureCapacity nan and infinities
-    private long capacity;
     // global flags for whether the nans, positive, and negative infinities are present
     private boolean hasPositiveInfinities = false;
     private boolean hasNegativeInfinities = false;
@@ -44,7 +42,7 @@ abstract class FpChunkedNonNormalCounter {
     final long updateNanCount(long destination, int newNans) {
         if (newNans > 0 && !hasNans) {
             nanCount = new LongArraySource();
-            nanCount.ensureCapacity(capacity);
+            nanCount.ensureCapacityLike(blockTemplate(), true);
             if (trackingPrev) {
                 nanCount.startTrackingPrevValues();
             }
@@ -73,7 +71,7 @@ abstract class FpChunkedNonNormalCounter {
 
         if (!hasNans) {
             nanCount = new LongArraySource();
-            nanCount.ensureCapacity(capacity);
+            nanCount.ensureCapacityLike(blockTemplate(), true);
             if (trackingPrev) {
                 nanCount.startTrackingPrevValues();
             }
@@ -89,7 +87,7 @@ abstract class FpChunkedNonNormalCounter {
     final long updatePositiveInfinityCount(long destination, int newPositiveInfinity) {
         if (newPositiveInfinity > 0 && !hasPositiveInfinities) {
             positiveInfinityCount = new LongArraySource();
-            positiveInfinityCount.ensureCapacity(capacity);
+            positiveInfinityCount.ensureCapacityLike(blockTemplate(), true);
             if (trackingPrev) {
                 positiveInfinityCount.startTrackingPrevValues();
             }
@@ -120,7 +118,7 @@ abstract class FpChunkedNonNormalCounter {
 
         if (!hasPositiveInfinities) {
             positiveInfinityCount = new LongArraySource();
-            positiveInfinityCount.ensureCapacity(capacity);
+            positiveInfinityCount.ensureCapacityLike(blockTemplate(), true);
             if (trackingPrev) {
                 positiveInfinityCount.startTrackingPrevValues();
             }
@@ -137,7 +135,7 @@ abstract class FpChunkedNonNormalCounter {
     final long updateNegativeInfinityCount(long destination, int newNegativeInfinity) {
         if (newNegativeInfinity > 0 && !hasNegativeInfinities) {
             negativeInfinityCount = new LongArraySource();
-            negativeInfinityCount.ensureCapacity(capacity);
+            negativeInfinityCount.ensureCapacityLike(blockTemplate(), true);
             if (trackingPrev) {
                 negativeInfinityCount.startTrackingPrevValues();
             }
@@ -167,7 +165,7 @@ abstract class FpChunkedNonNormalCounter {
 
         if (!hasNegativeInfinities) {
             negativeInfinityCount = new LongArraySource();
-            negativeInfinityCount.ensureCapacity(capacity);
+            negativeInfinityCount.ensureCapacityLike(blockTemplate(), true);
             if (trackingPrev) {
                 negativeInfinityCount.startTrackingPrevValues();
             }
@@ -181,8 +179,13 @@ abstract class FpChunkedNonNormalCounter {
         return totalNegativeInfinityCount;
     }
 
+    /**
+     * @return a per-state source of the operator that is always allocated, whose blocks a lazily created counter
+     *         allocates, so that it holds no storage for the blocks the operator has released
+     */
+    abstract ArrayBackedColumnSource<?> blockTemplate();
+
     final void ensureNonNormalCapacity(long tableSize) {
-        capacity = tableSize;
         if (hasNans) {
             nanCount.ensureCapacity(tableSize);
         }

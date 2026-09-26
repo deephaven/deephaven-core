@@ -3,14 +3,10 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 
@@ -107,7 +103,7 @@ public final class NonNullCounter {
     }
 
     /**
-     * Set a range of a count source to zero, filling it from a chunk of zeros one block at a time.
+     * Set a range of a count source to zero. Blocks a move left unallocated hold no counts and are left alone.
      *
      * @param counts the count source
      * @param firstKey the first row key to zero
@@ -118,16 +114,9 @@ public final class NonNullCounter {
             return;
         }
         final int chunkCapacity = (int) Math.min(ArrayBackedColumnSource.BLOCK_SIZE, lastKey - firstKey + 1);
-        try (final ChunkSink.FillFromContext fillFromContext = counts.makeFillFromContext(chunkCapacity);
-                final WritableLongChunk<Values> zeros = WritableLongChunk.makeWritableChunk(chunkCapacity);
-                final RowSequence range = RowSequenceFactory.forRange(firstKey, lastKey);
-                final RowSequence.Iterator rangeIterator = range.getRowSequenceIterator()) {
+        try (final WritableLongChunk<Values> zeros = WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             zeros.fillWithValue(0, chunkCapacity, 0L);
-            while (rangeIterator.hasMore()) {
-                final RowSequence slice = rangeIterator.getNextRowSequenceWithLength(chunkCapacity);
-                zeros.setSize(slice.intSize());
-                counts.fillFromChunk(fillFromContext, zeros, slice);
-            }
+            counts.fillRange(firstKey, lastKey, zeros);
         }
     }
 }

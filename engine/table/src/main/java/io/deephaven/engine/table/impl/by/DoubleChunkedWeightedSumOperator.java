@@ -226,7 +226,8 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
 
     private long allocateNans(long destination, long newNans) {
         nanCount = new LongArraySource();
-        nanCount.ensureCapacity(tableSize);
+        // only the blocks the result still has, since the others were released
+        nanCount.ensureCapacityLike(resultColumn, true);
         nanCount.set(destination, newNans);
         return newNans;
     }

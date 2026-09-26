@@ -682,31 +682,4 @@ public abstract class ArrayBackedColumnSource<T>
     public boolean providesFillUnordered() {
         return true;
     }
-
-    /**
-     * Null the values for a range of row keys by filling them from a chunk of nulls, one block at a time.
-     *
-     * @param firstKey the first row key to null
-     * @param lastKey the last row key to null, inclusive
-     */
-    @Override
-    public void setNull(final long firstKey, final long lastKey) {
-        // positions past the capacity hold no values, and an unbounded range is limited to the positions that do
-        final long last = Math.min(lastKey, maxIndex);
-        if (last < firstKey) {
-            return;
-        }
-        final int chunkCapacity = (int) Math.min(BLOCK_SIZE - 1, last - firstKey) + 1;
-        try (final FillFromContext fillFromContext = makeFillFromContext(chunkCapacity);
-                final WritableChunk<Values> nullChunk = getChunkType().makeWritableChunk(chunkCapacity);
-                final RowSequence range = RowSequenceFactory.forRange(firstKey, last);
-                final RowSequence.Iterator rangeIterator = range.getRowSequenceIterator()) {
-            nullChunk.fillWithNullValue(0, chunkCapacity);
-            while (rangeIterator.hasMore()) {
-                final RowSequence slice = rangeIterator.getNextRowSequenceWithLength(chunkCapacity);
-                nullChunk.setSize(slice.intSize());
-                fillFromChunk(fillFromContext, nullChunk, slice);
-            }
-        }
-    }
 }
