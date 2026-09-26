@@ -1077,6 +1077,11 @@ public class TestLongLongMap {
         }
 
         @Override
+        public long[] keysAndValuesSnapshot() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public long[] keyArray() {
             return map.keySet().toLongArray();
         }

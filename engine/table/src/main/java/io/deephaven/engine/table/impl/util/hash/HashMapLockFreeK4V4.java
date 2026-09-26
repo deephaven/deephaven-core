@@ -156,6 +156,11 @@ final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongM
     }
 
     @Override
+    public long[] keysAndValuesSnapshot() {
+        return keysAndValues;
+    }
+
+    @Override
     public long[] keyArray() {
         return keysOrValuesImpl(keysAndValues, null, false);
     }

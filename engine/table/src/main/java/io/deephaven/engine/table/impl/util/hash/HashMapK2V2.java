@@ -9,7 +9,7 @@ abstract class HashMapK2V2 extends HashMapBase {
     }
 
     final long putImpl(long[] kvs, long numBucketsReciprocal, long key, long value, boolean insertOnly) {
-        if (kvs == EMPTY_KEYS_AND_VALUES) {
+        if (isEmptyArray(kvs)) {
             kvs = allocateKeysAndValuesArray(2);
             numBucketsReciprocal = reciprocalOf(kvs);
         }

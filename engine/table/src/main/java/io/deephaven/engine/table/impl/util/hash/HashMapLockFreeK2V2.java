@@ -142,6 +142,11 @@ final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongM
     }
 
     @Override
+    public long[] keysAndValuesSnapshot() {
+        return keysAndValues;
+    }
+
+    @Override
     public long[] keyArray() {
         return keysOrValuesImpl(keysAndValues, null, false);
     }
