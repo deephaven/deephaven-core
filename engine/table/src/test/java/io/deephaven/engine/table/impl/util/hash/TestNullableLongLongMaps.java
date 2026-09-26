@@ -90,15 +90,24 @@ public class TestNullableLongLongMaps {
     }
 
     @Test
-    public void wantWindowedReadsGatesOnFootprint() {
+    public void wantWindowedReadsGatesOnFootprintAndChunkSize() {
         final int threshold = NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES;
-        // At and above the footprint threshold: windowed, however full the map happens to be (occupancy is not an
-        // input — it sawtooths with rehash and turned out to be second-order; see the javadoc).
-        assertTrue(NullableLongLongMaps.wantWindowedReads(threshold));
-        assertTrue(NullableLongLongMaps.wantWindowedReads(Integer.MAX_VALUE));
-        // Below it (cache-resident): serial.
-        assertFalse(NullableLongLongMaps.wantWindowedReads(threshold - 1));
-        assertFalse(NullableLongLongMaps.wantWindowedReads(0));
+        final int minChunk = NullableLongLongMaps.MIN_WINDOWED_CHUNK;
+        // At and above the footprint threshold, with a chunk that fills the window: windowed, however full the map
+        // happens to be (occupancy is not an input — it sawtooths with rehash and turned out to be second-order; see
+        // the javadoc).
+        assertTrue(NullableLongLongMaps.wantWindowedReads(threshold, minChunk));
+        assertTrue(NullableLongLongMaps.wantWindowedReads(Integer.MAX_VALUE, minChunk));
+        assertTrue(NullableLongLongMaps.wantWindowedReads(threshold, 4096));
+        // Below the footprint threshold (cache-resident): serial, whatever the chunk.
+        assertFalse(NullableLongLongMaps.wantWindowedReads(threshold - 1, minChunk));
+        assertFalse(NullableLongLongMaps.wantWindowedReads(threshold - 1, 4096));
+        assertFalse(NullableLongLongMaps.wantWindowedReads(0, 4096));
+        // A chunk too narrow to fill the window: serial, however large the map — the scalar cursor's single-key
+        // chunk above all.
+        assertFalse(NullableLongLongMaps.wantWindowedReads(threshold, minChunk - 1));
+        assertFalse(NullableLongLongMaps.wantWindowedReads(Integer.MAX_VALUE, 1));
+        assertFalse(NullableLongLongMaps.wantWindowedReads(Integer.MAX_VALUE, 0));
     }
 
     @Test

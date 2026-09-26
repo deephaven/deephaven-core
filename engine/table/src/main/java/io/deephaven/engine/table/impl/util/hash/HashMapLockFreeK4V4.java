@@ -102,11 +102,13 @@ final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongM
         // resident in the near caches simply does not have — service the chunk through the AMAC window; otherwise use
         // the serial loop, which ties or wins when the table fits those caches. Footprint is a function of the
         // snapshot's own length, so the choice is stable between rehashes and flips exactly when the array grows past
-        // the crossover. (Occupancy is deliberately not consulted; see wantWindowedReads.) A pinned
-        // ReadMode overrides the gate, for pricing and tests only. Reads are
-        // pure, so the windowed path may resolve lookups out of index order, invisibly to the caller.
+        // the crossover. (Occupancy is deliberately not consulted; see wantWindowedReads.) The chunk must also be
+        // wide enough to fill the window: its fixed cost is paid per call, and a single-key chunk — the scalar
+        // cursor's case — has nothing to overlap, measured at 1.6-2.3x slower under the window. A pinned ReadMode
+        // overrides the gate, for pricing and tests only. Reads are pure, so the windowed path may resolve lookups
+        // out of index order, invisibly to the caller.
         final boolean windowed = readMode == ReadMode.ADAPTIVE
-                ? NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2)
+                ? NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2, n)
                 : readMode == ReadMode.WINDOW;
         if (windowed) {
             getBatchImpl(localKvs, reciprocalOf(localKvs), keys, result);
