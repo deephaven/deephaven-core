@@ -335,6 +335,12 @@ public class AsOfJoinHelper {
                                 try (final RowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot)) {
                                     final RowSet rightRowSet = asOfJoinStateManager.getRightRowset(slot);
                                     assert arrayValuesCache != null;
+                                    // a refreshing left table is joined to a table built from the static right side,
+                                    // so a bucket the left probe reports has right rows: its row set, or once that is
+                                    // released, its cached stamps
+                                    if (rightRowSet == null) {
+                                        Assert.neqNull(arrayValuesCache.getKeys(slot), "cached right stamp keys");
+                                    }
                                     try {
                                         processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet,
                                                 rowRedirection, rightStampSource, keyChunk, valuesChunk,
