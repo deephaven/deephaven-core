@@ -94,7 +94,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         if (state != QueryState.NOT_STARTED) {
             throw new IllegalStateException("Can't resume a query that has already started");
         }
-        return resumeInternal();
+        return resumeInternal(false);
     }
 
     @Override
@@ -146,22 +146,34 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     /**
      * Resumes a suspend query.
      * <p>
-     * It is an error to resume a query while another query is running on this thread.
+     * The query may be resumed on a thread that is already running another query; that outer query gets the thread back
+     * when the returned closeable is closed.
      *
-     * @return this
+     * @return a closeable that restores the query that was running on this thread before, if any
      */
     public synchronized SafeCloseable resumeQuery() {
         if (state != QueryState.SUSPENDED) {
             throw new IllegalStateException("Can't resume a query that isn't suspended");
         }
 
-        return resumeInternal();
+        return resumeInternal(true);
     }
 
-    private SafeCloseable resumeInternal() {
-        final QueryPerformanceRecorder threadLocalInstance = QueryPerformanceRecorderState.getInstance();
-        if (threadLocalInstance != QueryPerformanceRecorderState.DUMMY_RECORDER) {
-            throw new IllegalStateException("Can't resume a query while another query is in operation");
+    /**
+     * Installs this recorder on the current thread and marks the query running.
+     *
+     * @param allowNesting whether this query may take over a thread that is already running another query. A resumed
+     *        query may: an RPC that fails an export synchronously inside submit() can complete an unrelated request,
+     *        whose recorder then resumes here to finish. A newly started query may not.
+     * @return a closeable that hands the thread back to the query that was running before, if any
+     */
+    private SafeCloseable resumeInternal(final boolean allowNesting) {
+        final QueryPerformanceRecorder outerInstance = QueryPerformanceRecorderState.getInstance();
+        if (outerInstance == this) {
+            throw new IllegalStateException("Can't resume a query that is already in operation on this thread");
+        }
+        if (!allowNesting && outerInstance != QueryPerformanceRecorderState.DUMMY_RECORDER) {
+            throw new IllegalStateException("Can't start a query while another query is in operation");
         }
         QueryPerformanceRecorderState.THE_LOCAL.set(this);
 
@@ -170,7 +182,12 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         Assert.eqNull(catchAllNugget, "catchAllNugget");
         startCatchAll();
 
-        return QueryPerformanceRecorderState::resetInstance;
+        return () -> {
+            QueryPerformanceRecorderState.resetInstance();
+            if (outerInstance != QueryPerformanceRecorderState.DUMMY_RECORDER) {
+                QueryPerformanceRecorderState.THE_LOCAL.set(outerInstance);
+            }
+        };
     }
 
     private void startCatchAll() {
