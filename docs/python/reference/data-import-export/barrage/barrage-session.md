@@ -2,7 +2,7 @@
 title: barrage_session
 ---
 
-The `barrage_session` method returns a cached Deephaven gRPC session ([`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession)) to a remote server if one is available; otherwise, it creates a new [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession).
+The `barrage_session` method creates a new Deephaven gRPC session ([`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession)) to a remote server. Each call opens its own connection. Use the session's [`subscribe`](./subscribe.md) and [`snapshot`](./snapshot-barrage.md) methods to retrieve remote tables, and [`close`](./close.md) it when you are done.
 
 <!--TODO: Add information about client mutual TLS authentication when it's added. -->
 
@@ -15,7 +15,8 @@ barrage_session(
   auth_type: str = 'Anonymous',
   auth_token: str = '',
   use_tls: bool = False,
-  tls_root_certs: bytes = None
+  tls_root_certs: bytes = None,
+  extra_headers: dict[str, str] = None
 ) -> BarrageSession
 ```
 
@@ -39,7 +40,7 @@ The authentication type string. Can be "Anonymous", "Basic", or any custom-built
 </Param>
 <Param name="auth_token" type="str" optional>
 
-The authentication token string. When auth_type is Basic, it must be "user:password". When `auth_type` is Anonymous, `auth_token` will be ignored. When `auth_type` is a custom-built authenticator, `auth_token` must conform to the specific requirements of the authenticator.
+The authentication token string. When `auth_type` is `Basic`, it must be the Base64 encoding of `user:password`; unlike [`pydeephaven.Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session), `barrage_session` sends the token as is and does not encode it for you. When `auth_type` is `Anonymous`, leave `auth_token` empty; a non-empty token is sent to the server, which rejects it. When `auth_type` is a custom-built authenticator, `auth_token` must conform to the specific requirements of the authenticator.
 
 </Param>
 <Param name="use_tls" type="bool" optional>
@@ -49,7 +50,12 @@ If `True`, the connection will be encrypted using TLS. The default is `False`.
 </Param>
 <Param name="tls_root_certs" type="bytes" optional>
 
-The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. `True` implies the use of a TLS connection and the `use_tls` argument should be passed as `True`. Defaults to `None`.
+The PEM-encoded root certificates to use for TLS connection, or `None` (or an empty value) to use the local server's outbound TLS configuration (the `outbound.ssl.*` properties, or otherwise the server's own SSL configuration) together with the JDK's default trust store. `barrage_session` has no client certificate (mutual TLS) parameters; a client identity in the local server's `outbound.ssl.*` configuration is used only when `tls_root_certs` is `None` or empty, because a non-empty value replaces that configuration. A non-empty value requires a TLS connection, so `use_tls` must also be `True`; otherwise, `barrage_session` raises an error. Defaults to `None`.
+
+</Param>
+<Param name="extra_headers" type="dict[str, str]" optional>
+
+Extra headers to set when configuring the gRPC channel. Defaults to `None`.
 
 </Param>
 </ParamTable>
@@ -60,7 +66,7 @@ A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.B
 
 ## Examples
 
-The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`.
+The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`. This and the next two examples use the default anonymous authentication, so the target server must allow it (`-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`); the default server configuration uses pre-shared key authentication.
 
 ```python skip-test
 from deephaven.barrage import barrage_session
@@ -99,4 +105,9 @@ barrage_sesh = barrage_session(
 
 ## Related documentation
 
+- [What is Barrage?](../../../conceptual/what-is-barrage.md)
+- [Capture Python client tables](../../../how-to-guides/capture-tables.md)
+- [`subscribe`](./subscribe.md)
+- [`snapshot`](./snapshot-barrage.md)
+- [`close`](./close.md)
 - [Pydoc](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session)

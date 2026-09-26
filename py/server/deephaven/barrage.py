@@ -133,10 +133,10 @@ def barrage_session(
     tls_root_certs: Optional[bytes] = None,
     extra_headers: Optional[dict[str, str]] = None,
 ) -> BarrageSession:
-    """Returns a Deephaven gRPC session to a remote server if a cached session is available; otherwise, creates a new
-    session.
+    """Creates a new Deephaven gRPC session to a remote server.
 
-    Note: client authentication is not supported yet.
+    Note: this function has no client certificate (mutual TLS) parameters. A client identity configured in the local
+    server's outbound.ssl.* properties is used only when tls_root_certs is None or empty.
 
     Args:
         host (str): the host name or IP address of the Deephaven server.
@@ -144,12 +144,14 @@ def barrage_session(
         auth_type (str): the authentication type string, can be "Anonymous', 'Basic", or any custom-built
             authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",
             default is 'Anonymous'.
-        auth_token (str): the authentication token string. When auth_type is 'Basic', it must be
-            "user:password"; when auth_type is "Anonymous', it will be ignored; when auth_type is a custom-built
-            authenticator, it must conform to the specific requirement of the authenticator
+        auth_token (str): the authentication token string. When auth_type is 'Basic', it must be the Base64
+            encoding of "user:password" (it is sent as is, without encoding); when auth_type is 'Anonymous', it
+            must be empty; when auth_type is a custom-built authenticator, it must conform to the specific
+            requirement of the authenticator
         use_tls (bool): if True, use a TLS connection.  Defaults to False
-        tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
-             If not None implies use a TLS connection and the use_tls argument should have been passed
+        tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None (or empty) to use the
+             local server's outbound TLS configuration (or otherwise its own SSL configuration) with the JDK's default
+             trust store. A non-empty value requires a TLS connection, so the use_tls argument should have been passed
              as True. Defaults to None
         extra_headers (Optional[dict[str, str]]): extra headers to set when configuring the gRPC channel. Defaults to None.
 

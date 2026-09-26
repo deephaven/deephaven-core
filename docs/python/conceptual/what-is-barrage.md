@@ -19,12 +19,12 @@ Barrage solves these problems by:
 
 ## When to use Barrage
 
-| Use Case                                                                        | Barrage Feature                          |
-| ------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Real-time dashboards**: Display live-updating tables in a UI                  | Subscribe to streaming updates           |
-| **Server-to-server data sharing**: Move tables between Deephaven instances      | Subscribe or snapshot via shared tickets |
-| **Point-in-time analysis**: Capture table state for offline processing          | Snapshot to get a static copy            |
-| **Large table visualization**: Display a scrollable view of a million-row table | Viewports (via web UI or JS client)      |
+| Use Case                                                                        | Barrage Feature                            |
+| ------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Real-time dashboards**: Display live-updating tables in a UI                  | Subscribe to streaming updates             |
+| **Server-to-server data sharing**: Move tables between Deephaven instances      | Subscribe or snapshot via shared tickets   |
+| **Point-in-time analysis**: Capture table state for offline processing          | Snapshot to get a static copy              |
+| **Large table visualization**: Display a scrollable view of a million-row table | Viewports (web UI, JS client, Java client) |
 
 ## Key concepts
 
@@ -34,11 +34,12 @@ Barrage supports two primary modes of retrieving data:
 
 - **Subscription**: Opens a persistent connection that streams updates as the source table changes. The client receives an initial snapshot followed by incremental updates. Use this for ticking tables you want to monitor in real time.
 
-- **Snapshot**: Retrieves a one-time, static copy of the table. The connection closes after the data is delivered. Use this for static tables or when you need a point-in-time capture.
+- **Snapshot**: Retrieves a one-time, static copy of the table. The request completes once the data is delivered. Use this for static tables or when you need a point-in-time capture.
 
 ```python skip-test
 from deephaven.barrage import barrage_session
 
+# Uses anonymous authentication; pass auth_type and auth_token for a server that requires credentials
 session = barrage_session(host="remote-server", port=10000)
 
 # Subscription: receives ongoing updates
@@ -66,19 +67,19 @@ See [Capture Python client tables](../how-to-guides/capture-tables.md) for compl
 
 ### Viewports
 
-A viewport defines a window over a table — a range of row positions and a subset of columns. Viewports are essential for interactive applications where users scroll through large tables. Rather than streaming millions of rows, the server sends only the data visible in the current view.
+A viewport defines a window over a table — a set of row positions (typically a contiguous range) and a subset of columns. Viewports are essential for interactive applications where users scroll through large tables. Rather than streaming millions of rows, the server sends only the data visible in the current view.
 
-Viewports are automatically managed by Deephaven's web UI and JavaScript client. When a user scrolls or resizes a table view, the client updates its viewport subscription accordingly.
+Deephaven's web UI manages viewports automatically: when a user scrolls or resizes a table view, it updates its viewport subscription accordingly. JavaScript client code sets a viewport with `setViewport`. The Java client can also request a viewport, a subset of columns, or both when it subscribes.
 
 > [!NOTE]
-> The Python `BarrageSession` API currently supports full-table subscriptions. Viewport functionality is available through the JavaScript client or by subscribing to pre-filtered tables.
+> The Python `BarrageSession` API subscribes to and snapshots entire tables only. To limit the rows or columns you receive from Python, publish a filtered or narrowed table (for example, with [`where`](../reference/table-operations/filter/where.md) or [`view`](../reference/table-operations/select/view.md)) and subscribe to that instead. Viewports and column subsets are available through the JavaScript and Java clients.
 
 ### Update intervals and batching
 
 Barrage aggregates table updates before sending them to subscribers. This batching reduces network overhead when tables update frequently. The update interval is configurable:
 
 - **Server default**: Set via `-Dbarrage.minUpdateInterval` (milliseconds). Default: 1000 (1 second).
-- **Per-subscription**: Configurable when initiating the subscription (advanced use).
+- **Per-subscription**: The Java and JavaScript clients can request a different interval when initiating a subscription. The interval is fixed for the life of the subscription; to use a different interval, create a new subscription. The Python `BarrageSession` API always uses the server default.
 
 A shorter interval reduces latency but increases network traffic. A longer interval reduces traffic but introduces delay.
 
@@ -86,12 +87,12 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 
 ![Barrage architecture](../assets/conceptual/remote_and_local_server.png)
 
-1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), export tickets, or shared tickets for cross-session access.
+1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), application tickets, export tickets, or shared tickets for cross-session access.
 2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata.
 3. **Local server** subscribes via `BarrageSession` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
 
 > [!NOTE]
-> Java and Groovy clients are unique among Deephaven clients — they can perform downstream computation locally because they run the full Deephaven engine. Other clients (Python via pydeephaven, JavaScript, C++) receive data but rely on the server for query execution.
+> Only receivers that run the Deephaven engine can perform downstream computation on a subscribed table locally: a Deephaven server (Python or Groovy) that subscribes with `BarrageSession` or a [URI](../how-to-guides/use-uris.md), and the Java client. Other clients (`pydeephaven`, JavaScript, C++) receive data but rely on the server for query execution.
 
 ## Barrage vs. Arrow Flight
 
@@ -108,18 +109,21 @@ Barrage is fully compatible with Arrow Flight — you can use a standard Flight 
 
 ## Performance considerations
 
-- **Large initial snapshots**: When subscribing to a large table, the initial snapshot can be memory-intensive. Use [subscription growth controls](../how-to-guides/performance/barrage-performance.md#control-subscription-snapshot-size) to break large snapshots into smaller chunks.
+- **Large initial snapshots**: When subscribing to a large table, the initial snapshot can be memory-intensive. By default, Barrage breaks large initial snapshots into smaller chunks; tune the chunk size with the [subscription growth controls](../how-to-guides/performance/barrage-performance.md#control-subscription-snapshot-size).
 
-- **High-frequency updates**: Tables that tick rapidly can generate significant network traffic. Consider increasing `barrage.minUpdateInterval` or filtering data before subscription.
+- **High-frequency updates**: Tables that tick rapidly can generate significant network traffic. Consider increasing [`barrage.minUpdateInterval`](../how-to-guides/performance/barrage-performance.md#update-interval) or filtering data before subscription.
 
-- **Column selection**: Subscribe only to the columns you need. Fewer columns means less data to transfer.
+- **Column selection**: Subscribe only to the columns you need. Fewer columns means less data to transfer. From Python, publish a narrowed table (for example, with [`view`](../reference/table-operations/select/view.md)) and subscribe to that.
 
 - **Monitoring**: Use the [Barrage performance tables](../how-to-guides/performance/barrage-performance.md) to track subscription health and identify bottlenecks.
 
 ## Related documentation
 
 - [`barrage_session` reference](../reference/data-import-export/barrage/barrage-session.md) - API reference for creating Barrage sessions
+- [`subscribe`](../reference/data-import-export/barrage/subscribe.md) and [`snapshot`](../reference/data-import-export/barrage/snapshot-barrage.md) - API reference for retrieving remote tables
 - [Capture Python client tables](../how-to-guides/capture-tables.md) - Complete tutorial for using Barrage with the Python client
+- [Use URIs to share tables](../how-to-guides/use-uris.md) - Subscribe to remote tables by URI
+- [Arrow Flight and Deephaven](../how-to-guides/data-import-export/arrow-flight.md) - Use standard Arrow Flight clients with Deephaven
 - [Barrage metrics](../how-to-guides/performance/barrage-performance.md) - Monitor Barrage performance
 - [Interpret Barrage metrics](./barrage-metrics.md) - Understand what the metrics mean
 - [Barrage schema annotation](../how-to-guides/data-import-export/barrage-schema.md) - Annotate schemas for complex types

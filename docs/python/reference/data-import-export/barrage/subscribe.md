@@ -25,7 +25,7 @@ The bytes of the ticket.
 
 ## Returns
 
-A `Table` that is a subscribed to the remote table.
+A refreshing `Table` that is subscribed to the remote table. Raises a `DHError` if the subscription fails.
 
 ## Examples
 
@@ -69,10 +69,10 @@ new_local_table = local_table.last_by()
 ```
 
 > [!IMPORTANT]
-> Shared tickets have a life cycle tied to the source. Tickets can be fetched by other Deephaven sessions to access the table _only_ as long as the table is not released. When the table is released either through an explicit call of the [`close`](./close.md) method, implicitly through garbage collection, or through the closing of the publishing session, the shared ticket will no longer be valid.
+> Shared tickets have a life cycle tied to the source. Tickets can be fetched by other Deephaven sessions to access the table _only_ as long as the table is not released. When the table is released either through an explicit call of the publishing client table's [`close`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table.close) method, implicitly through garbage collection, or through the closing of the publishing session, the shared ticket will no longer be valid.
 
 <details>
-  <summary> The following `docker-compose.yml` file was used to run the above code block. It starts two Deephaven servers: one running on port `10001` and the other on port `10000`. The code block was run from the server running on port `10001`. </summary>
+  <summary> The following `docker-compose.yml` file was used to run the above code block. It starts two Deephaven servers: `deephaven1`, exposed on host port `10001`, and `deephaven.local`, exposed on host port `10000` with PSK authentication. The code block was run from `deephaven1`. </summary>
 
 ```yaml
 services:
@@ -85,7 +85,7 @@ services:
     environment:
       - START_OPTS=-Xmx4g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 
-  deephaven2:
+  deephaven.local:
     image: ghcr.io/deephaven/server:latest
     ports:
       - 10000:10000
@@ -99,6 +99,11 @@ services:
 
 ## Related documentation
 
+- [What is Barrage?](../../../conceptual/what-is-barrage.md)
+- [Capture Python client tables](../../../how-to-guides/capture-tables.md)
+- [`barrage_session`](./barrage-session.md)
+- [`snapshot`](./snapshot-barrage.md)
+- [`close`](./close.md)
 - [`fetch_table`](../../client-api/session/fetch-table.md)
 - [`publish_table`](../../client-api/session/publish-table.md)
 - [Pydoc](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession.subscribe)

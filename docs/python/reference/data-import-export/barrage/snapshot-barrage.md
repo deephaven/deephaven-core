@@ -25,11 +25,11 @@ The bytes of the ticket.
 
 ## Returns
 
-A `Table` that is a snapshot of the remote table.
+A static `Table` that is a snapshot of the remote table. Raises a `DHError` if the snapshot fails.
 
 ## Examples
 
-The following example installs the Deephaven Python Client ([`pydeephaven`](/core/client-api/python/)) and creates a remote Deephaven server running on our local machine on port `9999` with [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md).
+The following example installs the Deephaven Python Client ([`pydeephaven`](/core/client-api/python/)) and connects to a second Deephaven server on port `9999` that uses [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md) (see the `docker-compose.yml` file below).
 Next, the remote server is used to create a table and a shared ticket pointing to the table that can be shared with other sessions.
 Finally, a Barrage session is started that listens to the same server at port `9999`, and a snapshot of the shared ticket's table is obtained.
 
@@ -52,7 +52,7 @@ client_session.publish_table(client_ticket, client_table)
 
 # Create a barrage session that listens to the server on port 9999
 my_barrage_session = barrage_session(host="host.docker.internal", port=9999)
-# Subscribe to the client table ticking data
+# Take a static snapshot of the client table
 local_table = my_barrage_session.snapshot(client_ticket.bytes)
 # Perform operations on this now-local table
 new_local_table = local_table.where("X > 5")
@@ -86,4 +86,11 @@ services:
 
 ## Related documentation
 
+- [What is Barrage?](../../../conceptual/what-is-barrage.md)
+- [Capture Python client tables](../../../how-to-guides/capture-tables.md)
+- [`barrage_session`](./barrage-session.md)
+- [`subscribe`](./subscribe.md)
+- [`close`](./close.md)
+- [`fetch_table`](../../client-api/session/fetch-table.md)
+- [`publish_table`](../../client-api/session/publish-table.md)
 - [Pydoc](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession.snapshot)
