@@ -335,9 +335,14 @@ public class AsOfJoinHelper {
                                 try (final RowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot)) {
                                     final RowSet rightRowSet = asOfJoinStateManager.getRightRowset(slot);
                                     assert arrayValuesCache != null;
-                                    processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
-                                            rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
-                                    asOfJoinStateManager.releaseRightRowSet(slot);
+                                    try {
+                                        processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet,
+                                                rowRedirection, rightStampSource, keyChunk, valuesChunk,
+                                                arrayValuesCache, slot);
+                                    } finally {
+                                        // a failed update fails the result, which never stamps this bucket again
+                                        asOfJoinStateManager.releaseRightRowSet(slot);
+                                    }
                                 }
                             }
                         }
