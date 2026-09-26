@@ -40,6 +40,8 @@ DEFAULT_JVM_PROPERTIES = {
     "stdout.toLogBuffer": "false",
     "stderr.toLogBuffer": "false",
     "logback.configurationFile": "logback-minimal.xml",
+    # Enable unsafe memory access for Netty 4.2, required as of Arrow 19 on Java 25
+    "io.netty.noUnsafe": "false",
 }
 DEFAULT_JVM_ARGS = [
     # Disable the JVM's signal handling for interactive python consoles - if python will
