@@ -36,7 +36,7 @@ public class TestLongLongMap {
 
     private static BiFunction<Integer, Float, NullableLongLongMap> shaped(final Shape shape, final ReadMode readMode) {
         return (capacity, loadFactor) -> NullableLongLongMaps.of(shape, capacity, loadFactor,
-                HashMapBase.DEFAULT_NO_ENTRY_VALUE, readMode);
+                HashMapLockFreeKnVn.DEFAULT_NO_ENTRY_VALUE, readMode);
     }
 
     @Parameterized.Parameters(name = "map={0}, cap={1}, load={2}")
@@ -89,13 +89,13 @@ public class TestLongLongMap {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
         try {
-            scalarAccess.put(HashMapBase.SPECIAL_KEY_FOR_DELETED_SLOT, 12345);
+            scalarAccess.put(HashMapLockFreeKnVn.SPECIAL_KEY_FOR_DELETED_SLOT, 12345);
             fail("SPECIAL_KEY_FOR_DELETED_SLOT should not be accepted");
         } catch (io.deephaven.base.verify.AssertionFailure e) {
             // do nothing
         }
         try {
-            scalarAccess.put(HashMapBase.REDIRECTED_KEY_FOR_EMPTY_SLOT, 12345);
+            scalarAccess.put(HashMapLockFreeKnVn.REDIRECTED_KEY_FOR_EMPTY_SLOT, 12345);
             fail("REDIRECTED_KEY_FOR_EMPTY_SLOT should not be accepted");
         } catch (io.deephaven.base.verify.AssertionFailure e) {
             // do nothing
@@ -260,14 +260,14 @@ public class TestLongLongMap {
     private void checkTombstoneReuse(final int occupied, final int deleted, final int alsoDeleted) {
         final String where = "occupied=" + occupied + " deleted=" + deleted + " alsoDeleted=" + alsoDeleted;
         final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
-        final HashMapBase base = (HashMapBase) map;
+        final HashMapLockFreeKnVn base = (HashMapLockFreeKnVn) map;
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         // The first key goes in before anything is measured: a never-populated map has no array, hence no capacity.
         final long first = 1;
         cursor.put(first, 10);
         final int numBuckets = map.capacity() / factory.getEntriesPerBucket();
-        final long reciprocal = HashMapBase.reciprocalFor(numBuckets);
-        final int bucket = HashMapBase.probe1(first, numBuckets, reciprocal);
+        final long reciprocal = HashMapLockFreeKnVn.reciprocalFor(numBuckets);
+        final int bucket = HashMapLockFreeKnVn.probe1(first, numBuckets, reciprocal);
         // occupied + 1 keys whose probes all start in that bucket, in the order they will be inserted
         final long[] colliding = new long[occupied + 1];
         colliding[0] = first;
@@ -275,7 +275,7 @@ public class TestLongLongMap {
         for (int ci = 1; ci < colliding.length; ++ci) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
+            } while (HashMapLockFreeKnVn.probe1(candidate, numBuckets, reciprocal) != bucket);
             colliding[ci] = candidate;
         }
         for (int ki = 1; ki < occupied; ++ki) {
@@ -332,34 +332,34 @@ public class TestLongLongMap {
         final int entriesPerBucket = factory.getEntriesPerBucket();
         // Room for every key of the test without a rehash, whatever the parameterized capacity.
         final NullableLongLongMap map = factory.create(1000, loadFactor);
-        final HashMapBase base = (HashMapBase) map;
+        final HashMapLockFreeKnVn base = (HashMapLockFreeKnVn) map;
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         final long first = 1;
         cursor.put(first, 10);
         final int numBuckets = map.capacity() / entriesPerBucket;
-        final long reciprocal = HashMapBase.reciprocalFor(numBuckets);
-        final int bucket = HashMapBase.probe1(first, numBuckets, reciprocal);
+        final long reciprocal = HashMapLockFreeKnVn.reciprocalFor(numBuckets);
+        final int bucket = HashMapLockFreeKnVn.probe1(first, numBuckets, reciprocal);
         // Fill the first bucket: entriesPerBucket keys whose probes start there, then one more, the key under test.
         long candidate = first;
         for (int ki = 1; ki < entriesPerBucket; ++ki) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
+            } while (HashMapLockFreeKnVn.probe1(candidate, numBuckets, reciprocal) != bucket);
             cursor.put(candidate, 10 + ki);
         }
         do {
             ++candidate;
-        } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
+        } while (HashMapLockFreeKnVn.probe1(candidate, numBuckets, reciprocal) != bucket);
         final long key = candidate;
         // Its second bucket, as the probe loop computes it: one plus the second hash, in buckets, past the first.
-        final int secondBucket = (bucket + 1 + HashMapBase.probe2(key, numBuckets - 2)) % numBuckets;
+        final int secondBucket = (bucket + 1 + HashMapLockFreeKnVn.probe2(key, numBuckets - 2)) % numBuckets;
         // filled keys whose first bucket is that second bucket; they take its slots 0..filled-1 in order.
         final long[] others = new long[filled];
         candidate = 1_000_000;
         for (int ki = 0; ki < filled; ++ki) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != secondBucket);
+            } while (HashMapLockFreeKnVn.probe1(candidate, numBuckets, reciprocal) != secondBucket);
             others[ki] = candidate;
             cursor.put(candidate, 100 + ki);
         }
@@ -416,7 +416,7 @@ public class TestLongLongMap {
     @Test
     public void zeroComesBackThroughKeys() {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
-        final long specialKey = HashMapBase.SPECIAL_KEY_FOR_EMPTY_SLOT;
+        final long specialKey = HashMapLockFreeKnVn.SPECIAL_KEY_FOR_EMPTY_SLOT;
         final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
         scalarAccess.put(specialKey, 12345);
         final long[] keys = ((NullableLongLongMapTestAccessors) map).keyArray();
@@ -456,7 +456,7 @@ public class TestLongLongMap {
         assertArrayEquals(expectedKeys, actualKeys);
         assertArrayEquals(expectedValues, actualValues);
 
-        if (test instanceof HashMapBase) {
+        if (test instanceof HashMapLockFreeKnVn) {
             // Also exercise the caller-provided-space overloads.
             final long[] keySpace = new long[reference.size()];
             final long[] valueSpace = new long[reference.size()];

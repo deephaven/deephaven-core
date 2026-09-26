@@ -10,13 +10,13 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class TestHashMapBase {
+public class TestHashMapLockFreeKnVn {
     private static final double[] LOAD_FACTORS = {0.5, 0.75, 0.9};
 
     /**
      * A put rehashes when the slot count reaches the threshold {@code (int) (entryCapacity * loadFactor)}. Verify that
-     * {@link HashMapBase#capacityForExpectedEntries(int, double)} always produces a capacity whose threshold strictly
-     * clears the expected count, and that it is the smallest such capacity (so we are not over-allocating).
+     * {@link HashMapLockFreeKnVn#capacityForExpectedEntries(int, double)} always produces a capacity whose threshold
+     * strictly clears the expected count, and that it is the smallest such capacity (so we are not over-allocating).
      */
     @Test
     public void capacityForExpectedEntriesClearsThreshold() {
@@ -39,7 +39,7 @@ public class TestHashMapBase {
     }
 
     private static void checkCapacity(final int expected, final double loadFactor) {
-        final int capacity = HashMapBase.capacityForExpectedEntries(expected, loadFactor);
+        final int capacity = HashMapLockFreeKnVn.capacityForExpectedEntries(expected, loadFactor);
         final String message = String.format("loadFactor=%f, expected=%d, capacity=%d", loadFactor, expected, capacity);
         if (capacity == Integer.MAX_VALUE) {
             // No int capacity can promise this count at this load factor; the request saturates and the map instead
@@ -89,7 +89,7 @@ public class TestHashMapBase {
         for (final double loadFactor : LOAD_FACTORS) {
             for (final int expected : new int[] {Integer.MAX_VALUE, Integer.MAX_VALUE - 1, 2_000_000_000}) {
                 assertEquals(Integer.MAX_VALUE,
-                        HashMapBase.capacityForExpectedEntries(expected, loadFactor));
+                        HashMapLockFreeKnVn.capacityForExpectedEntries(expected, loadFactor));
             }
         }
     }
@@ -101,7 +101,7 @@ public class TestHashMapBase {
     @Test
     public void desiredBucketCountDoesNotOverflow() {
         for (final int entriesPerBucket : new int[] {1, 2, 4}) {
-            final int buckets = HashMapBase.desiredBucketCount(Integer.MAX_VALUE, entriesPerBucket);
+            final int buckets = HashMapLockFreeKnVn.desiredBucketCount(Integer.MAX_VALUE, entriesPerBucket);
             final int expected = (int) (((long) Integer.MAX_VALUE + entriesPerBucket - 1) / entriesPerBucket);
             assertTrue("buckets > 0 for width " + entriesPerBucket, buckets > 0);
             assertEquals(expected, buckets);
@@ -115,13 +115,13 @@ public class TestHashMapBase {
     @Test
     public void grownBucketCountSaturatesAtTheMaximum() {
         for (final int entriesPerBucket : new int[] {1, 2, 4}) {
-            final int max = HashMapBase.getMaxBucketCapacity(entriesPerBucket);
+            final int max = HashMapLockFreeKnVn.getMaxBucketCapacity(entriesPerBucket);
             // Each width's maximum is the largest prime whose array fits in an int: near 2^31 / (2 * width).
             assertTrue(max > Integer.MAX_VALUE / (2 * entriesPerBucket) - 100_000);
-            assertEquals(2000, HashMapBase.grownBucketCount(1000, entriesPerBucket));
-            assertEquals(max, HashMapBase.grownBucketCount(max / 2 + 1, entriesPerBucket));
-            assertEquals(max, HashMapBase.grownBucketCount(max - 1, entriesPerBucket));
-            assertEquals(max, HashMapBase.grownBucketCount(max, entriesPerBucket));
+            assertEquals(2000, HashMapLockFreeKnVn.grownBucketCount(1000, entriesPerBucket));
+            assertEquals(max, HashMapLockFreeKnVn.grownBucketCount(max / 2 + 1, entriesPerBucket));
+            assertEquals(max, HashMapLockFreeKnVn.grownBucketCount(max - 1, entriesPerBucket));
+            assertEquals(max, HashMapLockFreeKnVn.grownBucketCount(max, entriesPerBucket));
         }
     }
 
@@ -134,9 +134,9 @@ public class TestHashMapBase {
         for (final Shape shape : Shape.values()) {
             final NullableLongLongMap map = NullableLongLongMaps.of(shape, 16, 0.5, -1);
             final NullableLongLongMapTestAccessors accessors = (NullableLongLongMapTestAccessors) map;
-            assertTrue(shape.name(), HashMapBase.isEmptyArray(accessors.keysAndValuesSnapshot()));
-            assertEquals(HashMapBase.SHAPE_TAG_EMPTY,
-                    HashMapBase.shapeTagOf(accessors.keysAndValuesSnapshot()));
+            assertTrue(shape.name(), HashMapLockFreeKnVn.isEmptyArray(accessors.keysAndValuesSnapshot()));
+            assertEquals(HashMapLockFreeKnVn.SHAPE_TAG_EMPTY,
+                    HashMapLockFreeKnVn.shapeTagOf(accessors.keysAndValuesSnapshot()));
             final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
             cursor.put(1, 1);
             long[] kvs = accessors.keysAndValuesSnapshot();
@@ -149,14 +149,15 @@ public class TestHashMapBase {
             kvs = accessors.keysAndValuesSnapshot();
             checkHeader(shape, kvs);
             map.resetToNull();
-            assertTrue(shape.name(), HashMapBase.isEmptyArray(accessors.keysAndValuesSnapshot()));
+            assertTrue(shape.name(), HashMapLockFreeKnVn.isEmptyArray(accessors.keysAndValuesSnapshot()));
         }
     }
 
     private static void checkHeader(final Shape shape, final long[] kvs) {
-        assertEquals(shape.name(), shape.bucketWidth(), HashMapBase.shapeTagOf(kvs));
-        assertFalse(shape.name(), HashMapBase.isEmptyArray(kvs));
-        final int numBuckets = (kvs.length - HashMapBase.HEADER_LONGS) / (shape.bucketWidth() * 2);
-        assertEquals(shape.name(), HashMapBase.reciprocalFor(numBuckets), HashMapBase.reciprocalOf(kvs));
+        assertEquals(shape.name(), shape.bucketWidth(), HashMapLockFreeKnVn.shapeTagOf(kvs));
+        assertFalse(shape.name(), HashMapLockFreeKnVn.isEmptyArray(kvs));
+        final int numBuckets = (kvs.length - HashMapLockFreeKnVn.HEADER_LONGS) / (shape.bucketWidth() * 2);
+        assertEquals(shape.name(), HashMapLockFreeKnVn.reciprocalFor(numBuckets),
+                HashMapLockFreeKnVn.reciprocalOf(kvs));
     }
 }

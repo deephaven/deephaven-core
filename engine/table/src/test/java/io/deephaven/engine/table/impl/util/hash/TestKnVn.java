@@ -47,8 +47,9 @@ public class TestKnVn {
     }
 
     private static NullableLongLongMap withDefaults(final Shape shape) {
-        return NullableLongLongMaps.of(shape, HashMapBase.DEFAULT_INITIAL_CAPACITY, HashMapBase.DEFAULT_LOAD_FACTOR,
-                HashMapBase.DEFAULT_NO_ENTRY_VALUE);
+        return NullableLongLongMaps.of(shape, HashMapLockFreeKnVn.DEFAULT_INITIAL_CAPACITY,
+                HashMapLockFreeKnVn.DEFAULT_LOAD_FACTOR,
+                HashMapLockFreeKnVn.DEFAULT_NO_ENTRY_VALUE);
     }
 
     private static void fillToCapacity(NullableLongLongMap ht, final long lowerSizeBound) {
@@ -92,7 +93,7 @@ public class TestKnVn {
         // back at that capacity with its nearly-full rehash threshold and a refill of the entries this generation
         // absorbed would not trigger another maximum-sized rehash.
         final long entriesAbsorbed = ii;
-        final HashMapBase base = (HashMapBase) ht;
+        final HashMapLockFreeKnVn base = (HashMapLockFreeKnVn) ht;
         final int capacityAtMax = ht.capacity();
         ht.resetToNullRetainingCapacity();
         assertEquals(0, ht.capacity());

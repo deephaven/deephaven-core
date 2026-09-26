@@ -4,15 +4,33 @@
 package io.deephaven.engine.table.impl.util.hash;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import io.deephaven.hash.PrimeFinder;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-abstract class HashMapBase implements NullableLongLongMap {
+/**
+ * The one {@link NullableLongLongMap} implementation: a lock-free open-addressing hash map whose buckets live in a
+ * single {@code long[]} that describes itself — its header carries the shape tag (bucket width) and the fastmod
+ * reciprocal (see {@link #HEADER_LONGS}). The probe loops live in the width kernels ({@link K1V1Kernel},
+ * {@link K2V2Kernel}, {@link K4V4Kernel}), static and pure in the array plus this map's counters; every operation takes
+ * one volatile read of the array and dispatches on that snapshot's own tag, so no code path needs to know which shape
+ * the map was born with. Callers construct maps through {@link NullableLongLongMaps} and hold the interface.
+ *
+ * <p>
+ * One writer, any number of unsynchronized readers: readers work on a snapshot of the array, the writer publishes a
+ * rebuilt array with one volatile store, and every piece of state a reader needs to probe travels inside the array.
+ */
+final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     static final int DEFAULT_INITIAL_CAPACITY = 10;
     static final long DEFAULT_NO_ENTRY_VALUE = -1;
     static final double DEFAULT_LOAD_FACTOR = 0.5;
@@ -87,15 +105,27 @@ abstract class HashMapBase implements NullableLongLongMap {
     // - How many buckets in the array (this is always a prime number)
     // - How many entries in the array (at 4 entries per bucket, this is numBuckets * 4)
     // - How many longs in the array (at 2 longs per entry (key and value), this is numEntries * 2)
-    // The actual array of longs (with length (numBuckets * 4 * 2)) is stored in our child.
 
-    HashMapBase(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
+    // The buckets, self-described by their header (shape tag and reciprocal); never null — the empty sentinel stands
+    // in for "no buckets". Every operation takes one volatile read of this field and works on that snapshot; put
+    // re-reads it per element, because a put may rehash.
+    private volatile long[] keysAndValues;
+    // The shape the first allocation takes. Until then the sentinel's tag says EMPTY, so this is the only place the
+    // requested width lives; afterwards the array's own tag is authoritative.
+    private final Shape initialShape;
+    private final ReadMode readMode;
+
+    HashMapLockFreeKnVn(Shape initialShape, int desiredInitialCapacity, double loadFactor, long noEntryValue,
+            ReadMode readMode) {
+        this.initialShape = initialShape;
         this.desiredInitialCapacity = desiredInitialCapacity;
         this.loadFactor = loadFactor;
         this.noEntryValue = noEntryValue;
+        this.readMode = Objects.requireNonNull(readMode, "readMode");
         this.size = 0;
         this.nonEmptySlots = 0;
         this.rehashThreshold = 0;
+        this.keysAndValues = EMPTY_KEYS_AND_VALUES;
     }
 
     static long fixKey(long key) {
@@ -185,17 +215,26 @@ abstract class HashMapBase implements NullableLongLongMap {
         return shapeTagOf(kvs) == SHAPE_TAG_EMPTY;
     }
 
-    long[] allocateKeysAndValuesArray(int entriesPerBucket) {
+    /**
+     * The first allocation, at the requested initial shape; replaces the empty sentinel.
+     */
+    private long[] allocateKeysAndValuesArray() {
+        final int entriesPerBucket = initialShape.bucketWidth();
         final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
         final int dataLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         final long[] keysAndValues = new long[dataLongs + HEADER_LONGS];
         writeShapeTag(keysAndValues, entriesPerBucket);
         writeReciprocal(keysAndValues, reciprocalFor(dataLongs / (entriesPerBucket * 2)));
-        setKeysAndValues(keysAndValues);
+        this.keysAndValues = keysAndValues;
         return keysAndValues;
     }
 
-    void rehash(long[] oldKeysAndValues, boolean wantResize, int entriesPerBucket) {
+    /**
+     * Rebuilds the array — at double the bucket count if {@code wantResize}, else the same — and publishes it. The
+     * array says what shape it is, and the rebuilt array keeps that shape.
+     */
+    void rehash(long[] oldKeysAndValues, boolean wantResize) {
+        final int entriesPerBucket = shapeTagOf(oldKeysAndValues);
         final int oldDataLongs = oldKeysAndValues.length - HEADER_LONGS;
 
         final int newDataLongs;
@@ -220,9 +259,26 @@ abstract class HashMapBase implements NullableLongLongMap {
                 continue;
             }
             final long oldValue = oldKeysAndValues[ii + 1];
-            putImplNoTranslate(newKvs, newReciprocal, oldKey, oldValue, true);
+            putNoTranslate(entriesPerBucket, newKvs, newReciprocal, oldKey, oldValue);
         }
-        setKeysAndValues(newKvs);
+        keysAndValues = newKvs;
+    }
+
+    // Rehash's insert: the key is already in its stored form, and the width is the one the new array was built at.
+    private void putNoTranslate(int entriesPerBucket, long[] kvs, long numBucketsReciprocal, long key, long value) {
+        switch (entriesPerBucket) {
+            case 1:
+                K1V1Kernel.putNoTranslate(this, kvs, numBucketsReciprocal, key, value, true);
+                return;
+            case 2:
+                K2V2Kernel.putNoTranslate(this, kvs, numBucketsReciprocal, key, value, true);
+                return;
+            case 4:
+                K4V4Kernel.putNoTranslate(this, kvs, numBucketsReciprocal, key, value, true);
+                return;
+            default:
+                throw new IllegalStateException("Unexpected shape tag " + entriesPerBucket);
+        }
     }
 
     /**
@@ -260,11 +316,6 @@ abstract class HashMapBase implements NullableLongLongMap {
                     String.format("The Hashtable has exceeded its maximum capacity of %d elements", sizeLimit));
         }
     }
-
-    abstract long putImplNoTranslate(long[] kvs, long numBucketsReciprocal, long key, long value,
-            boolean insertOnly);
-
-    abstract void setKeysAndValues(long[] keysAndValues);
 
     @Override
     public final int size() {
@@ -341,8 +392,8 @@ abstract class HashMapBase implements NullableLongLongMap {
 
     /**
      * @param kv Our keys and values array
-     * @param space The array to populate (if {@code array} is not null and {@code array.length} >=
-     *        {@link HashMapBase#size()}, otherwise an array of length {@link HashMapBase#size()} will be allocated.
+     * @param space The array to populate (if {@code array} is not null and {@code array.length} >= {@link #size()},
+     *        otherwise an array of length {@link #size()} will be allocated.
      * @param wantValues false to return keys; true to return values
      * @return The passed-in or newly-allocated array of (keys or values).
      */
@@ -489,5 +540,287 @@ abstract class HashMapBase implements NullableLongLongMap {
      */
     static int probe2(long key, int range) {
         return fastRange(mix64b(key), range);
+    }
+
+    // ------------------------------------------------------------------------------------------------------------
+    // The interface: one volatile read of the array per operation, then dispatch on the snapshot's own shape tag.
+
+    @Override
+    public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
+            WritableLongChunk<? extends Any> oldValues) {
+        putChunk(keys, values, oldValues, false);
+    }
+
+    @Override
+    public void putIfAbsent(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
+            WritableLongChunk<? extends Any> oldValues) {
+        putChunk(keys, values, oldValues, true);
+    }
+
+    private void putChunk(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
+            WritableLongChunk<? extends Any> oldValues, boolean insertOnly) {
+        final int n = keys.size();
+        long[] kvs = firstArrayForPuts(n);
+        long numBucketsReciprocal = reciprocalOf(kvs);
+        for (int ii = 0; ii < n; ++ii) {
+            oldValues.set(ii, putOne(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), insertOnly));
+            // Hot reads: cheap, and free of a stale-check branch (the array is never null).
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
+        }
+        oldValues.setSize(n);
+    }
+
+    @Override
+    public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values) {
+        final int n = keys.size();
+        long[] kvs = firstArrayForPuts(n);
+        long numBucketsReciprocal = reciprocalOf(kvs);
+        for (int ii = 0; ii < n; ++ii) {
+            putOne(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), false);
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
+        }
+    }
+
+    @Override
+    public void put(LongChunk<? extends Any> keys, long value) {
+        final int n = keys.size();
+        long[] kvs = firstArrayForPuts(n);
+        long numBucketsReciprocal = reciprocalOf(kvs);
+        for (int ii = 0; ii < n; ++ii) {
+            putOne(kvs, numBucketsReciprocal, keys.get(ii), value, false);
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
+        }
+    }
+
+    /**
+     * The array the first element of a batch of {@code n} puts probes. Unlike get, the volatile read is NOT hoisted
+     * across the batch: any put may rehash, so each element must see the array that the previous element may have
+     * replaced; the reciprocal rides in a register-local memo, refreshed from the new array's own header whenever the
+     * array changes (a load, not a divide: every array carries its reciprocal). The first write allocates, at the
+     * requested initial shape. From there on the array is never the sentinel (rehash only ever builds real arrays), so
+     * the loops dispatch on real widths only.
+     */
+    private long[] firstArrayForPuts(final int n) {
+        final long[] kvs = keysAndValues;
+        return n > 0 && isEmptyArray(kvs) ? allocateKeysAndValuesArray() : kvs;
+    }
+
+    /**
+     * One put, dispatched per element rather than per chunk: a put may replace the array between elements, and the
+     * array's own tag says which kernel probes it (today a rehash keeps the width; it need not always). One predicted
+     * branch per element.
+     */
+    private long putOne(final long[] kvs, final long numBucketsReciprocal, final long key, final long value,
+            final boolean insertOnly) {
+        switch (shapeTagOf(kvs)) {
+            case 1:
+                return K1V1Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
+            case 2:
+                return K2V2Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
+            case 4:
+                return K4V4Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
+            default:
+                throw new IllegalStateException("Unexpected shape tag " + shapeTagOf(kvs));
+        }
+    }
+
+    @Override
+    public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+        // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
+        // array, whose header carries its shape and its reciprocal. Each shape's loop lives in a method of its own,
+        // so that this dispatcher stays small enough to be inlined at the scalar cursor's call site with its kernel
+        // calls inlined in turn: one method holding every loop measured as a real call per key on single-key chunks.
+        final long[] localKvs = keysAndValues;
+        switch (shapeTagOf(localKvs)) {
+            case 1:
+                getK1V1(localKvs, keys, result);
+                break;
+            case 2:
+                getK2V2(localKvs, keys, result);
+                break;
+            case 4:
+                getK4V4(localKvs, keys, result);
+                break;
+            case SHAPE_TAG_EMPTY:
+                getEmpty(keys, result);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected shape tag " + shapeTagOf(localKvs));
+        }
+    }
+
+    private void getK1V1(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+        final int n = keys.size();
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
+        final long noEntry = noEntryValue;
+        for (int ii = 0; ii < n; ++ii) {
+            result.set(ii, K1V1Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry));
+        }
+        result.setSize(n);
+    }
+
+    private void getK2V2(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+        final int n = keys.size();
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
+        final long noEntry = noEntryValue;
+        for (int ii = 0; ii < n; ++ii) {
+            result.set(ii, K2V2Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry));
+        }
+        result.setSize(n);
+    }
+
+    private void getK4V4(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+        final int n = keys.size();
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
+        final long noEntry = noEntryValue;
+        // Adaptive read strategy: when the map's footprint is beyond the last-level cache — its whole job is
+        // overlapping the misses that a cache-resident table simply does not have — service the chunk through the
+        // AMAC window; otherwise use the serial loop, which ties or wins when the table is cache-resident. Footprint
+        // is a function of the snapshot's own length, so the choice is stable between rehashes and flips exactly when
+        // the array grows past the cache. (Occupancy is deliberately not consulted; see wantWindowedReads.) The
+        // chunk must also be wide enough to fill the window: its fixed cost is paid per call, and a single-key chunk —
+        // the scalar cursor's case — has nothing to overlap, measured at 1.6-2.3x slower under the window. A pinned
+        // ReadMode overrides the gate, for pricing and tests only. Reads are pure, so the windowed path may resolve
+        // lookups out of index order, invisibly to the caller.
+        final boolean windowed = readMode == ReadMode.ADAPTIVE
+                ? NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2, n)
+                : readMode == ReadMode.WINDOW;
+        if (windowed) {
+            K4V4Kernel.getBatch(localKvs, numBucketsReciprocal, keys, result, noEntry);
+        } else {
+            for (int ii = 0; ii < n; ++ii) {
+                result.set(ii, K4V4Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry));
+            }
+        }
+        result.setSize(n);
+    }
+
+    // No buckets: every key is a miss.
+    private void getEmpty(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+        final int n = keys.size();
+        final long noEntry = noEntryValue;
+        for (int ii = 0; ii < n; ++ii) {
+            result.set(ii, noEntry);
+        }
+        result.setSize(n);
+    }
+
+    @Override
+    public void remove(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> oldValues) {
+        // Like get (and unlike put), the volatile read is hoisted: a remove tombstones slots in place and never
+        // rehashes, so no element can replace the array a later element must see. Per-shape loops in their own
+        // methods, for the same inlining reason as get.
+        final long[] localKvs = keysAndValues;
+        switch (shapeTagOf(localKvs)) {
+            case 1:
+                removeK1V1(localKvs, keys, oldValues);
+                break;
+            case 2:
+                removeK2V2(localKvs, keys, oldValues);
+                break;
+            case 4:
+                removeK4V4(localKvs, keys, oldValues);
+                break;
+            case SHAPE_TAG_EMPTY:
+                // No buckets: nothing to remove.
+                getEmpty(keys, oldValues);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected shape tag " + shapeTagOf(localKvs));
+        }
+    }
+
+    private void removeK1V1(long[] localKvs, LongChunk<? extends Any> keys,
+            WritableLongChunk<? extends Any> oldValues) {
+        final int n = keys.size();
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
+        for (int ii = 0; ii < n; ++ii) {
+            oldValues.set(ii, K1V1Kernel.remove(this, localKvs, numBucketsReciprocal, keys.get(ii)));
+        }
+        oldValues.setSize(n);
+    }
+
+    private void removeK2V2(long[] localKvs, LongChunk<? extends Any> keys,
+            WritableLongChunk<? extends Any> oldValues) {
+        final int n = keys.size();
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
+        for (int ii = 0; ii < n; ++ii) {
+            oldValues.set(ii, K2V2Kernel.remove(this, localKvs, numBucketsReciprocal, keys.get(ii)));
+        }
+        oldValues.setSize(n);
+    }
+
+    private void removeK4V4(long[] localKvs, LongChunk<? extends Any> keys,
+            WritableLongChunk<? extends Any> oldValues) {
+        final int n = keys.size();
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
+        for (int ii = 0; ii < n; ++ii) {
+            oldValues.set(ii, K4V4Kernel.remove(this, localKvs, numBucketsReciprocal, keys.get(ii)));
+        }
+        oldValues.setSize(n);
+    }
+
+    @Override
+    public int capacity() {
+        return capacityImpl(keysAndValues);
+    }
+
+    @Override
+    public void clear() {
+        clearImpl(keysAndValues);
+    }
+
+    @Override
+    public void resetToNull() {
+        resetToNullImpl();
+        keysAndValues = EMPTY_KEYS_AND_VALUES;
+    }
+
+    @Override
+    public void resetToNullRetainingCapacity() {
+        resetToNullRetainingCapacityImpl(keysAndValues);
+        keysAndValues = EMPTY_KEYS_AND_VALUES;
+    }
+
+    /**
+     * The shape this map probes with right now: its array's own tag or, while it is empty, the shape its first
+     * allocation will take.
+     */
+    Shape shape() {
+        final long[] localKvs = keysAndValues;
+        return isEmptyArray(localKvs) ? initialShape : Shape.forBucketWidth(shapeTagOf(localKvs));
+    }
+
+    @Override
+    public long[] keysAndValuesSnapshot() {
+        return keysAndValues;
+    }
+
+    @Override
+    public long[] keyArray() {
+        return keysOrValuesImpl(keysAndValues, null, false);
+    }
+
+    @Override
+    public long[] keyArray(long[] space) {
+        return keysOrValuesImpl(keysAndValues, space, false);
+    }
+
+    @Override
+    public long[] valueArray() {
+        return keysOrValuesImpl(keysAndValues, null, true);
+    }
+
+    @Override
+    public long[] valueArray(long[] space) {
+        return keysOrValuesImpl(keysAndValues, space, true);
+    }
+
+    @Override
+    public void forEach(LongLongBiConsumer consumer) {
+        forEachImpl(keysAndValues, consumer);
     }
 }

@@ -83,7 +83,7 @@ public final class NullableLongLongMaps {
 
     /**
      * The narrowest chunk a K4V4 map services through the AMAC window: the window's own width,
-     * {@code HashMapK4V4.GET_WINDOW}, so that retuning the window moves this gate with it. Below it a chunked get runs
+     * {@code K4V4Kernel.GET_WINDOW}, so that retuning the window moves this gate with it. Below it a chunked get runs
      * serially even when the footprint says window, because the window only pays when it is full: a chunk narrower than
      * the window cannot overlap a window's worth of misses, while the window's fixed cost (the per-thread scratch,
      * per-job setup) is paid regardless. Measured at 10M entries on an i9-13900K (three forks, serial vs forced window,
@@ -94,7 +94,7 @@ public final class NullableLongLongMaps {
      * that machine and tie or win on a Ryzen 9 9950X3D2 — a lookup-pattern question, deliberately left out of this
      * gate.)
      */
-    public static final int MIN_WINDOWED_CHUNK = HashMapK4V4.GET_WINDOW;
+    public static final int MIN_WINDOWED_CHUNK = K4V4Kernel.GET_WINDOW;
 
     /**
      * The load factor at and above which a map that is big enough is rebuilt in the wide-bucket (K4V4) shape; below it
@@ -139,16 +139,7 @@ public final class NullableLongLongMaps {
         if (readMode == ReadMode.WINDOW && shape != Shape.K4V4) {
             throw new IllegalArgumentException("ReadMode.WINDOW requires Shape.K4V4, not " + shape);
         }
-        switch (shape) {
-            case K1V1:
-                return new HashMapLockFreeK1V1(desiredInitialCapacity, loadFactor, noEntryValue);
-            case K2V2:
-                return new HashMapLockFreeK2V2(desiredInitialCapacity, loadFactor, noEntryValue);
-            case K4V4:
-                return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, readMode);
-            default:
-                throw new IllegalStateException("Unknown shape " + shape);
-        }
+        return new HashMapLockFreeKnVn(shape, desiredInitialCapacity, loadFactor, noEntryValue, readMode);
     }
 
     /**
@@ -157,7 +148,7 @@ public final class NullableLongLongMaps {
      */
     public static NullableLongLongMap ofExpectedSize(final Shape shape, final int expectedSize,
             final double loadFactor, final long noEntryValue) {
-        final int desiredInitialCapacity = HashMapBase.capacityForExpectedEntries(expectedSize, loadFactor);
+        final int desiredInitialCapacity = HashMapLockFreeKnVn.capacityForExpectedEntries(expectedSize, loadFactor);
         return of(shape, desiredInitialCapacity, loadFactor, noEntryValue);
     }
 
@@ -202,7 +193,7 @@ public final class NullableLongLongMaps {
     // Package-visible so tests can exercise the ceiling trigger without building a 750M-entry map.
     static NullableLongLongMap maybeUpgrade(final NullableLongLongMap map, final double loadFactor,
             final int amacThresholdEntries, final int ceilingCutoverEntries) {
-        if (map instanceof HashMapK4V4) {
+        if (!(map instanceof HashMapLockFreeKnVn) || ((HashMapLockFreeKnVn) map).shape() == Shape.K4V4) {
             return map;
         }
         final boolean deliberatelyDense =
