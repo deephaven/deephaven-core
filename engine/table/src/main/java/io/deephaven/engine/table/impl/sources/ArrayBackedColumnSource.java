@@ -691,13 +691,15 @@ public abstract class ArrayBackedColumnSource<T>
      */
     @Override
     public void setNull(final long firstKey, final long lastKey) {
-        if (lastKey < firstKey) {
+        // positions past the capacity hold no values, and an unbounded range is limited to the positions that do
+        final long last = Math.min(lastKey, maxIndex);
+        if (last < firstKey) {
             return;
         }
-        final int chunkCapacity = (int) Math.min(BLOCK_SIZE, lastKey - firstKey + 1);
+        final int chunkCapacity = (int) Math.min(BLOCK_SIZE - 1, last - firstKey) + 1;
         try (final FillFromContext fillFromContext = makeFillFromContext(chunkCapacity);
                 final WritableChunk<Values> nullChunk = getChunkType().makeWritableChunk(chunkCapacity);
-                final RowSequence range = RowSequenceFactory.forRange(firstKey, lastKey);
+                final RowSequence range = RowSequenceFactory.forRange(firstKey, last);
                 final RowSequence.Iterator rangeIterator = range.getRowSequenceIterator()) {
             nullChunk.fillWithNullValue(0, chunkCapacity);
             while (rangeIterator.hasMore()) {

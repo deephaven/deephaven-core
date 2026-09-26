@@ -58,7 +58,11 @@ public class TestArraySourceShift {
                 }
                 shift(source, trackPrev, delta, () -> {
                     for (long ii = 0; ii < SIZE; ++ii) {
-                        assertEquals("delta=" + delta + ", ii=" + ii, (Long) expected(ii, delta), source.get(ii));
+                        // an object source clears the positions it moves values from and not into
+                        final boolean vacated = ii >= SHIFT_FIRST && ii <= SHIFT_LAST
+                                && (ii < SHIFT_FIRST + delta || ii > SHIFT_LAST + delta);
+                        assertEquals("delta=" + delta + ", ii=" + ii, vacated ? null : (Long) expected(ii, delta),
+                                source.get(ii));
                         if (trackPrev) {
                             assertEquals("delta=" + delta + ", ii=" + ii, (Long) ii, source.getPrev(ii));
                         }
@@ -285,6 +289,62 @@ public class TestArraySourceShift {
             longs.set(4L * blockSize - 1, 7L);
             assertEquals(7L, longs.getLong(4L * blockSize - 1));
         }
+    }
+
+    @Test
+    public void testShiftClearsVacatedObjects() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        for (final boolean trackPrev : new boolean[] {false, true}) {
+            final ObjectArraySource<String> objects = new ObjectArraySource<>(String.class);
+            objects.ensureCapacity(2L * blockSize);
+            for (int ii = 0; ii < 2 * blockSize; ++ii) {
+                objects.set(ii, Long.toString(ii));
+            }
+            // single positions collapsing toward the start of the first block, as a sparse run does
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            for (long ii = 1; ii < 16; ++ii) {
+                builder.shiftRange(8 * ii, 8 * ii, -7 * ii);
+            }
+            final RowSetShiftData shiftData = builder.build();
+            final Runnable shiftAndCheck = () -> {
+                objects.shift(shiftData);
+                for (long ii = 1; ii < 16; ++ii) {
+                    assertEquals("ii=" + ii, Long.toString(8 * ii), objects.get(ii));
+                }
+                for (long ii = 16; ii < 8 * 16; ++ii) {
+                    // positions moved from and not moved into hold no references
+                    final boolean vacated = ii % 8 == 0;
+                    assertEquals("ii=" + ii, vacated ? null : Long.toString(ii), objects.get(ii));
+                }
+                if (trackPrev) {
+                    for (long ii = 0; ii < 8 * 16; ++ii) {
+                        assertEquals("ii=" + ii, Long.toString(ii), objects.getPrev(ii));
+                    }
+                }
+            };
+            if (trackPrev) {
+                objects.startTrackingPrevValues();
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(shiftAndCheck::run);
+            } else {
+                shiftAndCheck.run();
+            }
+        }
+    }
+
+    @Test
+    public void testSetNullThroughUnboundedEnd() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final LongArraySource longs = new LongArraySource();
+        longs.ensureCapacity(2L * blockSize);
+        for (int ii = 0; ii < 2 * blockSize; ++ii) {
+            longs.set(ii, (long) ii);
+        }
+        longs.setNull(5, Long.MAX_VALUE);
+        assertEquals(4L, longs.getLong(4));
+        assertEquals(QueryConstants.NULL_LONG, longs.getLong(5));
+        assertEquals(QueryConstants.NULL_LONG, longs.getLong(2L * blockSize - 1));
+        assertEquals(2L * blockSize, longs.getCapacity());
     }
 
     @Test

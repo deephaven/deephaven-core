@@ -736,6 +736,36 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         if (shiftData.empty()) {
             return;
         }
-        shiftData.apply((s, e, d) -> move(s, s + d, e - s + 1));
+        // Ranges are applied in an order in which no range reads the positions an earlier one vacated, though it may
+        // write them, so each range's vacated positions can be cleared as soon as it has moved.
+        shiftData.apply((s, e, d) -> {
+            move(s, s + d, e - s + 1);
+            clearVacated(s, e, d);
+        });
+    }
+
+    /**
+     * Clear the positions a move of {@code first} through {@code last} by {@code delta} left behind, so that they no
+     * longer hold references to the moved objects, or to the objects of states no longer present. Blocks a whole-block
+     * move left unallocated need no clearing.
+     */
+    private void clearVacated(final long first, final long last, final long delta) {
+        final long vacatedFirst = delta < 0 ? Math.max(first, last + delta + 1) : first;
+        final long vacatedLast = Math.min(delta < 0 ? last : Math.min(last, first + delta - 1), maxIndex);
+        for (long blockFirst = vacatedFirst; blockFirst <= vacatedLast;) {
+            final int blockIndex = (int) (blockFirst >> LOG_BLOCK_SIZE);
+            final long blockLast = Math.min(vacatedLast, ((long) blockIndex << LOG_BLOCK_SIZE) + BLOCK_SIZE - 1);
+            if (blocks[blockIndex] != null) {
+                if (prevFlusher != null) {
+                    for (long key = blockFirst; key <= blockLast; ++key) {
+                        set(key, null);
+                    }
+                } else {
+                    Arrays.fill(blocks[blockIndex], (int) (blockFirst & INDEX_MASK), (int) (blockLast & INDEX_MASK) + 1,
+                            null);
+                }
+            }
+            blockFirst = blockLast + 1;
+        }
     }
 }
