@@ -32,7 +32,9 @@ public class JoinRowRedirection {
                 rowRedirection = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
                 break;
             case Hash:
-                rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
+                // the size is only an initial capacity, so a left table of more than Integer.MAX_VALUE rows caps it
+                rowRedirection = WritableRowRedirectionLockFree.FACTORY
+                        .createRowRedirection((int) Math.min(leftTable.size(), Integer.MAX_VALUE));
                 break;
             default:
                 throw new IllegalStateException();

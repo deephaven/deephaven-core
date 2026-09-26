@@ -18,14 +18,13 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedChunk;
-import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.ssa.SsaSsaStamp;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,6 +45,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
     private final WritableRowRedirection rowRedirection;
     private final ModifiedColumnSet leftStampColumn;
     private final ModifiedColumnSet rightStampColumn;
+    private final ModifiedColumnSet rightColumnsToAdd;
     private final ModifiedColumnSet allRightColumns;
     private final ModifiedColumnSet.Transformer leftTransformer;
     private final ModifiedColumnSet.Transformer rightTransformer;
@@ -100,12 +100,25 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
         leftStampColumn = leftTable.newModifiedColumnSet(stampPair.leftColumn());
         rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
+        rightColumnsToAdd = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
         allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         leftTransformer =
                 leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
         rightTransformer = rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
 
         resultModifiedColumnSet = result.newModifiedColumnSet(result.getDefinition().getColumnNamesArray());
+    }
+
+    /**
+     * The number of rows a recorder's update can present to a chunked pass, clamped to the configured maximum.
+     */
+    private static int cycleChunkSize(final int maximumChunkSize, final JoinListenerRecorder recorder) {
+        if (recorder == null) {
+            return 1;
+        }
+        final long work = recorder.getAdded().size() + recorder.getRemoved().size() + recorder.getModified().size()
+                + recorder.getShifted().getEffectiveSize();
+        return (int) Math.max(1, Math.min(maximumChunkSize, work));
     }
 
     @Override
@@ -117,19 +130,25 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         final boolean leftTicked = leftRecorder.recordedVariablesAreValid();
         final boolean rightTicked = rightRecorder.recordedVariablesAreValid();
 
+        // A cycle's chunks and sort contexts are sized to the rows that cycle actually touches rather than to the
+        // maximum chunk size. The same value bounds the allocation and the length requested from each row sequence
+        // iterator, so a smaller size costs additional iterations and nothing else.
+        final int cycleLeftChunkSize = cycleChunkSize(leftChunkSize, leftTicked ? leftRecorder : null);
+        final int cycleRightChunkSize = cycleChunkSize(rightChunkSize, rightTicked ? rightRecorder : null);
+
         final boolean leftStampModified = leftTicked && leftRecorder.getModified().isNonempty()
                 && leftRecorder.getModifiedColumnSet().containsAny(leftStampColumn);
         final boolean leftAdditionsOrRemovals = leftStampModified
                 || (leftTicked && (leftRecorder.getAdded().isNonempty() || leftRecorder.getRemoved().isNonempty()));
 
         try (final ColumnSource.FillContext leftFillContext =
-                leftAdditionsOrRemovals ? leftStampSource.makeFillContext(leftChunkSize) : null;
+                leftAdditionsOrRemovals ? leftStampSource.makeFillContext(cycleLeftChunkSize) : null;
                 final WritableChunk<Values> leftStampValues =
-                        leftAdditionsOrRemovals ? stampChunkType.makeWritableChunk(leftChunkSize) : null;
+                        leftAdditionsOrRemovals ? stampChunkType.makeWritableChunk(cycleLeftChunkSize) : null;
                 final WritableLongChunk<RowKeys> leftStampKeys =
-                        leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(leftChunkSize) : null;
+                        leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(cycleLeftChunkSize) : null;
                 final LongSortKernel<Values, RowKeys> sortKernel = LongSortKernel.makeContext(stampChunkType, order,
-                        Math.max(leftChunkSize, rightChunkSize), true)) {
+                        Math.max(cycleLeftChunkSize, cycleRightChunkSize), true)) {
             final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
 
             // first we remove anything that is not of interest from the left hand side, because we don't want to
@@ -144,38 +163,34 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     leftRestampRemovals = leftRemoved;
                 }
 
-                if (leftRestampRemovals.isNonempty()) {
-                    rowRedirection.removeAll(leftRestampRemovals);
+                try (final SafeCloseable ignored = leftStampModified ? leftRestampRemovals : null) {
+                    if (leftRestampRemovals.isNonempty()) {
+                        rowRedirection.removeAll(leftRestampRemovals);
 
-                    try (final RowSequence.Iterator leftRsIt = leftRestampRemovals.getRowSequenceIterator()) {
-                        assert leftFillContext != null;
-                        assert leftStampValues != null;
+                        try (final RowSequence.Iterator leftRsIt = leftRestampRemovals.getRowSequenceIterator()) {
+                            assert leftFillContext != null;
+                            assert leftStampValues != null;
 
-                        while (leftRsIt.hasMore()) {
-                            final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(leftChunkSize);
+                            while (leftRsIt.hasMore()) {
+                                final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(cycleLeftChunkSize);
 
-                            leftStampSource.fillPrevChunk(leftFillContext, leftStampValues, chunkOk);
-                            chunkOk.fillRowKeyChunk(leftStampKeys);
+                                leftStampSource.fillPrevChunk(leftFillContext, leftStampValues, chunkOk);
+                                chunkOk.fillRowKeyChunk(leftStampKeys);
 
-                            sortKernel.sort(leftStampKeys, leftStampValues);
+                                sortKernel.sort(leftStampKeys, leftStampValues);
 
-                            leftSsa.remove(leftStampValues, leftStampKeys);
+                                leftSsa.remove(leftStampValues, leftStampKeys);
+                            }
                         }
                     }
-                }
 
-                final RowSetShiftData leftShifted = leftRecorder.getShifted();
-                if (leftShifted.nonempty()) {
-                    // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
-                    try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
-                        rowRedirection.applyShift(prevRowSet, leftShifted);
+                    final RowSetShiftData leftShifted = leftRecorder.getShifted();
+                    if (leftShifted.nonempty()) {
+                        // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
+                        rowRedirection.applyShift(leftTable.getRowSet().prev(), leftShifted);
+                        ChunkedAjUtils.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
+                                cycleLeftChunkSize, leftStampSource);
                     }
-                    ChunkedAjUtils.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
-                            leftChunkSize, leftStampSource);
-                }
-
-                if (leftStampModified) {
-                    leftRestampRemovals.close();
                 }
             } else {
                 downstream.added = RowSetFactory.empty();
@@ -188,10 +203,11 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                 final boolean rightStampModified = rightRecorder.getModifiedColumnSet().containsAny(rightStampColumn);
 
-                try (final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(rightChunkSize);
-                        final WritableChunk<Values> rightStampValues = stampChunkType.makeWritableChunk(rightChunkSize);
+                try (final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(cycleRightChunkSize);
+                        final WritableChunk<Values> rightStampValues =
+                                stampChunkType.makeWritableChunk(cycleRightChunkSize);
                         final WritableLongChunk<RowKeys> rightStampKeys =
-                                WritableLongChunk.makeWritableChunk(rightChunkSize)) {
+                                WritableLongChunk.makeWritableChunk(cycleRightChunkSize)) {
                     final RowSet rightRestampRemovals;
                     final RowSet rightRestampAdditions;
                     final RowSet rightModified = rightRecorder.getModified();
@@ -203,150 +219,150 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                         rightRestampRemovals = rightRecorder.getRemoved();
                     }
 
-                    // When removing a row, record the stamp, redirection key, and prior redirection key. Binary search
-                    // in the left for the removed key to find the smallest value geq the removed right. Update all rows
-                    // with the removed redirection to the previous key.
-                    try (final RowSequence.Iterator removeit = rightRestampRemovals.getRowSequenceIterator();
-                            final WritableLongChunk<RowKeys> priorRedirections =
-                                    WritableLongChunk.makeWritableChunk(rightChunkSize)) {
-                        while (removeit.hasMore()) {
-                            final RowSequence chunkOk = removeit.getNextRowSequenceWithLength(rightChunkSize);
-                            rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
-                            chunkOk.fillRowKeyChunk(rightStampKeys);
-                            sortKernel.sort(rightStampKeys, rightStampValues);
+                    try (final SafeCloseable ignoredAdditions = rightStampModified ? rightRestampAdditions : null;
+                            final SafeCloseable ignoredRemovals = rightStampModified ? rightRestampRemovals : null) {
+                        // When removing a row, record the stamp, redirection key, and prior redirection key. Binary
+                        // search in the left for the removed key to find the smallest value geq the removed right.
+                        // Update all rows with the removed redirection to the previous key.
+                        try (final RowSequence.Iterator removeit = rightRestampRemovals.getRowSequenceIterator();
+                                final WritableLongChunk<RowKeys> priorRedirections =
+                                        WritableLongChunk.makeWritableChunk(cycleRightChunkSize)) {
+                            while (removeit.hasMore()) {
+                                final RowSequence chunkOk = removeit.getNextRowSequenceWithLength(cycleRightChunkSize);
+                                rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
+                                chunkOk.fillRowKeyChunk(rightStampKeys);
+                                sortKernel.sort(rightStampKeys, rightStampValues);
 
-                            rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
-                            ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys, priorRedirections,
-                                    rowRedirection, modifiedBuilder, disallowExactMatch);
+                                rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
+                                ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys,
+                                        priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
+                            }
                         }
-                    }
 
-                    final RowSetShiftData rightShifted = rightRecorder.getShifted();
-                    if (rightShifted.nonempty()) {
-                        try (final RowSet fullPrevRowSet = rightTable.getRowSet().copyPrev();
-                                final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
-                                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
-                                        new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
-                                        new SizedSafeCloseable<>(
-                                                sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
-                                final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
-                                final SizedLongChunk<RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
-                            final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
-                            while (sit.hasNext()) {
-                                sit.next();
-                                final RowSet rowSetToShift =
-                                        previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
-                                if (rowSetToShift.isEmpty()) {
-                                    rowSetToShift.close();
-                                    continue;
-                                }
+                        final RowSetShiftData rightShifted = rightRecorder.getShifted();
+                        if (rightShifted.nonempty()) {
+                            final RowSet prevRowSet = rightTable.getRowSet().prev();
+                            try (final RowSet relevantShiftedRows = ChunkedAjUtils.relevantShiftedRows(rightShifted,
+                                    prevRowSet, rightRestampRemovals)) {
+                                final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
+                                while (sit.hasNext()) {
+                                    sit.next();
+                                    try (final RowSet rowSetToShift =
+                                            relevantShiftedRows.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
+                                        if (rowSetToShift.isEmpty()) {
+                                            continue;
+                                        }
 
-                                if (sit.polarityReversed()) {
-                                    final int shiftSize = rowSetToShift.intSize();
+                                        if (sit.polarityReversed()) {
+                                            // a positive shift moves the highest row keys first, so no row is shifted
+                                            // onto a key that has yet to be shifted
+                                            final long rowsToShift = rowSetToShift.size();
+                                            for (long endPosition = rowsToShift; endPosition > 0; endPosition -=
+                                                    cycleRightChunkSize) {
+                                                try (final RowSet chunkOk = rowSetToShift.subSetByPositionRange(
+                                                        Math.max(0, endPosition - cycleRightChunkSize), endPosition)) {
+                                                    rightStampSource.fillPrevChunk(fillContext, rightStampValues,
+                                                            chunkOk);
+                                                    chunkOk.fillRowKeyChunk(rightStampKeys);
+                                                    sortKernel.sort(rightStampKeys, rightStampValues);
 
-                                    rightStampSource.fillPrevChunk(shiftFillContext.ensureCapacity(shiftSize),
-                                            shiftRightStampValues.ensureCapacity(shiftSize), rowSetToShift);
-                                    rowSetToShift.fillRowKeyChunk(shiftRightStampKeys.ensureCapacity(shiftSize));
-                                    shiftSortContext.ensureCapacity(shiftSize).sort(shiftRightStampKeys.get(),
-                                            shiftRightStampValues.get());
+                                                    ssaSsaStamp.applyShift(leftSsa, rightStampValues, rightStampKeys,
+                                                            sit.shiftDelta(), rowRedirection, disallowExactMatch);
+                                                    rightSsa.applyShiftReverse(rightStampValues, rightStampKeys,
+                                                            sit.shiftDelta());
+                                                }
+                                            }
+                                        } else {
+                                            try (final RowSequence.Iterator shiftIt =
+                                                    rowSetToShift.getRowSequenceIterator()) {
+                                                while (shiftIt.hasMore()) {
+                                                    final RowSequence chunkOk =
+                                                            shiftIt.getNextRowSequenceWithLength(cycleRightChunkSize);
+                                                    rightStampSource.fillPrevChunk(fillContext, rightStampValues,
+                                                            chunkOk);
+                                                    chunkOk.fillRowKeyChunk(rightStampKeys);
+                                                    sortKernel.sort(rightStampKeys, rightStampValues);
 
-                                    ssaSsaStamp.applyShift(leftSsa, shiftRightStampValues.get(),
-                                            shiftRightStampKeys.get(), sit.shiftDelta(), rowRedirection,
-                                            disallowExactMatch);
-                                    rightSsa.applyShiftReverse(shiftRightStampValues.get(), shiftRightStampKeys.get(),
-                                            sit.shiftDelta());
-                                } else {
-                                    try (final RowSequence.Iterator shiftIt = rowSetToShift.getRowSequenceIterator()) {
-                                        while (shiftIt.hasMore()) {
-                                            final RowSequence chunkOk =
-                                                    shiftIt.getNextRowSequenceWithLength(rightChunkSize);
-                                            rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
-                                            chunkOk.fillRowKeyChunk(rightStampKeys);
-                                            sortKernel.sort(rightStampKeys, rightStampValues);
-
-                                            rightSsa.applyShift(rightStampValues, rightStampKeys, sit.shiftDelta());
-                                            ssaSsaStamp.applyShift(leftSsa, rightStampValues, rightStampKeys,
-                                                    sit.shiftDelta(), rowRedirection, disallowExactMatch);
+                                                    rightSsa.applyShift(rightStampValues, rightStampKeys,
+                                                            sit.shiftDelta());
+                                                    ssaSsaStamp.applyShift(leftSsa, rightStampValues, rightStampKeys,
+                                                            sit.shiftDelta(), rowRedirection, disallowExactMatch);
+                                                }
+                                            }
                                         }
                                     }
                                 }
-
-                                rowSetToShift.close();
                             }
                         }
-                    }
 
 
-                    // When adding a row to the right hand side: we need to know which left hand side might be
-                    // responsive. If we are a duplicate stamp and not the last one, we ignore it. Next, we should
-                    // binary
-                    // search in the left for the first value >=, everything up until the next extant right value should
-                    // be
-                    // restamped with our value
-                    try (final WritableChunk<Values> stampChunk = stampChunkType.makeWritableChunk(rightChunkSize);
-                            final WritableChunk<Values> nextRightValue =
-                                    stampChunkType.makeWritableChunk(rightChunkSize);
-                            final WritableLongChunk<RowKeys> insertedIndices =
-                                    WritableLongChunk.makeWritableChunk(rightChunkSize);
-                            final WritableBooleanChunk<Any> retainStamps =
-                                    WritableBooleanChunk.makeWritableChunk(rightChunkSize)) {
-                        final int chunks = (rightRestampAdditions.intSize() + rightChunkSize - 1) / rightChunkSize;
-                        for (int ii = 0; ii < chunks; ++ii) {
-                            final int startChunk = chunks - ii - 1;
-                            try (final RowSet chunkOk =
-                                    rightRestampAdditions.subSetByPositionRange(startChunk * rightChunkSize,
-                                            (startChunk + 1) * rightChunkSize)) {
-                                final int chunkSize = chunkOk.intSize();
-                                rightStampSource.fillChunk(fillContext, stampChunk, chunkOk);
-                                insertedIndices.setSize(chunkSize);
-                                chunkOk.fillRowKeyChunk(insertedIndices);
+                        // When adding a row to the right hand side: we need to know which left hand side might be
+                        // responsive. If we are a duplicate stamp and not the last one, we ignore it. Next, we should
+                        // binary search in the left for the first value >=, everything up until the next extant right
+                        // value should be restamped with our value
+                        try (final WritableChunk<Values> stampChunk =
+                                stampChunkType.makeWritableChunk(cycleRightChunkSize);
+                                final WritableChunk<Values> nextRightValue =
+                                        stampChunkType.makeWritableChunk(cycleRightChunkSize);
+                                final WritableLongChunk<RowKeys> insertedIndices =
+                                        WritableLongChunk.makeWritableChunk(cycleRightChunkSize);
+                                final WritableBooleanChunk<Any> retainStamps =
+                                        WritableBooleanChunk.makeWritableChunk(cycleRightChunkSize)) {
+                            final long chunks =
+                                    (rightRestampAdditions.size() + cycleRightChunkSize - 1) / cycleRightChunkSize;
+                            for (long ii = 0; ii < chunks; ++ii) {
+                                final long startChunk = chunks - ii - 1;
+                                try (final RowSet chunkOk =
+                                        rightRestampAdditions.subSetByPositionRange(startChunk * cycleRightChunkSize,
+                                                (startChunk + 1) * cycleRightChunkSize)) {
+                                    final int chunkSize = chunkOk.intSize();
+                                    rightStampSource.fillChunk(fillContext, stampChunk, chunkOk);
+                                    insertedIndices.setSize(chunkSize);
+                                    chunkOk.fillRowKeyChunk(insertedIndices);
 
-                                sortKernel.sort(insertedIndices, stampChunk);
+                                    sortKernel.sort(insertedIndices, stampChunk);
 
-                                final int valuesWithNext =
-                                        rightSsa.insertAndGetNextValue(stampChunk, insertedIndices, nextRightValue);
+                                    final int valuesWithNext =
+                                            rightSsa.insertAndGetNextValue(stampChunk, insertedIndices, nextRightValue);
 
-                                final boolean endsWithLastValue = valuesWithNext != stampChunk.size();
-                                if (endsWithLastValue) {
-                                    stampChunk.setSize(valuesWithNext);
-                                    stampChunkEquals.notEqual(stampChunk, nextRightValue, retainStamps);
-                                    stampCompact.compact(nextRightValue, retainStamps);
+                                    final boolean endsWithLastValue = valuesWithNext != stampChunk.size();
+                                    if (endsWithLastValue) {
+                                        stampChunk.setSize(valuesWithNext);
+                                        stampChunkEquals.notEqual(stampChunk, nextRightValue, retainStamps);
+                                        stampCompact.compact(nextRightValue, retainStamps);
 
-                                    retainStamps.setSize(chunkSize);
-                                    retainStamps.set(valuesWithNext, true);
-                                    stampChunk.setSize(chunkSize);
-                                } else {
-                                    // remove duplicates
-                                    stampChunkEquals.notEqual(stampChunk, nextRightValue, retainStamps);
-                                    stampCompact.compact(nextRightValue, retainStamps);
+                                        retainStamps.setSize(chunkSize);
+                                        retainStamps.set(valuesWithNext, true);
+                                        stampChunk.setSize(chunkSize);
+                                    } else {
+                                        // remove duplicates
+                                        stampChunkEquals.notEqual(stampChunk, nextRightValue, retainStamps);
+                                        stampCompact.compact(nextRightValue, retainStamps);
+                                    }
+                                    LongCompactKernel.compact(insertedIndices, retainStamps);
+                                    stampCompact.compact(stampChunk, retainStamps);
+
+                                    ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices, nextRightValue,
+                                            rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
                                 }
-                                LongCompactKernel.compact(insertedIndices, retainStamps);
-                                stampCompact.compact(stampChunk, retainStamps);
-
-                                ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices, nextRightValue,
-                                        rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
                             }
                         }
-                    }
 
-                    // if the stamp was not modified, then we need to figure out the responsive rows to mark as modified
-                    if (!rightStampModified && rightModified.isNonempty()) {
-                        try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
-                            while (modit.hasMore()) {
-                                final RowSequence chunkOk = modit.getNextRowSequenceWithLength(rightChunkSize);
-                                rightStampSource.fillChunk(fillContext, rightStampValues, chunkOk);
-                                chunkOk.fillRowKeyChunk(rightStampKeys);
-                                sortKernel.sort(rightStampKeys, rightStampValues);
-                                ssaSsaStamp.findModified(leftSsa, rowRedirection, rightStampValues, rightStampKeys,
-                                        modifiedBuilder, disallowExactMatch);
+                        // if the stamp was not modified, then we need to figure out the responsive rows to mark
+                        // as modified; only a modified column that the result adds changes a responsive row
+                        if (!rightStampModified && rightModified.isNonempty()
+                                && rightRecorder.getModifiedColumnSet().containsAny(rightColumnsToAdd)) {
+                            try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
+                                while (modit.hasMore()) {
+                                    final RowSequence chunkOk = modit.getNextRowSequenceWithLength(cycleRightChunkSize);
+                                    rightStampSource.fillChunk(fillContext, rightStampValues, chunkOk);
+                                    chunkOk.fillRowKeyChunk(rightStampKeys);
+                                    sortKernel.sort(rightStampKeys, rightStampValues);
+                                    ssaSsaStamp.findModified(leftSsa, rowRedirection, rightStampValues, rightStampKeys,
+                                            modifiedBuilder, disallowExactMatch);
+                                }
                             }
                         }
-                    }
-
-                    if (rightStampModified) {
-                        rightRestampAdditions.close();
-                        rightRestampRemovals.close();
                     }
 
                     if (rightStampModified || rightRecorder.getAdded().isNonempty()
@@ -368,14 +384,15 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     leftRestampAdditions = leftRecorder.getAdded();
                 }
 
-                try (final RowSequence.Iterator leftRsIt = leftRestampAdditions.getRowSequenceIterator();
+                try (final SafeCloseable ignored = leftStampModified ? leftRestampAdditions : null;
+                        final RowSequence.Iterator leftRsIt = leftRestampAdditions.getRowSequenceIterator();
                         final WritableLongChunk<RowKeys> rightKeysForLeft =
-                                WritableLongChunk.makeWritableChunk(leftChunkSize)) {
+                                WritableLongChunk.makeWritableChunk(cycleLeftChunkSize)) {
                     while (leftRsIt.hasMore()) {
                         assert leftFillContext != null;
                         assert leftStampValues != null;
 
-                        final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(leftChunkSize);
+                        final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(cycleLeftChunkSize);
                         leftStampSource.fillChunk(leftFillContext, leftStampValues, chunkOk);
                         chunkOk.fillRowKeyChunk(leftStampKeys);
                         sortKernel.sort(leftStampKeys, leftStampValues);
@@ -400,14 +417,15 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 leftTransformer.transform(leftRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet());
                 if (leftStampModified) {
                     downstream.modifiedColumnSet().setAll(allRightColumns);
-                    leftRestampAdditions.close();
                 }
                 downstream.added = leftRecorder.getAdded().copy();
                 downstream.removed = leftRecorder.getRemoved().copy();
                 downstream.shifted = leftRecorder.getShifted();
             }
 
-            downstream.modified = leftRecorder.getModified().union(modifiedBuilder.build());
+            try (final RowSet modifiedByRightStamps = modifiedBuilder.build()) {
+                downstream.modified = leftRecorder.getModified().union(modifiedByRightStamps);
+            }
         }
 
         result.notifyListeners(downstream);

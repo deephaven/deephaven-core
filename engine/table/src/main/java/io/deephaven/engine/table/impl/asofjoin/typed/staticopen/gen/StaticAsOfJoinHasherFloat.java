@@ -16,7 +16,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.FloatChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -99,8 +98,7 @@ final class StaticAsOfJoinHasherFloat extends StaticAsOfJoinStateManagerTypedBas
     }
 
     protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, MutableInt hashSlotOffset,
-            RowSetBuilderRandom foundBuilder) {
+            IntegerArraySource hashSlots, MutableInt hashSlotOffset) {
         final FloatChunk<Values> keyChunk0 = sourceKeyChunks[0].asFloatChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -114,7 +112,6 @@ final class StaticAsOfJoinHasherFloat extends StaticAsOfJoinStateManagerTypedBas
                     final long indexKey = rowKeyChunk.get(chunkPosition);
                     if (addLeftKey(tableLocation, indexKey) && hashSlots != null) {
                         hashSlots.set(hashSlotOffset.getAndIncrement(), tableLocation);
-                        foundBuilder.addKey(indexKey);
                     }
                     break;
                 }

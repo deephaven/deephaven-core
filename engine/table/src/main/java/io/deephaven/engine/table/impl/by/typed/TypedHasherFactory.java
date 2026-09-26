@@ -16,7 +16,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -343,8 +342,7 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null, true,
                     TypedAsOfJoinFactory::staticProbeDecorateLeftFound, null,
                     ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "hashSlots").build(),
-                    ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build(),
-                    ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build()));
+                    ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, true, TypedAsOfJoinFactory::staticBuildRightFound,
@@ -360,9 +358,11 @@ public class TypedHasherFactory {
             builder.classPrefix("RightIncrementalAsOfJoinHasher").packageGroup("asofjoin")
                     .packageMiddle("rightincopen")
                     .openAddressedAlternate(true)
+                    .supportTombstones(true)
                     .stateType(byte.class).mainStateName("stateSource")
                     .overflowOrAlternateStateName("alternateStateSource")
                     .emptyStateName("ENTRY_EMPTY_STATE")
+                    .tombstoneStateName("ENTRY_TOMBSTONE_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
                     .moveMainFull(TypedAsOfJoinFactory::rightIncrementalMoveMainFull)
@@ -1360,9 +1360,13 @@ public class TypedHasherFactory {
         if (foundBlockRequired) {
             builder.beginControlFlow("if (!$L)", foundName);
             if (hasherConfig.supportTombstones && !alternate) {
-                builder.beginControlFlow("if (!searchAlternate)");
-                ps.missing.accept(builder);
-                builder.nextControlFlow("else");
+                if (ps.missing == null) {
+                    builder.beginControlFlow("if (searchAlternate)");
+                } else {
+                    builder.beginControlFlow("if (!searchAlternate)");
+                    ps.missing.accept(builder);
+                    builder.nextControlFlow("else");
+                }
             }
             if (hasherConfig.openAddressedAlternate && !alternate) {
                 doProbeSearch(hasherConfig, ps, chunkTypes, builder, true);

@@ -9,6 +9,17 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.Asserts;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
+import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -16,23 +27,34 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.table.BasicDataIndex;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.MismatchedJoinKeyException;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.testutil.QueryTableTestBase.JoinIncrement;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.sources.TestColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -72,6 +94,183 @@ public class QueryTableAjTest {
         } catch (RuntimeException e) {
             assertEquals(e.getMessage(), "Conflicting column names [Bucket]");
         }
+    }
+
+    @Test
+    public void testAjMismatchedKeyTypes() {
+        final Table left = TableTools.newTable(intCol("Key", 1), intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(longCol("Key", 1L), intCol("RightStamp", 1), intCol("Sentinel", 1));
+
+        try {
+            left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+            fail("Expected mismatched key type exception!");
+        } catch (MismatchedJoinKeyException e) {
+            assertEquals("Mismatched join types, Key=Key: int != long", e.getMessage());
+        }
+
+        final Table instantLeft = TableTools.newTable(instantCol("Key", DateTimeUtils.epochNanosToInstant(1)),
+                intCol("LeftStamp", 5));
+        try {
+            instantLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+            fail("Expected mismatched key type exception!");
+        } catch (MismatchedJoinKeyException e) {
+            assertEquals("Mismatched join types, Key=Key: class java.time.Instant != long", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testAjEmptyMatch() {
+        final Table left = TableTools.newTable(intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(intCol("RightStamp", 1), intCol("Sentinel", 1));
+
+        for (final String match : new String[] {"", " ", " , "}) {
+            final IllegalArgumentException ajEmpty =
+                    assertThrows(IllegalArgumentException.class, () -> left.aj(right, match, "Sentinel"));
+            assertEquals("aj() requires at least one column to match!", ajEmpty.getMessage());
+            final IllegalArgumentException rajEmpty =
+                    assertThrows(IllegalArgumentException.class, () -> left.raj(right, match));
+            assertEquals("raj() requires at least one column to match!", rajEmpty.getMessage());
+        }
+    }
+
+    @Test
+    public void testAjMismatchedTypesWithEmptyLeft() {
+        final Table right = TableTools.newTable(longCol("Key", 1L), longCol("RightStamp", 1L), intCol("Sentinel", 1));
+        final Table emptyIntKeyLeft = TableTools.newTable(intCol("Key"), longCol("LeftStamp"));
+        final MismatchedJoinKeyException keyMismatch = assertThrows(MismatchedJoinKeyException.class,
+                () -> emptyIntKeyLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel"));
+        assertEquals("Mismatched join types, Key=Key: int != long", keyMismatch.getMessage());
+
+        final Table emptyIntStampLeft = TableTools.newTable(longCol("Key"), intCol("LeftStamp"));
+        final MismatchedJoinKeyException stampMismatch = assertThrows(MismatchedJoinKeyException.class,
+                () -> emptyIntStampLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel"));
+        assertEquals("Can not aj() with different stamp types: left=int, right=long", stampMismatch.getMessage());
+    }
+
+    @Test
+    public void testAjMismatchedStampTypes() {
+        final Table left = TableTools.newTable(instantCol("LeftStamp", DateTimeUtils.epochNanosToInstant(5)));
+        final Table right = TableTools.newTable(longCol("RightStamp", 1L), intCol("Sentinel", 1));
+
+        try {
+            left.aj(right, "LeftStamp>=RightStamp", "Sentinel");
+            fail("Expected mismatched stamp type exception!");
+        } catch (MismatchedJoinKeyException e) {
+            assertEquals("Can not aj() with different stamp types: left=class java.time.Instant, right=long",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testRajMismatchedStampTypes() {
+        final Table left = TableTools.newTable(instantCol("LeftStamp", DateTimeUtils.epochNanosToInstant(5)));
+        final Table right = TableTools.newTable(longCol("RightStamp", 1L), intCol("Sentinel", 1));
+
+        final MismatchedJoinKeyException stampMismatch = assertThrows(MismatchedJoinKeyException.class,
+                () -> left.raj(right, "LeftStamp<=RightStamp", "Sentinel"));
+        assertEquals("Can not raj() with different stamp types: left=class java.time.Instant, right=long",
+                stampMismatch.getMessage());
+    }
+
+    /**
+     * Builds a one-row table whose ZonedDateTime column is backed by a nanosecond source, which can be reinterpreted to
+     * long, alongside an int column.
+     */
+    private static QueryTable convertibleZonedTable(final String zonedName, final long epochNanos,
+            final String intName, final int intValue) {
+        final Table instants = TableTools.newTable(instantCol("Ts", DateTimeUtils.epochNanosToInstant(epochNanos)),
+                intCol(intName, intValue));
+        final ColumnSource<ZonedDateTime> zoned =
+                ((ConvertibleTimeSource) instants.getColumnSource("Ts")).toZonedDateTime(ZoneId.of("UTC"));
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
+        sources.put(zonedName, zoned);
+        sources.put(intName, instants.getColumnSource(intName));
+        return new QueryTable(instants.getRowSet().copy().toTracking(), sources);
+    }
+
+    private static ZonedDateTime utc(final long epochNanos) {
+        return ZonedDateTime.ofInstant(DateTimeUtils.epochNanosToInstant(epochNanos), ZoneId.of("UTC"));
+    }
+
+    @Test
+    public void testAjZonedDateTimeStampConvertibleAndObjectSources() {
+        final Table right = TableTools.newTable(col("RightStamp", utc(1_000L)), intCol("Sentinel", 1));
+        final Table objectLeft = TableTools.newTable(col("Stamp", utc(5_000L)), intCol("Other", 0));
+        final Table expected = objectLeft.aj(right, "Stamp>=RightStamp", "Sentinel");
+
+        final QueryTable convertibleLeft = convertibleZonedTable("Stamp", 5_000L, "Other", 0);
+        final Table result = convertibleLeft.aj(right, "Stamp>=RightStamp", "Sentinel");
+        assertTableEquals(expected.view("Other", "Sentinel"), result.view("Other", "Sentinel"));
+    }
+
+    @Test
+    public void testAjZonedDateTimeKeyConvertibleAndObjectSources() {
+        final Table right =
+                TableTools.newTable(col("Key", utc(1_000L)), intCol("RightStamp", 1), intCol("Sentinel", 1));
+        final Table objectLeft = TableTools.newTable(col("Key", utc(1_000L)), intCol("LeftStamp", 5));
+        final Table expected = objectLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+
+        final QueryTable convertibleLeft = convertibleZonedTable("Key", 1_000L, "LeftStamp", 5);
+        final Table result = convertibleLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+        assertTableEquals(expected.view("LeftStamp", "Sentinel"), result.view("LeftStamp", "Sentinel"));
+    }
+
+    /**
+     * When several right rows share the closest stamp, aj matches the last of them and raj the first, whether the
+     * tables are static or refreshing and whether or not there are exact match keys.
+     */
+    @Test
+    public void testAjDuplicateRightStampTieBreak() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean rightRefreshing : new boolean[] {false, true}) {
+                final QueryTable left = leftRefreshing
+                        ? testRefreshingTable(i(0, 1).toTracking(), col("Key", "A", "B"), intCol("LeftStamp", 5, 5))
+                        : testTable(i(0, 1).toTracking(), col("Key", "A", "B"), intCol("LeftStamp", 5, 5));
+                final ColumnHolder<?>[] rightColumns = new ColumnHolder<?>[] {
+                        col("Key", "A", "A", "A", "B", "B", "B"),
+                        intCol("RightStamp", 5, 5, 5, 5, 5, 5),
+                        intCol("Sentinel", 1, 2, 3, 4, 5, 6)};
+                final QueryTable right = rightRefreshing
+                        ? testRefreshingTable(i(0, 1, 2, 3, 4, 5).toTracking(), rightColumns)
+                        : testTable(i(0, 1, 2, 3, 4, 5).toTracking(), rightColumns);
+                final String context = "leftRefreshing=" + leftRefreshing + ", rightRefreshing=" + rightRefreshing;
+
+                Asserts.assertEquals(context, new int[] {6, 6},
+                        intColumn(left.aj(right, "LeftStamp>=RightStamp", "Sentinel"), "Sentinel"));
+                Asserts.assertEquals(context, new int[] {1, 1},
+                        intColumn(left.raj(right, "LeftStamp<=RightStamp", "Sentinel"), "Sentinel"));
+                Asserts.assertEquals(context, new int[] {3, 6},
+                        intColumn(left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel"), "Sentinel"));
+                Asserts.assertEquals(context, new int[] {1, 4},
+                        intColumn(left.raj(right, "Key,LeftStamp<=RightStamp", "Sentinel"), "Sentinel"));
+            }
+        }
+    }
+
+    /**
+     * A data index on either side of a keyed as-of join supplies key columns in the same representation as the table
+     * sources, even when a nanosecond-backed ZonedDateTime key meets an object-backed one.
+     */
+    @Test
+    public void testAjZonedDateTimeKeyConvertibleAndObjectSourcesWithDataIndex() {
+        final Table objectRight =
+                TableTools.newTable(col("Key", utc(1_000L)), intCol("RightStamp", 1), intCol("Sentinel", 1));
+        final Table objectLeft = TableTools.newTable(col("Key", utc(1_000L)), intCol("LeftStamp", 5));
+        final Table expected = objectLeft.aj(objectRight, "Key,LeftStamp>=RightStamp", "Sentinel");
+
+        final QueryTable indexedConvertibleLeft = convertibleZonedTable("Key", 1_000L, "LeftStamp", 5);
+        DataIndexer.getOrCreateDataIndex(indexedConvertibleLeft, "Key");
+        assertTableEquals(expected.view("LeftStamp", "Sentinel"),
+                indexedConvertibleLeft.aj(objectRight, "Key,LeftStamp>=RightStamp", "Sentinel")
+                        .view("LeftStamp", "Sentinel"));
+
+        final QueryTable indexedObjectRight = (QueryTable) TableTools.newTable(col("Key", utc(1_000L)),
+                intCol("RightStamp", 1), intCol("Sentinel", 1));
+        DataIndexer.getOrCreateDataIndex(indexedObjectRight, "Key");
+        final QueryTable convertibleLeft = convertibleZonedTable("Key", 1_000L, "LeftStamp", 5);
+        assertTableEquals(expected.view("LeftStamp", "Sentinel"),
+                convertibleLeft.aj(indexedObjectRight, "Key,LeftStamp>=RightStamp", "Sentinel")
+                        .view("LeftStamp", "Sentinel"));
     }
 
     @Test
@@ -352,7 +551,7 @@ public class QueryTableAjTest {
     @Test
     public void testAjEmpty() {
         final Table left = TableTools.newTable(
-                col("Bucket"),
+                stringCol("Bucket"),
                 intCol("LeftStamp"));
 
         final Table right = TableTools.newTable(
@@ -506,45 +705,6 @@ public class QueryTableAjTest {
 
         Asserts.assertEquals(new int[] {2, NULL_INT, 1, 2, 4, NULL_INT},
                 intColumn(reverseResultGt, "Sentinel"));
-    }
-
-    private void tickCheck(Table left, boolean key, final String stampColumn, final String firstUnsorted,
-            final String secondUnsorted) {
-        final QueryTable right = TstUtils.testRefreshingTable(stringCol("SingleKey", "Key", "Key", "Key"),
-                byteCol("ByteCol", (byte) 1, (byte) 2, (byte) 3),
-                longCol("LongCol", 1, 2, 3),
-                doubleCol("DoubleCol", 1, 2.0, 3),
-                col("BoolCol", null, false, true),
-                stringCol("StringCol", "A", "B", "C"));
-
-        final QueryTable result1 =
-                (QueryTable) left.aj(right, (key ? "SingleKey," : "") + stampColumn, "Dummy<=LongCol");
-        try {
-            base.setExpectError(true);
-            final io.deephaven.engine.table.impl.ErrorListener listener =
-                    new io.deephaven.engine.table.impl.ErrorListener(result1);
-            result1.addUpdateListener(listener);
-
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-            updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(right, i(4, 5, 6),
-                        stringCol("SingleKey", "Key", "Key", "Key"),
-                        byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),
-                        longCol("LongCol", 4, 6, 5),
-                        doubleCol("DoubleCol", 4, 6, 5),
-                        stringCol("StringCol", "A", "D", "C"),
-                        col("BoolCol", null, true, false));
-                right.notifyListeners(i(4, 5, 6), i(), i());
-            });
-
-            assertNotNull(listener.originalException());
-            assertEquals(
-                    "Right stamp columns must be sorted, but are not for " + (key ? "Key " : "[] (zero key columns) ")
-                            + firstUnsorted + " came before " + secondUnsorted,
-                    listener.originalException().getMessage());
-        } finally {
-            base.setExpectError(false);
-        }
     }
 
     @Test
@@ -951,7 +1111,7 @@ public class QueryTableAjTest {
             JoinControl control, Class<?> stampType) {
         testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement,
                 leftRefreshing, rightRefreshing, initialOnly, withZeroKeys, withBuckets, withReverse, false, false,
-                getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
+                control, stampType);
     }
 
     @Test
@@ -1718,5 +1878,718 @@ public class QueryTableAjTest {
         checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
                 rightTable.partitionBy("Bucket"),
                 true, true);
+    }
+
+    /**
+     * A static left table joined against a refreshing right table takes the bucketed right-ticking path, which reuses
+     * one per-slot builder array for removals, additions, shifts and modifications. A cycle whose only change is a
+     * modification of a right column that is neither the stamp nor a bucket key leaves the removal and addition sets
+     * empty, so the builder array must still be sized for the modified rows before the modification pass probes into
+     * it.
+     */
+    @Test
+    public void testRightModifyNonStampColumnWithStaticLeft() {
+        final QueryTable left = testTable(i(0).toTracking(),
+                col("Bucket", "A"), intCol("LeftStamp", 5));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(),
+                col("Bucket", "A"), intCol("RightStamp", 1), intCol("Sentinel", 1), intCol("Other", 0));
+
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel,Other");
+        assertTableEquals(newTable(col("Bucket", "A"), intCol("LeftStamp", 5), intCol("RightStamp", 1),
+                intCol("Sentinel", 1), intCol("Other", 0)), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0), col("Bucket", "A"), intCol("RightStamp", 1), intCol("Sentinel", 1),
+                    intCol("Other", 7));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Other")));
+        });
+
+        assertTableEquals(newTable(col("Bucket", "A"), intCol("LeftStamp", 5), intCol("RightStamp", 1),
+                intCol("Sentinel", 1), intCol("Other", 7)), result);
+    }
+
+    /**
+     * A bucketed join over two refreshing tables builds a bucket for a right key it has not seen before, so the
+     * per-slot output arrays must be sized for the added rows rather than for the buckets that already exist. A cycle
+     * whose only change is right additions in new buckets reaches the build with no earlier operation having grown
+     * those arrays.
+     */
+    @Test
+    public void testRightAddInNewBucketWithBothTicking() {
+        final QueryTable left = testRefreshingTable(i(0).toTracking(),
+                col("Bucket", "A"), intCol("LeftStamp", 5));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(),
+                col("Bucket", "A"), intCol("RightStamp", 1), intCol("Sentinel", 1));
+
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
+        final Table expected = newTable(col("Bucket", "A"), intCol("LeftStamp", 5), intCol("RightStamp", 1),
+                intCol("Sentinel", 1));
+        assertTableEquals(expected, result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(1, 2), col("Bucket", "B", "C"), intCol("RightStamp", 1, 1), intCol("Sentinel", 2, 3));
+            right.notifyListeners(i(1, 2), i(), i());
+        });
+
+        // the new buckets have no left rows, so the result is unchanged
+        assertTableEquals(expected, result);
+    }
+
+    /**
+     * A right column that is also a stamp match column is added to the result automatically under its own name. Naming
+     * it in columnsToAdd renames that automatic addition, and naming it twice under two different left names produces
+     * both renamed columns. The left stamp column is always carried through under its own name.
+     */
+    @Test
+    public void testAjAddStampColumnUnderTwoNames() {
+        final Table left = TableTools.newTable(intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(intCol("RightStamp", 1), intCol("Sentinel", 100));
+
+        final Table result = left.aj(right, "LeftStamp>=RightStamp", "A=RightStamp,B=RightStamp,Sentinel");
+
+        assertEquals(Arrays.asList("LeftStamp", "A", "B", "Sentinel"), result.getDefinition().getColumnNames());
+        Asserts.assertEquals(new int[] {5}, intColumn(result, "LeftStamp"));
+        Asserts.assertEquals(new int[] {1}, intColumn(result, "A"));
+        Asserts.assertEquals(new int[] {1}, intColumn(result, "B"));
+        Asserts.assertEquals(new int[] {100}, intColumn(result, "Sentinel"));
+    }
+
+    /**
+     * The stamp match column appears in the result under its right hand name when columnsToAdd does not mention it, and
+     * under the requested name when it does. Either way the left stamp column keeps its own name, and an added column
+     * may not take a name the left table already uses.
+     */
+    @Test
+    public void testAjStampColumnNamingInOutput() {
+        final Table left = TableTools.newTable(intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(intCol("RightStamp", 1), intCol("Sentinel", 100));
+
+        // not mentioned in columnsToAdd, so the match column is carried through under its own name
+        final Table automatic = left.aj(right, "LeftStamp>=RightStamp", "Sentinel");
+        assertEquals(Arrays.asList("LeftStamp", "RightStamp", "Sentinel"),
+                automatic.getDefinition().getColumnNames());
+        Asserts.assertEquals(new int[] {1}, intColumn(automatic, "RightStamp"));
+
+        // a single alias renames that automatic addition rather than adding a second copy
+        final Table renamed = left.aj(right, "LeftStamp>=RightStamp", "A=RightStamp,Sentinel");
+        assertEquals(Arrays.asList("LeftStamp", "A", "Sentinel"), renamed.getDefinition().getColumnNames());
+        Asserts.assertEquals(new int[] {1}, intColumn(renamed, "A"));
+
+        // the left stamp column is untouched by the join and is never renamed
+        final Table sameName = TableTools.newTable(intCol("Stamp", 5));
+        final Table rightSameName = TableTools.newTable(intCol("Stamp", 1), intCol("Sentinel", 100));
+        final Table shared = sameName.aj(rightSameName, "Stamp>=Stamp", "Sentinel");
+        assertEquals(Arrays.asList("Stamp", "Sentinel"), shared.getDefinition().getColumnNames());
+        Asserts.assertEquals(new int[] {5}, intColumn(shared, "Stamp"));
+
+        // an added column may not be renamed onto a column the left table already has
+        try {
+            left.aj(right, "LeftStamp>=RightStamp", "LeftStamp=RightStamp,Sentinel");
+            fail("expected a conflict for an added column named LeftStamp");
+        } catch (RuntimeException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("LeftStamp"));
+        }
+    }
+
+    /**
+     * Naming a stamp match column under its own name and under an alias requests both output columns, in either order.
+     */
+    @Test
+    public void testAjAddStampColumnWithAndWithoutAlias() {
+        final Table left = TableTools.newTable(intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(intCol("RightStamp", 1), intCol("Sentinel", 100));
+
+        final Table originalFirst = left.aj(right, "LeftStamp>=RightStamp", "RightStamp,A=RightStamp,Sentinel");
+        assertEquals(Arrays.asList("LeftStamp", "RightStamp", "A", "Sentinel"),
+                originalFirst.getDefinition().getColumnNames());
+
+        final Table aliasFirst = left.aj(right, "LeftStamp>=RightStamp", "A=RightStamp,RightStamp,Sentinel");
+        assertEquals(Arrays.asList("LeftStamp", "RightStamp", "A", "Sentinel"),
+                aliasFirst.getDefinition().getColumnNames());
+    }
+
+    /**
+     * Churns bucket keys through a bucketed as-of join over many cycles: keys appear, lose all of their rows on one or
+     * both sides, and some return after leaving. A small hash table forces rehashes while emptied buckets are released,
+     * and each cycle is compared against a static join of the current tables.
+     */
+    @Test
+    public void testAjChurningBuckets() {
+        for (int seed = 0; seed < 3; ++seed) {
+            for (final boolean leftRefreshing : new boolean[] {true, false}) {
+                for (final boolean reverse : new boolean[] {false, true}) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        testAjChurningBuckets(seed, leftRefreshing, reverse);
+                    }
+                }
+            }
+        }
+    }
+
+    private void testAjChurningBuckets(final int seed, final boolean leftRefreshing, final boolean reverse) {
+        final Random random = new Random(seed);
+        final JoinControl control = new JoinControl() {
+            @Override
+            int initialBuildSize() {
+                return 1 << 3;
+            }
+
+            @Override
+            int rightSsaNodeSize() {
+                return 4;
+            }
+
+            @Override
+            int leftSsaNodeSize() {
+                return 4;
+            }
+
+            @Override
+            public int rightChunkSize() {
+                return 4;
+            }
+
+            @Override
+            public int leftChunkSize() {
+                return 4;
+            }
+        };
+
+        final ChurnSide leftSide = new ChurnSide();
+        final ChurnSide rightSide = new ChurnSide();
+
+        final QueryTable left;
+        final int staticLeftKeys = 24;
+        if (leftRefreshing) {
+            left = testRefreshingTable(i().toTracking(), intCol("Bucket"), intCol("LeftStamp"));
+        } else {
+            // a static left side holds a fixed set of keys, while the right side churns over a wider range
+            for (int key = 0; key < staticLeftKeys; ++key) {
+                leftSide.stage(key, 1 + random.nextInt(3), random);
+            }
+            left = testTable(leftSide.addedRows().toTracking(), intCol("Bucket", leftSide.addedKeys()),
+                    intCol("LeftStamp", leftSide.addedStamps()));
+            leftSide.clearStaged();
+        }
+        final QueryTable right =
+                testRefreshingTable(i().toTracking(), intCol("Bucket"), intCol("RightStamp"), intCol("Sentinel"));
+
+        // raj is a descending as-of join against the reversed right table, which is what makes it match the first of
+        // several duplicate right stamps
+        final Table result = AsOfJoinHelper.asOfJoin(control, left, reverse ? (QueryTable) right.reverse() : right,
+                MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                MatchPairFactory.getExpressions("Sentinel"),
+                reverse ? SortingOrder.Descending : SortingOrder.Ascending, false);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final IntArrayList departedKeys = new IntArrayList();
+        int nextKey = leftRefreshing ? 0 : staticLeftKeys / 2;
+        int sentinel = 0;
+
+        for (int cycle = 0; cycle < 150; ++cycle) {
+            // remove every row of some keys, from both sides or from only one of them
+            for (final int key : leftSide.union(rightSide)) {
+                if (random.nextInt(3) != 0) {
+                    continue;
+                }
+                final int sides = random.nextInt(4);
+                if (leftRefreshing && sides != 1) {
+                    leftSide.removeKey(key);
+                }
+                if (sides != 2) {
+                    rightSide.removeKey(key);
+                }
+                if (!leftSide.contains(key) && !rightSide.contains(key)) {
+                    departedKeys.add(key);
+                }
+            }
+
+            // introduce new keys, some on only one side
+            final int newKeys = 1 + random.nextInt(3);
+            for (int ii = 0; ii < newKeys; ++ii) {
+                final int key = nextKey++;
+                final int sides = random.nextInt(4);
+                if (leftRefreshing && sides != 1) {
+                    leftSide.stage(key, 1 + random.nextInt(3), random);
+                }
+                if (sides != 2) {
+                    sentinel = rightSide.stage(key, 1 + random.nextInt(3), random, sentinel);
+                }
+            }
+
+            // bring back a key that previously lost all of its rows
+            if (!departedKeys.isEmpty() && random.nextBoolean()) {
+                final int key = departedKeys.removeInt(random.nextInt(departedKeys.size()));
+                if (leftRefreshing && random.nextBoolean()) {
+                    leftSide.stage(key, 1 + random.nextInt(2), random);
+                }
+                sentinel = rightSide.stage(key, 1 + random.nextInt(2), random, sentinel);
+            }
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (leftRefreshing) {
+                    leftSide.apply(left, false);
+                }
+                rightSide.apply(right, true);
+            });
+
+            final Table leftSnapshot = left.snapshot();
+            final Table rightSnapshot = right.snapshot();
+            final Table expected = reverse
+                    ? leftSnapshot.raj(rightSnapshot, "Bucket,LeftStamp<=RightStamp", "Sentinel")
+                    : leftSnapshot.aj(rightSnapshot, "Bucket,LeftStamp>=RightStamp", "Sentinel");
+            assertTableEquals(expected.view("Bucket", "LeftStamp", "Sentinel"),
+                    result.view("Bucket", "LeftStamp", "Sentinel"));
+        }
+    }
+
+    /**
+     * A right incremental as-of join state manager releases buckets that lose all of their rows, so a stream of keys
+     * that each live for a single cycle occupies a hash table sized to the live keys rather than to every key seen.
+     */
+    @Test
+    public void testAjStateManagerReleasesEmptyBuckets() {
+        final int keysPerCycle = 10;
+        final int cycles = 1000;
+        final Table keyTable = TableTools.newTable(intCol("Key", IntStream.range(0, keysPerCycle * cycles).toArray()));
+        final ColumnSource<?>[] keySources = new ColumnSource<?>[] {keyTable.getColumnSource("Key")};
+
+        final RightIncrementalHashedAsOfJoinStateManager stateManager = TypedHasherFactory.make(
+                RightIncrementalAsOfJoinStateManagerTypedBase.class, keySources, keySources, 1 << 3, 0.75, 0.7);
+        final IntegerArraySource slots = new IntegerArraySource();
+        final ObjectArraySource<RowSetBuilderSequential> builders =
+                new ObjectArraySource<>(RowSetBuilderSequential.class);
+
+        for (int cycle = 0; cycle < cycles; ++cycle) {
+            if (cycle > 0) {
+                // every row of the previous cycle's keys goes away
+                try (final RowSet removed = RowSetFactory.fromRange((long) (cycle - 1) * keysPerCycle,
+                        (long) cycle * keysPerCycle - 1)) {
+                    final int removedSlots = stateManager.markForRemoval(removed, keySources, slots, builders);
+                    assertEquals(keysPerCycle, removedSlots);
+                    stateManager.ensureTombstoneCandidateCapacity(removedSlots);
+                    for (int slotIndex = 0; slotIndex < removedSlots; ++slotIndex) {
+                        final int slot = slots.getInt(slotIndex);
+                        final WritableRowSet leftRowSet = stateManager.getLeftRowSet(slot);
+                        try (final RowSet slotRemoved = builders.get(slotIndex).build()) {
+                            builders.set(slotIndex, null);
+                            leftRowSet.remove(slotRemoved);
+                        }
+                        assertTrue(leftRowSet.isEmpty());
+                        stateManager.addTombstoneCandidate(slot);
+                    }
+                }
+            }
+
+            try (final RowSet added =
+                    RowSetFactory.fromRange((long) cycle * keysPerCycle, (long) (cycle + 1) * keysPerCycle - 1)) {
+                final int addedSlots = stateManager.buildAdditions(true, added, keySources, slots, builders);
+                assertEquals(keysPerCycle, addedSlots);
+                for (int slotIndex = 0; slotIndex < addedSlots; ++slotIndex) {
+                    stateManager.setLeftRowSet(slots.getInt(slotIndex), builders.get(slotIndex).build());
+                    builders.set(slotIndex, null);
+                }
+            }
+
+            stateManager.releaseEmptyBuckets();
+            assertEquals(keysPerCycle, stateManager.getNumEntries());
+            assertTrue("tableSize=" + stateManager.getTableSize(), stateManager.getTableSize() <= 64);
+        }
+    }
+
+    /**
+     * With a static left table and a refreshing right table, each update reports the columns modified in that cycle
+     * alone: a modification of one added right column reports just that column, even after an earlier cycle reported
+     * every right column.
+     */
+    @Test
+    public void testRightTickingModifiedColumnSetIsPerCycle() {
+        for (final String match : new String[] {"LeftStamp>=RightStamp", "Key,LeftStamp>=RightStamp"}) {
+            final QueryTable left = testTable(i(0).toTracking(), col("Key", "K"), intCol("LeftStamp", 10));
+            final QueryTable right = testRefreshingTable(i(0).toTracking(), col("Key", "K"),
+                    intCol("RightStamp", 5), intCol("ColumnA", 1), intCol("ColumnB", 2));
+            final QueryTable result = (QueryTable) left.aj(right, match, "ColumnA,ColumnB");
+            final SimpleListener listener = new SimpleListener(result);
+            result.addUpdateListener(listener);
+
+            // an added right row reports every right column
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(right, i(1), col("Key", "K"), intCol("RightStamp", 3), intCol("ColumnA", 3),
+                        intCol("ColumnB", 4));
+                right.notifyListeners(i(1), i(), i());
+            });
+
+            listener.reset();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(right, i(0), col("Key", "K"), intCol("RightStamp", 5), intCol("ColumnA", 1),
+                        intCol("ColumnB", 20));
+                right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                        right.newModifiedColumnSet("ColumnB")));
+            });
+            assertEquals(match, 1, listener.getCount());
+            assertEquals(match, i(0), listener.getUpdate().modified());
+            assertEquals(match, result.newModifiedColumnSet("ColumnB"), listener.getUpdate().modifiedColumnSet());
+            result.removeUpdateListener(listener);
+        }
+    }
+
+    /**
+     * With both sides refreshing and no exact match columns, modifying a right column that the join does not add leaves
+     * the left rows that match the modified right row unmodified, even when the same cycle modifies another left row.
+     */
+    @Test
+    public void testZeroKeyRightModificationOfColumnNotAdded() {
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(), intCol("LeftStamp", 1, 2, 3),
+                intCol("LeftOther", 0, 0, 0));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), intCol("RightStamp", 1, 3),
+                intCol("Sentinel", 10, 11), intCol("RightOther", 0, 0));
+        final QueryTable result = (QueryTable) left.aj(right, "LeftStamp>=RightStamp", "Sentinel");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(2), intCol("LeftStamp", 3), intCol("LeftOther", 1));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("LeftOther")));
+            // right row 0 matches left rows 0 and 1, but RightOther is not a column of the result
+            addToTable(right, i(0), intCol("RightStamp", 1), intCol("Sentinel", 10), intCol("RightOther", 1));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("RightOther")));
+        });
+
+        Asserts.assertEquals(new int[] {10, 10, 11}, ColumnVectors.ofInt(result, "Sentinel").toArray());
+        assertEquals(1, listener.getCount());
+        assertEquals(i(2), listener.getUpdate().modified());
+        result.removeUpdateListener(listener);
+    }
+
+    /**
+     * With both sides refreshing, the first right row of a bucket that held only left rows modifies just the left rows
+     * that it matches.
+     */
+    @Test
+    public void testFirstRightRowOfBucketModifiesOnlyMatchedLeftRows() {
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "A", "A", "A"),
+                intCol("LeftStamp", 1, 2, 3));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(), col("Key", "B"), intCol("RightStamp", 1),
+                intCol("Sentinel", 0));
+        final QueryTable result = (QueryTable) left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(10), col("Key", "A"), intCol("RightStamp", 2), intCol("Sentinel", 10));
+            right.notifyListeners(i(10), i(), i());
+        });
+
+        Asserts.assertEquals(new int[] {NULL_INT, 10, 10}, ColumnVectors.ofInt(result, "Sentinel").toArray());
+        assertEquals(1, listener.getCount());
+        assertEquals(i(1, 2), listener.getUpdate().modified());
+        result.removeUpdateListener(listener);
+    }
+
+    /**
+     * Shifts a range of rows of a refreshing test table by a positive delta, which may move rows onto keys that other
+     * rows of the same range vacate, and notifies listeners.
+     */
+    private static void shiftTestTable(final QueryTable table, final long start, final long end, final long delta) {
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(start, end, delta);
+        final RowSetShiftData shifted = shiftBuilder.build();
+        shifted.apply((beginRange, endRange, shiftDelta) -> {
+            for (final ColumnSource<?> column : table.getColumnSources()) {
+                ((TestColumnSource<?>) column).shift(beginRange, endRange, shiftDelta);
+            }
+        });
+        shifted.apply(table.getRowSet().writableCast());
+        table.notifyListeners(new TableUpdateImpl(i(), i(), i(), shifted, ModifiedColumnSet.EMPTY));
+    }
+
+    /**
+     * A refreshing left table joined to a static right table reads each bucket's right stamps once and keeps them
+     * cached. Left rows added later to buckets that already hold left rows and to buckets that do not stamp as a static
+     * join would, with and without a right data index, and the index's row sets are left intact.
+     */
+    @Test
+    public void testLeftRefreshingStaticRightStampsBucketsOnce() {
+        for (final boolean rightIndexed : new boolean[] {false, true}) {
+            final QueryTable right = testTable(RowSetFactory.flat(8).toTracking(),
+                    col("Key", "A", "B", "C", "A", "B", "C", "A", "B"), intCol("RightStamp", 1, 2, 3, 4, 5, 6, 7, 8),
+                    intCol("Sentinel", 0, 1, 2, 3, 4, 5, 6, 7));
+            final BasicDataIndex rightIndex =
+                    rightIndexed ? DataIndexer.getOrCreateDataIndex(right, "Key") : null;
+            final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), col("Key", "A", "B"),
+                    intCol("LeftStamp", 5, 3));
+
+            final String match = "Key,LeftStamp>=RightStamp";
+            final Table result = left.aj(right, match, "Sentinel");
+            assertTableEquals(left.snapshot().aj(right, match, "Sentinel"), result);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            // bucket A already holds left rows, bucket C does not
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(2, 3), col("Key", "A", "C"), intCol("LeftStamp", 8, 4));
+                left.notifyListeners(i(2, 3), i(), i());
+            });
+            assertTableEquals(left.snapshot().aj(right, match, "Sentinel"), result);
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(4, 5), col("Key", "C", "B"), intCol("LeftStamp", 7, 9));
+                left.notifyListeners(i(4, 5), i(), i());
+            });
+            assertTableEquals(left.snapshot().aj(right, match, "Sentinel"), result);
+
+            if (rightIndex != null) {
+                final Table indexTable = rightIndex.table();
+                final ColumnSource<RowSet> rowSets = rightIndex.rowSetColumn();
+                long indexedRows = 0;
+                try (final RowSet.Iterator indexRows = indexTable.getRowSet().iterator()) {
+                    while (indexRows.hasNext()) {
+                        indexedRows += rowSets.get(indexRows.nextLong()).size();
+                    }
+                }
+                assertEquals(right.size(), indexedRows);
+            }
+        }
+    }
+
+    /**
+     * A static left table joined to a refreshing right table on two key columns, when one right update shifts several
+     * ranges of rows, restamps every shifted right row with the same result as a static join.
+     */
+    @Test
+    public void testLeftStaticKeyedAjSeveralRightShiftRanges() {
+        final int rightSize = 12;
+        final String[] rightFirstKeys = new String[rightSize];
+        final int[] rightSecondKeys = new int[rightSize];
+        final int[] rightStamps = new int[rightSize];
+        for (int ii = 0; ii < rightSize; ++ii) {
+            rightFirstKeys[ii] = ii % 2 == 0 ? "A" : "B";
+            rightSecondKeys[ii] = ii % 3;
+            rightStamps[ii] = ii * 10;
+        }
+        final QueryTable right = testRefreshingTable(RowSetFactory.flat(rightSize).toTracking(),
+                col("First", rightFirstKeys), intCol("Second", rightSecondKeys), intCol("RightStamp", rightStamps),
+                intCol("Sentinel", IntStream.range(0, rightSize).toArray()));
+
+        final int leftSize = 36;
+        final String[] leftFirstKeys = new String[leftSize];
+        final int[] leftSecondKeys = new int[leftSize];
+        final int[] leftStamps = new int[leftSize];
+        for (int ii = 0; ii < leftSize; ++ii) {
+            leftFirstKeys[ii] = ii % 2 == 0 ? "A" : "B";
+            leftSecondKeys[ii] = ii % 3;
+            leftStamps[ii] = ii * 4;
+        }
+        final QueryTable left = testTable(RowSetFactory.flat(leftSize).toTracking(), col("First", leftFirstKeys),
+                intCol("Second", leftSecondKeys), intCol("LeftStamp", leftStamps));
+
+        final String match = "First,Second,LeftStamp>=RightStamp";
+        final Table result = left.aj(right, match, "Sentinel");
+        assertTableEquals(left.aj(right.snapshot(), match, "Sentinel"), result);
+
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(0, 3, 100);
+        shiftBuilder.shiftRange(4, 7, 200);
+        shiftBuilder.shiftRange(8, 11, 300);
+        final RowSetShiftData shifted = shiftBuilder.build();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            shifted.apply((beginRange, endRange, shiftDelta) -> {
+                for (final ColumnSource<?> column : right.getColumnSources()) {
+                    ((TestColumnSource<?>) column).shift(beginRange, endRange, shiftDelta);
+                }
+            });
+            shifted.apply(right.getRowSet().writableCast());
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(), shifted, ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(i(100, 101, 102, 103, 204, 205, 206, 207, 308, 309, 310, 311), right.getRowSet());
+        assertTableEquals(left.aj(right.snapshot(), match, "Sentinel"), result);
+    }
+
+    /**
+     * Positive shifts of more rows than the join's chunk size are applied a chunk at a time, from the highest row keys
+     * down. Each shift moves every row of a range onto the key that the next row of its bucket vacates, on the right
+     * and the left side, for zero-key and bucketed joins with a static or refreshing left table.
+     */
+    @Test
+    public void testPositiveShiftLargerThanChunk() {
+        final int chunkSize = 4;
+        final JoinControl control = new JoinControl() {
+            @Override
+            int rightSsaNodeSize() {
+                return chunkSize;
+            }
+
+            @Override
+            int leftSsaNodeSize() {
+                return chunkSize;
+            }
+
+            @Override
+            public int rightChunkSize() {
+                return chunkSize;
+            }
+        };
+
+        final int rightSize = 40;
+        final long[] rightKeys = new long[rightSize];
+        final String[] rightBuckets = new String[rightSize];
+        final int[] rightStamps = new int[rightSize];
+        for (int ii = 0; ii < rightSize; ++ii) {
+            rightKeys[ii] = 2L * ii;
+            rightBuckets[ii] = ii % 2 == 0 ? "A" : "B";
+            // stamps decrease as the row key increases, so the left rows matched to a right row sit just after those
+            // matched to the right row whose key it is shifted onto
+            rightStamps[ii] = (rightSize - ii) * 5;
+        }
+        final int leftSize = 80;
+        final long[] leftKeys = new long[leftSize];
+        final String[] leftBuckets = new String[leftSize];
+        final int[] leftStamps = new int[leftSize];
+        for (int ii = 0; ii < leftSize; ++ii) {
+            leftKeys[ii] = 2L * ii;
+            leftBuckets[ii] = ii % 2 == 0 ? "A" : "B";
+            leftStamps[ii] = (ii / 2) * 5;
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (final boolean keyed : new boolean[] {false, true}) {
+            for (final boolean leftRefreshing : new boolean[] {false, true}) {
+                for (final boolean disallowExactMatch : new boolean[] {false, true}) {
+                    final QueryTable left = leftRefreshing
+                            ? testRefreshingTable(i(leftKeys).toTracking(), col("Bucket", leftBuckets),
+                                    intCol("LeftStamp", leftStamps))
+                            : testTable(i(leftKeys).toTracking(), col("Bucket", leftBuckets),
+                                    intCol("LeftStamp", leftStamps));
+                    final QueryTable right = testRefreshingTable(i(rightKeys).toTracking(),
+                            col("Bucket", rightBuckets), intCol("RightStamp", rightStamps),
+                            intCol("Sentinel", IntStream.range(0, rightSize).toArray()));
+
+                    final MatchPair stamp = new MatchPair("LeftStamp", "RightStamp");
+                    final MatchPair[] matches = keyed ? new MatchPair[] {new MatchPair("Bucket", "Bucket"), stamp}
+                            : new MatchPair[] {stamp};
+                    final String matchString = (keyed ? "Bucket," : "") + "LeftStamp"
+                            + (disallowExactMatch ? ">" : ">=") + "RightStamp";
+                    final Table result = AsOfJoinHelper.asOfJoin(control, left, right, matches,
+                            MatchPairFactory.getExpressions("RightStamp", "Sentinel"), SortingOrder.Ascending,
+                            disallowExactMatch);
+                    final String description = matchString + ", leftRefreshing=" + leftRefreshing;
+                    // each row moves onto the key of the next row of its bucket
+                    final long shiftDelta = keyed ? 4 : 2;
+                    assertTableEquals(description, left.snapshot().aj(right.snapshot(), matchString, "Sentinel"),
+                            result);
+
+                    updateGraph
+                            .runWithinUnitTestCycle(() -> shiftTestTable(right, 0, 2L * (rightSize - 1), shiftDelta));
+                    assertTableEquals(description, left.snapshot().aj(right.snapshot(), matchString, "Sentinel"),
+                            result);
+
+                    if (leftRefreshing) {
+                        updateGraph
+                                .runWithinUnitTestCycle(() -> shiftTestTable(left, 0, 2L * (leftSize - 1), shiftDelta));
+                        assertTableEquals(description, left.snapshot().aj(right.snapshot(), matchString, "Sentinel"),
+                                result);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * The rows of one side of a churning bucketed join, grouped by key, along with the additions and removals staged
+     * for the next cycle. Rows are appended in increasing row key order.
+     */
+    private static class ChurnSide {
+        private final Map<Integer, LongArrayList> rowsByKey = new LinkedHashMap<>();
+        private final IntArrayList stagedKeys = new IntArrayList();
+        private final IntArrayList stagedStamps = new IntArrayList();
+        private final IntArrayList stagedSentinels = new IntArrayList();
+        private RowSetBuilderRandom removed = RowSetFactory.builderRandom();
+        private long nextRow = 0;
+        private long firstStagedRow = 0;
+
+        boolean contains(final int key) {
+            return rowsByKey.containsKey(key);
+        }
+
+        Set<Integer> union(final ChurnSide other) {
+            final Set<Integer> keys = new LinkedHashSet<>(rowsByKey.keySet());
+            keys.addAll(other.rowsByKey.keySet());
+            return keys;
+        }
+
+        void removeKey(final int key) {
+            final LongArrayList rows = rowsByKey.remove(key);
+            if (rows != null) {
+                rows.forEach(removed::addKey);
+            }
+        }
+
+        void stage(final int key, final int count, final Random random) {
+            for (int ii = 0; ii < count; ++ii) {
+                stageRow(key, random.nextInt(500_000), 0);
+            }
+        }
+
+        /**
+         * Stage right rows drawn from a few stamp values, so that buckets hold duplicate stamps and the expected match
+         * depends on which of the duplicates the join chooses.
+         */
+        int stage(final int key, final int count, final Random random, int sentinel) {
+            for (int ii = 0; ii < count; ++ii) {
+                stageRow(key, random.nextInt(5) * 100_000, sentinel);
+                ++sentinel;
+            }
+            return sentinel;
+        }
+
+        private void stageRow(final int key, final int stamp, final int sentinel) {
+            rowsByKey.computeIfAbsent(key, unused -> new LongArrayList()).add(nextRow++);
+            stagedKeys.add(key);
+            stagedStamps.add(stamp);
+            stagedSentinels.add(sentinel);
+        }
+
+        WritableRowSet addedRows() {
+            return nextRow == firstStagedRow ? i() : RowSetFactory.fromRange(firstStagedRow, nextRow - 1);
+        }
+
+        int[] addedKeys() {
+            return stagedKeys.toIntArray();
+        }
+
+        int[] addedStamps() {
+            return stagedStamps.toIntArray();
+        }
+
+        void clearStaged() {
+            stagedKeys.clear();
+            stagedStamps.clear();
+            stagedSentinels.clear();
+            firstStagedRow = nextRow;
+        }
+
+        void apply(final QueryTable table, final boolean rightSide) {
+            final RowSet removedRows = removed.build();
+            removed = RowSetFactory.builderRandom();
+            final RowSet addedRows = addedRows();
+            removeRows(table, removedRows);
+            if (rightSide) {
+                addToTable(table, addedRows, intCol("Bucket", addedKeys()), intCol("RightStamp", addedStamps()),
+                        intCol("Sentinel", stagedSentinels.toIntArray()));
+            } else {
+                addToTable(table, addedRows, intCol("Bucket", addedKeys()), intCol("LeftStamp", addedStamps()));
+            }
+            clearStaged();
+            table.notifyListeners(addedRows, removedRows, i());
+        }
     }
 }

@@ -29,6 +29,11 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
     public static final Object EMPTY_RIGHT_STATE = null;
 
+    /**
+     * The right state of an occupied slot whose right row set has been released; the slot stays occupied for probing.
+     */
+    private static final Object RELEASED_RIGHT_STATE = new Object();
+
     // the number of slots in our table
     protected int tableSize;
 
@@ -50,6 +55,12 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
      * put the sequential builders into rightRowSetSource. After the conversion, the sources store actual rowsets.
      */
     private boolean rightBuildersConverted = false;
+
+    /**
+     * Whether the right row sets were built here and are closed on release, rather than supplied by a data index that
+     * owns them.
+     */
+    private boolean rightRowSetsOwned;
 
     protected final ImmutableObjectArraySource<Object> rightRowSetSource;
 
@@ -226,24 +237,24 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     private class LeftProbeHandler implements TypedHasherUtil.ProbeHandler {
         final IntegerArraySource hashSlots;
         final MutableInt hashOffset;
-        final RowSetBuilderRandom foundBuilder;
 
         private LeftProbeHandler() {
             this.hashSlots = null;
             this.hashOffset = null;
-            this.foundBuilder = null;
         }
 
-        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableInt hashOffset,
-                RowSetBuilderRandom foundBuilder) {
+        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableInt hashOffset) {
             this.hashSlots = hashSlots;
             this.hashOffset = hashOffset;
-            this.foundBuilder = foundBuilder;
         }
 
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            decorateLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset, foundBuilder);
+            if (hashSlots != null) {
+                // each probed row reports at most one new slot, and there are at most numEntries slots
+                hashSlots.ensureCapacity(Math.min(hashOffset.get() + chunkOk.size(), numEntries));
+            }
+            decorateLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset);
         }
     }
 
@@ -265,14 +276,14 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources, @NotNull final IntegerArraySource slots,
-            RowSetBuilderRandom foundBuilder) {
+    public int probeLeft(RowSequence leftRowSet, ColumnSource<?>[] leftSources,
+            @NotNull final IntegerArraySource slots) {
         if (leftRowSet.isEmpty()) {
             return 0;
         }
         try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
             final MutableInt slotCount = new MutableInt();
-            probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount, foundBuilder));
+            probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount));
             return slotCount.get();
         }
     }
@@ -314,16 +325,29 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     @Override
     public RowSet getRightRowset(int slot) {
         if (rightBuildersConverted) {
-            return (RowSet) rightRowSetSource.getUnsafe(slot);
+            final Object rightState = rightRowSetSource.getUnsafe(slot);
+            return rightState == RELEASED_RIGHT_STATE ? null : (RowSet) rightState;
         }
         throw new IllegalStateException(
                 "getRightRowset() may not be called before convertRightBuildersToRowSet() or populateRightRowSetsFromIndex()");
     }
 
     @Override
+    public void releaseRightRowSet(int slot) {
+        final Object rightState = rightRowSetSource.getUnsafe(slot);
+        if (rightState instanceof RowSet) {
+            if (rightRowSetsOwned) {
+                ((RowSet) rightState).close();
+            }
+            rightRowSetSource.set(slot, RELEASED_RIGHT_STATE);
+        }
+    }
+
+    @Override
     public void convertRightBuildersToRowSet(@NotNull final IntegerArraySource slots, final int slotCount) {
         Assert.eqFalse(rightBuildersConverted, "rightBuildersConverted");
         rightBuildersConverted = true;
+        rightRowSetsOwned = true;
 
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final int slot = slots.getInt(slotIndex);
@@ -362,9 +386,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
                 if (rs.isEmpty()) {
                     rightRowSetSource.set(slot, EMPTY_RIGHT_STATE);
                 } else if (rs.size() == 1) {
-                    // The index cannot be modified, since the right table must be static, but make a defensive copy
-                    // anyway in case the index is cleaned up aggressively in the future.
-                    rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
+                    // the right table is static, so its index row sets never change; they belong to the index
+                    rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()));
                 } else {
                     throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
                 }
@@ -377,7 +400,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, MutableInt hashSlotOffset, RowSetBuilderRandom foundBuilder);
+            IntegerArraySource hashSlots, MutableInt hashSlotOffset);
 
     abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 

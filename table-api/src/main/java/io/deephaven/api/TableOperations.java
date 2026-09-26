@@ -514,6 +514,10 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform an as-of join with the {@code rightTable}.
      *
      * <p>
+     * When more than one right row has the same exact match keys and the same closest value in the as-of column, the
+     * last of those rows in {@code rightTable} is matched.
+     *
+     * <p>
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
@@ -527,12 +531,16 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform an as-of join with the {@code rightTable}.
      *
      * <p>
+     * When more than one right row has the same exact match keys and the same closest value in the as-of column, the
+     * last of those rows in {@code rightTable} is matched.
+     *
+     * <p>
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn>=rightColumn"},
      *        {@code "leftColumn>rightColumn"}, {@code "columnFoundInBoth"}).
-     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
+     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
@@ -542,6 +550,10 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     /**
      * Perform an reverse-as-of join with the {@code rightTable}.
+     *
+     * <p>
+     * When more than one right row has the same exact match keys and the same closest value in the as-of column, the
+     * first of those rows in {@code rightTable} is matched.
      *
      * <p>
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
@@ -557,12 +569,16 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform a reverse-as-of join with the {@code rightTable}.
      *
      * <p>
+     * When more than one right row has the same exact match keys and the same closest value in the as-of column, the
+     * first of those rows in {@code rightTable} is matched.
+     *
+     * <p>
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}
      *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn<=rightColumn"},
      *        {@code "leftColumn<rightColumn"}, {@code "columnFoundInBoth"}).
-     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
+     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
