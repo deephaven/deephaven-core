@@ -1233,7 +1233,7 @@
                 "label": "JavaScript (client)",
                 "items": [
                   {
-                    "label": "Javascript API Concepts",
+                    "label": "JavaScript API concepts",
                     "path": "reference/js-api/concepts.md"
                   },
                   {

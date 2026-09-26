@@ -1107,10 +1107,10 @@
                 "href": "https://deephaven.io/core/pydoc"
               },
               {
-                "label": "Javascript API (client/server)",
+                "label": "JavaScript API (client/server)",
                 "items": [
                   {
-                    "label": "Javascript",
+                    "label": "JavaScript",
                     "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
                   }
                 ]
@@ -1136,7 +1136,7 @@
                 "href": "https://deephaven.io/core/client-api/r"
               },
               {
-                "label": "Barrage (Deephaven's Arrow Flight extension",
+                "label": "Barrage (Deephaven's Arrow Flight extension)",
                 "href": "https://deephaven.io/barrage/docs/"
               },
               {
