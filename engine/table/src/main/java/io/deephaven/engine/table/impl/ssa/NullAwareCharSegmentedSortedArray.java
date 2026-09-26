@@ -97,9 +97,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
             return 0;
         }
 
-        if (leafCount == 0) {
-            throw new IllegalArgumentException("No values to find.");
-        }
+        Assert.gtZero(leafCount, "leafCount");
 
         if (leafCount == 1) {
             return findNextOneLeaf(0, stampValues, stampRowKeys, nextValues, size, directoryValues, directoryRowKeys);
@@ -108,9 +106,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
         int stampsFound = 0;
         int currentLeaf = 0;
         while (stampsFound < stampValues.size()) {
-            if (currentLeaf >= leafCount) {
-                break;
-            }
+            Assert.lt(currentLeaf, "currentLeaf", leafCount, "leafCount");
             final char searchValue = stampValues.get(stampsFound);
             final long searchKey = stampRowKeys.get(stampsFound);
             // we need to check the last value in the leaf
@@ -342,11 +338,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
 
 
         if (SEGMENTED_SORTED_ARRAY_VALIDATION) {
-            if (leafCount > 1) {
-                validateLeaf(leaf);
-            } else {
-                validateLeaf(directoryValues, directoryRowKeys, newSize);
-            }
+            validateLeaf(leaf);
         }
     }
 
@@ -377,6 +369,15 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
     private void moveLeafValues(char[] leafValues, long[] leafRowKeys, int srcPos, int destPos, int length) {
         System.arraycopy(leafValues, srcPos, leafValues, destPos, length);
         System.arraycopy(leafRowKeys, srcPos, leafRowKeys, destPos, length);
+    }
+
+    /**
+     * Clears positions [from, to) of a values array that hold no live entries, so that they do not keep stamp objects
+     * reachable. Primitive values need no clearing.
+     */
+    private static void clearValues(char[] values, int from, int to) {
+        // region clearValues
+        // endregion clearValues
     }
 
     private void promoteDirectory(int newLeafCount) {
@@ -435,7 +436,8 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
 
     private void distributeValues(int targetSize, int startingLeaf, int distributionSlots,
             CharChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeys) {
-        final int totalInsertions = valuesToInsert.size() + leafSizes[startingLeaf];
+        final int startingLeafSize = leafSizes[startingLeaf];
+        final int totalInsertions = valuesToInsert.size() + startingLeafSize;
         final int shortLeaves = (distributionSlots * targetSize) - totalInsertions;
         final int lastFullSlot = startingLeaf + shortLeaves;
 
@@ -501,6 +503,10 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
             directoryRowKeys[workingSlot] = leafRowKeys[workingSlot][leafSize - 1];
             leafSizes[workingSlot] = leafSize;
             insertedValues += leafSize;
+        }
+
+        if (leafSizes[startingLeaf] < startingLeafSize) {
+            clearValues(leafValues[startingLeaf], leafSizes[startingLeaf], startingLeafSize);
         }
 
         Assert.eq(totalInsertions, "totalInsertions", insertedValues, "insertedValues");
@@ -604,7 +610,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
             // found values in bulk. If our gallop length exceeds the initial gallop, then we reduce the number of
             // consecutive wins before we enter gallop mode. If we did not exceed the initial gallop length, we increase
             // the number of consecutive wins so that we don't enter gallop mode too early.
-            if (iwins > minGallop && rposl >= 0) {
+            if (iwins > minGallop) {
                 // find position the smallest position in insertValues that is larger than the next leaf value
                 final char searchValue = leafValues[rposl];
                 final long searchKey = leafRowKeys[rposl];
@@ -640,7 +646,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                 } else {
                     minGallop = Math.max(2, minGallop - 1);
                 }
-            } else if (lwins > minGallop && rposi >= 0) {
+            } else if (lwins > minGallop) {
                 // find the next insert value in the leaf
                 final char searchValue = insertValues.get(rposi);
                 final long searchKey = insertRowKeys.get(rposi);
@@ -761,6 +767,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                 }
             }
         }
+        clearValues(leafValues, leafSize - removeSize, leafSize);
     }
 
 
@@ -926,7 +933,8 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                 int firstValuesPosition = 0;
                 int totalCount = 0;
 
-                final IntList leavesToRemove = new IntArrayList();
+                // allocated when the first leaf is removed, which most removals never do
+                IntList leavesToRemove = null;
 
                 while (firstValuesPosition < removeSize) {
                     // we need to find out where our valuesToRemove should go using a binary search of the directory
@@ -951,6 +959,9 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                         // we are going to remove the whole leaf
                         final long firstPrior =
                                 priorRedirections == null ? RowSequence.NULL_ROW_KEY : getFirstPrior(firstLeaf);
+                        if (leavesToRemove == null) {
+                            leavesToRemove = new IntArrayList();
+                        }
                         leavesToRemove.add(firstLeaf);
                         leafSizes[firstLeaf] = 0;
                         if (priorRedirections != null) {
@@ -969,8 +980,11 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                         removeFromLeaf(leafSizes[firstLeaf], leafValues[firstLeaf], leafValuesRemoveChunk,
                                 leafRowKeys[firstLeaf], leafKeysRemoveChunk, priorRedirectionsSlice, firstPrior);
                         leafSizes[firstLeaf] -= count;
+                        // the directory holds the leaf's last value rather than a stamp that has been removed
+                        directoryValues[firstLeaf] = leafValues[firstLeaf][leafSizes[firstLeaf] - 1];
+                        directoryRowKeys[firstLeaf] = leafRowKeys[firstLeaf][leafSizes[firstLeaf] - 1];
 
-                        final boolean hasLeft = firstLeaf > 0 && (leavesToRemove.isEmpty()
+                        final boolean hasLeft = firstLeaf > 0 && (leavesToRemove == null || leavesToRemove.isEmpty()
                                 || (leavesToRemove.getInt(leavesToRemove.size() - 1) != (firstLeaf - 1)));
                         final boolean hasRight = firstLeaf < leafCount - 1;
 
@@ -984,6 +998,9 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                         final boolean leftMerge = !threeWay && leftSize + middleSize < leafSize;
                         final boolean rightMerge = !threeWay && rightSize + middleSize < leafSize;
 
+                        if ((threeWay || leftMerge || rightMerge) && leavesToRemove == null) {
+                            leavesToRemove = new IntArrayList();
+                        }
                         if (threeWay) {
                             mergeThreeLeaves(firstLeaf - 1, leavesToRemove);
                         } else if (leftMerge) {
@@ -994,12 +1011,14 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                     }
                     firstValuesPosition += count;
 
-                    if (leafCount - leavesToRemove.size() > 1) {
+                    if (leafCount - (leavesToRemove == null ? 0 : leavesToRemove.size()) > 1) {
                         if (SEGMENTED_SORTED_ARRAY_VALIDATION) {
                             Assert.eq(computeLeafSizes(), "computeLeafSizes()", size - totalCount, "size - totalCount");
                         }
                     } else if (firstValuesPosition < removeSize) {
-                        leavesToRemove.clear();
+                        if (leavesToRemove != null) {
+                            leavesToRemove.clear();
+                        }
                         // we need to promote the last remaining leaf to the directory values, because there is only a
                         // single leaf left
                         promoteLastLeafToDirectory();
@@ -1022,7 +1041,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                     }
                 }
 
-                if (!leavesToRemove.isEmpty()) {
+                if (leavesToRemove != null && !leavesToRemove.isEmpty()) {
 
                     int destIdx = leavesToRemove.getInt(0);
                     int srcIdx = destIdx + 1;
@@ -1052,6 +1071,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                         Arrays.fill(leafValues, destIdx, leafCount, null);
                         Arrays.fill(leafRowKeys, destIdx, leafCount, null);
                         Arrays.fill(leafSizes, destIdx, leafCount, 0);
+                        clearValues(directoryValues, destIdx, leafCount);
                     }
                     leafCount = destIdx;
                 }
@@ -1120,9 +1140,10 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                     if (firstLeaf == leafCount - 1) {
                         lastValueForLeaf = shiftSize - 1;
                     } else {
+                        // every value up to and including the leaf's directory entry is in this leaf
                         final char leafMaxValue = directoryValues[firstLeaf];
                         final long leafMaxRowKey = directoryRowKeys[firstLeaf];
-                        lastValueForLeaf = lowerBound(stampChunk, keyChunk, firstValuesPosition, shiftSize,
+                        lastValueForLeaf = upperBound(stampChunk, keyChunk, firstValuesPosition, shiftSize,
                                 leafMaxValue, leafMaxRowKey);
                     }
 
@@ -1133,12 +1154,6 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
 
                     shiftLeaf(leafSizes[firstLeaf], leafValues[firstLeaf], leafValuesChunk, leafRowKeys[firstLeaf],
                             leafKeyChunk, shiftDelta);
-                    final int predecessorLeaf = firstLeaf - 1;
-                    if (predecessorLeaf >= 0) {
-                        directoryValues[predecessorLeaf] = leafValues[predecessorLeaf][leafSizes[predecessorLeaf] - 1];
-                        directoryRowKeys[predecessorLeaf] =
-                                leafRowKeys[predecessorLeaf][leafSizes[predecessorLeaf] - 1];
-                    }
                     directoryValues[firstLeaf] = leafValues[firstLeaf][leafSizes[firstLeaf] - 1];
                     directoryRowKeys[firstLeaf] = leafRowKeys[firstLeaf][leafSizes[firstLeaf] - 1];
 
@@ -1405,7 +1420,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
             final char nextValue = leafValues[leaf + 1][0];
             final long nextKey = leafRowKeys[leaf + 1][0];
             Assert.assertion(leq(lastValue, nextValue), lastValue + " < " + nextValue);
-            if (lastValue == nextValue) {
+            if (eq(lastValue, nextValue)) {
                 Assert.lt(lastKey, "lastRowKey (" + leaf + ")", nextKey, "nextKey");
             }
         }
@@ -1643,7 +1658,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
         public void advanceToBeforeFirst(char value) {
             advanceToInternal(value, false);
             if (disallowExactMatch) {
-                if (hasNext() && nextValue() == value) {
+                if (hasNext() && eq(nextValue(), value)) {
                     next();
                     advanceWhileEqual();
                 }
@@ -1745,7 +1760,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
                 if (indexWithinLeaf < leafSizes[leafIndex] - 1) {
                     return;
                 }
-                if (leafValues[leafIndex + 1][0] != value) {
+                if (!eq(leafValues[leafIndex + 1][0], value)) {
                     return;
                 }
                 leafIndex++;
@@ -1788,15 +1803,15 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
             final int startIndex = Math.max(0, indexWithinLeaf);
             if (leafCount == 1) {
                 indexWithinLeaf = upperBound(directoryValues, startIndex, size, value);
-                if (indexWithinLeaf == 0 && disallowExactMatch ? lt(value, directoryValues[0])
-                        : leq(value, directoryValues[0])) {
+                if (indexWithinLeaf == 0 && (disallowExactMatch ? lt(value, directoryValues[0])
+                        : leq(value, directoryValues[0]))) {
                     // we want the user to call next() to get to the relevant value
                     indexWithinLeaf--;
                 }
             } else {
                 indexWithinLeaf = upperBound(leafValues[leafIndex], startIndex, leafSizes[leafIndex], value);
-                if (indexWithinLeaf == 0 && disallowExactMatch ? lt(value, leafValues[leafIndex][0])
-                        : leq(value, leafValues[leafIndex][0])) {
+                if (indexWithinLeaf == 0 && (disallowExactMatch ? lt(value, leafValues[leafIndex][0])
+                        : leq(value, leafValues[leafIndex][0]))) {
                     // we want the user to call next() to get to the relevant value
                     indexWithinLeaf--;
                 }
@@ -1838,8 +1853,4 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
         return leafRowKeys[leafCount - 1][leafSizes[leafCount - 1] - 1];
     }
 
-    @Override
-    public SsaChecker makeChecker() {
-        return CharSsaChecker.INSTANCE;
-    }
 }

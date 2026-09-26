@@ -113,8 +113,9 @@ public class ReplicateSegmentedSortedArray {
             }
         }
 
+        // the checkers exist only to validate an SSA's contents from a test, so they live in the test source set
         final String charSsaCheckerPath =
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharSsaChecker.java";
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/CharSsaChecker.java";
         final List<String> ssaCheckers = charToAllButBoolean(TASK, charSsaCheckerPath);
         ssaCheckers.add(charSsaCheckerPath);
 
@@ -207,8 +208,9 @@ public class ReplicateSegmentedSortedArray {
     private static void fixupObjectSsa(String objectPath, boolean ascending) throws IOException {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, ReplicationUtils.simpleFixup(
+        FileUtils.writeLines(objectFile, ReplicationUtils.replaceRegion(ReplicationUtils.simpleFixup(
                 ReplicateSortKernel.fixupObjectComparisons(ReplicationUtils.fixupChunkAttributes(lines), ascending),
-                "fillValue", "Object.MIN_VALUE", "null"));
+                "fillValue", "Object.MIN_VALUE", "null"),
+                "clearValues", List.of("        Arrays.fill(values, from, to, null);")));
     }
 }
