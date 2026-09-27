@@ -192,6 +192,10 @@ public abstract class HashMapBase implements NullableLongLongMap {
     final void clearImpl(long[] keysAndValues) {
         size = 0;
         nonEmptySlots = 0;
+        if (keysAndValues == null) {
+            // Never populated, or reset: there is no array to clear, and clearing an empty map is a no-op.
+            return;
+        }
         // We leave rehashThreshold alone because the array size (and therefore the hashtable capacity) isn't changing.
         Arrays.fill(keysAndValues, SPECIAL_KEY_FOR_EMPTY_SLOT);
     }
@@ -258,7 +262,9 @@ public abstract class HashMapBase implements NullableLongLongMap {
         // In a single-threaded case, we would not need the 'nextIndex < sz' part of the conjunction. But in the
         // unsynchronized concurrent case, we might encounter more keys than would fit in the array. To avoid an index
         // range exception, we do the 'nextIndex < sz' test here.
-        for (int ii = 0; ii < kv.length && nextIndex < sz; ii += 2) {
+        // A never-populated (or reset) map has no array; its keys and values are simply none.
+        final int length = kv == null ? 0 : kv.length;
+        for (int ii = 0; ii < length && nextIndex < sz; ii += 2) {
             final long key = kv[ii];
             if (key == SPECIAL_KEY_FOR_EMPTY_SLOT || key == SPECIAL_KEY_FOR_DELETED_SLOT) {
                 continue;
