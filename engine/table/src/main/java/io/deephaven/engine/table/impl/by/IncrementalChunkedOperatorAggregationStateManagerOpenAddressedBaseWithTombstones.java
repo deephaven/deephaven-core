@@ -290,8 +290,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             Assert.eq(numEntries, "numEntries", liveEntries, "liveEntries");
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                // TODO: this change probably belongs in the non-tombstone version as well!
-                rehashInternalPartial((int) alternateEntries);
+                // a partial rehash is bounded by the slots it examines, so ask for every slot that remains
+                rehashInternalPartial(rehashPointer);
                 clearAlternate();
             }
 
