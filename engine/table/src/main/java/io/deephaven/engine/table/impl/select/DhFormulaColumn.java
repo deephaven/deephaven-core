@@ -380,9 +380,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "public [[RETURN_TYPE]] [[GETTER_NAME]](final long k)", CodeGenerator.block(
                         (usePrev
                                 ? CodeGenerator.optional("maybeCreateIorII",
-                                        "final long findResult;",
-                                        "try (final RowSet prev = __rowSet.copyPrev())", CodeGenerator.block(
-                                                "findResult = prev.find(k);"))
+                                        "final long findResult = __rowSet.findPrev(k);")
                                 : CodeGenerator.optional("maybeCreateIorII",
                                         "final long findResult = __rowSet.find(k);")),
                         CodeGenerator.optional("maybeCreateI",
@@ -566,9 +564,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.optional("maybeCreateIOrII",
-                                "try (final RowSet prev = __usePrev ? __rowSet.copyPrev() : null;",
-                                CodeGenerator.indent(
-                                        "final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet()))"),
+                                "try (final RowSet inverted = (__usePrev ? __rowSet.prev() : __rowSet).invert(__rowSequence.asRowSet()))",
                                 CodeGenerator.block(
                                         CodeGenerator.optional("maybeCreateI",
                                                 "__context.__iChunk.setSize(0);",
