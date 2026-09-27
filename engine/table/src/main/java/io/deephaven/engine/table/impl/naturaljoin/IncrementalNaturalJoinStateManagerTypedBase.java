@@ -322,6 +322,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
         setupNewAlternate(oldTableSize);
         adviseNewAlternate();
+        if (liveEntries == 0) {
+            // every entry is a tombstone, so nothing needs to migrate; drop the old table rather than examine it
+            clearAlternate();
+            return false;
+        }
 
         return true;
     }
