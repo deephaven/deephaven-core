@@ -155,20 +155,23 @@ table of 1,000,000 rows, one row per group, with 10,000 rows added and removed e
 A group "returns" when its key comes back after its state has been removed; with returning groups, the keys cycle
 through a space twice the size of the table.
 
-The columns are main, which predates reclaiming, and this branch's modes. "Blocks" is `releaseBlocks(1, -1)`, the
-default, and "Blocks with moves" is `releaseBlocks(0.75, 0)`, which collapses and shifts blocks.
+The columns are main, which predates reclaiming; main with
+[#8676](https://github.com/deephaven/deephaven-core/pull/8676), which reuses the aggregation's modified-states bitmap
+and is the fair baseline for this branch's other improvements to the update cycle; and this branch's modes. "Blocks"
+is `releaseBlocks(1, -1)`, the default, and "Blocks with moves" is `releaseBlocks(0.75, 0)`, which collapses and shifts
+blocks.
 
 ### Time
 
 Milliseconds per batch of 900 cycles; lower is better.
 
-| Workload | Groups return | Main | `none` | Blocks | Blocks with moves | `credit` |
-| --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 911 ± 130 | 862 ± 130 | 898 ± 87 | 876 ± 78 | 907 ± 58 |
-| Sliding window | No | 1382 ± 68 | 1354 ± 68 | 800 ± 39 | 861 ± 71 | 898 ± 66 |
-| Sliding window | Yes | 601 ± 23 | 617 ± 55 | 693 ± 43 | 782 ± 60 | 772 ± 45 |
-| Random churn | No | 3137 ± 170 | 2512 ± 92 | 2392 ± 92 | 2389 ± 81 | 2440 ± 188 |
-| Random churn | Yes | 2044 ± 57 | 1608 ± 83 | 2355 ± 48 | 2344 ± 48 | 2201 ± 45 |
+| Workload | Groups return | Main | Main + #8676 | `none` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 911 ± 130 | 973 ± 129 | 862 ± 130 | 898 ± 87 | 876 ± 78 | 907 ± 58 |
+| Sliding window | No | 1382 ± 68 | 1384 ± 80 | 1354 ± 68 | 800 ± 39 | 861 ± 71 | 898 ± 66 |
+| Sliding window | Yes | 601 ± 23 | 592 ± 97 | 617 ± 55 | 693 ± 43 | 782 ± 60 | 772 ± 45 |
+| Random churn | No | 3137 ± 170 | 2799 ± 161 | 2512 ± 92 | 2392 ± 92 | 2389 ± 81 | 2440 ± 188 |
+| Random churn | Yes | 2044 ± 57 | 1783 ± 59 | 1608 ± 83 | 2355 ± 48 | 2344 ± 48 | 2201 ± 45 |
 
 ### Memory
 
@@ -176,47 +179,52 @@ The heap retained at the end of a batch, in megabytes, after a garbage collectio
 the benchmark's own data, so compare the modes with each other rather than reading the values as the aggregation's
 size.
 
-| Workload | Groups return | Main | `none` | Blocks | Blocks with moves | `credit` |
-| --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 673 | 674 | 571 | 568 | 569 |
-| Sliding window | No | 670 | 682 | 175 | 180 | 191 |
-| Sliding window | Yes | 178 | 179 | 119 | 124 | 135 |
-| Random churn | No | 709 | 720 | 468 | 254 | 229 |
-| Random churn | Yes | 216 | 218 | 432 | 197 | 170 |
+| Workload | Groups return | Main | Main + #8676 | `none` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 673 | 673 | 674 | 571 | 568 | 569 |
+| Sliding window | No | 670 | 676 | 682 | 175 | 180 | 191 |
+| Sliding window | Yes | 178 | 180 | 179 | 119 | 124 | 135 |
+| Random churn | No | 709 | 713 | 720 | 468 | 254 | 229 |
+| Random churn | Yes | 216 | 217 | 218 | 432 | 197 | 170 |
 
 ### Output positions assigned
 
 The positions assigned at the end of a batch, in millions. Every workload creates 10 million groups over the batch,
 or cycles through 2 million keys when groups return.
 
-| Workload | Groups return | Main | `none` | Blocks | Blocks with moves | `credit` |
-| --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 10.00 | 10.00 | 10.00 | 10.00 | 10.00 |
-| Sliding window | No | 10.00 | 10.00 | 10.00 | 2.96 | 1.49 |
-| Sliding window | Yes | 2.00 | 2.00 | 10.00 | 2.96 | 1.49 |
-| Random churn | No | 10.00 | 10.00 | 10.00 | 4.02 | 2.44 |
-| Random churn | Yes | 2.00 | 2.00 | 8.71 | 3.25 | 2.35 |
+| Workload | Groups return | Main | Main + #8676 | `none` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 10.00 | 10.00 | 10.00 | 10.00 | 10.00 | 10.00 |
+| Sliding window | No | 10.00 | 10.00 | 10.00 | 10.00 | 2.96 | 1.49 |
+| Sliding window | Yes | 2.00 | 2.00 | 2.00 | 10.00 | 2.96 | 1.49 |
+| Random churn | No | 10.00 | 10.00 | 10.00 | 10.00 | 4.02 | 2.44 |
+| Random churn | Yes | 2.00 | 2.00 | 2.00 | 8.71 | 3.25 | 2.35 |
 
 ### Longest cycle
 
 The longest single cycle of a batch, in milliseconds, the worst over five batches.
 
-| Workload | Groups return | Main | `none` | Blocks | Blocks with moves | `credit` |
-| --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 19.8 | 14.0 | 14.8 | 13.7 | 13.7 |
-| Sliding window | No | 25.8 | 20.1 | 6.2 | 10.0 | 10.4 |
-| Sliding window | Yes | 5.6 | 6.2 | 5.6 | 5.3 | 6.0 |
-| Random churn | No | 13.0 | 13.4 | 7.0 | 7.0 | 18.3 |
-| Random churn | Yes | 11.8 | 10.2 | 12.6 | 8.8 | 21.5 |
+| Workload | Groups return | Main | Main + #8676 | `none` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 19.8 | 22.3 | 14.0 | 14.8 | 13.7 | 13.7 |
+| Sliding window | No | 25.8 | 15.8 | 20.1 | 6.2 | 10.0 | 10.4 |
+| Sliding window | Yes | 5.6 | 7.0 | 6.2 | 5.6 | 5.3 | 6.0 |
+| Random churn | No | 13.0 | 14.1 | 13.4 | 7.0 | 7.0 | 18.3 |
+| Random churn | Yes | 11.8 | 11.5 | 10.2 | 12.6 | 8.8 | 21.5 |
 
 ### Findings
 
-- When groups do not return, every mode that releases blocks runs faster than main and retains less heap: about a
-  quarter of main's for the sliding window, and for random churn a third less with blocks alone, or about two thirds
-  less with blocks with moves or `credit`. The credit mode also keeps the positions assigned closest to the live
-  groups: 1.5 times them for the sliding window and 2.4 times for random churn, against 10 times without reclaiming.
-- When groups return, `none` is the fastest, since returning groups reuse their states. Blocks with moves and `credit`
-  still use less heap than main, and `credit` assigns the fewest positions of the reclaiming modes.
+- #8676 alone makes random churn about 11% faster than main when groups do not return and 13% faster when they do,
+  and changes nothing else measurably. It retains the same heap as main.
+- When groups do not return, every mode that releases blocks runs faster than main with #8676: 35% to 42% faster for
+  the sliding window, and 13% to 15% for random churn. They retain less heap: about a quarter of main's for the
+  sliding window, and for random churn a third less with blocks alone, or about two thirds less with blocks with moves
+  or `credit`. The credit mode also keeps the positions assigned closest to the live groups: 1.5 times them for the
+  sliding window and 2.4 times for random churn, against 10 times without reclaiming.
+- When groups return, `none` is the fastest, since returning groups reuse their states: as fast as main with #8676 for
+  the sliding window, and 10% faster for random churn. The reclaiming modes are slower here, `credit` by 30% for the
+  sliding window and 23% for random churn against main with #8676, but blocks with moves and `credit` still use less
+  heap than main, and `credit` assigns the fewest positions of the reclaiming modes.
 - Adding rows only costs nothing with any mode.
 - The credit mode's longest cycle is the highest for random churn, because its bulk shift moves every live state after
   the first released block in one cycle.
