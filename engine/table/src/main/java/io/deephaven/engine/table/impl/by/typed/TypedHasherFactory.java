@@ -270,7 +270,7 @@ public class TypedHasherFactory {
                     .tombstoneStateName("TOMBSTONE_RIGHT_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
-                    .rehashSlotsPerEntry(IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY)
+                    .rehashSlotsPerEntry(IncrementalNaturalJoinStateManagerTypedBase.class, "REHASH_SLOTS_PER_ENTRY")
                     .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
                     .moveMainFull(TypedNaturalJoinFactory::incrementalMoveMainFull)
                     .moveMainAlternate(TypedNaturalJoinFactory::incrementalMoveMainAlternate)
@@ -880,7 +880,7 @@ public class TypedHasherFactory {
 
         final String extraParamNames = getExtraMigrateParams(hasherConfig.extraPartialRehashParameters);
         final String deletedParam = hasherConfig.supportTombstones ? ", false" : "";
-        if (hasherConfig.rehashSlotsPerEntry > 0) {
+        if (hasherConfig.rehashSlotsPerEntry != null) {
             // bound the slots examined, so that tombstones and empty slots cannot make one call scan the whole table
             builder.addStatement("final long slotsToExamine = (long) entriesToRehash * $L",
                     hasherConfig.rehashSlotsPerEntry);

@@ -3696,6 +3696,30 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testMaximumLoadFactorMustLetTheAlternateDrain() {
+        final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), longCol("K", 1, 2));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(), longCol("K", 1), intCol("RV", 10));
+        final Function<Double, Table> join = maximumLoadFactor -> NaturalJoinHelper.naturalJoin(left, right,
+                MatchPairFactory.getExpressions("K"), MatchPairFactory.getExpressions("RV"),
+                NaturalJoinType.ERROR_ON_DUPLICATE, new JoinControl() {
+                    @Override
+                    double getMaximumLoadFactor() {
+                        return maximumLoadFactor;
+                    }
+                });
+
+        // below 1 / REHASH_SLOTS_PER_ENTRY, a partial rehash could not drain the alternate before the new table fills
+        Throwable cause = assertThrows(Throwable.class, () -> join.apply(0.3));
+        while (!(cause instanceof IllegalArgumentException) && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        assertTrue(String.valueOf(cause), cause instanceof IllegalArgumentException);
+        assertTrue(cause.getMessage(), cause.getMessage().contains("REHASH_SLOTS_PER_ENTRY"));
+
+        assertEquals(2, join.apply(0.5).size());
+    }
+
+    @Test
     public void testCyclingKeysRehashWithoutLiveEntries() {
         testCyclingKeysThroughRehashes(500, 500, false, 400);
     }

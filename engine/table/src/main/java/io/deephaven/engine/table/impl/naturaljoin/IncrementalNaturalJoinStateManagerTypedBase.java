@@ -49,7 +49,10 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     /**
      * The alternate slots a partial rehash examines for each entry about to be built. Bounding the slots examined,
      * rather than the live entries moved, keeps one build from scanning a long run of tombstones and empty slots;
-     * {@link #computeTableSize} sizes a new table so that the alternate still drains before the new table fills.
+     * {@link #computeTableSize} sizes a new table so that the alternate still drains before the new table fills. That
+     * requires a maximum load factor of at least {@code 1 / REHASH_SLOTS_PER_ENTRY}: below it, even an empty new table
+     * the size of the alternate cannot pay for examining every alternate slot, so every rehash would double the table.
+     * The generated hashers refer to this constant, so changing it changes both the drain rate and the sizing.
      */
     public static final int REHASH_SLOTS_PER_ENTRY = 3;
 
@@ -124,6 +127,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         Require.gtZero(tableSize, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
         Require.inRange(maximumLoadFactor, 0.0, 0.95, "maximumLoadFactor");
+        if (maximumLoadFactor < 1.0 / REHASH_SLOTS_PER_ENTRY) {
+            throw new IllegalArgumentException("maximumLoadFactor " + maximumLoadFactor
+                    + " is less than 1 / REHASH_SLOTS_PER_ENTRY; a partial rehash could not drain the alternate table"
+                    + " before the new table fills");
+        }
 
         mainKeySources = new WritableColumnSource[tableKeySources.length];
         alternateKeySources = new WritableColumnSource[tableKeySources.length];

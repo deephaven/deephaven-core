@@ -34,10 +34,12 @@ public class HasherConfig<T> {
     final boolean includeOriginalSources;
     final boolean supportRehash;
     /**
-     * If positive, a partial rehash examines up to this many alternate slots for each entry it is asked to rehash,
-     * rather than continuing until that many live entries have moved; otherwise, it moves live entries.
+     * If non-null, a reference to a static {@code int} constant: a partial rehash examines up to that many alternate
+     * slots for each entry it is asked to rehash, rather than continuing until that many live entries have moved. If
+     * null, it moves live entries. The generated code refers to the constant, so that the hasher and the code that
+     * sizes its tables for that rate cannot disagree.
      */
-    final int rehashSlotsPerEntry;
+    final CodeBlock rehashSlotsPerEntry;
     final List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods;
     final List<ParameterSpec> extraPartialRehashParameters;
     final List<ProbeSpec> probes;
@@ -50,7 +52,7 @@ public class HasherConfig<T> {
             boolean alwaysMoveMain,
             boolean includeOriginalSources,
             boolean supportRehash,
-            int rehashSlotsPerEntry,
+            CodeBlock rehashSlotsPerEntry,
             String mainStateName,
             String overflowOrAlternateStateName,
             String emptyStateName,
@@ -179,7 +181,7 @@ public class HasherConfig<T> {
         private boolean supportTombstones = false;
         private boolean openAddressedAlternate = true;
         private boolean alwaysMoveMain = false;
-        private int rehashSlotsPerEntry = 0;
+        private CodeBlock rehashSlotsPerEntry = null;
         private boolean includeOriginalSources = false;
         private boolean supportRehash = true;
         private String mainStateName;
@@ -225,8 +227,26 @@ public class HasherConfig<T> {
             return this;
         }
 
-        public Builder<T> rehashSlotsPerEntry(int rehashSlotsPerEntry) {
-            this.rehashSlotsPerEntry = rehashSlotsPerEntry;
+        /**
+         * Bound each partial rehash by the alternate slots it examines, at the rate the named constant gives.
+         *
+         * @param owner the class that declares the constant
+         * @param constantName the name of a public static final {@code int} field of {@code owner}
+         * @return this builder
+         */
+        public Builder<T> rehashSlotsPerEntry(final Class<?> owner, final String constantName) {
+            final java.lang.reflect.Field field;
+            try {
+                field = owner.getField(constantName);
+            } catch (NoSuchFieldException e) {
+                throw new IllegalArgumentException(owner.getName() + " has no public field " + constantName, e);
+            }
+            final int modifiers = field.getModifiers();
+            if (field.getType() != int.class || !java.lang.reflect.Modifier.isStatic(modifiers)
+                    || !java.lang.reflect.Modifier.isFinal(modifiers)) {
+                throw new IllegalArgumentException(owner.getName() + "." + constantName + " is not a static final int");
+            }
+            this.rehashSlotsPerEntry = CodeBlock.of("$T.$L", owner, constantName);
             return this;
         }
 
