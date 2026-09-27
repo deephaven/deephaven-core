@@ -48,48 +48,40 @@ reuses it. This is how aggregations behaved before reclaiming existed. It uses t
 
 ### Release blocks
 
-`StateReclaimMode.releaseBlocks(collapseFreeFraction, blockShiftFraction)` frees the storage of each block once every
-state in it has been removed. With the default parameters, no state ever moves:
+`StateReclaimMode.releaseBlocks(collapseFreeFraction, blockShiftFraction, bulkShift)` frees the storage of each block
+once every state in it has been removed. With the default parameters, no state ever moves:
 
 - Memory tracks the groups that have rows, but only at block granularity. A block that holds even one long-lived state
   is never released, so random churn with some long-lived groups releases few blocks.
 - Output positions are never given back, so the positions assigned grow with every group ever created.
 
-Two optional moves reduce both limits. Each cycle may move no more live states than the cycle's input rows added,
-modified, and removed.
+The three parameters control the two moves that reduce both limits:
 
-- **Collapse** (`collapseFreeFraction` below 1): a closed block at least this fraction free is sparse. Runs of adjacent
-  sparse blocks are collapsed: their live states move to the start of the run, and the blocks this empties are
-  released. A run collapses only if that frees at least one block. Collapse frees memory but does not give output
-  positions back.
-- **Block shift** (`blockShiftFraction` zero or more): once the released blocks are at least this fraction of the
-  positions assigned, the blocks after released ones shift down over them as whole blocks. The shift sweeps toward the
-  end over several cycles and resumes where it stopped. Unspent budget of up to one block carries to the next cycle.
-  When the sweep reaches the end, the released blocks are given back and the next output position moves down.
-
-### Credit
-
-`StateReclaimMode.credit()` releases blocks as they empty and moves states only when a move frees a whole block. Moves
-are paid for by a credit that carries across cycles:
-
-- **Earning credit:** each cycle earns the number of states it added and removed. Unspent credit carries to later
-  cycles, up to the number of positions assigned, which is enough for any move.
-- **Combining blocks:** two closed blocks that are consecutive among the blocks not released, and whose live states fit
-  in one block, are combined. The states of both move, in order, to the start of the lower block, and the upper block
-  is released. Released blocks may lie between the two. Pairs are combined from the first block on, each only if the
-  credit covers the states of both blocks. A combined block may take in the next block too.
-- **Shifting in bulk:** once the credit covers every live state after the first released block, those blocks shift
-  down over the released blocks as whole blocks, all in one cycle, and every released block is given back at the end.
-  The shift never stops part of the way.
+- **Collapse** (`collapseFreeFraction` below 1) combines adjacent runs of blocks. A closed block at least this fraction
+  free is sparse. Runs of adjacent sparse blocks are collapsed: their live states move to the start of the run, and the
+  blocks this empties are released. A run collapses only if that frees at least one block. Collapse frees memory but
+  does not give output positions back.
+- **Block shift** (`blockShiftFraction` zero or more) moves blocks down over released ones, as whole blocks, so that
+  output positions are given back. It runs only once the released blocks are at least this fraction of the positions
+  assigned, so that many blocks do not shift to fill very small holes.
+- **Bulk shift** (`bulkShift`) chooses how the block shift proceeds:
+  - Without it, the shift sweeps toward the end over several cycles and resumes where it stopped. Each cycle may move
+    no more live states than its input rows added, modified, and removed, shared with the collapse; unspent budget of
+    up to one block carries to the next cycle. When the sweep reaches the end, the released blocks are given back and
+    the next output position moves down.
+  - With it, the shift waits until it can shift every block after the first released one in one cycle, so that it
+    always frees space at the end, and gives every released block back. Moves are paid for by a credit: each cycle
+    earns the number of states it added and removed, and unspent credit carries to later cycles, up to the number of
+    positions assigned. The collapse spends from the same credit first.
 
 The block shift moves whole blocks by reference in the array-backed sources, so its cost per state is the hash table's
-update of the state's output position. On average the credit mode moves no more states per cycle than the cycle added
-and removed. The bulk shift concentrates that work: every live state moves in one cycle, roughly once per cycle count
-that it takes to earn the live state count.
+update of the state's output position.
 
-The credit mode bounds the positions assigned for both front-concentrated and random removals. For a sliding window
-with `L` live groups, the shift runs whenever the credit reaches `L`, when about `L / 2` positions have been added past
-the live states, so the positions assigned stay near `1.5 L`.
+A sweeping shift chases a tail that grows with each cycle's new groups, and it moves blocks near the front that empty
+soon after, so for a sliding window with `L` live groups the positions assigned peak near `3 L`. A bulk shift for the
+same window runs whenever the credit reaches `L`, when about `L / 2` positions have been added past the live states,
+so the positions assigned stay near `1.5 L`. On average the bulk shift moves no more states per cycle than the cycle
+added and removed, but it concentrates that work: every live state after the first released block moves in one cycle.
 
 ## Parameters
 
@@ -100,12 +92,12 @@ matching public static fields of `ChunkedOperatorAggregationHelper`.
 | Property | Field | Default | Meaning |
 | --- | --- | --- | --- |
 | `ChunkedOperatorAggregationHelper.reclaimStates` | `RECLAIM_STATES` | `true` | Whether states are reclaimed at all. `false` selects `none`. |
-| `ChunkedOperatorAggregationHelper.collapseFreeFraction` | `COLLAPSE_FREE_FRACTION` | `1.0` | With released blocks, the fraction free at which a closed block is sparse and may be collapsed. 1 or more never collapses. |
-| `ChunkedOperatorAggregationHelper.blockShiftFraction` | `BLOCK_SHIFT_FRACTION` | `-1.0` | With released blocks, the fraction of the positions assigned that released blocks must reach before blocks shift down. 0 shifts for any released block; negative never shifts. |
-| `ChunkedOperatorAggregationHelper.creditReclaim` | `CREDIT_RECLAIM` | `false` | Whether to use the credit mode. It takes precedence over the collapse and block shift settings. |
+| `ChunkedOperatorAggregationHelper.collapseFreeFraction` | `COLLAPSE_FREE_FRACTION` | `1.0` | The fraction free at which a closed block is sparse and may be collapsed. 1 or more never collapses. |
+| `ChunkedOperatorAggregationHelper.blockShiftFraction` | `BLOCK_SHIFT_FRACTION` | `-1.0` | The fraction of the positions assigned that released blocks must reach before blocks shift down. 0 shifts for any released block; negative never shifts. |
+| `ChunkedOperatorAggregationHelper.bulkShift` | `BULK_SHIFT` | `false` | Whether the block shift waits until it can reach the end in one cycle, paid for by credit carried across cycles, rather than sweeping over several cycles. |
 
-The defaults select `releaseBlocks(1, -1)`: blocks are released as they empty and no state moves. A fraction must not
-be `NaN`; `releaseBlocks` rejects one.
+The defaults select `releaseBlocks(1, -1, false)`: blocks are released as they empty and no state moves. A fraction
+must not be `NaN`; `releaseBlocks` rejects one.
 
 ## Choosing a mode per call
 
@@ -121,13 +113,21 @@ moves states. The tree table's source row lookup uses `none` for this reason, an
 
 ## When a mode applies
 
-A mode other than `none` applies only when all of the following hold. Otherwise the aggregation behaves as with `none`.
+A mode other than `none` can apply only when all of the following hold:
 
-- The input table is refreshing.
-- Every operator of the aggregation can reclaim states. Group-by, partition-by, formula, and rollup operators cannot,
-  so aggregations that use them never reclaim.
+- Every operator of the aggregation can reclaim states. Group-by, partition-by, formula, and rollup operators cannot.
 - The aggregation does not preserve empty groups.
 - The aggregation has no initial groups.
+
+What happens when they do not hold depends on where the mode came from:
+
+- **The configured mode** (`StateReclaimMode.configured()`, which the public `aggBy` family uses) degrades silently: the
+  aggregation behaves as with `none`.
+- **A mode chosen explicitly** (`releaseBlocks(...)` rather than `configured()`) fails the
+  aggregation with an `IllegalArgumentException` naming the reason — for example, the result columns whose operators
+  cannot reclaim states. `StateReclaimMode.isConfigured()` tells the two apart.
+
+A static input table never reclaims states, since no state is ever removed, so any mode is accepted for it.
 
 ## Costs and limits
 
@@ -139,9 +139,8 @@ A mode other than `none` applies only when all of the following hold. Otherwise 
 - **The hash table does not shrink.** Tombstones keep their keys until a rehash drops them. Growth is driven by the live
   states: when tombstones alone cross the load factor, the table rehashes at the same size.
 - **Key columns track previous values only when states can move.** The copied key columns start tracking previous
-  values for collapse, block shift, and credit, but not for release blocks without moves.
-- **The bulk shift of the credit mode has a latency cost.** The cycle that shifts moves every live state after the first
-  released block.
+  values for collapse and block shift, but not for release blocks without moves.
+- **The bulk shift has a latency cost.** The cycle that shifts moves every live state after the first released block.
 
 ## Benchmark results
 

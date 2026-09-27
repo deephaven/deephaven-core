@@ -16,9 +16,8 @@ final class AggregationStateBenchSupport {
     private AggregationStateBenchSupport() {}
 
     /**
-     * Select how refreshing aggregations reclaim the states of removed keys: {@code none} keeps every state,
-     * {@code blocks} releases whole blocks of empty states in place, and {@code credit} releases blocks and moves
-     * states by credit.
+     * Select how refreshing aggregations reclaim the states of removed keys: {@code none} keeps every state, and
+     * {@code blocks} releases whole blocks of empty states in place.
      *
      * <p>
      * The {@code ChunkedOperatorAggregationHelper} flags are set reflectively so that these benchmarks also compile and
@@ -31,19 +30,23 @@ final class AggregationStateBenchSupport {
         switch (reclaim) {
             case "none":
                 setFlag("RECLAIM_STATES", false);
-                setFlag("CREDIT_RECLAIM", false);
                 break;
             case "blocks":
                 setFlag("RECLAIM_STATES", true);
-                setFlag("CREDIT_RECLAIM", false);
-                break;
-            case "credit":
-                setFlag("RECLAIM_STATES", true);
-                setFlag("CREDIT_RECLAIM", true);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown reclaim mode " + reclaim);
         }
+    }
+
+    /**
+     * Set whether the block shift waits until it can reach the end in one cycle, paid for by credit carried across
+     * cycles; {@code false}, which is all that a build without the setting supports, sweeps over several cycles.
+     *
+     * @param bulkShift whether to shift in bulk
+     */
+    static void setBulkShift(final boolean bulkShift) {
+        setFlag("BULK_SHIFT", bulkShift);
     }
 
     /**

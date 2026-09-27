@@ -4729,7 +4729,7 @@ public class QueryTableAggregationTest {
         final QueryTable table = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
                 stringCol("Key", windowKeys(0, size)), longCol("x", windowValues(0, size)));
         final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(List.of(AggSum("Sum=x"))),
-                false, null, ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, 0));
+                false, null, ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, 0, false));
         final TableUpdateValidator validated =
                 TableUpdateValidator.make("testBlockShiftGivesBackReleasedBlocksAtEnd", aggregated);
         final FailureListener failureListener = new FailureListener();
@@ -4778,7 +4778,7 @@ public class QueryTableAggregationTest {
         final List<Aggregation> aggregations = List.of(AggSum("Sum=d"), AggAbsSum("AbsSum=d"), AggAvg("Avg=d"),
                 AggVar("Var=d"), AggStd("Std=d"), AggWSum("w", "WSum=d"), AggWAvg("w", "WAvg=d"));
         final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(aggregations), false, null,
-                ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, -1));
+                ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, -1, false));
         final TableUpdateValidator validated =
                 TableUpdateValidator.make("testFirstNonFiniteValueAfterBlocksReleased", aggregated);
         final FailureListener failureListener = new FailureListener();
@@ -4831,13 +4831,57 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    public void testCreditReclaim() {
+    public void testExplicitReclaimModeMustBeSupported() {
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+                stringCol("Key", "A", "B", "A", "C"), longCol("x", 1, 2, 3, 4));
+        final AggregationContextFactory groupBy = AggregationProcessor.forAggregation(List.of(AggGroup("G=x")));
+        final AggregationContextFactory sum = AggregationProcessor.forAggregation(List.of(AggSum("S=x")));
+        final List<ColumnName> key = ColumnName.from("Key");
+
+        // an explicit mode the aggregation cannot use fails, naming the reason
+        assertReclaimRejected("the operators for [G] cannot reclaim states",
+                () -> table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.releaseBlocks(1, 0, true)));
+        assertReclaimRejected("it preserves empty groups",
+                () -> table.aggNoMemo(sum, true, null, key, StateReclaimMode.releaseBlocks(1, -1, false)));
+        assertReclaimRejected("it has initial groups", () -> table.aggNoMemo(sum, false,
+                newTable(stringCol("Key", "A")), key, StateReclaimMode.releaseBlocks(1, 0, true)));
+
+        // the configured mode uses none instead, as does an explicit none
+        final QueryTable configured = table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.configured());
+        final QueryTable none = table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.none());
+        // a static aggregation has no states to reclaim, so any mode is accepted
+        final QueryTable staticSum = ((QueryTable) table.snapshot()).aggNoMemo(sum, false, null, key,
+                StateReclaimMode.releaseBlocks(1, 0, true));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1));
+            table.notifyListeners(i(), i(1), i());
+        });
+        final Table expected = table.snapshot().groupBy("Key").view("Key", "G=x").sort("Key");
+        assertTableEquals(expected, configured.sort("Key"));
+        assertTableEquals(expected, none.sort("Key"));
+        assertEquals(3, staticSum.size());
+    }
+
+    private static void assertReclaimRejected(final String reason, final Runnable aggregation) {
+        final Throwable thrown = assertThrows(Throwable.class, aggregation::run);
+        Throwable cause = thrown;
+        while (!(cause instanceof IllegalArgumentException) && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        assertTrue(String.valueOf(thrown), cause instanceof IllegalArgumentException);
+        assertTrue(cause.getMessage(), cause.getMessage().contains(reason));
+    }
+
+    @Test
+    public void testBulkShiftReclaim() {
         for (final boolean random : new boolean[] {false, true}) {
-            doTestCreditReclaim(random);
+            doTestBulkShiftReclaim(random);
         }
     }
 
-    private void doTestCreditReclaim(final boolean randomRemovals) {
+    private void doTestBulkShiftReclaim(final boolean randomRemovals) {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final int size = 6 * blockSize;
         final int step = blockSize / 4 + 3;
@@ -4850,8 +4894,8 @@ public class QueryTableAggregationTest {
                 AggVar("Var=d"), AggCountDistinct("CD=x"), AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x"),
                 AggMed("Med=x"), AggCount("N"));
         final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(aggregations), false, null,
-                ColumnName.from("Key"), StateReclaimMode.credit());
-        final String description = "testCreditReclaim-" + randomRemovals;
+                ColumnName.from("Key"), StateReclaimMode.releaseBlocks(0.5, 0, true));
+        final String description = "testBulkShiftReclaim-" + randomRemovals;
         final TableUpdateValidator validated = TableUpdateValidator.make(description, aggregated);
         final FailureListener failureListener = new FailureListener();
         validated.getResultTable().addUpdateListener(failureListener);
@@ -4899,7 +4943,7 @@ public class QueryTableAggregationTest {
         final QueryTable table = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
                 stringCol("Key", windowKeys(0, size)), longCol("x", windowValues(0, size)));
         final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(List.of(AggSum("Sum=x"))),
-                false, null, ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, 0));
+                false, null, ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, 0, false));
         final TableUpdateValidator validated =
                 TableUpdateValidator.make("testBlockShiftReleasesBlockBelowResumedSweep", aggregated);
         final FailureListener failureListener = new FailureListener();

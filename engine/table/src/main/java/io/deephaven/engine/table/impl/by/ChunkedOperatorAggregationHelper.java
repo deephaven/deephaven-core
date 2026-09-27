@@ -49,6 +49,7 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
@@ -85,11 +86,13 @@ public class ChunkedOperatorAggregationHelper {
     public static double BLOCK_SHIFT_FRACTION = Configuration.getInstance()
             .getDoubleWithDefault("ChunkedOperatorAggregationHelper.blockShiftFraction", -1.0);
     /**
-     * When reclaiming states, whether moves are paid for by credit carried across cycles: see
-     * {@link StateReclaimMode#credit()}. Takes precedence over the collapse and block shift settings.
+     * When releasing blocks, whether the block shift waits until it can shift every block after the first released one
+     * in one cycle, giving the released blocks back at the end, rather than sweeping toward the end over several
+     * cycles. Moves are then paid for by a credit that each cycle's added and removed states earn, carried across
+     * cycles.
      */
-    public static boolean CREDIT_RECLAIM =
-            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.creditReclaim", false);
+    public static boolean BULK_SHIFT =
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.bulkShift", false);
 
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
@@ -220,9 +223,14 @@ public class ChunkedOperatorAggregationHelper {
 
         // Preserved empty groups are never removed, so there is nothing to reclaim. Initial groups reserve output
         // positions for groups that are not in the result, which reclaiming does not model.
-        final boolean reclaimStates = input.isRefreshing() && reclaimMode.reclaims() && !preserveEmpty
-                && initialKeys == null
-                && Arrays.stream(ac.operators).allMatch(IterativeChunkedAggregationOperator::canReclaimStates);
+        final String cannotReclaim = input.isRefreshing() && reclaimMode.reclaims()
+                ? whyCannotReclaim(ac, preserveEmpty, initialKeys)
+                : null;
+        if (cannotReclaim != null && !reclaimMode.isConfigured()) {
+            throw new IllegalArgumentException(
+                    "Aggregation cannot use " + reclaimMode + ": " + cannotReclaim);
+        }
+        final boolean reclaimStates = input.isRefreshing() && reclaimMode.reclaims() && cannotReclaim == null;
         final MutableInt outputPosition = new MutableInt();
         final Supplier<OperatorAggregationStateManager> stateManagerSupplier =
                 () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac,
@@ -299,7 +307,7 @@ public class ChunkedOperatorAggregationHelper {
             final OutputPositionBlockTracker blockTracker = incrementalStateManager.canReclaim()
                     ? new OutputPositionBlockTracker(resultRowSet, outputPosition.get(),
                             reclaimMode.collapseFreeFraction(), reclaimMode.blockShiftFraction(),
-                            reclaimMode.usesCredit())
+                            reclaimMode.bulkShift())
                     : null;
 
             final boolean isBlink = input.isBlink();
@@ -369,6 +377,28 @@ public class ChunkedOperatorAggregationHelper {
             finalResult.setFlat();
         }
         return finalResult;
+    }
+
+    /**
+     * @return why a refreshing aggregation cannot reclaim its states, or {@code null} if it can
+     */
+    @Nullable
+    private static String whyCannotReclaim(@NotNull final AggregationContext ac, final boolean preserveEmpty,
+            @Nullable final Table initialKeys) {
+        if (preserveEmpty) {
+            return "it preserves empty groups";
+        }
+        if (initialKeys != null) {
+            return "it has initial groups";
+        }
+        final List<String> operators = Arrays.stream(ac.operators)
+                .filter(operator -> !operator.canReclaimStates())
+                .map(operator -> operator.getResultColumns().isEmpty()
+                        ? operator.getClass().getSimpleName()
+                        : String.join(", ", operator.getResultColumns().keySet()))
+                .collect(Collectors.toList());
+        return operators.isEmpty() ? null
+                : "the operators for " + operators + " cannot reclaim states";
     }
 
     private static OperatorAggregationStateManager makeStateManager(
@@ -749,10 +779,11 @@ public class ChunkedOperatorAggregationHelper {
                         upstream.added().size() + upstream.modified().size() + upstream.removed().size();
                 final OutputPositionBlockTracker.Collapse collapse;
                 final OutputPositionBlockTracker.BlockShift blockShift;
-                if (blockTracker.usesCredit()) {
+                if (blockTracker.bulkShift()) {
+                    // moves are paid for by the states added and removed, carried across cycles
                     blockTracker.earnCredit(downstream.added().size() + downstream.removed().size(),
                             outputPosition.get());
-                    collapse = blockTracker.combineBlocks(resultRowset, releasable);
+                    collapse = blockTracker.collapseSparseBlocksByCredit(resultRowset, releasable);
                     blockShift = blockTracker.planBulkBlockShift(outputPosition.get());
                 } else {
                     collapse = blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);

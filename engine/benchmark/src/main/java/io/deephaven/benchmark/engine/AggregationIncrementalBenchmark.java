@@ -40,8 +40,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Measures update cycles of a keyed {@code sumBy} over a refreshing table under each way of reclaiming the states of
  * removed keys ({@code reclaim}): keeping every state, releasing whole blocks of empty states, optionally collapsing
- * runs of sparse blocks ({@code collapse}) or shifting blocks down ({@code blockShift}), or releasing blocks and moving
- * states by credit. Each iteration reports the positions assigned, the retained heap, and its longest cycle.
+ * runs of sparse blocks ({@code collapse}) and shifting blocks down ({@code blockShift}), over several cycles or in
+ * bulk ({@code bulkShift}). Each iteration reports the positions assigned, the retained heap, and its longest cycle.
  *
  * <p>
  * Each measured iteration is a batch of {@link #CYCLES} update cycles against a freshly built aggregation, so the
@@ -78,7 +78,7 @@ public class AggregationIncrementalBenchmark {
     /** The number of update cycles in each measured batch. */
     static final int CYCLES = 900;
 
-    @Param({"none", "blocks", "credit"})
+    @Param({"none", "blocks"})
     private String reclaim;
 
     /** The fraction free at which blocks are collapsed when releasing blocks; 1 disables collapsing. */
@@ -91,6 +91,13 @@ public class AggregationIncrementalBenchmark {
      */
     @Param({"-1"})
     private double blockShift;
+
+    /**
+     * Whether the block shift waits until it can shift every block after the first released one in one cycle, paid for
+     * by credit carried across cycles, rather than sweeping toward the end over several cycles.
+     */
+    @Param({"false"})
+    private boolean bulkShift;
 
     /** The initial size for {@link #addOnly()}, and the constant size for the other benchmarks. */
     @Param({"1000000"})
@@ -134,6 +141,7 @@ public class AggregationIncrementalBenchmark {
         AggregationStateBenchSupport.setReclaimMode(reclaim);
         AggregationStateBenchSupport.setCollapseFreeFraction(collapse);
         AggregationStateBenchSupport.setBlockShiftFraction(blockShift);
+        AggregationStateBenchSupport.setBulkShift(bulkShift);
         if (params.getBenchmark().endsWith(".randomChurn")) {
             randomRemovals = chooseRandomRemovals();
         }
