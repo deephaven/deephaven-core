@@ -10,7 +10,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.*;
@@ -18,7 +17,6 @@ import io.deephaven.engine.table.ChunkSource.GetContext;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.ShiftableColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectSingleValueSource;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.ObjectVector;
@@ -41,7 +39,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     private GroupByOperator groupBy;
     private boolean delegateToBy;
     private final SelectColumn selectColumn;
-    private final ShiftableColumnSource<?> resultColumn;
+    private final WritableColumnSource<?> resultColumn;
     private final String[] inputKeyColumns;
     @Nullable
     private final ColumnSource<Integer> formulaDepthSource;
@@ -465,22 +463,5 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     public void updateGroupBy(GroupByOperator groupBy, boolean delegateToBy) {
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
-    }
-
-    @Override
-    public boolean canReclaimStates() {
-        // the formula reads the group-by operator's row sets, which must follow any reclaimed state; the group-by
-        // operator may be private to this operator, so it is not otherwise consulted
-        return groupBy.canReclaimStates();
-    }
-
-    @Override
-    public void shift(RowSetShiftData shiftData) {
-        resultColumn.shift(shiftData);
-    }
-
-    @Override
-    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
-        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 }
