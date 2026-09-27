@@ -230,6 +230,33 @@ public class TestLongLongMap {
         assertEquals(second, keys[0]);
     }
 
+    /**
+     * A map that has never been populated — or has been reset to null — is empty, not broken: clearing it is a no-op
+     * and its key and value accessors answer with nothing, where they used to dereference the array it does not have.
+     */
+    @Test
+    public void neverPopulatedMapIsEmptyNotBroken() {
+        // The reference fastutil implementation always has storage.
+        if (factory == referenceFactory) {
+            return;
+        }
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final NullableLongLongMapTestAccessors accessors = (NullableLongLongMapTestAccessors) map;
+        for (int round = 0; round < 2; ++round) {
+            map.clear();
+            assertEquals(0, map.size());
+            assertTrue(map.isEmpty());
+            assertEquals(0, map.capacity());
+            assertEquals(0, accessors.keyArray().length);
+            assertEquals(0, accessors.valueArray().length);
+            final long[] space = new long[4];
+            assertSame(space, accessors.keyArray(space));
+            assertSame(space, accessors.valueArray(space));
+            // Round two: the same, after a reset has released a real array.
+            map.resetToNull();
+        }
+    }
+
     @Test
     public void zeroComesBackThroughKeys() {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
