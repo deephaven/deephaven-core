@@ -126,7 +126,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
         final int newNumLongs;
         if (wantResize) {
             final int oldBucketCapacity = oldNumLongs / (entriesPerBucket * 2);
-            final int desiredNumBuckets = oldBucketCapacity * 2;
+            final int desiredNumBuckets = grownBucketCount(oldBucketCapacity, entriesPerBucket);
             newNumLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         } else {
             newNumLongs = oldNumLongs;
@@ -145,6 +145,17 @@ public abstract class HashMapBase implements NullableLongLongMap {
             putImplNoTranslate(newKvs, oldKey, oldValue, true);
         }
         setKeysAndValues(newKvs);
+    }
+
+    /**
+     * The bucket count a growing rehash asks for: double the current one, saturating at the width's maximum bucket
+     * capacity. Doubling in int arithmetic overflowed once the map sat at that maximum — and a growing rehash can be
+     * asked for there, because deleted slots count toward the rehash threshold while only live entries count toward the
+     * size limit — so the prime finder was handed a negative count and answered with a handful of buckets for a billion
+     * entries.
+     */
+    static int grownBucketCount(int oldBucketCapacity, int entriesPerBucket) {
+        return (int) Math.min(getMaxBucketCapacity(entriesPerBucket), 2L * oldBucketCapacity);
     }
 
     private int setRehashThresholdAndCalcLongCapacity(int desiredNumBuckets, int entriesPerBucket) {
@@ -326,7 +337,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
      * @param entriesPerBucket Number of entries per bucket
      * @return The largest prime p such that p * entriesPerBucket * 2 <= Integer.MAX_VALUE
      */
-    private static int getMaxBucketCapacity(int entriesPerBucket) {
+    static int getMaxBucketCapacity(int entriesPerBucket) {
         switch (entriesPerBucket) {
             case 1:
                 return 1073741789;
