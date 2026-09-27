@@ -51,8 +51,10 @@ reuses it. This is how aggregations behaved before reclaiming existed. It uses t
 `StateReclaimMode.releaseBlocks(collapseFreeFraction, blockShiftFraction, bulkShift)` frees the storage of each block
 once every state in it has been removed. With the default parameters, no state ever moves:
 
-- Memory tracks the groups that have rows, but only at block granularity. A block that holds even one long-lived state
-  is never released, so random churn with some long-lived groups releases few blocks.
+- The result columns' storage tracks the groups that have rows, but only at block granularity. A block that holds even
+  one long-lived state is never released, so random churn with some long-lived groups releases few blocks. The hash
+  table does not shrink (see [Costs and limits](#costs-and-limits)), so it stays sized for the most groups the
+  aggregation has had at once.
 - Output positions are never given back, so the positions assigned grow with every group ever created.
 
 The three parameters control the two moves that reduce both limits:
@@ -74,8 +76,10 @@ The three parameters control the two moves that reduce both limits:
     earns the number of states it added and removed, and unspent credit carries to later cycles, up to the number of
     positions assigned. The collapse spends from the same credit first.
 
-The block shift moves whole blocks by reference in the array-backed sources, so its cost per state is the hash table's
-update of the state's output position.
+The block shift moves whole blocks, so the array-backed sources never move its states one value at a time. A source
+that does not track previous values moves each block by reference. The result columns track previous values, so a
+block whose array must also hold this cycle's previous values is copied into a new current block, one array copy per
+block. Each moved state also costs the hash table's update of its output position.
 
 A sweeping shift chases a tail that grows with each cycle's new groups, and it moves blocks near the front that empty
 soon after, so for a sliding window with `L` live groups the positions assigned peak near `3 L`. A bulk shift for the
