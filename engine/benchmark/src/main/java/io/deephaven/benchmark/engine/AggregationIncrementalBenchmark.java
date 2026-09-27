@@ -39,8 +39,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Measures update cycles of a keyed {@code sumBy} over a refreshing table under each way of reclaiming the states of
- * removed keys ({@code reclaim}): keeping every state, compacting the result, or releasing whole blocks of empty
- * states, optionally collapsing runs of sparse blocks ({@code collapse}).
+ * removed keys ({@code reclaim}): keeping every state, compacting the result, releasing whole blocks of empty states,
+ * optionally collapsing runs of sparse blocks ({@code collapse}) or shifting blocks down ({@code blockShift}), or
+ * releasing blocks and moving states by credit. Each iteration reports the positions assigned, the retained heap, and
+ * its longest cycle.
  *
  * <p>
  * Each measured iteration is a batch of {@link #CYCLES} update cycles against a freshly built aggregation, so the
@@ -77,7 +79,7 @@ public class AggregationIncrementalBenchmark {
     /** The number of update cycles in each measured batch. */
     static final int CYCLES = 900;
 
-    @Param({"none", "compact", "blocks"})
+    @Param({"none", "compact", "blocks", "credit"})
     private String reclaim;
 
     /** The fraction free at which blocks are collapsed when releasing blocks; 1 disables collapsing. */
@@ -120,6 +122,8 @@ public class AggregationIncrementalBenchmark {
     private long windowFirstKey;
     private int cycle;
     private long maxPosition;
+    /** The longest cycle of the iteration, in nanoseconds. */
+    private long maxCycleNanos;
     private long rehashesAtStart;
 
     @Setup(Level.Trial)
@@ -176,6 +180,7 @@ public class AggregationIncrementalBenchmark {
         windowFirstKey = 0;
         cycle = 0;
         maxPosition = result.getRowSet().lastRowKey();
+        maxCycleNanos = 0;
         rehashesAtStart = AggregationStateBenchSupport.rehashCount();
     }
 
@@ -184,6 +189,7 @@ public class AggregationIncrementalBenchmark {
         System.out.println("result: liveStates=" + result.size() + ", positionsAssigned=" + (maxPosition + 1)
                 + ", lastLivePosition=" + result.getRowSet().lastRowKey()
                 + ", rehashes=" + (AggregationStateBenchSupport.rehashCount() - rehashesAtStart)
+                + ", maxCycleMillis=" + maxCycleNanos / 1_000_000.0
                 + ", retainedHeapMB=" + retainedHeapMegabytes());
         iterationScope.release();
         source = null;
@@ -217,11 +223,13 @@ public class AggregationIncrementalBenchmark {
 
     private void runCycle(final RowSet removed) {
         final long firstAdded = nextRowKey;
+        final long startNanos = System.nanoTime();
         updateGraph.runWithinUnitTestCycle(() -> {
             final WritableRowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + rowsPerCycle - 1);
             source.getRowSet().writableCast().update(added, removed);
             source.notifyListeners(added, removed.copy(), RowSetFactory.empty());
         });
+        maxCycleNanos = Math.max(maxCycleNanos, System.nanoTime() - startNanos);
         nextRowKey += rowsPerCycle;
         maxPosition = Math.max(maxPosition, result.getRowSet().lastRowKey());
     }

@@ -17,8 +17,8 @@ final class AggregationStateBenchSupport {
 
     /**
      * Select how refreshing aggregations reclaim the states of removed keys: {@code none} keeps every state,
-     * {@code compact} shifts states into the positions of removed ones, and {@code blocks} releases whole blocks of
-     * empty states in place.
+     * {@code compact} shifts states into the positions of removed ones, {@code blocks} releases whole blocks of empty
+     * states in place, and {@code credit} releases blocks and moves states by credit.
      *
      * <p>
      * The {@code ChunkedOperatorAggregationHelper} flags are set reflectively so that these benchmarks also compile and
@@ -31,14 +31,22 @@ final class AggregationStateBenchSupport {
         switch (reclaim) {
             case "none":
                 setFlag("RECLAIM_STATES", false);
+                setFlag("CREDIT_RECLAIM", false);
                 break;
             case "compact":
                 setFlag("RECLAIM_STATES", true);
                 setFlag("RELEASE_BLOCKS", false);
+                setFlag("CREDIT_RECLAIM", false);
                 break;
             case "blocks":
                 setFlag("RECLAIM_STATES", true);
                 setFlag("RELEASE_BLOCKS", true);
+                setFlag("CREDIT_RECLAIM", false);
+                break;
+            case "credit":
+                setFlag("RECLAIM_STATES", true);
+                setFlag("RELEASE_BLOCKS", true);
+                setFlag("CREDIT_RECLAIM", true);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown reclaim mode " + reclaim);

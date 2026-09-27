@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
+
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -66,16 +68,27 @@ final class OutputPositionBlockTracker {
     private final double blockShiftFraction;
 
     /**
+     * The states that may still be moved: each cycle earns the states it added and removed, and each move spends the
+     * states it moves. Unspent credit carries to later cycles, so that a move bigger than one cycle's changes can be
+     * made once enough has built up.
+     */
+    private long credit;
+    /** Whether moves are made by {@link #combineBlocks} and {@link #planBulkBlockShift}, paid for by credit. */
+    private final boolean usesCredit;
+
+    /**
      * @param initialStates the output positions of the live states after the initial build
      * @param nextOutputPosition the next output position that will be assigned
      * @param collapseFreeFraction a closed block at least this fraction free is sparse, and runs of adjacent sparse
      *        blocks are collapsed; 1 or more disables collapsing
      * @param blockShiftFraction the fraction of the positions assigned that the released blocks must reach before
      *        {@link #planBlockShift} shifts blocks; zero shifts for any released block, and negative never shifts
+     * @param usesCredit whether moves are made by {@link #combineBlocks} and {@link #planBulkBlockShift}
      */
     OutputPositionBlockTracker(final RowSet initialStates, final int nextOutputPosition,
-            final double collapseFreeFraction, final double blockShiftFraction) {
+            final double collapseFreeFraction, final double blockShiftFraction, final boolean usesCredit) {
         this.blockShiftFraction = blockShiftFraction;
+        this.usesCredit = usesCredit;
         sparseLiveLimit = collapseFreeFraction >= 1 ? 0 : (int) (BLOCK_SIZE * (1 - collapseFreeFraction));
         ensureCapacity(nextOutputPosition);
         adjust(initialStates, 1);
@@ -362,6 +375,119 @@ final class OutputPositionBlockTracker {
         } else {
             ranges.add(new int[] {bi, bi, gap});
         }
+    }
+
+    /**
+     * @return whether moves are made by {@link #combineBlocks} and {@link #planBulkBlockShift}, paid for by credit
+     */
+    boolean usesCredit() {
+        return usesCredit;
+    }
+
+    /**
+     * Earn credit for moving states.
+     *
+     * @param states the states added and removed this cycle
+     * @param nextOutputPosition the next output position that will be assigned, which bounds the credit worth keeping:
+     *        no move ever needs more than every state
+     */
+    void earnCredit(final long states, final int nextOutputPosition) {
+        credit = Math.min(credit + states, nextOutputPosition);
+    }
+
+    /**
+     * Combine pairs of closed blocks whose live states fit in one block: the states of both move, in order, to the
+     * start of the lower block, and the upper block is released. The blocks of a pair are consecutive among the blocks
+     * not released, so released blocks may lie between them. No other state moves. Each combination spends the live
+     * states of both blocks from the credit, and is made only if the credit covers it.
+     *
+     * @param liveStates the output positions of the live states, after this cycle's additions and removals
+     * @param released the output positions of blocks to release, to which the emptied blocks are added
+     * @return the combined pairs, as collapsed runs from the lower block's first position to the upper block's last
+     */
+    Collapse combineBlocks(final RowSet liveStates, final WritableRowSet released) {
+        final List<long[]> runs = new ArrayList<>();
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        final RowSetBuilderSequential releasedBuilder = RowSetFactory.builderSequential();
+        int lower = -1;
+        for (int bi = 0; bi < closedBlocks; ++bi) {
+            if (liveCounts[bi] == RELEASED) {
+                continue;
+            }
+            if (lower >= 0) {
+                final long combined = (long) liveCounts[lower] + liveCounts[bi];
+                if (combined <= BLOCK_SIZE && combined <= credit) {
+                    combinePair(lower, bi, liveStates, runs, shiftBuilder, releasedBuilder);
+                    // the combined block may take in the next block too
+                    continue;
+                }
+            }
+            lower = bi;
+        }
+        try (final RowSet newlyReleased = releasedBuilder.build()) {
+            released.insert(newlyReleased);
+        }
+        if (runs.isEmpty()) {
+            return Collapse.NONE;
+        }
+        return new Collapse(shiftBuilder.build(), runs);
+    }
+
+    /**
+     * Move the live states of {@code lower} and {@code upper}, in order, to the start of {@code lower}, release
+     * {@code upper}, and spend the states moved from the credit.
+     */
+    private void combinePair(final int lower, final int upper, final RowSet liveStates, final List<long[]> runs,
+            final RowSetShiftData.Builder shiftBuilder, final RowSetBuilderSequential releasedBuilder) {
+        final long combined = (long) liveCounts[lower] + liveCounts[upper];
+        credit -= combined;
+        final long firstPosition = (long) lower << LOG_BLOCK_SIZE;
+        final long lastPosition = ((long) (upper + 1) << LOG_BLOCK_SIZE) - 1;
+        runs.add(new long[] {firstPosition, lastPosition, combined});
+        try (final RowSequence pairStates = liveStates.getRowSequenceByKeyRange(firstPosition, lastPosition)) {
+            final MutableLong destination = new MutableLong(firstPosition);
+            pairStates.forAllRowKeyRanges((first, last) -> {
+                if (first != destination.get()) {
+                    shiftBuilder.shiftRange(first, last, destination.get() - first);
+                }
+                destination.add(last - first + 1);
+            });
+        }
+        liveCounts[lower] = (int) combined;
+        updateSparse(lower);
+        liveCounts[upper] = 0;
+        release(upper, releasedBuilder);
+    }
+
+    /**
+     * Plan to shift every block after the first released block down over the released blocks, giving them back at the
+     * end, but only once the credit covers every live state that moves; otherwise nothing moves. The shift then spends
+     * those states from the credit.
+     *
+     * @param nextOutputPosition the next output position that will be assigned
+     * @return the plan, which {@link #applyBlockShift} records once the moves are made
+     */
+    BlockShift planBulkBlockShift(final int nextOutputPosition) {
+        if (releasedBlockCount == 0) {
+            return BlockShift.NONE;
+        }
+        final int blocksInUse = blocksInUse(nextOutputPosition);
+        final int firstReleased = releasedBlocks.nextSetBit(0);
+        long moving = 0;
+        for (int bi = firstReleased; bi < blocksInUse; ++bi) {
+            if (liveCounts[bi] != RELEASED) {
+                moving += liveCounts[bi];
+            }
+        }
+        if (moving > credit) {
+            return BlockShift.NONE;
+        }
+        sweepBlock = -1;
+        carriedShiftBudget = 0;
+        final BlockShift plan = planBlockShift(nextOutputPosition, moving);
+        Assert.assertion(plan.reclaimedPositions() > 0, "plan.reclaimedPositions() > 0");
+        credit -= plan.movedStates;
+        return plan;
     }
 
     /**

@@ -4911,6 +4911,68 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testCreditReclaim() {
+        for (final boolean random : new boolean[] {false, true}) {
+            doTestCreditReclaim(random);
+        }
+    }
+
+    private void doTestCreditReclaim(final boolean randomRemovals) {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int size = 6 * blockSize;
+        final int step = blockSize / 4 + 3;
+        final int cycles = 80;
+        final Random random = new Random(0);
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
+                stringCol("Key", windowKeys(0, size)), longCol("x", windowValues(0, size)),
+                doubleCol("d", windowDoubles(0, size)));
+        final List<Aggregation> aggregations = List.of(AggSum("Sum=x", "DSum=d"), AggMin("Min=x"), AggAvg("Avg=x"),
+                AggVar("Var=d"), AggCountDistinct("CD=x"), AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x"),
+                AggMed("Med=x"), AggCount("N"));
+        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(aggregations), false, null,
+                ColumnName.from("Key"), StateReclaimMode.credit());
+        final String description = "testCreditReclaim-" + randomRemovals;
+        final TableUpdateValidator validated = TableUpdateValidator.make(description, aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        long nextRow = size;
+        long maxLastRowKey = 0;
+        for (int cycle = 0; cycle < cycles; ++cycle) {
+            final RowSet removed;
+            if (randomRemovals) {
+                final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+                final int liveRows = table.intSize();
+                for (int ii = 0; ii < step; ++ii) {
+                    builder.addKey(table.getRowSet().get(random.nextInt(liveRows)));
+                }
+                removed = builder.build();
+            } else {
+                final long first = table.getRowSet().firstRowKey();
+                removed = RowSetFactory.fromRange(first, first + step - 1);
+            }
+            final long firstAdded = nextRow;
+            final int added = (int) removed.size();
+            nextRow += added;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet addedRows = RowSetFactory.fromRange(firstAdded, firstAdded + added - 1);
+                removeRows(table, removed);
+                addToTable(table, addedRows, stringCol("Key", windowKeys(firstAdded, added)),
+                        longCol("x", windowValues(firstAdded, added)),
+                        doubleCol("d", windowDoubles(firstAdded, added)));
+                table.notifyListeners(addedRows, removed, i());
+            });
+            // a static snapshot, so that each cycle's expected result is not another refreshing aggregation
+            assertTableEquals(table.snapshot().aggBy(aggregations, "Key").sort("Key"), aggregated.sort("Key"));
+            maxLastRowKey = Math.max(maxLastRowKey, aggregated.getRowSet().lastRowKey());
+        }
+        // every key was new, so without reclaiming positions the last row key would reach size + cycles * step
+        assertTrue(description + ": maxLastRowKey=" + maxLastRowKey,
+                maxLastRowKey < size + (long) cycles * step / 2);
+    }
+
+    @Test
     public void testBlockShiftReleasesBlockBelowResumedSweep() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final int size = 10 * blockSize;

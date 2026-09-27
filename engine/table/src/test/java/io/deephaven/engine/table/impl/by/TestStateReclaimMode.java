@@ -17,6 +17,9 @@ public class TestStateReclaimMode {
         assertFalse(StateReclaimMode.releaseBlocks(1, -1).movesStates());
         assertTrue(StateReclaimMode.releaseBlocks(0.5, -1).movesStates());
         assertTrue(StateReclaimMode.releaseBlocks(1, 0).movesStates());
+        assertTrue(StateReclaimMode.credit().movesStates());
+        assertTrue(StateReclaimMode.credit().usesCredit());
+        assertFalse(StateReclaimMode.releaseBlocks(1, 0).usesCredit());
     }
 
     @Test

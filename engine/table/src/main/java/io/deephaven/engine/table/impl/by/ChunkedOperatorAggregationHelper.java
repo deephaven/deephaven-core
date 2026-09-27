@@ -91,6 +91,12 @@ public class ChunkedOperatorAggregationHelper {
      */
     public static double BLOCK_SHIFT_FRACTION = Configuration.getInstance()
             .getDoubleWithDefault("ChunkedOperatorAggregationHelper.blockShiftFraction", -1.0);
+    /**
+     * When reclaiming states, whether moves are paid for by credit carried across cycles: see
+     * {@link StateReclaimMode#credit()}. Takes precedence over the release, collapse, and block shift settings.
+     */
+    public static boolean CREDIT_RECLAIM =
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.creditReclaim", false);
 
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
@@ -300,7 +306,8 @@ public class ChunkedOperatorAggregationHelper {
             final OutputPositionBlockTracker blockTracker =
                     reclaimMode.releasesBlocks() && incrementalStateManager.canReclaim()
                             ? new OutputPositionBlockTracker(resultRowSet, outputPosition.get(),
-                                    reclaimMode.collapseFreeFraction(), reclaimMode.blockShiftFraction())
+                                    reclaimMode.collapseFreeFraction(), reclaimMode.blockShiftFraction(),
+                                    reclaimMode.usesCredit())
                             : null;
 
             final boolean isBlink = input.isBlink();
@@ -759,10 +766,17 @@ public class ChunkedOperatorAggregationHelper {
                 // the collapse and the block shift together move no more states than this cycle's input rows
                 final long inputRows =
                         upstream.added().size() + upstream.modified().size() + upstream.removed().size();
-                final OutputPositionBlockTracker.Collapse collapse =
-                        blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
-                final OutputPositionBlockTracker.BlockShift blockShift =
-                        blockTracker.planBlockShift(outputPosition.get(), inputRows - collapse.movedStates());
+                final OutputPositionBlockTracker.Collapse collapse;
+                final OutputPositionBlockTracker.BlockShift blockShift;
+                if (blockTracker.usesCredit()) {
+                    blockTracker.earnCredit(downstream.added().size() + downstream.removed().size(),
+                            outputPosition.get());
+                    collapse = blockTracker.combineBlocks(resultRowset, releasable);
+                    blockShift = blockTracker.planBulkBlockShift(outputPosition.get());
+                } else {
+                    collapse = blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
+                    blockShift = blockTracker.planBlockShift(outputPosition.get(), inputRows - collapse.movedStates());
+                }
                 if (!blockShift.isEmpty()) {
                     shiftBlocks(blockTracker, collapse, blockShift, resultRowset, downstream, releasable,
                             keyColumnsCopied);

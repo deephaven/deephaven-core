@@ -15,6 +15,9 @@ package io.deephaven.engine.table.impl.by;
  * <li>{@link #releaseBlocks(double, double)}: the storage for a block of output positions is released once all of its
  * states are removed. States move only if the collapse or block shift is enabled.</li>
  * <li>{@link #compact()}: the states after removed ones are shifted down into their positions.</li>
+ * <li>{@link #credit()}: blocks are released as they empty, and states move only as paid for by a credit that each
+ * cycle's added and removed states earn: to combine two blocks into one, or to shift the blocks after released ones
+ * down over them.</li>
  * </ul>
  * Only the modes that move states ({@link #movesStates()}) change a group's row key while it has rows; a consumer that
  * looks up a group's current row key and reads previous values there needs a mode that does not.
@@ -26,14 +29,22 @@ public final class StateReclaimMode {
 
     private static final StateReclaimMode NONE = new StateReclaimMode(false, false, 1, -1);
     private static final StateReclaimMode COMPACT = new StateReclaimMode(true, false, 1, -1);
+    private static final StateReclaimMode CREDIT = new StateReclaimMode(true, true, 1, 0, true);
 
     private final boolean reclaim;
     private final boolean releaseBlocks;
     private final double collapseFreeFraction;
     private final double blockShiftFraction;
+    private final boolean credit;
 
     private StateReclaimMode(final boolean reclaim, final boolean releaseBlocks, final double collapseFreeFraction,
             final double blockShiftFraction) {
+        this(reclaim, releaseBlocks, collapseFreeFraction, blockShiftFraction, false);
+    }
+
+    private StateReclaimMode(final boolean reclaim, final boolean releaseBlocks, final double collapseFreeFraction,
+            final double blockShiftFraction, final boolean credit) {
+        this.credit = credit;
         this.reclaim = reclaim;
         this.releaseBlocks = releaseBlocks;
         this.collapseFreeFraction = collapseFreeFraction;
@@ -80,11 +91,33 @@ public final class StateReclaimMode {
         if (!ChunkedOperatorAggregationHelper.RECLAIM_STATES) {
             return NONE;
         }
+        if (ChunkedOperatorAggregationHelper.CREDIT_RECLAIM) {
+            return CREDIT;
+        }
         if (!ChunkedOperatorAggregationHelper.RELEASE_BLOCKS) {
             return COMPACT;
         }
         return releaseBlocks(ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION,
                 ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION);
+    }
+
+    /**
+     * Release whole blocks of removed states, and move states only by credit: each cycle earns the states it added and
+     * removed, and unspent credit carries over. Two blocks whose live states fit in one are combined, releasing one,
+     * and once the credit covers every live state after the first released block, those blocks shift down over the
+     * released ones as whole blocks, giving the released blocks back at the end.
+     *
+     * @return the mode that combines blocks and shifts them in bulk by credit
+     */
+    public static StateReclaimMode credit() {
+        return CREDIT;
+    }
+
+    /**
+     * @return whether moves are paid for by credit carried across cycles, as in {@link #credit()}
+     */
+    public boolean usesCredit() {
+        return credit;
     }
 
     /**
@@ -129,6 +162,9 @@ public final class StateReclaimMode {
         }
         if (!releaseBlocks) {
             return "StateReclaimMode{compact}";
+        }
+        if (credit) {
+            return "StateReclaimMode{credit}";
         }
         return "StateReclaimMode{releaseBlocks, collapseFreeFraction=" + collapseFreeFraction
                 + ", blockShiftFraction=" + blockShiftFraction + '}';
