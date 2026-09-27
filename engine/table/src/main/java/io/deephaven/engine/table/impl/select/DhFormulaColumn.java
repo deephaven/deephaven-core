@@ -564,7 +564,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.optional("maybeCreateIOrII",
-                                "try (final RowSet inverted = (__usePrev ? __rowSet.prev() : __rowSet).invert(__rowSequence.asRowSet()))",
+                                "try (final RowSet __rowSequenceRowSet = __rowSequence.asRowSet();",
+                                CodeGenerator.indent(
+                                        "final RowSet inverted = (__usePrev ? __rowSet.prev() : __rowSet).invert(__rowSequenceRowSet))"),
                                 CodeGenerator.block(
                                         CodeGenerator.optional("maybeCreateI",
                                                 "__context.__iChunk.setSize(0);",
