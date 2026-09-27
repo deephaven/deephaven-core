@@ -194,6 +194,42 @@ public class TestLongLongMap {
         }
     }
 
+    /**
+     * An insert whose probe starts in a bucket holding a deleted slot ahead of an empty one takes the deleted slot — in
+     * the first bucket of the probe as in every later one — so putting removed keys back does not consume empty slots
+     * and walk the map toward a needless rehash. (K1V1 has one slot per bucket and was always right; the unrolled first
+     * bucket of K2V2 and K4V4 used to take the empty slot instead.)
+     */
+    @Test
+    public void firstBucketReusesTombstones() {
+        // The reference fastutil implementation is a different map altogether.
+        if (factory == referenceFactory) {
+            return;
+        }
+        // K1V1 -> 1, K2V2 -> 2, K4V4 -> 4: the factory's name says how many slots a bucket has.
+        final int entriesPerBucket = factory.toString().charAt(1) - '0';
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final HashMapBase base = (HashMapBase) map;
+        final long first = 1;
+        map.put(first, 10);
+        final int numBuckets = map.capacity() / entriesPerBucket;
+        final int bucket = HashMapBase.probe1(first, numBuckets);
+        // Another key whose probe starts in the same bucket.
+        long second = 2;
+        while (HashMapBase.probe1(second, numBuckets) != bucket) {
+            ++second;
+        }
+        map.remove(first);
+        assertEquals(1, base.nonEmptySlots);
+        map.put(second, 20);
+        // Reused the deleted slot: the count of non-empty slots did not grow, and the map holds exactly the new key.
+        assertEquals(1, base.nonEmptySlots);
+        assertEquals(1, map.size());
+        final long[] keys = ((NullableLongLongMapTestAccessors) map).keyArray();
+        assertEquals(1, keys.length);
+        assertEquals(second, keys[0]);
+    }
+
     @Test
     public void zeroComesBackThroughKeys() {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
