@@ -16,6 +16,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import java.lang.Object;
@@ -84,7 +85,7 @@ final class IncrementalAggOpenHasherWithTombstoneObject extends IncrementalChunk
                     }
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    outputPosition = allocateOutputPosition();
+                    outputPosition = ChunkedOperatorAggregationHelper.allocateOutputPosition(nextOutputPosition);
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
@@ -94,7 +95,7 @@ final class IncrementalAggOpenHasherWithTombstoneObject extends IncrementalChunk
                         tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
-                        outputPosition = allocateOutputPosition();
+                        outputPosition = ChunkedOperatorAggregationHelper.allocateOutputPosition(nextOutputPosition);
                         outputPositions.set(chunkPosition, outputPosition);
                         mainOutputPosition.set(tableLocation, outputPosition);
                         outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);

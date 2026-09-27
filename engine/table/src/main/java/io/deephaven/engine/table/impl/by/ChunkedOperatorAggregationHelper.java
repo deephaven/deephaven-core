@@ -79,6 +79,23 @@ public class ChunkedOperatorAggregationHelper {
     public static double COLLAPSE_FREE_FRACTION = Configuration.getInstance()
             .getDoubleWithDefault("ChunkedOperatorAggregationHelper.collapseFreeFraction", 1.0);
 
+    /**
+     * Take the next output position for a new state. Output positions are never reused, so an aggregation that creates
+     * more states over its life than an {@code int} can index fails rather than wrapping around.
+     *
+     * @param nextOutputPosition the next output position to assign, which this advances
+     * @return the output position for the new state
+     */
+    public static int allocateOutputPosition(@NotNull final MutableInt nextOutputPosition) {
+        final int outputPosition = nextOutputPosition.getAndAdd(1);
+        if (outputPosition == Integer.MAX_VALUE) {
+            // the counter has wrapped, but the operation fails, so it is never read again
+            throw new UnsupportedOperationException(
+                    "Aggregation output positions exhausted: " + outputPosition + " states have been created");
+        }
+        return outputPosition;
+    }
+
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable input,

@@ -156,22 +156,6 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    /**
-     * Take the next output position for a new state. Output positions are never reused, so a long-lived aggregation
-     * whose keys churn can run out of them.
-     *
-     * @return the output position for the new state
-     */
-    protected final int allocateOutputPosition() {
-        final int outputPosition = nextOutputPosition.get();
-        if (outputPosition == Integer.MAX_VALUE) {
-            throw new UnsupportedOperationException(
-                    "Aggregation output positions exhausted: " + outputPosition + " states have been created");
-        }
-        nextOutputPosition.set(outputPosition + 1);
-        return outputPosition;
-    }
-
     protected void buildTable(
             final BuildContext bc,
             final RowSequence buildRows,
@@ -186,8 +170,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
-                // Rows of existing states take no positions, so only allocateOutputPosition checks for running out;
-                // the capacity for the chunk's worst case is limited to the positions there are.
+                // Rows of existing states take no positions, so only
+                // ChunkedOperatorAggregationHelper.allocateOutputPosition checks for running out; the capacity for the
+                // chunk's worst case is limited to the positions there are.
                 outputPositionToHashSlot.ensureCapacity(
                         Math.min((long) nextOutputPosition.get() + nextChunkSize, Integer.MAX_VALUE), false);
                 while (doRehash(bc.rehashCredits, nextChunkSize)) {
