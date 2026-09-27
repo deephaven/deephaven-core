@@ -276,14 +276,16 @@ differences within the error bounds as noise.
 Output positions are `int`s, so a mode that never gives positions back runs out after 2^31 - 1 states (see
 [Costs and limits](#costs-and-limits)). Storing them as `long`s would remove the limit, and with it the reason to move
 states at all: releasing blocks as they empty would bound memory, and positions could keep increasing. That would allow
-a design without the collapse, the block shift, or the credit. Two experiments, not part of this change, measured what
+a design without the collapse, the block shift, or the credit. Three experiments, not part of this change, measured what
 `long` positions cost.
 
 ### What changed in the experiments
 
+The two places that hold positions were widened separately:
+
 - **The hash table's positions:** the tombstone state manager stores each slot's output position as a `long`, in both
   the main and the alternate table, with `long` sentinels. Its generated hashers use a `long` state type.
-- **Everything downstream, in the second experiment only:**
+- **Everything downstream of the hash table:**
   - the destination chunk every aggregation operator receives, `LongChunk<RowKeys>` instead of `IntChunk<RowKeys>`,
     in 149 operator files;
   - the state managers' output position chunks;
@@ -291,7 +293,14 @@ a design without the collapse, the block shift, or the credit. Two experiments, 
     capacity counts;
   - the block tracker's position arguments.
 
-The second experiment still keeps some `int`s:
+The experiments cover three of the four combinations:
+
+| | `int` hash table | `long` hash table |
+| --- | --- | --- |
+| **`int` downstream** | this change | the first experiment |
+| **`long` downstream** | the third experiment | the second experiment, a complete conversion |
+
+Even the complete conversion keeps some `int`s:
 
 - The block tracker's block index and the modified-states bitmap's word index, which limit positions to 2^42 and 2^37.
 - `findPositionForKey` and `AggregationRowLookup`, which return `int` positions.
@@ -303,11 +312,12 @@ structure for the blocks.
 
 ### Results
 
-The same benchmarks as [Benchmark results](#benchmark-results), one row per group, comparing this branch's `int`
-positions with the second experiment's `long` positions; milliseconds per batch of 900 cycles. An asterisk marks the
-one difference outside the error bounds.
+The same benchmarks as [Benchmark results](#benchmark-results), one row per group, comparing this change's `int`
+positions with each experiment; milliseconds per batch of 900 cycles. An asterisk marks a difference outside the error
+bounds. Unless a table says otherwise, the numbers come from an Apple silicon Mac.
 
-Without reclaiming, only the operators' destinations are wider, and nothing measurable changes:
+**The complete conversion, without reclaiming.** Only the downstream positions are wider, and nothing measurable
+changes:
 
 | Size | Workload | Groups return | `int` | `long` | Change | Heap, MB |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -320,7 +330,8 @@ Without reclaiming, only the operators' destinations are wider, and nothing meas
 | 100M | Add only | — | 12300 ± 755 | 12230 ± 1624 | −1% | 5617 → 5623 |
 | 100M | Random churn | No | 30299 ± 12134 | 30175 ± 1882 | −0% | 5925 → 5932 |
 
-Releasing blocks with no moves (`releaseBlocks(1, -1, false)`), the hash table's positions are wider too:
+**The complete conversion, releasing blocks with no moves** (`releaseBlocks(1, -1, false)`). The hash table's positions
+are wider too:
 
 | Size | Workload | Groups return | `int` | `long` | Change | Heap, MB |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -335,23 +346,60 @@ Releasing blocks with no moves (`releaseBlocks(1, -1, false)`), the hash table's
 | 100M | Sliding window | No | 10815 ± 690 | 11336 ± 1357 | +5% | 887 → 1014 |
 | 100M | Random churn | No | 29504 ± 1626 | 30508 ± 1765 | +3% | 4053 → 4312 |
 
-The initial build of 10M rows was within 5% either way without reclaiming, and 6% (`String` keys) to 10% (`long`
-keys) slower with reclaiming at 5 million keys. The first experiment, which widened only the hash table's positions,
-measured the same costs as the second.
+**The third experiment, releasing blocks with no moves.** Downstream positions are `long` and the hash table's stay
+`int`. Nothing measurable changes, including the heap:
+
+| Size | Workload | Groups return | `int` | `long` downstream | Change | Heap, MB |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1M | Add only | — | 91 ± 12 | 94 ± 7 | +3% | 83 → 83 |
+| 1M | Random churn | No | 218 ± 56 | 220 ± 20 | +1% | 59 → 59 |
+| 10M | Add only | — | 924 ± 50 | 859 ± 90 | −7% | 571 → 570 |
+| 10M | Sliding window | No | 822 ± 27 | 872 ± 59 | +6% | 175 → 175 |
+| 10M | Sliding window | Yes | 759 ± 182 | 724 ± 22 | −5% | 120 → 119 |
+| 10M | Random churn | No | 2396 ± 101 | 2409 ± 177 | +1% | 468 → 469 |
+| 10M | Random churn | Yes | 2448 ± 118 | 2409 ± 104 | −2% | 433 → 433 |
+| 100M | Add only | — | 11465 ± 3351 | 11566 ± 1643 | +1% | 5076 → 5079 |
+| 100M | Sliding window | No | 10909 ± 753 | 11082 ± 985 | +2% | 886 → 884 |
+| 100M | Random churn | No | 29766 ± 1089 | 30058 ± 3970 | +1% | 4054 → 4059 |
+
+**The first experiment, on a second machine.** Only the hash table's positions are wider. These numbers come from a
+Linux container on an Intel Core i9-14900KS with 128 GB of RAM, which is slower than the Mac in absolute terms:
+
+| Size | Mode | Workload | Groups return | `int` | `long` hash table | Change | Heap, MB |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 10M | `releaseBlocks(1, -1, false)` | Add only | — | 1446 ± 212 | 1654 ± 278 | +14% | 570 → 634 |
+| 10M | `releaseBlocks(1, -1, false)` | Sliding window | No | 1528 ± 289 | 1775 ± 254 | +16% | 186 → 218 |
+| 10M | `releaseBlocks(1, -1, false)` | Random churn | No | 4242 ± 389 | 4458 ± 155 | +5% | 473 → 505 |
+| 10M | `releaseBlocks(0.5, 0, true)` | Add only | — | 1482 ± 261 | 1639 ± 147 | +11% | 578 → 641 |
+| 10M | `releaseBlocks(0.5, 0, true)` | Sliding window | No | 1683 ± 184 | 1826 ± 195 | +9% | 194 → 226 |
+| 10M | `releaseBlocks(0.5, 0, true)` | Random churn | No | 4015 ± 54 | 4180 ± 377 | +4% | 238 → 270 |
+| 100M | `releaseBlocks(1, -1, false)` | Add only | — | 13746 ± 6732 | 14964 ± 2324 | +9% | 5068 → 5596 |
+| 100M | `releaseBlocks(1, -1, false)` | Sliding window | No | 16183 ± 1638 | 16967 ± 358 | +5% | 896 → 1025 |
+| 100M | `releaseBlocks(1, -1, false)` | Random churn | No | 49006 ± 5216 | 48964 ± 3746 | −0% | 4059 → 4314 |
+| 100M | `releaseBlocks(0.5, 0, true)` | Add only | — | 14118 ± 3163 | 15585 ± 846 | +10% | 5087 → 5607 |
+| 100M | `releaseBlocks(0.5, 0, true)` | Random churn | No | 44588 ± 2668 | 44728 ± 1234 | +0% | 1701 → 1957 |
+
+The initial build of 10M rows, with reclaiming:
+
+- The complete conversion was within 5% either way without reclaiming, and 6% (`String` keys) to 10% (`long` keys)
+  slower at 5 million keys with reclaiming.
+- The third experiment was within 3% of `int` at 5 million keys.
+- On the second machine, the first experiment was 5% slower at 5 million keys, and within 2% at 100,000.
 
 ### Findings
 
-- Widening the operators' destinations and the helper costs nothing measurable. The whole cost is the hash table's
-  slots growing from 4 to 8 bytes: typically 2% to 5% more time, up to 14% where adding states dominates, and 5% to 15%
-  more retained heap.
+- Widening the positions downstream of the hash table costs nothing measurable, with or without reclaiming. The whole
+  cost is the hash table's slots growing from 4 to 8 bytes: 2% to 16% more time, most where adding states dominates
+  and least for random churn, and 5% to 15% more retained heap. Both machines agree.
 - A design with `long` positions and no moves would pay that cost in exchange for dropping the collapse, the block
   shift, the bulk shift, and the credit, and for never exhausting its positions.
 - A hybrid would pay it only when needed: `long` positions everywhere except the hash table, which stores `int`
   positions until they reach a threshold such as 2^30 and is then converted once, as part of a rehash, to a hasher that
-  stores `long`s. With the operators already `long`, the conversion is confined to the hash table.
+  stores `long`s. The third experiment shows that below the threshold this costs nothing, and with the downstream
+  positions already `long`, the conversion is confined to the hash table.
 
-The numbers come from one machine and one JVM fork per configuration, with five measured batches each, or three at
-100M; treat differences within the error bounds as noise.
+The numbers come from one JVM fork per configuration, with five measured batches each, or three at 100M; treat
+differences within the error bounds as noise.
 
 ## Related documentation
 
