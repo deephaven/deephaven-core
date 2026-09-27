@@ -67,20 +67,6 @@ modified, and removed.
   end over several cycles and resumes where it stopped. Unspent budget of up to one block carries to the next cycle.
   When the sweep reaches the end, the released blocks are given back and the next output position moves down.
 
-### Compact
-
-`StateReclaimMode.compact()` shifts the states after removed ones down into their positions and gives the positions
-past the new end back, releasing their storage after the cycle. It does not release blocks in the middle of the result
-as they empty.
-
-Compaction is budgeted by the cycle's input rows, and it starts from the first free position every cycle. When
-removals are concentrated at the front — a sliding window, for example — keeping the result dense means moving every
-live state each cycle. Once the live states exceed twice the cycle's changes, the budget cannot keep up: compaction
-moves the same front states every cycle, and the positions assigned grow as fast as without reclaiming.
-
-In the benchmarks, compaction is slower and retains more memory than the modes that release blocks — see
-[Benchmark results](#benchmark-results).
-
 ### Credit
 
 `StateReclaimMode.credit()` releases blocks as they empty and moves states only when a move frees a whole block. Moves
@@ -114,10 +100,9 @@ matching public static fields of `ChunkedOperatorAggregationHelper`.
 | Property | Field | Default | Meaning |
 | --- | --- | --- | --- |
 | `ChunkedOperatorAggregationHelper.reclaimStates` | `RECLAIM_STATES` | `true` | Whether states are reclaimed at all. `false` selects `none`. |
-| `ChunkedOperatorAggregationHelper.releaseBlocks` | `RELEASE_BLOCKS` | `true` | Whether to release blocks (`true`) or compact (`false`). |
 | `ChunkedOperatorAggregationHelper.collapseFreeFraction` | `COLLAPSE_FREE_FRACTION` | `1.0` | With released blocks, the fraction free at which a closed block is sparse and may be collapsed. 1 or more never collapses. |
 | `ChunkedOperatorAggregationHelper.blockShiftFraction` | `BLOCK_SHIFT_FRACTION` | `-1.0` | With released blocks, the fraction of the positions assigned that released blocks must reach before blocks shift down. 0 shifts for any released block; negative never shifts. |
-| `ChunkedOperatorAggregationHelper.creditReclaim` | `CREDIT_RECLAIM` | `false` | Whether to use the credit mode. It takes precedence over the release, collapse, and block shift settings. |
+| `ChunkedOperatorAggregationHelper.creditReclaim` | `CREDIT_RECLAIM` | `false` | Whether to use the credit mode. It takes precedence over the collapse and block shift settings. |
 
 The defaults select `releaseBlocks(1, -1)`: blocks are released as they empty and no state moves. A fraction must not
 be `NaN`; `releaseBlocks` rejects one.
@@ -154,7 +139,7 @@ A mode other than `none` applies only when all of the following hold. Otherwise 
 - **The hash table does not shrink.** Tombstones keep their keys until a rehash drops them. Growth is driven by the live
   states: when tombstones alone cross the load factor, the table rehashes at the same size.
 - **Key columns track previous values only when states can move.** The copied key columns start tracking previous
-  values for compaction, collapse, block shift, and credit, but not for release blocks without moves.
+  values for collapse, block shift, and credit, but not for release blocks without moves.
 - **The bulk shift of the credit mode has a latency cost.** The cycle that shifts moves every live state after the first
   released block.
 
@@ -177,13 +162,13 @@ default, and "Blocks with moves" is `releaseBlocks(0.75, 0)`, which collapses an
 
 Milliseconds per batch of 900 cycles; lower is better.
 
-| Workload | Groups return | Main | `none` | `compact` | Blocks | Blocks with moves | `credit` |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 911 ± 130 | 862 ± 130 | 865 ± 179 | 898 ± 87 | 876 ± 78 | 907 ± 58 |
-| Sliding window | No | 1382 ± 68 | 1354 ± 68 | 1053 ± 65 | 800 ± 39 | 861 ± 71 | 898 ± 66 |
-| Sliding window | Yes | 601 ± 23 | 617 ± 55 | 928 ± 105 | 693 ± 43 | 782 ± 60 | 772 ± 45 |
-| Random churn | No | 3137 ± 170 | 2512 ± 92 | 2750 ± 125 | 2392 ± 92 | 2389 ± 81 | 2440 ± 188 |
-| Random churn | Yes | 2044 ± 57 | 1608 ± 83 | 2915 ± 153 | 2355 ± 48 | 2344 ± 48 | 2201 ± 45 |
+| Workload | Groups return | Main | `none` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 911 ± 130 | 862 ± 130 | 898 ± 87 | 876 ± 78 | 907 ± 58 |
+| Sliding window | No | 1382 ± 68 | 1354 ± 68 | 800 ± 39 | 861 ± 71 | 898 ± 66 |
+| Sliding window | Yes | 601 ± 23 | 617 ± 55 | 693 ± 43 | 782 ± 60 | 772 ± 45 |
+| Random churn | No | 3137 ± 170 | 2512 ± 92 | 2392 ± 92 | 2389 ± 81 | 2440 ± 188 |
+| Random churn | Yes | 2044 ± 57 | 1608 ± 83 | 2355 ± 48 | 2344 ± 48 | 2201 ± 45 |
 
 ### Memory
 
@@ -191,38 +176,38 @@ The heap retained at the end of a batch, in megabytes, after a garbage collectio
 the benchmark's own data, so compare the modes with each other rather than reading the values as the aggregation's
 size.
 
-| Workload | Groups return | Main | `none` | `compact` | Blocks | Blocks with moves | `credit` |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 673 | 674 | 567 | 571 | 568 | 569 |
-| Sliding window | No | 670 | 682 | 481 | 175 | 180 | 191 |
-| Sliding window | Yes | 178 | 179 | 423 | 119 | 124 | 135 |
-| Random churn | No | 709 | 720 | 525 | 468 | 254 | 229 |
-| Random churn | Yes | 216 | 218 | 425 | 432 | 197 | 170 |
+| Workload | Groups return | Main | `none` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 673 | 674 | 571 | 568 | 569 |
+| Sliding window | No | 670 | 682 | 175 | 180 | 191 |
+| Sliding window | Yes | 178 | 179 | 119 | 124 | 135 |
+| Random churn | No | 709 | 720 | 468 | 254 | 229 |
+| Random churn | Yes | 216 | 218 | 432 | 197 | 170 |
 
 ### Output positions assigned
 
 The positions assigned at the end of a batch, in millions. Every workload creates 10 million groups over the batch,
 or cycles through 2 million keys when groups return.
 
-| Workload | Groups return | Main | `none` | `compact` | Blocks | Blocks with moves | `credit` |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 10.00 | 10.00 | 10.00 | 10.00 | 10.00 | 10.00 |
-| Sliding window | No | 10.00 | 10.00 | 10.00 | 10.00 | 2.96 | 1.49 |
-| Sliding window | Yes | 2.00 | 2.00 | 10.00 | 10.00 | 2.96 | 1.49 |
-| Random churn | No | 10.00 | 10.00 | 10.00 | 10.00 | 4.02 | 2.44 |
-| Random churn | Yes | 2.00 | 2.00 | 8.71 | 8.71 | 3.25 | 2.35 |
+| Workload | Groups return | Main | `none` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 10.00 | 10.00 | 10.00 | 10.00 | 10.00 |
+| Sliding window | No | 10.00 | 10.00 | 10.00 | 2.96 | 1.49 |
+| Sliding window | Yes | 2.00 | 2.00 | 10.00 | 2.96 | 1.49 |
+| Random churn | No | 10.00 | 10.00 | 10.00 | 4.02 | 2.44 |
+| Random churn | Yes | 2.00 | 2.00 | 8.71 | 3.25 | 2.35 |
 
 ### Longest cycle
 
 The longest single cycle of a batch, in milliseconds, the worst over five batches.
 
-| Workload | Groups return | Main | `none` | `compact` | Blocks | Blocks with moves | `credit` |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | — | 19.8 | 14.0 | 17.7 | 14.8 | 13.7 | 13.7 |
-| Sliding window | No | 25.8 | 20.1 | 26.3 | 6.2 | 10.0 | 10.4 |
-| Sliding window | Yes | 5.6 | 6.2 | 21.2 | 5.6 | 5.3 | 6.0 |
-| Random churn | No | 13.0 | 13.4 | 9.0 | 7.0 | 7.0 | 18.3 |
-| Random churn | Yes | 11.8 | 10.2 | 10.3 | 12.6 | 8.8 | 21.5 |
+| Workload | Groups return | Main | `none` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 19.8 | 14.0 | 14.8 | 13.7 | 13.7 |
+| Sliding window | No | 25.8 | 20.1 | 6.2 | 10.0 | 10.4 |
+| Sliding window | Yes | 5.6 | 6.2 | 5.6 | 5.3 | 6.0 |
+| Random churn | No | 13.0 | 13.4 | 7.0 | 7.0 | 18.3 |
+| Random churn | Yes | 11.8 | 10.2 | 12.6 | 8.8 | 21.5 |
 
 ### Findings
 
@@ -232,9 +217,6 @@ The longest single cycle of a batch, in milliseconds, the worst over five batche
   groups: 1.5 times them for the sliding window and 2.4 times for random churn, against 10 times without reclaiming.
 - When groups return, `none` is the fastest, since returning groups reuse their states. Blocks with moves and `credit`
   still use less heap than main, and `credit` assigns the fewest positions of the reclaiming modes.
-- Compaction is the weakest mode. It never lowers the positions assigned in these workloads, and it is the slowest
-  mode wherever groups return. It retains more heap than blocks with moves or `credit` in every workload with removals
-  — two to three times as much for the sliding window — and about as much as blocks alone for random churn.
 - Adding rows only costs nothing with any mode.
 - The credit mode's longest cycle is the highest for random churn, because its bulk shift moves every live state after
   the first released block in one cycle.
@@ -250,3 +232,63 @@ differences within the error bounds as noise.
 - `ChunkedOperatorAggregationHelper` (`engine/table/src/main/java/io/deephaven/engine/table/impl/by/ChunkedOperatorAggregationHelper.java`)
 - `IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones` (`engine/table/src/main/java/io/deephaven/engine/table/impl/by/IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.java`)
 - `AggregationIncrementalBenchmark` (`engine/benchmark/src/main/java/io/deephaven/benchmark/engine/AggregationIncrementalBenchmark.java`)
+
+## Rejected Alternatives
+
+These designs were implemented or measured and then rejected.
+
+### Compaction
+
+Compaction shifted the states after removed ones down into their positions, cell by cell where the positions did not
+line up with blocks, and gave the positions past the new end back. It released no blocks in the middle of the result.
+Each cycle could move no more live states than its input rows, and each cycle started again from the first free
+position.
+
+Compaction falls behind whenever removals are concentrated at the front. Keeping the result dense then means moving
+every live state each cycle, and the budget covers only the cycle's changes. The sequence below is a sliding window of
+6 live groups that removes the 2 oldest and adds 2 new groups each cycle, so each cycle may move 4 states:
+
+| Cycle | States moved | Positions after | Gap | Last row key |
+| --- | --- | --- | --- | --- |
+| start | — | 0–5 | 0 | 5 |
+| 1 | 4 | 0–3, 6–7 | 2 | 7 |
+| 2 | 4 | 0–3, 8–9 | 4 | 9 |
+| 3 | 4 | 0–3, 10–11 | 6 | 11 |
+| 4 | 4 | 0–3, 12–13 | 8 | 13 |
+| 5 | 4 | 0–3, 14–15 | 10 | 15 |
+
+Every cycle spends its budget moving the same front states, the gap after them grows by the churn, and the last row
+key grows exactly as it would without reclaiming. Compaction falls behind like this whenever the live groups exceed
+twice the churn, which is the common case of a large table with small changes.
+
+It also moved cells into holes one value at a time, where the other modes move cells only to free a whole block, and it
+needed a `clear` hook on every operator, a range `setNull` on the column sources, and free-position tracking in the
+state manager, none of which any other mode uses.
+
+Measured with the benchmark described in [Benchmark results](#benchmark-results), compaction was the weakest mode:
+
+| Workload | Groups return | Time, ms | Heap, MB | Positions, millions |
+| --- | --- | --- | --- | --- |
+| Add only | — | 865 ± 179 | 567 | 10.00 |
+| Sliding window | No | 1053 ± 65 | 481 | 10.00 |
+| Sliding window | Yes | 928 ± 105 | 423 | 10.00 |
+| Random churn | No | 2750 ± 125 | 525 | 10.00 |
+| Random churn | Yes | 2915 ± 153 | 425 | 8.71 |
+
+It never lowered the positions assigned, it was the slowest mode wherever groups return, and for the sliding window it
+retained 2.5 to 3.4 times the heap of blocks with moves or `credit`.
+
+### Combining the cheapest pairs first
+
+A variant of the credit mode combined the pairs of blocks with the fewest live states first, wherever they were, since
+every combination frees one block and the cheapest free the most blocks for the credit. It assigned the same number of
+positions as combining from the first block on, because at the benchmark's churn every pair that fits is combined
+either way. Over 30 measured batches of random churn its longest cycle had a median of 18.2 ms against 16.9 ms, and its
+batches took about 1% longer, from sorting the candidate pairs each cycle.
+
+### Assigning new states to released positions
+
+Assigning new states to released positions in the middle of the result would bound the positions assigned without
+moving any state. It would give new groups lower row keys than older ones, so the result would no longer list groups
+in the order they were first seen, even among groups that never empty. New states therefore always go after every
+existing state, and only moves that keep the states in order give positions back.

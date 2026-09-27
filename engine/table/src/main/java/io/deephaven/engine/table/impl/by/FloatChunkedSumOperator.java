@@ -390,12 +390,4 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter
         runningSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
         nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        super.clear(firstOutputPosition, lastOutputPosition);
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-        runningSum.setNull(firstOutputPosition, lastOutputPosition);
-        nonNullCount.clear(firstOutputPosition, lastOutputPosition);
-    }
 }

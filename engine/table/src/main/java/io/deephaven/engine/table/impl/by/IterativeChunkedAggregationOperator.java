@@ -367,15 +367,13 @@ public interface IterativeChunkedAggregationOperator {
     }
 
     /**
-     * Can this operator reclaim states (i.e. does it support shift and clear).
+     * Can this operator reclaim states (i.e. does it support shift and releaseBlocks).
      * 
      * @return true if this operator can reclaim states, false otherwise
      */
     boolean canReclaimStates();
 
     void shift(RowSetShiftData shiftData);
-
-    void clear(long firstOutputPosition, long lastOutputPosition);
 
     /**
      * Release the storage for every block of output positions that lies entirely within the given range. The positions

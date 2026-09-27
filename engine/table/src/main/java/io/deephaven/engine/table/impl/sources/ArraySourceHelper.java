@@ -7,10 +7,8 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
@@ -469,56 +467,6 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         if (lastKey >= maxIndex && firstBlock < allocatedBlocks) {
             // released through the end, so the capacity shrinks and ensureCapacity allocates these blocks again
             maxIndex = (firstBlock << LOG_BLOCK_SIZE) - 1;
-        }
-    }
-
-    /**
-     * Null the values for a range of row keys. Positions past the capacity, and blocks a move left unallocated, hold no
-     * values and are left alone.
-     *
-     * @param firstKey the first row key to null
-     * @param lastKey the last row key to null, inclusive
-     */
-    @Override
-    public void setNull(final long firstKey, final long lastKey) {
-        final long last = Math.min(lastKey, maxIndex);
-        if (last < firstKey) {
-            return;
-        }
-        final int chunkCapacity = (int) Math.min(BLOCK_SIZE - 1, last - firstKey) + 1;
-        try (final WritableChunk<Values> nullChunk = getChunkType().makeWritableChunk(chunkCapacity)) {
-            nullChunk.fillWithNullValue(0, chunkCapacity);
-            fillRange(firstKey, last, nullChunk);
-        }
-    }
-
-    /**
-     * Set every value in a range of row keys to one value, one block at a time. Positions past the capacity, and blocks
-     * a move left unallocated, hold no values and are left alone.
-     *
-     * @param firstKey the first row key to set
-     * @param lastKey the last row key to set, inclusive
-     * @param values a chunk holding the value at each of its first {@code min(BLOCK_SIZE, lastKey - firstKey + 1)}
-     *        positions; its size is changed
-     */
-    public final void fillRange(final long firstKey, final long lastKey, @NotNull final WritableChunk<Values> values) {
-        final long last = Math.min(lastKey, maxIndex);
-        if (last < firstKey) {
-            return;
-        }
-        final UArray[] blocks = getBlocks();
-        try (final FillFromContext fillFromContext =
-                makeFillFromContext((int) Math.min(BLOCK_SIZE - 1, last - firstKey) + 1)) {
-            for (long blockFirst = firstKey; blockFirst <= last;) {
-                final long blockLast = Math.min(last, blockFirst | INDEX_MASK);
-                if (blocks[(int) (blockFirst >> LOG_BLOCK_SIZE)] != null) {
-                    values.setSize((int) (blockLast - blockFirst + 1));
-                    try (final RowSequence slice = RowSequenceFactory.forRange(blockFirst, blockLast)) {
-                        fillFromChunk(fillFromContext, values, slice);
-                    }
-                }
-                blockFirst = blockLast + 1;
-            }
         }
     }
 

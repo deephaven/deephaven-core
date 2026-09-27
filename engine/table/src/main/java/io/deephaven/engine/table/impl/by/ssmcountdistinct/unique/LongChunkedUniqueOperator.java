@@ -471,11 +471,4 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         singletonCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
         ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        internalResult.setNull(firstOutputPosition, lastOutputPosition);
-        singletonCount.setNull(firstOutputPosition, lastOutputPosition);
-        ssms.clear(firstOutputPosition, lastOutputPosition);
-    }
 }

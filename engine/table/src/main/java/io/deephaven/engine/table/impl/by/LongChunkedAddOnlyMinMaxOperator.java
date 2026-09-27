@@ -210,9 +210,4 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-    }
 }

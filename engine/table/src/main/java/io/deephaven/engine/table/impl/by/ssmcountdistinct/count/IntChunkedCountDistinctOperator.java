@@ -368,10 +368,4 @@ public class IntChunkedCountDistinctOperator implements IterativeChunkedAggregat
         ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
         resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        ssms.clear(firstOutputPosition, lastOutputPosition);
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-    }
 }

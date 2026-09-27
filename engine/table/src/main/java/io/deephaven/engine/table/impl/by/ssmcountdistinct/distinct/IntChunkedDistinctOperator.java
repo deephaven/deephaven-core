@@ -363,9 +363,4 @@ public class IntChunkedDistinctOperator implements IterativeChunkedAggregationOp
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        internalResult.clear(firstOutputPosition, lastOutputPosition);
-    }
 }

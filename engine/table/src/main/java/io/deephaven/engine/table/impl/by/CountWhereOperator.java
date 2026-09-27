@@ -600,9 +600,4 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         resultColumnSource.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        resultColumnSource.setNull(firstOutputPosition, lastOutputPosition);
-    }
 }

@@ -577,9 +577,4 @@ public class ByteRollupDistinctOperator implements IterativeChunkedAggregationOp
     public void shift(RowSetShiftData shiftData) {
         throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
-    }
 }

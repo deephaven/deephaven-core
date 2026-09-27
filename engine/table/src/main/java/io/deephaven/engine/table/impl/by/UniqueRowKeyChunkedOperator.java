@@ -235,9 +235,4 @@ public class UniqueRowKeyChunkedOperator
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         rowKeys.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        rowKeys.setNull(firstOutputPosition, lastOutputPosition);
-    }
 }

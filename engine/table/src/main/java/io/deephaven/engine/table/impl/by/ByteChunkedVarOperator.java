@@ -205,12 +205,4 @@ class ByteChunkedVarOperator implements IterativeChunkedAggregationOperator {
         sum2Source.releaseBlocks(firstOutputPosition, lastOutputPosition);
         nonNullCounter.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-        sumSource.setNull(firstOutputPosition, lastOutputPosition);
-        sum2Source.setNull(firstOutputPosition, lastOutputPosition);
-        nonNullCounter.clear(firstOutputPosition, lastOutputPosition);
-    }
 }

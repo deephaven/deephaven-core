@@ -308,10 +308,4 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
         falseCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-        falseCount.setNull(firstOutputPosition, lastOutputPosition);
-    }
 }

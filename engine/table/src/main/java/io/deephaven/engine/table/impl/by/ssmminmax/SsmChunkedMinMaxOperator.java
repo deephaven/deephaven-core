@@ -505,11 +505,6 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
             resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
         }
-
-        @Override
-        public void clear(long firstOutputPosition, long lastOutputPosition) {
-            resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-        }
     }
 
     @Override
@@ -527,11 +522,5 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
         ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
-    }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        ssms.setNull(firstOutputPosition, lastOutputPosition);
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

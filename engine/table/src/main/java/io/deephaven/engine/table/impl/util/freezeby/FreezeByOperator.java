@@ -150,9 +150,4 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         resultSource.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        resultSource.setNull(firstOutputPosition, lastOutputPosition);
-    }
 }

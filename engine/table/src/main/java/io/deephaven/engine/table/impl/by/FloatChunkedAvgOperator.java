@@ -214,12 +214,4 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
         runningSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
         nonNullCounter.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        super.clear(firstOutputPosition, lastOutputPosition);
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-        runningSum.setNull(firstOutputPosition, lastOutputPosition);
-        nonNullCounter.clear(firstOutputPosition, lastOutputPosition);
-    }
 }

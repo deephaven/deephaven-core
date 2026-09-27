@@ -7,12 +7,9 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.mutable.MutableInt;
 
 /**
  * Interface for ChunkedOperatorAggregationHelper to process incremental updates.
@@ -43,22 +40,8 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
     boolean canReclaim();
 
     /**
-     * Reclaim any rows that are free in the result table (depending on thresholds)
-     *
-     * @param resultRowset
-     * @param downstream the downstream update, which may need to be changed to reflect the reclaimed rows
-     * @param outputPosition
-     * @param maxShiftedStates the maximum number of rows that can be shifted as part of reclamation
-     * @param operators
-     */
-    void reclaimFreedRows(TrackingWritableRowSet resultRowset, TableUpdateImpl downstream, MutableInt outputPosition,
-            long maxShiftedStates, IterativeChunkedAggregationOperator[] operators);
-
-    void removeStates(RowSet removed);
-
-    /**
-     * Remove the hash table entries for states that are empty at the end of an update cycle, without making their
-     * output positions available for reuse. Only supported when {@link #canReclaim()} is true.
+     * Remove the hash table entries for states that are empty at the end of an update cycle. Their output positions are
+     * not assigned to new states. Only supported when {@link #canReclaim()} is true.
      *
      * @param removed the output positions of the empty states
      */

@@ -98,41 +98,6 @@ public class TestArraySourceShift {
      * previous values still hold the values from before the shift.
      */
     @Test
-    public void testSetNullRange() {
-        for (final boolean trackPrev : new boolean[] {false, true}) {
-            final LongArraySource longs = new LongArraySource();
-            final ObjectArraySource<String> objects = new ObjectArraySource<>(String.class);
-            longs.ensureCapacity(SIZE);
-            objects.ensureCapacity(SIZE);
-            for (int ii = 0; ii < SIZE; ++ii) {
-                longs.set(ii, (long) ii);
-                objects.set(ii, Long.toString(ii));
-            }
-            final Runnable nullAndCheck = () -> {
-                longs.setNull(SHIFT_FIRST, SHIFT_LAST);
-                objects.setNull(SHIFT_FIRST, SHIFT_LAST);
-                for (long ii = 0; ii < SIZE; ++ii) {
-                    final boolean nulled = ii >= SHIFT_FIRST && ii <= SHIFT_LAST;
-                    assertEquals("ii=" + ii, nulled ? QueryConstants.NULL_LONG : ii, longs.getLong(ii));
-                    assertEquals("ii=" + ii, nulled ? null : Long.toString(ii), objects.get(ii));
-                    if (trackPrev) {
-                        assertEquals("ii=" + ii, ii, longs.getPrevLong(ii));
-                        assertEquals("ii=" + ii, Long.toString(ii), objects.getPrev(ii));
-                    }
-                }
-            };
-            if (trackPrev) {
-                longs.startTrackingPrevValues();
-                objects.startTrackingPrevValues();
-                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-                updateGraph.runWithinUnitTestCycle(nullAndCheck::run);
-            } else {
-                nullAndCheck.run();
-            }
-        }
-    }
-
-    @Test
     public void testWholeBlockShifts() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final int size = 8 * blockSize;
@@ -333,21 +298,6 @@ public class TestArraySourceShift {
     }
 
     @Test
-    public void testSetNullThroughUnboundedEnd() {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final LongArraySource longs = new LongArraySource();
-        longs.ensureCapacity(2L * blockSize);
-        for (int ii = 0; ii < 2 * blockSize; ++ii) {
-            longs.set(ii, (long) ii);
-        }
-        longs.setNull(5, Long.MAX_VALUE);
-        assertEquals(4L, longs.getLong(4));
-        assertEquals(QueryConstants.NULL_LONG, longs.getLong(5));
-        assertEquals(QueryConstants.NULL_LONG, longs.getLong(2L * blockSize - 1));
-        assertEquals(2L * blockSize, longs.getCapacity());
-    }
-
-    @Test
     public void testReleaseBlocksThroughEnd() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final LongArraySource longs = new LongArraySource();
@@ -454,41 +404,6 @@ public class TestArraySourceShift {
                 updateGraph.runWithinUnitTestCycle(shiftAndCheck::run);
             } else {
                 shiftAndCheck.run();
-            }
-        }
-    }
-
-    @Test
-    public void testSetNullAfterWholeBlockShift() {
-        // compaction clears the positions past the new end, which a whole-block shift may have left unallocated
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
-        builder.shiftRange(blockSize, 3L * blockSize - 1, -blockSize);
-        final RowSetShiftData shiftData = builder.build();
-        for (final boolean trackPrev : new boolean[] {false, true}) {
-            final LongArraySource longs = new LongArraySource();
-            longs.ensureCapacity(3L * blockSize);
-            for (int ii = 0; ii < 3 * blockSize; ++ii) {
-                longs.set(ii, (long) ii);
-            }
-            final Runnable shiftAndClear = () -> {
-                longs.shift(shiftData);
-                assertEquals(null, longs.getBlocks()[2]);
-                longs.setNull(2L * blockSize - 10, 3L * blockSize - 1);
-                assertEquals(null, longs.getBlocks()[2]);
-                for (long ii = 0; ii < 2L * blockSize - 10; ++ii) {
-                    assertEquals("ii=" + ii, ii + blockSize, longs.getLong(ii));
-                }
-                for (long ii = 2L * blockSize - 10; ii < 2L * blockSize; ++ii) {
-                    assertEquals("ii=" + ii, QueryConstants.NULL_LONG, longs.getLong(ii));
-                }
-            };
-            if (trackPrev) {
-                longs.startTrackingPrevValues();
-                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-                updateGraph.runWithinUnitTestCycle(shiftAndClear::run);
-            } else {
-                shiftAndClear.run();
             }
         }
     }

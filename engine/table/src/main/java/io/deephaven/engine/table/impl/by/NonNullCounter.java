@@ -5,9 +5,6 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 
 public final class NonNullCounter {
@@ -96,27 +93,5 @@ public final class NonNullCounter {
 
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
-    }
-
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        zeroRange(nonNullCount, firstOutputPosition, lastOutputPosition);
-    }
-
-    /**
-     * Set a range of a count source to zero. Blocks a move left unallocated hold no counts and are left alone.
-     *
-     * @param counts the count source
-     * @param firstKey the first row key to zero
-     * @param lastKey the last row key to zero, inclusive
-     */
-    static void zeroRange(final LongArraySource counts, final long firstKey, final long lastKey) {
-        if (lastKey < firstKey) {
-            return;
-        }
-        final int chunkCapacity = (int) Math.min(ArrayBackedColumnSource.BLOCK_SIZE, lastKey - firstKey + 1);
-        try (final WritableLongChunk<Values> zeros = WritableLongChunk.makeWritableChunk(chunkCapacity)) {
-            zeros.fillWithValue(0, chunkCapacity, 0L);
-            counts.fillRange(firstKey, lastKey, zeros);
-        }
     }
 }

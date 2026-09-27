@@ -75,9 +75,4 @@ abstract class GroupByResultExtractor implements IterativeChunkedAggregationOper
     public void shift(RowSetShiftData shiftData) {
         throw new UnsupportedOperationException("GroupBy result extractors cannot reclaim states.");
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        throw new UnsupportedOperationException("GroupBy result extractors cannot reclaim states.");
-    }
 }

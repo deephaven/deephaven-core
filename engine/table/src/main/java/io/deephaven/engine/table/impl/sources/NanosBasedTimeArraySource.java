@@ -222,15 +222,9 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractColum
     }
     // endregion
 
-
     @Override
     public void shift(RowSetShiftData shiftData) {
         nanoSource.shift(shiftData);
-    }
-
-    @Override
-    public void setNull(final long firstKey, final long lastKey) {
-        nanoSource.setNull(firstKey, lastKey);
     }
 
     @Override

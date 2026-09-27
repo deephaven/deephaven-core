@@ -569,10 +569,4 @@ public class SortedFirstOrLastChunkedOperator
         ssas.releaseBlocks(firstOutputPosition, lastOutputPosition);
         redirections.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        ssas.setNull(firstOutputPosition, lastOutputPosition);
-        redirections.setNull(firstOutputPosition, lastOutputPosition);
-    }
 }

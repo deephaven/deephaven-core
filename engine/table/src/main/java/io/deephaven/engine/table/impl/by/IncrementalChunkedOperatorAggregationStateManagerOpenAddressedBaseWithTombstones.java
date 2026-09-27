@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
@@ -25,8 +24,6 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.P
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
-import io.deephaven.util.mutable.MutableLong;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
@@ -108,8 +105,6 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     /** Output alternating column sources. */
     protected AlternatingColumnSource[] alternatingColumnSources;
-
-    protected final WritableRowSet freeOutputPositions = RowSetFactory.empty();
 
     /**
      * The mask for insertion into the main table (this tells our alternating column sources which of the two sources to
@@ -484,18 +479,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
-    public void removeStates(RowSet removed) {
+    public void tombstoneStates(final RowSet removed) {
         liveEntries -= removed.intSize();
         // A tombstone keeps its key: probes and builds stop at a tombstone whose key matches, which is only correct
         // if a deleted slot cannot be mistaken for a live key's slot. The keys are released when a rehash drops the
         // tombstone or a new state reuses the slot.
-        freeOutputPositions.insert(removed);
-        removed.forAllRowKeys(this::tombstone);
-    }
-
-    @Override
-    public void tombstoneStates(final RowSet removed) {
-        liveEntries -= removed.intSize();
         removed.forAllRowKeys(this::tombstone);
     }
 
@@ -560,108 +548,6 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             return;
         }
         alternateOutputPosition.set(slot, TOMBSTONE_STATE);
-    }
-
-    @Override
-    public void reclaimFreedRows(TrackingWritableRowSet resultRowset, TableUpdateImpl downstream,
-            MutableInt nextOutputPosition, long maxShiftedStates, IterativeChunkedAggregationOperator[] operators) {
-        if (freeOutputPositions.isEmpty()) {
-            resultRowset.remove(downstream.removed());
-            resultRowset.insert(downstream.added());
-            return;
-        }
-
-        // we need to clear out the results if we are freeing slots
-        final int originalLastSlot = nextOutputPosition.get() - 1;
-
-        // we can easily reclaim anything past the end of the table
-        final RowSet.SearchIterator revit = freeOutputPositions.reverseIterator();;
-        while (revit.hasNext()) {
-            final long lastFreePosition = revit.nextLong();
-            if (lastFreePosition + 1 == nextOutputPosition.get()) {
-                nextOutputPosition.set(Math.toIntExact(lastFreePosition));
-            } else {
-                break;
-            }
-        }
-        // no longer free, we'll just use them as necessary
-        freeOutputPositions.removeRange(nextOutputPosition.get(), Long.MAX_VALUE);
-
-        // move no more states than the input rows added, modified, and removed this cycle
-        final MutableLong shiftedValues = new MutableLong();
-        final MutableLong firstFreeKey = new MutableLong(freeOutputPositions.firstRowKey());
-
-        try (final WritableRowSet effectiveRowSet = resultRowset.copy()) {
-            // we need the added positions to be accounted for
-            effectiveRowSet.insert(downstream.added);
-            // and the free positions to be removed, so that we know the leftover ranges
-            effectiveRowSet.remove(freeOutputPositions);
-            // and we already removed things that were at the end
-            effectiveRowSet.removeRange(nextOutputPosition.get(), Long.MAX_VALUE);
-
-            final RowSet.RangeIterator rangeIterator = effectiveRowSet.rangeIterator();
-
-            final RowSetShiftData.Builder shiftDataBuilder = new RowSetShiftData.Builder();
-
-            final boolean completed = freeOutputPositions.forEachRowKeyRange((long start, long end) -> {
-                if (!rangeIterator.advance(end + 1)) {
-                    throw new IllegalStateException("Free output positions went past the end of the result rowset!");
-                }
-                final long firstToShift = rangeIterator.currentRangeStart();
-                long lastToShift = rangeIterator.currentRangeEnd();
-                // we've exhausted the effective rowset, so have nothing left to do on subsequent
-                final boolean exhaustedResultRowset = lastToShift == effectiveRowSet.lastRowKey();
-
-                final long permittedShift = maxShiftedStates - shiftedValues.get();
-                if (permittedShift <= 0) {
-                    return false;
-                }
-                if (lastToShift - firstToShift + 1 > permittedShift) {
-                    lastToShift = firstToShift + permittedShift - 1;
-                }
-
-                // we want to fill in the free destination
-                final long shiftDelta = firstFreeKey.get() - firstToShift;
-                shiftDataBuilder.shiftRange(firstToShift, lastToShift, shiftDelta);
-                shiftedValues.add(lastToShift - firstToShift + 1);
-                firstFreeKey.set(lastToShift + shiftDelta + 1);
-
-                return shiftedValues.get() < maxShiftedStates && !exhaustedResultRowset;
-            });
-
-            // we've figured out what we should shift, let's do it now
-            downstream.shifted = shiftDataBuilder.build();
-
-            shiftOutputPositions(downstream.shifted);
-
-            // shift the indices
-            resultRowset.remove(downstream.removed());
-            downstream.shifted().apply(resultRowset.writableCast());
-            downstream.shifted().apply(downstream.added.writableCast());
-            resultRowset.insert(downstream.added());
-            downstream.shifted().apply(downstream.modified.writableCast());
-
-
-            if (completed) {
-                Assert.assertion(resultRowset.isFlat(), "resultRowset.isFlat()");
-            }
-
-            // don't leave a useless gap at the end
-            nextOutputPosition.set(Math.toIntExact(resultRowset.lastRowKey() + 1));
-            // fix up the operators
-            for (int oi = 0; oi < operators.length; ++oi) {
-                operators[oi].shift(downstream.shifted);
-            }
-            if (nextOutputPosition.get() <= originalLastSlot) {
-                for (int oi = 0; oi < operators.length; ++oi) {
-                    operators[oi].clear(nextOutputPosition.get(), originalLastSlot);
-                }
-            }
-
-            // we've actually freed these positions now
-            final RowSet toFree = RowSetFactory.flat(resultRowset.lastRowKey() + 1).minus(resultRowset);
-            freeOutputPositions.resetTo(toFree);
-        }
     }
 
     @Override

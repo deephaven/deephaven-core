@@ -748,9 +748,4 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         rowSets.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        rowSets.setNull(firstOutputPosition, lastOutputPosition);
-    }
 }

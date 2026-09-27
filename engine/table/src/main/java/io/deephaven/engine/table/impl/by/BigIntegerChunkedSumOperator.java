@@ -239,10 +239,4 @@ public class BigIntegerChunkedSumOperator implements IterativeChunkedAggregation
         resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
         nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-        nonNullCount.clear(firstOutputPosition, lastOutputPosition);
-    }
 }

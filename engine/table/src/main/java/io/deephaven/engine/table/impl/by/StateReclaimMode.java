@@ -14,7 +14,6 @@ package io.deephaven.engine.table.impl.by;
  * it. Memory grows with every group ever seen.</li>
  * <li>{@link #releaseBlocks(double, double)}: the storage for a block of output positions is released once all of its
  * states are removed. States move only if the collapse or block shift is enabled.</li>
- * <li>{@link #compact()}: the states after removed ones are shifted down into their positions.</li>
  * <li>{@link #credit()}: blocks are released as they empty, and states move only as paid for by a credit that each
  * cycle's added and removed states earn: to combine two blocks into one, or to shift the blocks after released ones
  * down over them.</li>
@@ -27,28 +26,20 @@ package io.deephaven.engine.table.impl.by;
  */
 public final class StateReclaimMode {
 
-    private static final StateReclaimMode NONE = new StateReclaimMode(false, false, 1, -1);
-    private static final StateReclaimMode COMPACT = new StateReclaimMode(true, false, 1, -1);
-    private static final StateReclaimMode CREDIT = new StateReclaimMode(true, true, 1, 0, true);
+    private static final StateReclaimMode NONE = new StateReclaimMode(false, 1, -1, false);
+    private static final StateReclaimMode CREDIT = new StateReclaimMode(true, 1, 0, true);
 
     private final boolean reclaim;
-    private final boolean releaseBlocks;
     private final double collapseFreeFraction;
     private final double blockShiftFraction;
     private final boolean credit;
 
-    private StateReclaimMode(final boolean reclaim, final boolean releaseBlocks, final double collapseFreeFraction,
-            final double blockShiftFraction) {
-        this(reclaim, releaseBlocks, collapseFreeFraction, blockShiftFraction, false);
-    }
-
-    private StateReclaimMode(final boolean reclaim, final boolean releaseBlocks, final double collapseFreeFraction,
+    private StateReclaimMode(final boolean reclaim, final double collapseFreeFraction,
             final double blockShiftFraction, final boolean credit) {
-        this.credit = credit;
         this.reclaim = reclaim;
-        this.releaseBlocks = releaseBlocks;
         this.collapseFreeFraction = collapseFreeFraction;
         this.blockShiftFraction = blockShiftFraction;
+        this.credit = credit;
     }
 
     /**
@@ -56,13 +47,6 @@ public final class StateReclaimMode {
      */
     public static StateReclaimMode none() {
         return NONE;
-    }
-
-    /**
-     * @return the mode that shifts the states after removed ones down into their output positions
-     */
-    public static StateReclaimMode compact() {
-        return COMPACT;
     }
 
     /**
@@ -81,7 +65,7 @@ public final class StateReclaimMode {
             throw new IllegalArgumentException("State reclaim fractions must not be NaN: collapseFreeFraction="
                     + collapseFreeFraction + ", blockShiftFraction=" + blockShiftFraction);
         }
-        return new StateReclaimMode(true, true, collapseFreeFraction, blockShiftFraction);
+        return new StateReclaimMode(true, collapseFreeFraction, blockShiftFraction, false);
     }
 
     /**
@@ -93,9 +77,6 @@ public final class StateReclaimMode {
         }
         if (ChunkedOperatorAggregationHelper.CREDIT_RECLAIM) {
             return CREDIT;
-        }
-        if (!ChunkedOperatorAggregationHelper.RELEASE_BLOCKS) {
-            return COMPACT;
         }
         return releaseBlocks(ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION,
                 ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION);
@@ -128,21 +109,14 @@ public final class StateReclaimMode {
     }
 
     /**
-     * @return whether the storage for whole blocks of removed states is released, rather than the result compacted
-     */
-    public boolean releasesBlocks() {
-        return releaseBlocks;
-    }
-
-    /**
-     * @return the fraction free at which a block of output positions is collapsed, when releasing blocks
+     * @return the fraction free at which a block of output positions is collapsed
      */
     public double collapseFreeFraction() {
         return collapseFreeFraction;
     }
 
     /**
-     * @return the fraction of output positions released at which blocks are shifted down, when releasing blocks
+     * @return the fraction of output positions released at which blocks are shifted down
      */
     public double blockShiftFraction() {
         return blockShiftFraction;
@@ -152,16 +126,13 @@ public final class StateReclaimMode {
      * @return whether a state's output position may change while its group has rows
      */
     public boolean movesStates() {
-        return reclaim && (!releaseBlocks || collapseFreeFraction < 1 || blockShiftFraction >= 0);
+        return reclaim && (credit || collapseFreeFraction < 1 || blockShiftFraction >= 0);
     }
 
     @Override
     public String toString() {
         if (!reclaim) {
             return "StateReclaimMode{none}";
-        }
-        if (!releaseBlocks) {
-            return "StateReclaimMode{compact}";
         }
         if (credit) {
             return "StateReclaimMode{credit}";

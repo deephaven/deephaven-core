@@ -107,8 +107,4 @@ public class ShortSsmBackedSource extends AbstractColumnSource<ShortVector>
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         underlying.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    public void clear(long firstKey, long lastKey) {
-        underlying.setNull(firstKey, lastKey);
-    }
 }

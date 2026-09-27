@@ -166,11 +166,4 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
         runningSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
         nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
-        runningSum.setNull(firstOutputPosition, lastOutputPosition);
-        nonNullCount.clear(firstOutputPosition, lastOutputPosition);
-    }
 }

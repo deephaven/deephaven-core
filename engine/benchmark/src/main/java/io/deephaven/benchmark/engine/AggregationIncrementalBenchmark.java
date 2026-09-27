@@ -39,10 +39,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Measures update cycles of a keyed {@code sumBy} over a refreshing table under each way of reclaiming the states of
- * removed keys ({@code reclaim}): keeping every state, compacting the result, releasing whole blocks of empty states,
- * optionally collapsing runs of sparse blocks ({@code collapse}) or shifting blocks down ({@code blockShift}), or
- * releasing blocks and moving states by credit. Each iteration reports the positions assigned, the retained heap, and
- * its longest cycle.
+ * removed keys ({@code reclaim}): keeping every state, releasing whole blocks of empty states, optionally collapsing
+ * runs of sparse blocks ({@code collapse}) or shifting blocks down ({@code blockShift}), or releasing blocks and moving
+ * states by credit. Each iteration reports the positions assigned, the retained heap, and its longest cycle.
  *
  * <p>
  * Each measured iteration is a batch of {@link #CYCLES} update cycles against a freshly built aggregation, so the
@@ -79,7 +78,7 @@ public class AggregationIncrementalBenchmark {
     /** The number of update cycles in each measured batch. */
     static final int CYCLES = 900;
 
-    @Param({"none", "compact", "blocks", "credit"})
+    @Param({"none", "blocks", "credit"})
     private String reclaim;
 
     /** The fraction free at which blocks are collapsed when releasing blocks; 1 disables collapsing. */

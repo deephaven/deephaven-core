@@ -4516,18 +4516,13 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testReleaseBlocksSlidingWindow() {
-        final boolean originalRelease = ChunkedOperatorAggregationHelper.RELEASE_BLOCKS;
-        try (final SafeCloseable ignored =
-                () -> ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = originalRelease) {
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = true;
-            // the test checks that the first block is released, which a shift down would fill again
-            final double originalBlockShift = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = -1;
-            try {
-                doTestReleaseBlocksSlidingWindow();
-            } finally {
-                ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalBlockShift;
-            }
+        // the test checks that the first block is released, which a shift down would fill again
+        final double originalBlockShift = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
+        ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = -1;
+        try {
+            doTestReleaseBlocksSlidingWindow();
+        } finally {
+            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalBlockShift;
         }
     }
 
@@ -4677,12 +4672,9 @@ public class QueryTableAggregationTest {
     @Test
     public void testBlockShiftReusesOutputPositions() {
         final double originalFraction = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
-        final boolean originalRelease = ChunkedOperatorAggregationHelper.RELEASE_BLOCKS;
         try (final SafeCloseable ignored = () -> {
             ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalFraction;
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = originalRelease;
         }) {
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = true;
             for (final double fraction : new double[] {0, 0.5}) {
                 ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = fraction;
                 testBlockShiftReusesOutputPositions(fraction);
@@ -4728,51 +4720,6 @@ public class QueryTableAggregationTest {
         final long positionsWithoutShifting = window + (long) cycles * step;
         assertTrue("fraction=" + fraction + ", lastRowKey=" + aggregated.getRowSet().lastRowKey(),
                 aggregated.getRowSet().lastRowKey() < positionsWithoutShifting / 2);
-    }
-
-    @Test
-    public void testCompactSlidingWindow() {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        // A block-aligned step compacts by moving whole blocks, which leaves the blocks moved from unallocated until
-        // the storage past the new end is released; the other step compacts by moving values.
-        for (final int step : new int[] {blockSize, blockSize / 2 + 7}) {
-            doTestCompactSlidingWindow(step);
-        }
-    }
-
-    private void doTestCompactSlidingWindow(final int step) {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final int window = 3 * blockSize;
-        final int cycles = 20;
-        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
-                stringCol("Key", windowKeys(0, window)), longCol("x", windowValues(0, window)),
-                doubleCol("d", windowDoubles(0, window)));
-        final List<Aggregation> aggregations = List.of(AggSum("Sum=x", "DSum=d"), AggMin("Min=x"), AggAvg("Avg=x"),
-                AggVar("Var=d"), AggCountDistinct("CD=x"), AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x"),
-                AggCount("N"));
-        // the mode is chosen for this aggregation alone
-        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(aggregations), false, null,
-                ColumnName.from("Key"), StateReclaimMode.compact());
-
-        final TableUpdateValidator validated =
-                TableUpdateValidator.make("testCompactSlidingWindow-" + step, aggregated);
-        final FailureListener failureListener = new FailureListener();
-        validated.getResultTable().addUpdateListener(failureListener);
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (int cycle = 0; cycle < cycles; ++cycle) {
-            final long firstRemoved = (long) cycle * step;
-            final long firstAdded = firstRemoved + window;
-            updateGraph.runWithinUnitTestCycle(() -> {
-                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
-                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
-                removeRows(table, removed);
-                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, step)),
-                        longCol("x", windowValues(firstAdded, step)), doubleCol("d", windowDoubles(firstAdded, step)));
-                table.notifyListeners(added, removed, i());
-            });
-            assertTableEquals(table.aggBy(aggregations, "Key").sort("Key"), aggregated.sort("Key"));
-        }
     }
 
     @Test
@@ -4884,33 +4831,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    public void testCompactMovesNoMoreStatesThanInputRows() {
-        final QueryTable table = testRefreshingTable(RowSetFactory.flat(10).toTracking(),
-                stringCol("Key", windowKeys(0, 10)), longCol("x", windowValues(0, 10)));
-        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(List.of(AggSum("Sum=x"))),
-                false, null, ColumnName.from("Key"), StateReclaimMode.compact());
-        final SimpleListener listener = new SimpleListener(aggregated);
-        aggregated.addUpdateListener(listener);
-
-        // one removed row, so the compaction may move one state into the freed position
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.runWithinUnitTestCycle(() -> {
-            removeRows(table, i(0));
-            table.notifyListeners(i(), i(0), i());
-        });
-        assertEquals(1, listener.getCount());
-        final RowSetShiftData shifted = listener.getUpdate().shifted();
-        long moved = 0;
-        for (int ri = 0; ri < shifted.size(); ++ri) {
-            moved += shifted.getEndRange(ri) - shifted.getBeginRange(ri) + 1;
-        }
-        assertEquals(1, moved);
-        assertTableEquals(table.aggBy(AggSum("Sum=x"), "Key").sort("Key"), aggregated.sort("Key"));
-        aggregated.removeUpdateListener(listener);
-        listener.close();
-    }
-
-    @Test
     public void testCreditReclaim() {
         for (final boolean random : new boolean[] {false, true}) {
             doTestCreditReclaim(random);
@@ -5010,13 +4930,10 @@ public class QueryTableAggregationTest {
     public void testOperatorsShiftCellsAndWholeBlocks() {
         final double originalFraction = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
         final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
-        final boolean originalRelease = ChunkedOperatorAggregationHelper.RELEASE_BLOCKS;
         try (final SafeCloseable ignored = () -> {
             ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalFraction;
             ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse;
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = originalRelease;
         }) {
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = true;
             ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = 0;
             ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
             doTestOperatorsShiftCellsAndWholeBlocks();
@@ -5135,13 +5052,10 @@ public class QueryTableAggregationTest {
     public void testBlockShiftWithCollapseEveryCycle() {
         final double originalFraction = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
         final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
-        final boolean originalRelease = ChunkedOperatorAggregationHelper.RELEASE_BLOCKS;
         try (final SafeCloseable ignored = () -> {
             ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalFraction;
             ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse;
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = originalRelease;
         }) {
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = true;
             ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = 0;
             ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
             doTestBlockShiftWithCollapseEveryCycle();
@@ -5227,13 +5141,10 @@ public class QueryTableAggregationTest {
     public void testBlockShiftClosesMiddleHoleWithinInputBudget() {
         final double originalFraction = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
         final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
-        final boolean originalRelease = ChunkedOperatorAggregationHelper.RELEASE_BLOCKS;
         try (final SafeCloseable ignored = () -> {
             ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalFraction;
             ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse;
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = originalRelease;
         }) {
-            ChunkedOperatorAggregationHelper.RELEASE_BLOCKS = true;
             ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = 0;
             ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 1;
             doTestBlockShiftClosesMiddleHoleWithinInputBudget();

@@ -462,11 +462,6 @@ public class FirstOrLastChunkedOperator
         public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
             // nothing to do, our enclosing class has shifted our result
         }
-
-        @Override
-        public void clear(long firstOutputPosition, long lastOutputPosition) {
-            // nothing to do, our enclosing class has cleared our result
-        }
     }
 
     private class ComplementaryOperator implements IterativeChunkedAggregationOperator {
@@ -656,11 +651,6 @@ public class FirstOrLastChunkedOperator
         public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
             redirections.releaseBlocks(firstOutputPosition, lastOutputPosition);
         }
-
-        @Override
-        public void clear(long firstOutputPosition, long lastOutputPosition) {
-            redirections.setNull(firstOutputPosition, lastOutputPosition);
-        }
     }
 
     @Override
@@ -678,11 +668,5 @@ public class FirstOrLastChunkedOperator
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         redirections.releaseBlocks(firstOutputPosition, lastOutputPosition);
         rowSets.releaseBlocks(firstOutputPosition, lastOutputPosition);
-    }
-
-    @Override
-    public void clear(long firstOutputPosition, long lastOutputPosition) {
-        redirections.setNull(firstOutputPosition, lastOutputPosition);
-        rowSets.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

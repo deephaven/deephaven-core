@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class AggregationBuildBenchmark {
 
-    @Param({"none", "compact", "blocks"})
+    @Param({"none", "blocks"})
     private String reclaim;
 
     @Param({"10000000"})
