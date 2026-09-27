@@ -93,7 +93,10 @@ public abstract class HashMapK4V4 extends HashMapBase {
 
         // Unroll this loop for probe + 0, 2, 4, 6.
         // If the key matches, return the probe (indicating an exact match).
-        // If we hit an empty slot, return (-probe - 1), indicating empty slot reached at probe.
+        // If we hit an empty slot, return (-slot - 1) for the slot an insert should take: the earliest deleted slot
+        // passed in this bucket if there is one, else the empty slot itself — the same rule the loop below applies to
+        // every later bucket. The earlier keys are already in registers, so this costs a lookup that misses here
+        // nothing but a predictable compare or two; the hit path is untouched.
         long cKey0 = kvs[probe];
         if (cKey0 == target) {
             return probe;
@@ -106,21 +109,25 @@ public abstract class HashMapK4V4 extends HashMapBase {
             return probe + 2;
         }
         if (cKey1 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
-            return -(probe + 2) - 1;
+            return -(cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe : probe + 2) - 1;
         }
         long cKey2 = kvs[probe + 4];
         if (cKey2 == target) {
             return probe + 4;
         }
         if (cKey2 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
-            return -(probe + 4) - 1;
+            return -(cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe
+                    : cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe + 2 : probe + 4) - 1;
         }
         long cKey3 = kvs[probe + 6];
         if (cKey3 == target) {
             return probe + 6;
         }
         if (cKey3 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
-            return -(probe + 6) - 1;
+            return -(cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe
+                    : cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe + 2
+                            : cKey2 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe + 4 : probe + 6)
+                    - 1;
         }
 
         // These slots might also have been deleted slots. If so, we need to keep searching (until key found or the
