@@ -62,8 +62,14 @@ public final class StateReclaimMode {
      *        the blocks after released ones are shifted down over them, keeping the states in order, so that output
      *        positions are reused; zero shifts for any released block, and negative never shifts
      * @return the mode that releases the storage for blocks of output positions whose states have all been removed
+     * @throws IllegalArgumentException if either fraction is NaN
      */
     public static StateReclaimMode releaseBlocks(final double collapseFreeFraction, final double blockShiftFraction) {
+        // every comparison with NaN is false, so a NaN fraction would mean different things in different places
+        if (Double.isNaN(collapseFreeFraction) || Double.isNaN(blockShiftFraction)) {
+            throw new IllegalArgumentException("State reclaim fractions must not be NaN: collapseFreeFraction="
+                    + collapseFreeFraction + ", blockShiftFraction=" + blockShiftFraction);
+        }
         return new StateReclaimMode(true, true, collapseFreeFraction, blockShiftFraction);
     }
 
