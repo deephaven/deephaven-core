@@ -1018,14 +1018,4 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     public boolean unchunkedRowSet() {
         return true;
     }
-
-    @Override
-    public boolean canReclaimStates() {
-        return false;
-    }
-
-    @Override
-    public void shift(RowSetShiftData shiftData) {
-        throw new UnsupportedOperationException("The Partition operation cannot reclaim states.");
-    }
 }

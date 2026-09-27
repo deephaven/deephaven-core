@@ -8,7 +8,6 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -594,14 +593,4 @@ public class IntRollupCountDistinctOperator implements IterativeChunkedAggregati
     }
 
     // endregion
-
-    @Override
-    public boolean canReclaimStates() {
-        return false;
-    }
-
-    @Override
-    public void shift(RowSetShiftData shiftData) {
-        throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
-    }
 }

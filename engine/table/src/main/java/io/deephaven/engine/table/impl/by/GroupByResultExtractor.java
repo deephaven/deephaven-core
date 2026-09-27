@@ -11,7 +11,6 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 
 import java.util.Map;
@@ -64,15 +63,4 @@ abstract class GroupByResultExtractor implements IterativeChunkedAggregationOper
 
     @Override
     public void startTrackingPrevValues() {}
-
-    @Override
-    public boolean canReclaimStates() {
-        // the results are views of the group by operator's RowSets, which do not reclaim states
-        return false;
-    }
-
-    @Override
-    public void shift(RowSetShiftData shiftData) {
-        throw new UnsupportedOperationException("GroupBy result extractors cannot reclaim states.");
-    }
 }
