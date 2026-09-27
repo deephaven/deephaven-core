@@ -805,6 +805,64 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         oldValues.setSize(n);
     }
 
+    // The scalar cursor's back end. NullableLongLongMap.ScalarAccess binds to this map at reset and comes here for
+    // each key, so a genuinely scalar caller pays one volatile read, one tag dispatch and one kernel call per key —
+    // the part-1 scalar price — and none of the chunk machinery a chunked call amortizes over thousands of keys and a
+    // single key cannot: a one-element chunk's set and get, the per-shape loop, the size bookkeeping. Semantics are
+    // exactly those of the chunked operations on a one-element chunk, save one: a K4V4 read is always serial here,
+    // because a window over one key has nothing to overlap (the adaptive gate already says so, and a pinned WINDOW
+    // mode exists to price chunks, not keys).
+
+    long getScalar(final long key) {
+        final long[] localKvs = keysAndValues;
+        switch (shapeTagOf(localKvs)) {
+            case 1:
+                return K1V1Kernel.get(localKvs, reciprocalOf(localKvs), key, noEntryValue);
+            case 2:
+                return K2V2Kernel.get(localKvs, reciprocalOf(localKvs), key, noEntryValue);
+            case 4:
+                return K4V4Kernel.get(localKvs, reciprocalOf(localKvs), key, noEntryValue);
+            case SHAPE_TAG_EMPTY:
+                return noEntryValue;
+            default:
+                throw new IllegalStateException("Unexpected shape tag " + shapeTagOf(localKvs));
+        }
+    }
+
+    long putScalar(final long key, final long value, final boolean insertOnly) {
+        long[] kvs = keysAndValues;
+        if (isEmptyArray(kvs)) {
+            kvs = allocateKeysAndValuesArray();
+        }
+        final long numBucketsReciprocal = reciprocalOf(kvs);
+        switch (shapeTagOf(kvs)) {
+            case 1:
+                return K1V1Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
+            case 2:
+                return K2V2Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
+            case 4:
+                return K4V4Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
+            default:
+                throw new IllegalStateException("Unexpected shape tag " + shapeTagOf(kvs));
+        }
+    }
+
+    long removeScalar(final long key) {
+        final long[] localKvs = keysAndValues;
+        switch (shapeTagOf(localKvs)) {
+            case 1:
+                return K1V1Kernel.remove(this, localKvs, reciprocalOf(localKvs), key);
+            case 2:
+                return K2V2Kernel.remove(this, localKvs, reciprocalOf(localKvs), key);
+            case 4:
+                return K4V4Kernel.remove(this, localKvs, reciprocalOf(localKvs), key);
+            case SHAPE_TAG_EMPTY:
+                return noEntryValue;
+            default:
+                throw new IllegalStateException("Unexpected shape tag " + shapeTagOf(localKvs));
+        }
+    }
+
     @Override
     public int capacity() {
         return capacityImpl(keysAndValues);

@@ -43,6 +43,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * ({@link LongChunk}&lt;? extends {@link Any}&gt;). When the series began the map API was per-element and small "glue"
  * methods bridged the gap; the maps now speak chunks natively and the glue is gone. Every benchmark method, workload
  * generator, and parameter has stayed identical along the way, so numbers remain comparable across the whole series.
+ * ({@code scalarCursor}, added at part 19, defaults off; the matrix without it is the one every earlier part ran.)
  *
  * <p>
  * Workload notes:
@@ -172,11 +173,26 @@ public class NullableLongLongMapBench {
     @Param({"0.5"})
     public double loadFactor;
 
+    /**
+     * When true, every key goes through the map one at a time via {@link NullableLongLongMap.ScalarAccess}, the route a
+     * genuinely scalar caller takes (a redirection index's get(long), Sort's reverse lookup), instead of through
+     * chunks. Requires chunkSize=1, so the same keys are visited in the same order as the one-element-chunk lane it is
+     * compared against. Off by default, which leaves the series' existing parameter matrix untouched.
+     */
+    @Param({"false"})
+    public boolean scalarCursor;
+
     private LongChunk<Any>[] keyChunks;
     private LongChunk<Any>[] valueChunks;
     private LongChunk<Any>[] hitChunks;
     private LongChunk<Any>[] missChunks;
     private WritableLongChunk<Any> scratch;
+    // The same keys as the chunks, for the scalar-cursor lane.
+    private long[] keyArray;
+    private long[] valueArray;
+    private long[] hitArray;
+    private long[] missArray;
+    private final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(null);
     private NullableLongLongMap filledMap;
 
     /**
@@ -253,6 +269,13 @@ public class NullableLongLongMapBench {
         for (int ii = 0; ii < size; ++ii) {
             values[ii] = ii;
         }
+        if (scalarCursor && chunkSize != 1) {
+            throw new IllegalArgumentException("scalarCursor requires chunkSize=1");
+        }
+        keyArray = keys;
+        valueArray = values;
+        hitArray = hits;
+        missArray = misses;
         keyChunks = chunkify(keys, chunkSize);
         valueChunks = chunkify(values, chunkSize);
         hitChunks = chunkify(hits, chunkSize);
@@ -408,15 +431,31 @@ public class NullableLongLongMapBench {
     }
 
     private void fill(final NullableLongLongMap map) {
+        if (scalarCursor) {
+            cursor.reset(map);
+            for (int ii = 0; ii < keyArray.length; ++ii) {
+                cursor.put(keyArray[ii], valueArray[ii]);
+            }
+            return;
+        }
         for (int ci = 0; ci < keyChunks.length; ++ci) {
             map.put(keyChunks[ci], valueChunks[ci], scratch);
         }
     }
 
     /**
-     * The one shared call site for lookups, so getHit and getMiss measure identical code.
+     * The one shared call site for lookups, so getHit and getMiss measure identical code. {@code chunks} and
+     * {@code keys} hold the same keys in the same order; the scalar-cursor lane reads the array.
      */
-    private void sweep(final NullableLongLongMap map, final LongChunk<Any>[] chunks, final Blackhole bh) {
+    private void sweep(final NullableLongLongMap map, final LongChunk<Any>[] chunks, final long[] keys,
+            final Blackhole bh) {
+        if (scalarCursor) {
+            cursor.reset(map);
+            for (final long key : keys) {
+                bh.consume(cursor.get(key));
+            }
+            return;
+        }
         for (final LongChunk<Any> chunk : chunks) {
             map.get(chunk, scratch);
             bh.consume(scratch);
@@ -438,7 +477,7 @@ public class NullableLongLongMapBench {
      */
     @Benchmark
     public void getHit(final Blackhole bh) {
-        sweep(filledMap, hitChunks, bh);
+        sweep(filledMap, hitChunks, hitArray, bh);
     }
 
     /**
@@ -446,7 +485,7 @@ public class NullableLongLongMapBench {
      */
     @Benchmark
     public void getMiss(final Blackhole bh) {
-        sweep(filledMap, missChunks, bh);
+        sweep(filledMap, missChunks, missArray, bh);
     }
 
     /**
@@ -455,8 +494,15 @@ public class NullableLongLongMapBench {
     @Benchmark
     public void removeThenReinsert() {
         final NullableLongLongMap map = filledMap;
-        for (final LongChunk<Any> chunk : keyChunks) {
-            map.remove(chunk, scratch);
+        if (scalarCursor) {
+            cursor.reset(map);
+            for (final long key : keyArray) {
+                cursor.remove(key);
+            }
+        } else {
+            for (final LongChunk<Any> chunk : keyChunks) {
+                map.remove(chunk, scratch);
+            }
         }
         fill(map);
     }
