@@ -570,7 +570,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public void shift(RowSetShiftData shiftData) {
-        // NOGOOD, since everything is doubled
+        // output position p holds its SSMs at 2p and 2p + 1, so each range moves twice as far in the SSM source
         final RowSetShiftData.Builder expandedShiftBuilder = new RowSetShiftData.Builder();
         for (int si = 0; si < shiftData.size(); ++si) {
             final long begin = shiftData.getBeginRange(si);
