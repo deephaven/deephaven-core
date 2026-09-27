@@ -72,8 +72,9 @@ public class ChunkedOperatorAggregationHelper {
     public static boolean RECLAIM_STATES =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.reclaimStates", true);
     /**
-     * When releasing blocks, a block of output positions at least this fraction free is sparse, and runs of adjacent
-     * sparse blocks are collapsed so that their emptied blocks can be released. 1 or more disables collapsing.
+     * When releasing blocks, a block of output positions at least this fraction free is sparse, and runs of sparse
+     * blocks separated only by released blocks are collapsed so that their emptied blocks can be released. 1 or more
+     * disables collapsing.
      */
     public static double COLLAPSE_FREE_FRACTION = Configuration.getInstance()
             .getDoubleWithDefault("ChunkedOperatorAggregationHelper.collapseFreeFraction", 1.0);

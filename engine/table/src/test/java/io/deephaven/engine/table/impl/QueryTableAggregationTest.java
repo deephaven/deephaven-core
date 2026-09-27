@@ -4772,6 +4772,97 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testCollapseAcrossReleasedBlocks() {
+        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        try (final SafeCloseable ignored =
+                () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse) {
+            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
+            doTestCollapseAcrossReleasedBlocks();
+        }
+    }
+
+    /**
+     * Blocks 0 and 2 keep every eighth state and block 1 empties, so the two sparse blocks are separated by a released
+     * block. They still collapse: block 2's states follow block 0's in block 0, nothing moves onto block 1, and block 2
+     * is released.
+     */
+    private void doTestCollapseAcrossReleasedBlocks() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int initialSize = 4 * blockSize;
+
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
+                shiftTestColumns(0, initialSize));
+        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggMin("MinS=s"),
+                AggVar("Var=y"), AggLast("Last=x"), AggCountDistinct("CD=s"), AggMed("Med=x")), "Key");
+        final QueryTable aggregated = (QueryTable) aggregation.get();
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testCollapseAcrossReleasedBlocks", aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+        final SimpleListener listener = new SimpleListener(aggregated);
+        aggregated.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+        removedBuilder.addRange(blockSize, 2L * blockSize - 1);
+        for (long row = 0; row < 3L * blockSize; ++row) {
+            if (row % 8 != 0 && (row < blockSize || row >= 2L * blockSize)) {
+                removedBuilder.addKey(row);
+            }
+        }
+        final RowSet removed = removedBuilder.build();
+        final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
+        for (long row = 2L * blockSize; row < 3L * blockSize; row += 64) {
+            modifiedBuilder.addKey(row);
+        }
+        final RowSet modified = modifiedBuilder.build();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, removed);
+            addToTable(table, modified, shiftTestModifiedColumns(modified));
+            table.notifyListeners(i(), removed, modified);
+        });
+        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+
+        // block 0's survivors at 8k move to k, and block 2's at 2 * blockSize + 8j follow them at survivors + j
+        final int survivors = blockSize / 8;
+        final RowSetShiftData shifted = listener.getUpdate().shifted();
+        assertEquals(2 * survivors - 1, shifted.size());
+        for (int ri = 0; ri < survivors - 1; ++ri) {
+            assertEquals(8L * (ri + 1), shifted.getBeginRange(ri));
+            assertEquals(8L * (ri + 1), shifted.getEndRange(ri));
+            assertEquals(-7L * (ri + 1), shifted.getShiftDelta(ri));
+        }
+        for (int jj = 0; jj < survivors; ++jj) {
+            final int ri = survivors - 1 + jj;
+            final long source = 2L * blockSize + 8L * jj;
+            assertEquals(source, shifted.getBeginRange(ri));
+            assertEquals(source, shifted.getEndRange(ri));
+            assertEquals(survivors + jj - source, shifted.getShiftDelta(ri));
+        }
+        assertEquals(2 * survivors, aggregated.getRowSet().subSetByKeyRange(0, 3L * blockSize - 1).size());
+        assertEquals(2L * survivors - 1, aggregated.getRowSet().subSetByKeyRange(0, 3L * blockSize - 1).lastRowKey());
+
+        // the released blocks hold no storage once the cycle has completed
+        final ColumnSource<?> sums = aggregated.getColumnSource("Sum");
+        assertThrows(NullPointerException.class, () -> sums.getLong(blockSize));
+        assertThrows(NullPointerException.class, () -> sums.getLong(2L * blockSize));
+
+        // the moved states keep changing, and a removed key comes back as a new state
+        final RowSet secondModified = RowSetFactory.fromKeys(2L * blockSize + 8, 2L * blockSize + 64);
+        final RowSet secondAdded = RowSetFactory.fromRange(initialSize, initialSize);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, secondModified, shiftTestModifiedColumns(secondModified));
+            addToTable(table, secondAdded, stringCol("Key", "K1"), longCol("x", 7), doubleCol("y", 2.5),
+                    intCol("w", 3), stringCol("s", "S7"));
+            table.notifyListeners(secondAdded, i(), secondModified);
+        });
+        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+        assertEquals(initialSize, aggregated.getRowSet().lastRowKey());
+    }
+
+    @Test
     public void testOperatorsShiftCollapsedStates() {
         final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
         try (final SafeCloseable ignored =

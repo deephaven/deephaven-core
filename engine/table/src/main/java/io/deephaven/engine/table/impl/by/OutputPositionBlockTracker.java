@@ -25,19 +25,23 @@ import java.util.List;
  * <p>
  * Output positions are assigned in increasing order, and a state that is empty at the end of a cycle is removed, so
  * once every position in a block has been assigned and the block's live count reaches zero, no state will be assigned
- * to the block again. New states are only ever assigned after every existing one. Runs of sparse blocks can be
- * collapsed, moving their states down while keeping them in order, so that the blocks this empties are released too.
+ * to the block again. New states are only ever assigned after every existing one. Runs of sparse blocks, separated by
+ * nothing but released blocks, can be collapsed, moving their states down while keeping them in order, so that the
+ * blocks this empties are released too.
  * </p>
  */
 final class OutputPositionBlockTracker {
     private static final int BLOCK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
     private static final int LOG_BLOCK_SIZE = Integer.numberOfTrailingZeros(BLOCK_SIZE);
+    private static final long INDEX_MASK = BLOCK_SIZE - 1;
     private static final int RELEASED = -1;
 
     /** The number of live states in each block, or {@link #RELEASED}. */
     private int[] liveCounts = new int[0];
     /** Every position in the blocks below this one has been assigned. */
     private int closedBlocks;
+    /** The blocks whose live count is {@link #RELEASED}; a released block is never assigned or moved onto again. */
+    private final BitSet releasedBlocks = new BitSet();
     /** A closed block with at most this many live states is sparse, and may be collapsed. */
     private final int sparseLiveLimit;
     /** The closed blocks that hold live states, but no more than {@link #sparseLiveLimit}. */
@@ -48,8 +52,8 @@ final class OutputPositionBlockTracker {
     /**
      * @param initialStates the output positions of the live states after the initial build
      * @param nextOutputPosition the next output position that will be assigned
-     * @param collapseFreeFraction a closed block at least this fraction free is sparse, and runs of adjacent sparse
-     *        blocks are collapsed; 1 or more disables collapsing
+     * @param collapseFreeFraction a closed block at least this fraction free is sparse, and runs of sparse blocks
+     *        separated only by released blocks are collapsed; 1 or more disables collapsing
      */
     OutputPositionBlockTracker(final RowSet initialStates, final int nextOutputPosition,
             final double collapseFreeFraction) {
@@ -123,9 +127,10 @@ final class OutputPositionBlockTracker {
     }
 
     /**
-     * Collapse runs of adjacent sparse blocks: within each run, shift the live states toward the run's first position,
-     * preserving their order, so that the blocks at the end of the run are left empty and can be released. States
-     * outside the runs do not move.
+     * Collapse runs of sparse blocks: a run is two or more sparse blocks with nothing but released blocks between them.
+     * Within each run, the live states are packed into the run's sparse blocks, preserving their order, so that the
+     * sparse blocks at the end of the run are left empty and can be released. Nothing moves onto a released block,
+     * whose storage may already be gone or be released after this cycle. States outside the runs do not move.
      *
      * @param liveStates the output positions of the live states, after this cycle's additions and removals
      * @param maxShiftedStates the most states to move in this cycle
@@ -138,64 +143,67 @@ final class OutputPositionBlockTracker {
         if (sparseBlockCount < 2) {
             return Collapse.NONE;
         }
-        final List<long[]> collapsedRuns = new ArrayList<>();
+        final List<Run> collapsedRuns = new ArrayList<>();
         final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
         final RowSetBuilderSequential releasedBuilder = RowSetFactory.builderSequential();
         long remainingShifts = maxShiftedStates;
 
-        // find the runs of consecutive sparse blocks first, since collapsing a run changes the sparse set
+        // find the runs first, since collapsing a run changes the sparse set
+        final int[] sparse = sparseBlocks.stream().toArray();
         final List<int[]> runs = new ArrayList<>();
-        int runFirst = -1;
-        int runLast = -1;
-        for (int bi = sparseBlocks.nextSetBit(0); bi >= 0; bi = sparseBlocks.nextSetBit(bi + 1)) {
-            if (runFirst >= 0 && bi == runLast + 1) {
-                runLast = bi;
+        int runStart = 0;
+        for (int si = 1; si <= sparse.length; ++si) {
+            // the next sparse block continues the run if every block before it, back to the last one, is released
+            if (si < sparse.length && releasedBlocks.nextClearBit(sparse[si - 1] + 1) == sparse[si]) {
                 continue;
             }
-            if (runFirst >= 0) {
-                runs.add(new int[] {runFirst, runLast});
+            if (si - runStart >= 2) {
+                runs.add(Arrays.copyOfRange(sparse, runStart, si));
             }
-            runFirst = runLast = bi;
+            runStart = si;
         }
-        runs.add(new int[] {runFirst, runLast});
 
         for (final int[] run : runs) {
             // take as long a prefix of the run as the shift budget allows
             long runLive = 0;
-            int collapseLast = run[0] - 1;
-            for (int bi = run[0]; bi <= run[1] && runLive + liveCounts[bi] <= remainingShifts; ++bi) {
-                runLive += liveCounts[bi];
-                collapseLast = bi;
+            int prefix = 0;
+            while (prefix < run.length && runLive + liveCounts[run[prefix]] <= remainingShifts) {
+                runLive += liveCounts[run[prefix]];
+                ++prefix;
             }
-            final int blocks = collapseLast - run[0] + 1;
             final int blocksAfter = (int) ((runLive + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE);
-            if (blocks < 2 || blocksAfter >= blocks) {
+            if (prefix < 2 || blocksAfter >= prefix) {
                 continue;
             }
             remainingShifts -= runLive;
 
-            final long firstPosition = (long) run[0] << LOG_BLOCK_SIZE;
-            final long lastPosition = ((long) (collapseLast + 1) << LOG_BLOCK_SIZE) - 1;
-            collapsedRuns.add(new long[] {firstPosition, lastPosition, runLive});
-            try (final RowSequence runStates = liveStates.getRowSequenceByKeyRange(firstPosition, lastPosition)) {
-                final MutableLong destination = new MutableLong(firstPosition);
+            final Run collapsed = new Run(Arrays.copyOf(run, prefix), runLive);
+            collapsedRuns.add(collapsed);
+            try (final RowSequence runStates =
+                    liveStates.getRowSequenceByKeyRange(collapsed.firstPosition(), collapsed.lastPosition())) {
+                final MutableLong rank = new MutableLong(0);
                 runStates.forAllRowKeyRanges((first, last) -> {
-                    if (first != destination.get()) {
-                        shiftBuilder.shiftRange(first, last, destination.get() - first);
+                    long source = first;
+                    while (source <= last) {
+                        // the destinations are consecutive within a block, so a range splits only where one ends
+                        final long destination = collapsed.position(rank.get());
+                        final long count = Math.min(last - source + 1, BLOCK_SIZE - (rank.get() & INDEX_MASK));
+                        shiftBuilder.shiftRange(source, source + count - 1, destination - source);
+                        rank.add(count);
+                        source += count;
                     }
-                    destination.add(last - first + 1);
                 });
             }
 
-            for (int bi = run[0]; bi <= collapseLast; ++bi) {
-                clearSparse(bi);
-                final long blockLive =
-                        Math.max(0, Math.min(BLOCK_SIZE, runLive - ((long) (bi - run[0]) << LOG_BLOCK_SIZE)));
-                liveCounts[bi] = (int) blockLive;
+            for (int bi = 0; bi < prefix; ++bi) {
+                final int block = collapsed.blocks[bi];
+                clearSparse(block);
+                final long blockLive = Math.max(0, Math.min(BLOCK_SIZE, runLive - ((long) bi << LOG_BLOCK_SIZE)));
+                liveCounts[block] = (int) blockLive;
                 if (blockLive == 0) {
-                    release(bi, releasedBuilder);
+                    release(block, releasedBuilder);
                 } else {
-                    updateSparse(bi);
+                    updateSparse(block);
                 }
             }
             if (remainingShifts <= 0) {
@@ -210,18 +218,47 @@ final class OutputPositionBlockTracker {
     }
 
     /**
-     * The runs collapsed in one cycle. Within a run, the live states keep their order and are moved to occupy the run's
-     * first positions.
+     * A collapsed run: the sparse blocks its live states are packed into, in order, and the number of those states. The
+     * state of rank {@code r} among the run's live states moves to position {@code r} of the run's blocks taken
+     * together.
+     */
+    private static final class Run {
+        private final int[] blocks;
+        private final long live;
+
+        private Run(final int[] blocks, final long live) {
+            this.blocks = blocks;
+            this.live = live;
+        }
+
+        /** @return the first position of the run's first block */
+        long firstPosition() {
+            return (long) blocks[0] << LOG_BLOCK_SIZE;
+        }
+
+        /** @return the last position of the run's last block, past any released blocks before it */
+        long lastPosition() {
+            return ((long) (blocks[blocks.length - 1] + 1) << LOG_BLOCK_SIZE) - 1;
+        }
+
+        /** @return the position, after the collapse, of the live state of rank {@code rank} within the run */
+        long position(final long rank) {
+            return ((long) blocks[(int) (rank >> LOG_BLOCK_SIZE)] << LOG_BLOCK_SIZE) + (rank & INDEX_MASK);
+        }
+    }
+
+    /**
+     * The runs collapsed in one cycle. Within a run, the live states keep their order and are packed into the run's
+     * first blocks.
      */
     static final class Collapse {
         static final Collapse NONE = new Collapse(RowSetShiftData.EMPTY, List.of());
 
         /** The shifts that move the live states; nonempty exactly when some run was collapsed. */
         final RowSetShiftData shift;
-        /** For each collapsed run, in order: its first position, its last position, and its number of live states. */
-        private final List<long[]> runs;
+        private final List<Run> runs;
 
-        private Collapse(final RowSetShiftData shift, final List<long[]> runs) {
+        private Collapse(final RowSetShiftData shift, final List<Run> runs) {
             this.shift = shift;
             this.runs = runs;
         }
@@ -236,18 +273,17 @@ final class OutputPositionBlockTracker {
 
         /**
          * Apply the collapse to the live states and to row sets of states within them. Each run of the live states is
-         * replaced by one contiguous range, which is far cheaper than applying {@link #shift} range by range when the
-         * live states are scattered.
+         * replaced by one range per block it fills, which is far cheaper than applying {@link #shift} range by range
+         * when the live states are scattered.
          *
          * @param liveStates the output positions of the live states, before the collapse
          * @param subsets row sets of positions that are all in {@code liveStates}, such as the states added or modified
          *        this cycle
          */
         void apply(final WritableRowSet liveStates, final WritableRowSet... subsets) {
-            for (final long[] run : runs) {
-                final long first = run[0];
-                final long last = run[1];
-                // a state's new position is the run's first position plus its rank among the run's live states
+            for (final Run run : runs) {
+                final long first = run.firstPosition();
+                final long last = run.lastPosition();
                 final long firstRank = rankOf(liveStates, first);
                 for (final WritableRowSet subset : subsets) {
                     final RowSetBuilderSequential moved = RowSetFactory.builderSequential();
@@ -255,7 +291,7 @@ final class OutputPositionBlockTracker {
                         if (moving.isEmpty()) {
                             continue;
                         }
-                        moving.forAllRowKeys(key -> moved.appendKey(first + liveStates.find(key) - firstRank));
+                        moving.forAllRowKeys(key -> moved.appendKey(run.position(liveStates.find(key) - firstRank)));
                     }
                     subset.removeRange(first, last);
                     try (final RowSet movedKeys = moved.build()) {
@@ -263,8 +299,9 @@ final class OutputPositionBlockTracker {
                     }
                 }
                 liveStates.removeRange(first, last);
-                if (run[2] > 0) {
-                    liveStates.insertRange(first, first + run[2] - 1);
+                for (long rank = 0; rank < run.live; rank += BLOCK_SIZE) {
+                    final long blockFirst = run.position(rank);
+                    liveStates.insertRange(blockFirst, blockFirst + Math.min(BLOCK_SIZE, run.live - rank) - 1);
                 }
             }
         }
@@ -273,6 +310,7 @@ final class OutputPositionBlockTracker {
     private void release(final int bi, final RowSetBuilderSequential builder) {
         liveCounts[bi] = RELEASED;
         clearSparse(bi);
+        releasedBlocks.set(bi);
         final long first = (long) bi << LOG_BLOCK_SIZE;
         builder.appendRange(first, first + BLOCK_SIZE - 1);
     }
