@@ -4884,6 +4884,33 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testCompactMovesNoMoreStatesThanInputRows() {
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(10).toTracking(),
+                stringCol("Key", windowKeys(0, 10)), longCol("x", windowValues(0, 10)));
+        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(List.of(AggSum("Sum=x"))),
+                false, null, ColumnName.from("Key"), StateReclaimMode.compact());
+        final SimpleListener listener = new SimpleListener(aggregated);
+        aggregated.addUpdateListener(listener);
+
+        // one removed row, so the compaction may move one state into the freed position
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0));
+            table.notifyListeners(i(), i(0), i());
+        });
+        assertEquals(1, listener.getCount());
+        final RowSetShiftData shifted = listener.getUpdate().shifted();
+        long moved = 0;
+        for (int ri = 0; ri < shifted.size(); ++ri) {
+            moved += shifted.getEndRange(ri) - shifted.getBeginRange(ri) + 1;
+        }
+        assertEquals(1, moved);
+        assertTableEquals(table.aggBy(AggSum("Sum=x"), "Key").sort("Key"), aggregated.sort("Key"));
+        aggregated.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    @Test
     public void testBlockShiftReleasesBlockBelowResumedSweep() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final int size = 10 * blockSize;

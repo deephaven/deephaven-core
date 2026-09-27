@@ -601,8 +601,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
                 final boolean exhaustedResultRowset = lastToShift == effectiveRowSet.lastRowKey();
 
                 final long permittedShift = maxShiftedStates - shiftedValues.get();
-                if (lastToShift - firstToShift > permittedShift) {
-                    lastToShift = firstToShift + permittedShift;
+                if (permittedShift <= 0) {
+                    return false;
+                }
+                if (lastToShift - firstToShift + 1 > permittedShift) {
+                    lastToShift = firstToShift + permittedShift - 1;
                 }
 
                 // we want to fill in the free destination
