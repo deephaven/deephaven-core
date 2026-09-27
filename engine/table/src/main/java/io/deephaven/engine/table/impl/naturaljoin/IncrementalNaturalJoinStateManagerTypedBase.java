@@ -284,7 +284,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     /**
      * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
-     * @param rehashCredits the number of entries this operation has rehashed (input/output)
+     * @param rehashCredits the rehash work this operation has done, in entries' worth of alternate slots examined
+     *        ({@link #REHASH_SLOTS_PER_ENTRY} slots each), which pays for building as many entries (input/output)
      * @param nextChunkSize the size of the chunk we are processing
      * @return true if a front migration is required
      */
@@ -434,8 +435,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     abstract protected void migrateFront(NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     /**
-     * @param numEntriesToRehash number of entries to rehash into main table
-     * @return actual number of entries rehashed
+     * Migrate entries from the alternate table, examining {@link #REHASH_SLOTS_PER_ENTRY} alternate slots, whether they
+     * hold a live entry, a tombstone or nothing, for each entry's worth of work requested.
+     *
+     * @param numEntriesToRehash the entries' worth of work to do, which pays for building as many entries
+     * @return the entries' worth of work done: the slots examined divided by {@link #REHASH_SLOTS_PER_ENTRY}, or
+     *         {@code numEntriesToRehash} if the alternate table was drained
      */
     protected abstract int rehashInternalPartial(int numEntriesToRehash,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
