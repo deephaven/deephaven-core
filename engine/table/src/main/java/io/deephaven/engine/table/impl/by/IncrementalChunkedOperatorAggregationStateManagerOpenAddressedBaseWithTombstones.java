@@ -323,6 +323,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         REHASH_COUNT.increment();
         setupNewAlternate(oldTableSize);
         adviseNewAlternate();
+        if (rehashPointer == 0) {
+            // the old table held no entries, not even tombstones, so there is nothing to migrate and it can go now
+            clearAlternate();
+            return false;
+        }
 
         return true;
     }
