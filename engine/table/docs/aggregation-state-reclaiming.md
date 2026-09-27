@@ -50,8 +50,8 @@ reuses it. This is how aggregations behaved before reclaiming existed. It uses t
 
 ### Release blocks
 
-`StateReclaimMode.releaseBlocks(collapseFreeFraction)` frees the storage of each block once every state in it has been
-removed. With the default parameter, no state ever moves:
+`StateReclaimMode.releaseBlocks(collapseFreeFraction)` frees the storage of each closed block once every state in it
+has been removed. With the default parameter, no state ever moves:
 
 - The result columns' storage tracks the groups that have rows, but only at block granularity. A block that holds even
   one long-lived state is never released, so random churn with some long-lived groups releases few blocks. The hash
@@ -60,9 +60,10 @@ removed. With the default parameter, no state ever moves:
 - Output positions are never given back, so the positions assigned grow with every group ever created.
 
 The **collapse** (`collapseFreeFraction` below 1) releases blocks that random churn would otherwise leave nearly empty.
-A closed block at least this fraction free is sparse. Runs of adjacent sparse blocks are collapsed: their live states
-move to the start of the run, keeping their order, and the blocks this empties are released. A run collapses only if
-that frees at least one block. Each cycle moves no more live states than its input rows added, modified, and removed;
+A closed block at least this fraction free is sparse. A run is two or more sparse blocks with nothing but released
+blocks between them. A run is collapsed by packing its live states into its sparse blocks, first to last, keeping their
+order, and releasing the sparse blocks this empties. Nothing moves onto a released block. A run collapses only if that
+frees at least one block. Each cycle moves no more live states than its input rows added, modified, and removed;
 a run that does not fit waits for a later cycle. The collapse frees memory but does not give output positions back.
 
 ## Parameters
