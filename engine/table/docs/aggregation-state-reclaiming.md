@@ -78,6 +78,9 @@ removals are concentrated at the front — a sliding window, for example — kee
 live state each cycle. Once the live states exceed twice the cycle's changes, the budget cannot keep up: compaction
 moves the same front states every cycle, and the positions assigned grow as fast as without reclaiming.
 
+In the benchmarks, compaction is slower and retains more memory than the modes that release blocks — see
+[Benchmark results](#benchmark-results).
+
 ### Credit
 
 `StateReclaimMode.credit()` releases blocks as they empty and moves states only when a move frees a whole block. Moves
@@ -158,27 +161,87 @@ A mode other than `none` applies only when all of the following hold. Otherwise 
 ## Benchmark results
 
 `AggregationIncrementalBenchmark` in `engine/benchmark` measures batches of 900 update cycles of a keyed `sumBy` over a
-table of 1,000,000 rows, with 10,000 rows added and removed each cycle. The table compares the credit mode and `none`
-against main, which predates reclaiming, on one row per group. Times are milliseconds per batch; lower is better.
+table of 1,000,000 rows, one row per group, with 10,000 rows added and removed each cycle:
 
-| Workload | Groups return | Main | `none` | `credit` | Positions assigned, main / `credit` |
-| --- | --- | --- | --- | --- | --- |
-| Add only | — | 911 ± 130 | 950 ± 85 | 868 ± 128 | 10.0M / 10.0M |
-| Sliding window | No | 1382 ± 68 | 1338 ± 65 | 913 ± 42 | 10.0M / 1.49M |
-| Sliding window | Yes | 601 ± 23 | 643 ± 63 | 785 ± 60 | 2.0M / 1.49M |
-| Random churn | No | 3137 ± 170 | 2558 ± 73 | 2268 ± 28 | 10.0M / 2.44M |
-| Random churn | Yes | 2044 ± 57 | 1526 ± 125 | 2227 ± 188 | 2.0M / 2.35M |
+- **Add only:** rows are only added, each with a new group.
+- **Sliding window:** each cycle removes the oldest rows, so groups empty in the order they were created.
+- **Random churn:** each cycle removes rows chosen at random, so blocks thin out unevenly.
 
-- When groups do not return, the credit mode is the fastest and keeps the positions assigned bounded. Its retained
-  heap is about a third of main's: 190 MB against 670 MB for the sliding window, and 228 MB against 709 MB for random
-  churn.
-- When groups return, `none` is the fastest, because returning groups reuse their states.
-- With 100 rows per group, all three are within the measurement noise of each other.
-- The credit mode's longest cycle is about 17 to 19 ms for random churn, against 9 to 13 ms without it, because of the
-  bulk shift.
+A group "returns" when its key comes back after its state has been removed; with returning groups, the keys cycle
+through a space twice the size of the table.
 
-The numbers come from one machine and one JVM fork per configuration; treat differences within the error bounds as
-noise.
+The columns are main, which predates reclaiming, and this branch's modes. "Blocks" is `releaseBlocks(1, -1)`, the
+default, and "Blocks with moves" is `releaseBlocks(0.75, 0)`, which collapses and shifts blocks.
+
+### Time
+
+Milliseconds per batch of 900 cycles; lower is better.
+
+| Workload | Groups return | Main | `none` | `compact` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 911 ± 130 | 862 ± 130 | 865 ± 179 | 898 ± 87 | 876 ± 78 | 907 ± 58 |
+| Sliding window | No | 1382 ± 68 | 1354 ± 68 | 1053 ± 65 | 800 ± 39 | 861 ± 71 | 898 ± 66 |
+| Sliding window | Yes | 601 ± 23 | 617 ± 55 | 928 ± 105 | 693 ± 43 | 782 ± 60 | 772 ± 45 |
+| Random churn | No | 3137 ± 170 | 2512 ± 92 | 2750 ± 125 | 2392 ± 92 | 2389 ± 81 | 2440 ± 188 |
+| Random churn | Yes | 2044 ± 57 | 1608 ± 83 | 2915 ± 153 | 2355 ± 48 | 2344 ± 48 | 2201 ± 45 |
+
+### Memory
+
+The heap retained at the end of a batch, in megabytes, after a garbage collection. It includes the source table and
+the benchmark's own data, so compare the modes with each other rather than reading the values as the aggregation's
+size.
+
+| Workload | Groups return | Main | `none` | `compact` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 673 | 674 | 567 | 571 | 568 | 569 |
+| Sliding window | No | 670 | 682 | 481 | 175 | 180 | 191 |
+| Sliding window | Yes | 178 | 179 | 423 | 119 | 124 | 135 |
+| Random churn | No | 709 | 720 | 525 | 468 | 254 | 229 |
+| Random churn | Yes | 216 | 218 | 425 | 432 | 197 | 170 |
+
+### Output positions assigned
+
+The positions assigned at the end of a batch, in millions. Every workload creates 10 million groups over the batch,
+or cycles through 2 million keys when groups return.
+
+| Workload | Groups return | Main | `none` | `compact` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 10.00 | 10.00 | 10.00 | 10.00 | 10.00 | 10.00 |
+| Sliding window | No | 10.00 | 10.00 | 10.00 | 10.00 | 2.96 | 1.49 |
+| Sliding window | Yes | 2.00 | 2.00 | 10.00 | 10.00 | 2.96 | 1.49 |
+| Random churn | No | 10.00 | 10.00 | 10.00 | 10.00 | 4.02 | 2.44 |
+| Random churn | Yes | 2.00 | 2.00 | 8.71 | 8.71 | 3.25 | 2.35 |
+
+### Longest cycle
+
+The longest single cycle of a batch, in milliseconds, the worst over five batches.
+
+| Workload | Groups return | Main | `none` | `compact` | Blocks | Blocks with moves | `credit` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 19.8 | 14.0 | 17.7 | 14.8 | 13.7 | 13.7 |
+| Sliding window | No | 25.8 | 20.1 | 26.3 | 6.2 | 10.0 | 10.4 |
+| Sliding window | Yes | 5.6 | 6.2 | 21.2 | 5.6 | 5.3 | 6.0 |
+| Random churn | No | 13.0 | 13.4 | 9.0 | 7.0 | 7.0 | 18.3 |
+| Random churn | Yes | 11.8 | 10.2 | 10.3 | 12.6 | 8.8 | 21.5 |
+
+### Findings
+
+- When groups do not return, every mode that releases blocks runs faster than main and retains less heap: about a
+  quarter of main's for the sliding window, and for random churn a third less with blocks alone, or about two thirds
+  less with blocks with moves or `credit`. The credit mode also keeps the positions assigned closest to the live
+  groups: 1.5 times them for the sliding window and 2.4 times for random churn, against 10 times without reclaiming.
+- When groups return, `none` is the fastest, since returning groups reuse their states. Blocks with moves and `credit`
+  still use less heap than main, and `credit` assigns the fewest positions of the reclaiming modes.
+- Compaction is the weakest mode. It never lowers the positions assigned in these workloads, and it is the slowest
+  mode wherever groups return. It retains more heap than blocks with moves or `credit` in every workload with removals
+  — two to three times as much for the sliding window — and about as much as blocks alone for random churn.
+- Adding rows only costs nothing with any mode.
+- The credit mode's longest cycle is the highest for random churn, because its bulk shift moves every live state after
+  the first released block in one cycle.
+- With 100 rows per group, earlier runs placed every mode within the measurement noise of each other.
+
+The numbers come from one machine and one JVM fork per configuration, with five measured batches each; treat
+differences within the error bounds as noise.
 
 ## Related documentation
 
