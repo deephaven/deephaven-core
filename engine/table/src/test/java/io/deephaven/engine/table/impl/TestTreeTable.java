@@ -95,8 +95,8 @@ public class TestTreeTable extends RefreshingTableTestCase {
     public void testFilterAfterSourceRowLookupStatesRemoved() {
         // The source row lookup is an aggregation by identifier. The filter reads a node's previous source row at the
         // row it looks up now, so the lookup's states must stay put even when aggregations move states.
-        final double originalBlockShift = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
-        ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = 0;
+        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
         try {
             final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
             final int size = 2 * blockSize + 1;
@@ -125,7 +125,7 @@ public class TestTreeTable extends RefreshingTableTestCase {
             });
             assertEquals(0, filteredSource.size());
         } finally {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalBlockShift;
+            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse;
         }
     }
 

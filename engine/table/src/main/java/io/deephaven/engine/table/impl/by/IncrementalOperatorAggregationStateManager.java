@@ -69,16 +69,4 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
     default void shiftOutputPositions(RowSetShiftData shiftData) {
         throw new UnsupportedOperationException();
     }
-
-    /**
-     * Move states down by whole blocks, updating the hash table for the live states. Unlike
-     * {@link #shiftOutputPositions}, the ranges may cover positions that hold no state; only the live states in them
-     * are visited. Only supported when {@link #canReclaim()} is true.
-     *
-     * @param liveStates the output positions of the live states, before the move
-     * @param shiftData the moves, which keep the states in order and only move toward lower positions
-     */
-    default void shiftAllOutputPositions(RowSet liveStates, RowSetShiftData shiftData) {
-        throw new UnsupportedOperationException();
-    }
 }

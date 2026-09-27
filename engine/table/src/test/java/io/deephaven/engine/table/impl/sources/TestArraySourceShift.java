@@ -98,7 +98,7 @@ public class TestArraySourceShift {
      * previous values still hold the values from before the shift.
      */
     @Test
-    public void testWholeBlockShifts() {
+    public void testBlockAlignedShifts() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final int size = 8 * blockSize;
         // whole blocks plus a partial block at the end of the range
@@ -155,24 +155,6 @@ public class TestArraySourceShift {
                                 assertEquals(description + ", ii=" + ii, ii, longs.getLong(ii));
                             }
                         }
-                        // Vacated positions hold no values: a block vacated entirely is left unallocated, and the
-                        // rest of a partly vacated block can be written.
-                        for (long ii = first; ii <= last; ++ii) {
-                            if (ii >= first + delta && ii <= last + delta) {
-                                continue;
-                            }
-                            final long blockFirst = ii & ~(long) (blockSize - 1);
-                            final long blockLast = blockFirst + blockSize - 1;
-                            final boolean blockVacated = blockFirst >= first && blockLast <= last
-                                    && (blockLast < first + delta || blockFirst > last + delta);
-                            final long key = ii;
-                            if (blockVacated) {
-                                assertThrows(NullPointerException.class, () -> longs.getLong(key));
-                            } else {
-                                longs.set(key, 7L);
-                                objects.set(key, "seven");
-                            }
-                        }
                     };
                     if (trackPrev) {
                         longs.startTrackingPrevValues();
@@ -185,74 +167,6 @@ public class TestArraySourceShift {
                     }
                 }
             }
-        }
-    }
-
-    @Test
-    public void testWholeBlockShiftFromReleasedBlock() {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        for (final boolean trackPrev : new boolean[] {false, true}) {
-            final LongArraySource longs = new LongArraySource();
-            longs.ensureCapacity(4L * blockSize);
-            for (int ii = 0; ii < 4 * blockSize; ++ii) {
-                longs.set(ii, (long) ii);
-            }
-            // the first block is released, then the rest of the source moves down over it
-            longs.releaseBlocks(0, blockSize - 1);
-            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
-            builder.shiftRange(blockSize, 4L * blockSize - 1, -blockSize);
-            final RowSetShiftData shiftData = builder.build();
-            final Runnable shiftAndCheck = () -> {
-                longs.shift(shiftData);
-                for (long ii = 0; ii < 3L * blockSize; ++ii) {
-                    assertEquals("ii=" + ii, ii + blockSize, longs.getLong(ii));
-                }
-            };
-            if (trackPrev) {
-                longs.startTrackingPrevValues();
-                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-                updateGraph.runWithinUnitTestCycle(shiftAndCheck::run);
-            } else {
-                shiftAndCheck.run();
-            }
-            assertVacatedLastBlockReallocates(longs);
-        }
-    }
-
-    @Test
-    public void testWholeBlockShiftVacatesReleasedBlock() {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        for (final boolean trackPrev : new boolean[] {false, true}) {
-            final LongArraySource longs = new LongArraySource();
-            longs.ensureCapacity(4L * blockSize);
-            for (int ii = 0; ii < 4 * blockSize; ++ii) {
-                longs.set(ii, (long) ii);
-            }
-            // the last block is released as well as the first, so the block the move vacates holds no array
-            longs.releaseBlocks(0, blockSize - 1);
-            longs.releaseBlocks(3L * blockSize, 4L * blockSize - 1);
-            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
-            builder.shiftRange(blockSize, 4L * blockSize - 1, -blockSize);
-            final RowSetShiftData shiftData = builder.build();
-            final Runnable shiftAndCheck = () -> {
-                longs.shift(shiftData);
-                for (long ii = 0; ii < 2L * blockSize; ++ii) {
-                    assertEquals("ii=" + ii, ii + blockSize, longs.getLong(ii));
-                }
-            };
-            if (trackPrev) {
-                longs.startTrackingPrevValues();
-                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-                updateGraph.runWithinUnitTestCycle(shiftAndCheck::run);
-            } else {
-                shiftAndCheck.run();
-            }
-            // releasing the last block reached the end of the capacity, which shrank to exclude it
-            assertEquals(3L * blockSize, longs.getCapacity());
-            longs.ensureCapacity(4L * blockSize);
-            assertEquals(QueryConstants.NULL_LONG, longs.getLong(3L * blockSize));
-            longs.set(4L * blockSize - 1, 7L);
-            assertEquals(7L, longs.getLong(4L * blockSize - 1));
         }
     }
 
@@ -298,26 +212,26 @@ public class TestArraySourceShift {
     }
 
     @Test
-    public void testReleaseBlocksThroughEnd() {
+    public void testReleaseBlocks() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final LongArraySource longs = new LongArraySource();
         longs.ensureCapacity(4L * blockSize);
         for (int ii = 0; ii < 4 * blockSize; ++ii) {
             longs.set(ii, (long) ii);
         }
-        // an unbounded range releases every block from the first one it covers, and shrinks the capacity to them
+        // an unbounded range releases every block from the first one it covers, leaving the capacity alone
         longs.releaseBlocks(2L * blockSize, Long.MAX_VALUE);
-        assertEquals(2L * blockSize, longs.getCapacity());
+        assertEquals(4L * blockSize, longs.getCapacity());
         assertEquals(null, longs.getBlocks()[2]);
         assertEquals(null, longs.getBlocks()[3]);
         assertEquals(2L * blockSize - 1, longs.getLong(2L * blockSize - 1));
 
         // a range within the capacity releases only the blocks it covers entirely
         longs.releaseBlocks(1, blockSize - 1);
-        assertEquals(2L * blockSize, longs.getCapacity());
+        assertEquals(0L, longs.getLong(0));
         longs.releaseBlocks(0, blockSize - 1);
         assertEquals(null, longs.getBlocks()[0]);
-        assertEquals(2L * blockSize, longs.getCapacity());
+        assertEquals(4L * blockSize, longs.getCapacity());
         assertEquals(blockSize, longs.getLong(blockSize));
     }
 
@@ -353,9 +267,8 @@ public class TestArraySourceShift {
     }
 
     @Test
-    public void testShiftIntoBlockVacatedBySameShift() {
-        // One shift moves a whole block down, leaving its block unallocated, and moves a later range element-wise into
-        // that block. The element-wise move allocates the block again.
+    public void testShiftIntoBlockMovedFromBySameShift() {
+        // One shift moves a block down by a whole block, and moves a later range into the block it moved from.
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final int size = 3 * blockSize;
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
@@ -423,30 +336,19 @@ public class TestArraySourceShift {
         assertEquals(QueryConstants.NULL_LONG, counts.getLong(0));
         assertEquals(QueryConstants.NULL_LONG, counts.getLong(4L * blockSize - 1));
 
-        // a template released through the end of its capacity has a smaller capacity, which growing allocates again
+        // releasing through the end of the capacity leaves the capacity alone, and the copy allocates none of those
+        // blocks
         template.releaseBlocks(3L * blockSize, Long.MAX_VALUE);
         final LongArraySource later = new LongArraySource();
         later.ensureCapacityLike(template, false);
-        assertEquals(3L * blockSize, later.getCapacity());
+        assertEquals(4L * blockSize, later.getCapacity());
         assertEquals(null, later.getBlocks()[1]);
+        assertEquals(null, later.getBlocks()[3]);
         assertEquals(0, later.getLong(blockSize - 1));
-        later.ensureCapacity(4L * blockSize, false);
-        assertEquals(0, later.getLong(4L * blockSize - 1));
-    }
-
-    /**
-     * The move down left the last of four blocks unallocated. Once it is released through the end of the capacity,
-     * after the cycle, ensuring the capacity allocates it again, null-filled.
-     */
-    private static void assertVacatedLastBlockReallocates(final LongArraySource longs) {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        assertThrows(NullPointerException.class, () -> longs.getLong(3L * blockSize));
-        longs.releaseBlocks(3L * blockSize, Long.MAX_VALUE);
-        assertEquals(3L * blockSize, longs.getCapacity());
-        longs.ensureCapacity(4L * blockSize);
-        assertEquals(QueryConstants.NULL_LONG, longs.getLong(3L * blockSize));
-        longs.set(4L * blockSize - 1, 7L);
-        assertEquals(7L, longs.getLong(4L * blockSize - 1));
+        // growing past the capacity allocates only the new blocks
+        later.ensureCapacity(5L * blockSize, false);
+        assertEquals(null, later.getBlocks()[3]);
+        assertEquals(0, later.getLong(5L * blockSize - 1));
     }
 
     private static void shift(final ShiftableColumnSource<?> source, final boolean trackPrev, final long delta,

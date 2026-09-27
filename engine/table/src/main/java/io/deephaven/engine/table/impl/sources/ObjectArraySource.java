@@ -698,33 +698,12 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
 
     /**
      * Move the values of {@code length} positions from {@code source} to {@code dest} for {@link #shift}. Unlike
-     * {@link #move}, the positions moved from hold no values afterward: where both positions are at the start of a
-     * block, whole blocks move by reference, and source blocks that are not also destinations are left unallocated. A
-     * destination block that an earlier move left unallocated is allocated before values are copied into it.
+     * {@link #move}, each destination's previous value is recorded when previous values are tracked.
      */
     private void shiftRange(long source, long dest, long length) {
         if (source == dest) {
             return;
         }
-        if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
-            final long wholeBlocks = length & ~(long) INDEX_MASK;
-            if (wholeBlocks > 0) {
-                if (dest < source) {
-                    // moving down: the whole blocks first, then the partial block after them
-                    moveWholeBlocks(source, dest, wholeBlocks);
-                    shiftRange(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
-                } else {
-                    // moving up: the partial block at the end first, then the whole blocks
-                    shiftRange(source + wholeBlocks, dest + wholeBlocks, length - wholeBlocks);
-                    moveWholeBlocks(source, dest, wholeBlocks);
-                }
-                return;
-            }
-        }
-        if (length == 0) {
-            return;
-        }
-        allocateMissingBlocks(dest, dest + length - 1);
         if (prevBlocks == null) {
             move(source, dest, length);
             return;
@@ -756,8 +735,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
 
     /**
      * Clear the positions a move of {@code first} through {@code last} by {@code delta} left behind, so that they no
-     * longer hold references to the moved objects, or to the objects of states no longer present. Blocks a whole-block
-     * move left unallocated need no clearing.
+     * longer hold references to the moved objects, or to the objects of states no longer present.
      */
     private void clearVacated(final long first, final long last, final long delta) {
         final long vacatedFirst = delta < 0 ? Math.max(first, last + delta + 1) : first;

@@ -488,29 +488,6 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
-    public void shiftAllOutputPositions(final RowSet liveStates, final RowSetShiftData shiftData) {
-        // removed states' slots are tombstones, which must stay tombstones, so only the live states are updated; the
-        // ranges may cover positions that hold no state, whose entries in outputPositionToHashSlot are stale
-        for (int ri = 0; ri < shiftData.size(); ++ri) {
-            final long delta = shiftData.getShiftDelta(ri);
-            try (final RowSequence moving =
-                    liveStates.getRowSequenceByKeyRange(shiftData.getBeginRange(ri), shiftData.getEndRange(ri))) {
-                moving.forAllRowKeys(outputPosition -> {
-                    final int hashSlot = outputPositionToHashSlot.getUnsafe(outputPosition);
-                    final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
-                    final int newOutputPosition = Math.toIntExact(outputPosition + delta);
-                    if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
-                        mainOutputPosition.set(slot, newOutputPosition);
-                    } else {
-                        alternateOutputPosition.set(slot, newOutputPosition);
-                    }
-                });
-            }
-        }
-        outputPositionToHashSlot.shift(shiftData);
-    }
-
-    @Override
     public void shiftOutputPositions(final RowSetShiftData shiftData) {
         final RowSetShiftData.Iterator it = shiftData.applyIterator();
         while (it.hasNext()) {

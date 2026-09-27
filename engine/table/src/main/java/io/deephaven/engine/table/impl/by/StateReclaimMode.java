@@ -12,11 +12,10 @@ package io.deephaven.engine.table.impl.by;
  * <ul>
  * <li>{@link #none()}: states are never removed. An empty state keeps its output position, and a returning group reuses
  * it. Memory grows with every group ever seen.</li>
- * <li>{@link #releaseBlocks(double, double, boolean)}: the storage for a block of output positions is released once all
- * of its states are removed. States move only to collapse runs of sparse blocks or to shift blocks down over released
- * ones, as the parameters allow.</li>
+ * <li>{@link #releaseBlocks(double)}: the storage for a block of output positions is released once all of its states
+ * are removed. States move only to collapse runs of sparse blocks, when the parameter allows.</li>
  * </ul>
- * Only the modes that move states ({@link #movesStates()}) change a group's row key while it has rows; a consumer that
+ * Only a mode that moves states ({@link #movesStates()}) change a group's row key while it has rows; a consumer that
  * looks up a group's current row key and reads previous values there needs a mode that does not.
  * <p>
  * A mode that reclaims states applies only to a refreshing aggregation whose operators can all reclaim states, and that
@@ -25,20 +24,15 @@ package io.deephaven.engine.table.impl.by;
  */
 public final class StateReclaimMode {
 
-    private static final StateReclaimMode NONE = new StateReclaimMode(false, 1, -1, false, false);
+    private static final StateReclaimMode NONE = new StateReclaimMode(false, 1, false);
 
     private final boolean reclaim;
     private final double collapseFreeFraction;
-    private final double blockShiftFraction;
-    private final boolean bulkShift;
     private final boolean configured;
 
-    private StateReclaimMode(final boolean reclaim, final double collapseFreeFraction,
-            final double blockShiftFraction, final boolean bulkShift, final boolean configured) {
+    private StateReclaimMode(final boolean reclaim, final double collapseFreeFraction, final boolean configured) {
         this.reclaim = reclaim;
         this.collapseFreeFraction = collapseFreeFraction;
-        this.blockShiftFraction = blockShiftFraction;
-        this.bulkShift = bulkShift;
         this.configured = configured;
     }
 
@@ -51,31 +45,21 @@ public final class StateReclaimMode {
 
     /**
      * @param collapseFreeFraction a closed block of output positions at least this fraction free is sparse, and runs of
-     *        adjacent sparse blocks are collapsed so that the blocks this empties can be released; 1 or more never
-     *        collapses
-     * @param blockShiftFraction once the released blocks are at least this fraction of the output positions assigned,
-     *        the blocks after released ones are shifted down over them, keeping the states in order, so that output
-     *        positions are reused; zero shifts for any released block, and negative never shifts
-     * @param bulkShift whether the block shift waits until it can shift every block after the first released one in one
-     *        cycle, giving the released blocks back at the end, rather than sweeping toward the end over several
-     *        cycles. Moves are then paid for by a credit that each cycle's added and removed states earn, carried
-     *        across cycles; otherwise each cycle may move no more states than its input rows.
+     *        adjacent sparse blocks are collapsed, keeping the states in order, so that the blocks this empties can be
+     *        released; 1 or more never collapses
      * @return the mode that releases the storage for blocks of output positions whose states have all been removed
-     * @throws IllegalArgumentException if either fraction is NaN
+     * @throws IllegalArgumentException if {@code collapseFreeFraction} is NaN
      */
-    public static StateReclaimMode releaseBlocks(final double collapseFreeFraction, final double blockShiftFraction,
-            final boolean bulkShift) {
-        return releaseBlocks(collapseFreeFraction, blockShiftFraction, bulkShift, false);
+    public static StateReclaimMode releaseBlocks(final double collapseFreeFraction) {
+        return releaseBlocks(collapseFreeFraction, false);
     }
 
-    private static StateReclaimMode releaseBlocks(final double collapseFreeFraction, final double blockShiftFraction,
-            final boolean bulkShift, final boolean configured) {
-        // every comparison with NaN is false, so a NaN fraction would mean different things in different places
-        if (Double.isNaN(collapseFreeFraction) || Double.isNaN(blockShiftFraction)) {
-            throw new IllegalArgumentException("State reclaim fractions must not be NaN: collapseFreeFraction="
-                    + collapseFreeFraction + ", blockShiftFraction=" + blockShiftFraction);
+    private static StateReclaimMode releaseBlocks(final double collapseFreeFraction, final boolean configured) {
+        // every comparison with NaN is false, so a NaN fraction would neither collapse nor be rejected as out of range
+        if (Double.isNaN(collapseFreeFraction)) {
+            throw new IllegalArgumentException("collapseFreeFraction must not be NaN");
         }
-        return new StateReclaimMode(true, collapseFreeFraction, blockShiftFraction, bulkShift, configured);
+        return new StateReclaimMode(true, collapseFreeFraction, configured);
     }
 
     /**
@@ -88,9 +72,7 @@ public final class StateReclaimMode {
         if (!ChunkedOperatorAggregationHelper.RECLAIM_STATES) {
             return NONE;
         }
-        return releaseBlocks(ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION,
-                ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION, ChunkedOperatorAggregationHelper.BULK_SHIFT,
-                true);
+        return releaseBlocks(ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION, true);
     }
 
     /**
@@ -116,24 +98,10 @@ public final class StateReclaimMode {
     }
 
     /**
-     * @return the fraction of output positions released at which blocks are shifted down
-     */
-    public double blockShiftFraction() {
-        return blockShiftFraction;
-    }
-
-    /**
-     * @return whether blocks shift only in bulk, with moves paid for by credit carried across cycles
-     */
-    public boolean bulkShift() {
-        return bulkShift;
-    }
-
-    /**
      * @return whether a state's output position may change while its group has rows
      */
     public boolean movesStates() {
-        return reclaim && (collapseFreeFraction < 1 || blockShiftFraction >= 0);
+        return reclaim && collapseFreeFraction < 1;
     }
 
     @Override
@@ -142,7 +110,6 @@ public final class StateReclaimMode {
             return "StateReclaimMode{none}";
         }
         return "StateReclaimMode{releaseBlocks, collapseFreeFraction=" + collapseFreeFraction
-                + ", blockShiftFraction=" + blockShiftFraction + ", bulkShift=" + bulkShift
                 + (configured ? ", configured" : "") + '}';
     }
 }

@@ -65,8 +65,9 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
     /**
      * Whether an aggregation reclaims the states of groups whose rows have all been removed, unless its caller chooses
-     * a {@link StateReclaimMode}. This and the properties after it are read by {@link StateReclaimMode#configured()} as
-     * each aggregation is created, so changing them affects only aggregations created afterward.
+     * a {@link StateReclaimMode}. This and {@link #COLLAPSE_FREE_FRACTION} are read by
+     * {@link StateReclaimMode#configured()} as each aggregation is created, so changing them affects only aggregations
+     * created afterward.
      */
     public static boolean RECLAIM_STATES =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.reclaimStates", true);
@@ -76,23 +77,6 @@ public class ChunkedOperatorAggregationHelper {
      */
     public static double COLLAPSE_FREE_FRACTION = Configuration.getInstance()
             .getDoubleWithDefault("ChunkedOperatorAggregationHelper.collapseFreeFraction", 1.0);
-    /**
-     * When releasing blocks, shift the blocks after released ones down over them, as whole blocks and keeping the
-     * states in order, once the released blocks anywhere in the output positions are at least this fraction of the
-     * positions assigned, so that output positions are reused. Zero shifts for any released block; negative never
-     * shifts. Each cycle moves no more live states than its input rows added, modified, and removed, less those the
-     * collapse moved.
-     */
-    public static double BLOCK_SHIFT_FRACTION = Configuration.getInstance()
-            .getDoubleWithDefault("ChunkedOperatorAggregationHelper.blockShiftFraction", -1.0);
-    /**
-     * When releasing blocks, whether the block shift waits until it can shift every block after the first released one
-     * in one cycle, giving the released blocks back at the end, rather than sweeping toward the end over several
-     * cycles. Moves are then paid for by a credit that each cycle's added and removed states earn, carried across
-     * cycles.
-     */
-    public static boolean BULK_SHIFT =
-            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.bulkShift", false);
 
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
@@ -306,8 +290,7 @@ public class ChunkedOperatorAggregationHelper {
             incrementalStateManager.startTrackingPrevValues();
             final OutputPositionBlockTracker blockTracker = incrementalStateManager.canReclaim()
                     ? new OutputPositionBlockTracker(resultRowSet, outputPosition.get(),
-                            reclaimMode.collapseFreeFraction(), reclaimMode.blockShiftFraction(),
-                            reclaimMode.bulkShift())
+                            reclaimMode.collapseFreeFraction())
                     : null;
 
             final boolean isBlink = input.isBlink();
@@ -774,25 +757,12 @@ public class ChunkedOperatorAggregationHelper {
                 resultRowset.insert(downstream.added());
                 final WritableRowSet releasable =
                         blockTracker.update(downstream.added(), downstream.removed(), outputPosition.get());
-                // the collapse and the block shift together move no more states than this cycle's input rows
+                // the collapse moves no more states than this cycle's input rows
                 final long inputRows =
                         upstream.added().size() + upstream.modified().size() + upstream.removed().size();
-                final OutputPositionBlockTracker.Collapse collapse;
-                final OutputPositionBlockTracker.BlockShift blockShift;
-                if (blockTracker.bulkShift()) {
-                    // moves are paid for by the states added and removed, carried across cycles
-                    blockTracker.earnCredit(downstream.added().size() + downstream.removed().size(),
-                            outputPosition.get());
-                    collapse = blockTracker.collapseSparseBlocksByCredit(resultRowset, releasable);
-                    blockShift = blockTracker.planBulkBlockShift(outputPosition.get());
-                } else {
-                    collapse = blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
-                    blockShift = blockTracker.planBlockShift(outputPosition.get(), inputRows - collapse.movedStates());
-                }
-                if (!blockShift.isEmpty()) {
-                    shiftBlocks(blockTracker, collapse, blockShift, resultRowset, downstream, releasable,
-                            keyColumnsCopied);
-                } else if (collapse.shift.nonempty()) {
+                final OutputPositionBlockTracker.Collapse collapse =
+                        blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
+                if (collapse.shift.nonempty()) {
                     incrementalStateManager.shiftOutputPositions(collapse.shift);
                     // a block that closed this cycle may hold this cycle's new states and still be collapsed
                     collapse.apply(resultRowset, downstream.added().writableCast(),
@@ -812,85 +782,6 @@ public class ChunkedOperatorAggregationHelper {
             // states are never removed, so the result keeps every state and nothing moves
             resultRowset.update(downstream.added(), downstream.removed());
             return downstream;
-        }
-
-        /**
-         * Shift blocks down over released ones, keeping the states in order, so that output positions are reused. The
-         * moves are by whole blocks, which the array sources make by moving blocks rather than values. A collapse in
-         * the same cycle is composed with the shift, so that downstream sees one shift. Released blocks at the end are
-         * given back even when no block moves.
-         */
-        private void shiftBlocks(
-                @NotNull final OutputPositionBlockTracker blockTracker,
-                @NotNull final OutputPositionBlockTracker.Collapse collapse,
-                @NotNull final OutputPositionBlockTracker.BlockShift blockShift,
-                @NotNull final TrackingWritableRowSet resultRowset,
-                @NotNull final TableUpdateImpl downstream,
-                @NotNull final WritableRowSet releasable,
-                @NotNull final ShiftableColumnSource<?>[] keyColumnsCopied) {
-            // downstream sees the collapse and the block shift as one shift, from the positions before either
-            downstream.shifted = blockShift.composedWith(collapse, resultRowset);
-
-            // The storage takes them in turn: the collapse within its runs, then the whole blocks, which move the
-            // collapsed runs too. The composition names only the live states within the runs, so applied to the
-            // storage it would leave the runs' destinations unallocated where they fall on released blocks.
-            if (collapse.shift.nonempty()) {
-                incrementalStateManager.shiftOutputPositions(collapse.shift);
-                for (final IterativeChunkedAggregationOperator operator : ac.operators) {
-                    operator.shift(collapse.shift);
-                }
-                for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
-                    keyColumn.shift(collapse.shift);
-                }
-                collapse.apply(resultRowset, downstream.added().writableCast(), downstream.modified().writableCast());
-            }
-            final RowSetShiftData shift = blockShift.shift;
-            incrementalStateManager.shiftAllOutputPositions(resultRowset, shift);
-            applyBlockShift(shift, resultRowset);
-            applyBlockShift(shift, downstream.added().writableCast());
-            applyBlockShift(shift, downstream.modified().writableCast());
-            for (final IterativeChunkedAggregationOperator operator : ac.operators) {
-                operator.shift(shift);
-            }
-            for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
-                keyColumn.shift(shift);
-            }
-
-            // The blocks released this cycle from the first block the shift passed over up to the first block not
-            // moved had blocks moved onto them; the released blocks left in their place, just before that block, are
-            // released instead. Blocks released before the shift's start, which a sweep resumed past, stay releasable:
-            // nothing moved onto them. Nothing at or after the first block not moved moved.
-            releasable.removeRange(blockShift.firstPassedPosition(), blockShift.firstUnmovedPosition() - 1);
-            try (final RowSet remaining = blockShift.remainingReleased()) {
-                releasable.insert(remaining);
-            }
-            blockTracker.applyBlockShift(blockShift);
-            outputPosition.subtract(Math.toIntExact(blockShift.reclaimedPositions()));
-        }
-
-        /**
-         * Apply a block shift to a row set, moving each range's keys as a whole: a block shift has few ranges but may
-         * move many scattered keys, so this avoids appending every moved range of keys to a builder, as
-         * {@link RowSetShiftData#apply(WritableRowSet)} does. Each range's keys are taken through a view, which shares
-         * the row set's storage, rather than a subset, which would be compacted only to be inserted again. Every range
-         * moves down, so applying them in order never moves keys onto keys still to be moved.
-         */
-        private void applyBlockShift(@NotNull final RowSetShiftData shift, @NotNull final WritableRowSet rowSet) {
-            for (int ri = 0; ri < shift.size(); ++ri) {
-                final long first = shift.getBeginRange(ri);
-                final long last = shift.getEndRange(ri);
-                final RowSet moving;
-                try (final RowSequence inRange = rowSet.getRowSequenceByKeyRange(first, last)) {
-                    if (inRange.isEmpty()) {
-                        continue;
-                    }
-                    moving = inRange.asRowSet();
-                }
-                try (final RowSet ignored = moving) {
-                    rowSet.removeRange(first, last);
-                    rowSet.insertWithShift(shift.getShiftDelta(ri), moving);
-                }
-            }
         }
 
         /**

@@ -13,25 +13,22 @@ public class TestStateReclaimMode {
     @Test
     public void testMovesStates() {
         assertFalse(StateReclaimMode.none().movesStates());
-        assertFalse(StateReclaimMode.releaseBlocks(1, -1, false).movesStates());
-        assertTrue(StateReclaimMode.releaseBlocks(0.5, -1, false).movesStates());
-        assertTrue(StateReclaimMode.releaseBlocks(1, 0, false).movesStates());
-        assertTrue(StateReclaimMode.releaseBlocks(1, 0, true).movesStates());
-        assertTrue(StateReclaimMode.releaseBlocks(1, 0, true).bulkShift());
-        assertFalse(StateReclaimMode.releaseBlocks(1, 0, false).bulkShift());
+        assertFalse(StateReclaimMode.releaseBlocks(1).movesStates());
+        assertFalse(StateReclaimMode.releaseBlocks(2).movesStates());
+        assertTrue(StateReclaimMode.releaseBlocks(0.5).movesStates());
+        assertTrue(StateReclaimMode.releaseBlocks(0).movesStates());
     }
 
     @Test
     public void testConfiguredModesMayDegrade() {
         assertTrue(StateReclaimMode.configured().isConfigured() || !StateReclaimMode.configured().reclaims());
-        assertFalse(StateReclaimMode.releaseBlocks(1, 0, true).isConfigured());
-        assertFalse(StateReclaimMode.releaseBlocks(1, -1, false).isConfigured());
+        assertFalse(StateReclaimMode.releaseBlocks(0.5).isConfigured());
+        assertFalse(StateReclaimMode.releaseBlocks(1).isConfigured());
         assertFalse(StateReclaimMode.none().isConfigured());
     }
 
     @Test
-    public void testRejectsNaNFractions() {
-        assertThrows(IllegalArgumentException.class, () -> StateReclaimMode.releaseBlocks(Double.NaN, -1, false));
-        assertThrows(IllegalArgumentException.class, () -> StateReclaimMode.releaseBlocks(1, Double.NaN, false));
+    public void testRejectsNaNFraction() {
+        assertThrows(IllegalArgumentException.class, () -> StateReclaimMode.releaseBlocks(Double.NaN));
     }
 }

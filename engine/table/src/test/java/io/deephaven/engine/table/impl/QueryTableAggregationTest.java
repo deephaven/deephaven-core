@@ -4516,17 +4516,6 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testReleaseBlocksSlidingWindow() {
-        // the test checks that the first block is released, which a shift down would fill again
-        final double originalBlockShift = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
-        ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = -1;
-        try {
-            doTestReleaseBlocksSlidingWindow();
-        } finally {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalBlockShift;
-        }
-    }
-
-    private void doTestReleaseBlocksSlidingWindow() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final int window = 3 * blockSize;
         // not a multiple of the block size, so that blocks empty part way through a cycle
@@ -4670,98 +4659,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    public void testBlockShiftReusesOutputPositions() {
-        final double originalFraction = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
-        try (final SafeCloseable ignored = () -> {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalFraction;
-        }) {
-            for (final double fraction : new double[] {0, 0.5}) {
-                ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = fraction;
-                testBlockShiftReusesOutputPositions(fraction);
-            }
-        }
-    }
-
-    private void testBlockShiftReusesOutputPositions(final double fraction) {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final int window = 3 * blockSize;
-        // not a multiple of the block size, so that blocks empty part way through a cycle
-        final int step = blockSize / 2 + 7;
-        final int cycles = 60;
-
-        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
-                stringCol("Key", windowKeys(0, window)), longCol("x", windowValues(0, window)));
-        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggMin("Min=x"),
-                AggAvg("Avg=x"), AggCountDistinct("CD=x"), AggDistinct("D=x"), AggFirst("First=x"), AggLast("Last=x"),
-                AggUnique("U=x"), AggMed("Med=x")), "Key");
-        final Table aggregated = aggregation.get();
-
-        final TableUpdateValidator validated = TableUpdateValidator.make(
-                "testBlockShiftReusesOutputPositions-" + fraction, (QueryTable) aggregated);
-        final FailureListener failureListener = new FailureListener();
-        validated.getResultTable().addUpdateListener(failureListener);
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (int cycle = 0; cycle < cycles; ++cycle) {
-            final long firstRemoved = (long) cycle * step;
-            final long firstAdded = firstRemoved + window;
-            updateGraph.runWithinUnitTestCycle(() -> {
-                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
-                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
-                removeRows(table, removed);
-                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, step)),
-                        longCol("x", windowValues(firstAdded, step)));
-                table.notifyListeners(added, removed, i());
-            });
-            assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
-        }
-
-        // every key was new, so without shifting the positions would reach window + cycles * step
-        final long positionsWithoutShifting = window + (long) cycles * step;
-        assertTrue("fraction=" + fraction + ", lastRowKey=" + aggregated.getRowSet().lastRowKey(),
-                aggregated.getRowSet().lastRowKey() < positionsWithoutShifting / 2);
-    }
-
-    @Test
-    public void testBlockShiftGivesBackReleasedBlocksAtEnd() {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final int size = 3 * blockSize;
-        final QueryTable table = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
-                stringCol("Key", windowKeys(0, size)), longCol("x", windowValues(0, size)));
-        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(List.of(AggSum("Sum=x"))),
-                false, null, ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, 0, false));
-        final TableUpdateValidator validated =
-                TableUpdateValidator.make("testBlockShiftGivesBackReleasedBlocksAtEnd", aggregated);
-        final FailureListener failureListener = new FailureListener();
-        validated.getResultTable().addUpdateListener(failureListener);
-
-        // the last two blocks empty, and no live block follows them to move down
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.runWithinUnitTestCycle(() -> {
-            final RowSet removed = RowSetFactory.fromRange(blockSize, size - 1);
-            removeRows(table, removed);
-            table.notifyListeners(i(), removed, i());
-        });
-        assertTableEquals(table.aggBy(AggSum("Sum=x"), "Key").sort("Key"), aggregated.sort("Key"));
-
-        // Their positions were given back, so a new group is assigned the position after the first block, rather
-        // than one past the released blocks that a later block shift would move down.
-        final SimpleListener listener = new SimpleListener(aggregated);
-        aggregated.addUpdateListener(listener);
-        updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(size), stringCol("Key", "New"), longCol("x", 5));
-            table.notifyListeners(i(size), i(), i());
-        });
-        assertTableEquals(table.aggBy(AggSum("Sum=x"), "Key").sort("Key"), aggregated.sort("Key"));
-        assertEquals(1, listener.getCount());
-        assertEquals(i(blockSize), listener.getUpdate().added());
-        assertTrue(listener.getUpdate().shifted().empty());
-        assertEquals(5, aggregated.getColumnSource("Sum").getLong(blockSize));
-        aggregated.removeUpdateListener(listener);
-        listener.close();
-    }
-
-    @Test
     public void testFirstNonFiniteValueAfterBlocksReleased() {
         // The NaN and infinity counters are created on the first such value, with storage only for the blocks the
         // operator still has, so the first ones arrive after the sliding window has released blocks.
@@ -4778,7 +4675,7 @@ public class QueryTableAggregationTest {
         final List<Aggregation> aggregations = List.of(AggSum("Sum=d"), AggAbsSum("AbsSum=d"), AggAvg("Avg=d"),
                 AggVar("Var=d"), AggStd("Std=d"), AggWSum("w", "WSum=d"), AggWAvg("w", "WAvg=d"));
         final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(aggregations), false, null,
-                ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, -1, false));
+                ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1));
         final TableUpdateValidator validated =
                 TableUpdateValidator.make("testFirstNonFiniteValueAfterBlocksReleased", aggregated);
         final FailureListener failureListener = new FailureListener();
@@ -4840,18 +4737,18 @@ public class QueryTableAggregationTest {
 
         // an explicit mode the aggregation cannot use fails, naming the reason
         assertReclaimRejected("the operators for [G] cannot reclaim states",
-                () -> table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.releaseBlocks(1, 0, true)));
+                () -> table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.releaseBlocks(0.5)));
         assertReclaimRejected("it preserves empty groups",
-                () -> table.aggNoMemo(sum, true, null, key, StateReclaimMode.releaseBlocks(1, -1, false)));
+                () -> table.aggNoMemo(sum, true, null, key, StateReclaimMode.releaseBlocks(1)));
         assertReclaimRejected("it has initial groups", () -> table.aggNoMemo(sum, false,
-                newTable(stringCol("Key", "A")), key, StateReclaimMode.releaseBlocks(1, 0, true)));
+                newTable(stringCol("Key", "A")), key, StateReclaimMode.releaseBlocks(0.5)));
 
         // the configured mode uses none instead, as does an explicit none
         final QueryTable configured = table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.configured());
         final QueryTable none = table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.none());
         // a static aggregation has no states to reclaim, so any mode is accepted
         final QueryTable staticSum = ((QueryTable) table.snapshot()).aggNoMemo(sum, false, null, key,
-                StateReclaimMode.releaseBlocks(1, 0, true));
+                StateReclaimMode.releaseBlocks(0.5));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -4875,125 +4772,23 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    public void testBulkShiftReclaim() {
-        for (final boolean random : new boolean[] {false, true}) {
-            doTestBulkShiftReclaim(random);
-        }
-    }
-
-    private void doTestBulkShiftReclaim(final boolean randomRemovals) {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final int size = 6 * blockSize;
-        final int step = blockSize / 4 + 3;
-        final int cycles = 80;
-        final Random random = new Random(0);
-        final QueryTable table = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
-                stringCol("Key", windowKeys(0, size)), longCol("x", windowValues(0, size)),
-                doubleCol("d", windowDoubles(0, size)));
-        final List<Aggregation> aggregations = List.of(AggSum("Sum=x", "DSum=d"), AggMin("Min=x"), AggAvg("Avg=x"),
-                AggVar("Var=d"), AggCountDistinct("CD=x"), AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x"),
-                AggMed("Med=x"), AggCount("N"));
-        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(aggregations), false, null,
-                ColumnName.from("Key"), StateReclaimMode.releaseBlocks(0.5, 0, true));
-        final String description = "testBulkShiftReclaim-" + randomRemovals;
-        final TableUpdateValidator validated = TableUpdateValidator.make(description, aggregated);
-        final FailureListener failureListener = new FailureListener();
-        validated.getResultTable().addUpdateListener(failureListener);
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        long nextRow = size;
-        long maxLastRowKey = 0;
-        for (int cycle = 0; cycle < cycles; ++cycle) {
-            final RowSet removed;
-            if (randomRemovals) {
-                final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-                final int liveRows = table.intSize();
-                for (int ii = 0; ii < step; ++ii) {
-                    builder.addKey(table.getRowSet().get(random.nextInt(liveRows)));
-                }
-                removed = builder.build();
-            } else {
-                final long first = table.getRowSet().firstRowKey();
-                removed = RowSetFactory.fromRange(first, first + step - 1);
-            }
-            final long firstAdded = nextRow;
-            final int added = (int) removed.size();
-            nextRow += added;
-            updateGraph.runWithinUnitTestCycle(() -> {
-                final RowSet addedRows = RowSetFactory.fromRange(firstAdded, firstAdded + added - 1);
-                removeRows(table, removed);
-                addToTable(table, addedRows, stringCol("Key", windowKeys(firstAdded, added)),
-                        longCol("x", windowValues(firstAdded, added)),
-                        doubleCol("d", windowDoubles(firstAdded, added)));
-                table.notifyListeners(addedRows, removed, i());
-            });
-            // a static snapshot, so that each cycle's expected result is not another refreshing aggregation
-            assertTableEquals(table.snapshot().aggBy(aggregations, "Key").sort("Key"), aggregated.sort("Key"));
-            maxLastRowKey = Math.max(maxLastRowKey, aggregated.getRowSet().lastRowKey());
-        }
-        // every key was new, so without reclaiming positions the last row key would reach size + cycles * step
-        assertTrue(description + ": maxLastRowKey=" + maxLastRowKey,
-                maxLastRowKey < size + (long) cycles * step / 2);
-    }
-
-    @Test
-    public void testBlockShiftReleasesBlockBelowResumedSweep() {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final int size = 10 * blockSize;
-        final QueryTable table = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
-                stringCol("Key", windowKeys(0, size)), longCol("x", windowValues(0, size)));
-        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(List.of(AggSum("Sum=x"))),
-                false, null, ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1, 0, false));
-        final TableUpdateValidator validated =
-                TableUpdateValidator.make("testBlockShiftReleasesBlockBelowResumedSweep", aggregated);
-        final FailureListener failureListener = new FailureListener();
-        validated.getResultTable().addUpdateListener(failureListener);
-
-        // Removing the second block lets one block move down over it within the cycle's budget, so the shift stops
-        // with its released block at the third, where the next cycle's shift resumes.
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.runWithinUnitTestCycle(() -> {
-            final RowSet removed = RowSetFactory.fromRange(blockSize, 2L * blockSize - 1);
-            removeRows(table, removed);
-            table.notifyListeners(i(), removed, i());
-        });
-        assertTableEquals(table.aggBy(AggSum("Sum=x"), "Key").sort("Key"), aggregated.sort("Key"));
-
-        // the first block empties below where the shift resumes, so nothing moves onto it and it is released
-        updateGraph.runWithinUnitTestCycle(() -> {
-            final RowSet removed = RowSetFactory.fromRange(0, blockSize - 1);
-            removeRows(table, removed);
-            table.notifyListeners(i(), removed, i());
-        });
-        assertTableEquals(table.aggBy(AggSum("Sum=x"), "Key").sort("Key"), aggregated.sort("Key"));
-        final ColumnSource<?> sums = aggregated.getColumnSource("Sum");
-        assertThrows(NullPointerException.class, () -> sums.getLong(0));
-    }
-
-    @Test
-    public void testOperatorsShiftCellsAndWholeBlocks() {
-        final double originalFraction = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
+    public void testOperatorsShiftCollapsedStates() {
         final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
-        try (final SafeCloseable ignored = () -> {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalFraction;
-            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse;
-        }) {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = 0;
+        try (final SafeCloseable ignored =
+                () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse) {
             ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
-            doTestOperatorsShiftCellsAndWholeBlocks();
+            doTestOperatorsShiftCollapsedStates();
         }
     }
 
     /**
      * Every key has one row, and the initial build gives the key of row {@code r} output position {@code r}. The first
-     * update empties the first three blocks, so every state shifts down by three whole blocks. The second leaves every
-     * eighth state of the next two blocks, which collapse onto the first block one state at a time, and the blocks
-     * after them shift down over the block the collapse released. Each operator must move its values both ways, with
-     * the states added and modified in the same cycles.
+     * update leaves every eighth state of the first two blocks, which collapse onto the first block one state at a
+     * time, releasing the second. Each operator must move its values, with states added and modified in the same cycle.
      */
-    private void doTestOperatorsShiftCellsAndWholeBlocks() {
+    private void doTestOperatorsShiftCollapsedStates() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final int initialSize = 6 * blockSize;
+        final int initialSize = 4 * blockSize;
 
         final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
                 shiftTestColumns(0, initialSize));
@@ -5006,7 +4801,7 @@ public class QueryTableAggregationTest {
         final QueryTable aggregated = (QueryTable) aggregation.get();
 
         final TableUpdateValidator validated =
-                TableUpdateValidator.make("testOperatorsShiftCellsAndWholeBlocks", aggregated);
+                TableUpdateValidator.make("testOperatorsShiftCollapsedStates", aggregated);
         final FailureListener failureListener = new FailureListener();
         validated.getResultTable().addUpdateListener(failureListener);
         final SimpleListener listener = new SimpleListener(aggregated);
@@ -5014,265 +4809,55 @@ public class QueryTableAggregationTest {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        // Empty blocks 0 through 2, and remove a few states of block 4, whose rows pay for the shift. Add states and
-        // modify states that move, in the same cycle.
+        // Keep every eighth state of blocks 0 and 1, so that both are sparse and collapse onto block 0, each moved
+        // state its own range. Modify states that move and states after the run, and add states, in the same cycle.
         final RowSetBuilderRandom firstRemovedBuilder = RowSetFactory.builderRandom();
-        firstRemovedBuilder.addRange(0, 3L * blockSize - 1);
-        for (int ii = 0; ii < 10; ++ii) {
-            firstRemovedBuilder.addKey(4L * blockSize + 8L * ii + 1);
+        for (long row = 0; row < 2L * blockSize; ++row) {
+            if (row % 8 != 0) {
+                firstRemovedBuilder.addKey(row);
+            }
         }
         final RowSet firstRemoved = firstRemovedBuilder.build();
-        final RowSet firstModified = RowSetFactory.fromRange(3L * blockSize + 100, 3L * blockSize + 199);
-        final RowSet firstAdded = RowSetFactory.fromRange(initialSize, initialSize + 49);
+        final RowSetBuilderRandom firstModifiedBuilder = RowSetFactory.builderRandom();
+        for (long row = 0; row < 2L * blockSize; row += 64) {
+            firstModifiedBuilder.addKey(row);
+        }
+        firstModifiedBuilder.addRange(2L * blockSize, 2L * blockSize + 99);
+        final RowSet firstModified = firstModifiedBuilder.build();
+        final RowSet firstAdded = RowSetFactory.fromRange(initialSize, initialSize + 29);
         updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, firstRemoved);
             addToTable(table, firstModified, shiftTestModifiedColumns(firstModified));
             addToTable(table, firstAdded, shiftTestColumns(initialSize, firstAdded.intSize()));
-            table.notifyListeners(firstAdded, firstRemoved.copy(), firstModified);
-        });
-        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
-        final RowSetShiftData blockShift = listener.getUpdate().shifted();
-        assertEquals(1, blockShift.size());
-        assertEquals(3L * blockSize, blockShift.getBeginRange(0));
-        assertEquals(-3L * blockSize, blockShift.getShiftDelta(0));
-        assertEquals(0, (blockShift.getEndRange(0) + 1) % blockSize);
-        assertEquals(3L * blockSize + 49, aggregated.getRowSet().lastRowKey());
-
-        // The states of rows 3 * blockSize through 5 * blockSize - 1 are now in blocks 0 and 1. Keep every eighth, so
-        // that both blocks are sparse and collapse onto block 0, each moved state its own range.
-        final RowSetBuilderRandom secondRemovedBuilder = RowSetFactory.builderRandom();
-        for (long row = 3L * blockSize; row < 5L * blockSize; ++row) {
-            if (row % 8 != 0 && !firstRemoved.containsRange(row, row)) {
-                secondRemovedBuilder.addKey(row);
-            }
-        }
-        final RowSet secondRemoved = secondRemovedBuilder.build();
-        final RowSetBuilderRandom secondModifiedBuilder = RowSetFactory.builderRandom();
-        for (long row = 3L * blockSize; row < 5L * blockSize; row += 64) {
-            secondModifiedBuilder.addKey(row);
-        }
-        secondModifiedBuilder.addRange(5L * blockSize, 5L * blockSize + 99);
-        final RowSet secondModified = secondModifiedBuilder.build();
-        final RowSet secondAdded = RowSetFactory.fromRange(initialSize + 50, initialSize + 79);
-        updateGraph.runWithinUnitTestCycle(() -> {
-            removeRows(table, secondRemoved);
-            addToTable(table, secondModified, shiftTestModifiedColumns(secondModified));
-            addToTable(table, secondAdded, shiftTestColumns(initialSize + 50, secondAdded.intSize()));
-            table.notifyListeners(secondAdded, secondRemoved, secondModified);
+            table.notifyListeners(firstAdded, firstRemoved, firstModified);
         });
         assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
         final RowSetShiftData cellShift = listener.getUpdate().shifted();
         // the survivors are at 8k for k in [0, 2 * blockSize / 8); every one but the first moves, to k
         final int survivors = 2 * blockSize / 8;
-        assertEquals(survivors, cellShift.size());
+        assertEquals(survivors - 1, cellShift.size());
         for (int ri = 0; ri < survivors - 1; ++ri) {
             final long first = cellShift.getBeginRange(ri);
             assertEquals(first, cellShift.getEndRange(ri));
             assertEquals(8L * (ri + 1), first);
             assertEquals(-7L * (ri + 1), cellShift.getShiftDelta(ri));
         }
-        // the collapse released block 1, so the blocks after it move down over it, as whole blocks
-        final int blockRange = survivors - 1;
-        assertEquals(2L * blockSize, cellShift.getBeginRange(blockRange));
-        assertEquals(-blockSize, cellShift.getShiftDelta(blockRange));
-        assertEquals(0, (cellShift.getEndRange(blockRange) + 1) % blockSize);
-        assertEquals(2L * blockSize + 79, aggregated.getRowSet().lastRowKey());
+        // nothing after the collapsed run moves, and new states still go after every existing one
+        assertEquals(initialSize + 29, aggregated.getRowSet().lastRowKey());
 
         // A removed key comes back as a new state, and the states after the collapsed run keep changing.
-        final RowSet thirdAdded = RowSetFactory.fromRange(initialSize + 80, initialSize + 80);
-        final RowSet thirdRemoved = RowSetFactory.fromRange(5L * blockSize + 200, 5L * blockSize + 299);
-        final RowSet thirdModified = RowSetFactory.fromRange(3L * blockSize, 3L * blockSize);
+        final RowSet secondAdded = RowSetFactory.fromRange(initialSize + 30, initialSize + 30);
+        final RowSet secondRemoved = RowSetFactory.fromRange(2L * blockSize + 200, 2L * blockSize + 299);
+        final RowSet secondModified = RowSetFactory.fromRange(8, 8);
         updateGraph.runWithinUnitTestCycle(() -> {
-            removeRows(table, thirdRemoved);
-            addToTable(table, thirdModified, shiftTestModifiedColumns(thirdModified));
-            addToTable(table, thirdAdded, stringCol("Key", "K0"), longCol("x", 7), doubleCol("y", 2.5),
+            removeRows(table, secondRemoved);
+            addToTable(table, secondModified, shiftTestModifiedColumns(secondModified));
+            addToTable(table, secondAdded, stringCol("Key", "K1"), longCol("x", 7), doubleCol("y", 2.5),
                     intCol("w", 3), stringCol("s", "S7"));
-            table.notifyListeners(thirdAdded, thirdRemoved, thirdModified);
+            table.notifyListeners(secondAdded, secondRemoved, secondModified);
         });
         assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
-    }
-
-    @Test
-    public void testBlockShiftWithCollapseEveryCycle() {
-        final double originalFraction = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
-        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
-        try (final SafeCloseable ignored = () -> {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalFraction;
-            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse;
-        }) {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = 0;
-            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
-            doTestBlockShiftWithCollapseEveryCycle();
-        }
-    }
-
-    /**
-     * Every key has one row, and each cycle adds a batch of four blocks of new keys. It also leaves every eighth state
-     * of the previous batch's last two blocks, which collapse, and removes the batch before that, which extends the
-     * released blocks at the start. A collapse happens in every cycle, so the released blocks are only reused if the
-     * move down over them happens in the same cycles as the collapses.
-     */
-    private void doTestBlockShiftWithCollapseEveryCycle() {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final int batchSize = 4 * blockSize;
-        final int cycles = 12;
-
-        final QueryTable table = testRefreshingTable(RowSetFactory.flat(batchSize).toTracking(),
-                shiftTestColumns(0, batchSize));
-        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggMin("MinS=s"),
-                AggVar("Var=y"), AggLast("Last=x"), AggCountDistinct("CD=s"), AggMed("Med=x"), AggWAvg("w", "WAvg=x"),
-                AggSortedFirst("x", "SF=y")), "Key");
-        final QueryTable aggregated = (QueryTable) aggregation.get();
-
-        final TableUpdateValidator validated =
-                TableUpdateValidator.make("testBlockShiftWithCollapseEveryCycle", aggregated);
-        final FailureListener failureListener = new FailureListener();
-        validated.getResultTable().addUpdateListener(failureListener);
-        final SimpleListener listener = new SimpleListener(aggregated);
-        aggregated.addUpdateListener(listener);
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        int combinedCycles = 0;
-        for (int cycle = 1; cycle <= cycles; ++cycle) {
-            final long previousBatch = (long) (cycle - 1) * batchSize;
-            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-            for (long row = previousBatch + 2L * blockSize; row < previousBatch + batchSize; ++row) {
-                if ((row - previousBatch) % 8 != 0) {
-                    removedBuilder.addKey(row);
-                }
-            }
-            if (cycle >= 2) {
-                // the batch before, including the survivors of its collapse
-                final long olderBatch = (long) (cycle - 2) * batchSize;
-                removedBuilder.addRange(olderBatch, olderBatch + batchSize - 1);
-            }
-            final RowSet removed = removedBuilder.build().intersect(table.getRowSet());
-            final long firstAdded = (long) cycle * batchSize;
-            final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + batchSize - 1);
-            updateGraph.runWithinUnitTestCycle(() -> {
-                removeRows(table, removed);
-                addToTable(table, added, shiftTestColumns(firstAdded, batchSize));
-                table.notifyListeners(added, removed, i());
-            });
-            assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
-
-            // a cycle that moves everything down by whole blocks and collapses a run moves some states by one amount
-            // over whole blocks, and others, one at a time, by more
-            final RowSetShiftData shifted = listener.getUpdate().shifted();
-            long blockDelta = 0;
-            boolean singleStates = false;
-            for (int ri = 0; ri < shifted.size(); ++ri) {
-                final long length = shifted.getEndRange(ri) - shifted.getBeginRange(ri) + 1;
-                if (length >= blockSize && shifted.getShiftDelta(ri) % blockSize == 0) {
-                    blockDelta = shifted.getShiftDelta(ri);
-                } else if (length == 1) {
-                    singleStates = true;
-                }
-            }
-            if (blockDelta != 0 && singleStates) {
-                ++combinedCycles;
-            }
-        }
-
-        assertTrue("combinedCycles=" + combinedCycles, combinedCycles > 0);
-        // two batches are live at a time; without reusing the released blocks, the positions would reach
-        // (cycles + 1) * batchSize
-        assertTrue("lastRowKey=" + aggregated.getRowSet().lastRowKey(),
-                aggregated.getRowSet().lastRowKey() < 4L * batchSize);
-    }
-
-    @Test
-    public void testBlockShiftClosesMiddleHoleWithinInputBudget() {
-        final double originalFraction = ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION;
-        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
-        try (final SafeCloseable ignored = () -> {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = originalFraction;
-            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse;
-        }) {
-            ChunkedOperatorAggregationHelper.BLOCK_SHIFT_FRACTION = 0;
-            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 1;
-            doTestBlockShiftClosesMiddleHoleWithinInputBudget();
-        }
-    }
-
-    /**
-     * Every key has one row, and the initial build gives the key of row {@code r} output position {@code r}, filling
-     * eight blocks. Removing block 3 leaves a hole in the middle. Each cycle may move only as many live states as its
-     * input rows, so the blocks after the hole move down over it one full block at a time, and a cycle with less than a
-     * block of input carries its budget to the next. Once the last block has moved, the hole is given back at the end,
-     * and a new key is assigned after every existing state.
-     */
-    private void doTestBlockShiftClosesMiddleHoleWithinInputBudget() {
-        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
-        final int initialSize = 8 * blockSize;
-
-        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
-                shiftTestColumns(0, initialSize));
-        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggMin("MinS=s"),
-                AggVar("Var=y"), AggLast("Last=x"), AggCountDistinct("CD=s"), AggMed("Med=x"), AggWAvg("w", "WAvg=x"),
-                AggSortedFirst("x", "SF=y")), "Key");
-        final QueryTable aggregated = (QueryTable) aggregation.get();
-
-        final TableUpdateValidator validated =
-                TableUpdateValidator.make("testBlockShiftClosesMiddleHoleWithinInputBudget", aggregated);
-        final FailureListener failureListener = new FailureListener();
-        validated.getResultTable().addUpdateListener(failureListener);
-        final SimpleListener listener = new SimpleListener(aggregated);
-        aggregated.addUpdateListener(listener);
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Consumer<RowSet> modify = rows -> {
-            updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(table, rows, shiftTestModifiedColumns(rows));
-                table.notifyListeners(i(), i(), rows.copy());
-            });
-            assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
-        };
-        final Consumer<Integer> assertMovedDownOneBlock = movedBlock -> {
-            final RowSetShiftData shifted = listener.getUpdate().shifted();
-            assertEquals(1, shifted.size());
-            assertEquals((long) movedBlock * blockSize, shifted.getBeginRange(0));
-            assertEquals(-blockSize, shifted.getShiftDelta(0));
-        };
-
-        // removing block 3 is exactly enough input to move block 4 down over it
-        final RowSet removed = RowSetFactory.fromRange(3L * blockSize, 4L * blockSize - 1);
-        updateGraph.runWithinUnitTestCycle(() -> {
-            removeRows(table, removed);
-            table.notifyListeners(i(), removed, i());
-        });
-        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
-        assertMovedDownOneBlock.accept(4);
-        assertEquals(5L * blockSize - 1, listener.getUpdate().shifted().getEndRange(0));
-
-        // less than a block of input moves nothing, but carries over
-        final int countBefore = listener.getCount();
-        modify.accept(RowSetFactory.fromRange(0, 999));
-        assertEquals(countBefore + 1, listener.getCount());
-        assertTrue(listener.getUpdate().shifted().empty());
-        modify.accept(RowSetFactory.fromRange(1000, 2099));
-        assertMovedDownOneBlock.accept(5);
-
-        // Each block of input moves the next block, resuming where the last move stopped. Each cycle modifies rows
-        // not modified before, the second of them states that have already moved.
-        modify.accept(RowSetFactory.fromRange(2100, 2100 + blockSize - 1));
-        assertMovedDownOneBlock.accept(6);
-        assertEquals(initialSize - 1, aggregated.getRowSet().lastRowKey());
-        modify.accept(RowSetFactory.fromRange(4L * blockSize, 5L * blockSize - 1));
-        assertMovedDownOneBlock.accept(7);
-        // the last block moved, so the hole is given back at the end
-        assertEquals(initialSize - blockSize - 1, aggregated.getRowSet().lastRowKey());
-        assertEquals(initialSize - blockSize, aggregated.size());
-
-        // a new key goes after every existing state
-        final RowSet added = RowSetFactory.fromRange(initialSize, initialSize);
-        updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(table, added, shiftTestColumns(initialSize, 1));
-            table.notifyListeners(added, i(), i());
-        });
-        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
-        assertEquals(RowSetFactory.fromRange(initialSize - blockSize, initialSize - blockSize),
-                listener.getUpdate().added());
+        assertEquals(initialSize + 30, aggregated.getRowSet().lastRowKey());
     }
 
     private static ColumnHolder<?>[] shiftTestColumns(final long firstRowKey, final int count) {

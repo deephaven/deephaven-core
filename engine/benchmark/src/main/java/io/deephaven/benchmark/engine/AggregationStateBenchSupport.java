@@ -40,16 +40,6 @@ final class AggregationStateBenchSupport {
     }
 
     /**
-     * Set whether the block shift waits until it can reach the end in one cycle, paid for by credit carried across
-     * cycles; {@code false}, which is all that a build without the setting supports, sweeps over several cycles.
-     *
-     * @param bulkShift whether to shift in bulk
-     */
-    static void setBulkShift(final boolean bulkShift) {
-        setFlag("BULK_SHIFT", bulkShift);
-    }
-
-    /**
      * Set the fraction free at which blocks of output positions are collapsed; 1 or more disables collapsing, which is
      * all that a build without the setting supports.
      *
@@ -62,24 +52,6 @@ final class AggregationStateBenchSupport {
         } catch (NoSuchFieldException e) {
             if (collapseFreeFraction < 1) {
                 throw new IllegalStateException("This build cannot collapse blocks", e);
-            }
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    /**
-     * Set the fraction of the output positions that released blocks anywhere must reach before the blocks after them
-     * are shifted down to reuse them; negative, which is all that a build without the setting supports, never shifts.
-     *
-     * @param blockShiftFraction the fraction at which to shift, zero for any released block, negative for never
-     */
-    static void setBlockShiftFraction(final double blockShiftFraction) {
-        try {
-            ChunkedOperatorAggregationHelper.class.getField("BLOCK_SHIFT_FRACTION").setDouble(null, blockShiftFraction);
-        } catch (NoSuchFieldException e) {
-            if (blockShiftFraction >= 0) {
-                throw new IllegalStateException("This build cannot shift states down", e);
             }
         } catch (IllegalAccessException e) {
             throw new IllegalStateException(e);
