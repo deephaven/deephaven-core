@@ -27,10 +27,12 @@ mode keeps these rules:
 
 - **New states go after every existing state.** A group that returns on a later cycle is a new state at a new output
   position, after every group that has rows. States are never placed into free positions in the middle of the result.
-- **Moves keep the order of the states.** When a mode moves states to give output positions back, the states keep
-  their relative order. Downstream listeners see the moves as the shifts of a `TableUpdate`.
-- **A group keeps its row key while it has rows,** unless the mode moves states. A group that empties and returns is a
-  new row, at the end of the result. This differs from the encounter-order promise of an aggregation that does not
+- **Moves keep the order of the states.** When the collapse moves states to free blocks, the states keep their
+  relative order. Downstream listeners see the moves as the shifts of a `TableUpdate`.
+- **Output positions are never given back.** Blocks are released in place, so the positions assigned grow with every
+  group ever created. See [Costs and limits](#costs-and-limits) for what bounds them.
+- **A group keeps its row key while it has rows,** unless the mode collapses blocks. A group that empties and returns
+  is a new row, at the end of the result. This differs from the encounter-order promise of an aggregation that does not
   reclaim.
 - **Storage is released after the cycle.** A block's storage is freed by a terminal notification, once every listener
   in the cycle has run, so previous values stay readable for the whole cycle that removed the states.
@@ -48,8 +50,8 @@ reuses it. This is how aggregations behaved before reclaiming existed. It uses t
 
 ### Release blocks
 
-`StateReclaimMode.releaseBlocks(collapseFreeFraction, blockShiftFraction, bulkShift)` frees the storage of each block
-once every state in it has been removed. With the default parameters, no state ever moves:
+`StateReclaimMode.releaseBlocks(collapseFreeFraction)` frees the storage of each block once every state in it has been
+removed. With the default parameter, no state ever moves:
 
 - The result columns' storage tracks the groups that have rows, but only at block granularity. A block that holds even
   one long-lived state is never released, so random churn with some long-lived groups releases few blocks. The hash
@@ -57,35 +59,11 @@ once every state in it has been removed. With the default parameters, no state e
   aggregation has had at once.
 - Output positions are never given back, so the positions assigned grow with every group ever created.
 
-The three parameters control the two moves that reduce both limits:
-
-- **Collapse** (`collapseFreeFraction` below 1) combines adjacent runs of blocks. A closed block at least this fraction
-  free is sparse. Runs of adjacent sparse blocks are collapsed: their live states move to the start of the run, and the
-  blocks this empties are released. A run collapses only if that frees at least one block. Collapse frees memory but
-  does not give output positions back.
-- **Block shift** (`blockShiftFraction` zero or more) moves blocks down over released ones, as whole blocks, so that
-  output positions are given back. It runs only once the released blocks are at least this fraction of the positions
-  assigned, so that many blocks do not shift to fill very small holes.
-- **Bulk shift** (`bulkShift`) chooses how the block shift proceeds:
-  - Without it, the shift sweeps toward the end over several cycles and resumes where it stopped. Each cycle may move
-    no more live states than its input rows added, modified, and removed, shared with the collapse; unspent budget of
-    up to one block carries to the next cycle. When the sweep reaches the end, the released blocks are given back and
-    the next output position moves down.
-  - With it, the shift waits until it can shift every block after the first released one in one cycle, so that it
-    always frees space at the end, and gives every released block back. Moves are paid for by a credit: each cycle
-    earns the number of states it added and removed, and unspent credit carries to later cycles, up to the number of
-    positions assigned. The collapse spends from the same credit first.
-
-The block shift moves whole blocks, so the array-backed sources never move its states one value at a time. A source
-that does not track previous values moves each block by reference. The result columns track previous values, so a
-block whose array must also hold this cycle's previous values is copied into a new current block, one array copy per
-block. Each moved state also costs the hash table's update of its output position.
-
-A sweeping shift chases a tail that grows with each cycle's new groups, and it moves blocks near the front that empty
-soon after, so for a sliding window with `L` live groups the positions assigned peak near `3 L`. A bulk shift for the
-same window runs whenever the credit reaches `L`, when about `L / 2` positions have been added past the live states,
-so the positions assigned stay near `1.5 L`. On average the bulk shift moves no more states per cycle than the cycle
-added and removed, but it concentrates that work: every live state after the first released block moves in one cycle.
+The **collapse** (`collapseFreeFraction` below 1) releases blocks that random churn would otherwise leave nearly empty.
+A closed block at least this fraction free is sparse. Runs of adjacent sparse blocks are collapsed: their live states
+move to the start of the run, keeping their order, and the blocks this empties are released. A run collapses only if
+that frees at least one block. Each cycle moves no more live states than its input rows added, modified, and removed;
+a run that does not fit waits for a later cycle. The collapse frees memory but does not give output positions back.
 
 ## Parameters
 
@@ -97,11 +75,9 @@ matching public static fields of `ChunkedOperatorAggregationHelper`.
 | --- | --- | --- | --- |
 | `ChunkedOperatorAggregationHelper.reclaimStates` | `RECLAIM_STATES` | `true` | Whether states are reclaimed at all. `false` selects `none`. |
 | `ChunkedOperatorAggregationHelper.collapseFreeFraction` | `COLLAPSE_FREE_FRACTION` | `1.0` | The fraction free at which a closed block is sparse and may be collapsed. 1 or more never collapses. |
-| `ChunkedOperatorAggregationHelper.blockShiftFraction` | `BLOCK_SHIFT_FRACTION` | `-1.0` | The fraction of the positions assigned that released blocks must reach before blocks shift down. 0 shifts for any released block; negative never shifts. |
-| `ChunkedOperatorAggregationHelper.bulkShift` | `BULK_SHIFT` | `false` | Whether the block shift waits until it can reach the end in one cycle, paid for by credit carried across cycles, rather than sweeping over several cycles. |
 
-The defaults select `releaseBlocks(1, -1, false)`: blocks are released as they empty and no state moves. A fraction
-must not be `NaN`; `releaseBlocks` rejects one.
+The defaults select `releaseBlocks(1)`: blocks are released as they empty and no state moves. The fraction must not be
+`NaN`; `releaseBlocks` rejects one.
 
 ## Choosing a mode per call
 
@@ -119,7 +95,8 @@ moves states. The tree table's source row lookup uses `none` for this reason, an
 
 A mode other than `none` can apply only when all of the following hold:
 
-- Every operator of the aggregation can reclaim states. Group-by, partition-by, formula, and rollup operators cannot.
+- Every operator of the aggregation can reclaim states (`IterativeChunkedAggregationOperator.canReclaimStates()`, false
+  by default). Group-by, partition-by, formula, and rollup operators cannot.
 - The aggregation does not preserve empty groups.
 - The aggregation has no initial groups.
 
@@ -137,14 +114,15 @@ A static input table never reclaims states, since no state is ever removed, so a
 
 - **Returning groups cost more.** A group that empties and returns is a new state, and a new row at the end of the
   result, where `none` would reuse its state. Workloads whose groups keep returning run slower with reclaiming.
-- **Output positions are ints.** A mode that never gives positions back — release blocks without the block shift —
-  fails with `Aggregation output positions exhausted` once 2^31 - 1 states have been created over the life of the
-  aggregation. At 10,000 new groups per second that is about 2.5 days.
+- **Output positions are ints.** No mode gives positions back, so every reclaiming mode fails with `Aggregation output
+  positions exhausted` once 2^31 - 1 states have been created over the life of the aggregation. At 10,000 new groups
+  per second that is about 2.5 days. Rather than moving states to keep positions low, which was tried and rejected (see
+  [Block shifting](#block-shifting)), an aggregation that needs more can migrate to `long` output positions (see
+  [Long output positions](#long-output-positions)).
 - **The hash table does not shrink.** Tombstones keep their keys until a rehash drops them. Growth is driven by the live
   states: when tombstones alone cross the load factor, the table rehashes at the same size.
 - **Key columns track previous values only when states can move.** The copied key columns start tracking previous
-  values for collapse and block shift, but not for release blocks without moves.
-- **The bulk shift has a latency cost.** The cycle that shifts moves every live state after the first released block.
+  values when the mode collapses, but not for release blocks without moves.
 
 ## Benchmark results
 
@@ -167,28 +145,29 @@ The columns:
   aggregation's modified-states bitmap. Every percentage is the change against this column, the fair baseline for
   this branch.
 - **`none`:** this branch without reclaiming, which isolates its other improvements to the update cycle.
-- **Blocks:** `releaseBlocks(1, -1, false)`, the default, which releases blocks and never moves a state.
-- **Collapse, sweep:** `releaseBlocks(0.75, 0, false)`, which collapses sparse blocks and sweeps blocks down over
-  several cycles.
-- **Bulk:** `releaseBlocks(1, 0, true)`, which shifts blocks in bulk without collapsing.
-- **Collapse 0.75, bulk** and **Collapse 0.5, bulk:** `releaseBlocks(0.75, 0, true)` and `releaseBlocks(0.5, 0, true)`.
+- **Blocks:** `releaseBlocks(1)`, the default, which releases blocks and never moves a state.
+- **Collapse 0.75** and **Collapse 0.5:** `releaseBlocks(0.75)` and `releaseBlocks(0.5)`, which also collapse runs of
+  sparse blocks.
+
+The Blocks and collapse columns come from a later run than the others. Blocks measured within the error bounds of the
+earlier run in every workload.
 
 ### Time
 
 Milliseconds per batch of 900 cycles; lower is better.
 
-| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse, sweep | Bulk | Collapse 0.75, bulk | Collapse 0.5, bulk |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 967 ± 141 (+2%) | 949 ± 116 | 954 ± 152 (+1%) | 873 ± 83 (−8%) | 922 ± 137 (−3%) | 950 ± 32 (+0%) | 917 ± 65 (−3%) | 922 ± 43 (−3%) |
-| Sliding window | 1 | No | 1457 ± 178 (+7%) | 1367 ± 87 | 1435 ± 61 (+5%) | 822 ± 43 (−40%) | 907 ± 77 (−34%) | 968 ± 128 (−29%) | 906 ± 16 (−34%) | 926 ± 70 (−32%) |
-| Sliding window | 1 | Yes | 618 ± 50 (+4%) | 595 ± 30 | 754 ± 561 (+27%) | 726 ± 90 (+22%) | 890 ± 51 (+50%) | 784 ± 56 (+32%) | 810 ± 47 (+36%) | 871 ± 22 (+46%) |
-| Random churn | 1 | No | 3131 ± 156 (+11%) | 2827 ± 127 | 2624 ± 73 (−7%) | 2318 ± 70 (−18%) | 2537 ± 121 (−10%) | 2818 ± 89 (−0%) | 2374 ± 92 (−16%) | 2420 ± 79 (−14%) |
-| Random churn | 1 | Yes | 2067 ± 122 (+10%) | 1873 ± 49 | 1589 ± 68 (−15%) | 2460 ± 211 (+31%) | 2470 ± 175 (+32%) | 2868 ± 392 (+53%) | 2393 ± 155 (+28%) | 2274 ± 210 (+21%) |
-| Add only | 100 | — | 116 ± 14 (−4%) | 120 ± 19 | 115 ± 18 (−4%) | 126 ± 13 (+5%) | 130 ± 17 (+8%) | 130 ± 18 (+8%) | 138 ± 47 (+15%) | 129 ± 11 (+7%) |
-| Sliding window | 100 | No | 203 ± 36 (+2%) | 200 ± 17 | 197 ± 17 (−2%) | 187 ± 12 (−6%) | 200 ± 18 (−0%) | 203 ± 21 (+1%) | 205 ± 16 (+2%) | 187 ± 13 (−7%) |
-| Sliding window | 100 | Yes | 200 ± 15 (+7%) | 187 ± 23 | 188 ± 10 (+0%) | 200 ± 16 (+7%) | 205 ± 14 (+10%) | 191 ± 14 (+2%) | 206 ± 8 (+10%) | 193 ± 11 (+3%) |
-| Random churn | 100 | No | 674 ± 21 (+6%) | 637 ± 40 | 635 ± 45 (−0%) | 637 ± 30 (−0%) | 662 ± 44 (+4%) | 641 ± 45 (+1%) | 649 ± 48 (+2%) | 628 ± 10 (−1%) |
-| Random churn | 100 | Yes | 608 ± 33 (+3%) | 591 ± 11 | 592 ± 24 (+0%) | 596 ± 14 (+1%) | 600 ± 50 (+2%) | 590 ± 33 (−0%) | 631 ± 110 (+7%) | 601 ± 29 (+2%) |
+| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse 0.75 | Collapse 0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | 1 | — | 967 ± 141 (+2%) | 949 ± 116 | 954 ± 152 (+1%) | 857 ± 92 (−10%) | 861 ± 45 (−9%) | 895 ± 103 (−6%) |
+| Sliding window | 1 | No | 1457 ± 178 (+7%) | 1367 ± 87 | 1435 ± 61 (+5%) | 867 ± 31 (−37%) | 841 ± 46 (−38%) | 907 ± 231 (−34%) |
+| Sliding window | 1 | Yes | 618 ± 50 (+4%) | 595 ± 30 | 754 ± 561 (+27%) | 819 ± 66 (+38%) | 824 ± 65 (+38%) | 800 ± 105 (+34%) |
+| Random churn | 1 | No | 3131 ± 156 (+11%) | 2827 ± 127 | 2624 ± 73 (−7%) | 2545 ± 219 (−10%) | 2302 ± 298 (−19%) | 2271 ± 173 (−20%) |
+| Random churn | 1 | Yes | 2067 ± 122 (+10%) | 1873 ± 49 | 1589 ± 68 (−15%) | 2374 ± 81 (+27%) | 2208 ± 120 (+18%) | 2469 ± 284 (+32%) |
+| Add only | 100 | — | 116 ± 14 (−4%) | 120 ± 19 | 115 ± 18 (−4%) | 125 ± 39 (+4%) | 125 ± 12 (+4%) | 124 ± 11 (+3%) |
+| Sliding window | 100 | No | 203 ± 36 (+2%) | 200 ± 17 | 197 ± 17 (−2%) | 181 ± 15 (−9%) | 192 ± 32 (−4%) | 204 ± 20 (+2%) |
+| Sliding window | 100 | Yes | 200 ± 15 (+7%) | 187 ± 23 | 188 ± 10 (+0%) | 200 ± 13 (+7%) | 196 ± 15 (+5%) | 199 ± 17 (+6%) |
+| Random churn | 100 | No | 674 ± 21 (+6%) | 637 ± 40 | 635 ± 45 (−0%) | 632 ± 42 (−1%) | 637 ± 24 (−0%) | 627 ± 59 (−2%) |
+| Random churn | 100 | Yes | 608 ± 33 (+3%) | 591 ± 11 | 592 ± 24 (+0%) | 588 ± 23 (−0%) | 589 ± 53 (−0%) | 581 ± 10 (−2%) |
 
 ### Memory
 
@@ -196,36 +175,36 @@ The heap retained at the end of a batch, in megabytes, after a garbage collectio
 the benchmark's own data, so compare the modes with each other rather than reading the values as the aggregation's
 size.
 
-| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse, sweep | Bulk | Collapse 0.75, bulk | Collapse 0.5, bulk |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 673 (−0%) | 675 | 673 (−0%) | 568 (−16%) | 569 (−16%) | 568 (−16%) | 567 (−16%) | 568 (−16%) |
-| Sliding window | 1 | No | 670 (−1%) | 676 | 681 (+1%) | 175 (−74%) | 180 (−73%) | 191 (−72%) | 190 (−72%) | 190 (−72%) |
-| Sliding window | 1 | Yes | 178 (−1%) | 179 | 180 (+0%) | 119 (−34%) | 124 (−31%) | 135 (−25%) | 135 (−25%) | 135 (−25%) |
-| Random churn | 1 | No | 710 (−1%) | 715 | 717 (+0%) | 468 (−35%) | 254 (−64%) | 469 (−34%) | 253 (−65%) | 234 (−67%) |
-| Random churn | 1 | Yes | 217 (−0%) | 217 | 217 (+0%) | 433 (+100%) | 197 (−9%) | 432 (+99%) | 196 (−10%) | 175 (−19%) |
-| Add only | 100 | — | 28 (+0%) | 28 | 28 (+0%) | 27 (−4%) | 26 (−7%) | 26 (−7%) | 26 (−6%) | 26 (−7%) |
-| Sliding window | 100 | No | 28 (+0%) | 28 | 28 (+0%) | 23 (−18%) | 27 (−2%) | 23 (−18%) | 23 (−18%) | 23 (−18%) |
-| Sliding window | 100 | Yes | 20 (+0%) | 20 | 20 (+0%) | 23 (+15%) | 27 (+33%) | 23 (+15%) | 23 (+15%) | 23 (+15%) |
-| Random churn | 100 | No | 52 (+2%) | 51 | 51 (+0%) | 46 (−9%) | 52 (+3%) | 45 (−12%) | 51 (+0%) | 51 (−1%) |
-| Random churn | 100 | Yes | 42 (+2%) | 41 | 42 (+2%) | 41 (+0%) | 45 (+9%) | 44 (+7%) | 44 (+7%) | 45 (+10%) |
+| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse 0.75 | Collapse 0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | 1 | — | 673 (−0%) | 675 | 673 (−0%) | 571 (−15%) | 567 (−16%) | 569 (−16%) |
+| Sliding window | 1 | No | 670 (−1%) | 676 | 681 (+1%) | 175 (−74%) | 183 (−73%) | 183 (−73%) |
+| Sliding window | 1 | Yes | 178 (−1%) | 179 | 180 (+0%) | 119 (−33%) | 127 (−29%) | 127 (−29%) |
+| Random churn | 1 | No | 710 (−1%) | 715 | 717 (+0%) | 468 (−35%) | 338 (−53%) | 322 (−55%) |
+| Random churn | 1 | Yes | 217 (−0%) | 217 | 217 (+0%) | 432 (+99%) | 277 (+28%) | 255 (+18%) |
+| Add only | 100 | — | 28 (+0%) | 28 | 28 (+0%) | 27 (−4%) | 26 (−7%) | 26 (−7%) |
+| Sliding window | 100 | No | 28 (+0%) | 28 | 28 (+0%) | 23 (−18%) | 23 (−18%) | 23 (−18%) |
+| Sliding window | 100 | Yes | 20 (+0%) | 20 | 20 (+0%) | 23 (+15%) | 23 (+15%) | 23 (+15%) |
+| Random churn | 100 | No | 52 (+2%) | 51 | 51 (+0%) | 46 (−10%) | 50 (−2%) | 49 (−4%) |
+| Random churn | 100 | Yes | 42 (+2%) | 41 | 42 (+2%) | 41 (+0%) | 45 (+10%) | 44 (+7%) |
 
 ### Output positions assigned
 
 The positions assigned at the end of a batch. Over a batch, one row per group creates 10 million groups, or cycles
 through 2 million keys when groups return; 100 rows per group creates 100,000 groups, or cycles through 20,000 keys.
 
-| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse, sweep | Bulk | Collapse 0.75, bulk | Collapse 0.5, bulk |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 10.00M (+0%) | 10.00M | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) |
-| Sliding window | 1 | No | 10.00M (+0%) | 10.00M | 10.00M (+0%) | 10.00M (+0%) | 2.96M (−70%) | 1.49M (−85%) | 1.49M (−85%) | 1.49M (−85%) |
-| Sliding window | 1 | Yes | 2.00M (+0%) | 2.00M | 2.00M (+0%) | 10.00M (+400%) | 2.96M (+48%) | 1.49M (−25%) | 1.49M (−25%) | 1.49M (−25%) |
-| Random churn | 1 | No | 10.00M (+0%) | 10.00M | 10.00M (+0%) | 10.00M (+0%) | 4.02M (−60%) | 8.59M (−14%) | 2.76M (−72%) | 2.57M (−74%) |
-| Random churn | 1 | Yes | 2.00M (+0%) | 2.00M | 2.00M (+0%) | 8.71M (+335%) | 3.25M (+63%) | 8.65M (+333%) | 2.62M (+31%) | 2.40M (+20%) |
-| Add only | 100 | — | 100.0k (+0%) | 100.0k | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) |
-| Sliding window | 100 | No | 100.0k (+0%) | 100.0k | 100.0k (+0%) | 100.0k (+0%) | 12.0k (−88%) | 16.9k (−83%) | 16.9k (−83%) | 16.9k (−83%) |
-| Sliding window | 100 | Yes | 20.0k (+0%) | 20.0k | 20.0k (+0%) | 100.0k (+400%) | 12.0k (−40%) | 16.9k (−16%) | 16.9k (−16%) | 16.9k (−16%) |
-| Random churn | 100 | No | 100.0k (+0%) | 100.0k | 100.0k (+0%) | 100.0k (+0%) | 69.4k (−31%) | 100.0k (+0%) | 86.3k (−14%) | 90.6k (−9%) |
-| Random churn | 100 | Yes | 20.0k (+0%) | 20.0k | 20.0k (+0%) | 20.0k (+0%) | 20.0k (+0%) | 20.0k (+0%) | 20.0k (+0%) | 20.0k (+0%) |
+| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse 0.75 | Collapse 0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | 1 | — | 10.00M (+0%) | 10.00M | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) |
+| Sliding window | 1 | No | 10.00M (+0%) | 10.00M | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) |
+| Sliding window | 1 | Yes | 2.00M (+0%) | 2.00M | 2.00M (+0%) | 10.00M (+400%) | 10.00M (+400%) | 10.00M (+400%) |
+| Random churn | 1 | No | 10.00M (+0%) | 10.00M | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) |
+| Random churn | 1 | Yes | 2.00M (+0%) | 2.00M | 2.00M (+0%) | 8.71M (+335%) | 8.71M (+335%) | 8.71M (+335%) |
+| Add only | 100 | — | 100.0k (+0%) | 100.0k | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) |
+| Sliding window | 100 | No | 100.0k (+0%) | 100.0k | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) |
+| Sliding window | 100 | Yes | 20.0k (+0%) | 20.0k | 20.0k (+0%) | 100.0k (+400%) | 100.0k (+400%) | 100.0k (+400%) |
+| Random churn | 100 | No | 100.0k (+0%) | 100.0k | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) | 100.0k (+0%) |
+| Random churn | 100 | Yes | 20.0k (+0%) | 20.0k | 20.0k (+0%) | 20.0k (+0%) | 20.0k (+0%) | 20.0k (+0%) |
 
 ### Longest cycle
 
@@ -233,18 +212,18 @@ The longest single cycle of a batch, in milliseconds, the worst over five batche
 the same configuration varied by a factor of two between runs — so this table has no percentages; read it for the
 modes whose longest cycles are consistently high.
 
-| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse, sweep | Bulk | Collapse 0.75, bulk | Collapse 0.5, bulk |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 16.4 | 19.3 | 26.8 | 25.8 | 11.4 | 13.5 | 14.9 | 14.0 |
-| Sliding window | 1 | No | 25.0 | 46.4 | 33.1 | 8.7 | 6.8 | 10.3 | 10.0 | 10.0 |
-| Sliding window | 1 | Yes | 4.8 | 5.9 | 8.8 | 6.8 | 6.2 | 6.1 | 6.1 | 6.7 |
-| Random churn | 1 | No | 11.1 | 14.4 | 11.0 | 9.5 | 8.5 | 36.6 | 28.9 | 19.1 |
-| Random churn | 1 | Yes | 12.5 | 12.1 | 10.9 | 15.3 | 8.0 | 42.4 | 25.3 | 20.7 |
-| Add only | 100 | — | 0.4 | 0.4 | 0.5 | 0.5 | 0.5 | 0.5 | 1.0 | 0.4 |
-| Sliding window | 100 | No | 2.7 | 0.6 | 0.5 | 0.6 | 0.5 | 1.5 | 0.8 | 0.4 |
-| Sliding window | 100 | Yes | 0.6 | 0.5 | 0.6 | 1.4 | 0.5 | 0.4 | 0.5 | 0.4 |
-| Random churn | 100 | No | 1.4 | 1.5 | 1.5 | 1.4 | 8.8 | 2.0 | 2.5 | 2.9 |
-| Random churn | 100 | Yes | 1.9 | 1.1 | 1.4 | 1.1 | 2.5 | 1.7 | 2.3 | 1.3 |
+| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse 0.75 | Collapse 0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | 1 | — | 16.4 | 19.3 | 26.8 | 14.4 | 16.6 | 13.4 |
+| Sliding window | 1 | No | 25.0 | 46.4 | 33.1 | 6.4 | 10.4 | 8.9 |
+| Sliding window | 1 | Yes | 4.8 | 5.9 | 8.8 | 6.0 | 11.2 | 6.0 |
+| Random churn | 1 | No | 11.1 | 14.4 | 11.0 | 11.8 | 8.5 | 7.3 |
+| Random churn | 1 | Yes | 12.5 | 12.1 | 10.9 | 10.6 | 7.5 | 7.8 |
+| Add only | 100 | — | 0.4 | 0.4 | 0.5 | 0.6 | 0.5 | 0.4 |
+| Sliding window | 100 | No | 2.7 | 0.6 | 0.5 | 0.5 | 1.0 | 0.6 |
+| Sliding window | 100 | Yes | 0.6 | 0.5 | 0.6 | 0.5 | 0.5 | 0.5 |
+| Random churn | 100 | No | 1.4 | 1.5 | 1.5 | 2.1 | 1.6 | 1.4 |
+| Random churn | 100 | Yes | 1.9 | 1.1 | 1.4 | 1.2 | 1.3 | 1.1 |
 
 ### Findings
 
@@ -252,32 +231,28 @@ modes whose longest cycles are consistently high.
   main with #8676 are within the error of each other, and they retain the same heap.
 - This branch without reclaiming (`none`) is 7% faster than main with #8676 for random churn when groups do not return,
   and 15% faster when they do, from its other improvements to the update cycle. Elsewhere it is within the error.
-- When groups do not return, every mode that releases blocks is faster than main with #8676 for the sliding window, by
-  29% to 40%, and retains about a quarter of its heap. For random churn, the modes that collapse retain a third of the
-  heap, and releasing blocks alone two thirds. The bulk shift without collapsing gains little there — the same time and
-  heap as releasing blocks alone, and 14% fewer positions — because random removals seldom empty a whole block for it
-  to give back.
-- The bulk shift keeps the positions assigned lowest: 1.49 million for the sliding window, against 2.96 million for the
-  sweeping shift and 10 million without a shift. For random churn it needs the collapse to release blocks: collapsing
-  at 0.5 with the bulk shift assigns 2.57 million positions, at 0.75 2.76 million, and the sweeping shift 4.02 million.
-- When groups return, every reclaiming mode is 21% to 53% slower than main with #8676, since returning groups are new
-  states rather than reused ones. Every mode retains less heap for the sliding window. For random churn the modes that
-  collapse retain 9% to 19% less, while releasing blocks alone, with or without the bulk shift, retains twice as much,
-  since few blocks empty while no state is reused.
+- When groups do not return, every reclaiming mode is faster than main with #8676 for the sliding window, by 34% to
+  38%, and retains about a quarter of its heap. For random churn, releasing blocks alone is 10% faster and retains
+  35% less heap; collapsing is 19% to 20% faster and retains 53% to 55% less.
+- When groups return, every reclaiming mode is 18% to 38% slower than main with #8676, since returning groups are new
+  states rather than reused ones. Every mode retains less heap for the sliding window. For random churn, releasing
+  blocks alone retains twice the heap of main with #8676, and collapsing 18% to 28% more.
+- No mode gives output positions back, so one row per group assigns 10 million positions when groups do not return,
+  and 8.71 to 10 million when they do, where main reuses 2 million.
 - With 100 rows per group, the modes are within the error of each other for time.
-- The bulk shift has the longest cycles for random churn, 19 to 42 ms against 8 to 15 ms without it, because it moves
-  every live state after the first released block in one cycle.
+- No mode has long cycles: the longest were 7 to 12 ms for random churn with one row per group.
 
 The numbers come from one machine and one JVM fork per configuration, with five measured batches each; treat
 differences within the error bounds as noise.
 
 ## Long output positions
 
-Output positions are `int`s, so a mode that never gives positions back runs out after 2^31 - 1 states (see
-[Costs and limits](#costs-and-limits)). Storing them as `long`s would remove the limit, and with it the reason to move
-states at all: releasing blocks as they empty would bound memory, and positions could keep increasing. That would allow
-a design without the collapse, the block shift, or the credit. Three experiments, not part of this change, measured what
-`long` positions cost.
+Output positions are `int`s, and no mode gives them back, so an aggregation runs out after 2^31 - 1 states (see
+[Costs and limits](#costs-and-limits)). Storing them as `long`s would remove the limit without moving states to give
+positions back, which was tried and rejected (see [Block shifting](#block-shifting)): releasing blocks as they empty
+bounds memory, and positions can keep increasing. Three experiments, not part of this change, measured what `long`
+positions cost. They were run while block shifting was still a parameter of release blocks, so the modes below are
+written with its parameters.
 
 ### What changed in the experiments
 
@@ -330,8 +305,8 @@ changes:
 | 100M | Add only | — | 12300 ± 755 | 12230 ± 1624 | −1% | 5617 → 5623 |
 | 100M | Random churn | No | 30299 ± 12134 | 30175 ± 1882 | −0% | 5925 → 5932 |
 
-**The complete conversion, releasing blocks with no moves** (`releaseBlocks(1, -1, false)`). The hash table's positions
-are wider too:
+**The complete conversion, releasing blocks with no moves** (`releaseBlocks(1, -1, false)`, now `releaseBlocks(1)`).
+The hash table's positions are wider too:
 
 | Size | Workload | Groups return | `int` | `long` | Change | Heap, MB |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -379,6 +354,8 @@ Linux container on an Intel Core i9-14900KS with 128 GB of RAM, which is slower 
 | 100M | `releaseBlocks(0.5, 0, true)` | Add only | — | 14118 ± 3163 | 15585 ± 846 | +10% | 5087 → 5607 |
 | 100M | `releaseBlocks(0.5, 0, true)` | Random churn | No | 44588 ± 2668 | 44728 ± 1234 | +0% | 1701 → 1957 |
 
+`releaseBlocks(0.5, 0, true)` collapsed at 0.5 and shifted blocks in bulk.
+
 The initial build of 10M rows, with reclaiming:
 
 - The complete conversion was within 5% either way without reclaiming, and 6% (`String` keys) to 10% (`long` keys)
@@ -391,8 +368,8 @@ The initial build of 10M rows, with reclaiming:
 - Widening the positions downstream of the hash table costs nothing measurable, with or without reclaiming. The whole
   cost is the hash table's slots growing from 4 to 8 bytes: 2% to 16% more time, most where adding states dominates
   and least for random churn, and 5% to 15% more retained heap. Both machines agree.
-- A design with `long` positions and no moves would pay that cost in exchange for dropping the collapse, the block
-  shift, the bulk shift, and the credit, and for never exhausting its positions.
+- `long` positions everywhere would pay that cost in every aggregation that reclaims, to remove a limit that few
+  reach.
 - A hybrid would pay it only when needed: `long` positions everywhere except the hash table, which stores `int`
   positions until they reach a threshold such as 2^30 and is then converted once, as part of a rehash, to a hasher that
   stores `long`s. The third experiment shows that below the threshold this costs nothing, and with the downstream
@@ -412,6 +389,92 @@ differences within the error bounds as noise.
 ## Rejected Alternatives
 
 These designs were implemented or measured and then rejected.
+
+### Block shifting
+
+Block shifting moved whole blocks of states down over released blocks, keeping the states in order, so that output
+positions were given back as well as memory. It was a pair of parameters of release blocks:
+
+- `blockShiftFraction` started a shift once the released blocks were at least this fraction of the positions assigned,
+  so that many blocks did not shift to fill very small holes.
+- `bulkShift` chose how the shift proceeded. Without it, the shift swept toward the end over several cycles, each
+  moving no more live states than its input rows, and gave the released blocks back when it reached the end. With it,
+  the shift waited until it could move every block after the first released one in one cycle, paid for by a credit that
+  each cycle's added and removed states earned and that carried across cycles.
+
+A sweeping shift chases a tail that grows with each cycle's new groups, and it moves blocks near the front that empty
+soon after, so for a sliding window with `L` live groups the positions assigned peaked near `3 L`. The bulk shift ran
+whenever the credit reached `L`, so the positions assigned stayed near `1.5 L`, but it concentrated the work: every live
+state after the first released block moved in one cycle.
+
+Its benefits were lower output positions and, for random churn, more memory released by the collapse (see below). Its
+costs:
+
+- **Latency.** The bulk shift had the longest cycles for random churn, 19 to 42 ms against 7 to 15 ms without it.
+- **Memory.** Every shifting mode retained slightly more heap than releasing blocks alone for the sliding window,
+  180 to 191 MB against 175 MB.
+- **Code.** The array sources moved whole blocks by reference, completed a block's previous values before moving it,
+  allocated destination blocks that an earlier move had left unallocated, and shrank their capacity when blocks were
+  released through the end. The helper composed the collapse and the shift into one shift for downstream listeners,
+  and the state manager updated the hash table for every live state in the moved blocks.
+
+The positions it kept low matter only for the `int` limit of 2^31 - 1 states created over the life of an aggregation.
+Rather than moving states to stay under it, an aggregation that needs more can migrate to `long` output positions: the
+[Long output positions](#long-output-positions) experiments show that `long` positions downstream of the hash table
+cost nothing, and a hash table that converts to `long` positions at a threshold pays their cost only once it is
+needed.
+
+Measured with the benchmark described in [Benchmark results](#benchmark-results), one row per group, with percentages
+against main with #8676 as there. Blocks releases blocks with no moves. The shifting modes were
+`releaseBlocks(0.75, 0, false)`, which collapsed and swept (Collapse, sweep); `releaseBlocks(1, 0, true)`, which
+shifted in bulk without collapsing (Bulk); and `releaseBlocks(0.75, 0, true)` and `releaseBlocks(0.5, 0, true)`, which
+collapsed and shifted in bulk. The last two columns collapse without shifting, from the later run in
+[Benchmark results](#benchmark-results).
+
+Time, in milliseconds per batch of 900 cycles:
+
+| Workload | Rows per group | Groups return | Main + #8676 | Blocks | Collapse, sweep | Bulk | Collapse 0.75, bulk | Collapse 0.5, bulk | Collapse 0.75 | Collapse 0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | 1 | — | 949 ± 116 | 873 ± 83 (−8%) | 922 ± 137 (−3%) | 950 ± 32 (+0%) | 917 ± 65 (−3%) | 922 ± 43 (−3%) | 861 ± 45 (−9%) | 895 ± 103 (−6%) |
+| Sliding window | 1 | No | 1367 ± 87 | 822 ± 43 (−40%) | 907 ± 77 (−34%) | 968 ± 128 (−29%) | 906 ± 16 (−34%) | 926 ± 70 (−32%) | 841 ± 46 (−38%) | 907 ± 231 (−34%) |
+| Sliding window | 1 | Yes | 595 ± 30 | 726 ± 90 (+22%) | 890 ± 51 (+50%) | 784 ± 56 (+32%) | 810 ± 47 (+36%) | 871 ± 22 (+46%) | 824 ± 65 (+38%) | 800 ± 105 (+34%) |
+| Random churn | 1 | No | 2827 ± 127 | 2318 ± 70 (−18%) | 2537 ± 121 (−10%) | 2818 ± 89 (−0%) | 2374 ± 92 (−16%) | 2420 ± 79 (−14%) | 2302 ± 298 (−19%) | 2271 ± 173 (−20%) |
+| Random churn | 1 | Yes | 1873 ± 49 | 2460 ± 211 (+31%) | 2470 ± 175 (+32%) | 2868 ± 392 (+53%) | 2393 ± 155 (+28%) | 2274 ± 210 (+21%) | 2208 ± 120 (+18%) | 2469 ± 284 (+32%) |
+
+Retained heap, in megabytes:
+
+| Workload | Rows per group | Groups return | Main + #8676 | Blocks | Collapse, sweep | Bulk | Collapse 0.75, bulk | Collapse 0.5, bulk | Collapse 0.75 | Collapse 0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | 1 | — | 675 | 568 (−16%) | 569 (−16%) | 568 (−16%) | 567 (−16%) | 568 (−16%) | 567 (−16%) | 569 (−16%) |
+| Sliding window | 1 | No | 676 | 175 (−74%) | 180 (−73%) | 191 (−72%) | 190 (−72%) | 190 (−72%) | 183 (−73%) | 183 (−73%) |
+| Sliding window | 1 | Yes | 179 | 119 (−34%) | 124 (−31%) | 135 (−25%) | 135 (−25%) | 135 (−25%) | 127 (−29%) | 127 (−29%) |
+| Random churn | 1 | No | 715 | 468 (−35%) | 254 (−64%) | 469 (−34%) | 253 (−65%) | 234 (−67%) | 338 (−53%) | 322 (−55%) |
+| Random churn | 1 | Yes | 217 | 433 (+100%) | 197 (−9%) | 432 (+99%) | 196 (−10%) | 175 (−19%) | 277 (+28%) | 255 (+18%) |
+
+Output positions assigned:
+
+| Workload | Rows per group | Groups return | Main + #8676 | Blocks | Collapse, sweep | Bulk | Collapse 0.75, bulk | Collapse 0.5, bulk | Collapse 0.75 | Collapse 0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | 1 | — | 10.00M | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) | 10.00M (+0%) |
+| Sliding window | 1 | No | 10.00M | 10.00M (+0%) | 2.96M (−70%) | 1.49M (−85%) | 1.49M (−85%) | 1.49M (−85%) | 10.00M (+0%) | 10.00M (+0%) |
+| Sliding window | 1 | Yes | 2.00M | 10.00M (+400%) | 2.96M (+48%) | 1.49M (−25%) | 1.49M (−25%) | 1.49M (−25%) | 10.00M (+400%) | 10.00M (+400%) |
+| Random churn | 1 | No | 10.00M | 10.00M (+0%) | 4.02M (−60%) | 8.59M (−14%) | 2.76M (−72%) | 2.57M (−74%) | 10.00M (+0%) | 10.00M (+0%) |
+| Random churn | 1 | Yes | 2.00M | 8.71M (+335%) | 3.25M (+63%) | 8.65M (+333%) | 2.62M (+31%) | 2.40M (+20%) | 8.71M (+335%) | 8.71M (+335%) |
+
+Longest cycle, in milliseconds:
+
+| Workload | Rows per group | Groups return | Main + #8676 | Blocks | Collapse, sweep | Bulk | Collapse 0.75, bulk | Collapse 0.5, bulk | Collapse 0.75 | Collapse 0.5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | 1 | — | 19.3 | 25.8 | 11.4 | 13.5 | 14.9 | 14.0 | 16.6 | 13.4 |
+| Sliding window | 1 | No | 46.4 | 8.7 | 6.8 | 10.3 | 10.0 | 10.0 | 10.4 | 8.9 |
+| Sliding window | 1 | Yes | 5.9 | 6.8 | 6.2 | 6.1 | 6.1 | 6.7 | 11.2 | 6.0 |
+| Random churn | 1 | No | 14.4 | 9.5 | 8.5 | 36.6 | 28.9 | 19.1 | 8.5 | 7.3 |
+| Random churn | 1 | Yes | 12.1 | 15.3 | 8.0 | 42.4 | 25.3 | 20.7 | 7.5 | 7.8 |
+
+Shifting also helped the collapse. For random churn, collapsing with a shift retained 234 to 254 MB when groups do not
+return and 175 to 197 MB when they do, against 322 to 338 MB and 255 to 277 MB for collapsing alone. A run to collapse
+must be adjacent sparse blocks, and a released block between two sparse blocks separates them; shifting removed the
+released blocks from between the live ones, which is the likely reason.
 
 ### Compaction
 
@@ -453,18 +516,19 @@ Measured with the benchmark described in [Benchmark results](#benchmark-results)
 
 It never lowered the positions assigned, it was the slowest mode wherever groups return, and for the sliding window it
 retained 2.5 to 3.4 times the heap of the modes that collapse. These numbers come from an earlier run than the
-tables above, without the `bulkShift` parameter.
+tables above, before block shifting had a bulk variant.
 
 ### Combining any two blocks that fit
 
-An earlier credit mode, before `bulkShift` became a parameter of release mode, combined blocks in pairs rather than
-collapsing runs of sparse blocks: two closed blocks, consecutive among the blocks not released, were combined whenever
-their live states fit in one block, releasing the upper one, whatever their fractions free. It shifted in bulk as
-`bulkShift` does.
+An earlier credit mode, before the bulk shift became a parameter of release blocks, combined blocks in pairs rather
+than collapsing runs of sparse blocks: two closed blocks, consecutive among the blocks not released, were combined
+whenever their live states fit in one block, releasing the upper one, whatever their fractions free. It shifted blocks
+in bulk (see [Block shifting](#block-shifting)).
 
 Collapsing at 0.5 with the bulk shift does nearly as well, and uses one combining mechanism rather than two. Measured in
 an earlier run, the pairwise combine assigned 2.44 million positions for random churn with one row per group and
-retained 229 MB, against 2.57 million and 234 MB for collapsing at 0.5 with the bulk shift in the tables above; with
+retained 229 MB, against 2.57 million and 234 MB for collapsing at 0.5 with the bulk shift in the tables of
+[Block shifting](#block-shifting); with
 returning groups, 2.35 million and 170 MB against 2.40 million and 175 MB. Their times were within the error of each
 other.
 
