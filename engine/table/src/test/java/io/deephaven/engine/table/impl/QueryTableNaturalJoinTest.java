@@ -15,6 +15,7 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -3708,13 +3709,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     }
                 });
 
-        // below 1 / REHASH_SLOTS_PER_ENTRY, a partial rehash could not drain the alternate before the new table fills
-        Throwable cause = assertThrows(Throwable.class, () -> join.apply(0.3));
-        while (!(cause instanceof IllegalArgumentException) && cause.getCause() != null) {
-            cause = cause.getCause();
+        // at or below 1 / REHASH_SLOTS_PER_ENTRY, a partial rehash could not drain the alternate before the new table
+        // fills
+        final double limit = 1.0 / IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY;
+        for (final double maximumLoadFactor : new double[] {0.3, limit}) {
+            Throwable cause = assertThrows(Throwable.class, () -> join.apply(maximumLoadFactor));
+            while (!(cause instanceof IllegalArgumentException) && cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            assertTrue(String.valueOf(cause), cause instanceof IllegalArgumentException);
+            assertTrue(cause.getMessage(), cause.getMessage().contains("REHASH_SLOTS_PER_ENTRY"));
         }
-        assertTrue(String.valueOf(cause), cause instanceof IllegalArgumentException);
-        assertTrue(cause.getMessage(), cause.getMessage().contains("REHASH_SLOTS_PER_ENTRY"));
 
         assertEquals(2, join.apply(0.5).size());
     }
