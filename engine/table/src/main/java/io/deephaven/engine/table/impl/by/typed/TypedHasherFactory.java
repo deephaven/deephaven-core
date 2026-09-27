@@ -270,6 +270,7 @@ public class TypedHasherFactory {
                     .tombstoneStateName("TOMBSTONE_RIGHT_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
+                    .rehashSlotsPerEntry(IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY)
                     .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
                     .moveMainFull(TypedNaturalJoinFactory::incrementalMoveMainFull)
                     .moveMainAlternate(TypedNaturalJoinFactory::incrementalMoveMainAlternate)
@@ -877,17 +878,30 @@ public class TypedHasherFactory {
     private static MethodSpec createRehashInternalPartialMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        // ensure the capacity for everything
-        builder.addStatement("int rehashedEntries = 0");
-        builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
         final String extraParamNames = getExtraMigrateParams(hasherConfig.extraPartialRehashParameters);
         final String deletedParam = hasherConfig.supportTombstones ? ", false" : "";
-
-        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + deletedParam + extraParamNames + "))");
-        builder.addStatement("rehashedEntries++");
-        builder.endControlFlow();
-        builder.endControlFlow();
-        builder.addStatement("return rehashedEntries");
+        if (hasherConfig.rehashSlotsPerEntry > 0) {
+            // bound the slots examined, so that tombstones and empty slots cannot make one call scan the whole table
+            builder.addStatement("final long slotsToExamine = (long) entriesToRehash * $L",
+                    hasherConfig.rehashSlotsPerEntry);
+            builder.addStatement("long examinedSlots = 0");
+            builder.beginControlFlow("while (rehashPointer > 0 && examinedSlots < slotsToExamine)");
+            builder.addStatement("migrateOneLocation(--rehashPointer" + deletedParam + extraParamNames + ")");
+            builder.addStatement("++examinedSlots");
+            builder.endControlFlow();
+            builder.beginControlFlow("if (rehashPointer == 0)");
+            builder.addStatement("return entriesToRehash");
+            builder.endControlFlow();
+            builder.addStatement("return (int) (examinedSlots / $L)", hasherConfig.rehashSlotsPerEntry);
+        } else {
+            builder.addStatement("int rehashedEntries = 0");
+            builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
+            builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + deletedParam + extraParamNames + "))");
+            builder.addStatement("rehashedEntries++");
+            builder.endControlFlow();
+            builder.endControlFlow();
+            builder.addStatement("return rehashedEntries");
+        }
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("rehashInternalPartial")
                 .returns(int.class).addModifiers(Modifier.PROTECTED).addParameter(int.class, "entriesToRehash")

@@ -46,6 +46,13 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
 public abstract class IncrementalNaturalJoinStateManagerTypedBase extends StaticNaturalJoinStateManager
         implements IncrementalNaturalJoinStateManager, BothIncrementalNaturalJoinStateManager {
 
+    /**
+     * The alternate slots a partial rehash examines for each entry about to be built. Bounding the slots examined,
+     * rather than the live entries moved, keeps one build from scanning a long run of tombstones and empty slots;
+     * {@link #computeTableSize} sizes a new table so that the alternate still drains before the new table fills.
+     */
+    public static final int REHASH_SLOTS_PER_ENTRY = 3;
+
     // the number of slots in our table
     protected int tableSize;
 
@@ -301,7 +308,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
 
         int oldTableSize = tableSize;
-        tableSize = computeTableSize(nextChunkSize);
+        tableSize = computeTableSize(nextChunkSize, oldTableSize, fullRehash);
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
         if (rehashCredits.get() > 0) {
@@ -311,7 +318,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         if (fullRehash) {
             // we need to ditch the alternate table before continuing on a full rehash
             if (rehashPointer > 0) {
-                rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
+                // a partial rehash is bounded by the slots it examines, so ask for every slot that remains
+                rehashInternalPartial(rehashPointer, modifiedSlotTracker);
                 Assert.eqZero(alternateEntries, "alternateEntries");
                 clearAlternate();
             }
@@ -394,14 +402,27 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
     }
 
-    public int computeTableSize(int nextChunkSize) {
+    /**
+     * @param nextChunkSize the size of the chunk about to be built
+     * @param alternateSize the size of the table that becomes the alternate
+     * @param fullRehash whether the whole table is rehashed at once, leaving no alternate to drain
+     * @return the size of the new table
+     */
+    public int computeTableSize(final int nextChunkSize, final int alternateSize, final boolean fullRehash) {
         // we use the number of liveEntries multiplied by 2, so that as we rehash we can both consume a slot for the
-        // live entry from the alternate table; and also consume a slot for the new value. This ensures that we will
-        // burn down our rehash requirements before we need to initiate a new partial rehash.
-
+        // live entry from the alternate table; and also consume a slot for the new value.
         final long desiredEntries = Math.max(liveEntries * 2, liveEntries + nextChunkSize);
-        final long tableSize =
+        long tableSize =
                 MathUtil.roundUpPowerOf2(Math.max(this.tableSize, (long) (desiredEntries / maximumLoadFactor)));
+        // Each build examines REHASH_SLOTS_PER_ENTRY alternate slots per entry before inserting, so the alternate
+        // drains before the new table needs another rehash if the entries that fit under the load factor pay for
+        // examining every alternate slot. An alternate with no live entries is dropped without being examined.
+        if (!fullRehash && liveEntries > 0) {
+            while (tableSize <= MAX_TABLE_SIZE && (tableSize * maximumLoadFactor - liveEntries - nextChunkSize)
+                    * REHASH_SLOTS_PER_ENTRY < alternateSize) {
+                tableSize *= 2;
+            }
+        }
         if (tableSize <= 1 || tableSize > MAX_TABLE_SIZE) {
             throw new UnsupportedOperationException("Hash table exceeds maximum size!");
         }

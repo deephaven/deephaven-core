@@ -33,6 +33,11 @@ public class HasherConfig<T> {
     final Consumer<CodeBlock.Builder> rehashFullSetup;
     final boolean includeOriginalSources;
     final boolean supportRehash;
+    /**
+     * If positive, a partial rehash examines up to this many alternate slots for each entry it is asked to rehash,
+     * rather than continuing until that many live entries have moved; otherwise, it moves live entries.
+     */
+    final int rehashSlotsPerEntry;
     final List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods;
     final List<ParameterSpec> extraPartialRehashParameters;
     final List<ProbeSpec> probes;
@@ -45,6 +50,7 @@ public class HasherConfig<T> {
             boolean alwaysMoveMain,
             boolean includeOriginalSources,
             boolean supportRehash,
+            int rehashSlotsPerEntry,
             String mainStateName,
             String overflowOrAlternateStateName,
             String emptyStateName,
@@ -67,6 +73,7 @@ public class HasherConfig<T> {
         this.alwaysMoveMain = alwaysMoveMain;
         this.includeOriginalSources = includeOriginalSources;
         this.supportRehash = supportRehash;
+        this.rehashSlotsPerEntry = rehashSlotsPerEntry;
         this.mainStateName = mainStateName;
         this.overflowOrAlternateStateName = overflowOrAlternateStateName;
         this.emptyStateName = emptyStateName;
@@ -172,6 +179,7 @@ public class HasherConfig<T> {
         private boolean supportTombstones = false;
         private boolean openAddressedAlternate = true;
         private boolean alwaysMoveMain = false;
+        private int rehashSlotsPerEntry = 0;
         private boolean includeOriginalSources = false;
         private boolean supportRehash = true;
         private String mainStateName;
@@ -214,6 +222,11 @@ public class HasherConfig<T> {
 
         public Builder<T> supportTombstones(boolean supportTombstones) {
             this.supportTombstones = supportTombstones;
+            return this;
+        }
+
+        public Builder<T> rehashSlotsPerEntry(int rehashSlotsPerEntry) {
+            this.rehashSlotsPerEntry = rehashSlotsPerEntry;
             return this;
         }
 
@@ -310,7 +323,7 @@ public class HasherConfig<T> {
 
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle,
                     openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash,
-                    mainStateName,
+                    rehashSlotsPerEntry, mainStateName,
                     overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
                     stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
                     builds, extraMethods, extraConstructorParameters);
