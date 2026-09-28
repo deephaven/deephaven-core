@@ -6,15 +6,14 @@ package io.deephaven.engine.table.impl.by;
 /**
  * How an incremental aggregation reclaims the states of groups whose rows have all been removed.
  * <p>
- * A group that empties leaves the result at the end of the cycle. Unless the mode is {@link #none()}, its state leaves
- * the hash table as well, so a group that returns on a later cycle is a new state and, like any new group, gets a row
- * key after every existing row's. The modes differ in whether the storage of removed states is freed:
+ * A group that empties leaves the result at the end of the cycle. The modes differ in what happens to its state:
  * <ul>
- * <li>{@link #none()}: states are never removed. An empty group keeps its state, and a returning group gets its row key
- * back. Memory grows with every group ever seen.</li>
- * <li>{@link #releaseBlocks(double)}: when enough adjacent states are removed, free the underlying storage. If the
- * {@code collapseFreeFraction} is less than 1.0, states may move to eliminate fragmentation that would otherwise
- * prevent empty runs from being freed.</li>
+ * <li>{@link #none()}: the state is kept, so a group that returns on a later cycle gets its row key back. Memory grows
+ * with every group ever seen.</li>
+ * <li>{@link #releaseBlocks(double)}: the state is removed from the hash table, so a group that returns on a later
+ * cycle is a new state and, like any new group, gets a row key after every existing row's. When enough adjacent states
+ * are removed, free the underlying storage. If the {@code collapseFreeFraction} is less than 1.0, states may move to
+ * eliminate fragmentation that would otherwise prevent empty runs from being freed.</li>
  * </ul>
  * Only a mode that moves states ({@link #movesStates()}) changes a group's row key while it has rows; a consumer that
  * looks up a group's current row key and reads previous values there needs a mode that does not.
