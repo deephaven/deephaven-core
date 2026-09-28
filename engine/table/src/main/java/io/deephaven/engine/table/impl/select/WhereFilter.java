@@ -311,6 +311,30 @@ public interface WhereFilter extends Filter {
     }
 
     /**
+     * Returns true if this filter may be satisfied by pushdown rather than by its own
+     * {@link #filter(RowSet, RowSet, Table, boolean) filter()} call.
+     *
+     * <p>
+     * Pushdown treats a filter as a pure predicate over its columns, which lets a column source or data index answer it
+     * without ever calling {@code filter()}. A filter must return false when that assumption does not hold: when its
+     * {@code filter()} call carries state or side effects that later evaluation depends on, or when it performs its own
+     * index-based optimization that an external pushdown would duplicate or bypass.
+     * </p>
+     *
+     * <p>
+     * Wrappers and composed filters need not consult the filters they contain:
+     * {@link io.deephaven.engine.table.impl.PushdownFilterMatcher#canPushdownFilter(WhereFilter)} asks every filter in
+     * the tree for itself. A filter that delegates to an inner filter the tree does not expose, as {@link MatchFilter}
+     * and {@link RangeFilter} do, must answer for that inner filter.
+     * </p>
+     *
+     * @return if this filter may be pushed down
+     */
+    default boolean canPushdown() {
+        return true;
+    }
+
+    /**
      * Return true if this filter is a {@link io.deephaven.api.ConcurrencyControl#withSerial() serial} filter.
      *
      * <p>

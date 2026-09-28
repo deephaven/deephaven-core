@@ -8,8 +8,10 @@ import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.base.OSUtil;
 import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+@Ignore("The MinIO container is disabled")
 public class S3ParquetMinIOTest extends S3ParquetTestBase {
 
     @BeforeClass

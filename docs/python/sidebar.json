@@ -863,23 +863,23 @@
                   },
                   {
                     "label": "Fetch tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-FetchTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-FetchTable"
                   },
                   {
                     "label": "Import tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-ImportTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
                   },
                   {
                     "label": "Create input tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-InputTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
                   },
                   {
                     "label": "Run scripts",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-RunScript"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-RunScript"
                   },
                   {
                     "label": "Table operations",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-TableOps"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-TableOps"
                   }
                 ]
               },
@@ -1635,7 +1635,7 @@
                     "path": "reference/iceberg/adapter.md"
                   },
                   {
-                    "label": "adapater_aws_glue",
+                    "label": "adapter_aws_glue",
                     "path": "reference/iceberg/adapter-aws-glue.md"
                   },
                   {
@@ -1957,6 +1957,10 @@
                     "label": "Single aggregation",
                     "items": [
                       {
+                        "label": "abs_sum_by",
+                        "path": "reference/table-operations/group-and-aggregate/AbsSumBy.md"
+                      },
+                      {
                         "label": "avg_by",
                         "path": "reference/table-operations/group-and-aggregate/avgBy.md"
                       },
@@ -2024,10 +2028,6 @@
                       {
                         "label": "partitioned_agg_by",
                         "path": "reference/table-operations/group-and-aggregate/partitionedAggBy.md"
-                      },
-                      {
-                        "label": "abs_sum_by",
-                        "path": "reference/table-operations/group-and-aggregate/AbsSumBy.md"
                       },
                       {
                         "label": "abs_sum",
@@ -2229,7 +2229,7 @@
                     "path": "reference/table-operations/update-by-operations/rolling-count-time.md"
                   },
                   {
-                    "label": "rolling_count__where_tick",
+                    "label": "rolling_count_where_tick",
                     "path": "reference/table-operations/update-by-operations/rolling-count-where-tick.md"
                   },
                   {
@@ -3022,7 +3022,7 @@
                     "path": "reference/community-questions/convert-year-day-minute-instant.md"
                   },
                   {
-                    "label": "Why are my table operations producing incorrect results?",
+                    "label": "Why does my function with type hints throw an error on null values?",
                     "path": "reference/community-questions/why-do-my-python-type-hints-error.md"
                   },
                   {

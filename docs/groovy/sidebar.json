@@ -761,23 +761,23 @@
                   },
                   {
                     "label": "Fetch tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-FetchTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-FetchTable"
                   },
                   {
                     "label": "Import tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-ImportTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
                   },
                   {
                     "label": "Create input tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-InputTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
                   },
                   {
                     "label": "Run scripts",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-RunScript"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-RunScript"
                   },
                   {
                     "label": "Table operations",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-TableOps"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-TableOps"
                   }
                 ]
               },
