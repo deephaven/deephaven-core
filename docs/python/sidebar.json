@@ -1204,6 +1204,10 @@
         "collapsible": false,
         "items": [
           {
+            "label": "Data types",
+            "path": "reference/python/deephaven-python-types.md"
+          },
+          {
             "label": "API documentation",
             "items": [
               {
@@ -1213,6 +1217,18 @@
               {
                 "label": "Python (server)",
                 "href": "https://deephaven.io/core/pydoc"
+              },
+              {
+                "label": "C++ (client)",
+                "href": "https://deephaven.io/core/client-api/cpp"
+              },
+              {
+                "label": "C++ (examples)",
+                "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "Go (client)",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
               },
               {
                 "label": "Java (client/server)",
@@ -1230,18 +1246,6 @@
                     "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
                   }
                 ]
-              },
-              {
-                "label": "Go (client)",
-                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
-              },
-              {
-                "label": "C++ (client)",
-                "href": "https://deephaven.io/core/client-api/cpp"
-              },
-              {
-                "label": "C++ (examples)",
-                "href": "https://deephaven.io/core/client-api/cpp-examples"
               },
               {
                 "label": "R (client)",
@@ -1452,61 +1456,6 @@
                 "path": "reference/data-import-export/HTML/to-html.md"
               },
               {
-                "label": "Kafka",
-                "items": [
-                  {
-                    "label": "consume_to_partitioned_table",
-                    "path": "reference/data-import-export/Kafka/consume-to-partitioned-table.md"
-                  },
-                  {
-                    "label": "consume",
-                    "path": "reference/data-import-export/Kafka/consume.md"
-                  },
-                  {
-                    "label": "produce",
-                    "path": "reference/data-import-export/Kafka/produce.md"
-                  }
-                ]
-              },
-              {
-                "label": "Parquet",
-                "items": [
-                  {
-                    "label": "ColumnInstruction",
-                    "path": "reference/data-import-export/Parquet/ColumnInstruction.md"
-                  },
-                  {
-                    "label": "read",
-                    "path": "reference/data-import-export/Parquet/readTable.md"
-                  },
-                  {
-                    "label": "write",
-                    "path": "reference/data-import-export/Parquet/writeTable.md"
-                  },
-                  {
-                    "label": "write_partitioned",
-                    "path": "reference/data-import-export/Parquet/writePartitioned.md"
-                  }
-                ]
-              },
-              {
-                "label": "SQL",
-                "items": [
-                  {
-                    "label": "read_sql",
-                    "path": "reference/data-import-export/SQL/read_sql.md"
-                  },
-                  {
-                    "label": "adbc.read_cursor",
-                    "path": "reference/data-import-export/SQL/adbc.md"
-                  },
-                  {
-                    "label": "odbc.read_cursor",
-                    "path": "reference/data-import-export/SQL/odbc.md"
-                  }
-                ]
-              },
-              {
                 "label": "Iceberg",
                 "items": [
                   {
@@ -1572,23 +1521,57 @@
                 ]
               },
               {
-                "label": "Iterate",
+                "label": "Kafka",
                 "items": [
                   {
-                    "label": "iter_dict",
-                    "path": "reference/data-import-export/iterate/iter-dict.md"
+                    "label": "consume_to_partitioned_table",
+                    "path": "reference/data-import-export/Kafka/consume-to-partitioned-table.md"
                   },
                   {
-                    "label": "iter_tuple",
-                    "path": "reference/data-import-export/iterate/iter-tuple.md"
+                    "label": "consume",
+                    "path": "reference/data-import-export/Kafka/consume.md"
                   },
                   {
-                    "label": "iter_chunk_dict",
-                    "path": "reference/data-import-export/iterate/iter-chunk-dict.md"
+                    "label": "produce",
+                    "path": "reference/data-import-export/Kafka/produce.md"
+                  }
+                ]
+              },
+              {
+                "label": "Parquet",
+                "items": [
+                  {
+                    "label": "ColumnInstruction",
+                    "path": "reference/data-import-export/Parquet/ColumnInstruction.md"
                   },
                   {
-                    "label": "iter_chunk_tuple",
-                    "path": "reference/data-import-export/iterate/iter-chunk-tuple.md"
+                    "label": "read",
+                    "path": "reference/data-import-export/Parquet/readTable.md"
+                  },
+                  {
+                    "label": "write",
+                    "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "write_partitioned",
+                    "path": "reference/data-import-export/Parquet/writePartitioned.md"
+                  }
+                ]
+              },
+              {
+                "label": "SQL",
+                "items": [
+                  {
+                    "label": "read_sql",
+                    "path": "reference/data-import-export/SQL/read_sql.md"
+                  },
+                  {
+                    "label": "adbc.read_cursor",
+                    "path": "reference/data-import-export/SQL/adbc.md"
+                  },
+                  {
+                    "label": "odbc.read_cursor",
+                    "path": "reference/data-import-export/SQL/odbc.md"
                   }
                 ]
               },
@@ -2500,12 +2483,37 @@
                     ]
                   }
                 ]
+              },
+              {
+                "label": "Iterate",
+                "items": [
+                  {
+                    "label": "iter_dict",
+                    "path": "reference/data-import-export/iterate/iter-dict.md"
+                  },
+                  {
+                    "label": "iter_tuple",
+                    "path": "reference/data-import-export/iterate/iter-tuple.md"
+                  },
+                  {
+                    "label": "iter_chunk_dict",
+                    "path": "reference/data-import-export/iterate/iter-chunk-dict.md"
+                  },
+                  {
+                    "label": "iter_chunk_tuple",
+                    "path": "reference/data-import-export/iterate/iter-chunk-tuple.md"
+                  }
+                ]
               }
             ]
           },
           {
             "label": "Query strings",
             "items": [
+              {
+                "label": "Special variables and constants",
+                "path": "reference/query-language/variables/special-variables.md"
+              },
               {
                 "label": "Match filters",
                 "items": [
@@ -2534,10 +2542,6 @@
                     "path": "reference/query-language/match-filters/not-in.md"
                   }
                 ]
-              },
-              {
-                "label": "Special variables and constants",
-                "path": "reference/query-language/variables/special-variables.md"
               },
               {
                 "label": "Types",
@@ -2589,10 +2593,6 @@
                 ]
               }
             ]
-          },
-          {
-            "label": "Data types",
-            "path": "reference/python/deephaven-python-types.md"
           },
           {
             "label": "numpy",
@@ -2681,6 +2681,10 @@
             "label": "Imports",
             "items": [
               {
+                "label": "Backend Imports",
+                "path": "reference/python/backend-imports.md"
+              },
+              {
                 "label": "Auto-imported functions",
                 "items": [
                   {
@@ -2732,10 +2736,6 @@
                     "path": "reference/query-language/query-library/auto-imported/data-types.md"
                   }
                 ]
-              },
-              {
-                "label": "Backend Imports",
-                "path": "reference/python/backend-imports.md"
               }
             ]
           }

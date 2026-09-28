@@ -1093,28 +1093,28 @@
                 "href": "https://deephaven.io/core/javadoc"
               },
               {
-                "label": "Pydoc (client)",
-                "href": "https://deephaven.io/core/client-api/python"
-              },
-              {
-                "label": "Pydoc (server)",
-                "href": "https://deephaven.io/core/pydoc"
-              },
-              {
-                "label": "JavaScript API (client/server)",
-                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
-              },
-              {
-                "label": "Godoc",
-                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
-              },
-              {
                 "label": "C++ (client)",
                 "href": "https://deephaven.io/core/client-api/cpp"
               },
               {
                 "label": "C++ (examples)",
                 "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "Godoc",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+              },
+              {
+                "label": "JavaScript API (client/server)",
+                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+              },
+              {
+                "label": "Pydoc (client)",
+                "href": "https://deephaven.io/core/client-api/python"
+              },
+              {
+                "label": "Pydoc (server)",
+                "href": "https://deephaven.io/core/pydoc"
               },
               {
                 "label": "R (client)",
@@ -1288,6 +1288,55 @@
                 ]
               },
               {
+                "label": "Iceberg",
+                "items": [
+                  {
+                    "label": "IcebergCatalogAdapter",
+                    "path": "reference/data-import-export/Iceberg/iceberg-catalog-adapter.md"
+                  },
+                  {
+                    "label": "IcebergTableAdapter",
+                    "path": "reference/data-import-export/Iceberg/iceberg-table-adapter.md"
+                  },
+                  {
+                    "label": "IcebergTable",
+                    "path": "reference/data-import-export/Iceberg/iceberg-table.md"
+                  },
+                  {
+                    "label": "IcebergReadInstructions",
+                    "path": "reference/data-import-export/Iceberg/iceberg-read-instructions.md"
+                  },
+                  {
+                    "label": "IcebergUpdateMode",
+                    "path": "reference/data-import-export/Iceberg/iceberg-update-mode.md"
+                  },
+                  {
+                    "label": "IcebergTableWriter",
+                    "path": "reference/data-import-export/Iceberg/iceberg-table-writer.md"
+                  },
+                  {
+                    "label": "IcebergWriteInstructions",
+                    "path": "reference/data-import-export/Iceberg/iceberg-write-instructions.md"
+                  },
+                  {
+                    "label": "InferenceResolver",
+                    "path": "reference/data-import-export/Iceberg/inference-resolver.md"
+                  },
+                  {
+                    "label": "UnboundResolver",
+                    "path": "reference/data-import-export/Iceberg/unbound-resolver.md"
+                  },
+                  {
+                    "label": "BuildCatalogOptions",
+                    "path": "reference/data-import-export/Iceberg/build-catalog-options.md"
+                  },
+                  {
+                    "label": "LoadTableOptions",
+                    "path": "reference/data-import-export/Iceberg/load-table-options.md"
+                  }
+                ]
+              },
+              {
                 "label": "Kafka",
                 "items": [
                   {
@@ -1335,55 +1384,6 @@
                   {
                     "label": "parseSql",
                     "path": "reference/data-import-export/SQL/parseSql.md"
-                  }
-                ]
-              },
-              {
-                "label": "Iceberg",
-                "items": [
-                  {
-                    "label": "IcebergCatalogAdapter",
-                    "path": "reference/data-import-export/Iceberg/iceberg-catalog-adapter.md"
-                  },
-                  {
-                    "label": "IcebergTableAdapter",
-                    "path": "reference/data-import-export/Iceberg/iceberg-table-adapter.md"
-                  },
-                  {
-                    "label": "IcebergTable",
-                    "path": "reference/data-import-export/Iceberg/iceberg-table.md"
-                  },
-                  {
-                    "label": "IcebergReadInstructions",
-                    "path": "reference/data-import-export/Iceberg/iceberg-read-instructions.md"
-                  },
-                  {
-                    "label": "IcebergUpdateMode",
-                    "path": "reference/data-import-export/Iceberg/iceberg-update-mode.md"
-                  },
-                  {
-                    "label": "IcebergTableWriter",
-                    "path": "reference/data-import-export/Iceberg/iceberg-table-writer.md"
-                  },
-                  {
-                    "label": "IcebergWriteInstructions",
-                    "path": "reference/data-import-export/Iceberg/iceberg-write-instructions.md"
-                  },
-                  {
-                    "label": "InferenceResolver",
-                    "path": "reference/data-import-export/Iceberg/inference-resolver.md"
-                  },
-                  {
-                    "label": "UnboundResolver",
-                    "path": "reference/data-import-export/Iceberg/unbound-resolver.md"
-                  },
-                  {
-                    "label": "BuildCatalogOptions",
-                    "path": "reference/data-import-export/Iceberg/build-catalog-options.md"
-                  },
-                  {
-                    "label": "LoadTableOptions",
-                    "path": "reference/data-import-export/Iceberg/load-table-options.md"
                   }
                 ]
               },
@@ -2630,6 +2630,10 @@
             "label": "Query strings",
             "items": [
               {
+                "label": "Query language functions",
+                "path": "reference/query-language/query-library/query-language-function-reference.md"
+              },
+              {
                 "label": "Match filters",
                 "items": [
                   {
@@ -2719,10 +2723,6 @@
                     "path": "reference/query-language/types/strings.md"
                   }
                 ]
-              },
-              {
-                "label": "Query language functions",
-                "path": "reference/query-language/query-library/query-language-function-reference.md"
               }
             ]
           },
@@ -2779,6 +2779,14 @@
             "label": "Imports",
             "items": [
               {
+                "label": "Automatic Groovy Imports",
+                "path": "reference/groovy/groovy-auto-imports.md"
+              },
+              {
+                "label": "Backend Imports",
+                "path": "reference/groovy/backend-imports.md"
+              },
+              {
                 "label": "Auto-imported functions",
                 "items": [
                   {
@@ -2830,14 +2838,6 @@
                     "path": "reference/query-language/query-library/auto-imported/data-types.md"
                   }
                 ]
-              },
-              {
-                "label": "Automatic Groovy Imports",
-                "path": "reference/groovy/groovy-auto-imports.md"
-              },
-              {
-                "label": "Backend Imports",
-                "path": "reference/groovy/backend-imports.md"
               }
             ]
           }
