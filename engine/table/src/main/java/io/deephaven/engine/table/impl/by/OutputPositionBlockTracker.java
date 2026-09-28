@@ -55,20 +55,23 @@ final class OutputPositionBlockTracker {
     private int sparseBlockCount;
 
     /**
-     * @param initialStates the output positions of the live states after the initial build
-     * @param nextOutputPosition the next output position that will be assigned
+     * @param nextOutputPosition the next output position that will be assigned. Every position before it holds a live
+     *        state: the initial build assigns positions contiguously from 0, and reclaiming never applies with initial
+     *        groups, the only way a position could be assigned to a state not in the result.
      * @param collapseFreeFraction a closed block at least this fraction free is sparse, and runs of sparse blocks
      *        separated only by released blocks are collapsed; 1 or more disables collapsing
      */
-    OutputPositionBlockTracker(final RowSet initialStates, final int nextOutputPosition,
-            final double collapseFreeFraction) {
-        sparseLiveLimit = collapseFreeFraction >= 1 ? 0 : (short) (BLOCK_SIZE * (1 - collapseFreeFraction));
+    OutputPositionBlockTracker(final int nextOutputPosition, final double collapseFreeFraction) {
+        // a full block has nothing to give up, so a sparse block has at least one free position
+        sparseLiveLimit = collapseFreeFraction >= 1 ? 0
+                : (short) Math.min(BLOCK_SIZE - 1, (int) (BLOCK_SIZE * (1 - collapseFreeFraction)));
         ensureCapacity(nextOutputPosition);
-        addLive(initialStates);
         closedBlocks = nextOutputPosition >> LOG_BLOCK_SIZE;
-        for (int bi = 0; bi < closedBlocks; ++bi) {
-            updateSparse(bi);
+        Arrays.fill(liveCounts, 0, closedBlocks, (short) BLOCK_SIZE);
+        if (closedBlocks < liveCounts.length) {
+            liveCounts[closedBlocks] = (short) (nextOutputPosition & (BLOCK_SIZE - 1));
         }
+        // every closed block is full, so none is sparse
     }
 
     /**

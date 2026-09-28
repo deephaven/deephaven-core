@@ -53,8 +53,8 @@ public final class StateReclaimMode {
     /**
      * @param collapseFreeFraction when at least this fraction of a run of row keys belongs to removed groups, the rows
      *        that remain may move to lower row keys, keeping their order, so that the storage for the row keys this
-     *        empties can be freed. It is clamped to the range 0 to 1: 0 moves rows whenever that frees storage, and 1
-     *        never moves rows.
+     *        empties can be freed. It is clamped to the range 0 to 1: at 0 any block with a removed group's row key may
+     *        move, but a block with none never does, and 1 never moves rows.
      * @return the mode that frees the storage for runs of adjacent row keys whose groups have all been removed
      * @throws IllegalArgumentException if {@code collapseFreeFraction} is NaN
      */
