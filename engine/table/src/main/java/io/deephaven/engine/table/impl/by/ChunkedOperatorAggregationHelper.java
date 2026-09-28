@@ -263,6 +263,8 @@ public class ChunkedOperatorAggregationHelper {
 
                 final StateChangeRecorder stateChangeRecorder =
                         preserveEmpty ? null : ac.getStateChangeRecorder();
+                // reused by every update, so that its bitset is allocated once and grows with the output positions
+                final BitmapRandomBuilder modifiedStatesBuilder = new BitmapRandomBuilder(0);
 
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
@@ -276,7 +278,7 @@ public class ChunkedOperatorAggregationHelper {
                     try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
                             reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
                             operatorInputModifiedColumnSets, stateChangeRecorder, upstreamToUse,
-                            outputPosition)) {
+                            outputPosition, modifiedStatesBuilder)) {
                         downstream = kuc.computeDownstreamIndicesAndCopyKeys(input.getRowSet(),
                                 keyColumnsRaw,
                                 keyColumnsCopied,
@@ -370,7 +372,7 @@ public class ChunkedOperatorAggregationHelper {
 
         private final RowSetBuilderRandom reincarnatedStatesBuilder;
         private final RowSetBuilderRandom emptiedStatesBuilder;
-        private final RowSetBuilderRandom modifiedStatesBuilder;
+        private final BitmapRandomBuilder modifiedStatesBuilder;
         private final boolean[] modifiedOperators;
 
         private final SafeCloseableList toClose;
@@ -418,7 +420,8 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final ModifiedColumnSet[] operatorInputUpstreamModifiedColumnSets,
                 @Nullable final StateChangeRecorder stateChangeRecorder,
                 @NotNull final TableUpdate upstream,
-                @NotNull final MutableInt outputPosition) {
+                @NotNull final MutableInt outputPosition,
+                @NotNull final BitmapRandomBuilder modifiedStatesBuilder) {
             this.ac = ac;
             this.incrementalStateManager = incrementalStateManager;
             this.reinterpretedKeySources = reinterpretedKeySources;
@@ -457,7 +460,8 @@ public class ChunkedOperatorAggregationHelper {
                 reincarnatedStatesBuilder = new EmptyRandomBuilder();
                 emptiedStatesBuilder = new EmptyRandomBuilder();
             }
-            modifiedStatesBuilder = new BitmapRandomBuilder(outputPosition.get());
+            this.modifiedStatesBuilder = modifiedStatesBuilder;
+            modifiedStatesBuilder.reset(outputPosition.get());
             modifiedOperators = new boolean[ac.size()];
 
             toClose = new SafeCloseableList();
@@ -647,9 +651,7 @@ public class ChunkedOperatorAggregationHelper {
                         copyKeyColumns(keyColumnsRaw, keyColumnsCopied, newStates);
                     }
 
-                    downstream.modified = modifiedStatesBuilder.build();
-                    downstream.modified().writableCast().remove(downstream.added());
-                    downstream.modified().writableCast().remove(downstream.removed());
+                    downstream.modified = modifiedStatesBuilder.build(downstream.added(), downstream.removed());
                 }
 
                 ac.propagateChangesToOperators(downstream, newStates);
