@@ -163,6 +163,18 @@
                 ]
               },
               {
+                "label": "Replay",
+                "path": "how-to-guides/replay-data.md"
+              },
+              {
+                "label": "Arrow Flight",
+                "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
+              },
+              {
                 "label": "CSV",
                 "items": [
                   {
@@ -191,14 +203,6 @@
                     "path": "how-to-guides/data-import-export/html-export.md"
                   }
                 ]
-              },
-              {
-                "label": "Arrow Flight",
-                "path": "how-to-guides/data-import-export/arrow-flight.md"
-              },
-              {
-                "label": "Arrow/Barrage Schema",
-                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
@@ -251,16 +255,12 @@
                 "path": "how-to-guides/data-import-export/execute-sql-queries.md"
               },
               {
-                "label": "URI",
-                "path": "how-to-guides/use-uris.md"
-              },
-              {
                 "label": "Table data service",
                 "path": "how-to-guides/data-import-export/table-data-service.md"
               },
               {
-                "label": "Replay",
-                "path": "how-to-guides/replay-data.md"
+                "label": "URI",
+                "path": "how-to-guides/use-uris.md"
               }
             ]
           },
@@ -410,6 +410,26 @@
                 "path": "how-to-guides/query-string-overview.md"
               },
               {
+                "label": "Data types",
+                "path": "how-to-guides/data-types.md"
+              },
+              {
+                "label": "Nulls, infs, and NaNs",
+                "path": "how-to-guides/null-inf-nan.md"
+              },
+              {
+                "label": "Arrays",
+                "path": "how-to-guides/work-with-arrays.md"
+              },
+              {
+                "label": "Strings",
+                "path": "how-to-guides/work-with-strings.md"
+              },
+              {
+                "label": "Java classes & objects",
+                "path": "how-to-guides/java-classes.md"
+              },
+              {
                 "label": "Literals",
                 "items": [
                   {
@@ -488,26 +508,6 @@
                     "path": "how-to-guides/groovy-classes.md"
                   }
                 ]
-              },
-              {
-                "label": "Data types",
-                "path": "how-to-guides/data-types.md"
-              },
-              {
-                "label": "Nulls, infs, and NaNs",
-                "path": "how-to-guides/null-inf-nan.md"
-              },
-              {
-                "label": "Arrays",
-                "path": "how-to-guides/work-with-arrays.md"
-              },
-              {
-                "label": "Strings",
-                "path": "how-to-guides/work-with-strings.md"
-              },
-              {
-                "label": "Java classes & objects",
-                "path": "how-to-guides/java-classes.md"
               }
             ]
           },
@@ -608,6 +608,60 @@
             "label": "Client APIs",
             "items": [
               {
+                "label": "C++",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/index.html"
+                  },
+                  {
+                    "label": "Getting started",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/getting_started.html"
+                  },
+                  {
+                    "label": "Resource management",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/resource_mgmt.html"
+                  },
+                  {
+                    "label": "Data I/O",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/input_output.html"
+                  },
+                  {
+                    "label": "Fluent interface",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/fluent.html"
+                  }
+                ]
+              },
+              {
+                "label": "Go",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go#section-readme"
+                  },
+                  {
+                    "label": "Fetch tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-FetchTable"
+                  },
+                  {
+                    "label": "Import tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
+                  },
+                  {
+                    "label": "Create input tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
+                  },
+                  {
+                    "label": "Run scripts",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-RunScript"
+                  },
+                  {
+                    "label": "Table operations",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-TableOps"
+                  }
+                ]
+              },
+              {
                 "label": "Java",
                 "items": [
                   {
@@ -682,60 +736,6 @@
                   {
                     "label": "Capture Python client tables",
                     "path": "how-to-guides/capture-tables.md"
-                  }
-                ]
-              },
-              {
-                "label": "C++",
-                "items": [
-                  {
-                    "label": "Overview",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/index.html"
-                  },
-                  {
-                    "label": "Getting started",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/getting_started.html"
-                  },
-                  {
-                    "label": "Resource management",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/resource_mgmt.html"
-                  },
-                  {
-                    "label": "Data I/O",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/input_output.html"
-                  },
-                  {
-                    "label": "Fluent interface",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/fluent.html"
-                  }
-                ]
-              },
-              {
-                "label": "Go",
-                "items": [
-                  {
-                    "label": "Overview",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go#section-readme"
-                  },
-                  {
-                    "label": "Fetch tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-FetchTable"
-                  },
-                  {
-                    "label": "Import tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
-                  },
-                  {
-                    "label": "Create input tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
-                  },
-                  {
-                    "label": "Run scripts",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-RunScript"
-                  },
-                  {
-                    "label": "Table operations",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-TableOps"
                   }
                 ]
               },
@@ -952,6 +952,10 @@
             "path": "getting-started/production-application.md"
           },
           {
+            "label": "Update Deephaven",
+            "path": "how-to-guides/configuration/updating-deephaven.md"
+          },
+          {
             "label": "Cloud deployment",
             "items": [
               {
@@ -963,10 +967,6 @@
                 "path": "how-to-guides/gcp-linux.md"
               }
             ]
-          },
-          {
-            "label": "Update Deephaven",
-            "path": "how-to-guides/configuration/updating-deephaven.md"
           },
           {
             "label": "Authentication",
@@ -1013,6 +1013,38 @@
                 "path": "how-to-guides/configuration/docker-application.md"
               },
               {
+                "label": "Install packages",
+                "path": "how-to-guides/install-packages.md"
+              },
+              {
+                "label": "Install and use Java packages",
+                "path": "how-to-guides/install-and-use-java-packages.md"
+              },
+              {
+                "label": "Configure the production application",
+                "path": "how-to-guides/configuration/configure-production-application.md"
+              },
+              {
+                "label": "Deephaven configuration files",
+                "path": "how-to-guides/configuration/config-file.md"
+              },
+              {
+                "label": "Configuration properties",
+                "path": "how-to-guides/configuration/configuration-properties.md"
+              },
+              {
+                "label": "Web Defaults",
+                "path": "how-to-guides/configuration/configure-web.md"
+              },
+              {
+                "label": "JS plugins",
+                "path": "how-to-guides/configuration/js-plugins.md"
+              },
+              {
+                "label": "Custom environmental variables",
+                "path": "how-to-guides/custom-environmental-variables.md"
+              },
+              {
                 "label": "Periodic Update Graph configuration",
                 "path": "conceptual/periodic-update-graph-configuration.md"
               },
@@ -1040,38 +1072,6 @@
                     "path": "how-to-guides/application-mode-script.md"
                   }
                 ]
-              },
-              {
-                "label": "JS plugins",
-                "path": "how-to-guides/configuration/js-plugins.md"
-              },
-              {
-                "label": "Install packages",
-                "path": "how-to-guides/install-packages.md"
-              },
-              {
-                "label": "Install and use Java packages",
-                "path": "how-to-guides/install-and-use-java-packages.md"
-              },
-              {
-                "label": "Configure the production application",
-                "path": "how-to-guides/configuration/configure-production-application.md"
-              },
-              {
-                "label": "Deephaven configuration files",
-                "path": "how-to-guides/configuration/config-file.md"
-              },
-              {
-                "label": "Configuration properties",
-                "path": "how-to-guides/configuration/configuration-properties.md"
-              },
-              {
-                "label": "Web Defaults",
-                "path": "how-to-guides/configuration/configure-web.md"
-              },
-              {
-                "label": "Custom environmental variables",
-                "path": "how-to-guides/custom-environmental-variables.md"
               }
             ]
           }
@@ -2812,6 +2812,14 @@
             "path": "reference/cheat-sheets/cheat-sheet.md"
           },
           {
+            "label": "Performance tables",
+            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
+          },
+          {
+            "label": "Time operations",
+            "path": "reference/cheat-sheets/datetime-cheat-sheet.md"
+          },
+          {
             "label": "Data import / export",
             "items": [
               {
@@ -2835,14 +2843,6 @@
                 "path": "reference/cheat-sheets/uri-cheat-sheet.md"
               }
             ]
-          },
-          {
-            "label": "Performance tables",
-            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
-          },
-          {
-            "label": "Time operations",
-            "path": "reference/cheat-sheets/datetime-cheat-sheet.md"
           }
         ]
       },
@@ -2853,6 +2853,18 @@
           {
             "label": "Deephaven example apps on GitHub",
             "href": "https://github.com/deephaven-examples"
+          },
+          {
+            "label": "Engage in GitHub discussions",
+            "href": "https://github.com/deephaven/deephaven-core/discussions"
+          },
+          {
+            "label": "File GitHub issue",
+            "href": "https://github.com/deephaven/deephaven-core/issues"
+          },
+          {
+            "label": "Slack",
+            "href": "https://deephaven.io/slack"
           },
           {
             "label": "FAQs",
@@ -3075,18 +3087,6 @@
                 ]
               }
             ]
-          },
-          {
-            "label": "Engage in GitHub discussions",
-            "href": "https://github.com/deephaven/deephaven-core/discussions"
-          },
-          {
-            "label": "File GitHub issue",
-            "href": "https://github.com/deephaven/deephaven-core/issues"
-          },
-          {
-            "label": "Slack",
-            "href": "https://deephaven.io/slack"
           }
         ]
       }
