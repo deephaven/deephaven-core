@@ -15,8 +15,10 @@ import io.deephaven.io.log.impl.LogEntryImpl;
 import io.deephaven.io.log.impl.LogOutputCsvImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StringsLoggerImpl;
+import io.deephaven.test.types.SerialTest;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -26,7 +28,11 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Test that a select or update layer failing during a refresh logs which operation failed.
+ * <p>
+ * This test replaces the {@link InstrumentedTableListenerBase} logger, which is process-wide, so it must not run
+ * concurrently with other tests.
  */
+@Category(SerialTest.class)
 public class SelectOrUpdateListenerErrorTest {
 
     @Rule

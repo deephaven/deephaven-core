@@ -44,7 +44,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private static final AtomicLongFieldUpdater<InstrumentedTableListenerBase> LAST_ENQUEUED_STEP_UPDATER =
             AtomicLongFieldUpdater.newUpdater(InstrumentedTableListenerBase.class, "lastEnqueuedStep");
 
-    private static volatile Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
+    private static Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
 
     private final UpdateGraph updateGraph;
     private final String description;
