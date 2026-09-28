@@ -281,38 +281,76 @@ final class OutputPositionBlockTracker {
         }
 
         /**
-         * Apply the collapse to the live states and to row sets of states within them. Each run of the live states is
-         * replaced by one range per block it fills, which is far cheaper than applying {@link #shift} range by range
-         * when the live states are scattered.
+         * Apply the collapse to the live states and to row sets of states within them. Each run's states move only
+         * within the run, keeping their order, and the runs are in increasing order, so each row set is updated with
+         * one removal of its states in the runs and one insertion of where they move to, whatever the number of runs.
+         * The live states become one range per block each run fills, which is far cheaper than applying {@link #shift}
+         * range by range when the live states are scattered.
          *
          * @param liveStates the output positions of the live states, before the collapse
          * @param subsets row sets of positions that are all in {@code liveStates}, such as the states added or modified
          *        this cycle
          */
         void apply(final WritableRowSet liveStates, final WritableRowSet... subsets) {
-            for (final Run run : runs) {
-                final long first = run.firstPosition();
-                final long last = run.lastPosition();
-                final long firstRank = rankOf(liveStates, first);
+            final long[] firstRanks = new long[runs.size()];
+            final RowSetBuilderSequential runRangesBuilder = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential packedBuilder = RowSetFactory.builderSequential();
+            for (int ri = 0; ri < runs.size(); ++ri) {
+                final Run run = runs.get(ri);
+                firstRanks[ri] = rankOf(liveStates, run.firstPosition());
+                runRangesBuilder.appendRange(run.firstPosition(), run.lastPosition());
+                for (long rank = 0; rank < run.live; rank += BLOCK_SIZE) {
+                    final long blockFirst = run.position(rank);
+                    packedBuilder.appendRange(blockFirst, blockFirst + Math.min(BLOCK_SIZE, run.live - rank) - 1);
+                }
+            }
+            try (final WritableRowSet runRanges = runRangesBuilder.build()) {
                 for (final WritableRowSet subset : subsets) {
-                    final RowSetBuilderSequential moved = RowSetFactory.builderSequential();
-                    try (final RowSequence moving = subset.getRowSequenceByKeyRange(first, last)) {
+                    try (final WritableRowSet moving = subset.intersect(runRanges)) {
                         if (moving.isEmpty()) {
                             continue;
                         }
-                        moving.forAllRowKeys(key -> moved.appendKey(run.position(liveStates.find(key) - firstRank)));
-                    }
-                    subset.removeRange(first, last);
-                    try (final WritableRowSet movedKeys = moved.build()) {
-                        subset.subsume(movedKeys);
+                        // the moving states' ranks among the live states place them within their runs
+                        try (final WritableRowSet ranks = liveStates.invert(moving);
+                                final WritableRowSet moved = movedPositions(ranks, firstRanks)) {
+                            subset.remove(moving);
+                            subset.subsume(moved);
+                        }
                     }
                 }
-                liveStates.removeRange(first, last);
-                for (long rank = 0; rank < run.live; rank += BLOCK_SIZE) {
-                    final long blockFirst = run.position(rank);
-                    liveStates.insertRange(blockFirst, blockFirst + Math.min(BLOCK_SIZE, run.live - rank) - 1);
-                }
+                liveStates.remove(runRanges);
             }
+            try (final WritableRowSet packed = packedBuilder.build()) {
+                liveStates.subsume(packed);
+            }
+        }
+
+        /**
+         * @param ranks the ranks among the live states of states in the runs
+         * @param firstRanks the rank among the live states of each run's first live state
+         * @return the positions the states at {@code ranks} move to
+         */
+        private WritableRowSet movedPositions(final RowSet ranks, final long[] firstRanks) {
+            final RowSetBuilderSequential moved = RowSetFactory.builderSequential();
+            final MutableInt runIndex = new MutableInt(0);
+            ranks.forAllRowKeyRanges((first, last) -> {
+                long rank = first;
+                while (rank <= last) {
+                    while (rank >= firstRanks[runIndex.get()] + runs.get(runIndex.get()).live) {
+                        runIndex.increment();
+                    }
+                    final Run run = runs.get(runIndex.get());
+                    final long runRank = rank - firstRanks[runIndex.get()];
+                    // Destinations are consecutive until the destination block fills. A range of ranks never spans
+                    // two runs: live states outside every run always lie between them.
+                    final long count = Math.min(last - rank + 1, BLOCK_SIZE - (runRank & INDEX_MASK));
+                    assert runRank + count <= run.live;
+                    final long destination = run.position(runRank);
+                    moved.appendRange(destination, destination + count - 1);
+                    rank += count;
+                }
+            });
+            return moved.build();
         }
     }
 
