@@ -196,7 +196,8 @@ final class OutputPositionBlockTracker {
                 runStates.forAllRowKeyRanges((first, last) -> {
                     long source = first;
                     while (source <= last) {
-                        // the destinations are consecutive within a block, so a range splits only where one ends
+                        // Destinations are consecutive within a block, but skip the released blocks between the
+                        // run's blocks, so a range is split where its destination block fills.
                         final long destination = collapsed.position(rank.get());
                         final long count = Math.min(last - source + 1, BLOCK_SIZE - (rank.get() & INDEX_MASK));
                         shiftBuilder.shiftRange(source, source + count - 1, destination - source);
