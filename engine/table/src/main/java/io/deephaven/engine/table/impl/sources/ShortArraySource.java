@@ -833,6 +833,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
     // region reinterpretation
     // endregion reinterpretation
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

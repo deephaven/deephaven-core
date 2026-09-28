@@ -830,6 +830,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
     // region reinterpretation
     // endregion reinterpretation
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

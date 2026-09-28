@@ -833,6 +833,7 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
     // region reinterpretation
     // endregion reinterpretation
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

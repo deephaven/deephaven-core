@@ -721,6 +721,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         }
     }
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

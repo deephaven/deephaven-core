@@ -839,6 +839,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
         }
     }
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

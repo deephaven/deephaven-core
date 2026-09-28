@@ -833,6 +833,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
     // region reinterpretation
     // endregion reinterpretation
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

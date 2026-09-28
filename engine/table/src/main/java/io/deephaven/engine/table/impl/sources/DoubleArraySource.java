@@ -833,6 +833,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
     // region reinterpretation
     // endregion reinterpretation
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

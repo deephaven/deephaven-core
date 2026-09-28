@@ -1385,6 +1385,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
     // endregion reinterpretation
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

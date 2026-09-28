@@ -833,6 +833,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
     // region reinterpretation
     // endregion reinterpretation
 
+    @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;

@@ -287,7 +287,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     abstract UArray[] getPrevBlocks();
 
     /**
-     * @return the array of current-value blocks, whose elements may be replaced
+     * @return the array of current-value blocks
      */
     abstract UArray[] getBlocks();
 
