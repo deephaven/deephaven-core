@@ -422,9 +422,10 @@ public final class TestJobScheduler {
         final boolean[] completed = new boolean[50];
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        updateGraph.resetForUnitTests(false, true, 0, 4, 0, 0);
         runExpectingUpdateGraphTermination(updateGraph, () -> {
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            Assert.gt(scheduler.threadCount(), "scheduler.threadCount()", 1);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -436,6 +437,11 @@ public final class TestJobScheduler {
 
                         // throw before "doing work" to make verification easy
                         if (idx == 10) {
+                            // Each task invoker closes its context once it runs out of tasks. Hold the Error until
+                            // every other invoker has done so; the cycle is torn down as soon as this thread dies,
+                            // and an invoker notification that has not started by then never runs, so the iteration
+                            // would never complete.
+                            observer.awaitOpenContexts(1, Duration.ofSeconds(10));
                             throw new TestError("Test error");
                         }
 
@@ -449,7 +455,9 @@ public final class TestJobScheduler {
         observer.assertDidNotCallComplete();
         assertTestErrorDelivered(observer);
         observer.assertNoOpenContexts();
-        Assert.eqFalse(completed[10], "completed[10]");
+        for (int ii = 0; ii < completed.length; ++ii) {
+            Assert.eq(completed[ii], "completed[ii]", ii != 10, "ii != 10");
+        }
 
         // The terminated cycle left its exclusive lock held; reset so that teardown gets a usable update graph back.
         updateGraph.resetForUnitTests(false);
@@ -920,28 +928,46 @@ public final class TestJobScheduler {
     }
 
     private static class ContextFactory implements Supplier<JobScheduler.JobThreadContext> {
-        private final AtomicInteger openCount;
+        private int openCount;
 
-        public ContextFactory() {
-            openCount = new AtomicInteger(0);
+        public synchronized void assertNoOpenContexts() {
+            Assert.eqZero(openCount, "openCount");
         }
 
-        public void assertNoOpenContexts() {
-            Assert.eqZero(openCount.get(), "openCount.get()");
+        /**
+         * Wait until no more than {@code maxOpen} contexts are open. This is called from within a job, which cannot
+         * throw a checked exception, so a timeout or interrupt is reported as an assertion failure.
+         */
+        public synchronized void awaitOpenContexts(final int maxOpen, final Duration timeout) {
+            final long deadlineNanos = System.nanoTime() + timeout.toNanos();
+            while (openCount > maxOpen) {
+                final long remainingNanos = deadlineNanos - System.nanoTime();
+                Assert.gtZero(remainingNanos, "remainingNanos");
+                try {
+                    TimeUnit.NANOSECONDS.timedWait(this, remainingNanos);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError("Interrupted while waiting for contexts to close", e);
+                }
+            }
         }
 
         @Override
-        public JobScheduler.JobThreadContext get() {
-            final JobThreadContextImpl ctx = new JobThreadContextImpl();
-            openCount.incrementAndGet();
-            return ctx;
+        public synchronized JobScheduler.JobThreadContext get() {
+            ++openCount;
+            return new JobThreadContextImpl();
+        }
+
+        private synchronized void onContextClosed() {
+            --openCount;
+            notifyAll();
         }
 
         class JobThreadContextImpl implements JobScheduler.JobThreadContext {
 
             @Override
             public void close() {
-                openCount.decrementAndGet();
+                onContextClosed();
             }
         }
     }
