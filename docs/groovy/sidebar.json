@@ -2196,6 +2196,14 @@
                       {
                         "label": "currentTimeNanos",
                         "path": "reference/time/clock/currentTimeNanos.md"
+                      },
+                      {
+                        "label": "instantMillis",
+                        "path": "reference/time/clock/instantMillis.md"
+                      },
+                      {
+                        "label": "instantNanos",
+                        "path": "reference/time/clock/instantNanos.md"
                       }
                     ]
                   },
@@ -2354,14 +2362,6 @@
                       {
                         "label": "excelToZonedDateTime",
                         "path": "reference/time/datetime/excelToZonedDateTime.md"
-                      },
-                      {
-                        "label": "instantMillis",
-                        "path": "reference/time/clock/instantMillis.md"
-                      },
-                      {
-                        "label": "instantNanos",
-                        "path": "reference/time/clock/instantNanos.md"
                       },
                       {
                         "label": "toExcelTime",
