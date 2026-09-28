@@ -46,7 +46,8 @@ public interface ChunkFilter {
      * @param values the values to filter
      * @param results a boolean chunk containing the result of the filter
      *
-     * @return the number of values that are newly set to {@code true} in {@code results} after the filter is applied.
+     * @return the number of values that are {@code true} in {@code results} after the filter is applied, i.e. the
+     *         values that were already {@code true} and also pass this filter.
      */
     int filterAnd(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
