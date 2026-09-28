@@ -271,8 +271,8 @@ public class ChunkedOperatorAggregationHelper {
             keyColumnsRaw[kci] = resultKeyColumnSource;
             if (input.isRefreshing()) {
                 // noinspection ConstantConditions,unchecked
-                keyColumnsCopied[kci] = ArrayBackedColumnSource.getMemoryColumnSource(outputPosition.get(),
-                        keyColumnsRaw[kci].getType());
+                keyColumnsCopied[kci] = (ShiftableColumnSource<?>) ArrayBackedColumnSource
+                        .getMemoryColumnSource(outputPosition.get(), keyColumnsRaw[kci].getType());
                 resultColumnSourceMap.put(keyNames[kci], keyColumnsCopied[kci]);
             } else {
                 resultColumnSourceMap.put(keyNames[kci], keyColumnsRaw[kci]);

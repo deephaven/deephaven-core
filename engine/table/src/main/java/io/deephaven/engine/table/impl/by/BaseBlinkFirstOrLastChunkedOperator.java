@@ -74,8 +74,8 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
         for (int ci = 0; ci < numResultColumns; ++ci) {
             final MatchPair resultPair = resultPairs[ci];
             final ColumnSource<?> streamSource = blinkTable.getColumnSource(resultPair.rightColumn());
-            final ShiftableColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
-                    streamSource.getType(), streamSource.getComponentType());
+            final ShiftableColumnSource<?> resultSource = (ShiftableColumnSource<?>) ArrayBackedColumnSource
+                    .getMemoryColumnSource(0, streamSource.getType(), streamSource.getComponentType());
             resultColumnsMutable.put(resultPair.leftColumn(), resultSource);
             inputColumns[ci] = SnapshotUtils.maybeWrapVector(ReinterpretUtils.maybeConvertToPrimitive(streamSource));
             // Note that ArrayBackedColumnSources implementations reinterpret very efficiently where applicable.

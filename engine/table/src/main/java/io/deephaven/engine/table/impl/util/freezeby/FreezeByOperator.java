@@ -28,7 +28,7 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
     private final FreezeByHelper helper;
 
     public FreezeByOperator(Class<?> type, String resultName, FreezeByCountOperator freezeByCountOperator) {
-        resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0, type);
+        resultSource = (ShiftableColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(0, type);
         name = resultName;
         helper = makeHelper(resultSource, freezeByCountOperator);
     }
