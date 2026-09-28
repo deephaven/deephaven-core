@@ -181,9 +181,9 @@ public class TypedHasherFactory {
             configureAggregation(builder);
             builder.supportTombstones(true);
             builder.tombstoneStateName("TOMBSTONE_STATE");
-            // must match
-            // IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.REHASH_SLOTS_PER_ENTRY
-            builder.rehashSlotsPerEntry(3);
+            builder.rehashSlotsPerEntry(
+                    IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
+                    "REHASH_SLOTS_PER_ENTRY");
             builder.classPrefix("IncrementalAggOpenHasherWithTombstone").packageMiddle("incopenaggts");
             builder.overflowOrAlternateStateName("alternateOutputPosition");
             builder.moveMainFull(TypedAggregationFactory::incAggMoveMain);
@@ -288,6 +288,7 @@ public class TypedHasherFactory {
                     .tombstoneStateName("TOMBSTONE_RIGHT_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
+                    .rehashSlotsPerEntry(IncrementalNaturalJoinStateManagerTypedBase.class, "REHASH_SLOTS_PER_ENTRY")
                     .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
                     .moveMainFull(TypedNaturalJoinFactory::incrementalMoveMainFull)
                     .moveMainAlternate(TypedNaturalJoinFactory::incrementalMoveMainAlternate)
@@ -903,7 +904,7 @@ public class TypedHasherFactory {
 
         final String extraParamNames = getExtraMigrateParams(hasherConfig.extraPartialRehashParameters);
         final String deletedParam = hasherConfig.supportTombstones ? ", false" : "";
-        if (hasherConfig.rehashSlotsPerEntry > 0) {
+        if (hasherConfig.rehashSlotsPerEntry != null) {
             // bound the slots examined, so that tombstones and empty slots cannot make one call scan the whole table
             builder.addStatement("final long slotsToExamine = (long) entriesToRehash * $L",
                     hasherConfig.rehashSlotsPerEntry);

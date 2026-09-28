@@ -312,8 +312,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         return true;
     }
 
-    /** The alternate slots a partial rehash examines for each entry inserted; matches the generated hashers. */
-    private static final int REHASH_SLOTS_PER_ENTRY = 3;
+    /** The alternate slots a partial rehash examines for each entry inserted; the generated hashers refer to it. */
+    public static final int REHASH_SLOTS_PER_ENTRY = 3;
 
     /**
      * @param alternateSize the size the alternate table will have

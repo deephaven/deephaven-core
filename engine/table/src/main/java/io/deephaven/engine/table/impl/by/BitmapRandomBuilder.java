@@ -27,9 +27,9 @@ import java.util.Arrays;
  * We also know that we will only modify the rows that existed when we start, so that we can clamp the maximum key for
  * the builder to the maximum output position without loss of fidelity.
  * <p>
- * A builder may be reused from one update to the next: {@link #reset(int)} sets the new maximum key, and building
- * clears each word as it is read, so the bitset needs no clearing between uses and grows geometrically as the output
- * positions do.
+ * A builder may be reused from one update to the next: {@link #reset(int)} sets the new maximum key and permits another
+ * build, and building clears each word as it is read, so the bitset needs no clearing between uses and grows
+ * geometrically as the output positions do. Between resets, a builder builds at most once.
  */
 public class BitmapRandomBuilder implements RowSetBuilderRandom {
 
@@ -53,6 +53,11 @@ public class BitmapRandomBuilder implements RowSetBuilderRandom {
      */
     long[] bitset;
 
+    /**
+     * Whether a RowSet has been built since the builder was made or last reset.
+     */
+    private boolean built;
+
     private static final int MIN_WORDS = 16;
 
     public BitmapRandomBuilder(int maxKey) {
@@ -60,7 +65,7 @@ public class BitmapRandomBuilder implements RowSetBuilderRandom {
     }
 
     /**
-     * Prepare to build another RowSet, discarding any keys added since the last build.
+     * Prepare to build another RowSet, discarding any keys added and not yet built.
      *
      * @param maxKey keys at or above this one are ignored
      */
@@ -71,6 +76,7 @@ public class BitmapRandomBuilder implements RowSetBuilderRandom {
         }
         firstUsed = Integer.MAX_VALUE;
         lastUsed = -1;
+        built = false;
     }
 
     private static int rowKeyToArrayIndex(long rowKey) {
@@ -83,13 +89,18 @@ public class BitmapRandomBuilder implements RowSetBuilderRandom {
     }
 
     /**
-     * Build the RowSet of the keys added, less the keys of {@code excluded}, leaving the builder empty.
+     * Build the RowSet of the keys added, less the keys of {@code excluded}, leaving the builder empty. Like
+     * {@link #build()}, this may be called only once until the builder is {@link #reset(int) reset}.
      *
      * @param excluded row sets whose keys are left out of the result; clearing their bits first costs time in
      *        proportion to their sizes, rather than removing them from the result afterward
      * @return the keys added and not excluded
      */
     public WritableRowSet build(final RowSet... excluded) {
+        if (built) {
+            throw new IllegalStateException("Builder was already used to build a result; reset it to build again");
+        }
+        built = true;
         if (firstUsed > lastUsed) {
             return RowSetFactory.empty();
         }

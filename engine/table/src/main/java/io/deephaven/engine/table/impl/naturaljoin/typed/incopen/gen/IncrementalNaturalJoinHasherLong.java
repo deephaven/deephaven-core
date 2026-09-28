@@ -861,13 +861,16 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
     @Override
     protected int rehashInternalPartial(int entriesToRehash,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        int rehashedEntries = 0;
-        while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, false, modifiedSlotTracker)) {
-                rehashedEntries++;
-            }
+        final long slotsToExamine = (long) entriesToRehash * IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY;
+        long examinedSlots = 0;
+        while (rehashPointer > 0 && examinedSlots < slotsToExamine) {
+            migrateOneLocation(--rehashPointer, false, modifiedSlotTracker);
+            ++examinedSlots;
         }
-        return rehashedEntries;
+        if (rehashPointer == 0) {
+            return entriesToRehash;
+        }
+        return (int) (examinedSlots / IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY);
     }
 
     @Override

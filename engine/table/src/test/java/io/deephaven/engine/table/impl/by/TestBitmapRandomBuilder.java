@@ -12,6 +12,7 @@ import org.junit.Test;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class TestBitmapRandomBuilder {
@@ -88,6 +89,9 @@ public class TestBitmapRandomBuilder {
         try (final RowSet built = builder.build()) {
             assertEquals(RowSetFactory.fromKeys(6), built);
         }
+        // a builder builds once until it is reset
+        assertThrows(IllegalStateException.class, builder::build);
+        builder.reset(1000);
         try (final RowSet built = builder.build()) {
             assertTrue(built.isEmpty());
         }

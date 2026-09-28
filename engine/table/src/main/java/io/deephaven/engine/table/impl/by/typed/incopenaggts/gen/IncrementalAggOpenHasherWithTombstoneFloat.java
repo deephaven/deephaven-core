@@ -215,7 +215,7 @@ final class IncrementalAggOpenHasherWithTombstoneFloat extends IncrementalChunke
 
     @Override
     protected int rehashInternalPartial(int entriesToRehash) {
-        final long slotsToExamine = (long) entriesToRehash * 3;
+        final long slotsToExamine = (long) entriesToRehash * IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.REHASH_SLOTS_PER_ENTRY;
         long examinedSlots = 0;
         while (rehashPointer > 0 && examinedSlots < slotsToExamine) {
             migrateOneLocation(--rehashPointer, false);
@@ -224,7 +224,7 @@ final class IncrementalAggOpenHasherWithTombstoneFloat extends IncrementalChunke
         if (rehashPointer == 0) {
             return entriesToRehash;
         }
-        return (int) (examinedSlots / 3);
+        return (int) (examinedSlots / IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.REHASH_SLOTS_PER_ENTRY);
     }
 
     @Override
