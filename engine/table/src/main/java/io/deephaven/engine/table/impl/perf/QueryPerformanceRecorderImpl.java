@@ -37,7 +37,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     private QueryPerformanceNugget catchAllNugget;
     /**
      * The query that owned the thread when this one was resumed on top of it, to hand the thread back to; null when
-     * this query is not installed on a thread, or took an idle thread. Only touched by the thread this query runs on.
+     * this query is not installed on a thread, or took an idle thread. Guarded by this, like the rest of the state.
      */
     private QueryPerformanceRecorder outerInstance;
 
@@ -152,7 +152,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      * this one was resumed on top of it, if any. A no-op if this recorder is no longer installed, so that the closeable
      * returned by {@link #resumeInternal} is safe to close after {@link #endQuery} or {@link #suspendQuery}.
      */
-    private void uninstall() {
+    private synchronized void uninstall() {
         if (QueryPerformanceRecorderState.getInstance() != this) {
             return;
         }
