@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.by.typed;
 
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.MethodSpec;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -115,8 +114,7 @@ public class TypedAggregationFactory {
 
         final String nextLocationName = alternate ? "alternateNextTableLocation" : "nextTableLocation";
         builder.addStatement("$L = $L($L)", tableLocationName, nextLocationName, tableLocationName);
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
-                firstLocationName, firstLocationName);
+        builder.addCode(TypedHasherFactory.wrapAroundCheck(tableLocationName, firstLocationName));
 
         builder.endControlFlow();
     }

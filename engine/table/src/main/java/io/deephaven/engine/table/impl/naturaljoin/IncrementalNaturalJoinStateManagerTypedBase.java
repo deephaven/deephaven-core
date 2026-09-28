@@ -46,6 +46,17 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
 public abstract class IncrementalNaturalJoinStateManagerTypedBase extends StaticNaturalJoinStateManager
         implements IncrementalNaturalJoinStateManager, BothIncrementalNaturalJoinStateManager {
 
+    /**
+     * The alternate slots a partial rehash examines for each entry about to be built. Bounding the slots examined,
+     * rather than the live entries moved, keeps one build from scanning a long run of tombstones and empty slots;
+     * {@link #computeTableSize} sizes a new table so that the alternate still drains before the new table fills. That
+     * requires a maximum load factor greater than {@code 1 / REHASH_SLOTS_PER_ENTRY}: at or below it, a new table the
+     * size of the alternate cannot pay for examining every alternate slot once anything is live or being built, so
+     * every rehash would double the table. Just above it, the table stabilizes only once it is many times the live
+     * entries. The generated hashers refer to this constant, so changing it changes both the drain rate and the sizing.
+     */
+    public static final int REHASH_SLOTS_PER_ENTRY = 3;
+
     // the number of slots in our table
     protected int tableSize;
 
@@ -117,6 +128,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         Require.gtZero(tableSize, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
         Require.inRange(maximumLoadFactor, 0.0, 0.95, "maximumLoadFactor");
+        if (maximumLoadFactor <= 1.0 / REHASH_SLOTS_PER_ENTRY) {
+            throw new IllegalArgumentException("maximumLoadFactor " + maximumLoadFactor
+                    + " is not greater than 1 / REHASH_SLOTS_PER_ENTRY; a partial rehash could not drain the alternate"
+                    + " table before the new table fills");
+        }
 
         mainKeySources = new WritableColumnSource[tableKeySources.length];
         alternateKeySources = new WritableColumnSource[tableKeySources.length];
@@ -277,7 +293,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     /**
      * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
-     * @param rehashCredits the number of entries this operation has rehashed (input/output)
+     * @param rehashCredits the rehash work this operation has done, in entries' worth of alternate slots examined
+     *        ({@link #REHASH_SLOTS_PER_ENTRY} slots each), which pays for building as many entries (input/output)
      * @param nextChunkSize the size of the chunk we are processing
      * @return true if a front migration is required
      */
@@ -301,7 +318,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
 
         int oldTableSize = tableSize;
-        tableSize = computeTableSize(nextChunkSize);
+        tableSize = computeTableSize(nextChunkSize, oldTableSize, fullRehash);
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
         if (rehashCredits.get() > 0) {
@@ -311,7 +328,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         if (fullRehash) {
             // we need to ditch the alternate table before continuing on a full rehash
             if (rehashPointer > 0) {
-                rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
+                // a partial rehash is bounded by the slots it examines, so ask for every slot that remains
+                rehashInternalPartial(rehashPointer, modifiedSlotTracker);
                 Assert.eqZero(alternateEntries, "alternateEntries");
                 clearAlternate();
             }
@@ -322,6 +340,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
         setupNewAlternate(oldTableSize);
         adviseNewAlternate();
+        if (liveEntries == 0) {
+            // every entry is a tombstone, so nothing needs to migrate; drop the old table rather than examine it
+            clearAlternate();
+            return false;
+        }
 
         return true;
     }
@@ -389,14 +412,27 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
     }
 
-    public int computeTableSize(int nextChunkSize) {
+    /**
+     * @param nextChunkSize the size of the chunk about to be built
+     * @param alternateSize the size of the table that becomes the alternate
+     * @param fullRehash whether the whole table is rehashed at once, leaving no alternate to drain
+     * @return the size of the new table
+     */
+    public int computeTableSize(final int nextChunkSize, final int alternateSize, final boolean fullRehash) {
         // we use the number of liveEntries multiplied by 2, so that as we rehash we can both consume a slot for the
-        // live entry from the alternate table; and also consume a slot for the new value. This ensures that we will
-        // burn down our rehash requirements before we need to initiate a new partial rehash.
-
+        // live entry from the alternate table; and also consume a slot for the new value.
         final long desiredEntries = Math.max(liveEntries * 2, liveEntries + nextChunkSize);
-        final long tableSize =
+        long tableSize =
                 MathUtil.roundUpPowerOf2(Math.max(this.tableSize, (long) (desiredEntries / maximumLoadFactor)));
+        // Each build examines REHASH_SLOTS_PER_ENTRY alternate slots per entry before inserting, so the alternate
+        // drains before the new table needs another rehash if the entries that fit under the load factor pay for
+        // examining every alternate slot. An alternate with no live entries is dropped without being examined.
+        if (!fullRehash && liveEntries > 0) {
+            while (tableSize <= MAX_TABLE_SIZE && (tableSize * maximumLoadFactor - liveEntries - nextChunkSize)
+                    * REHASH_SLOTS_PER_ENTRY < alternateSize) {
+                tableSize *= 2;
+            }
+        }
         if (tableSize <= 1 || tableSize > MAX_TABLE_SIZE) {
             throw new UnsupportedOperationException("Hash table exceeds maximum size!");
         }
@@ -408,8 +444,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     abstract protected void migrateFront(NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     /**
-     * @param numEntriesToRehash number of entries to rehash into main table
-     * @return actual number of entries rehashed
+     * Migrate entries from the alternate table, examining {@link #REHASH_SLOTS_PER_ENTRY} alternate slots, whether they
+     * hold a live entry, a tombstone or nothing, for each entry's worth of work requested.
+     *
+     * @param numEntriesToRehash the entries' worth of work to do, which pays for building as many entries
+     * @return the entries' worth of work done: the slots examined divided by {@link #REHASH_SLOTS_PER_ENTRY}, or
+     *         {@code numEntriesToRehash} if the alternate table was drained
      */
     protected abstract int rehashInternalPartial(int numEntriesToRehash,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
