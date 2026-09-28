@@ -365,14 +365,6 @@ The initial build of 10M rows, with reclaiming:
 The numbers come from one JVM fork per configuration, with five measured batches each, or three at 100M; treat
 differences within the error bounds as noise.
 
-## Related documentation
-
-- `StateReclaimMode` (`engine/table/src/main/java/io/deephaven/engine/table/impl/by/StateReclaimMode.java`)
-- `OutputPositionBlockTracker` (`engine/table/src/main/java/io/deephaven/engine/table/impl/by/OutputPositionBlockTracker.java`)
-- `ChunkedOperatorAggregationHelper` (`engine/table/src/main/java/io/deephaven/engine/table/impl/by/ChunkedOperatorAggregationHelper.java`)
-- `IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones` (`engine/table/src/main/java/io/deephaven/engine/table/impl/by/IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.java`)
-- `AggregationIncrementalBenchmark` (`engine/benchmark/src/main/java/io/deephaven/benchmark/engine/AggregationIncrementalBenchmark.java`)
-
 ## Rejected Alternatives
 
 These designs were implemented or measured and then rejected.
