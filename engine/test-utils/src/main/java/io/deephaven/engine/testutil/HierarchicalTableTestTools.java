@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.testutil;
 
@@ -101,6 +101,8 @@ public class HierarchicalTableTestTools {
                     chunk.getChunkType(), columnDefinition.getDataType(), columnDefinition.getComponentType());
             if (snapshotSize > 0) {
                 chunkColumnSource.addChunk(chunk);
+            } else {
+                chunk.close();
             }
             final ColumnSource<?> source;
             if (columnDefinition.getDataType() == Boolean.class && chunkColumnSource.getType() == byte.class) {

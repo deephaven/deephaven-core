@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -25,11 +25,13 @@ public class FloatRangeFilter extends AbstractRangeFilter {
     }
 
     public static FloatRangeFilter gt(String columnName, float x) {
-        return new FloatRangeFilter(columnName, x, Float.NaN, false, true);
+        // NaN used as upper bound, but explicitly excluded from the results (matching IEEE 754 comparison rules)
+        return new FloatRangeFilter(columnName, x, Float.NaN, false, false);
     }
 
     public static FloatRangeFilter geq(String columnName, float x) {
-        return new FloatRangeFilter(columnName, x, Float.NaN, true, true);
+        // NaN used as upper bound, but explicitly excluded from the results (matching IEEE 754 comparison rules)
+        return new FloatRangeFilter(columnName, x, Float.NaN, true, false);
     }
 
     private final float upper;

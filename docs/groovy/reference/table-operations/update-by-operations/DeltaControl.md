@@ -53,7 +53,7 @@ result = source.updateBy([
 
 ## Related documentation
 
-- [How to use `updateBy`](../../../how-to-guides/use-update-by.md)
+- [How to use `updateBy`](../../../how-to-guides/rolling-aggregations.md)
 - [ternary conditional operator](../../../how-to-guides/ternary-if-how-to.md)
 - [`newTable`](../create/newTable.md)
 - [`Delta`](./delta.md)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
@@ -78,7 +78,9 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Double at location " + locationKey);
             }
-            return new ColumnRegionDouble.Constant<>(regionMask(), unbox((Double) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? ColumnRegionDouble.createNull(regionMask())
+                    : new ColumnRegionDouble.Constant<>(regionMask(), unbox((Double) partitioningColumnValue));
         }
     }
 }

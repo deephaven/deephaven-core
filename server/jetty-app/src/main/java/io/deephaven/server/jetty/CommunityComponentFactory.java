@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty;
 
@@ -8,6 +8,7 @@ import dagger.Module;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
 import io.deephaven.server.flightsql.FlightSqlModule;
+import io.deephaven.server.plugin.AuthorizationProviderAdapterModule;
 import io.deephaven.server.runner.CommunityDefaultsModule;
 import io.deephaven.server.runner.ComponentFactoryBase;
 import io.deephaven.server.runner.TicketResolversFromServiceLoader;
@@ -78,6 +79,7 @@ public final class CommunityComponentFactory
             JettyClientChannelFactoryModule.class,
             CommunityAuthorizationModule.class,
             CommunityDefaultsModule.class,
+            AuthorizationProviderAdapterModule.class,
             // Implementation note: when / if modules are migrated out of CommunityDefaultsModule, they will need to be
             // re-added here.
     })

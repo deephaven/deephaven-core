@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSetResult and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -30,7 +30,13 @@ public class DoubleSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_DOUBLE;
         } else {
             final DoubleSegmentedSortedMultiset doubleSsm = (DoubleSegmentedSortedMultiset) ssm;
-            newResult = minimum ? doubleSsm.getMinDouble() : doubleSsm.getMaxDouble();
+            // region nan handling
+            if (minimum) {
+                newResult = Double.isNaN(doubleSsm.getMaxDouble()) ? Double.NaN : doubleSsm.getMinDouble();
+            } else {
+                newResult = doubleSsm.getMaxDouble(); // NaN sorts to max
+            }
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

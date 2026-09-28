@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.shared.data;
 
@@ -261,7 +261,7 @@ public class RangeSet {
         }
     }
 
-    private static class RangeIterator {
+    public static class RangeIterator implements Iterator<Range> {
         private int index = -1;
         private final List<Range> ranges;
         private long key = 0;
@@ -275,10 +275,12 @@ public class RangeSet {
             this.key = key;
         }
 
+        @Override
         public boolean hasNext() {
             return key == -1 || index < ranges.size() - 1;
         }
 
+        @Override
         public Range next() {
             if (key != 0) {
                 Range r = ranges.get(index);
@@ -396,8 +398,8 @@ public class RangeSet {
      * 
      * @return Iterator of {@link Range}
      */
-    public Iterator<Range> rangeIterator() {
-        return sortedRanges.iterator();
+    public RangeIterator rangeIterator() {
+        return new RangeIterator(sortedRanges);
     }
 
     public Iterator<Range> reverseRangeIterator() {
@@ -769,13 +771,12 @@ public class RangeSet {
         return result;
     }
 
-
     public long get(long key) {
+        if (key >= size() || key < 0) {
+            return -1;
+        }
         if (key == 0) {
             return getFirstRow();
-        }
-        if (key >= size()) {
-            return -1;
         }
         ensureCardinalityCache();
 

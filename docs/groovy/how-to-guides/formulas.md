@@ -23,7 +23,7 @@ In joins, formulas are used to define the columns to join the data on, and in ag
 - Aggregations
   - [Dedicated](./dedicated-aggregations.md)
   - [Combined](./combined-aggregations.md)
-  - [Rolling](./rolling-calculations.md)
+  - [Rolling](./rolling-aggregations.md)
 
 Additionally, formulas can be used in [partitioned table](./partitioned-tables.md) operations.
 

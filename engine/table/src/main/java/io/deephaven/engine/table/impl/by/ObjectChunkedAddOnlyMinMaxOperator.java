@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkedAddOnlyMinMaxOperator and run "./gradlew replicateOperators" to regenerate
@@ -47,6 +47,8 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         Object value = null;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final Object candidate = values.get(ii);
+            // region extra chunk value test
+            // endregion extra chunk value test
             if (candidate != null) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -64,6 +66,8 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         Object value = null;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final Object candidate = values.get(ii);
+            // region extra chunk value test
+            // endregion extra chunk value test
             if (candidate != null) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -135,6 +139,9 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         if (chunkSize == 0) {
             return false;
         }
+        final Object oldValue = resultColumn.getUnsafe(destination);
+        // region extra oldValue test
+        // endregion extra oldValue test
         final MutableInt chunkNonNull = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
         final Object chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
@@ -142,9 +149,8 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         if (chunkNonNull.get() == 0) {
             return false;
         }
-
+        // region compute result
         final Object result;
-        final Object oldValue = resultColumn.getUnsafe(destination);
         if (oldValue == null) {
             // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
             // that it is in fact empty and we should use the value from the chunk
@@ -152,6 +158,7 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
+        // endregion compute result
         if (!ObjectComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;

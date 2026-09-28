@@ -176,9 +176,9 @@ Closure<TaskProvider<Task>> javaMainInDocker = { String taskName, String javaMai
       copyFile 'classpath', '/classpath'
     }
     entrypoint = ['java', '-cp', '/classpath:/classpath/*',
-                  '-Djpy.jpyLib=/opt/deephaven/venv/lib/python3.10/site-packages/jpy.cpython-310-x86_64-linux-gnu.so',
-                  '-Djpy.jdlLib=/opt/deephaven/venv/lib/python3.10/site-packages/jdl.cpython-310-x86_64-linux-gnu.so',
-                  '-Djpy.pythonLib=/usr/lib/python3.10/config-3.10-x86_64-linux-gnu/libpython3.10.so'
+                  '-Djpy.jpyLib=/opt/deephaven/venv/lib/python3.12/site-packages/jpy.cpython-312-x86_64-linux-gnu.so',
+                  '-Djpy.jdlLib=/opt/deephaven/venv/lib/python3.12/site-packages/jdl.cpython-312-x86_64-linux-gnu.so',
+                  '-Djpy.pythonLib=/usr/lib/python3.12/config-3.12-x86_64-linux-gnu/libpython3.12.so'
     ] + jvmArgs + javaMain
 
     showLogsOnSuccess = true
@@ -224,7 +224,7 @@ Closure<TaskProvider<Task>> pyExec = { String taskName, List<String> command, bo
       // set up the container, env vars - things that aren't likely to change
       from Docker.localImageName('runtime-base')
       runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4;\\
+                      pip3 install unittest-xml-reporting==3.2.0;\\
                       mkdir /out;'''
       environmentVariable 'JAVA_VERSION', '1.8'
       environmentVariable 'JPY_PY_CONFIG', '/python/jpyconfig.py'

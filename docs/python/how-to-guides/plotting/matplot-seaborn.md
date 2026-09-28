@@ -28,7 +28,7 @@ The process for installing Python packages depends on whether Deephaven is run f
 ### Static plotting
 
 > [!CAUTION]
-> All examples in this guide use [Matplotlib's explicit interface](https://matplotlib.org/stable/users/explain/figure/api_interfaces.html#api-interfaces). Users should do the same, especially in examples where multiple plots source data from ticking tables.
+> All examples in this guide use [Matplotlib's explicit interface](https://matplotlib.org/stable/users/explain/figure/api_interfaces.html). Users should do the same, especially in examples where multiple plots source data from ticking tables.
 
 Here is the basic usage of Matplotlib to show one figure:
 
@@ -351,7 +351,7 @@ ani = TableAnimation(fig, tt, update_fig)
 ### Static plotting
 
 > [!CAUTION]
-> All examples in this guide use [Matplotlib's explicit interface](https://matplotlib.org/stable/users/explain/figure/api_interfaces.html#api-interfaces). Users should do the same, especially in examples where there are multiple plots that source data from ticking tables.
+> All examples in this guide use [Matplotlib's explicit interface](https://matplotlib.org/stable/users/explain/figure/api_interfaces.html). Users should do the same, especially in examples where there are multiple plots that source data from ticking tables.
 
 Here is the basic usage of Seaborn to show one figure:
 

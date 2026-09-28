@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.json.jackson;
 
@@ -15,7 +15,7 @@ import java.time.temporal.TemporalAccessor;
 final class LocalDateMixin extends GenericObjectMixin<LocalDateValue, LocalDate> {
 
     public LocalDateMixin(LocalDateValue options, JsonFactory factory) {
-        super(factory, options, Type.ofCustom(LocalDate.class));
+        super(factory, options, Type.localDateType());
     }
 
     @Override

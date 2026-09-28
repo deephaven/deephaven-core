@@ -24,7 +24,7 @@ The resulting data set is smaller than the source, which achieves one of the mai
 
 Now we've decided to add a [date-time](../reference/query-language/types/date-time.md) stamp to our purchases data, and we want to sum them by the day and the category. How can we downsample this data now that we have a column that will almost always be a unique value?
 
-Deephaven has two methods, [`lowerBin`](../reference/time/datetime/lowerBin.md) and [`upperBin`](../reference/time/datetime/upperBin.md), that group our date-time data into bins. Bin intervals can be any timed value, such as a second, minute, hour, day, and so on.
+Deephaven has two built-in methods, [`lowerBin`](../reference/time/datetime/lowerBin.md) and [`upperBin`](../reference/time/datetime/upperBin.md), that group our date-time data into bins. Bin intervals can be any timed value, such as a second, minute, hour, day, and so on.
 
 This example shows how to bin our data by the day, and then use [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md) to downsample the data. The bin operations use nanoseconds, so we are binning by one day and offsetting by five hours.
 

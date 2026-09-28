@@ -1,20 +1,25 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.kafka.ingest;
 
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.chunk.*;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
-import junit.framework.TestCase;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.util.Utf8;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -24,6 +29,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestAvroAdapter {
     @NotNull
@@ -75,13 +82,13 @@ public class TestAvroAdapter {
                         true);
                 adapter.handleChunk(inputValues, output);
 
-                TestCase.assertEquals(1, output[0].size());
-                TestCase.assertEquals(1, output[1].size());
-                TestCase.assertEquals(1, output[2].size());
+                assertThat(output[0].size()).isEqualTo(1);
+                assertThat(output[1].size()).isEqualTo(1);
+                assertThat(output[2].size()).isEqualTo(1);
 
-                TestCase.assertEquals(1234L, output[0].asLongChunk().get(0));
-                TestCase.assertEquals("chuck", output[1].asObjectChunk().get(0));
-                TestCase.assertEquals("mcgill", output[2].asObjectChunk().get(0));
+                assertThat(output[0].asLongChunk().get(0)).isEqualTo(1234L);
+                assertThat(output[1].asObjectChunk().get(0)).isEqualTo("chuck");
+                assertThat(output[2].asObjectChunk().get(0)).isEqualTo("mcgill");
             }
         }
     }
@@ -159,36 +166,146 @@ public class TestAvroAdapter {
                 adapter.handleChunk(inputValues, output);
 
                 for (int ii = 0; ii < 7; ++ii) {
-                    TestCase.assertEquals(3, output[0].size());
+                    assertThat(output[ii].size()).isEqualTo(3);
                 }
 
-                TestCase.assertEquals("LN1", output[0].asObjectChunk().get(0));
-                TestCase.assertEquals(32, output[1].asIntChunk().get(0));
-                TestCase.assertEquals(BooleanUtils.FALSE_BOOLEAN_AS_BYTE, output[2].asByteChunk().get(0));
-                TestCase.assertEquals(DateTimeUtils.millisToNanos(DateTimeUtils.epochMillis(dt1)),
-                        output[3].asLongChunk().get(0));
-                TestCase.assertEquals(DateTimeUtils.microsToNanos(DateTimeUtils.epochMicros(dt1)),
-                        output[4].asLongChunk().get(0));
-                TestCase.assertEquals(10000, output[5].asIntChunk().get(0));
-                TestCase.assertEquals(100000, output[6].asLongChunk().get(0));
+                assertThat(output[0].asObjectChunk().get(0)).isEqualTo("LN1");
+                assertThat(output[1].asIntChunk().get(0)).isEqualTo(32);
+                assertThat(output[2].asByteChunk().get(0)).isEqualTo(BooleanUtils.FALSE_BOOLEAN_AS_BYTE);
+                assertThat(output[3].asLongChunk().get(0))
+                        .isEqualTo(DateTimeUtils.millisToNanos(DateTimeUtils.epochMillis(dt1)));
+                assertThat(output[4].asLongChunk().get(0))
+                        .isEqualTo(DateTimeUtils.microsToNanos(DateTimeUtils.epochMicros(dt1)));
+                assertThat(output[5].asIntChunk().get(0)).isEqualTo(10000);
+                assertThat(output[6].asLongChunk().get(0)).isEqualTo(100000);
 
-                TestCase.assertNull(output[0].asObjectChunk().get(1));
-                TestCase.assertEquals(64, output[1].asIntChunk().get(1));
-                TestCase.assertEquals(BooleanUtils.TRUE_BOOLEAN_AS_BYTE, output[2].asByteChunk().get(1));
-                TestCase.assertEquals(DateTimeUtils.millisToNanos(DateTimeUtils.epochMillis(dt2)),
-                        output[3].asLongChunk().get(1));
-                TestCase.assertEquals(DateTimeUtils.microsToNanos(DateTimeUtils.epochMicros(dt2)),
-                        output[4].asLongChunk().get(1));
-                TestCase.assertEquals(20000, output[5].asIntChunk().get(1));
-                TestCase.assertEquals(200000, output[6].asLongChunk().get(1));
+                assertThat(output[0].asObjectChunk().get(1)).isNull();
+                assertThat(output[1].asIntChunk().get(1)).isEqualTo(64);
+                assertThat(output[2].asByteChunk().get(1)).isEqualTo(BooleanUtils.TRUE_BOOLEAN_AS_BYTE);
+                assertThat(output[3].asLongChunk().get(1))
+                        .isEqualTo(DateTimeUtils.millisToNanos(DateTimeUtils.epochMillis(dt2)));
+                assertThat(output[4].asLongChunk().get(1))
+                        .isEqualTo(DateTimeUtils.microsToNanos(DateTimeUtils.epochMicros(dt2)));
+                assertThat(output[5].asIntChunk().get(1)).isEqualTo(20000);
+                assertThat(output[6].asLongChunk().get(1)).isEqualTo(200000);
 
-                TestCase.assertEquals("LN3", output[0].asObjectChunk().get(2));
-                TestCase.assertEquals(128, output[1].asIntChunk().get(2));
-                TestCase.assertEquals(BooleanUtils.NULL_BOOLEAN_AS_BYTE, output[2].asByteChunk().get(2));
-                TestCase.assertEquals(QueryConstants.NULL_LONG, output[3].asLongChunk().get(2));
-                TestCase.assertEquals(QueryConstants.NULL_LONG, output[4].asLongChunk().get(2));
-                TestCase.assertEquals(30000, output[5].asIntChunk().get(2));
-                TestCase.assertEquals(300000, output[6].asLongChunk().get(2));
+                assertThat(output[0].asObjectChunk().get(2)).isEqualTo("LN3");
+                assertThat(output[1].asIntChunk().get(2)).isEqualTo(128);
+                assertThat(output[2].asByteChunk().get(2)).isEqualTo(BooleanUtils.NULL_BOOLEAN_AS_BYTE);
+                assertThat(output[3].asLongChunk().get(2)).isEqualTo(QueryConstants.NULL_LONG);
+                assertThat(output[4].asLongChunk().get(2)).isEqualTo(QueryConstants.NULL_LONG);
+                assertThat(output[5].asIntChunk().get(2)).isEqualTo(30000);
+                assertThat(output[6].asLongChunk().get(2)).isEqualTo(300000);
+            }
+        }
+    }
+
+    @Test
+    public void testStringArray() throws IOException {
+        final Schema avroSchema = getSchema("stringarray.avsc");
+
+        final String[] names = new String[] {"A", "B", "C", "Result"};
+        final Class<?>[] types = new Class[] {int.class, String.class, double.class, String[].class};
+        final TableDefinition definition = TableDefinition.from(Arrays.asList(names), Arrays.asList(types));
+
+        final GenericData.Record genericRecord = new GenericData.Record(avroSchema);
+        genericRecord.put("A", 123);
+        genericRecord.put("B", "hello");
+        genericRecord.put("C", 45.67);
+        genericRecord.put("Result",
+                new GenericData.Array<>(avroSchema.getField("Result").schema(), Arrays.asList("pass", "ok", "done")));
+
+        final Map<String, String> colMap = new HashMap<>();
+        colMap.put("A", "A");
+        colMap.put("B", "B");
+        colMap.put("C", "C");
+        colMap.put("Result", "Result");
+
+        try (final WritableObjectChunk<Object, Values> inputValues =
+                WritableObjectChunk.makeWritableChunk(1)) {
+            inputValues.setSize(0);
+            inputValues.add(genericRecord);
+
+            final WritableChunk[] output = new WritableChunk[names.length];
+            try (final SafeCloseableArray ignored = new SafeCloseableArray(output)) {
+                output[0] = WritableIntChunk.makeWritableChunk(1);
+                output[1] = WritableObjectChunk.makeWritableChunk(1);
+                output[2] = WritableDoubleChunk.makeWritableChunk(1);
+                output[3] = WritableObjectChunk.makeWritableChunk(1);
+
+                for (WritableChunk wc : output) {
+                    wc.setSize(0);
+                }
+
+                final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition,
+                        (idx) -> output[idx].getChunkType(), colMap, Pattern.compile(Pattern.quote(".")), avroSchema,
+                        true);
+                adapter.handleChunk(inputValues, output);
+
+                assertThat(output[0].size()).isEqualTo(1);
+                assertThat(output[1].size()).isEqualTo(1);
+                assertThat(output[2].size()).isEqualTo(1);
+                assertThat(output[3].size()).isEqualTo(1);
+
+                assertThat(output[0].asIntChunk().get(0)).isEqualTo(123);
+                assertThat(output[1].asObjectChunk().get(0)).isEqualTo("hello");
+                assertThat(output[2].asDoubleChunk().get(0)).isEqualTo(45.67);
+                assertThat((String[]) output[3].asObjectChunk().get(0)).isEqualTo(new String[] {"pass", "ok", "done"});
+            }
+        }
+    }
+
+    @Test
+    public void testUtf8Array() throws IOException {
+        final Schema avroSchema = getSchema("stringarray.avsc");
+
+        final String[] names = new String[] {"A", "B", "C", "Result"};
+        final Class<?>[] types = new Class[] {int.class, String.class, double.class, String[].class};
+        final TableDefinition definition = TableDefinition.from(Arrays.asList(names), Arrays.asList(types));
+
+        final GenericData.Record genericRecord = new GenericData.Record(avroSchema);
+        genericRecord.put("A", 123);
+        genericRecord.put("B", "hello");
+        genericRecord.put("C", 45.67);
+        genericRecord.put("Result", new GenericData.Array<>(avroSchema.getField("Result").schema(),
+                Arrays.asList(new Utf8("pass"), new Utf8("ok"), new Utf8("done"))));
+
+        final Map<String, String> colMap = new HashMap<>();
+        colMap.put("A", "A");
+        colMap.put("B", "B");
+        colMap.put("C", "C");
+        colMap.put("Result", "Result");
+
+        try (final WritableObjectChunk<Object, Values> inputValues =
+                WritableObjectChunk.makeWritableChunk(1)) {
+            inputValues.setSize(0);
+            inputValues.add(genericRecord);
+
+            final WritableChunk[] output = new WritableChunk[names.length];
+            try (final SafeCloseableArray ignored = new SafeCloseableArray(output)) {
+                output[0] = WritableIntChunk.makeWritableChunk(1);
+                output[1] = WritableObjectChunk.makeWritableChunk(1);
+                output[2] = WritableDoubleChunk.makeWritableChunk(1);
+                output[3] = WritableObjectChunk.makeWritableChunk(1);
+
+                for (WritableChunk wc : output) {
+                    wc.setSize(0);
+                }
+
+                final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition,
+                        (idx) -> output[idx].getChunkType(), colMap, Pattern.compile(Pattern.quote(".")), avroSchema,
+                        true);
+                adapter.handleChunk(inputValues, output);
+
+                assertThat(output[0].size()).isEqualTo(1);
+                assertThat(output[1].size()).isEqualTo(1);
+                assertThat(output[2].size()).isEqualTo(1);
+                assertThat(output[3].size()).isEqualTo(1);
+
+                assertThat(output[0].asIntChunk().get(0)).isEqualTo(123);
+                assertThat(output[1].asObjectChunk().get(0)).isEqualTo("hello");
+                assertThat(output[2].asDoubleChunk().get(0)).isEqualTo(45.67);
+                assertThat((String[]) output[3].asObjectChunk().get(0)).isEqualTo(new String[] {"pass", "ok", "done"});
             }
         }
     }

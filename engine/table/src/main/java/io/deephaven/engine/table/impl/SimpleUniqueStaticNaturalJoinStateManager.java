@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -22,10 +22,14 @@ import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
 /**
  * A static natural join manager that only maintains a single array source for the right indices.
  *
- * We do not store the keys, because we know that only one possible value can exist in each slot.
+ * <p>
+ * >We do not store the keys, because we know that only one possible value can exist in each slot.
+ * </p>
  *
+ * <p>
  * This manager is appropriate for non-composite joins with small types (byte, char, short) or where we know that the
  * table has a limited range (e.g., a symbol table).
+ * </p>
  */
 class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateManager {
     private final int tableSize;
@@ -104,6 +108,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                 for (int ii = 0; ii < dataChunkAsInt.size(); ++ii) {
                     final int tableLocation = dataChunkAsInt.get(ii);
                     if (tableLocation < 0 || tableLocation >= tableSize) {
+                        leftRedirections.set(offset + ii, NO_RIGHT_ENTRY_VALUE);
                         continue;
                     }
                     final long existingRight = rightRowSetSource.getLong(tableLocation);

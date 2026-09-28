@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -11,7 +11,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfByte;
-import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -29,7 +28,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<ByteVector, Byte> type() {
-        return PrimitiveVectorType.of(ByteVector.class, ByteType.of());
+        return Types.BYTE_VECTOR_TYPE;
     }
 
     /**

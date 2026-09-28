@@ -1,12 +1,12 @@
 package io.deephaven.tuple.generated;
 
-import gnu.trove.map.TIntObjectMap;
 import io.deephaven.tuple.CanonicalizableTuple;
 import io.deephaven.tuple.serialization.SerializationUtils;
 import io.deephaven.tuple.serialization.StreamingExternalizable;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.compare.ObjectComparisons;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Externalizable;
@@ -55,9 +55,9 @@ public class LongObjectFloatTuple implements Comparable<LongObjectFloatTuple>, E
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Long.hashCode(element1)) * 31 +
-                Objects.hashCode(element2)) * 31 +
-                Float.hashCode(element3);
+                LongComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2)) * 31 +
+                FloatComparisons.hashCode(element3);
     }
 
     public final long getFirstElement() {
@@ -87,9 +87,9 @@ public class LongObjectFloatTuple implements Comparable<LongObjectFloatTuple>, E
         }
         final LongObjectFloatTuple typedOther = (LongObjectFloatTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return LongComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2) &&
-               element3 == typedOther.element3;
+               FloatComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 
@@ -123,14 +123,14 @@ public class LongObjectFloatTuple implements Comparable<LongObjectFloatTuple>, E
     }
 
     @Override
-    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
+    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
         out.writeLong(element1);
         StreamingExternalizable.writeObjectElement(out, cachedWriters, 1, element2);
         out.writeFloat(element3);
     }
 
     @Override
-    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
+    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         initialize(
                 in.readLong(),
                 StreamingExternalizable.readObjectElement(in, cachedReaders, 1),

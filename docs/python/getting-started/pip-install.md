@@ -20,6 +20,9 @@ Deephaven is only supported on:
 - MacOS
 - Windows 10 or 11 (requires [WSL 2 (Windows Subsystem for Linux v2)](https://learn.microsoft.com/en-us/windows/wsl/install))
 
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+
 ## Prerequisites
 
 pip-installed Deephaven requires the following package versions:
@@ -133,7 +136,10 @@ deephaven server --port 10000 --jvm-args "-Xmx4g -Dprocess.info.system-info.enab
 
 ## Example scripts
 
-This section contains a couple of scripts that demonstrate how to use Deephaven with pip. The scripts assume that you have already started a Deephaven server as shown above, as you _must_ start the server before performing any Deephaven operations - including imports.
+This section contains a couple of scripts that demonstrate how to use Deephaven with pip.
+
+> [!CAUTION]
+> You **must** start the Deephaven server **before** importing any Deephaven packages or performing any Deephaven operations. If you import Deephaven packages before starting the server, you will encounter errors.
 
 This script creates three streaming tables. The first table (`t`) steadily increases in size, the second table (`t_last`) contains the most recent timestamp for each label, and the third table (`t_join`) joins the most recent timestamp onto the first table.
 

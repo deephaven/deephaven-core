@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharPercentileTypeHelper and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -14,7 +14,6 @@ import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.IntSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.util.mutable.MutableInt;
@@ -41,6 +40,8 @@ public class IntPercentileTypeHelper implements SsmChunkedPercentileOperator.Per
         if (totalSize == 0) {
             return setResult(destination, NULL_INT);
         } else {
+            // region maybeHandleNaN
+            // endregion maybeHandleNaN
             final long targetLo = Math.round((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

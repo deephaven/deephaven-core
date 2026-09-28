@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.hierarchicaltable;
 
@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.BaseGridAttributes;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
@@ -354,12 +355,14 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     }
 
     @NotNull
-    private static List<WhereFilter> makeWhereFilters(
+    private List<WhereFilter> makeWhereFilters(
             @NotNull final Collection<Condition> finishedConditions,
             @NotNull final TableDefinition nodeDefinition) {
-        return finishedConditions.stream()
+        final List<WhereFilter> whereFilters = finishedConditions.stream()
                 .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
                 .collect(Collectors.toList());
+        columnExpressionValidator.validateWhereFilters(whereFilters, nodeDefinition);
+        return whereFilters;
     }
 
     @Nullable
@@ -401,7 +404,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 .map(Strings::of)
                 .toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumn.from(selectables);
-        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source.getDefinition());
 
         return request.getUpdateViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(
@@ -419,14 +422,14 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         }
 
         final Table source = inputHierarchicalTable.getSource();
-        final Selectable[] selectables = request.getUpdateViewsList().stream()
+        final Selectable[] selectables = request.getFormatViewsList().stream()
                 .map(uvr -> AggregationAdapter.adapt(uvr.getColumnSpec()))
                 .toArray(Selectable[]::new);
         final String[] columnSpecs = Arrays.asList(selectables).stream()
                 .map(Strings::of)
                 .toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumn.from(selectables);
-        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source.getDefinition());
 
         return request.getFormatViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(

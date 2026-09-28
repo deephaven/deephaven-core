@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
-    id 'com.google.protobuf' version '0.9.4'
+    id 'com.google.protobuf' version '0.9.6'
 }
 
 dependencies {
@@ -39,13 +39,13 @@ test {
 spotless {
     java {
         targetExclude(
-                'build/generated/source/proto/test/java/**',
+                'build/generated/sources/proto/test/java/**',
         )
     }
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
+        artifact = libs.protoc.get().toString()
     }
 }

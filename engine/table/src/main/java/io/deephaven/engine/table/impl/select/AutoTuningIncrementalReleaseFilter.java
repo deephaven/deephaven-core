@@ -1,18 +1,23 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ScriptApi;
+import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 
 /**
- * Filter that releases the required number of rows from a table to saturate the UGP cycle.
+ * Filter that releases the required number of rows from a table to saturate the UGP cycle. The source table must be
+ * static.
  * <p>
  * The table has an initial size, which can be thought of as the size during query initialization. There is an initial
  * number of rows that are released, which is then used to tune the number of rows to release on the subsequent cycle.
@@ -243,5 +248,15 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     void onReleaseAll() {
         releasedAll = true;
         super.onReleaseAll();
+    }
+
+    @Override
+    public @NotNull WritableRowSet filter(@NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table,
+            boolean usePrev) {
+        if (table.isRefreshing()) {
+            throw new UnsupportedOperationException(
+                    "Can not execute an AutoTuningIncrementalReleaseFilter on a refreshing table!");
+        }
+        return super.filter(selection, fullSet, table, usePrev);
     }
 }

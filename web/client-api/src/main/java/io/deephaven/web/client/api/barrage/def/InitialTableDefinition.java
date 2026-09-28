@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.barrage.def;
 
@@ -20,6 +20,7 @@ public class InitialTableDefinition {
 
     private ColumnDefinition[] columns;
     private TableAttributesDefinition attributes;
+    private InputTableMetadata inputTableMetadata;
 
     public ColumnDefinition[] getColumns() {
         return columns;
@@ -36,6 +37,15 @@ public class InitialTableDefinition {
 
     public InitialTableDefinition setAttributes(final TableAttributesDefinition attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public InputTableMetadata getInputTableMetadata() {
+        return inputTableMetadata;
+    }
+
+    public InitialTableDefinition setInputTableMetadata(final InputTableMetadata inputTableMetadata) {
+        this.inputTableMetadata = inputTableMetadata;
         return this;
     }
 

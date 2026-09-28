@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.type;
 
@@ -10,6 +10,9 @@ package io.deephaven.qst.type;
  * @see BoxedType
  * @see StringType
  * @see InstantType
+ * @see LocalTimeType
+ * @see LocalDateType
+ * @see DurationType
  * @see ArrayType
  * @see CustomType
  */
@@ -25,6 +28,12 @@ public interface GenericType<T> extends Type<T> {
         R visit(StringType stringType);
 
         R visit(InstantType instantType);
+
+        R visit(LocalTimeType localTimeType);
+
+        R visit(LocalDateType localDateType);
+
+        R visit(DurationType durationType);
 
         R visit(ArrayType<?, ?> arrayType);
 

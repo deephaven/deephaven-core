@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -11,6 +11,13 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+/**
+ * Describes a custom column expression.
+ *
+ * <p>
+ * This type is used to represent a formula column or a formatting column (for example, table color or number/date
+ * formatting) in the Deephaven JS API.
+ */
 @JsType(namespace = "dh")
 public class CustomColumn {
     public static final String TYPE_FORMAT_COLOR = "FORMAT_COLOR",
@@ -25,7 +32,7 @@ public class CustomColumn {
     private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
 
     /**
-     * Get the suffix to append to the name for the provided type
+     * Get the suffix to append to the name for the provided type.
      * 
      * @param type The type of format, see TYPE_*
      * @return The suffix to append to the name for the provided type
@@ -158,17 +165,41 @@ public class CustomColumn {
         return options;
     }
 
+    /**
+     * Returns the primitive value for this custom column.
+     */
     @JsMethod
     public String valueOf() {
         return toString();
     }
 
+    /**
+     * Returns a string representation of this custom column.
+     *
+     * <p>
+     * The returned value is formatted as {@code name[SUFFIX]=expression}, where {@code [SUFFIX]} depends on the
+     * {@linkplain #getType() type}.
+     *
+     * <p>
+     * {@link #from(String)} parses {@code name=expression} and always produces a {@link #TYPE_NEW} column. It does not
+     * interpret suffixes or preserve the original type.
+     */
     @JsMethod
     @Override
     public String toString() {
         return "" + name + getNameSuffix(type) + "=" + expression;
     }
 
+    /**
+     * Creates a {@link CustomColumn} by parsing a string produced by {@link #toString()}.
+     *
+     * <p>
+     * This method parses {@code name=expression} and always produces a {@link #TYPE_NEW} column. It does not interpret
+     * suffixes.
+     *
+     * @param columnInfo a string formatted as {@code name=expression}
+     * @return a new {@link CustomColumn}
+     */
     @JsMethod
     public static CustomColumn from(String columnInfo) {
         // Parse the column info from the formatted string (produced from toString())

@@ -59,4 +59,4 @@ with turbodbc.connect(connection_string=connection) as conn:
 - [How to execute SQL queries](../../../how-to-guides/data-import-export/execute-sql-queries.md)
 - [`adbc.read_cursor`](./adbc.md)
 - [`read_sql`](./read_sql.md)
-- [Pydoc](/core/pydoc/code/deephaven.dbc.odbc.html#deephaven.dbc.odbc.read_cursor)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.dbc.odbc.html#deephaven.dbc.odbc.read_cursor)

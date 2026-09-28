@@ -51,9 +51,9 @@ The following options are available:
 
 - `ERROR_ON_DUPLICATE`: Throw an error if a duplicate right table row is found.
 - `FIRST_MATCH`: Match the first right table row and ignore later duplicates. This is equivalent to calling
-  [`first_by()`](../group-and-aggregate/firstBy.md) on the right table's key columns before joining.
+  [`first_by`](../group-and-aggregate/firstBy.md) on the right table's key columns before joining.
 - `LAST_MATCH`: Match the last right table row and ignore earlier duplicates. This is equivalent to calling
-  [`last_by()`](../group-and-aggregate/lastBy.md) on the right table's key columns before joining.
+  [`last_by`](../group-and-aggregate/lastBy.md) on the right table's key columns before joining.
 - `EXACTLY_ONE_MATCH`: Match exactly one right table row; throw an error if there are zero or more than one matches.
   This is equivalent to [`exact_join`](./exact-join.md).
 

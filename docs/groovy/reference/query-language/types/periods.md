@@ -9,11 +9,11 @@ Periods are a special type of string used to represent a period of time.
 `-#Y#M#DT#H#M#S`
 
 - `-` - An optional sign to indicate that the period is negative. Omitting this makes the period positive.
-- `#` - Any numeric value
+- `#` - Any numeric value.
 - `Y` - Years
 - `M` (left of `T`) - Months
 - `D` - Days
-- `T` - A divider between the year/month/day and hour/minute/second times
+- `T` - A divider between the year/month/day and hour/minute/second times.
 - `H` - Hours
 - `M` (right of `T`) - Minutes
 - `S` - Seconds

@@ -58,8 +58,12 @@ add_custom_command(
 )
 
 set(ALL_FILES
+    src/server/bearer_middleware.cc
     src/server/server.cc
+    src/server/server_shared_state.cc
+    include/private/deephaven/client/server/bearer_middleware.h
     include/private/deephaven/client/server/server.h
+    include/private/deephaven/client/server/server_shared_state.h
 
     src/impl/aggregate_impl.cc
     src/impl/client_impl.cc
@@ -102,14 +106,15 @@ set(ALL_FILES
     include/private/deephaven/client/subscription/subscribe_thread.h
     include/private/deephaven/client/subscription/subscription_handle.h
 
-    src/utility/executor.cc
-    include/private/deephaven/client/utility/executor.h
-
     src/utility/arrow_util.cc
+    src/utility/executor.cc
+    src/utility/logging.cc
     src/utility/table_maker.cc
 
+    include/private/deephaven/client/utility/executor.h
     include/public/deephaven/client/utility/arrow_util.h
     include/public/deephaven/client/utility/internal_types.h
+    include/public/deephaven/client/utility/logging.h
     include/public/deephaven/client/utility/misc_types.h
     include/public/deephaven/client/utility/table_maker.h
 )

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -271,6 +271,22 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         // The underlying filter may be a ConditionFilter
         if (filter instanceof ExposesChunkFilter) {
             return ((ExposesChunkFilter) filter).chunkFilter();
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Return an {@link Optional} containing the underlying {@link AbstractRangeFilter} if the provided filter is a
+     * range filter that can be pushed down (i.e. is not implemented by a ConditionFilter). Otherwise returns
+     * {@code Optional.empty()}.
+     */
+    public static Optional<AbstractRangeFilter> extractRangeFilter(WhereFilter filter) {
+        if (filter instanceof RangeFilter
+                && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
+            return Optional.of((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter());
+        }
+        if (filter instanceof AbstractRangeFilter) {
+            return Optional.of((AbstractRangeFilter) filter);
         }
         return Optional.empty();
     }

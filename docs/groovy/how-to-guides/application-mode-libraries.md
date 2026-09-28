@@ -35,5 +35,5 @@ ApplicationContext.initialize(start)
 
 - [How to use Application Mode video](https://youtu.be/GNm1k0WiRMQ)
 - [How to use Application Mode scripts](./application-mode-script.md)
-- [Initialize server state with Application Mode](./app-mode.md)
+- [Initialize server state with Application Mode](./application-mode.md)
 - [Application Mode config file](../reference/app-mode/application-mode-config.md)

@@ -153,7 +153,7 @@ sourceMeta = source.meta()
 
 - [Access metadata](./metadata.md)
 - [Query string overview](./query-string-overview.md)
-- [Query scope](./queryscope.md)
+- [Query scope](./query-scope.md)
 - [Groovy variables in query strings](./groovy-variables.md)
 - [Groovy closures in query strings](./groovy-closures.md)
 - [Groovy classes in query strings](./groovy-classes.md)

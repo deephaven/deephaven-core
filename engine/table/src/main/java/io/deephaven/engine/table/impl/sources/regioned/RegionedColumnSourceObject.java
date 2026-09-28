@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -77,7 +77,9 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a " + getType() + " at location " + locationKey);
             }
             // noinspection unchecked
-            return new ColumnRegionObject.Constant<>(PARAMETERS.regionMask, (DATA_TYPE) partitioningColumnValue);
+            return partitioningColumnValue == null
+                    ? ColumnRegionObject.createNull(PARAMETERS.regionMask)
+                    : new ColumnRegionObject.Constant<>(PARAMETERS.regionMask, (DATA_TYPE) partitioningColumnValue);
         }
     }
 }

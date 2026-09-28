@@ -7,6 +7,9 @@ This guide will show you how to use [Numba](https://numba.pydata.org/) in your P
 
 [Numba](https://numba.pydata.org/) is an open-source just-in-time (JIT) compiler for Python. It can be used to translate portions of Python code into optimized machine code using [LLVM](https://llvm.org/). The use of [Numba](https://numba.pydata.org/) can make your queries faster and more responsive.
 
+> [!IMPORTANT]
+> Numba currently supports NumPy 2.4 and earlier, but Deephaven ships with NumPy 2.5. As a result, the Numba examples on this page do not run in a default Deephaven deployment. To run them, reconfigure Deephaven to use a NumPy version below 2.5 (for example, by building a custom Docker image that installs `numpy<2.5`).
+
 ## What is just-in-time (JIT) compilation?
 
 JIT compiles code into optimized machine code at runtime. When using [Numba](https://numba.pydata.org/), you can specify which functions and blocks of code you want to be compiled at runtime. Compiling code blocks into optimized machine code adds some overhead, but subsequent function calls can be much faster. Thus, JIT can be powerful when used on functions that are complex, large, or will be used many times.
@@ -20,8 +23,11 @@ JIT compiles code into optimized machine code at runtime. When using [Numba](htt
 
 In the following example, `@jit` and `@vectorize` are used to JIT compile `function_one` and `function_two`.
 
-```python
+```python docker-config=numba
 import math
+import os
+
+os.system("pip install numba")
 from numba import jit, vectorize, double, int64
 
 
@@ -41,8 +47,11 @@ If the decorator is used without a function signature, Numba will infer the argu
 
 The example below uses lazy compilation on the function `func`. When the code is first run, the function is compiled to optimized machine code, which takes extra overhead and results in longer execution time. On the second function call, Python uses the already optimized machine code, which results in very fast execution.
 
-```python
+```python docker-config=numba
 import numpy as np
+import os
+
+os.system("pip install numba")
 from numba import jit
 import time
 
@@ -75,7 +84,10 @@ If the decorator is used with a function signature, Numba will compile the funct
 
 The example below uses eager compilation on the function `func` by specifying one or more function signatures. These function signatures denote the allowed input and output data types to and from the function. With eager compilation, the code is compiled into optimized machine code at the function definition. When the code is run the first time, it has already been compiled into optimized machine code, so it's just as fast as the second function call. If the compiled function is used with a data type not specified in the function signature, an error will occur.
 
-```python
+```python docker-config=numba
+import os
+
+os.system("pip install numba")
 from numba import vectorize, int64, double
 import numpy as np
 import time
@@ -131,6 +143,9 @@ We've seen the `@jit` and `@vectorize` decorators used to optimize various funct
 This can be visualized with a simple example:
 
 ```python skip-test
+import os
+
+os.system("pip install numba")
 from numba import jit, vectorize, int64
 import numpy as np
 
@@ -169,7 +184,10 @@ The `@guvectorize` decorator takes the concepts from `@vectorize` one step furth
 
 The following example shows a `@guvectorize` decorated function.
 
-```python order=:log
+```python order=:log docker-config=numba
+import os
+
+os.system("pip install numba")
 from numba import guvectorize, int64
 import numpy as np
 
@@ -199,13 +217,16 @@ Here, the `nopython=True` option is used. This option produces faster, primitive
 
 This example looks at three cases:
 
-- A regular function without JIT
-- A JIT function that needs compilation
-- A JIT function that is already compiled
+- A regular function without JIT.
+- A JIT function that needs compilation.
+- A JIT function that is already compiled.
 
 The first time the JIT-enabled function is run on a matrix of integers, it's almost ten times slower than the standard function. However, after compilation, the JIT-enabled function is almost two hundred times faster!
 
-```python
+```python docker-config=numba
+import os
+
+os.system("pip install numba")
 from numba import jit
 import numpy as np
 import time
@@ -254,8 +275,11 @@ print("Execution time (JIT) = %s" % (end - start))
 
 To show how the performance of `@jit` and `@vectorize` differ when applied to Deephaven tables, we will create identical functions that use these decorators. We then measure the performance of creating new columns in a 625,000 row table when using the functions.
 
-```python order=t,t2,t3,t4,t5,t6
+```python order=t,t2,t3,t4,t5,t6 docker-config=numba
 from deephaven import empty_table
+import os
+
+os.system("pip install numba")
 from numba import jit, vectorize, double, int64
 import time
 
@@ -335,7 +359,10 @@ The use of `@vectorize` with functions operating on Deephaven tables results in 
 
 The following example uses the `@guvectorize` decorator on the function `g`, which is used in an [`update`](../reference/table-operations/select/update.md) operation.
 
-```python order=result,source
+```python order=result,source docker-config=numba
+import os
+
+os.system("pip install numba")
 from numba import guvectorize, int64
 from deephaven import empty_table
 from numpy import typing as npt

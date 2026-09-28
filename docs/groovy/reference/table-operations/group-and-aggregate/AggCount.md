@@ -43,7 +43,7 @@ result = source.aggBy([AggCount("Number"),AggAvg("AvgNumber = Number")], "X")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
 - [`aggBy`](./aggBy.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggCount(java.lang.String))

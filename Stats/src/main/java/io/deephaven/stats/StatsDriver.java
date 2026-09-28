@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.stats;
 
@@ -15,6 +15,8 @@ import io.deephaven.io.log.impl.LogSinkImpl;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.thread.NamingThreadFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.time.ZoneId;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -25,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Drives the collection of statistics on a 1-second timer task.
  */
-public class StatsDriver {
+public class StatsDriver implements Closeable {
     public interface StatusAdapter {
         void sendAlert(String alertText);
 
@@ -67,7 +69,7 @@ public class StatsDriver {
     private static final int BUFFER_SIZE = 8192;
     private static final int GUESS_ENTRY_SIZE = 256;
 
-    private final Value statsTiming = Stats.makeItem("Stats", "updateDuration", State.FACTORY,
+    private final Value statsTiming = Stats.makeItem("Stats", "updateDuration", Counter.FACTORY,
             "Microseconds required to update the statistics histories each second").getValue();
 
     private final Clock clock;
@@ -180,6 +182,22 @@ public class StatsDriver {
             scheduler = null;
             updateJobFuture = null;
         }
+    }
+
+    public void shutdownScheduler() {
+        if (scheduler != null) {
+            updateJobFuture.cancel(false);
+            scheduler.shutdown();
+        }
+    }
+
+    public boolean awaitSchedulerTermination(final long timeout, final TimeUnit unit) throws InterruptedException {
+        return scheduler == null || scheduler.awaitTermination(timeout, unit);
+    }
+
+    @Override
+    public void close() throws IOException {
+        intraday.close();
     }
 
     private void update() {

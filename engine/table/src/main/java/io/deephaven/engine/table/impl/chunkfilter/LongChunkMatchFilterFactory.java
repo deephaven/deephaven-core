@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.engine.table.MatchOptions;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 
 /**
  * Creates chunk filters for long values.
@@ -20,8 +22,8 @@ import gnu.trove.set.hash.TLongHashSet;
 public class LongChunkMatchFilterFactory {
     private LongChunkMatchFilterFactory() {} // static use only
 
-    public static LongChunkFilter makeFilter(boolean invertMatch, long... values) {
-        if (invertMatch) {
+    public static LongChunkFilter makeFilter(final MatchOptions matchOptions, final long... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueLongChunkFilter(values[0]);
             }
@@ -137,10 +139,10 @@ public class LongChunkMatchFilterFactory {
     }
 
     private final static class MultiValueLongChunkFilter extends LongChunkFilter {
-        private final TLongHashSet values;
+        private final LongSet values;
 
         private MultiValueLongChunkFilter(long... values) {
-            this.values = new TLongHashSet(values);
+            this.values = new LongOpenHashSet(values);
         }
 
         @Override
@@ -150,10 +152,10 @@ public class LongChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueLongChunkFilter extends LongChunkFilter {
-        private final TLongHashSet values;
+        private final LongSet values;
 
         private InverseMultiValueLongChunkFilter(long... values) {
-            this.values = new TLongHashSet(values);
+            this.values = new LongOpenHashSet(values);
         }
 
         @Override

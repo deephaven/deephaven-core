@@ -76,7 +76,7 @@ result = timeTable("PT2S")
 
 ## `RingTableTools.of`
 
-- [`ring_table`](../../how-to-guides/ring-table.md)
+- [`RingTableTools.of`](../table-operations/create/ringTable.md)
 
 ```groovy order=null
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools
@@ -113,5 +113,6 @@ result2 = AppendOnlyArrayBackedInputTable.make(tableDef)
 - [Create static tables](../../how-to-guides/new-and-empty-table.md)
 - [Select and create columns](../../how-to-guides/use-select-view-update.md)
 - [`emptyTable`](../../reference/table-operations/create/emptyTable.md)
-- [`Input Table`](../table-operations/create/InputTable.md)
+- [`InputTable`](../table-operations/create/InputTable.md)
 - [`newTable`](../../reference/table-operations/create/newTable.md)
+- [`RingTableTools.Of`](../table-operations/create/ringTable.md)

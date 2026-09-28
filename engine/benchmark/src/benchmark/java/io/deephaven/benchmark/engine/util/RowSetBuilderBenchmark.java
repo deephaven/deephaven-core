@@ -1,12 +1,13 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.benchmark.engine.util;
 
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Random;
@@ -26,8 +27,8 @@ public class RowSetBuilderBenchmark {
     @Param({"5", "50", "95"})
     private int percentRanges;
 
-    private final TLongArrayList rStart = new TLongArrayList();
-    private final TLongArrayList rEnd = new TLongArrayList();
+    private final LongList rStart = new LongArrayList();
+    private final LongList rEnd = new LongArrayList();
 
     int[] insertOrder;
 
@@ -73,7 +74,7 @@ public class RowSetBuilderBenchmark {
     public void insertSequentialStandard() {
         final RowSetBuilderRandom rb = RowSetFactory.builderRandom();
         for (int ii = 0; ii < rStart.size(); ii++) {
-            rb.addRange(rStart.get(ii), rEnd.get(ii));
+            rb.addRange(rStart.getLong(ii), rEnd.getLong(ii));
         }
     }
 
@@ -81,7 +82,7 @@ public class RowSetBuilderBenchmark {
     public void insertSequentialInsertOnly() {
         try (final WritableRowSet acc = RowSetFactory.empty()) {
             for (int ii = 0; ii < rStart.size(); ii++) {
-                acc.insertRange(rStart.get(ii), rEnd.get(ii));
+                acc.insertRange(rStart.getLong(ii), rEnd.getLong(ii));
             }
         }
     }
@@ -90,7 +91,7 @@ public class RowSetBuilderBenchmark {
     public void insertRandomStandard() {
         final RowSetBuilderRandom rb = RowSetFactory.builderRandom();
         for (int ii = 0; ii < rStart.size(); ii++) {
-            rb.addRange(rStart.get(insertOrder[ii]), rEnd.get(insertOrder[ii]));
+            rb.addRange(rStart.getLong(insertOrder[ii]), rEnd.getLong(insertOrder[ii]));
         }
     }
 
@@ -98,7 +99,7 @@ public class RowSetBuilderBenchmark {
     public void insertRandomInsertOnly() {
         try (final WritableRowSet acc = RowSetFactory.empty()) {
             for (int ii = 0; ii < rStart.size(); ii++) {
-                acc.insertRange(rStart.get(insertOrder[ii]), rEnd.get(insertOrder[ii]));
+                acc.insertRange(rStart.getLong(insertOrder[ii]), rEnd.getLong(insertOrder[ii]));
             }
         }
     }

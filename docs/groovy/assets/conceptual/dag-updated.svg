@@ -1,0 +1,119 @@
+<svg viewBox="0 0 900 700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 16px sans-serif; fill: #1f2937; }
+      .label { font: 14px sans-serif; fill: #374151; }
+      .code { font: 12px 'Courier New', monospace; fill: #1f2937; }
+      .description { font: 11px sans-serif; fill: #6b7280; }
+      .source { fill: #dbeafe; stroke: #3b82f6; stroke-width: 3; }
+      .operation { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2.5; }
+      .result { fill: #dcfce7; stroke: #22c55e; stroke-width: 2.5; }
+      .arrow { stroke: #6b7280; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .data-flow { stroke: #3b82f6; stroke-width: 2; fill: none; marker-end: url(#dataflow); stroke-dasharray: 5,5; }
+      .shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    
+    <marker id="dataflow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#3b82f6" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="450" y="30" text-anchor="middle">Deephaven DAG: Real-time Data Flow</text>
+  <text class="description" x="450" y="50" text-anchor="middle">Query operations form a directed acyclic graph with automatic updates</text>
+  
+  <!-- Data Source: time_table -->
+  <g class="shadow">
+    <rect class="source" x="350" y="90" width="200" height="80" rx="10"/>
+    <text class="label" x="450" y="115" text-anchor="middle" font-weight="bold">Data Source</text>
+    <text class="code" x="450" y="135" text-anchor="middle">time_table("PT1S")</text>
+    <text class="description" x="450" y="155" text-anchor="middle">Generates row every 1 second</text>
+  </g>
+  
+  <!-- Arrow down to t1 -->
+  <path class="arrow" d="M 450 170 L 450 200"/>
+  
+  <!-- Table t1: update operation -->
+  <g class="shadow">
+    <rect class="operation" x="330" y="200" width="240" height="100" rx="10"/>
+    <text class="label" x="450" y="225" text-anchor="middle" font-weight="bold">t1 = update()</text>
+    <text class="code" x="450" y="245" text-anchor="middle">Label = (ii % 2)</text>
+    <text class="description" x="450" y="265" text-anchor="middle">Columns: Timestamp, Label</text>
+    <text class="description" x="450" y="280" text-anchor="middle">Label alternates: 0, 1, 0, 1...</text>
+  </g>
+  
+  <!-- Arrows from t1 to t2 and t3 -->
+  <path class="arrow" d="M 330 250 L 220 250 L 220 360"/>
+  <path class="arrow" d="M 570 250 L 680 250 L 680 400"/>
+  
+  <!-- Table t2: last_by operation -->
+  <g class="shadow">
+    <rect class="operation" x="100" y="360" width="240" height="100" rx="10"/>
+    <text class="label" x="220" y="385" text-anchor="middle" font-weight="bold">t2 = last_by()</text>
+    <text class="code" x="220" y="405" text-anchor="middle">by=["Label"]</text>
+    <text class="description" x="220" y="425" text-anchor="middle">Most recent row per Label</text>
+    <text class="description" x="220" y="440" text-anchor="middle">Always 2 rows (Label=0, Label=1)</text>
+  </g>
+  
+  <!-- Arrow from t2 to t3 -->
+  <path class="arrow" d="M 340 410 L 560 450"/>
+  
+  <!-- Table t3: natural_join operation -->
+  <g class="shadow">
+    <rect class="result" x="560" y="400" width="240" height="120" rx="10"/>
+    <text class="label" x="680" y="425" text-anchor="middle" font-weight="bold">t3 = natural_join()</text>
+    <text class="code" x="680" y="445" text-anchor="middle">on=["Label"]</text>
+    <text class="code" x="680" y="460" text-anchor="middle">joins=["T2=Timestamp"]</text>
+    <text class="description" x="680" y="480" text-anchor="middle">Joins latest Timestamp from t2</text>
+    <text class="description" x="680" y="495" text-anchor="middle">onto each row in t1</text>
+  </g>
+  
+  <!-- Data flow indicators -->
+  <g opacity="0.7">
+    <path class="data-flow" d="M 450 170 L 450 200"/>
+    <text class="description" x="470" y="190" font-style="italic">new row</text>
+    
+    <path class="data-flow" d="M 330 250 L 220 360"/>
+    <text class="description" x="260" y="300" font-style="italic">updates</text>
+    
+    <path class="data-flow" d="M 570 250 L 680 400"/>
+    <text class="description" x="640" y="320" font-style="italic">updates</text>
+    
+    <path class="data-flow" d="M 340 410 L 560 450"/>
+    <text class="description" x="440" y="430" font-style="italic">latest values</text>
+  </g>
+  
+  <!-- Legend -->
+  <g transform="translate(50, 570)">
+    <text class="label" x="0" y="0" font-weight="bold">Legend:</text>
+    
+    <rect class="source" x="0" y="10" width="80" height="35" rx="5"/>
+    <text class="description" x="90" y="30">Data Source</text>
+    
+    <rect class="operation" x="200" y="10" width="80" height="35" rx="5"/>
+    <text class="description" x="290" y="30">Operation/Transform</text>
+    
+    <rect class="result" x="450" y="10" width="80" height="35" rx="5"/>
+    <text class="description" x="540" y="30">Final Result</text>
+    
+    <line class="arrow" x1="0" y1="70" x2="60" y2="70"/>
+    <text class="description" x="70" y="75">Dependency</text>
+    
+    <line class="data-flow" x1="200" y1="70" x2="260" y2="70"/>
+    <text class="description" x="270" y="75">Real-time data flow</text>
+  </g>
+  
+  <!-- Key insight box -->
+  <g transform="translate(580, 570)">
+    <rect fill="#f0f9ff" stroke="#3b82f6" stroke-width="2" x="0" y="0" width="280" height="90" rx="8"/>
+    <text class="label" x="10" y="20" font-weight="bold">💡 Key Insight</text>
+    <text class="description" x="10" y="40">When t1 gets a new row:</text>
+    <text class="description" x="10" y="55">• Only that row is processed</text>
+    <text class="description" x="10" y="70">• t2 updates affected Label</text>
+    <text class="description" x="10" y="85">• t3 incorporates both changes</text>
+  </g>
+</svg>

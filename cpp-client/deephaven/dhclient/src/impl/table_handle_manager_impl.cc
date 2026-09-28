@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 
 #include <map>
-#include <grpc/support/log.h>
+#include <absl/log/log.h>
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/client/impl/util.h"
@@ -40,11 +40,11 @@ TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&
     server_(std::move(server)),
     executor_(std::move(executor)),
     flightExecutor_(std::move(flight_executor)) {
-  gpr_log(GPR_DEBUG, "%s: Created.", me_.c_str());
+  VLOG(2) << me_ << ": Created.";
 }
 
 TableHandleManagerImpl::~TableHandleManagerImpl() {
-  gpr_log(GPR_DEBUG,"%s: Destroyed.", me_.c_str());
+  VLOG(2) << me_ << ": Destroyed.";
 }
 
 void TableHandleManagerImpl::Shutdown() {

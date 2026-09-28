@@ -1,15 +1,16 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations;
 
+import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Service responsible for {@link TableLocation} discovery.
  */
-public interface TableDataService {
+public interface TableDataService extends NamedImplementation {
 
     /**
      * Request a {@link TableLocationProvider} from this service.

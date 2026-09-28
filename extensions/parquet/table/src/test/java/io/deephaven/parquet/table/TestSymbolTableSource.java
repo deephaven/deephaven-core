@@ -1,10 +1,13 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
@@ -60,5 +63,67 @@ public class TestSymbolTableSource {
         final Table syms = source.getStaticSymbolTable(t.getRowSet(), false);
 
         assertTableEquals(expected, syms);
+    }
+
+    @Test
+    public void testSymbolTableDataIndexLookup() {
+        final Table t = TableTools.emptyTable(100)
+                .update("TheBestColumn=i==9?(String)null:`S`+(i%10)", "Sentinel=i");
+        final File toWrite = new File(dataDirectory, "table.parquet");
+        ParquetTools.writeTable(t, toWrite.getPath());
+
+        // Make sure we have the expected symbol table (or not)
+        final Table readBack = ParquetTools.readTable(toWrite.getPath());
+        final SymbolTableSource<String> source =
+                (SymbolTableSource<String>) readBack.getColumnSource("TheBestColumn", String.class);
+        Assert.assertTrue(source.hasSymbolTable(readBack.getRowSet()));
+
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(readBack, "TheBestColumn");
+        Assert.assertTrue("index instanceof TableBackedDataIndex", index instanceof TableBackedDataIndex);
+        final DataIndex.RowKeyLookup rkl = index.rowKeyLookup();
+
+        for (int i = 0; i < 9; i++) {
+            final String key = "S" + i;
+            final long rowKey = rkl.apply(key, false);
+            Assert.assertEquals(i, rowKey);
+        }
+        // Assert null lookup is correct.
+        final long rowKey = rkl.apply(null, false);
+        Assert.assertEquals(9, rowKey);
+    }
+
+    /**
+     * This won't fail after 41.0 due to the table-level filtering replacing AbstractColumnSource#match. Used to test
+     * bugfix against 0.40.x.
+     */
+    @Test
+    public void testFilterIndexedSymbolTable() {
+        final Table t = TableTools.emptyTable(100)
+                .update("TheBestColumn=i==9?(String)null:`S`+(i%10)", "Sentinel=i");
+        final File toWrite = new File(dataDirectory, "table.parquet");
+        ParquetTools.writeTable(t, toWrite.getPath());
+
+        // Make sure we have the expected symbol table (or not)
+        final Table readBack = ParquetTools.readTable(toWrite.getPath());
+        final SymbolTableSource<String> source =
+                (SymbolTableSource<String>) readBack.getColumnSource("TheBestColumn", String.class);
+        Assert.assertTrue(source.hasSymbolTable(readBack.getRowSet()));
+
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(readBack, "TheBestColumn");
+        Assert.assertTrue("index instanceof TableBackedDataIndex", index instanceof TableBackedDataIndex);
+        // materialize the index table
+        final Table indexTable = index.table();
+
+        Table filtered;
+        Table expected;
+
+        filtered = readBack.where("TheBestColumn in `S0`");
+        expected = TableTools.emptyTable(10).update("TheBestColumn=`S0`", "Sentinel=i*10");
+        assertTableEquals(expected, filtered);
+
+        // Assert null filtering is correct.
+        filtered = readBack.where("TheBestColumn in null");
+        expected = TableTools.emptyTable(1).update("TheBestColumn=(String)null", "Sentinel=9");
+        assertTableEquals(expected, filtered);
     }
 }

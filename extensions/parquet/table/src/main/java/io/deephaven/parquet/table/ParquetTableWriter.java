@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -137,10 +138,8 @@ public class ParquetTableWriter {
             for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
                 try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
                     // This will retrieve an existing index if one exists, or create a new one if not
-                    final BasicDataIndex dataIndex = Optional
-                            .ofNullable(DataIndexer.getDataIndex(t, info.indexColumnNames))
-                            .or(() -> Optional.of(DataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
-                            .get()
+                    final BasicDataIndex dataIndex = DataIndexer
+                            .getOrCreateDataIndex(t, info.indexColumnNames)
                             .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                     final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
                     final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
@@ -263,8 +262,8 @@ public class ParquetTableWriter {
                 try {
                     writeColumnSource(tableRowSet, writeInstructions, rowGroupWriter, computedCache, columnName,
                             columnSource);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException("Failed to write column " + columnName, e);
+                } catch (final RuntimeException e) {
+                    throw new UncheckedDeephavenException("Failed to write column " + columnName, e);
                 }
             }
         }
@@ -410,7 +409,7 @@ public class ParquetTableWriter {
             @NotNull final RowGroupWriter rowGroupWriter,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
-            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IllegalAccessException, IOException {
+            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IOException {
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
                 writeInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName))) {
             boolean usedDictionary = false;

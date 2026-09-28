@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v17/arrow"
 	"github.com/deephaven/deephaven-core/go/internal/test_tools"
 	"github.com/deephaven/deephaven-core/go/pkg/client"
 )
@@ -129,7 +129,7 @@ func Example_inputTable() {
 	//        metadata: ["deephaven:inputtable.isValue": "true", "deephaven:isSortable": "true", "deephaven:type": "float"]
 	//     - Volume: type=int32, nullable
 	//         metadata: ["deephaven:inputtable.isValue": "true", "deephaven:isSortable": "true", "deephaven:type": "int"]
-	//   metadata: ["deephaven:unsent.attribute.InputTable": ""]
+	//   metadata: ["deephaven:tableMetadata": "CikKDAoGVGlja2VyEgIIAQoLCgVDbG9zZRICCAIKDAoGVm9sdW1lEgIIAg==", "deephaven:unsent.attribute.InputTable": ""]
 	//   rows: 4
 	//   col[0][Ticker]: ["XRX" "XYZZY" "GME" "ZNGA"]
 	//   col[1][Close]: [53.8 88.5 453 544.9]

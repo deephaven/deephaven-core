@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
@@ -37,6 +37,8 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         if (totalSize == 0) {
             return setResult(destination, NULL_CHAR);
         } else {
+            // region maybeHandleNaN
+            // endregion maybeHandleNaN
             final long targetLo = Math.round((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

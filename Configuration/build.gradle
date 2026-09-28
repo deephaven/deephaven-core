@@ -4,8 +4,6 @@ plugins {
 }
 
 dependencies {
-    api libs.trove
-
     implementation project(':Base')
     implementation project(':IO')
     implementation project(':log-factory')

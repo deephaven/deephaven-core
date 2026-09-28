@@ -87,7 +87,7 @@ result = source.absSumBy("X", "Y")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to perform dedicated aggregations](../../../how-to-guides/dedicated-aggregations.md)
 - [`aggBy`](./aggBy.md)
 - [`dropColumns`](../select/drop-columns.md)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/utility/arrow_util.h"
 
@@ -132,6 +132,18 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
       element_type_ = inner.element_type_.WrapList();
     }
     return result;
+  }
+
+  // Arrow handles REE decoding internally when values are requested.
+  // Random access is O(log n) via binary search over run_ends (n = number of runs) but
+  // sequential access via Arrow's REE iterator is O(1) amortized.
+  arrow::Status Visit(const arrow::RunEndEncodedType &type) final {
+    return type.value_type()->Accept(this);
+  }
+
+  // The logical element type of a dictionary-encoded column is the value type, not the index type.
+  arrow::Status Visit(const arrow::DictionaryType &type) final {
+    return type.value_type()->Accept(this);
   }
 
   arrow::Status Visit(const arrow::Time64Type &/*type*/) final {

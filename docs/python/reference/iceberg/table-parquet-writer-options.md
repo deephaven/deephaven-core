@@ -116,4 +116,4 @@ writer_options = iceberg.TableParquetWriterOptions(
 - [`IcebergUpdateMode`](./iceberg-update-mode.md)
 - [`SortOrderProvider`](./sort-order-provider.md)
 - [`TableParquetWriterOptions`](./table-parquet-writer-options.md)
-- [Pydoc](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.TableParquetWriterOptions)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.TableParquetWriterOptions)

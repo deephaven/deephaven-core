@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.JsArray;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -12,7 +13,6 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
-import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -39,7 +39,7 @@ public class Column {
     private final int jsIndex;
 
     /**
-     * Specific to rollup tables when constituent columns are enabled. Used in toString(), but ignored for
+     * Specific to rollup tables when constituent columns are enabled. Used in {@code toString()}, but ignored for
      * equals/hashcode, since it might be helpful for debugging, but could potentially confuse some comparisons between
      * instances since this is set after the CTS is created, ready for use.
      */
@@ -48,10 +48,11 @@ public class Column {
     private String description;
     private final boolean isInputTableKeyColumn;
     private final boolean isInputTableValueColumn;
+    private final JsArray<ColumnRestriction> columnRestrictions;
 
     /**
-     * Format entire rows colors using the expression specified. Returns a <b>CustomColumn</b> object to apply to a
-     * table using <b>applyCustomColumns</b> with the parameters specified.
+     * Format entire rows colors using the expression specified. Returns a {@code CustomColumn} object to apply to a
+     * table using {@code applyCustomColumns} with the parameters specified.
      *
      * @param expression
      * @param options
@@ -64,7 +65,7 @@ public class Column {
     }
 
     /**
-     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
      *
      * @param name
      * @param expression
@@ -79,12 +80,12 @@ public class Column {
         return new CustomColumn(name, CustomColumn.TYPE_NEW, expression, options);
     }
 
-    public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
+    public Column(int jsIndex, int index, Integer styleColumnIndex, String type, String name,
             boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
-            boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable) {
+            boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable,
+            JsArray<ColumnRestriction> columnRestrictions) {
         this.jsIndex = jsIndex;
         this.index = index;
-        assert Objects.equals(formatColumnIndex, styleColumnIndex);
         this.styleColumnIndex = styleColumnIndex;
         this.type = type;
         this.name = name;
@@ -94,10 +95,11 @@ public class Column {
         this.isInputTableKeyColumn = inputTableKeyColumn;
         this.isInputTableValueColumn = inputTableValueColumn;
         this.isSortable = isSortable;
+        this.columnRestrictions = columnRestrictions != null ? columnRestrictions : new JsArray<>();
     }
 
     /**
-     * the value for this column in the given row. Type will be consistent with the type of the Column.
+     * The value for this column in the given row. Type will be consistent with the type of the Column.
      *
      * @param row
      * @return Any
@@ -113,7 +115,7 @@ public class Column {
     }
 
     /**
-     * @deprecated do not use. Internal index of the column in the table, to be used as a key on the Row.
+     * @deprecated Do not use. Internal index of the column in the table, to be used as a key on the Row.
      * @return int
      */
     @Deprecated
@@ -166,7 +168,7 @@ public class Column {
 
     /**
      * If this column is part of a roll-up tree table, represents the type of the row data that can be found in this
-     * column for leaf nodes if includeConstituents is enabled. Otherwise, it is <b>null</b>.
+     * column for leaf nodes if {@code includeConstituents} is enabled. Otherwise, it is {@code null}.
      *
      * @return String
      */
@@ -189,10 +191,10 @@ public class Column {
     }
 
     /**
-     * True if this column is a partition column. Partition columns are used for filtering uncoalesced tables - see
-     * {@link JsTable#isUncoalesced()}.
+     * {@code true} if this column is a partition column. Partition columns are used for filtering uncoalesced tables -
+     * see {@link JsTable#isUncoalesced()}.
      *
-     * @return true if the column is a partition column
+     * @return {@code true} if the column is a partition column.
      */
     @JsProperty
     public boolean getIsPartitionColumn() {
@@ -223,6 +225,18 @@ public class Column {
     }
 
     /**
+     * Returns the column restrictions for input table columns, or an empty array if this is not an input table column
+     * or if no restrictions are defined. The restrictions are implementation-specific constraints that the server
+     * enforces on column values. The returned array is a copy and may be safely modified by the caller.
+     *
+     * @return Array of column restrictions, empty if none are defined
+     */
+    @JsProperty
+    public JsArray<ColumnRestriction> getColumnRestrictions() {
+        return columnRestrictions.slice();
+    }
+
+    /**
      * Creates a new value for use in filters based on this column. Used either as a parameter to another filter
      * operation, or as a builder to create a filter operation.
      *
@@ -234,7 +248,7 @@ public class Column {
     }
 
     /**
-     * a <b>CustomColumn</b> object to apply using `applyCustomColumns` with the expression specified.
+     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}
@@ -246,7 +260,7 @@ public class Column {
     }
 
     /**
-     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}
@@ -258,7 +272,7 @@ public class Column {
     }
 
     /**
-     * a <b>CustomColumn</b> object to apply using <b>applyCustomColumns</b> with the expression specified.
+     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}
@@ -319,12 +333,14 @@ public class Column {
     }
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
-        return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
+        return new Column(jsIndex, index, styleColumnIndex, type, name, isPartitionColumn,
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable,
+                columnRestrictions);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
-        return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
+        return new Column(jsIndex, index, styleColumnIndex, type, name, isPartitionColumn,
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable,
+                columnRestrictions);
     }
 }

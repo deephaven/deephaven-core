@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.hashing;
 
-import com.squareup.javapoet.CodeBlock;
+import com.palantir.javapoet.CodeBlock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.engine.rowset.RowSetFactory;

@@ -29,7 +29,7 @@ A new table with a specific percentage of rows from the end of the source table.
 
 ## Examples
 
-The following example filters the table to the last 40% and 33.3333333% of rows.
+The following example filters the table to the last 40% and 33.333333333% of rows.
 
 ```python order=source,result,result1
 from deephaven import new_table

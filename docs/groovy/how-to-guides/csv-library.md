@@ -71,8 +71,8 @@ These are the adaptor classes you need to write (for convenience we will name th
 The job of each wrapper class is to:
 
 1. hold a reference to your actual underlying column data structure,
-2. implement the `write()` method from `Sink<TARRAY>` in order to copy data to that data structure, and
-3. implement the `getUnderlying()` method to give the underlying data structure back to the caller when done.
+2. implement the `write` method from `Sink<TARRAY>` in order to copy data to that data structure, and
+3. implement the `getUnderlying` method to give the underlying data structure back to the caller when done.
 
 ### Implement an adaptor class
 
@@ -86,13 +86,13 @@ public interface Sink<TARRAY> {
 }
 ```
 
-As it is populating a column, the Deephaven CSV Library will repeatedly call `write()` with chunks of data. It is the job of `write()` to:
+As it is populating a column, the Deephaven CSV Library will repeatedly call `write` with chunks of data. It is the job of `write` to:
 
 1. Ensure that the target column data structure has enough capacity.
 2. Copy the data to the target column data structure.
 3. If your data structure is capable of representing NULL values, process them appropriately.
 
-There are five arguments to `write()`:
+There are five arguments to `write`:
 
 1. `src` - the source data. This is a temporary array from which the data should be copied. The data should be copied from array index 0, and the number of elements to be copied is given by (`destEnd - destBegin`).
 2. `isNull` - a parallel array of booleans. If `isNull[i]` is `true` for some index `i`, this means that the value at `src[i]` should be ignored; instead, the corresponding element should be considered to have a null value. We will discuss null handling in a later section.
@@ -163,13 +163,13 @@ private static SinkFactory makeMySinkFactory() {
 
 ### Put it all together
 
-We now have everything we need to use our own data structures with the library. Simply take the example code in the [Use the Reference Implementation](#use-the-reference-implementation) section and change `SinkFactory.trove()` to `makeMySinkFactory()`.
+We now have everything we need to use our own data structures with the library. Simply take the example code in the [Use the Reference Implementation](#use-the-reference-implementation) section and change `SinkFactory.trove()` to `makeMySinkFactory`.
 
 ## Handle nulls
 
 Although the CSV specification itself doesn't contemplate the concept of "null value", many systems such as Deephaven do have such a concept, so it makes sense for the library to support it. Typically the caller will configure a null literal (perhaps the empty string or even the string "NULL"), and when the library encounters that string in the input text it will encode it as the appropriate null representation.
 
-What constitutes the "appropriate null representation" of course depends on your implementation. Some implementations reserve a special sentinel value from the data type. For example, they may use Integer.MIN_VALUE to represent the null value for the integer types. Other implementations keep a boolean flag off to the side which indicates whether that element is null. Deephaven supports both approaches. To handle nulls, you will need to modify the `write()` method that we described [above](#sample).
+What constitutes the "appropriate null representation" of course depends on your implementation. Some implementations reserve a special sentinel value from the data type. For example, they may use Integer.MIN_VALUE to represent the null value for the integer types. Other implementations keep a boolean flag off to the side which indicates whether that element is null. Deephaven supports both approaches. To handle nulls, you will need to modify the `write` method that we described [above](#sample).
 
 Let's assume that your system uses `Integer.MIN_VALUE` as a null sentinel for the int type. These are the modifications needed for `MyIntSink`, and you would need to do something similar for all your `MyXXXSinks`.
 
@@ -266,7 +266,7 @@ public interface Source<TARRAY> {
 }
 ```
 
-When it is reading back data from a column, the library will repeatedly call `read()` to get chunks of data. It is the job of `read()` to:
+When it is reading back data from a column, the library will repeatedly call `read` to get chunks of data. It is the job of `read` to:
 
 1. Copy the data from the column data structure.
 2. If your data structure is capable of representing null values, process them appropriately.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.benchmark.parquet.table;
 
@@ -51,7 +51,7 @@ public class TableWriteBenchmark {
                 .newQueryLibrary()
                 .newQueryScope()
                 .setQueryCompiler(
-                        QueryCompilerImpl.create(rootPath.resolve("cache").toFile(), getClass().getClassLoader()))
+                        QueryCompilerImpl.create())
                 .build();
         exContextCloseable = context.open();
 

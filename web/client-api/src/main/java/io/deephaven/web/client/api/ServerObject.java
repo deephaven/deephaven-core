@@ -1,11 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.api.widget.JsWidgetExportedObject;

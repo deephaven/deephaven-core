@@ -23,13 +23,17 @@ configurations {
 dependencies {
   // This should be implementation, if listed at all, at least once we have own own version management
   api libs.protobuf.java
+  api(libs.protobuf.java.util) {
+    because 'Ensures we use the same version of both protobuf and protobuf-util'
+  }
 
   api platform(libs.grpc.bom)
+  api(platform(libs.netty.bom)) {
+    because 'Ensures we use a consistent version of netty for grpc'
+  }
   api libs.grpc.protobuf
   api libs.grpc.api
   api libs.grpc.stub
-
-  runtimeOnly libs.boringssl
 
   // This is excessive, and brings in every grpc jar, making it compile-only limits what it pulls in to
   // downstream classpaths

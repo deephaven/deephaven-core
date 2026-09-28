@@ -5,7 +5,7 @@ title: sum_by
 `sum_by` returns the total sum for each group. Null values are ignored.
 
 > [!CAUTION]
-> Applying this aggregation to a column where the sum can not be computed will result in an error. For example, the sum is not defined for a column of string values.
+> Applying this aggregation to a column where the sum cannot be computed will result in an error. For example, the sum is not defined for a column of string values.
 
 ## Syntax
 
@@ -33,7 +33,7 @@ A new table containing the sum for each group.
 
 ## Examples
 
-In this example, `sum_by` returns the sum of the whole table. Because a sum can not be computed for the string columns `X` and `Y`, these columns are dropped before applying `sum_by`.
+In this example, `sum_by` returns the sum of the whole table. Because a sum cannot be computed for the string columns `X` and `Y`, these columns are dropped before applying `sum_by`.
 
 ```python order=source,result
 from deephaven import new_table
@@ -50,7 +50,7 @@ source = new_table(
 result = source.drop_columns(cols=["X", "Y"]).sum_by()
 ```
 
-In this example, `sum_by` returns the sum, as grouped by `X`. Because a sum can not be computed for the string column `Y`, this column is dropped before applying `sum_by`.
+In this example, `sum_by` returns the sum, as grouped by `X`. Because a sum cannot be computed for the string column `Y`, this column is dropped before applying `sum_by`.
 
 ```python order=source,result
 from deephaven import new_table

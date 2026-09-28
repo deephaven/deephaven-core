@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb;
 
@@ -409,6 +409,10 @@ public class ExecuteCommandResponse {
     public native void setChanges(FieldsChangeUpdate value);
 
     public native void setErrorMessage(String value);
+
+    public native String getStartTimestamp();
+
+    public native String getEndTimestamp();
 
     public native ExecuteCommandResponse.ToObjectReturnType0 toObject();
 

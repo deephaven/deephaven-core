@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -18,6 +18,19 @@ public class ReplicateSegmentedSortedMultisetTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedMultiset.main(args);
 
+        // Replicate TestFloatSegmentedSortedMultisetSpecialValues -> TestDoubleSegmentedSortedMultisetSpecialValues
+        floatToAllFloatingPoints("replicateSegmentedSortedMultisetTests",
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestFloatSegmentedSortedMultisetSpecialValues.java");
+        final File doubleSpecialValuesTest = new File(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestDoubleSegmentedSortedMultisetSpecialValues.java");
+        List<String> doubleSpecialValuesLines = FileUtils.readLines(doubleSpecialValuesTest, Charset.defaultCharset());
+        doubleSpecialValuesLines = globalReplacements(doubleSpecialValuesLines,
+                "Double\\.intBitsToDouble\\(0x7fc12345\\)", "Double.longBitsToDouble(0x7ff8000000000001L)",
+                "Double\\.doubleToRawIntBits", "Double.doubleToRawLongBits",
+                "0\\.0f", "0.0d",
+                "canonical 0x7fc00000", "canonical 0x7ff8000000000000L");
+        FileUtils.writeLines(doubleSpecialValuesTest, doubleSpecialValuesLines);
+
         charToAllButBooleanAndFloats("replicateSegmentedSortedMultisetTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupFloatTests(
@@ -27,10 +40,26 @@ public class ReplicateSegmentedSortedMultisetTests {
         fixupFloatTests(charToDouble("replicateSegmentedSortedMultisetTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java",
                 null));
-        final String objectSsaTest =
+        final String objectSsmTest =
                 charToObject("replicateSegmentedSortedMultisetTests",
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
-        fixupObjectSsaTest(objectSsaTest);
+        fixupObjectSsmTest(objectSsmTest);
+
+        final String compactModificationsTest =
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/compactmodifications/TestCharCompactModifications.java";
+        charToAllButBooleanAndFloats("replicateSegmentedSortedMultisetTests", compactModificationsTest);
+        fixupFloatTests(charToFloat("replicateSegmentedSortedMultisetTests", compactModificationsTest, null));
+        fixupFloatTests(charToDouble("replicateSegmentedSortedMultisetTests", compactModificationsTest, null));
+        fixupObjectCompactModificationsTest(
+                charToObject("replicateSegmentedSortedMultisetTests", compactModificationsTest));
+    }
+
+    private static void fixupObjectCompactModificationsTest(String objectPath) throws IOException {
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = globalReplacements(lines, "NULL_OBJECT", "null");
+        lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
+        FileUtils.writeLines(objectFile, ReplicationUtils.fixupChunkAttributes(lines));
     }
 
     private static void fixupFloatTests(String path) throws IOException {
@@ -40,7 +69,7 @@ public class ReplicateSegmentedSortedMultisetTests {
         FileUtils.writeLines(file, lines);
     }
 
-    private static void fixupObjectSsaTest(String objectPath) throws IOException {
+    private static void fixupObjectSsmTest(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = globalReplacements(lines, "NULL_OBJECT", "null",
@@ -50,6 +79,8 @@ public class ReplicateSegmentedSortedMultisetTests {
                 "new ObjectSegmentedSortedMultiset(desc.nodeSize(), Object.class)");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
         lines = removeRegion(lines, "SortFixupSanityCheck");
+        // the null-sentinel equality semantics are specific to the primitive types
+        lines = removeRegion(lines, "NullEquals");
         FileUtils.writeLines(objectFile, ReplicationUtils.fixupChunkAttributes(lines));
     }
 }

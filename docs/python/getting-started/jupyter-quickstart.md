@@ -39,7 +39,10 @@ jupyter lab
 jupyter notebook
 ```
 
-When using Deephaven from Jupyter, you _must_ start a Deephaven server before importing any Deephaven packages. The following code block starts a Deephaven server on port `10000` with 4GB of heap memory and anonymous authentication. Run it in your Jupyter instance:
+> [!CAUTION]
+> When using Deephaven from Jupyter, you **must** start a Deephaven server **before** importing any Deephaven packages. If you import Deephaven packages before starting the server, you will encounter errors.
+
+The following code block starts a Deephaven server on port `10000` with 4GB of heap memory and anonymous authentication. Run it in your Jupyter instance:
 
 <!--TODO: Change to PSK when https://github.com/deephaven/deephaven-ipywidgets/issues/38 is resolved -->
 
@@ -246,7 +249,7 @@ display(DeephavenWidget(summary_prices))
 
 ![Animated GIF showing summary table updated with percentage variation column](../assets/tutorials/quickstart-jupyter/jquickstart-12.gif)
 
-Finally, create a minute-by-minute Open-High-Low-Close table using the [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) [built-in function](../reference/query-language/query-library/auto-imported-functions.md) along with [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md), [`min_`](../reference/table-operations/group-and-aggregate/AggMin.md), and [`last`](../reference/table-operations/group-and-aggregate/AggLast.md):
+Finally, create a minute-by-minute Open-High-Low-Close table using the [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) [built-in function](../reference/query-language/query-library/auto-imported/index.md) along with [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md), [`min_`](../reference/table-operations/group-and-aggregate/AggMin.md), and [`last`](../reference/table-operations/group-and-aggregate/AggLast.md):
 
 ```python test-set=1 order=null ticking-table skip-test
 ohlc_by_minute = (

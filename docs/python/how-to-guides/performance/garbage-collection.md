@@ -43,6 +43,6 @@ print(f"GC {(rt.totalMemory() - rt.freeMemory()) / 1024 / 1024}")
 
 ![The console, displaying the results of the print statments in the above example](../../assets/reference/python/gc-perfmon.png)
 
-## Related Documentation
+## Related documentation
 
 - [Pydoc](/core/pydoc/code/deephaven.html#deephaven.garbage_collect)

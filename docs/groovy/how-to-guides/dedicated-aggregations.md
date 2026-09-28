@@ -1,11 +1,8 @@
 ---
-title: Perform dedicated aggregations for groups
-sidebar_label: Dedicated aggregations
+title: Single aggregation
 ---
 
-<!--TODO: will be retitled "Single Aggregation"-->
-
-This guide will show you how to programmatically compute summary information on groups of data using dedicated data aggregations.
+This guide will show you how to compute summary information on groups of data using dedicated data aggregations.
 
 Often when working with data, you will want to break the data into subgroups and then perform calculations on the grouped data. For example, a large multi-national corporation may want to know their average employee salary by country, or a teacher might want to calculate grade information for groups of students or in certain subject areas.
 
@@ -17,9 +14,14 @@ Deephaven provides many dedicated aggregations, such as [`maxBy`](../reference/t
 
 The general syntax follows:
 
+```groovy skip-test
+result = source.DEDICATED_AGG(columnNames)
+```
+
 The `columnNames` parameter determines the column(s) by which to group data.
 
-- `NULL` uses the whole table as a single group
+- `DEDICATED_AGG` should be substituted with one of the chosen aggregations below.
+- `NULL` uses the whole table as a single group.
 - `"X"` will output the desired value for each group in column `X`.
 - `"X", "Y"` will output the desired value for each group designated from the `X` and `Y` columns.
 
@@ -27,19 +29,22 @@ The `columnNames` parameter determines the column(s) by which to group data.
 
 Each dedicated aggregator performs one calculation at a time:
 
+- [`absSumBy`](../reference/table-operations/group-and-aggregate/absSumBy.md) - Sum of absolute values of each group.
 - [`avgBy`](../reference/table-operations/group-and-aggregate/avgBy.md) - Average (mean) of each group.
 - [`countBy`](../reference/table-operations/group-and-aggregate/countBy.md) - Number of rows in each group.
 - [`firstBy`](../reference/table-operations/group-and-aggregate/firstBy.md) - First row of each group.
-- [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) - Array of values in each group.
+- [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) - Group column content into vectors.
 - [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) - First `n` rows of each group.
 - [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) - Last row of each group.
 - [`maxBy`](../reference/table-operations/group-and-aggregate/maxBy.md) - Maximum value of each group.
 - [`medianBy`](../reference/table-operations/group-and-aggregate/medianBy.md) - Median of each group.
 - [`minBy`](../reference/table-operations/group-and-aggregate/minBy.md) - Minimum value of each group.
-- [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md) - Standard deviation of each group.
+- [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md) - Sample standard deviation of each group.
 - [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md) - Sum of each group.
 - [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md) - Last `n` rows of each group.
-- [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) - Variance of each group.
+- [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) - Sample variance of each group.
+- [`weightedAvgBy`](../reference/table-operations/group-and-aggregate/wavgBy.md) - Weighted average of each group.
+- [`weightedSumBy`](../reference/table-operations/group-and-aggregate/wsumBy.md) - Weighted sum of each group.
 
 In the following examples, we have test results in various subjects for some students. We want to summarize this information to see if students perform better in one class or another.
 
@@ -64,12 +69,7 @@ The [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) oper
 
 The "last" row is defined as the row closest to the bottom of the table. It is based strictly on the order of the rows in the source table — not an aspect of the data (such as timestamps or sequence numbers) nor, for live-updating tables, the row which appeared in the dataset most recently.
 
-A related operation is [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md),
-which sorts the data within each key before finding the last row. When used with `aggBy`, `AggSortedLast` takes
-the column name (or an array of column names) to sort the data by before performing the `lastBy` operation to identify
-the last row. It is more efficient than `.sort(<sort columns>).lastBy(<key columns>)` because the data is first
-separated into groups (based on the key columns), then sorted within each group. In many cases this requires less memory
-and processing than sorting the entire table at once.
+A related operation is [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md), which sorts the data within each key before finding the last row. When used with `aggBy`, `AggSortedLast` takes the column name (or an array of column names) to sort the data by before performing the `lastBy` operation to identify the last row. It is more efficient than `.sort(<sort columns>).lastBy(<key columns>)` because the data is first separated into groups (based on the key columns), then sorted within each group. In many cases this requires less memory and processing than sorting the entire table at once.
 
 The most basic case is a [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) with no key columns. When no key columns are specified, [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) simply returns the last row in the table:
 
@@ -96,8 +96,7 @@ t = emptyTable(10).update(
 t2 = t.lastBy("MyKey", "MySecondKey")
 ```
 
-Often, [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) is used with time series data to return a table showing the current state of a time series. The example below demonstrates using [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) on time series data (using generated data, including timestamps generated based
-on the current time).
+Often, [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) is used with time series data to return a table showing the current state of a time series. The example below demonstrates using [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) on time series data (using generated data, including timestamps generated based on the current time).
 
 ```groovy order=t2,t
 startTime = now()
@@ -111,9 +110,7 @@ t = emptyTable(100).update(
 t2 = t.lastBy("MyKey")
 ```
 
-When data is out of order, it can be sorted before applying the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md). For example, the data below is naturally
-ordered by `Timestamp1`. In order to find the latest rows based on `Timestamp2`, simply sort the data before
-running the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md):
+When data is out of order, it can be sorted before applying the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md). For example, the data below is naturally ordered by `Timestamp1`. In order to find the latest rows based on `Timestamp2`, simply sort the data before running the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md):
 
 ```groovy test-set=2 order=t2,tSorted,t
 startTime = now()
@@ -129,9 +126,7 @@ tSorted = t.sort("Timestamp2")
 t2 = tSorted.lastBy("MyKey")
 ```
 
-If the sorted data is not used elsewhere in the query, a more efficient implementation is to use
-[AggSortedLast](../reference/table-operations/group-and-aggregate/AggSortedLast.md). This produces the same
-result table (`t2`) with one method call (and more efficeint processing of the `sort` step):
+If the sorted data is not used elsewhere in the query, a more efficient implementation is to use [AggSortedLast](../reference/table-operations/group-and-aggregate/AggSortedLast.md). This produces the same result table (`t2`) with one method call (and more efficeint processing of the `sort` step):
 
 ```groovy order=t2,t
 startTime = now()
@@ -149,7 +144,7 @@ t2 = t.aggBy(AggSortedLast("Timestamp2", "Timestamp1", "MyCol"), "MyKey")
 
 ### `headBy` and `tailBy`
 
-In this example, we want to know the first two and the last two test results for each student. To achieve this, we can use [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) to return the first `n` test values and [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md) to return the last `n` test value. The results are grouped by `Name`.
+In this example, we want to know the first two and the last two test results for each student. To achieve this, we can use [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) to return the first `n` test values and [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md) to return the last `n` test values. The results are grouped by `Name`.
 
 ```groovy test-set=1 order=head,tail
 head = source.headBy(2, "Name")
@@ -189,7 +184,7 @@ mean = source.dropColumns("Subject").avgBy("Name")
 
 ### `stdBy`
 
-In this example, [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md) calculates the standard deviation of test scores for each `Name`. Because a standard deviation cannot be computed for the string column `Subject`, this column is dropped before applying [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md).
+In this example, [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md) calculates the sample standard deviation of test scores for each `Name`. Because a sample standard deviation cannot be computed for the string column `Subject`, this column is dropped before applying [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md).
 
 ```groovy test-set=1
 stdDev = source.dropColumns("Subject").stdBy("Name")
@@ -197,7 +192,7 @@ stdDev = source.dropColumns("Subject").stdBy("Name")
 
 ### `varBy`
 
-In this example, [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) calculates the variance of test scores for each `Name`. Because a variance cannot be computed for the string column `Subject`, this column is dropped before applying [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md).
+In this example, [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) calculates the sample variance of test scores for each `Name`. Because sample variance cannot be computed for the string column `Subject`, this column is dropped before applying [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md).
 
 ```groovy test-set=1
 var = source.dropColumns("Subject").varBy("Name")

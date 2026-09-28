@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -9,6 +9,7 @@ import elemental2.core.JsDate;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.JsPropertyMap;
 
+@Deprecated
 @TsInterface
 @TsName(name = "RefreshToken", namespace = "dh")
 public class JsRefreshToken {
@@ -37,11 +38,17 @@ public class JsRefreshToken {
         }
     }
 
+    /**
+     * The refresh token bytes.
+     */
     @JsProperty
     public String getBytes() {
         return bytes;
     }
 
+    /**
+     * The token expiry time, as milliseconds since the epoch.
+     */
     @JsProperty
     public double getExpiry() {
         return expiry;

@@ -1,6 +1,5 @@
 ---
-title: How to get version information
-sidebar_label: Get version information
+title: Get version information
 ---
 
 To find the web client version you are running, open the **Settings** menu:
@@ -12,3 +11,8 @@ To get the server version, run the following query:
 ```groovy
 println io.deephaven.engine.table.Table.class.getPackage().getImplementationVersion()
 ```
+
+## Related documentation
+
+- [Retrieve logs](./logs.md)
+- [Triage errors in queries](./triage-errors.md)

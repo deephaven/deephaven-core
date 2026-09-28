@@ -1,15 +1,16 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.remote;
 
-import gnu.trove.TIntCollection;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.ColumnSnapshotUnsuccessfulException;
@@ -85,10 +86,9 @@ public class ConstructSnapshot {
     private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
 
-    // TODO (deephaven-core#188): use ChunkPoolConstants.LARGEST_POOL_CHUNK_CAPACITY when JS API allows multiple batches
-    // default enables more than 100MB of 8-byte values in a single record batch
     public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
-            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
+            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize",
+                    ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
 
     public interface State {
 
@@ -617,7 +617,7 @@ public class ConstructSnapshot {
             };
             final long clockStep =
                     callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
-            final BarrageMessage snapshot = snapshotMsg.getValue();
+            final BarrageMessage snapshot = snapshotMsg.get();
             snapshot.firstSeq = snapshot.lastSeq = clockStep;
             return snapshot;
         }
@@ -1332,7 +1332,7 @@ public class ConstructSnapshot {
         // Snapshot empty columns serially, and collect indices of non-empty columns
         final int numColumnsToSnapshot =
                 columnsToSnapshot != null ? columnsToSnapshot.cardinality() : columnSources.length;
-        final TIntList nonEmptyColumnIndices = new TIntArrayList(numColumnsToSnapshot);
+        final IntList nonEmptyColumnIndices = new IntArrayList(numColumnsToSnapshot);
         final List<ColumnSource<?>> nonEmptyColumnSources = new ArrayList<>(numColumnsToSnapshot);
         if (!snapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
                 nonEmptyColumnIndices, nonEmptyColumnSources)) {
@@ -1405,7 +1405,7 @@ public class ConstructSnapshot {
      * Snapshot the specified columns in parallel.
      */
     private static boolean snapshotColumnsParallel(
-            @NotNull final TIntList columnIndices,
+            @NotNull final IntList columnIndices,
             @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             final ExecutionContext executionContext,
@@ -1418,7 +1418,7 @@ public class ConstructSnapshot {
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, columnIndices.size(),
                 (context, colRank, nestedErrorConsumer) -> snapshotColumnsSerial(
-                        new TIntArrayList(new int[] {columnIndices.get(colRank)}),
+                        new IntArrayList(new int[] {columnIndices.getInt(colRank)}),
                         columnSources.subList(colRank, colRank + 1),
                         usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
@@ -1448,7 +1448,7 @@ public class ConstructSnapshot {
             @NotNull final Table table,
             @NotNull final Object logIdentityObject,
             @NotNull final BarrageMessage snapshot,
-            @NotNull final TIntCollection nonEmptyColumnsIndices,
+            @NotNull final IntCollection nonEmptyColumnsIndices,
             @NotNull final Collection<ColumnSource<?>> nonEmptyColumnSources) {
         final boolean rowsetIsEmpty = snapshot.rowsIncluded.isEmpty();
         for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
@@ -1493,7 +1493,7 @@ public class ConstructSnapshot {
     }
 
     private static void snapshotColumnsSerial(
-            @NotNull final TIntList columnIndices,
+            @NotNull final IntList columnIndices,
             @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             @NotNull final BarrageMessage snapshot) {
@@ -1514,7 +1514,7 @@ public class ConstructSnapshot {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(maxChunkSize);
                 // Populate the snapshot data for each column for the current chunk of rows
                 for (int colRank = 0; colRank < numCols; ++colRank) {
-                    final int colIdx = columnIndices.get(colRank);
+                    final int colIdx = columnIndices.getInt(colRank);
                     final ColumnSource<?> columnSource = columnSources.get(colRank);
                     final ColumnSource.FillContext fillContext = fillContexts[colRank];
                     final WritableChunk<Values> currentChunk =

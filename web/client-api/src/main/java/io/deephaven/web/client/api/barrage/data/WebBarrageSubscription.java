@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.barrage.data;
 
@@ -43,7 +43,7 @@ public abstract class WebBarrageSubscription {
             final ViewportChangedHandler viewportChangedHandler,
             final DataChangedHandler dataChangedHandler) {
 
-        WebColumnData[] dataSinks = new WebColumnData[cts.columnTypes().length];
+        WebColumnData[] dataSinks = new WebColumnData[cts.getTableDef().getColumns().length];
         for (int i = 0; i < dataSinks.length; i++) {
             dataSinks[i] = new WebColumnData();
         }

@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl.sortedranges;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public final class SortedRangesInt extends SortedRangesPacked<int[]> {
 
@@ -22,14 +22,14 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
         return new SortedRangesInt(initialCapacity, offset);
     }
 
-    private static ThreadLocal<TIntObjectHashMap<int[]>> ARRAY_POOL =
-            ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
+    private static final ThreadLocal<Int2ObjectOpenHashMap<int[]>> ARRAY_POOL =
+            ThreadLocal.withInitial(() -> new Int2ObjectOpenHashMap<>(16));
 
     @Override
     protected int[] makeArray(final int capacity) {
         final int roundedCapacity = arraySizeRoundingInt(capacity);
         if (POOL_ARRAYS) {
-            final TIntObjectHashMap<int[]> localPool = ARRAY_POOL.get();
+            final Int2ObjectOpenHashMap<int[]> localPool = ARRAY_POOL.get();
             final int[] arr = localPool.remove(roundedCapacity);
             if (arr != null) {
                 return arr;
@@ -47,7 +47,7 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
         if (!isIntAllocationSize(arr.length)) {
             return;
         }
-        final TIntObjectHashMap<int[]> localPool = ARRAY_POOL.get();
+        final Int2ObjectOpenHashMap<int[]> localPool = ARRAY_POOL.get();
         localPool.put(arr.length, arr);
     }
 

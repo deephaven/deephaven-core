@@ -124,5 +124,5 @@ write_topic_group = pk.produce(
 - [`consume`](./consume.md)
 - [`last_by`](../../table-operations/group-and-aggregate/lastBy.md)
 - [time table](../..//table-operations/create/timeTable.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.html#produceFromTable(io.deephaven.engine.table.Table,java.util.Properties,java.lang.String,io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec,io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec,boolean))
-- [Pydoc](/core/pydoc/code/deephaven.stream.kafka.producer.html#deephaven.stream.kafka.producer.produce)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.stream.kafka.producer.html#deephaven.stream.kafka.producer.produce)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.html#produceFromTable(io.deephaven.engine.table.Table,java.util.Properties,java.lang.String,io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec,io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec,boolean))

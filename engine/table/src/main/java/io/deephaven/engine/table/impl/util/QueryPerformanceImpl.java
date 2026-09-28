@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -8,7 +8,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
-import io.deephaven.tablelogger.Row.Flags;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,11 +37,8 @@ class QueryPerformanceImpl implements QueryPerformanceLogLogger {
     }
 
     @Override
-    public void log(
-            @NotNull final Flags flags,
-            @NotNull final QueryPerformanceNugget nugget,
-            @Nullable final Exception exception) throws IOException {
+    public void log(@NotNull QueryPerformanceNugget nugget, @Nullable Exception exception) throws IOException {
         publisher.add(nugget, exception);
-        qplLogger.log(flags, nugget, exception);
+        qplLogger.log(nugget, exception);
     }
 }

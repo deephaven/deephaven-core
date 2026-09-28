@@ -29,7 +29,7 @@ The examples given below create a Keycloak server with a single user named `user
 
 ### docker-compose.yml
 
-The docker-compose YAML file will set up three services: `deephaven`, `database`, and `keycloak`. It will also set up the bridge network between Keycloak and the database.
+The Docker Compose YAML file will set up three services: `deephaven`, `database`, and `keycloak`. It will also set up the bridge network between Keycloak and the database.
 
 <details>
 <summary> Expand the YAML file </summary>

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit WritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -10,6 +10,7 @@ package io.deephaven.chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
+import io.deephaven.function.ArraySort;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -210,10 +211,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
     // region sort
     @Override
     public final void sort(int start, int length) {
-        Arrays.sort(data, offset + start, offset + start + length);
-
-        // region SortFixup
-        // endregion SortFixup
+        ArraySort.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 

@@ -4,6 +4,14 @@ title: Format tables in the UI
 
 This guide shows you how to format tables in Deephaven. This includes reordering and hiding columns, creating custom aggregation columns, applying color formatting to specific cells or rows, and more. All of Deephaven's tools for formatting tables can be accessed by using the column header context menu and the **Table Options** menu.
 
+> [!NOTE]
+> The [deephaven.ui](/core/ui/docs/) Python package provides a streamlined, programmatic way to format tables. With `deephaven.ui`, you can:
+>
+> - [Show, hide, freeze, and reorder columns](/core/ui/docs/components/table/#column-order-and-visibility)
+> - [Format rows and columns](/core/ui/docs/components/table/#formatting-rows-and-columns)
+> - [Apply color formatting](/core/ui/docs/components/table/#formatting-color)
+> - and much more
+
 ## Column header menu
 
 The column header menu can be accessed for any table by right-clicking on a column header.
@@ -104,13 +112,20 @@ Select **Add New Rule**, then choose **Conditional** to format individual cells 
 
 ![Conditional formatting dialog](../../assets/how-to/ui/cond_formatting2.png)
 
-- Choose a column from the dropdown list provided.
+- Choose a left-hand column from the dropdown list provided.
 - Select the desired condition, such as "is exactly", "contains", "starts with", etc..
+  - You can choose conditions that apply to Value or Column.
+  - Value conditions mean that the right-hand side of the condition is a specific value, while Column conditions mean that the right-hand side of the condition is another column in the table.
+
+![Conditional formatting condition selection](../../assets/how-to/ui/cond_formatting3.png)
+
 - Select a style:
 
   ![Conditional formatting color selection](../../assets/how-to/ui/cond_formatting4.png)
 
 Note that six colors are available by default. The "Custom" option allows you to define your own color.
+
+- Optionally, select one or more columns to apply the rule to. By default, the rule will apply to the left-hand column selected in the first step.
 
 In the example below, all cells in the Exchange column containing the value "Arca" will be colored in the "Positive" style:
 

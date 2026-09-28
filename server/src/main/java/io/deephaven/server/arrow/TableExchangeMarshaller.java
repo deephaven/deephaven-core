@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.arrow;
 
@@ -78,9 +78,7 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
 
         // push the schema to the listener
         listener.onNext(streamGeneratorFactory.getSchemaView(
-                fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
-                        options,
-                        table.getDefinition(), table.getAttributes(), table.isFlat())));
+                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, options, table)));
 
         // collect the viewport and columnsets (if provided)
         final BitSet columns = BarrageRequestHelpers.getColumns(snapshotRequest);

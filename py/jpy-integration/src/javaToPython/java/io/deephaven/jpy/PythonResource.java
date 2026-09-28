@@ -1,17 +1,17 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.jpy;
 
-import java.time.Duration;
-import java.util.Objects;
 import org.jpy.CreateModule;
 import org.junit.rules.ExternalResource;
+
+import java.util.Objects;
 
 public class PythonResource extends ExternalResource {
 
     public static PythonResource of(JpyConfig config) {
-        return new PythonResource(new JpyConfigExt(config), Duration.ofMillis(10));
+        return new PythonResource(new JpyConfigExt(config));
     }
 
     public static PythonResource ofSysProps() {
@@ -19,12 +19,11 @@ public class PythonResource extends ExternalResource {
     }
 
     private final JpyConfigExt config;
-    private final Duration cleanupTimeout;
     private boolean initialized;
+    private CreateModule createModule; // common / useful tool for a lot of tests
 
-    public PythonResource(JpyConfigExt config, Duration cleanupTimeout) {
+    public PythonResource(JpyConfigExt config) {
         this.config = Objects.requireNonNull(config, "config");
-        this.cleanupTimeout = cleanupTimeout;
         this.initialized = false;
     }
 
@@ -36,31 +35,12 @@ public class PythonResource extends ExternalResource {
         if (!initialized) {
             initialized = true;
             config.initPython();
-        }
-    }
-
-    public StartStopRule startStopRule() {
-        return new StartStopRule();
-    }
-
-    public class StartStopRule extends ExternalResource {
-
-        private CreateModule createModule; // common / useful tool for a lot of tests
-
-        public CreateModule getCreateModule() {
-            return createModule;
-        }
-
-        @Override
-        protected void before() {
             config.startPython();
             createModule = CreateModule.create();
         }
+    }
 
-        @Override
-        protected void after() {
-            createModule.close();
-            config.stopPython(cleanupTimeout);
-        }
+    public CreateModule getCreateModule() {
+        return createModule;
     }
 }

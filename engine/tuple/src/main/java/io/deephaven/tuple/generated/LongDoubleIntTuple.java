@@ -1,12 +1,12 @@
 package io.deephaven.tuple.generated;
 
-import gnu.trove.map.TIntObjectMap;
 import io.deephaven.tuple.CanonicalizableTuple;
 import io.deephaven.tuple.serialization.SerializationUtils;
 import io.deephaven.tuple.serialization.StreamingExternalizable;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.compare.LongComparisons;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Externalizable;
@@ -54,9 +54,9 @@ public class LongDoubleIntTuple implements Comparable<LongDoubleIntTuple>, Exter
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Long.hashCode(element1)) * 31 +
-                Double.hashCode(element2)) * 31 +
-                Integer.hashCode(element3);
+                LongComparisons.hashCode(element1)) * 31 +
+                DoubleComparisons.hashCode(element2)) * 31 +
+                IntComparisons.hashCode(element3);
     }
 
     public final long getFirstElement() {
@@ -86,9 +86,9 @@ public class LongDoubleIntTuple implements Comparable<LongDoubleIntTuple>, Exter
         }
         final LongDoubleIntTuple typedOther = (LongDoubleIntTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+        return LongComparisons.eq(element1, typedOther.element1) &&
+               DoubleComparisons.eq(element2, typedOther.element2) &&
+               IntComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 
@@ -122,14 +122,14 @@ public class LongDoubleIntTuple implements Comparable<LongDoubleIntTuple>, Exter
     }
 
     @Override
-    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
+    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
         out.writeLong(element1);
         out.writeDouble(element2);
         out.writeInt(element3);
     }
 
     @Override
-    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
+    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         initialize(
                 in.readLong(),
                 in.readDouble(),

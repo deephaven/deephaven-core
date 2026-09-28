@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.hierarchical;
 
@@ -412,7 +412,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 result[ci] = getDepthSource(snapshotState.getCurrentDepth());
             } else if (result[ci] == null && ci != ROW_EXPANDED_COLUMN_INDEX) {
                 final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - EXTRA_COLUMN_COUNT);
-                result[ci] = maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType()));
+                result[ci] = maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd));
             }
         }
         return result;

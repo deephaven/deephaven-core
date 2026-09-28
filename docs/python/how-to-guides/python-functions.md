@@ -5,6 +5,9 @@ sidebar_label: Functions
 
 The ability to use your own custom Python [variables](./python-variables.md), functions, and [classes](./python-classes.md) in Deephaven query strings is one of its most powerful features. The use of custom Python functions in query strings follows some basic rules, which are outlined in this guide.
 
+> [!CAUTION]
+> Python functions in query strings have [performance and memory implications](../conceptual/python-java-boundary.md). Python memory grows outside the Java heap and can lead to significant resident memory growth. For performance-critical or high-throughput queries, consider using [built-in query language functions](./built-in-functions.md) instead.
+
 ## Call a Python function in a query string
 
 Python functions can be called in query strings just like they can be called in Python code. They follow [query scope](./query-scope.md) rules, which are similar to Python's [LEGB](https://realpython.com/python-scope-legb-rule/) scoping. The following example calls a user-defined Python function in a query string to create a new column in a table:

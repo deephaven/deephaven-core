@@ -2,13 +2,14 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
+import datetime as dt
+import queue
 import unittest
+from typing import List
 
 import pyarrow as pa
 import pydeephaven as dh
-import datetime as dt
-import queue
-from typing import List
+
 
 class TickingAllTypesTestCase(unittest.TestCase):
     queue = queue.Queue()
@@ -16,21 +17,22 @@ class TickingAllTypesTestCase(unittest.TestCase):
 
     def test_ticking_basic_time_table(self):
         session = dh.Session()
-        table = session.empty_table(size = 10).update(
-            formulas = [
-            "Chars = ii == 5 ? null : (char)('a' + ii)",
-            "Bytes = ii == 5 ? null : (byte)(ii)",
-            "Shorts = ii == 5 ? null : (short)(ii)",
-            "Ints = ii == 5 ? null : (int)(ii)",
-            "Longs = ii == 5 ? null : (long)(ii)",
-            "Floats = ii == 5 ? null : (float)(ii)",
-            "Doubles = ii == 5 ? null : (double)(ii)",
-            "Bools = ii == 5 ? null : ((ii % 2) == 0)",
-            "Strings = ii == 5 ? null : `hello ` + i",
-            "DateTimes = ii == 5 ? null : '2001-03-01T12:34:56Z' + ii",
-            "LocalDates = ii == 5 ? null : '2001-03-01' + (i * 'P1D')",
-            "LocalTimes = ii == 5 ? null : '12:34:56.000'.plus(ii * 'PT1S')"
-                ])
+        table = session.empty_table(size=10).update(
+            formulas=[
+                "Chars = ii == 5 ? null : (char)('a' + ii)",
+                "Bytes = ii == 5 ? null : (byte)(ii)",
+                "Shorts = ii == 5 ? null : (short)(ii)",
+                "Ints = ii == 5 ? null : (int)(ii)",
+                "Longs = ii == 5 ? null : (long)(ii)",
+                "Floats = ii == 5 ? null : (float)(ii)",
+                "Doubles = ii == 5 ? null : (double)(ii)",
+                "Bools = ii == 5 ? null : ((ii % 2) == 0)",
+                "Strings = ii == 5 ? null : `hello ` + i",
+                "DateTimes = ii == 5 ? null : '2001-03-01T12:34:56Z' + ii",
+                "LocalDates = ii == 5 ? null : '2001-03-01' + (i * 'P1D')",
+                "LocalTimes = ii == 5 ? null : '12:34:56.000'.plus(ii * 'PT1S')",
+            ]
+        )
         session.bind_table(name="all_types_table", table=table)
 
         listener_handle = dh.listen(table, self.handle_update)
@@ -38,7 +40,7 @@ class TickingAllTypesTestCase(unittest.TestCase):
 
         timed_out = False
         try:
-            _ = self.queue.get(block = True, timeout = 10)
+            _ = self.queue.get(block=True, timeout=10)
         except queue.Empty:
             timed_out = True
 
@@ -69,14 +71,16 @@ class TickingAllTypesTestCase(unittest.TestCase):
         expected_local_date_data = []
         expected_local_time_data = []
 
-        date_time_base = pa.scalar(dt.datetime(2001, 3, 1, 12, 34, 56), type=pa.timestamp("ns", tz="UTC"))
+        date_time_base = pa.scalar(
+            dt.datetime(2001, 3, 1, 12, 34, 56), type=pa.timestamp("ns", tz="UTC")
+        )
         date_time_nanos = date_time_base.value
 
         # Use a datetime, do arithmetic on it, then pull out the time component
         local_time_base = dt.datetime(2001, 1, 1, 12, 34, 56)
 
         for i in range(10):
-            expected_char_data.append(ord('a') + i)
+            expected_char_data.append(ord("a") + i)
             expected_byte_data.append(i)
             expected_short_data.append(i)
             expected_int_data.append(i)
@@ -86,8 +90,12 @@ class TickingAllTypesTestCase(unittest.TestCase):
             expected_bool_data.append((i % 2) == 0)
             expected_string_data.append(f"hello {i}")
             expected_date_time_data.append(date_time_nanos + i)
-            expected_local_date_data.append(dt.datetime(2001, 3, 1) + dt.timedelta(days = i))
-            expected_local_time_data.append((local_time_base + dt.timedelta(seconds = i)).time())
+            expected_local_date_data.append(
+                dt.datetime(2001, 3, 1) + dt.timedelta(days=i)
+            )
+            expected_local_time_data.append(
+                (local_time_base + dt.timedelta(seconds=i)).time()
+            )
         expected_char_data[5] = None
         expected_byte_data[5] = None
         expected_short_data[5] = None
@@ -110,7 +118,9 @@ class TickingAllTypesTestCase(unittest.TestCase):
         expected_doubles = pa.array(expected_double_data, pa.float64())
         expected_bools = pa.array(expected_bool_data, pa.bool_())
         expected_strings = pa.array(expected_string_data, pa.string())
-        expected_date_times = pa.array(expected_date_time_data, pa.timestamp("ns", tz="UTC"))
+        expected_date_times = pa.array(
+            expected_date_time_data, pa.timestamp("ns", tz="UTC")
+        )
         expected_local_dates = pa.array(expected_local_date_data, pa.date64())
         expected_local_times = pa.array(expected_local_time_data, pa.time64("ns"))
 
@@ -132,7 +142,8 @@ class TickingAllTypesTestCase(unittest.TestCase):
     def validate(self, what: str, expected: pa.Array, added):
         actual = added[what]
         if expected != actual:
-            self.errors.append(f"Column \"{what}\": expected={expected}, actual={actual}")
+            self.errors.append(f'Column "{what}": expected={expected}, actual={actual}')
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

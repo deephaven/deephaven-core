@@ -1,49 +1,46 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.MathUtil;
-import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.sized.SizedObjectChunk;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.qst.type.NativeArrayType;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
 
 final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     private final ToObject<T> toObject;
-    private final SizedObjectChunk<T, ?> chunk;
+    private final Class<T[]> bufferClass;
+    private final Class<T> componentClass;
+    private T[] buffer;
 
     public RepeaterGenericImpl(ToObject<T> toObject, T[] onMissing, T[] onNull, NativeArrayType<T[], T> arrayType) {
         super(onMissing, onNull, arrayType);
         this.toObject = Objects.requireNonNull(toObject);
-        chunk = new SizedObjectChunk<>(0);
+        this.bufferClass = arrayType.clazz();
+        this.componentClass = arrayType.componentType().clazz();
+        // noinspection unchecked
+        this.buffer = (T[]) Array.newInstance(componentClass, 0);
     }
 
     @Override
     public void processElementImpl(JsonParser parser, int index) throws IOException {
-        final int newSize = index + 1;
-        final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-        chunk.set(index, toObject.parseValue(parser));
-        chunk.setSize(newSize);
+        buffer = ArrayUtil.put(buffer, index, toObject.parseValue(parser), componentClass);
     }
 
     @Override
     public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
-        final int newSize = index + 1;
-        final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-        chunk.set(index, toObject.parseMissing(parser));
-        chunk.setSize(newSize);
+        buffer = ArrayUtil.put(buffer, index, toObject.parseMissing(parser), componentClass);
     }
 
     @Override
     public T[] doneImpl(JsonParser parser, int length) {
-        final WritableObjectChunk<T, ?> chunk = this.chunk.get();
-        final T[] result = Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
-        chunk.fillWithNullValue(0, length);
+        final T[] result = Arrays.copyOfRange(buffer, 0, length, bufferClass);
+        Arrays.fill(buffer, 0, length, null);
         return result;
     }
 }

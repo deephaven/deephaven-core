@@ -58,7 +58,7 @@ In the dialog, choose a:
 
 The dropdown list expects unique values for the column source. You can create a new table for this purpose in one of two ways:
 
-- apply a [`.select_distinct`](../../reference/table-operations/select/select-distinct.md) in a table's query.
+- apply a [`select_distinct`](../../reference/table-operations/select/select-distinct.md) in a table's query.
 - use **Select Distinct Values** in a table's Options menu.
 
 > [!NOTE]
@@ -106,6 +106,8 @@ Quick filters can be added in a table's option menu, or by right-clicking a colu
 
 > [!TIP]
 > You can also open or close the Quick Filters bar using the keyboard shortcut <kbd>Ctrl+F</kbd> or <kbd>⌘F</kbd>.
+
+Quick Filters support all standard column types, including Vector and Array columns. When filtering Vector or Array columns, the filter searches for matching elements within the arrays.
 
 ## Advanced Filters
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api;
 
@@ -82,6 +82,14 @@ public class Strings {
 
     public static String of(FilterIsNull isNull, boolean inverted) {
         return (inverted ? "!" : "") + of(isNull);
+    }
+
+    public static String of(FilterIsNaN isNaN) {
+        return String.format("isNaN(%s)", of(isNaN.expression()));
+    }
+
+    public static String of(FilterIsNaN isNaN, boolean inverted) {
+        return (inverted ? "!" : "") + of(isNaN);
     }
 
     public static String of(FilterOr filterOr) {
@@ -367,6 +375,11 @@ public class Strings {
         @Override
         public String visit(FilterIsNull isNull) {
             return of(isNull, invert);
+        }
+
+        @Override
+        public String visit(FilterIsNaN isNaN) {
+            return of(isNaN, invert);
         }
 
         @Override

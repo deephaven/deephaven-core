@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.shared.ide.lsp;
 
@@ -8,9 +8,22 @@ import jsinterop.annotations.JsType;
 
 import java.io.Serializable;
 
+/**
+ * A text edit to apply to a document.
+ *
+ * This is a JS-exposed model type ({@code dh.lsp.TextEdit}) that closely follows the Language Server Protocol text edit
+ * shape.
+ */
 @JsType(namespace = "dh.lsp")
 public class TextEdit implements Serializable {
+    /**
+     * The range of the document to replace.
+     */
     public DocumentRange range;
+
+    /**
+     * The replacement text.
+     */
     public String text;
 
     @Override

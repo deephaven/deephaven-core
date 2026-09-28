@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.fu;
 
 import elemental2.core.JsArray;
+import io.deephaven.web.client.api.widget.plot.StringOrNumber;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -67,6 +68,15 @@ public class JsData {
         }
 
         return defaultValue;
+    }
+
+    public static StringOrNumber getRequiredStringOrIntProperty(JsPropertyMap<Object> source, String propertyName) {
+        Any value = getRequiredProperty(source, propertyName);
+        if (Js.typeof(value).equals("string") || Js.typeof(value).equals("number")) {
+            return Js.uncheckedCast(value);
+        } else {
+            throw new IllegalArgumentException("Property '" + propertyName + "' must be a string or int.");
+        }
     }
 
     public static String getRequiredStringProperty(JsPropertyMap<Object> source, String propertyName) {

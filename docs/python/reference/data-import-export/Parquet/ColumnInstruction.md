@@ -79,4 +79,4 @@ instruction = ColumnInstruction(
 ## Related documentation
 
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))
-- [Pydoc](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write)

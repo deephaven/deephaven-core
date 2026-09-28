@@ -1,10 +1,10 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-import jpy
 import pathlib
 
+import jpy
 from deephaven.plugin.js import JsPlugin
 
 _JJsPlugin = jpy.get_type("io.deephaven.plugin.js.JsPlugin")

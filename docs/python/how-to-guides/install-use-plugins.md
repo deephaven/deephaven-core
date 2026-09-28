@@ -12,6 +12,11 @@ Client-side plugins extend the functionality of any of Deephaven's client APIs. 
 
 Other plugins may have both a server-side plugin and a client-side plugin. The [Pickle RPC plugin](https://github.com/deephaven-examples/plugin-python-rpc-pickle) is one such example. It allows a client to make RPC calls on a server.
 
+> [!NOTE]
+> In some cases, you'll want to install packages rather than use plugins. Those instructions are covered in [How to install packages](./install-packages.md).
+>
+> To have _complete control_ of the build process, you can [Build and launch Deephaven from source code](../getting-started/launch-build.md).
+
 This guide covers the installation and use of pre-built plugins. For information on building your own plugins, see [Create your own plugin](./create-plugins.md).
 
 ## Install a plugin
@@ -87,6 +92,12 @@ All of the following user interface plugins can be installed with `pip` with no 
 - [`deephaven-plugin-plotly-express`](https://pypi.org/project/deephaven-plugin-plotly-express/): A plugin that makes [Plotly Express](https://plotly.com/python/plotly-express/) compatible with Deephaven tables.
 - [`deephaven-plugin-matplotlib`](./plotting/matplot-seaborn.md): A plugin that makes [Matplotlib](https://matplotlib.org/) and [Seaborn](https://seaborn.pydata.org/) compatible with Deephaven tables.
 
+### Remote File Sourcing
+
+This plugin can be installed with `pip`:
+
+- [deephaven-plugin-python-remote-file-source](https://pypi.org/project/deephaven-plugin-python-remote-file-source/): A Deephaven bi-directional plugin to allow sourcing Python imports from a remote file source. Use with the [Deephaven VS Code extension](https://deephaven.io/vscode/docs/) to enable local Python workspaces.
+
 ### Authentication
 
 Authentication plugins have a more complex installation process than other plugins. Please refer to the documentation links below for more information.
@@ -104,4 +115,9 @@ Authentication plugins have a more complex installation process than other plugi
 
 ## Related documentation
 
+- [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [Create your own plugin](./create-plugins.md)
+- [How to install packages](./install-packages.md)
+- [Install and use Java packages](./install-and-use-java-packages.md)
+- [Launch Deephaven from pre-built images](../getting-started/docker-install.md)

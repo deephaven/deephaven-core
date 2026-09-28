@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+namespace_packages = true
+exclude = ["tests", "demos", "build"]
+
+[[tool.mypy.overrides]]
+module = [
+  "pyarrow.*",
+  "pydeephaven_ticking._core",
+  "Cython.*"
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+lint.select = ["F", "I"]
+exclude = []
+
+[tool.ruff.format]
+exclude = []

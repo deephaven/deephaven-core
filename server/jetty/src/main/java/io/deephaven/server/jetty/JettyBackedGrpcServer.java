@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty;
 
@@ -79,6 +79,12 @@ public class JettyBackedGrpcServer implements GrpcServer {
     private final ScheduledExecutorService executorService;
     private final boolean websocketsEnabled;
 
+    /**
+     * Copied from ch.qos.logback.core.CoreConstants#DISABLE_SERVLET_CONTAINER_INITIALIZER_KEY so we don't _need_ to
+     * have an implementation dependency on logback-core.
+     */
+    private static final String DISABLE_SERVLET_CONTAINER_INITIALIZER_KEY = "logbackDisableServletContainerInitializer";
+
     @Inject
     public JettyBackedGrpcServer(
             final JettyConfig config,
@@ -93,6 +99,14 @@ public class JettyBackedGrpcServer implements GrpcServer {
         context = new WebAppContext("/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "etags", "true");
+
+        // Disable the auto-closing of logback when jetty is stopped
+        // (ch.qos.logback.classic.servlet.LogbackServletContainerInitializer). While we don't
+        // have a logback dependency at this level, our applications that depend on this project typically do. It
+        // would probably be "more correct" to have a way for the application main's to set or pass along this property
+        // themselves, but there is little harm in setting it here unconditionally (if the slf4j implementation is not
+        // logback, this setting will have no effect).
+        context.setInitParameter(DISABLE_SERVLET_CONTAINER_INITIALIZER_KEY, "true");
 
         // Cache all of the appropriate assets folders
         for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/", "/iframe/widget/")) {
@@ -298,6 +312,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
     private static ServerConnector createConnector(Server server, JettyConfig config) {
         // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
         final HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSendServerVersion(
+                Configuration.getInstance().getBooleanWithDefault("http.send.server.version", false));
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         httpConfig.addCustomizer(new AllowedHttpMethodsCustomizer(config.allowedHttpMethods()));
         if (!config.extraHeaders().isEmpty()) {

@@ -1,18 +1,18 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
-import com.squareup.javapoet.AnnotationSpec;
-import com.squareup.javapoet.ArrayTypeName;
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
-import com.squareup.javapoet.TypeSpec;
+import com.palantir.javapoet.AnnotationSpec;
+import com.palantir.javapoet.ArrayTypeName;
+import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.CodeBlock;
+import com.palantir.javapoet.FieldSpec;
+import com.palantir.javapoet.JavaFile;
+import com.palantir.javapoet.MethodSpec;
+import com.palantir.javapoet.ParameterizedTypeName;
+import com.palantir.javapoet.TypeName;
+import com.palantir.javapoet.TypeSpec;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -236,7 +236,7 @@ public class GenerateArrowColumnSourceTests {
             Class<?> generatorClass = GenerateArrowColumnSourceTests.class;
             final String header = String.join("\n",
                     "//",
-                    "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
+                    "// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending",
                     "//",
                     "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                     "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask

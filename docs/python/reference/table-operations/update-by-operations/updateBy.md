@@ -163,6 +163,5 @@ result = source.update_by(
 - [`rolling_sum_tick`](./rolling-sum-tick.md)
 - [Ternary conditional operator](../../../how-to-guides/ternary-if-how-to.md)
 - [`update`](../select/update.md)
-- [`update_by`](./updateBy.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateBy(java.util.Collection))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update_by)

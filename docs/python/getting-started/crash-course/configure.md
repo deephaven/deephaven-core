@@ -37,7 +37,7 @@ In addition to PSK authentication, Deephaven supports the following types of aut
 
 ## Deployments
 
-Deephaven provides [multiple docker images](../../getting-started/docker-install.md#choose-a-deployment). Each of these images, called deployments, comes pre-installed with different Python packages. You also have the option of including [Deephaven's example data](https://github.com/deephaven/examples) in any of these images. For example, the [`server-all-ai`](https://github.com/deephaven/deephaven-core/pkgs/container/server-all-ai) image comes pre-installed with [PyTorch](https://pytorch.org), [Tensorflow](https://www.tensorflow.org), [scikit-learn](https://scikit-learn.org/stable/), and [nltk](https://www.nltk.org). You can use this image with this Docker command:
+Deephaven provides [multiple docker images](../../getting-started/docker-install.md#choose-a-deployment). Each of these images, called deployments, comes pre-installed with different Python packages. You also have the option of including [Deephaven's example data](https://github.com/deephaven/examples) in any of these images. Many of these images integrate with popular Python libraries. For example, the [`server-all-ai`](https://github.com/deephaven/deephaven-core/pkgs/container/server-all-ai) image comes pre-installed with [PyTorch](https://pytorch.org), [Tensorflow](https://www.tensorflow.org), [scikit-learn](https://scikit-learn.org/stable/), and [nltk](https://www.nltk.org). You can use this image with this Docker command:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server-all-ai:latest

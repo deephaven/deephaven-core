@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -33,7 +33,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
@@ -1067,19 +1066,21 @@ public class WindowCheck {
         }
 
         @Override
-        public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive,
-                @Nullable DataIndex dataIndex, @NotNull RowSet mapper, Object... keys) {
+        public WritableRowSet match(
+                final boolean usePrev,
+                @NotNull final MatchOptions matchOptions,
+                @NotNull RowSet selection, Object... keys) {
             final List<Object> keysList = Arrays.asList(keys);
-            final boolean includeNull = keysList.contains(null) ^ invertMatch;
-            final boolean includeTrue = keysList.contains(true) ^ invertMatch;
-            final boolean includeFalse = keysList.contains(false) ^ invertMatch;
+            final boolean includeNull = keysList.contains(null) ^ matchOptions.inverted();
+            final boolean includeTrue = keysList.contains(true) ^ matchOptions.inverted();
+            final boolean includeFalse = keysList.contains(false) ^ matchOptions.inverted();
 
-            final int getSize = (int) Math.min(4096, mapper.size());
+            final int getSize = (int) Math.min(4096, selection.size());
 
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
             try (final GetContext getContext = timeStampSource.makeGetContext(getSize);
-                    final RowSequence.Iterator rsit = mapper.getRowSequenceIterator()) {
+                    final RowSequence.Iterator rsit = selection.getRowSequenceIterator()) {
                 while (rsit.hasMore()) {
                     final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(getSize);
                     final LongChunk<OrderedRowKeys> rowKeys = chunkRs.asRowKeyChunk();

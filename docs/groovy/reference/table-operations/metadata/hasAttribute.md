@@ -26,7 +26,7 @@ A Boolean that is `True` if the specified attribute exists in the source table's
 
 ## Examples
 
-In this example, we create an [Input Table](../../../how-to-guides/input-tables.md) and then print the result of a call to `hasAttribute()`.
+In this example, we create an [Input Table](../../../how-to-guides/input-tables.md) and then print the result of a call to `hasAttribute`.
 
 ```groovy order=:log
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable

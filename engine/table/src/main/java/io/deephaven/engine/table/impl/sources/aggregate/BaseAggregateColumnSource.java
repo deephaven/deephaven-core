@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.aggregate;
 
@@ -289,5 +289,10 @@ abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>
     @Override
     public boolean isImmutable() {
         return aggregatedSource.isImmutable() && groupRowSetSource.isImmutable();
+    }
+
+    @Override
+    public ColumnSource<COMPONENT_TYPE> getAggregatedSource() {
+        return aggregatedSource;
     }
 }

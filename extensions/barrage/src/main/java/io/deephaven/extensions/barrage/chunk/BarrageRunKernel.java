@@ -1,0 +1,63 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.extensions.barrage.chunk;
+
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
+
+/**
+ * Typed kernel for single-pass run detection over a row subset, used by {@link RunEndEncodedChunkWriter}. Each
+ * implementation is specialized for one value chunk type, avoiding virtual dispatch on per-element reads and writes.
+ */
+public interface BarrageRunKernel {
+
+    static BarrageRunKernel makeBarrageRunKernel(final ChunkType valuesChunkType) {
+        switch (valuesChunkType) {
+            case Char:
+                return CharBarrageRunKernel.INSTANCE;
+            case Byte:
+                return ByteBarrageRunKernel.INSTANCE;
+            case Short:
+                return ShortBarrageRunKernel.INSTANCE;
+            case Int:
+                return IntBarrageRunKernel.INSTANCE;
+            case Long:
+                return LongBarrageRunKernel.INSTANCE;
+            case Float:
+                return FloatBarrageRunKernel.INSTANCE;
+            case Double:
+                return DoubleBarrageRunKernel.INSTANCE;
+            default:
+                return ObjectBarrageRunKernel.INSTANCE;
+        }
+    }
+
+    /**
+     * Single-pass run detection directly over the subset. Reads {@code src} at the row positions given by
+     * {@code subset}, detects runs and stores runEnds and runValues into the provided {@link WritableChunk chunks}.
+     * <p>
+     * The caller must pre-allocate {@code runEnds} and {@code runValues} to capacity {@code subset.intSize()}
+     * (worst-case scenario)
+     */
+    void encodeRunEnds(
+            Chunk<Values> src,
+            RowSet subset,
+            WritableIntChunk<Values> runEnds,
+            WritableChunk<Values> runValues);
+
+    /**
+     * Expands run-end encoded data back into a flat chunk. Reads {@code runEnds} (cumulative 1-based end positions) and
+     * {@code runValues} (one value per run) and fills {@code dst} starting at {@code outOffset}.
+     */
+    void decodeRunEnds(
+            IntChunk<Values> runEnds,
+            Chunk<Values> runValues,
+            WritableChunk<Values> dst,
+            int outOffset);
+}

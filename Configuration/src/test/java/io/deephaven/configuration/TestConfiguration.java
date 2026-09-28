@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.configuration;
 
@@ -455,7 +455,7 @@ public class TestConfiguration extends TestCase {
                             +
                             "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n",
                     history.get(0).fileName);
-        } else if ("24".equals(javaVersion)) {
+        } else if ("25".equals(javaVersion)) {
             assertEquals(
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
                             +

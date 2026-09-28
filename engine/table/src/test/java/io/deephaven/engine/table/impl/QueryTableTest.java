@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -23,8 +23,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -714,6 +712,134 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    public void testRenameColumnCollision() {
+        // Create a test table with a String column and an array column
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("ColumnA", "A", "B", "C"),
+                TableTools.intCol("ColumnB", 1, 2, 3),
+                TableTools.longCol("ColumnC", 10L, 20L, 30L));
+
+        Table result;
+
+        // Dummy with no renames
+        result = testTable.renameColumns();
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnB").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnX").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        // Repeat with refreshing
+        testTable.setRefreshing(true);
+
+        result = testTable.renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnX").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+    }
+
+    public void testRenameColumnExceptions() {
+        // Create a test table with a String column and an array column
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("ColumnA", "A", "B", "C"),
+                TableTools.intCol("ColumnB", 1, 2, 3),
+                TableTools.intCol("ColumnC", 10, 20, 30));
+
+        Exception e;
+
+        // Column not found.
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnY");
+        });
+        assertTrue(e.getMessage().contains("Column(s) not found: ColumnY"));
+
+        // Duplicate source.
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnY=ColumnA");
+        });
+        assertTrue(e.getMessage().contains("Duplicate source column(s): ColumnA"));
+
+        // Duplicate destination.
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnX=ColumnB");
+        });
+        assertTrue(e.getMessage().contains("Duplicate destination column(s): ColumnX"));
+
+        // Multiple errors: Not Found + Duplicate source
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnY=ColumnA", "ColumnZ=ColumnQ");
+        });
+        assertTrue(e.getMessage().contains("Column(s) not found: ColumnQ"));
+        assertTrue(e.getMessage().contains("Duplicate source column(s): ColumnA"));
+
+        // Multiple errors: Not Found + Duplicate destination
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnX=ColumnB", "ColumnZ=ColumnQ");
+        });
+        assertTrue(e.getMessage().contains("Column(s) not found: ColumnQ"));
+        assertTrue(e.getMessage().contains("Duplicate destination column(s): ColumnX"));
+
+        // Multiple errors: Duplicate source + Duplicate destination
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnX=ColumnB", "ColumnY=ColumnA");
+        });
+        assertTrue(e.getMessage().contains("Duplicate source column(s): ColumnA"));
+        assertTrue(e.getMessage().contains("Duplicate destination column(s): ColumnX"));
+
+        // Multiple errors: Not Found + Duplicate source + Duplicate destination
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnX=ColumnB", "ColumnY=ColumnA", "ColumnZ=ColumnQ");
+        });
+        assertTrue(e.getMessage().contains("Column(s) not found: ColumnQ"));
+        assertTrue(e.getMessage().contains("Duplicate source column(s): ColumnA"));
+        assertTrue(e.getMessage().contains("Duplicate destination column(s): ColumnX"));
+    }
+
     public void testMoveColumnsUp() {
         final Table table = emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5");
 
@@ -881,27 +1007,28 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(
                 emptyTable(1).update("C = 3", "D = 4", "B = 1", "A = 2", "E = 5"),
                 table.moveColumns(2, "B = A", "A = B"));
+
+        // Original `C = 3` column missing after move and rename
+        assertTableEquals(
+                emptyTable(1).update("E = 5", "C = 4", "B = 1", "A = 2"),
+                table.moveColumns(1, "C = D", "B = A", "A = B"));
+
+        // Original `A = 1` column missing after move and rename
+        assertTableEquals(
+                emptyTable(1).update("E = 5", "C = 4", "B = 3", "A = 2"),
+                table.moveColumns(1, "C = D", "B = C", "A = B"));
+
+        // Original `B = 2` column missing after move and rename
+        assertTableEquals(
+                emptyTable(1).update("C = 4", "B = 3", "A = 1", "E = 5"),
+                table.moveColumns(0, "C = D", "B = C"));
     }
 
     public static WhereFilter stringContainsFilter(
-            String columnName,
-            String... values) {
-        return stringContainsFilter(MatchType.Regular, columnName, values);
-    }
-
-    public static WhereFilter stringContainsFilter(
-            MatchType matchType,
-            String columnName,
-            String... values) {
-        return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
-    }
-
-    public static WhereFilter stringContainsFilter(
-            CaseSensitivity sensitivity,
-            MatchType matchType,
-            @NotNull String columnName,
-            String... values) {
-        return WhereFilterFactory.stringContainsFilter(sensitivity, matchType, columnName, true, false, values);
+            @NotNull final MatchOptions matchOptions,
+            @NotNull final String columnName,
+            final String... values) {
+        return WhereFilterFactory.stringContainsFilter(matchOptions, columnName, true, false, values);
     }
 
     public void testStringContainsFilter() {
@@ -918,20 +1045,20 @@ public class QueryTableTest extends QueryTableTestBase {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new TableComparator(
                         table.where(filter.apply("S1.contains(`aab`)")),
-                        table.where(stringContainsFilter("S1", "aab"))),
+                        table.where(stringContainsFilter(MatchOptions.REGULAR, "S1", "aab"))),
                 new TableComparator(
                         table.where(filter.apply("S2.contains(`m`)")),
-                        table.where(stringContainsFilter("S2", "m"))),
+                        table.where(stringContainsFilter(MatchOptions.REGULAR, "S2", "m"))),
                 new TableComparator(
                         table.where(filter.apply("!S2.contains(`ma`)")),
-                        table.where(stringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
+                        table.where(stringContainsFilter(MatchOptions.INVERTED, "S2", "ma"))),
                 new TableComparator(
                         table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
-                        table.where(stringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
-                                MatchFilter.MatchType.Regular, "S2", "mA"))),
+                        table.where(stringContainsFilter(MatchOptions.builder().caseInsensitive(true).build(),
+                                "S2", "mA"))),
                 new TableComparator(
                         table.where(filter.apply("S2.contains(`mA`)")),
-                        table.where(stringContainsFilter("S2", "mA"))),
+                        table.where(stringContainsFilter(MatchOptions.REGULAR, "S2", "mA"))),
         };
 
         for (int i = 0; i < 500; i++) {
@@ -1027,8 +1154,9 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.showWithRowSet(geq1b);
 
         assertTableEquals(geq1b, geq1);
-        assertTableEquals(TableTools.newTable(doubleCol("DV", 1.0, 2.0, Double.NaN, 6.0, Double.POSITIVE_INFINITY, 9.0),
-                intCol("IV", 1, 2, 4, 6, 7, 9)), geq1);
+        // NOTE: NaN is not included (following IEEE 754)
+        assertTableEquals(TableTools.newTable(doubleCol("DV", 1.0, 2.0, 6.0, Double.POSITIVE_INFINITY, 9.0),
+                intCol("IV", 1, 2, 6, 7, 9)), geq1);
     }
 
     public void testLongRangeFilterSimple() {
@@ -1335,8 +1463,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
 
         final QueryTable reverseTable = (QueryTable) table.reverse();
-        final io.deephaven.engine.table.impl.SimpleListener listener =
-                new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
+        final SimpleListener listener = new SimpleListener(reverseTable);
         reverseTable.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -1362,8 +1489,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
         final QueryTable reversedTable = (QueryTable) table.reverse();
 
-        final io.deephaven.engine.table.impl.SimpleListener listener =
-                new io.deephaven.engine.table.impl.SimpleListener(reversedTable);
+        final SimpleListener listener = new SimpleListener(reversedTable);
         reversedTable.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -1423,8 +1549,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table table = testRefreshingTable(RowSetFactory.flat(1).toTracking(), intCol("Sentinel", 100))
                 .withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true));
         final Table reverseTable = table.reverse();
-        final io.deephaven.engine.table.impl.SimpleListener listener =
-                new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
+        final SimpleListener listener = new SimpleListener(reverseTable);
         reverseTable.addUpdateListener(listener);
 
         final long nextSize = ReverseOperation.MINIMUM_PIVOT + 2;
@@ -1702,14 +1827,24 @@ public class QueryTableTest extends QueryTableTestBase {
             TestCase.assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-            // This should flush the TUV and the select
+            // This should flush the TUV and the select (which will produce a "onComplete" notification)
             flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             TestCase.assertTrue(
                     snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+
+            // now flush select complete notification
+            flushed = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed);
             TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
                     snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
             TestCase.assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
@@ -1868,7 +2003,17 @@ public class QueryTableTest extends QueryTableTestBase {
             TestCase.assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-            // now we should flush the select
+            // now we should flush the select, will produce a "onComplete" notification
+            flushed2 = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed2);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+
+            // now flush select complete notification
             flushed2 = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed2);
             TestCase.assertTrue(
@@ -2024,7 +2169,17 @@ public class QueryTableTest extends QueryTableTestBase {
             TestCase.assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-            // now we should flush the select
+            // now we should flush the select, will produce a "onComplete" notification
+            flushed = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+
+            // now flush select complete notification
             flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             TestCase.assertTrue(
@@ -2226,8 +2381,8 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(snapshot, firstResult);
         assertTableEquals(prevTable(snapshot), firstResult);
 
-        final io.deephaven.engine.table.impl.SimpleListener listener;
-        snapshot.addUpdateListener(listener = new io.deephaven.engine.table.impl.SimpleListener(snapshot));
+        final SimpleListener listener;
+        snapshot.addUpdateListener(listener = new SimpleListener(snapshot));
         listener.reset();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -2449,8 +2604,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.apply(queryTable);
-        final io.deephaven.engine.table.impl.SimpleListener simpleListener =
-                new io.deephaven.engine.table.impl.SimpleListener(selected);
+        final SimpleListener simpleListener = new SimpleListener(selected);
         selected.addUpdateListener(simpleListener);
 
         final Supplier<TableUpdateImpl> newUpdate =
@@ -2540,8 +2694,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.apply(queryTable);
-        final io.deephaven.engine.table.impl.SimpleListener simpleListener =
-                new io.deephaven.engine.table.impl.SimpleListener(selected);
+        final SimpleListener simpleListener = new SimpleListener(selected);
         selected.addUpdateListener(simpleListener);
 
         final Supplier<TableUpdateImpl> newUpdate =
@@ -3033,15 +3186,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateEmptyUpdate() {
         final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final TableUpdateImpl update = new TableUpdateImpl();
-        update.added = i();
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        final TableUpdateImpl update = simpleAddUpdate(TstUtils.i());
 
         // any listener will do for this empty update test
-        final TableUpdateListener listener = new io.deephaven.engine.table.impl.SimpleListener(src);
+        final TableUpdateListener listener = new SimpleListener(src);
         src.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -3054,12 +3202,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateNoListeners() {
         final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final TableUpdateImpl update = new TableUpdateImpl();
-        update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        final TableUpdateImpl update = simpleAddUpdate(RowSetFactory.fromRange(200, 220));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -3071,12 +3214,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateChildListener() {
         final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final TableUpdateImpl update = new TableUpdateImpl();
-        update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        final TableUpdateImpl update = simpleAddUpdate(RowSetFactory.fromRange(200, 220));
 
         // we want to specifically test non-shift-aware-listener path
         final ShiftObliviousListener listener = new SimpleShiftObliviousListener(src);
@@ -3092,16 +3230,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateShiftAwareChildListener() {
         final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final TableUpdateImpl update = new TableUpdateImpl();
-        update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        final TableUpdateImpl update = simpleAddUpdate(RowSetFactory.fromRange(200, 220));
 
         // we want to specifically test shift-aware-listener path
-        final io.deephaven.engine.table.impl.SimpleListener listener =
-                new io.deephaven.engine.table.impl.SimpleListener(src);
+        final SimpleListener listener = new SimpleListener(src);
         src.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -3181,6 +3313,436 @@ public class QueryTableTest extends QueryTableTestBase {
         assertFalse(DataIndexer.of(t2.getRowSet()).hasDataIndex(reinterpreted));
     }
 
+    public void testDropColumnsValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.dropColumns("String");
+        // Assert the remaining columns are still correct
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.dropColumns("Int");
+        // Assert the remaining columns are still correct
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.dropColumns("Double");
+        // Assert the remaining columns are still correct
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+    }
+
+    public void testRenameColumnsValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.renameColumns("renamed=String");
+        assertTrue(result.getDefinition().getColumn("renamed").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.renameColumns("renamed=Int");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.renameColumns("renamed=Double");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.renameColumns("renamed=String");
+        assertTrue(result.getDefinition().getColumn("renamed").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = refreshingTable.renameColumns("renamed=Int");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = refreshingTable.renameColumns("renamed=Double");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+    }
+
+    public void testUpdateValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.update("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.update("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    public void testUpdateViewValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.updateView("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.updateView("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    public void testSelectValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.select();
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.select();
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    public void testUpdateListeners() {
+        final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
+        final SimpleListener listener = new SimpleListener(source);
+        source.addUpdateListener(listener);
+        assertTrue(source.hasListeners());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        listenerTestAddition(updateGraph, source, 4);
+
+        assertEquals(1, listener.count);
+
+        final SimpleListener listener2 = new SimpleListener(source);
+        source.addUpdateListener(listener2);
+        assertTrue(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 5);
+
+        assertEquals(2, listener.count);
+        assertEquals(1, listener2.count);
+
+        source.removeUpdateListener(listener);
+        listenerTestAddition(updateGraph, source, 6);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+
+        source.removeUpdateListener(listener2);
+        assertFalse(source.hasListeners());
+        listenerTestAddition(updateGraph, source, 7);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+
+        final SimpleShiftObliviousListener listener3 = new SimpleShiftObliviousListener(source);
+        source.addUpdateListener(listener3);
+        // shouldn't matter
+        source.removeUpdateListener(listener2);
+        assertTrue(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 8);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+        assertEquals(1, listener3.count);
+
+        final SimpleShiftObliviousListener listener4 = new SimpleShiftObliviousListener(source);
+        source.removeUpdateListener(listener3);
+        source.addUpdateListener(listener4);
+        assertTrue(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 9);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+        assertEquals(1, listener3.count);
+        assertEquals(1, listener4.count);
+
+        listenerTestAddition(updateGraph, source, 10);
+
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+        assertEquals(1, listener3.count);
+        assertEquals(2, listener4.count);
+
+        source.removeUpdateListener(listener4);
+        assertFalse(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 11);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+        assertEquals(1, listener3.count);
+        assertEquals(2, listener4.count);
+    }
+
+    public void testUpdateListeners2() {
+        final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
+        final SimpleListener listener = new SimpleListener(source);
+        source.addUpdateListener(listener);
+        assertTrue(source.hasListeners());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        listenerTestAddition(updateGraph, source, 4);
+
+        assertEquals(1, listener.count);
+
+        source.removeUpdateListener(listener);
+        assertFalse(source.hasListeners());
+        listenerTestAddition(updateGraph, source, 5);
+
+        assertEquals(1, listener.count);
+
+        final SimpleShiftObliviousListener listener2 = new SimpleShiftObliviousListener(source);
+        source.addUpdateListener(listener2);
+        assertTrue(source.hasListeners());
+        listenerTestAddition(updateGraph, source, 6);
+        assertEquals(1, listener.count);
+        assertEquals(1, listener2.count);
+
+        source.removeUpdateListener(listener2);
+        assertFalse(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 8);
+        assertEquals(1, listener.count);
+        assertEquals(1, listener2.count);
+    }
+
+    public void testUpdateListenersConcurrency() throws InterruptedException {
+        final int tests = 10; // we do this 10 times so that we have some confidence we are actually adding the
+                              // listeners
+        for (int ii = 0; ii < tests; ++ii) {
+            updateListenersConcurrencyStep();
+        }
+    }
+
+    private void updateListenersConcurrencyStep() throws InterruptedException {
+        final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
+        int listenerCount = 10;
+
+        final SimpleListener[] listeners = new SimpleListener[listenerCount];
+        final Thread[] threads = new Thread[listenerCount];
+        final CountDownLatch latch = new CountDownLatch(listenerCount);
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            final SimpleListener thisListener = new SimpleListener(source);
+            listeners[ii] = thisListener;
+            threads[ii] = new Thread(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                source.addUpdateListener(thisListener);
+            });
+        }
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            threads[ii].start();
+        }
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            threads[ii].join();
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        listenerTestAddition(updateGraph, source, 4);
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            assertEquals("listeners[" + ii + "]", 1, listeners[ii].count);
+        }
+    }
+
+    public void testUpdateListenersRemoveConcurrency() throws InterruptedException {
+        final int tests = 100; // we do this 100 times so that we have some confidence we are actually adding the
+                               // listeners
+        for (int ii = 0; ii < tests; ++ii) {
+            updateListenersRemoveConcurrency();
+        }
+    }
+
+    private void updateListenersRemoveConcurrency() throws InterruptedException {
+        final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
+        int listenerCount = 4;
+
+        final SimpleListener[] listeners = new SimpleListener[listenerCount];
+        final Thread[] threads = new Thread[listenerCount];
+        final CountDownLatch latch = new CountDownLatch(listenerCount);
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            final SimpleListener thisListener = new SimpleListener(source);
+            listeners[ii] = thisListener;
+            threads[ii] = new Thread(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                source.addUpdateListener(thisListener);
+                assertTrue(source.hasListeners());
+                source.removeUpdateListener(thisListener);
+            });
+        }
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            threads[ii].start();
+        }
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            threads[ii].join();
+        }
+
+        if (source.hasListeners()) {
+            System.err.println("source.hasListeners() = true");
+            // Which one doesn't matter, we just want to reap the collected refs single-threaded to work around a
+            // SimpleReferenceManager bug.
+            source.removeUpdateListener(listeners[0]);
+        }
+
+        assertFalse(source.hasListeners());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        listenerTestAddition(updateGraph, source, 4);
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            assertEquals("listeners[" + ii + "]", 0, listeners[ii].count);
+        }
+    }
+
+    private static void listenerTestAddition(ControlledUpdateGraph updateGraph, QueryTable source, final int rowKey) {
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(rowKey), intCol("A", rowKey));
+            source.notifyListeners(simpleAddUpdate(TstUtils.i(rowKey)));
+        });
+    }
+
+    private static @NotNull TableUpdateImpl simpleAddUpdate(final RowSet added) {
+        final TableUpdateImpl update = new TableUpdateImpl();
+        update.added = added;
+        update.removed = i();
+        update.modified = i();
+        update.shifted = RowSetShiftData.EMPTY;
+        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        return update;
+    }
+
+    public void testFlattenValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        // This flatten is a no-op since we are static and dense.
+        result = sourceTable.flatten();
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        // This flatten results in new dense column sources, column defs re-written.
+        final Table sparseTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+
+        result = sparseTable.flatten();
+        assertTrue(result.getDefinition().getColumn("String").isDirect());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        // This flatten results in redirected sources, column defs re-written.
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.flatten();
+        assertTrue(result.getDefinition().getColumn("String").isDirect());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
     static void validateUpdates(final Table table) {
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) table);
         final QueryTable validatorTable = validator.getResultTable();
@@ -3199,7 +3761,7 @@ public class QueryTableTest extends QueryTableTestBase {
         validatorTable.addUpdateListener(validatorTableListener);
     }
 
-    private static class MockUncoalescedTable extends UncoalescedTable<MockUncoalescedTable> {
+    private static class MockUncoalescedTable extends UncoalescedTableImpl<MockUncoalescedTable> {
 
         private final Supplier<QueryTable> supplier;
 
@@ -3503,6 +4065,16 @@ public class QueryTableTest extends QueryTableTestBase {
         @Override
         public LogicalClock clock() {
             return () -> 1;
+        }
+
+        @Override
+        public long cycleStartNanoTime() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Instant cycleStartTime() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

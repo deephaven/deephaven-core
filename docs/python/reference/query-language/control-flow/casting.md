@@ -227,5 +227,5 @@ The `source` table can now be ungrouped.
 - [How to use filters](../../../how-to-guides/use-filters.md)
 - [How to use select, view, and update](../../../how-to-guides/use-select-view-update.md)
 - [Operators in query strings](../../../how-to-guides/operators.md)
-- [Query language functions](../query-library/auto-imported-functions.md)
+- [Query language functions](../query-library/auto-imported/index.md)
 - [`update`](../../table-operations/select/update.md)

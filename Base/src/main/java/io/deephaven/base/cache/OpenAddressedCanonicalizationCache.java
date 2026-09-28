@@ -1,11 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base.cache;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import gnu.trove.impl.PrimeFinder;
+import io.deephaven.hash.PrimeFinder;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.ReferenceQueue;

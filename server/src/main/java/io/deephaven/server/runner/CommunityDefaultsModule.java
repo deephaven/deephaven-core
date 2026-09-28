@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.runner;
 
 import dagger.Module;
+import io.deephaven.server.plugin.AuthorizationProviderAdapterModule;
 import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.server.console.ExecutionContextModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
@@ -49,6 +50,7 @@ import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
         ExecutionContextModule.class,
         ObfuscatingErrorTransformerModule.class,
         CalendarsFromConfigurationModule.class,
+        AuthorizationProviderAdapterModule.class
 })
 public interface CommunityDefaultsModule {
 }

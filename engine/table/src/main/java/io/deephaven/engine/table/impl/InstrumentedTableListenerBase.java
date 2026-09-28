@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -188,9 +188,11 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 AsyncClientErrorNotifier.reportError(originalException);
             }
         } catch (IOException e) {
-            throw new UncheckedTableException(
+            final UncheckedTableException uncheckedTableException = new UncheckedTableException(
                     "Exception while delivering async client error notification for " + sourceEntry.toString(),
                     originalException);
+            uncheckedTableException.addSuppressed(e);
+            throw uncheckedTableException;
         }
     }
 

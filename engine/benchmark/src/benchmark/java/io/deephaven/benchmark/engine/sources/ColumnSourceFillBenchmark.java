@@ -1,16 +1,16 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.benchmark.engine.sources;
 
 
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.benchmarking.CsvResultWriter;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.results.RunResult;
@@ -81,7 +81,7 @@ public class ColumnSourceFillBenchmark {
             }
         }
 
-        final TIntSet seen = new TIntHashSet(fetchSize);
+        final IntSet seen = new IntOpenHashSet(fetchSize);
         int accepted = 0;
         final long[] keyArray = new long[fetchSize];
         while (accepted < fetchSize) {

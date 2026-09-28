@@ -47,9 +47,9 @@ ExamplePlugin/
 
 Deephaven plugins are implemented using the Java plugin API. The main components are:
 
-- **ObjectType**: Defines a custom object type that can be exported from the server
-- **Registration**: Registers the plugin with the Deephaven server using Java's ServiceLoader mechanism
-- **Build configuration**: Gradle build file to compile and package the plugin
+- **ObjectType**: Defines a custom object type that can be exported from the server.
+- **Registration**: Registers the plugin with the Deephaven server using Java's ServiceLoader mechanism.
+- **Build configuration**: Gradle build file to compile and package the plugin.
 
 #### Creating an object type plugin
 

@@ -11,6 +11,11 @@ final class WebRowSetBuilderSequentialImpl implements RowSetBuilderSequential {
     }
 
     @Override
+    public void appendKey(long key) {
+        rangeSet.addRange(new Range(key, key));
+    }
+
+    @Override
     public void accept(long first, long last) {
         appendRange(first, last);
     }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage;
 
@@ -104,11 +104,7 @@ public class BarragePerformanceLog {
         return snapImpl;
     }
 
-    public interface WriteMetricsConsumer {
-        void onWrite(long bytes, long cpuNanos);
-    }
-
-    public static class SnapshotMetricsHelper implements WriteMetricsConsumer {
+    public static class SnapshotMetricsHelper implements BarrageMessageWriter.WriteMetricsConsumer {
         public final Instant requestTm = DateTimeUtils.now();
 
         public String tableId;

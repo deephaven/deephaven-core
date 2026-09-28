@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/client.h"
 
 #include <stdexcept>
 
-#include <grpc/support/log.h>
+#include <absl/log/log.h>
 
 #include <arrow/array.h>
 #include <arrow/scalar.h>
@@ -32,6 +32,7 @@ using deephaven::client::server::Server;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
+using deephaven::client::utility::ArrowUtil;
 using deephaven::client::utility::ValueOrThrow;
 using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::clienttable::Schema;
@@ -53,11 +54,8 @@ Client Client::Connect(const std::string &target, const ClientOptions &options) 
   auto flight_executor = Executor::Create("Flight executor for " + server->me());
   void *const server_for_logging = server.get();
   auto impl = ClientImpl::Create(std::move(server), executor, flight_executor, options.sessionType_);
-  gpr_log(GPR_INFO,
-      "Client target=%s created ClientImpl(%p), Server(%p).",
-      target.c_str(),
-      static_cast<void*>(impl.get()),
-      server_for_logging);
+  LOG(INFO) << "Client target=" << target << " created ClientImpl(" << static_cast<void*>(impl.get())
+            << "), Server(" << server_for_logging << ").";
   return Client(std::move(impl));
 }
 
@@ -76,7 +74,7 @@ Client::~Client() {
     Close();
   } catch (...) {
     auto what = GetWhat(std::current_exception());
-    gpr_log(GPR_INFO, "Client destructor is ignoring thrown exception: %s", what.c_str());
+    LOG(INFO) << "Client destructor is ignoring thrown exception: " << what;
   }
 }
 
@@ -543,14 +541,23 @@ std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::GetFlightStreamR
   return GetManager().CreateFlightWrapper().GetFlightStreamReader(*this);
 }
 
-std::shared_ptr<arrow::Table> TableHandle::ToArrowTable() const {
+std::shared_ptr<ClientTable> TableHandle::ToClientTable() const {
   auto res = GetFlightStreamReader()->ToTable();
-  return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(std::move(res)));
+  auto raw_at = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(std::move(res)));
+  return ArrowClientTable::Create(std::move(raw_at));
 }
 
-std::shared_ptr<ClientTable> TableHandle::ToClientTable() const {
-  auto at = ToArrowTable();
-  return ArrowClientTable::Create(std::move(at));
+std::shared_ptr<arrow::Table> TableHandle::ToArrowTable(bool cooked) const {
+  if (cooked) {
+    // Roundtrip through ClientTable to remove RunEndEncoded and Dictionary arrow
+    // types, if any.
+    // TODO(kosak): could optimize by checking for these types first and passing
+    // straight through if there aren't any.
+    auto ct = ToClientTable();
+    return ArrowUtil::MakeArrowTable(*ct);
+  }
+  auto res = GetFlightStreamReader()->ToTable();
+  return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(std::move(res)));
 }
 
 std::shared_ptr<SubscriptionHandle> TableHandle::Subscribe(

@@ -78,7 +78,7 @@ result = source.groupBy("X", "Y")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
 - [How to group and ungroup data](../../../how-to-guides/grouping-data.md)
 - [`aggBy`](./aggBy.md)

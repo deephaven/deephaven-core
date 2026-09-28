@@ -62,5 +62,5 @@ result = source.aggBy([AggApproxPct(0.50, "Number")], "X")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggApproxPct(double,java.lang.String...))

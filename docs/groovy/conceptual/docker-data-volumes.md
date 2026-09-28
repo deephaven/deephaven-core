@@ -25,9 +25,9 @@ Your Docker-Compose YAML file is located in your Deephaven deployment directory 
 
 The Docker-Compose YAML file your installation uses depends on how you launch Deephaven:
 
-- If you [launch Deephaven from pre-built images](../tutorials/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
+- If you [launch Deephaven from pre-built images](../getting-started/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
 
-- If you [build and launch Deephaven from source code](../how-to-guides/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
+- If you [build and launch Deephaven from source code](../getting-started/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
 
 The `/data` mount point is configured using the `volumes` keyword in the Docker Compose YAML file.
 
@@ -40,9 +40,9 @@ This mounts the `./data` directory on your file system as `/data` in Deephaven. 
 
 ## Add mount points
 
-While `/data` is the default place for external data to reside, you have the option of creating other mount points. To create a mount point, you must add the volumes to the `grpc-api` and `web` services in your Docker-Compose YAML file.
+While `/data` is the default place for external data to reside, you have the option of creating other mount points. To create a mount point, you must add the volumes to the `server` and `web` services in your Docker Compose YAML file.
 
-Say we're working on a machine learning application and want separate volumes to store training, testing, and validation data sets. These volumes can be added by modifying the `volumes` section of the Docker Compose YAML file for both the `grpc-api` and `web` services:
+Say we're working on a machine learning application and want separate volumes to store training, testing, and validation data sets. These volumes can be added by modifying the `volumes` section of the Docker Compose YAML file for both the `server` and `web` services:
 
 ```
 volumes:
@@ -56,5 +56,5 @@ When Deephaven is re-launched, the new volumes will be available.
 
 ## Related documentation
 
-- [Launch Deephaven from pre-built images](../tutorials/docker-install.md)
-- [Launch Deephaven from source code](../how-to-guides/launch-build.md)
+- [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
+- [Launch Deephaven from source code](../getting-started/launch-build.md)

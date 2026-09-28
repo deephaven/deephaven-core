@@ -9,7 +9,7 @@ title: to_j_zdt
 >
 > - [Time in Deephaven](../../../conceptual/time-in-deephaven.md)
 > - [Java/Python boundary crossings](../../../conceptual/python-java-boundary.md)
-> - [Auto-imported functions](../../query-language/query-library/auto-imported-functions.md)
+> - [Auto-imported functions](../../query-language/query-library/auto-imported/index.md)
 
 ## Syntax
 
@@ -35,17 +35,16 @@ Returns a `ZonedDateTime` representation of the date-time string.
 
 ## Examples
 
-```python order=null
+```python
 from deephaven.time import to_j_zdt
 import numpy as np
 import pandas as pd
-import pytz
+from zoneinfo import ZoneInfo
 import datetime
 
 date_string = "2024-08-01T12:00:00 UTC"
 
-cst = pytz.timezone("US/Central")
-z_datetime = cst.localize(datetime.datetime.now())
+z_datetime = datetime.datetime.now(ZoneInfo("America/Chicago"))
 
 z_timestamp = pd.Timestamp("2024-08-01 12:00:00", tz="America/New_York")
 

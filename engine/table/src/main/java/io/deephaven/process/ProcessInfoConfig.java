@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.process;
 
@@ -54,6 +54,18 @@ public class ProcessInfoConfig {
     private static final boolean IS_VALUE_BASED = false;
 
     private static volatile ProcessUniqueId thisProcessId;
+    private static volatile ProcessInfo thisProcessInfo;
+
+    /**
+     * Generates a unique identifier string suitable for use as a process identifier. This allows a creating process to
+     * obtain an identifier that can be passed to a new process for use as the processInfoId. Generating it here
+     * encapsulates where it comes from.
+     *
+     * @return a unique identifier string
+     */
+    public static String generateNewProcessInfoId() {
+        return UUID.randomUUID().toString();
+    }
 
     @Nullable
     public static ProcessUniqueId getThisProcessId() {
@@ -67,15 +79,24 @@ public class ProcessInfoConfig {
     }
 
     public static synchronized ProcessInfo createForCurrentProcess(Configuration config) throws IOException {
-        if (thisProcessId != null) {
+        return createForCurrentProcess(config, null);
+    }
+
+    public static synchronized ProcessInfo createForCurrentProcess(Configuration config, String processInfoId)
+            throws IOException {
+        if (thisProcessId != null || thisProcessInfo != null) {
             throw new IllegalStateException("ProcessInfo already created with ID " + thisProcessId);
         }
         final Path path = Paths
                 .get(config.getStringWithDefault(HOST_PATH_INFO_DIR_KEY, HOST_PATH_INFO_DIR_DEFAULT));
         final SplayedPath hostPathSplayed = new SplayedPath(path, TRIM, IS_VALUE_BASED);
+
+        if (processInfoId == null) {
+            processInfoId = config.getStringWithDefault(PROCESS_INFO_ID_KEY, STATIC_UUID.toString());
+        }
+
         final Builder builder = ImmutableProcessInfo.builder()
-                .id(thisProcessId = ProcessUniqueId
-                        .of(config.getStringWithDefault(PROCESS_INFO_ID_KEY, STATIC_UUID.toString())))
+                .id(thisProcessId = ProcessUniqueId.of(processInfoId))
                 .runtimeInfo(RuntimeMxBeanInfo.of(ManagementFactory.getRuntimeMXBean()))
                 .environmentVariables(EnvironmentVariables.of())
                 .threadInfo(ThreadMxBeanInfo.of(ManagementFactory.getThreadMXBean()))
@@ -88,6 +109,15 @@ public class ProcessInfoConfig {
                 SYSTEM_INFO_ENABLED_DEFAULT)) {
             builder.systemInfo(SystemInfoOshi.forCurrentProcess());
         }
-        return builder.build();
+        return thisProcessInfo = builder.build();
+    }
+
+    public static synchronized ProcessInfo createOrGetForCurrentProcess(final Configuration config,
+            final String processInfoId) throws IOException {
+        if (thisProcessInfo != null) {
+            return thisProcessInfo;
+        } else {
+            return createForCurrentProcess(config, processInfoId);
+        }
     }
 }

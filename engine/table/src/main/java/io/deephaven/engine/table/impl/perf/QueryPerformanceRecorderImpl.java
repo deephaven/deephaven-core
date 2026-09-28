@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.perf;
 
@@ -290,9 +290,11 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             // abnormal condition and the nugget should be logged
             return true;
         } else if (nugget == catchAllNugget) {
-            return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(nugget.getUsageNanos());
+            return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(nugget.getUsageNanos(), nugget.getDataReadCount(),
+                    nugget.getMetadataOperationCount());
         } else {
-            return LOG_THRESHOLD.shouldLog(nugget.getUsageNanos());
+            return LOG_THRESHOLD.shouldLog(nugget.getUsageNanos(), nugget.getDataReadCount(),
+                    nugget.getMetadataOperationCount());
         }
     }
 

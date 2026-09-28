@@ -30,9 +30,9 @@ In this example, the `startTime` argument was not provided, so the first row of 
 > [!TIP]
 > Duration strings are formatted as `"PTnHnMnS"`, where:
 >
-> - `PT` is the prefix to indicate a [duration](../reference/query-language/types/durations.md)
-> - `n` is a number
-> - `H`, `M`, and `S` are the units of time (hours, minutes, and seconds, respectively)
+> - `PT` is the prefix to indicate a [duration](../reference/query-language/types/durations.md).
+> - `n` is a number.
+> - `H`, `M`, and `S` are the units of time (hours, minutes, and seconds, respectively).
 
 <LoopedVideo src='../assets/tutorials/timetable.mp4' />
 
@@ -52,7 +52,7 @@ When this code is run, `result` is initially populated with 1800 rows of data, o
 
 ### timeTable as a blink table
 
-By default, the result of timeTable is [append-only](../conceptual/table-types.md#specialization-1-append-only). You can create a [blink](../conceptual/table-types.md#specialization-3-blink) table with the [`TimeTable.Builder`](/core/javadoc/io/deephaven/engine/table/impl/TimeTable.Builder.html) by calling the builder's `blinkTable` method. The resulting table only retains rows from the most recent update cycle:
+By default, the result of `timeTable` is [append-only](../conceptual/table-types.md#specialization-1-append-only). You can create a [blink](../conceptual/table-types.md#specialization-3-blink) table with the [`TimeTable.Builder`](/core/javadoc/io/deephaven/engine/table/impl/TimeTable.Builder.html) by calling the builder's `blinkTable` method. The resulting table only retains rows from the most recent update cycle:
 
 ```groovy ticking-table order=null
 result = timeTableBuilder().period("PT2S").blinkTable(true).build()
@@ -64,9 +64,8 @@ result = timeTableBuilder().period("PT2S").blinkTable(true).build()
 
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [How to capture the history of ticking tables](../how-to-guides/capture-table-history.md)
+- [How to reduce the update frequency of ticking tables](../how-to-guides/performance/reduce-update-frequency.md)
 - [Table types](../conceptual/table-types.md)
 - [`snapshot`](../reference/table-operations/snapshot/snapshot.md)
 - [`snapshotWhen`](../reference/table-operations/snapshot/snapshot-when.md)
 - [`timeTable`](../reference/table-operations/create/timeTable.md)
-
-<!--TODO: add "reduce ticking frequency" doc when available-->

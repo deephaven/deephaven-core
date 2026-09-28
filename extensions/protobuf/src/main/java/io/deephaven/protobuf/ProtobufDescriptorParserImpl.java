@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.protobuf;
 
@@ -83,6 +83,25 @@ class ProtobufDescriptorParserImpl {
         public DescriptorContext(FieldPath fieldPath, Descriptor descriptor) {
             this.fieldPath = Objects.requireNonNull(fieldPath);
             this.descriptor = Objects.requireNonNull(descriptor);
+            final String fullName = descriptor.getFullName();
+            for (FieldDescriptor fd : fieldPath.path()) {
+                if (fullName.equals(fd.getContainingType().getFullName())) {
+                    throw new IllegalArgumentException(String.format(
+                            "Cyclical protobuf message descriptor detected at [%s]. Cyclic protobuf message descriptors are not supported; use `%s` fieldOptions to exclude one of the fields to work around this.",
+                            describeCycle(fieldPath, descriptor),
+                            ProtobufDescriptorParserOptions.class.getName()));
+                }
+            }
+        }
+
+        private static String describeCycle(FieldPath path, Descriptor descriptor) {
+            final StringBuilder sb = new StringBuilder();
+            for (FieldDescriptor fd : path.path()) {
+                sb.append('`').append(fd.getContainingType().getFullName()).append("` \"").append(fd.getName())
+                        .append("\" -> ");
+            }
+            sb.append('`').append(descriptor.getFullName()).append('`');
+            return sb.toString();
         }
 
         private ProtobufFunctions functions() {

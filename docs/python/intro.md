@@ -59,7 +59,8 @@ Popular guides
 
 - [Use filters](./how-to-guides/use-filters.md)
 - [Group and ungroup data](./how-to-guides/grouping-data.md)
-- [Import Parquet files](./how-to-guides/data-import-export/parquet-import.md)
+- [Read Parquet files](./how-to-guides/data-import-export/parquet-import.md)
+- [Write Parquet files](./how-to-guides/data-import-export/parquet-export.md)
 - [Import from Kafka](./how-to-guides/data-import-export/kafka-stream.md)
 - [Install Python packages](./how-to-guides/install-and-use-python-packages.md)
 
@@ -82,7 +83,7 @@ Clear explanations of core concepts to improve your fundamental understanding of
 Important concepts
 
 - [Deephaven overview](./conceptual/deephaven-overview.md)
-- [Deephaven's arhitectural design](./conceptual/deephaven-design.md)
+- [Deephaven's architectural design](./conceptual/deephaven-design.md)
 - [Core API features](./conceptual/deephaven-core-api.md)
 - [Table update model](./conceptual/table-update-model.md)
 - [Docker data volumes](./conceptual/docker-data-volumes.md)
@@ -133,6 +134,8 @@ Useful cheat sheets
 
 - [Table operations](./reference/cheat-sheets/cheat-sheet.md)
 - [Table constructors](./reference/cheat-sheets/simple-table-constructors.md)
+- [Ultimate Cheat Sheet](./reference/cheat-sheets/cheat-sheet.md)
+- [Time operations](./reference/cheat-sheets/time-cheat-sheet.md)
 
 </div>
 </div>

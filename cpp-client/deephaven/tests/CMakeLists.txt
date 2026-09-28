@@ -11,6 +11,7 @@ add_executable(dhclient_tests
         src/buffer_column_source_test.cc
         src/cython_support_test.cc
         src/date_time_test.cc
+        src/encoding_test.cc
         src/filter_test.cc
         src/group_test.cc
         src/head_and_tail_test.cc

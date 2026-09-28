@@ -38,12 +38,10 @@ Open up the `index.html` file for editing, and add the following:
     <h3>Table data</h3>
     <table id="simpleTable"></table>
 
-    <script>
-      (async () => {
-        import dh from 'http://localhost:10000/jsapi/dh-core.js';
+    <script type="module">
+      import dh from 'http://localhost:10000/jsapi/dh-core.js';
 
-        // Add the rest of the code here
-      })();
+      // Add the rest of the code here
     </script>
   </body>
 </html>
@@ -149,53 +147,51 @@ The final product of the HTML page is:
     <h3>Table data</h3>
     <table id="simpleTable"></table>
 
-    <script>
-      (async () => {
-        import dh from 'http://localhost:10000/jsapi/dh-core.js';
-        var client = new dh.CoreClient('http://localhost:10000');
+    <script type="module">
+      import dh from 'http://localhost:10000/jsapi/dh-core.js';
+      var client = new dh.CoreClient('http://localhost:10000');
 
-        await connection.login({
-          type: 'io.deephaven.authentication.psk.PskAuthenticationHandler',
-          token: 'very-secret-password',
-        });
+      await client.login({
+        type: 'io.deephaven.authentication.psk.PskAuthenticationHandler',
+        token: 'very-secret-password',
+      });
 
-        var ide = await connection.startSession('python');
-        var connection = await client.getAsIdeConnection();
+      var connection = await client.getAsIdeConnection();
+      var ide = await connection.startSession('python');
 
-        await ide.runCode(`
+      await ide.runCode(`
 from deephaven import empty_table
-remoteTable = empty_table(10).updateView(formulas = ["I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`"])
+remoteTable = empty_table(10).update_view(formulas = ["I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`"])
       `);
 
-        var table = await ide.getTable('remoteTable');
+      var table = await ide.getTable('remoteTable');
 
-        var header = document.createElement('thead');
-        var headerRow = document.createElement('tr');
-        table.columns.forEach((column) => {
+      var header = document.createElement('thead');
+      var headerRow = document.createElement('tr');
+      table.columns.forEach((column) => {
+        var td = document.createElement('td');
+        td.innerText = column.name;
+        headerRow.appendChild(td);
+      });
+      header.appendChild(headerRow);
+
+      table.setViewport(0, 9);
+      var tbody = document.createElement('tbody');
+      var viewportData = await table.getViewportData();
+      var rows = viewportData.rows;
+      for (var i = 0; i < rows.length; i++) {
+        var tr = document.createElement('tr');
+        for (var j = 0; j < table.columns.length; j++) {
           var td = document.createElement('td');
-          td.innerText = column.name;
-          headerRow.appendChild(td);
-        });
-        header.appendChild(headerRow);
-
-        table.setViewport(0, 9);
-        var tbody = document.createElement('tbody');
-        var viewportData = await table.getViewportData();
-        var rows = viewportData.rows;
-        for (var i = 0; i < rows.length; i++) {
-          var tr = document.createElement('tr');
-          for (var j = 0; j < table.columns.length; j++) {
-            var td = document.createElement('td');
-            td.textContent = rows[i].get(table.columns[j]);
-            tr.appendChild(td);
-          }
-          tbody.appendChild(tr);
+          td.textContent = rows[i].get(table.columns[j]);
+          tr.appendChild(td);
         }
+        tbody.appendChild(tr);
+      }
 
-        var tableElement = document.getElementById('simpleTable');
-        tableElement.appendChild(header);
-        tableElement.appendChild(tbody);
-      })();
+      var tableElement = document.getElementById('simpleTable');
+      tableElement.appendChild(header);
+      tableElement.appendChild(tbody);
     </script>
   </body>
 </html>

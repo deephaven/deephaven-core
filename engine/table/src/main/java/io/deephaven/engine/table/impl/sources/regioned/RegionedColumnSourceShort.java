@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
@@ -78,7 +78,9 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Short at location " + locationKey);
             }
-            return new ColumnRegionShort.Constant<>(regionMask(), unbox((Short) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? ColumnRegionShort.createNull(regionMask())
+                    : new ColumnRegionShort.Constant<>(regionMask(), unbox((Short) partitioningColumnValue));
         }
     }
 }

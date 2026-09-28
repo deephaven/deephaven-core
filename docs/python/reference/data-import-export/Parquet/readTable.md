@@ -236,4 +236,4 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 - [`write_table`](./writeTable.md)
 - [Docker data volumes](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))
-- [Pydoc](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read)

@@ -1,1 +1,1 @@
-{"file":"core/docs/conceptual/time-in-deephaven.md","objects":{"mse":{"type":"Table","data":{"columns":[{"name":"MeanSqErr","type":"double"}],"rows":[[{"value":"2.8916"}]]}}}}
+{"file":"conceptual/time-in-deephaven.md","objects":{"mse":{"type":"Table","data":{"columns":[{"name":"MeanSqErr","type":"double"}],"rows":[[{"value":"1.5128"}]]}}}}

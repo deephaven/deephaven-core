@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.kafka;
 
@@ -9,7 +9,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.kafka.KafkaTools.Produce;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 

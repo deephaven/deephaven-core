@@ -76,8 +76,8 @@ The `twinX` method enables you to use one Y axis for some of the series being pl
 
 `PlotName = figure().plot(...).twinX().plot(...).show()`
 
-- The plot(s) for the series placed _before_ the `twinX()` method share a common Y axis (on the left).
-- The plot(s) for the series listed _after_ the `twinX()` method share a common Y axis (on the right).
+- The plot(s) for the series placed _before_ the `twinX` method share a common Y axis (on the left).
+- The plot(s) for the series listed _after_ the `twinX` method share a common Y axis (on the right).
 - All plots share the same X axis.
 
 ```groovy test-set=1
@@ -95,8 +95,8 @@ The `twinY` method enables you to use one X axis for one set of the values being
 
 `PlotName = figure().plot(...).twinY().plot(...).show()`
 
-- The plot(s) for the series placed _before_ the `twinY()` method use the lower X axis.
-- The plot(s) for the series listed _after_ the `twinY()` method use the upper X axis.
+- The plot(s) for the series placed _before_ the `twinY` method use the lower X axis.
+- The plot(s) for the series listed _after_ the `twinY` method use the upper X axis.
 
 ### Multiple series
 
@@ -238,7 +238,7 @@ When data is sourced from a Deephaven table, the following syntax can be used:
 - `seriesName` is the name (as a [string](../../reference/query-language/types/strings.md)) you want to use to identify the series on the chart itself.
 - `source` is the table that holds the data you want to plot.
 - `valueCol` is the name of the column (as a [string](../../reference/query-language/types/strings.md)) containing the discrete values.
-- `show()` tells Deephaven to draw the plot in the console.
+- `show` tells Deephaven to draw the plot in the console.
 
 ```groovy test-set=4 order=source,result default=result
 source = newTable(
@@ -401,7 +401,7 @@ This query plots the OHLC chart as follows:
 - `tOHLC` is the table from which our data is being pulled.
 - `TimestampBin` is the name of the column to be used for the X axis.
 - `"Open"`, `"High"`, `"Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
-- `lineStyle()` and `chartTitle()` provide component formatting to the table. `2` refers to line width.
+- `lineStyle` and `chartTitle` provide component formatting to the table. `2` refers to line width.
 
 ### Shared axes
 
@@ -449,9 +449,9 @@ This query plots the OHLC chart as follows:
   - ``where("Instrument=`ETH/USD`")`` filters the table to only the MSFT Ticker.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, `"Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
-- `chartTitle()` provides the title for the chart.
+- `chartTitle` provides the title for the chart.
 
-In this plot, the opening, high, low and closing price of BTC and ETH are plotted. The `twinX()` method is used to show the value scale for BTC on the left Y axis and the value scale for ETH on the right Y axis.
+In this plot, the opening, high, low and closing price of BTC and ETH are plotted. The `twinX` method is used to show the value scale for BTC on the left Y axis and the value scale for ETH on the right Y axis.
 
 ## Pie
 

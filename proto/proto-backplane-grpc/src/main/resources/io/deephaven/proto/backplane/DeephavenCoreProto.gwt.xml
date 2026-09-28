@@ -1,0 +1,5 @@
+<module>
+    <inherits name="io.grpc.Grpc" />
+    <source path="script" />
+    <source path="grpc" />
+</module>

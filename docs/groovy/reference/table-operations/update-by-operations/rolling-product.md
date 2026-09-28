@@ -82,7 +82,7 @@ result = source.updateBy([opPrior, opPosterior, opMiddle])
 ## Related documentation
 
 - [How to create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
-- [How to use `updateBy`](../../../how-to-guides/use-update-by.md)
+- [How to use `updateBy`](../../../how-to-guides/rolling-aggregations.md)
 - [ternary conditional operator](../../../how-to-guides/ternary-if-how-to.md)
 - [`update`](../select/update.md)
 - [`updateBy`](./updateBy.md)

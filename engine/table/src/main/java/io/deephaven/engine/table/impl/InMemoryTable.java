@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -63,7 +64,7 @@ public class InMemoryTable extends QueryTable {
     private static Map<String, ColumnSource<?>> createColumnsMap(String[] columnNames, Object[] arrayValues) {
         Map<String, ColumnSource<?>> map = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
-            final String columnName = columnNames[i];
+            final String columnName = NameValidator.validateColumnName(columnNames[i]);
             final Object array = arrayValues[i];
             if (array == null) {
                 throw new ArgumentException("Value array for column " + columnName + " is null");

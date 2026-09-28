@@ -76,7 +76,7 @@ For Pie charts, select the column names to use for **Labels** and **Values**.
 
 ![The pie chart options in the Chart Builder](../../assets/how-to/plots/plots10.png)
 
-![pie chart](../../assets/how-to/plots/plots11.png)
+![A pie chart](../../assets/how-to/plots/plots11.png)
 
 ## Plot hover menu
 
@@ -106,4 +106,4 @@ When multiple series are plotted, you might want to temporarily hide one or more
 
 ## Related documentation
 
-- [Quickstart](../../tutorials/quickstart.md)
+- [Quickstart](../../getting-started/quickstart.md)

@@ -29,7 +29,7 @@ services:
       - START_OPTS=-Xmx4g -Duser.timezone="America/New_York"
 ```
 
-The following Docker command modifies the one-liner in our [quickstart](../../tutorials/quickstart.md#1-install-and-launch-deephaven) to set the default timezone to `America/New_York`:
+The following Docker command modifies the one-liner in our [quickstart](../../getting-started/quickstart.md#1-install-and-launch-deephaven) to set the default timezone to `America/New_York`:
 
 ```sh
 docker run --rm --name deephaven -p 10000:10000 --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE -Duser.timezone="America/New_York" ghcr.io/deephaven/server:latest

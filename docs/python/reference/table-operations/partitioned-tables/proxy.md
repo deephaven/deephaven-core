@@ -2,7 +2,7 @@
 title: proxy
 ---
 
-The `proxy` method creates a new `PartitionedTableProxy` from the provided `PartitionedTable`.
+The [`proxy`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable.proxy) method creates a new [`PartitionedTableProxy`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTableProxy) from the provided `PartitionedTable`.
 
 A `PartitionedTableProxy` is a table operation proxy object for the underlying `PartitionedTable`. The `PartitionedTableProxy` gives users access to a variety of Deephaven table operations that are not available to a `PartitionedTable`. When a user has made all the desired changes to the `PartitionedTableProxy`, they can use the `target` attribute to return the underlying `PartitionedTable` with the changes applied.
 
@@ -13,7 +13,7 @@ A query can achieve the same results by using either [`transform`](./transform.m
 ```python syntax
 PartitionedTable.proxy(
   require_matching_keys: bool = True,
-  sanity_check_joins: bool = True
+  sanity_check_joins: bool = False
 ) -> PartitionedTableProxy
 ```
 
@@ -22,7 +22,7 @@ PartitionedTable.proxy(
 <ParamTable>
 <Param name="require_matching_keys" type="bool">
 
-Whether to ensure that both `PartitionedTable`s have all the same keys present when an operation uses this `PartitionedTable` and another `PartitionedTable` as inputs for a `partitioned_transform()`. The default is `True`.
+Whether to ensure that both `PartitionedTable`s have all the same keys present when an operation uses this `PartitionedTable` and another `PartitionedTable` as inputs for a `partitioned_transform`. The default is `True`.
 
 </Param>
 <Param name="sanity_check_joins" type="bool">
@@ -31,6 +31,11 @@ Whether to check that for proxied join operations, a given join key only occurs 
 
 </Param>
 </ParamTable>
+
+> [!CAUTION]
+> `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., `natural_join`), `where_in`, or `where_not_in` when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
+>
+> When the argument `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
 
 ## Returns
 
@@ -43,45 +48,45 @@ The following methods are available to a `PartitionedTableProxy`:
 > [!NOTE]
 > The following links are for the `Table` version of each of these methods. The `PartitionedTableProxy` version of each method is identical, except that it returns a `PartitionedTableProxy` instead of a `Table`.
 
-- [`abs_sum_by()`](../group-and-aggregate/AbsSumBy.md)
-- [`agg_all_by()`](../group-and-aggregate/AggAllBy.md)
-- [`agg_by()`](../group-and-aggregate/aggBy.md)
-- [`aj()`](../join/aj.md)
-- [`avg_by()`](../group-and-aggregate/avgBy.md)
-- [`count_by()`](../group-and-aggregate/countBy.md)
-- [`exact_join()`](../join/exact-join.md)
-- [`first_by()`](../group-and-aggregate/firstBy.md)
-- [`group_by()`](../group-and-aggregate/groupBy.md)
-- [`head()`](../filter/head.md)
+- [`abs_sum_by`](../group-and-aggregate/AbsSumBy.md)
+- [`agg_all_by`](../group-and-aggregate/AggAllBy.md)
+- [`agg_by`](../group-and-aggregate/aggBy.md)
+- [`aj`](../join/aj.md)
+- [`avg_by`](../group-and-aggregate/avgBy.md)
+- [`count_by`](../group-and-aggregate/countBy.md)
+- [`exact_join`](../join/exact-join.md)
+- [`first_by`](../group-and-aggregate/firstBy.md)
+- [`group_by`](../group-and-aggregate/groupBy.md)
+- [`head`](../filter/head.md)
 - [`is_refreshing`](../metadata/is_refreshing.md)
-- [`join()`](../join/join.md)
-- [`last_by()`](../group-and-aggregate/lastBy.md)
-- [`max_by()`](../group-and-aggregate/maxBy.md)
-- [`median_by()`](../group-and-aggregate/medianBy.md)
-- [`min_by()`](../group-and-aggregate/minBy.md)
-- [`natural_join()`](../join/natural-join.md)
-- [`raj()`](../join/raj.md)
-- [`reverse()`](../sort/reverse.md)
-- [`select()`](../select/select.md)
-- [`select_distinct()`](../select/select-distinct.md)
-- [`snapshot()`](../snapshot/snapshot.md)
-- [`snapshot_when()`](../snapshot/snapshot-when.md)
-- [`sort()`](../sort/sort.md)
-- [`sort_descending()`](../sort/sort-descending.md)
-- [`std_by()`](../group-and-aggregate/stdBy.md)
-- [`sum_by()`](../group-and-aggregate/sumBy.md)
-- [`tail()`](../filter/tail.md)
-- [`update()`](../select/update.md)
-- [`update_by()`](../update-by-operations/updateBy.md)
+- [`join`](../join/join.md)
+- [`last_by`](../group-and-aggregate/lastBy.md)
+- [`max_by`](../group-and-aggregate/maxBy.md)
+- [`median_by`](../group-and-aggregate/medianBy.md)
+- [`min_by`](../group-and-aggregate/minBy.md)
+- [`natural_join`](../join/natural-join.md)
+- [`raj`](../join/raj.md)
+- [`reverse`](../sort/reverse.md)
+- [`select`](../select/select.md)
+- [`select_distinct`](../select/select-distinct.md)
+- [`snapshot`](../snapshot/snapshot.md)
+- [`snapshot_when`](../snapshot/snapshot-when.md)
+- [`sort`](../sort/sort.md)
+- [`sort_descending`](../sort/sort-descending.md)
+- [`std_by`](../group-and-aggregate/stdBy.md)
+- [`sum_by`](../group-and-aggregate/sumBy.md)
+- [`tail`](../filter/tail.md)
+- [`update`](../select/update.md)
+- [`update_by`](../update-by-operations/updateBy.md)
 - [`update_graph`](../metadata/update_graph.md)
-- [`update_view()`](../select/update-view.md)
-- [`var_by()`](../group-and-aggregate/varBy.md)
-- [`view()`](../select/view.md)
-- [`weighted_avg_by()`](../group-and-aggregate/weighted-avg-by.md)
-- [`weighted_sum_by()`](../group-and-aggregate/weighted-sum-by.md)
-- [`where()`](../filter/where.md)
-- [`where_in()`](../filter/where-in.md)
-- [`where_not_in()`](../filter/where-not-in.md)
+- [`update_view`](../select/update-view.md)
+- [`var_by`](../group-and-aggregate/varBy.md)
+- [`view`](../select/view.md)
+- [`weighted_avg_by`](../group-and-aggregate/weighted-avg-by.md)
+- [`weighted_sum_by`](../group-and-aggregate/weighted-sum-by.md)
+- [`where`](../filter/where.md)
+- [`where_in`](../filter/where-in.md)
+- [`where_not_in`](../filter/where-not-in.md)
 
 ## Example
 

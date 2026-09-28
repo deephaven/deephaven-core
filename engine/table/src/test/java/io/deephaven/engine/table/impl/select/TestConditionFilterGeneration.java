@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.util.ModelFileGenerator;

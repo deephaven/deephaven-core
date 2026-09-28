@@ -33,9 +33,9 @@ A `Replayer` object that can be used to replay historical data.
 
 `TableReplayer` supports the following methods:
 
-- [`add_table()`](/core/pydoc/code/deephaven.replay.html#deephaven.replay.TableReplayer.add_table) - Registers a table for replaying and returns the associated replay table.
-- [`start()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#start()) - Starts replaying data.
-- [`shutdown()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#shutdown()) - Shuts the replayer down.
+- [`add_table`](/core/pydoc/code/deephaven.replay.html#deephaven.replay.TableReplayer.add_table) - Registers a table for replaying and returns the associated replay table.
+- [`start`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#start()) - Starts replaying data.
+- [`shutdown`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#shutdown()) - Shuts the replayer down.
 
 ## Example
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.storage;
 
@@ -22,15 +22,37 @@ import java.util.Objects;
 @JsType(namespace = "dh.storage", name = "FileContents")
 public class JsFileContents {
 
+    /**
+     * Creates an instance from an existing <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
+     *
+     * @param blob The blob containing the file contents.
+     * @return A {@link JsFileContents} instance containing the provided data.
+     */
     public static JsFileContents blob(Blob blob) {
         Objects.requireNonNull(blob, "Blob cannot be null");
         return new JsFileContents(blob, null);
     }
 
+    /**
+     * Creates an instance from text.
+     *
+     * @param text One or more string parts to combine into a
+     *        <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
+     * @return A {@link JsFileContents} instance containing the provided data.
+     */
     public static JsFileContents text(String... text) {
         return new JsFileContents(new Blob(JsArray.from(text)), null);
     }
 
+    /**
+     * Creates an instance from one or more <a href=
+     * "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>
+     * values.
+     *
+     * @param buffers One or more buffers to combine into a
+     *        <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
+     * @return A {@link JsFileContents} instance containing the provided data.
+     */
     public static JsFileContents arrayBuffers(ArrayBuffer... buffers) {
         return new JsFileContents(new Blob(JsArray.from(buffers)), null);
     }
@@ -58,16 +80,34 @@ public class JsFileContents {
         return Promise.reject("No contents available, please use provided etag");
     }
 
+    /**
+     * Reads the contents as text.
+     *
+     * @return A promise that resolves to the file contents as a string.
+     */
     @JsMethod
     public Promise<String> text() {
         return contents().then(Blob::text);
     }
 
+    /**
+     * Reads the contents as an <a href=
+     * "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
+     *
+     * @return A promise that resolves to the file contents as an {@code ArrayBuffer}.
+     */
     @JsMethod
     public Promise<ArrayBuffer> arrayBuffer() {
         return contents().then(Blob::arrayBuffer);
     }
 
+    /**
+     * The etag associated with the contents.
+     *
+     * <p>
+     * If an etag was provided when loading and the server indicates that the client's cached contents are still valid,
+     * the contents of this instance may be empty and only the etag will be returned.
+     */
     @JsProperty
     public String getEtag() {
         return etag;

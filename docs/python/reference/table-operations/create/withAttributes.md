@@ -29,7 +29,7 @@ A table with the specified attributes added.
 
 ## Examples
 
-In this example, we create a source table, then create a `result` table with a call to `with_attributes()`. This returns a `result` table that is identical to our source table, but with the attribute we specify (`"MyAttribute"`) added.
+In this example, we create a source table, then create a `result` table with a call to `with_attributes`. This returns a `result` table that is identical to our source table, but with the attribute we specify (`"MyAttribute"`) added.
 
 ```python order=source,result
 from deephaven import new_table

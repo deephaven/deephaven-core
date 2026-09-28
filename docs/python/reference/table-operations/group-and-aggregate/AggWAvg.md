@@ -31,7 +31,7 @@ The source column(s) for the calculations.
 </ParamTable>
 
 > [!CAUTION]
-> If an aggregation does not rename the resulting column, the aggregation column will appear in the output table, not the input column. If multiple aggregations on the same column do not rename the resulting columns, an error will result, because the aggregations are trying to create multiple columns with the same name. For example, in `table.agg_by([agg.sum_(cols=[“X”]), agg.avg(cols=["X"])`, both the sum and the average aggregators produce column `X`, which results in an error.
+> If an aggregation does not rename the resulting column, the aggregation column will appear in the output table, not the input column. If multiple aggregations on the same column do not rename the resulting columns, an error will result, because the aggregations are trying to create multiple columns with the same name. For example, in `table.agg_by([agg.sum_(cols=[“X”]), agg.avg(cols=["X"])])`, both the sum and the average aggregators produce column `X`, which results in an error.
 
 ## Returns
 
@@ -126,7 +126,7 @@ result = source.agg_by(
 )
 ```
 
-In this example, `agg.weighted_avg` returns the weighted average of values of `Number` (renamed to `WAvgNumber`), as weighed by `Weight` and grouped by `X`, and `agg.avg`returns the total average of values of `Number`, as grouped by `X`.
+In this example, `agg.weighted_avg` returns the weighted average of values of `Number` (renamed to `WAvgNumber`), as weighed by `Weight` and grouped by `X`, and `agg.avg` returns the total average of values of `Number`, as grouped by `X`.
 
 ```python order=source,result
 from deephaven import new_table

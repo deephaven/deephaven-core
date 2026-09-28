@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -12,7 +12,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,8 +35,14 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
     private static final long NO_ENTRY_VALUE = -2;
     private static final long DELETED_ENTRY_VALUE = -1;
 
-    private final TObjectLongHashMap<Object> baselineMap = new TObjectLongHashMap<>(8, 0.5f, NO_ENTRY_VALUE);
-    private volatile TObjectLongHashMap<Object> currentMap;
+    private final Object2LongMap<Object> baselineMap = makeMap(8);
+    private volatile Object2LongMap<Object> currentMap;
+
+    private static Object2LongMap<Object> makeMap(int capacity) {
+        final Object2LongOpenHashMap<Object> map = new Object2LongOpenHashMap<>(capacity, 0.5f);
+        map.defaultReturnValue(NO_ENTRY_VALUE);
+        return map;
+    }
 
     private final LongFunction<K> keyProducer;
     private final LongFunction<K> prevKeyProducer;
@@ -89,7 +96,7 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
     @Override
     public void onUpdate(final TableUpdate upstream) {
         final int cap = upstream.added().intSize() + upstream.removed().intSize() + upstream.modified().intSize();
-        final TObjectLongHashMap<Object> newMap = new TObjectLongHashMap<>(cap, 0.5f, NO_ENTRY_VALUE);
+        final Object2LongMap<Object> newMap = makeMap(cap);
 
         final LongConsumer remover = (final long key) -> {
             newMap.put(prevKeyProducer.apply(key), DELETED_ENTRY_VALUE);
@@ -156,10 +163,10 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
      */
     public <T> T get(K key, LongFunction<T> valueProducer, LongFunction<T> prevValueProducer) {
         final LogicalClock.State state = getUpdateGraph().clock().currentState();
-        final TObjectLongHashMap<Object> map;
+        final Object2LongMap<Object> map;
         if (state == LogicalClock.State.Idle && (map = currentMap) != null) {
-            final long row = map.get(key);
-            if (row != map.getNoEntryValue()) {
+            final long row = map.getLong(key);
+            if (row != map.defaultReturnValue()) {
                 if (row == DELETED_ENTRY_VALUE) {
                     return null;
                 }
@@ -169,8 +176,8 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
 
         final long row;
         synchronized (baselineMap) {
-            row = baselineMap.get(key);
-            if (row == baselineMap.getNoEntryValue()) {
+            row = baselineMap.getLong(key);
+            if (row == baselineMap.defaultReturnValue()) {
                 return null;
             }
         }

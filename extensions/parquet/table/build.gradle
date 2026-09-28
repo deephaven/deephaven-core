@@ -38,6 +38,7 @@ dependencies {
     implementation project(':codec-cache')
 
     implementation libs.commons.lang3
+    implementation libs.dsi.fastutil
     implementation libs.commons.text
     implementation libs.commons.compress
 
@@ -67,6 +68,9 @@ dependencies {
             project(':configs'),
             project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
+
+    testCompileOnly libs.autoservice
+    testAnnotationProcessor libs.autoservice.compiler
 
     runtimeOnly project(':extensions-trackedfile')
 

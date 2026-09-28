@@ -1,11 +1,12 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.Set;
 
@@ -93,7 +94,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return finish(null);
                             }
                             // we are expecting an error message
-                            return Promise.reject(x);
+                            return report(x);
                         });
     }
 
@@ -115,6 +116,30 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(this::finish).catch_(this::report);
     }
+
+    public void testAddRowsExtraColumns() {
+        connect(tables)
+                .then(table("result6"))
+                .then(JsTable::inputTable)
+                .then(inputTable -> {
+                    JsPropertyMap<Object> row = JsPropertyMap.of();
+                    row.set("E", "5");
+                    row.set("F", "10");
+                    return inputTable.addRows(new JsPropertyMap[] {row}, null);
+                })
+                .then(inputTable -> {
+                    delayTestFinish(8000);
+                    JsTable table = inputTable.getTable();
+                    table.setViewport(0, 100, null);
+                    return waitForEvent(table, JsTable.EVENT_ROWADDED, 2001).onInvoke(table);
+                })
+                .then(table -> {
+                    assertEquals(6.0, table.getSize());
+                    return null;
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
 
     @Override
     public String getModuleName() {

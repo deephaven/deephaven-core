@@ -1,16 +1,16 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.FigureDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.FetchObjectResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
@@ -21,7 +21,6 @@ import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
-import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -33,9 +32,11 @@ import jsinterop.base.JsPropertyMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -77,7 +78,7 @@ import java.util.stream.Stream;
 public class JsFigure extends HasLifecycle {
 
     /**
-     * The data within this figure was updated. <b>event.detail</b> is <b>FigureUpdateEventData</b>
+     * The data within this figure was updated. {@code event.detail} is {@code FigureUpdateEventData}.
      */
     @JsProperty(namespace = "dh.plot.Figure")
     public static final String EVENT_UPDATED = "updated",
@@ -91,19 +92,19 @@ public class JsFigure extends HasLifecycle {
             EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED,
             /**
              * The API is updating how downsampling works on this Figure, probably in response to a call to
-             * <b>Axis.range()</b> or subscribe(). The <b>event.detail</b> value is an array of <b>Series</b> instances
-             * which are affected by this.
+             * {@code Axis.range} or {@code subscribe}. The {@code event.detail} value is an array of {@code Series}
+             * instances which are affected by this.
              */
             EVENT_DOWNSAMPLESTARTED = "downsamplestarted",
             /**
-             * Downsampling has finished on the given <b>Series</b> instances, and data will arrive shortly. The
-             * <b>event.detail</b> value is the array of <b>Series</b> instances.
+             * Downsampling has finished on the given {@code Series} instances, and data will arrive shortly. The
+             * {@code event.detail} value is the array of {@code Series} instances.
              */
             EVENT_DOWNSAMPLEFINISHED = "downsamplefinished",
             /**
-             * Downsampling failed for some reason on one or more series. The <b>event.detail</b> object has three
-             * properties, the <b>message</b> string describing what went wrong, the <b>size</b> number showing the full
-             * size of the table, and the <b>series</b> property, an array of <b>Series</b> instances affected.
+             * Downsampling failed for some reason on one or more series. The {@code event.detail} object has three
+             * properties: the <b>message</b> string describing what went wrong, the <b>size</b> number showing the full
+             * size of the table, and the <b>series</b> property, an array of {@code Series} instances affected.
              */
             EVENT_DOWNSAMPLEFAILED = "downsamplefailed",
             /**
@@ -113,10 +114,6 @@ public class JsFigure extends HasLifecycle {
              */
             EVENT_DOWNSAMPLENEEDED = "downsampleneeded";
 
-    public interface FigureFetch {
-        void fetch(JsBiConsumer<Object, FetchObjectResponse> callback);
-    }
-
     public interface FigureTableFetch {
         Promise<FigureTableFetchData> fetch(JsFigure figure, FetchObjectResponse descriptor);
     }
@@ -125,10 +122,19 @@ public class JsFigure extends HasLifecycle {
         void close(JsFigure figure);
     }
 
+    /**
+     * Indicates that a series data source could not be resolved or used for this figure.
+     */
     public class FigureSourceException extends RuntimeException {
+        /**
+         * The table associated with the failing source.
+         */
         @JsProperty
         transient JsTable table;
 
+        /**
+         * The series data source associated with the failure.
+         */
         @JsProperty
         transient SeriesDataSource source;
 
@@ -140,24 +146,37 @@ public class JsFigure extends HasLifecycle {
         }
     }
 
+    /**
+     * Error details for a failed figure fetch.
+     */
     public class FigureFetchError {
+        /**
+         * The underlying error object.
+         */
         @JsProperty
         Object error;
 
+        /**
+         * A String array of any server-reported error messages.
+         */
         @JsProperty
         JsArray<String> errors;
 
-        FigureFetchError(Object error, JsArray<String> errors) {
+        FigureFetchError(Object error, List<String> errors) {
             this.error = error;
-            this.errors = errors;
+            this.errors = JsArray.from(errors.toArray(new String[0]));
         }
 
+        /**
+         * Returns the string representation of the underlying error.
+         */
+        @Override
         public String toString() {
             return error.toString();
         }
     }
 
-    private final FigureFetch fetch;
+    private final Supplier<Promise<FetchObjectResponse>> fetch;
     private final FigureTableFetch tableFetch;
     private FigureClose onClose;
 
@@ -173,19 +192,19 @@ public class JsFigure extends HasLifecycle {
     private JsPartitionedTable[] partitionedTables;
     private Map<Integer, JsPartitionedTable> plotHandlesToPartitionedTables;
 
-    private final Map<AxisDescriptor, DownsampledAxisDetails> downsampled = new HashMap<>();
+    private final Map<FigureDescriptor.AxisDescriptor, DownsampledAxisDetails> downsampled = new HashMap<>();
 
     private final Map<FigureSubscription, FigureSubscription> activeFigureSubscriptions = new HashMap<>();
 
     private boolean subCheckEnqueued = false;
 
     @JsIgnore
-    public JsFigure(WorkerConnection connection, FigureFetch fetch) {
+    public JsFigure(WorkerConnection connection, Supplier<Promise<FetchObjectResponse>> fetch) {
         this(fetch, new DefaultFigureTableFetch(connection));
     }
 
     @JsIgnore
-    public JsFigure(FigureFetch fetch, FigureTableFetch tableFetch) {
+    public JsFigure(Supplier<Promise<FetchObjectResponse>> fetch, FigureTableFetch tableFetch) {
         this.fetch = fetch;
         this.tableFetch = tableFetch;
     }
@@ -195,14 +214,18 @@ public class JsFigure extends HasLifecycle {
         plotHandlesToTables = new HashMap<>();
         plotHandlesToPartitionedTables = new HashMap<>();
 
-        return Callbacks.grpcUnaryPromise(fetch::fetch).then(response -> {
-            this.descriptor = FigureDescriptor.deserializeBinary(response.getData_asU8());
+        return fetch.get().then(response -> {
+            try {
+                this.descriptor = FigureDescriptor.parseFrom(response.getData());
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
 
-            charts = descriptor.getChartsList().asList().stream()
+            charts = descriptor.getChartsList().stream()
                     .map(chartDescriptor -> new JsChart(chartDescriptor, this)).toArray(JsChart[]::new);
             JsObject.freeze(charts);
 
-            errors = JsObject.freeze(descriptor.getErrorsList().slice());
+            errors = Js.cast(JsObject.freeze(descriptor.getErrorsList().toArray()));
 
             return this.tableFetch.fetch(this, response);
         }).then(tableFetchData -> {
@@ -233,8 +256,7 @@ public class JsFigure extends HasLifecycle {
             return Promise.resolve(this);
         }, err -> {
             final FigureFetchError fetchError = new FigureFetchError(LazyPromise.ofObject(err),
-                    this.descriptor != null ? this.descriptor.getErrorsList() : new JsArray<>());
-            // noinspection unchecked
+                    this.descriptor != null ? this.descriptor.getErrorsList() : List.of());
             unsuppressEvents();
             fireEvent(EVENT_RECONNECTFAILED, fetchError);
             suppressEvents();
@@ -300,7 +322,7 @@ public class JsFigure extends HasLifecycle {
 
     @JsProperty
     public double getUpdateInterval() {
-        return Long.parseLong(descriptor.getUpdateInterval());
+        return descriptor.getUpdateInterval();
     }
 
     @JsProperty
@@ -336,7 +358,7 @@ public class JsFigure extends HasLifecycle {
         subscribe(null);
     }
 
-    public void subscribe(@JsOptional DownsampleOptions forceDisableDownsample) {
+    public void subscribe(@JsOptional @JsNullable DownsampleOptions forceDisableDownsample) {
         // iterate all series, mark all as subscribed, will enqueue a check automatically
         Arrays.stream(charts).flatMap(c -> Arrays.stream(c.getSeries()))
                 .forEach(s -> s.subscribe(forceDisableDownsample));
@@ -436,7 +458,7 @@ public class JsFigure extends HasLifecycle {
 
         // otherwise grab the first table we can find
         // TODO loop, assert all match
-        return plotHandlesToTables.get(s.getDescriptor().getDataSourcesList().getAt(0).getTableId());
+        return plotHandlesToTables.get(s.getDescriptor().getDataSources(0).getTableId());
     }
 
     // First, break down the ranges so we can tell when they are entirely incompatible. They
@@ -517,22 +539,22 @@ public class JsFigure extends HasLifecycle {
         }
         // this was formerly a switch/case, but since we're referencing JS we need to use expressions that look like
         // non-constants to java
-        int plotStyle = series.getPlotStyle();
-        if (plotStyle == FigureDescriptor.SeriesPlotStyle.getBAR()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTACKED_BAR()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getPIE()) {
+        FigureDescriptor.SeriesPlotStyle plotStyle = series.getDescriptor().getPlotStyle();
+        if (plotStyle == FigureDescriptor.SeriesPlotStyle.BAR
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.STACKED_BAR
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.PIE) {
             // category charts, can't remove categories
             return false;
-        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.getSCATTER()) {
+        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.SCATTER) {
             // pointless without shapes visible, this ensures we aren't somehow trying to draw it
             return false;
-        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.getLINE()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getAREA()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTACKED_AREA()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getHISTOGRAM()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getOHLC()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTEP()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getERROR_BAR()) {
+        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.LINE
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.AREA
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.STACKED_AREA
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.HISTOGRAM
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.OHLC
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.STEP
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.ERROR_BAR) {
             // allowed, fall through (listed so we can default to not downsample)
             return true;
         }
@@ -672,11 +694,11 @@ public class JsFigure extends HasLifecycle {
     }
 
     @JsIgnore
-    public void updateDownsampleRange(AxisDescriptor axis, Integer pixels, Long min, Long max) {
+    public void updateDownsampleRange(FigureDescriptor.AxisDescriptor axis, Integer pixels, Long min, Long max) {
         if (pixels == null) {
             downsampled.remove(axis);
         } else {
-            if (axis.getLog() || axis.getType() != AxisDescriptor.AxisType.getX() || axis.getInvert()) {
+            if (axis.getLog() || axis.getType() != FigureDescriptor.AxisDescriptor.AxisType.X || axis.getInvert()) {
                 return;
             }
             downsampled.put(axis, new DownsampledAxisDetails(pixels, min, max));
@@ -760,20 +782,18 @@ public class JsFigure extends HasLifecycle {
             JsTable[] tables = new JsTable[0];
             JsPartitionedTable[] partitionedTables = new JsPartitionedTable[0];
 
-            Promise<?>[] promises = new Promise[response.getTypedExportIdsList().length];
+            Promise<?>[] promises = new Promise[response.getTypedExportIdsList().size()];
 
             int nextTableIndex = 0;
             int nextPartitionedTableIndex = 0;
-            for (int i = 0; i < response.getTypedExportIdsList().length; i++) {
-                TypedTicket ticket = response.getTypedExportIdsList().getAt(i);
+            for (int i = 0; i < response.getTypedExportIdsList().size(); i++) {
+                TypedTicket ticket = response.getTypedExportIdsList().get(i);
                 if (ticket.getType().equals(JsVariableType.TABLE)) {
                     // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                     // reconnect in this way without refetching the entire figure anyway.
                     int tableIndex = nextTableIndex++;
-                    promises[i] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
-                        connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
-                                connection.metadata(),
-                                c::apply);
+                    promises[i] = Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(c -> {
+                        connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(), c);
                     }).then(etcr -> {
                         ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for figure");
                         JsTable table = new JsTable(connection, cts);

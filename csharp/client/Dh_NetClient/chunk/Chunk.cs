@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 global using BooleanChunk = Deephaven.Dh_NetClient.Chunk<bool>;
 global using StringChunk = Deephaven.Dh_NetClient.Chunk<string>;
@@ -13,6 +13,7 @@ global using DoubleChunk = Deephaven.Dh_NetClient.Chunk<double>;
 global using DateTimeOffsetChunk = Deephaven.Dh_NetClient.Chunk<System.DateTimeOffset>;
 global using DateOnlyChunk = Deephaven.Dh_NetClient.Chunk<System.DateOnly>;
 global using TimeOnlyChunk = Deephaven.Dh_NetClient.Chunk<System.TimeOnly>;
+global using ListChunk = Deephaven.Dh_NetClient.Chunk<System.Collections.IList>;
 
 namespace Deephaven.Dh_NetClient;
 
@@ -22,12 +23,12 @@ public abstract class Chunk(int size) {
 
 public sealed class Chunk<T> : Chunk {
   public static Chunk<T> Create(int size) {
-    return new Chunk<T>(new T[size]);
+    return new Chunk<T>(new T?[size]);
   }
 
-  public T[] Data { get; }
+  public T?[] Data { get; }
 
-  private Chunk(T[] data) : base(data.Length) {
+  private Chunk(T?[] data) : base(data.Length) {
     Data = data;
   }
 }

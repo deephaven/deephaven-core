@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.benchmark.engine.util;
 
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RspBitmapBuilderSequential;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
@@ -11,7 +12,8 @@ import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesLong;
-import gnu.trove.set.hash.TIntHashSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
@@ -42,7 +44,7 @@ public class SmallRowSetCreation {
 
     private static final long seed = 1;
 
-    private static final TIntHashSet workSet = new TIntHashSet();
+    private static final IntSet workSet = new IntOpenHashSet();
 
     private static void populateRandomBlockValues(
             final Random random, final int[] blockValues, final int valuesPerBlock) {
@@ -50,7 +52,8 @@ public class SmallRowSetCreation {
         while (workSet.size() < valuesPerBlock) {
             workSet.add(random.nextInt(RspArray.BLOCK_SIZE));
         }
-        workSet.toArray(blockValues);
+        final int[] returned = workSet.toArray(blockValues);
+        Assert.eq(returned, "returned", blockValues, "blockValues");
         Arrays.sort(blockValues);
     }
 

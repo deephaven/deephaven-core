@@ -451,7 +451,7 @@ t = empty_table(2 * 365 * 24 * 60).update(
 
 ### Convenience methods for date-times
 
-Date-time columns carry a lot of information, which can be extracted with Deephaven's [auto-imported functions](../../reference/query-language/query-library/auto-imported-functions.md):
+Date-time columns carry a lot of information, which can be extracted with Deephaven's [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md):
 
 ```python test-set=5
 t_more_methods = t.update(

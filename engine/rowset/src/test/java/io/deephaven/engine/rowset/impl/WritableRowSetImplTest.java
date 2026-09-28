@@ -1,12 +1,12 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl;
 
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.set.hash.TLongHashSet;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
@@ -341,10 +341,10 @@ public class WritableRowSetImplTest extends TestCase {
             final long[] fullKeys = generateFullKeys(maxSize, generator);
             final RowSet fullRowSet = getRowSet(fullKeys);
 
-            final Pair<RowSet, TLongList> pp =
+            final Pair<RowSet, LongList> pp =
                     generateSubset(fullKeys, fullRowSet, Integer.MAX_VALUE, generator);
             final RowSet subsetRowSet = pp.first;
-            final TLongList expected = pp.second;
+            final LongList expected = pp.second;
             TestCase.assertEquals(subsetRowSet.size(), expected.size());
 
             final RowSet invertedRowSet = fullRowSet.invert(subsetRowSet);
@@ -352,7 +352,7 @@ public class WritableRowSetImplTest extends TestCase {
             TestCase.assertEquals(expected.size(), invertedRowSet.size());
 
             for (int ii = 0; ii < invertedRowSet.intSize(); ++ii) {
-                final long expectedPosition = expected.get(ii);
+                final long expectedPosition = expected.getLong(ii);
                 final long actualPosition = invertedRowSet.get(ii);
                 TestCase.assertEquals(expectedPosition, actualPosition);
             }
@@ -375,16 +375,16 @@ public class WritableRowSetImplTest extends TestCase {
             final long[] fullKeys = generateFullKeys(maxSize, generator);
             final RowSet fullRowSet = getRowSet(fullKeys);
             final int maxPosition = generator.nextInt(fullRowSet.intSize());
-            final Pair<RowSet, TLongList> pp = generateSubset(fullKeys, fullRowSet, maxPosition, generator);
+            final Pair<RowSet, LongList> pp = generateSubset(fullKeys, fullRowSet, maxPosition, generator);
             final RowSet subsetRowSet = pp.first;
-            final TLongList expected = pp.second;
+            final LongList expected = pp.second;
 
             final RowSet invertedRowSet = fullRowSet.invert(subsetRowSet, maxPosition);
 
             TestCase.assertEquals("iteration=" + iteration, expected.size(), invertedRowSet.size());
 
             for (int ii = 0; ii < invertedRowSet.intSize(); ++ii) {
-                final long expectedPosition = expected.get(ii);
+                final long expectedPosition = expected.getLong(ii);
                 final long actualPosition = invertedRowSet.get(ii);
                 TestCase.assertEquals(expectedPosition, actualPosition);
             }
@@ -427,7 +427,7 @@ public class WritableRowSetImplTest extends TestCase {
      * This version picks a size, and generates ranges until we exceed that size
      */
     private long[] generateKeysMethod2(int maxSize, Random generator) {
-        final TLongArrayList keys = new TLongArrayList();
+        final LongArrayList keys = new LongArrayList();
         long lastKey = 0;
 
         while (keys.size() < maxSize) {
@@ -443,14 +443,14 @@ public class WritableRowSetImplTest extends TestCase {
             lastKey += count;
         }
 
-        return keys.toArray();
+        return keys.toLongArray();
     }
 
     /**
      * Generate a subset of the keys in fullKeys up to maxPosition positions in using generator. Returns a pair
-     * containing the subset of fullKeys as a RowSet and the expected positions as a TLongList.
+     * containing the subset of fullKeys as a RowSet and the expected positions as a LongList.
      */
-    private Pair<RowSet, TLongList> generateSubset(long[] fullKeys, RowSet fullRowSet, int maxPosition,
+    private Pair<RowSet, LongList> generateSubset(long[] fullKeys, RowSet fullRowSet, int maxPosition,
             Random generator) {
         switch (generator.nextInt(2)) {
             case 0:
@@ -465,14 +465,14 @@ public class WritableRowSetImplTest extends TestCase {
     /**
      * For each key, randomly flip a count as to whether it belongs in the output.
      */
-    private Pair<RowSet, TLongList> generateSubsetMethod1(long[] fullKeys,
+    private Pair<RowSet, LongList> generateSubsetMethod1(long[] fullKeys,
             @SuppressWarnings("unused") RowSet fullRowSet,
             int maxPosition, Random generator) {
         final boolean subset[] = new boolean[(int) fullRowSet.lastRowKey() + 1];
 
         final double density = generator.nextDouble();
 
-        final TLongList expected = new TLongArrayList();
+        final LongList expected = new LongArrayList();
         int included = 0;
         int included2 = 0;
         for (int ii = 0; ii < fullKeys.length; ++ii) {
@@ -506,12 +506,12 @@ public class WritableRowSetImplTest extends TestCase {
      * For each run of the RowSet, flip a coin to determine if it is included; then randomly select a start and end
      * within each range.
      */
-    private Pair<RowSet, TLongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys,
+    private Pair<RowSet, LongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys,
             RowSet fullRowSet,
             int maxPosition, Random generator) {
-        final boolean subset[] = new boolean[(int) fullKeys[fullKeys.length - 1] + 1];
+        final boolean[] subset = new boolean[(int) fullKeys[fullKeys.length - 1] + 1];
 
-        final TLongList expected = new TLongArrayList();
+        final LongList expected = new LongArrayList();
         long runningPosition = 0;
 
         final double inclusionThreshold = generator.nextDouble();
@@ -574,7 +574,7 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     private void testInsertionNotThere(long... keys) {
-        final TLongHashSet notThere = new TLongHashSet();
+        final LongOpenHashSet notThere = new LongOpenHashSet();
         for (int i = 0, key = 0; i < keys.length;) {
             if (key > keys[i]) {
                 i++;
@@ -593,29 +593,29 @@ public class WritableRowSetImplTest extends TestCase {
             notThere.add(1);
             notThere.add(10);
         }
-        for (final TLongIterator iterator = notThere.iterator(); iterator.hasNext();) {
+        for (final LongIterator iterator = notThere.iterator(); iterator.hasNext();) {
             final WritableRowSet rowSet = getRowSet(keys);
-            final long key = iterator.next();
+            final long key = iterator.nextLong();
             rowSet.insert(key);
-            final TLongArrayList al = new TLongArrayList(keys);
+            final LongArrayList al = new LongArrayList(LongArrayList.wrap(keys));
             al.add(key);
-            al.sort();
-            compareIndexAndKeyValues(rowSet, al.toArray());
+            al.sort(null);
+            compareIndexAndKeyValues(rowSet, al.toLongArray());
         }
         for (int i = 1; i < notThere.size() + 1; i++) {
             WritableRowSet rowSet = getRowSet(keys);
             int steps = 0;
-            TLongArrayList al = new TLongArrayList(keys);
-            for (final TLongIterator iterator = notThere.iterator(); iterator.hasNext();) {
+            LongArrayList al = new LongArrayList(LongArrayList.wrap(keys));
+            for (final LongIterator iterator = notThere.iterator(); iterator.hasNext();) {
                 if (steps % i == 0) {
-                    al = new TLongArrayList(keys);
+                    al = new LongArrayList(LongArrayList.wrap(keys));
                     rowSet = getRowSet(keys);
                 }
-                final long key = iterator.next();
+                final long key = iterator.nextLong();
                 rowSet.insert(key);
                 al.add(key);
-                al.sort();
-                compareIndexAndKeyValues(rowSet, al.toArray());
+                al.sort(null);
+                compareIndexAndKeyValues(rowSet, al.toLongArray());
                 steps++;
             }
         }
@@ -742,7 +742,7 @@ public class WritableRowSetImplTest extends TestCase {
     private void doTestFunnyOverlap(@SuppressWarnings("SameParameterValue") String input) {
         final RowSetBuilderRandom rowSetBuilder1 = RowSetFactory.builderRandom();
 
-        final TLongArrayList keyList = new TLongArrayList();
+        final LongArrayList keyList = new LongArrayList();
 
         final String[] splitInput = input.split(",");
         for (String range : splitInput) {
@@ -795,14 +795,14 @@ public class WritableRowSetImplTest extends TestCase {
 
             for (int ii = keyList.size() - 1; ii > 0; ii--) {
                 final int jj = random.nextInt(ii);
-                final long newKey = keyList.get(jj);
-                final long oldKey = keyList.get(ii);
+                final long newKey = keyList.getLong(jj);
+                final long oldKey = keyList.getLong(ii);
                 keyList.set(jj, oldKey);
                 keyList.set(ii, newKey);
             }
             final RowSetBuilderRandom rowSetBuilder3 = RowSetFactory.builderRandom();
             for (int ii = 0; ii < keyList.size(); ++ii) {
-                rowSetBuilder3.addKey(keyList.get(ii));
+                rowSetBuilder3.addKey(keyList.getLong(ii));
             }
             final RowSet rowSet3 = rowSetBuilder3.build();
             rowSet3.validate();
@@ -967,17 +967,17 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     private long[] booleanSetToKeys(boolean[] fullSet) {
-        final TLongArrayList resultArray = new TLongArrayList();
+        final LongArrayList resultArray = new LongArrayList();
         for (int ii = 0; ii < fullSet.length; ++ii) {
             if (fullSet[ii]) {
                 resultArray.add(ii);
             }
         }
-        return resultArray.toArray();
+        return resultArray.toLongArray();
     }
 
     private long[] stringToKeys(@SuppressWarnings("SameParameterValue") String input) {
-        final TLongArrayList resultArrayList = new TLongArrayList();
+        final LongArrayList resultArrayList = new LongArrayList();
         final String[] splitInput = input.split(",");
         for (String range : splitInput) {
             final int dash = range.indexOf("-");
@@ -994,32 +994,32 @@ public class WritableRowSetImplTest extends TestCase {
                 resultArrayList.add(Long.parseLong(range));
             }
         }
-        return resultArrayList.toArray();
+        return resultArrayList.toLongArray();
     }
 
     private long[] doMinusSimple(long[] allKeys, long[] subKeys) {
-        final TLongArrayList resultArrayList = new TLongArrayList();
-        final TLongHashSet longHashSet = new TLongHashSet(subKeys);
+        final LongArrayList resultArrayList = new LongArrayList();
+        final LongOpenHashSet longHashSet = new LongOpenHashSet(LongArrayList.wrap(subKeys));
         for (int ii = 0; ii < allKeys.length; ++ii) {
             if (!longHashSet.contains(allKeys[ii])) {
                 resultArrayList.add(allKeys[ii]);
             }
         }
-        return resultArrayList.toArray();
+        return resultArrayList.toLongArray();
     }
 
     private void testRangeByKey(final String m, long... keys) {
         final RowSet rowSet = getRowSet(keys);
         for (long i = (keys.length > 0 ? keys[0] - 2 : 1); i < (keys.length > 0 ? keys[keys.length - 1] : 0) + 3; i++) {
             for (long j = i; j < (keys.length > 0 ? keys[keys.length - 1] : 0) + 3; j++) {
-                final TLongArrayList data = new TLongArrayList();
+                final LongArrayList data = new LongArrayList();
                 for (int k = 0; k < keys.length; k++) {
                     final long key = keys[k];
                     if (key >= i && key <= j) {
                         data.add(key);
                     }
                 }
-                final long[] range = data.toArray();
+                final long[] range = data.toLongArray();
                 final RowSet subRowSet = rowSet.subSetByKeyRange(i, j);
                 try {
                     compareIndexAndKeyValues(m, subRowSet, range);
@@ -1629,7 +1629,7 @@ public class WritableRowSetImplTest extends TestCase {
     public void testRandomBuilder() {
         final Random random = new Random(0);
 
-        final TLongArrayList values = new TLongArrayList();
+        final LongArrayList values = new LongArrayList();
 
         for (int step = 0; step < 1000; ++step) {
             final int size = random.nextInt(10);
@@ -1653,18 +1653,18 @@ public class WritableRowSetImplTest extends TestCase {
             final RowSet prioRowSet = new WritableRowSetImpl(priorityQueueBuilder.getOrderedLongSet());
             final RowSet treeRowSet = treeBuilder.build();
 
-            values.sort();
+            values.sort(null);
             long lastValue = -1;
             int jj = 1, ii = 1;
             for (; ii < values.size(); ++ii) {
-                if (values.get(ii) != lastValue) {
+                if (values.getLong(ii) != lastValue) {
                     // keep it
-                    lastValue = values.get(ii);
+                    lastValue = values.getLong(ii);
                     values.set(jj++, lastValue);
                 }
             }
             if (jj < ii) {
-                values.remove(jj, values.size() - jj);
+                values.removeElements(jj, values.size());
             }
             // System.out.println(prioRowSet);
             // System.out.println(treeRowSet);
@@ -1675,7 +1675,7 @@ public class WritableRowSetImplTest extends TestCase {
             ii = 0;
             for (final RowSet.Iterator it = prioRowSet.iterator(); it.hasNext();) {
                 final long next = it.nextLong();
-                TestCase.assertEquals(values.get(ii++), next);
+                TestCase.assertEquals(values.getLong(ii++), next);
             }
 
             if (values.size() < 2) {
@@ -1683,8 +1683,8 @@ public class WritableRowSetImplTest extends TestCase {
             }
             final RowSet.SearchIterator it = prioRowSet.searchIterator();
             final int j = values.size() / 2;
-            final long v = values.get(j);
-            final long prev = values.get(j - 1);
+            final long v = values.getLong(j);
+            final long prev = values.getLong(j - 1);
             final String m = "step=" + step;
             if ((step & 1) != 0) {
                 assertTrue(m, it.advance(v));
@@ -1699,7 +1699,7 @@ public class WritableRowSetImplTest extends TestCase {
                     assertEquals(m, v, it.currentValue());
                 }
             }
-            assertFalse(it.advance(values.get(values.size() - 1) + 1));
+            assertFalse(it.advance(values.getLong(values.size() - 1) + 1));
         }
     }
 
@@ -1770,14 +1770,15 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(rit.hasNext());
     }
 
-    private void dumpValues(TLongArrayList values) {
+    @SuppressWarnings("unused")
+    private void dumpValues(LongArrayList values) {
         System.out.print("{");
         for (int startPosition = 0; startPosition < values.size();) {
             if (startPosition > 0) {
                 System.out.print(",");
             }
             final long size = rangeSize(values, startPosition);
-            final long startValue = values.get(startPosition);
+            final long startValue = values.getLong(startPosition);
             if (size > 1) {
                 System.out.print(startValue + "-" + (startValue + size - 1));
             } else {
@@ -1788,9 +1789,9 @@ public class WritableRowSetImplTest extends TestCase {
         System.out.println("}");
     }
 
-    private long rangeSize(TLongArrayList values, int start) {
+    private long rangeSize(LongArrayList values, int start) {
         int end = start + 1;
-        while (end < values.size() && values.get(end) == values.get(end - 1) + 1) {
+        while (end < values.size() && values.getLong(end) == values.getLong(end - 1) + 1) {
             end++;
         }
         return end - start;
@@ -1894,6 +1895,7 @@ public class WritableRowSetImplTest extends TestCase {
     // RowSet modified = readIndices.get("modifiedIndices");
     //
     //// Assert.eq(saveModified2, "saveModified2", modified, "modified");
+
     //
     //
     //

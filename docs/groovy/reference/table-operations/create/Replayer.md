@@ -33,9 +33,9 @@ A `Replayer` object that can be used to replay historical data.
 
 `Replayer` supports the following methods:
 
-- [`replay()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#replay(io.deephaven.engine.table.Table,java.lang.String)) - Prepares a historical table for replaying.
-- [`start()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#start()) - Starts replaying data.
-- [`shutdown()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#shutdown()) - Shuts the replayer down.
+- [`replay`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#replay(io.deephaven.engine.table.Table,java.lang.String)) - Prepares a historical table for replaying.
+- [`start`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#start()) - Starts replaying data.
+- [`shutdown`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/replay/Replayer.html#shutdown()) - Shuts the replayer down.
 
 ## Example
 

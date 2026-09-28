@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -347,6 +347,9 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public boolean hasVirtualRowVariables() {
+        if (usedColumns == null) {
+            throw new IllegalStateException("Cannot call hasVirtualRowVariables before calling initDef!");
+        }
         return usesI || usesII || usesK;
     }
 

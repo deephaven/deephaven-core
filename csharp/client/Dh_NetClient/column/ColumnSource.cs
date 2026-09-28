@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 global using ICharColumnSource = Deephaven.Dh_NetClient.IColumnSource<char>;
 global using IByteColumnSource = Deephaven.Dh_NetClient.IColumnSource<sbyte>;
@@ -13,6 +13,7 @@ global using IStringColumnSource = Deephaven.Dh_NetClient.IColumnSource<string>;
 global using IDateTimeOffsetColumnSource = Deephaven.Dh_NetClient.IColumnSource<System.DateTimeOffset>;
 global using IDateOnlyColumnSource = Deephaven.Dh_NetClient.IColumnSource<System.DateOnly>;
 global using ITimeOnlyColumnSource = Deephaven.Dh_NetClient.IColumnSource<System.TimeOnly>;
+global using IListColumnSource = Deephaven.Dh_NetClient.IColumnSource<System.Collections.IList>;
 
 namespace Deephaven.Dh_NetClient;
 
@@ -59,8 +60,13 @@ public interface IMutableColumnSource : IColumnSource {
   void FillFromChunk(RowSequence rows, Chunk src, BooleanChunk? nullFlags);
 }
 
-public interface IMutableColumnSource<T> : IMutableColumnSource, IColumnSource<T> {
+public interface IMutableColumnSource<T> : IMutableColumnSource, IColumnSource<T>;
 
+/// <summary>
+/// Used with interfaces like IColumnSource&lt;IList&gt; that have to expose their element type.
+/// </summary>
+public interface IHasElementType {
+  Type ElementType { get; }
 }
 
 /// <summary>

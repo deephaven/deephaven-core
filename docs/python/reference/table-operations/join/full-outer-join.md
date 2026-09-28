@@ -3,7 +3,7 @@ title: full_outer_join
 sidebar_label: full_outer_join
 ---
 
-`full_outer_join` joins data from a pair of tables - a left table and a right table - based upon one or more match columns. The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys.
+`full_outer_join` joins data from a pair of tables - a left table and a right table - based upon one or more match columns (`on`). The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys.
 
 The resultant table contains all rows from both tables that exist in the key identifier columns. Cells that exist in one table but not the other are filled with null values in the result.
 
@@ -99,6 +99,8 @@ result = full_outer_join(l_table=left, r_table=right, on=["X1 = X2"], joins=["Z 
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
-- [Joins: Exact and Relational](../../../how-to-guides/joins-exact-relational.md)
+- [Choose a join method](../../../how-to-guides/joins-exact-relational.md#which-method-should-you-use)
+- [Exact and relational joins](../../../how-to-guides/joins-exact-relational.md)
+- [Time series and range joins](../../../how-to-guides/joins-timeseries-range.md)
 - [Pydoc](/core/pydoc/code/deephaven.experimental.outer_joins.html#deephaven.experimental.outer_joins.full_outer_join)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/OuterJoinTools.html#fullOuterJoin(io.deephaven.engine.table.Table,io.deephaven.engine.table.Table,java.util.Collection))

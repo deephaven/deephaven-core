@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.rollingformula;
 
@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.ObjectRingBufferVectorWrapper;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -175,7 +176,7 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
             final long forwardWindowScaleUnits,
             final Class<?> columnType,
             final Class<?> componentType,
-            final Class<?> vectorType,
+            final Class<? extends Vector<?>> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef) {
         super(

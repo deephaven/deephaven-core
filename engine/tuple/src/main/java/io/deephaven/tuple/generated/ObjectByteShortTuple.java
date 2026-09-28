@@ -1,12 +1,12 @@
 package io.deephaven.tuple.generated;
 
-import gnu.trove.map.TIntObjectMap;
 import io.deephaven.tuple.CanonicalizableTuple;
 import io.deephaven.tuple.serialization.SerializationUtils;
 import io.deephaven.tuple.serialization.StreamingExternalizable;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.compare.ShortComparisons;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Externalizable;
@@ -55,9 +55,9 @@ public class ObjectByteShortTuple implements Comparable<ObjectByteShortTuple>, E
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Objects.hashCode(element1)) * 31 +
-                Byte.hashCode(element2)) * 31 +
-                Short.hashCode(element3);
+                ObjectComparisons.hashCode(element1)) * 31 +
+                ByteComparisons.hashCode(element2)) * 31 +
+                ShortComparisons.hashCode(element3);
     }
 
     public final Object getFirstElement() {
@@ -88,8 +88,8 @@ public class ObjectByteShortTuple implements Comparable<ObjectByteShortTuple>, E
         final ObjectByteShortTuple typedOther = (ObjectByteShortTuple) other;
         // @formatter:off
         return ObjectComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+               ByteComparisons.eq(element2, typedOther.element2) &&
+               ShortComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 
@@ -123,14 +123,14 @@ public class ObjectByteShortTuple implements Comparable<ObjectByteShortTuple>, E
     }
 
     @Override
-    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
+    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
         StreamingExternalizable.writeObjectElement(out, cachedWriters, 0, element1);
         out.writeByte(element2);
         out.writeShort(element3);
     }
 
     @Override
-    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
+    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         initialize(
                 StreamingExternalizable.readObjectElement(in, cachedReaders, 0),
                 in.readByte(),

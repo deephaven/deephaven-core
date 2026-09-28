@@ -1,15 +1,17 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
-import click
-import signal
 import sys
 import webbrowser
+from typing import List, Optional
+
+import click
 
 from .server import Server
 
+
 @click.group()
-def cli():
+def cli() -> None:
     """
     Command-line interface entry point for the Deephaven embedded server application.
     Accepts a command to start the application and the arguments to use.
@@ -22,19 +24,44 @@ def cli():
 @click.option("--port", default=None, type=int, help="The port to bind to.")
 @click.option("--jvm-args", default=None, help="The JVM arguments to use.")
 @click.option("--extra-classpath", default=None, help="The extra classpath to use.")
-@click.option("--default-jvm-args", default=None, help="The advanced JVM arguments to use in place of the default ones that Deephaven recommends.")
-@click.option('--browser/--no-browser', default=True, help="Whether to open the browser when the server starts.")
-def server(host, port, jvm_args, extra_classpath, default_jvm_args, browser):
+@click.option(
+    "--default-jvm-args",
+    default=None,
+    help="The advanced JVM arguments to use in place of the default ones that Deephaven recommends.",
+)
+@click.option(
+    "--browser/--no-browser",
+    default=True,
+    help="Whether to open the browser when the server starts.",
+)
+def server(
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    jvm_args: Optional[str] = None,
+    extra_classpath: Optional[str] = None,
+    default_jvm_args: Optional[str] = None,
+    browser: bool = True,
+) -> None:
     """
     Start the Deephaven server.
     """
     click.echo("Starting Deephaven server...")
 
-    jvm_args = jvm_args.split() if jvm_args else None
-    default_jvm_args = default_jvm_args.split() if default_jvm_args else None
-    extra_classpath = extra_classpath.split() if extra_classpath else None
+    jvm_args_l: Optional[List[str]] = jvm_args.split() if jvm_args else None
+    default_jvm_args_l: Optional[List[str]] = (
+        default_jvm_args.split() if default_jvm_args else None
+    )
+    extra_classpath_l: Optional[List[str]] = (
+        extra_classpath.split() if extra_classpath else None
+    )
 
-    s = Server(host=host, port=port, jvm_args=jvm_args, extra_classpath=extra_classpath, default_jvm_args=default_jvm_args)
+    s = Server(
+        host=host,
+        port=port,
+        jvm_args=jvm_args_l,
+        extra_classpath=extra_classpath_l,
+        default_jvm_args=default_jvm_args_l,
+    )
     s.start()
 
     target_url_or_default = s.server_config.target_url_or_default

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.liveness;
 
@@ -21,9 +21,6 @@ import java.util.concurrent.TimeUnit;
 public final class Liveness {
 
     public static final Logger log = LoggerFactory.getLogger(Liveness.class);
-
-    static final boolean REFERENCE_TRACKING_DISABLED =
-            Configuration.getInstance().getBooleanWithDefault("Liveness.referenceTrackingDisabled", false);
 
     public static final boolean DEBUG_MODE_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("Liveness.debugModeEnabled", false);

@@ -49,4 +49,4 @@ scope.release()
 
 - [How to use Liveness Scopes](../../conceptual/liveness-scope-concept.md)
 - [`liveness_scope`](./liveness-scope.md)
-- [Pydoc](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope)

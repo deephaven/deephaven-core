@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -29,8 +29,8 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 
-import gnu.trove.list.TByteList;
-import gnu.trove.list.array.TByteArrayList;
+import it.unimi.dsi.fastutil.bytes.ByteList;
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.mutable.MutableInt;
 import org.junit.Rule;
@@ -145,7 +145,7 @@ public class TestRedirectedColumnSource {
                 () -> a.naturalJoin(a, "I2=IntVal", "BoolVal2=BoolVal"));
         showWithRowSet(b);
 
-        final TByteList byteList = new TByteArrayList(6);
+        final ByteList byteList = new ByteArrayList(6);
         final ColumnSource<?> reinterpretedB = b.getColumnSource("BoolVal2").reinterpret(byte.class);
         b.getRowSet().forAllRowKeys(x -> {
             final byte value = reinterpretedB.getByte(x);
@@ -158,7 +158,7 @@ public class TestRedirectedColumnSource {
             expecteds[idx.get()] = BooleanUtils.booleanAsByte(boolVal);
             idx.increment();
         });
-        assertArrayEquals(expecteds, byteList.toArray());
+        assertArrayEquals(expecteds, byteList.toByteArray());
 
         try (final ChunkSource.GetContext context = reinterpretedB.makeGetContext(6)) {
             final ByteChunk<? extends Values> result = reinterpretedB.getChunk(context, b.getRowSet()).asByteChunk();
@@ -187,7 +187,7 @@ public class TestRedirectedColumnSource {
 
         final byte[] nullBytes = new byte[6];
         Arrays.fill(nullBytes, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
-        assertArrayEquals(nullBytes, byteList.toArray());
+        assertArrayEquals(nullBytes, byteList.toByteArray());
 
         try (final ChunkSource.GetContext context = reinterpretedC.makeGetContext(6)) {
             final ByteChunk<? extends Values> result = reinterpretedC.getChunk(context, b.getRowSet()).asByteChunk();
@@ -232,7 +232,7 @@ public class TestRedirectedColumnSource {
             System.out.println(value);
             byteList.add(value);
         });
-        assertArrayEquals(expecteds, byteList.toArray());
+        assertArrayEquals(expecteds, byteList.toByteArray());
 
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }

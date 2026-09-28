@@ -1,12 +1,13 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.plot.datasets.categoryerrorbar;
 
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.engine.table.Table;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +39,13 @@ public class CategoryErrorBarDataSeriesKernel {
     private Collection<Comparable> categories = Collections.emptyList();
 
     /** A lookup for the index of a particular category within the series. */
-    private final TObjectLongHashMap<Comparable> catIndex = new TObjectLongHashMap<>(10, .75f, -1);
+    private final Object2LongMap<Comparable> catIndex = newCatIndex();
+
+    private static Object2LongMap<Comparable> newCatIndex() {
+        final Object2LongMap<Comparable> m = new Object2LongOpenHashMap<>(10, .75f);
+        m.defaultReturnValue(-1);
+        return m;
+    }
 
     /** The mapping of category to actual value */
     private final Map<Comparable, Number> data = new HashMap<>();
@@ -118,7 +125,7 @@ public class CategoryErrorBarDataSeriesKernel {
      * @return the key of the specified category within the original data set. or -1 if not present.
      */
     public synchronized long getCategoryKey(final Comparable<?> category) {
-        return catIndex.get(category);
+        return catIndex.getLong(category);
     }
 
     public Number getStartY(final Comparable<?> category) {

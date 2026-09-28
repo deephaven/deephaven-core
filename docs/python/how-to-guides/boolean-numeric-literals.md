@@ -22,8 +22,8 @@ source_meta = source.meta_table
 
 Numeric literals in the query language can be integers or floating-point numbers. By default, an integer literal is treated as a 32-bit signed integer (Java primitive `int`), and a floating-point literal is treated as a 64-bit floating-point number (Java primitive `double`). You can specify the type of a numeric literal by appending a suffix to the number:
 
-- `L` or `l` for a 64-bit signed integer (Java primitive `long`)
-- `f` for a 32-bit floating-point number (Java primitive `float`)
+- `L` or `l` for a 64-bit signed integer (Java primitive `long`).
+- `f` for a 32-bit floating-point number (Java primitive `float`).
 
 The following example constructs four columns, each with a numeric literal. The table metadata is also shown:
 

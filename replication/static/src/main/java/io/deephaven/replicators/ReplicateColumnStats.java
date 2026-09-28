@@ -1,19 +1,18 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.shortToAllIntegralTypes;
 import static io.deephaven.replication.ReplicationUtils.globalReplacements;
@@ -45,23 +44,31 @@ public class ReplicateColumnStats {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.removeImport(lines,
-                "import gnu.trove.set.TObjectSet;",
-                "import gnu.trove.set.hash.TObjectHashSet;",
                 "import io.deephaven.util.QueryConstants;");
         lines = ReplicationUtils.addImport(lines,
-                Set.class,
-                HashSet.class);
+                ArrayTypeUtils.class);
         lines = globalReplacements(lines,
                 "QueryConstants.NULL_OBJECT", "null",
                 "\\? extends Attributes.Values", "?, ? extends Attributes.Values",
                 "ObjectChunk<[?] ", "ObjectChunk<?, ? ",
-                " TObjectLongMap", " TObjectLongMap<Object>",
-                " TObjectLongHashMap", " TObjectLongHashMap<>",
-                " TObjectSet", " Set<Object>",
-                " TObjectHashSet", " HashSet<>",
+                // charToObject capitalizes the leading C in the package "chars" to "Objects"; fix back to "objects".
+                "it\\.unimi\\.dsi\\.fastutil\\.Objects\\.", "it.unimi.dsi.fastutil.objects.",
+                "Object2LongOpenHashMap countValues", "Object2LongOpenHashMap<Object> countValues",
+                "new Object2LongOpenHashMap\\(\\)", "new Object2LongOpenHashMap<>()",
+                "ObjectSet uniqueValues", "ObjectSet<Object> uniqueValues",
+                "new ObjectOpenHashSet\\(\\)", "new ObjectOpenHashSet<>()",
                 "new ChunkedObjectColumnIterator", "new ChunkedObjectColumnIterator<>",
                 "\\(ObjectColumnIterator", "(ObjectColumnIterator<Object>",
                 "nextObject\\(\\)", "next()");
+        lines = ReplicationUtils.replaceRegion(lines, "add_entries", List.of("" +
+                "        if (columnSource.getType().isArray()) {\n" +
+                "            Object2LongMaps.fastForEach(countValues, entry -> sorted\n" +
+                "                    .add(Map.entry(ArrayTypeUtils.toString(entry.getKey()), entry.getLongValue())));\n"
+                +
+                "        } else {\n" +
+                "            Object2LongMaps.fastForEach(countValues, entry -> sorted\n" +
+                "                    .add(Map.entry(Objects.toString(entry.getKey()), entry.getLongValue())));\n" +
+                "        }"));
         FileUtils.writeLines(objectFile, lines);
     }
 }

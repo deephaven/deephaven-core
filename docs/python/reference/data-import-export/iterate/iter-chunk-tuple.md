@@ -99,8 +99,7 @@ for chunk in source.iter_chunk_tuple(chunk_size=2, tuple_name="my_tuple"):
 
 ## Related documentation
 
-<!-- TODO: Link to API documentation when it's available. -->
-
 - [`iter_chunk_dict`](./iter-chunk-dict.md)
 - [`iter_dict`](./iter-dict.md)
 - [`iter_tuple`](./iter-tuple.md)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table.iter_chunk_tuple)
