@@ -5,13 +5,14 @@ package io.deephaven.base.ringbuffer;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.AssertionFailure;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertThrows;
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
-public class TestCharRingBuffer extends TestCase {
+public class TestCharRingBuffer {
 
     final char SENTINEL = Character.MIN_VALUE;
 
@@ -101,6 +102,7 @@ public class TestCharRingBuffer extends TestCase {
     char E = 'E';
     char F = 'F';
 
+    @Test
     public void testAddRemove() {
 
         CharRingBuffer rb = new CharRingBuffer(3);
@@ -181,6 +183,7 @@ public class TestCharRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testOfferPoll() {
         CharRingBuffer rb = new CharRingBuffer(3);
 
@@ -240,6 +243,7 @@ public class TestCharRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowSimple() {
         CharRingBuffer rb = new CharRingBuffer(4);
 
@@ -264,6 +268,7 @@ public class TestCharRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowComplex() {
         CharRingBuffer rb = new CharRingBuffer(5);
 
@@ -293,6 +298,7 @@ public class TestCharRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testIterator() {
         CharRingBuffer rb = new CharRingBuffer(3);
 
@@ -351,6 +357,7 @@ public class TestCharRingBuffer extends TestCase {
                 iterFinal::remove);
     }
 
+    @Test
     public void testBack() {
         CharRingBuffer rb = new CharRingBuffer(5);
 
@@ -362,6 +369,7 @@ public class TestCharRingBuffer extends TestCase {
         assertEquals(rb.back(), C);
     }
 
+    @Test
     public void testBackWhenEmpty() {
         CharRingBuffer rb = new CharRingBuffer(5);
         try {
@@ -372,6 +380,7 @@ public class TestCharRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testBackTailIsZero() {
         CharRingBuffer rb = new CharRingBuffer(5, false);
 
@@ -386,6 +395,7 @@ public class TestCharRingBuffer extends TestCase {
         assertEquals(rb.back(), F);
     }
 
+    @Test
     public void testLargeAmounts() {
         CharRingBuffer rb = new CharRingBuffer(3);
 
@@ -405,6 +415,7 @@ public class TestCharRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testAddExceptionWhenFull() {
         CharRingBuffer rb = new CharRingBuffer(4, false);
         assert (rb.add(A));
@@ -417,6 +428,7 @@ public class TestCharRingBuffer extends TestCase {
                 () -> rb.add(E));
     }
 
+    @Test
     public void testAddOverwriteAndOffer() {
         CharRingBuffer rb = new CharRingBuffer(4, false);
         assert (4 == rb.remaining());
@@ -462,7 +474,7 @@ public class TestCharRingBuffer extends TestCase {
         assert (A == rb.peekBack(A));
     }
 
-
+    @Test
     public void testMultipleRemove() {
         CharRingBuffer rb = new CharRingBuffer(10, false);
 
@@ -505,6 +517,7 @@ public class TestCharRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testAddRemoveUnsafe() {
         CharRingBuffer rbNoGrow = new CharRingBuffer(3, false);
 
@@ -528,7 +541,6 @@ public class TestCharRingBuffer extends TestCase {
         assertEquals(rbNoGrow.removeUnsafe(), C);
         assertEmpty(rbNoGrow);
 
-
         CharRingBuffer rbGrow = new CharRingBuffer(3, true);
 
         for (int size = 10; size < 1_000_000; size *= 10) {
@@ -540,6 +552,7 @@ public class TestCharRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testOverflow() {
         CharRingBuffer rbA = new CharRingBuffer(0);
         // this should throw

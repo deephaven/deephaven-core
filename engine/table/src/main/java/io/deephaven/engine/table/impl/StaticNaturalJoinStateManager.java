@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.engine.exceptions.ExactJoinMissingKeyException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -17,6 +18,12 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
 public abstract class StaticNaturalJoinStateManager {
+    /**
+     * The right row key reported for a key that has several right rows. The static state managers store this value as a
+     * slot's right state; the incremental state managers store a duplicate-location token instead and translate it to
+     * this value in {@code getRightRowKey}. It coincides with the incremental tombstone state, so callers may only ask
+     * about slots that hold a live key.
+     */
     public static final long DUPLICATE_RIGHT_VALUE = -2;
     public static final long NO_RIGHT_ENTRY_VALUE = RowSequence.NULL_ROW_KEY;
 
@@ -36,7 +43,7 @@ public abstract class StaticNaturalJoinStateManager {
     @SuppressWarnings("WeakerAccess")
     public void checkExactMatch(long leftKeyIndex, long rightSide) {
         if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightSide == NO_RIGHT_ENTRY_VALUE) {
-            throw new RuntimeException("Tables don't have one-to-one mapping - no mappings for key "
+            throw new ExactJoinMissingKeyException("Tables don't have one-to-one mapping - no mappings for key "
                     + extractKeyStringFromSourceTable(leftKeyIndex) + ".");
         }
     }

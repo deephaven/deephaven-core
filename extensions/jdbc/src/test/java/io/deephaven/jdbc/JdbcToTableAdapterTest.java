@@ -3,6 +3,8 @@
 //
 package io.deephaven.jdbc;
 
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -17,9 +19,11 @@ import org.junit.*;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.time.*;
 import java.util.InputMismatchException;
 import java.util.Set;
@@ -610,6 +614,53 @@ public class JdbcToTableAdapterTest {
 
         Assert.assertEquals(expectedTime.toNanoOfDay(), dtcs.getLong(0));
         Assert.assertEquals(QueryConstants.NULL_LONG, dtcs.getLong(1));
+    }
+
+    /**
+     * Binding a pre-Epoch {@link Instant} used to fail, because the nano-of-second was derived from negative epoch
+     * nanos with a remainder that truncates towards zero, and {@link java.sql.Timestamp#setNanos} rejects a negative.
+     */
+    @Test
+    public void testTimestampInstantBindFromChunk() throws SQLException {
+        stmt.executeUpdate("DROP TABLE IF EXISTS TimestampBindingTable");
+        stmt.executeUpdate("CREATE TABLE TimestampBindingTable (" +
+                "   \"TimestampCol\" TIMESTAMP(9)" +
+                ");");
+
+        final JdbcTypeMapper.Context context =
+                JdbcTypeMapper.Context.of(TimeZone.getTimeZone(TZ_UTC), ",", true);
+        final JdbcTypeMapper.DataTypeMapping<Instant> mapping =
+                new JdbcTypeMapper.TimestampInstantDataTypeMapping(Types.TIMESTAMP);
+
+        // Pre-Epoch with a non-zero nano-of-second, the same value post-Epoch, and the Epoch boundary itself.
+        final Instant[] values = new Instant[] {
+                LocalDateTime.parse("1900-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC),
+                LocalDateTime.parse("2000-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC),
+                DateTimeUtils.epochNanosToInstant(-1L),
+                DateTimeUtils.epochNanosToInstant(0L),
+                DateTimeUtils.epochNanosToInstant(1L)};
+
+        try (final WritableObjectChunk<Instant, Values> chunk =
+                WritableObjectChunk.makeWritableChunk(values.length)) {
+            chunk.copyFromArray(values, 0, 0, values.length);
+            try (final PreparedStatement insert =
+                    conn.prepareStatement("INSERT INTO TimestampBindingTable VALUES (?);")) {
+                for (int ii = 0; ii < values.length; ++ii) {
+                    mapping.bindFromChunk(chunk, ii, insert, 1, context);
+                    insert.executeUpdate();
+                }
+            }
+        }
+
+        try (final WritableObjectChunk<Instant, Values> chunk =
+                WritableObjectChunk.makeWritableChunk(values.length)) {
+            final ResultSet resultSet = stmt.executeQuery("SELECT * FROM TimestampBindingTable");
+            for (int ii = 0; ii < values.length; ++ii) {
+                Assert.assertTrue(resultSet.next());
+                mapping.bindToChunk(chunk, ii, resultSet, 1, context);
+                Assert.assertEquals(values[ii], chunk.get(ii));
+            }
+        }
     }
 
     @Test

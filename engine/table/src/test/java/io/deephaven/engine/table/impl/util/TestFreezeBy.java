@@ -14,7 +14,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -22,8 +22,10 @@ import java.util.List;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 public class TestFreezeBy extends RefreshingTableTestCase {
+    @Test
     public void testSimpleTypes() {
         final Instant timeBase = DateTimeUtils.parseInstant("2020-09-10T09:00:00 NY");
         QueryScope.addParam("freezeByTimeBase", timeBase);
@@ -87,6 +89,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         QueryScope.addParam("freezeByTimeBase", null);
     }
 
+    @Test
     public void testCompositeKeys() {
         final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A", "A", "C"),
                 intCol("Key2", 101, 102, 103), intCol("Sentinel", 1, 2, 3));
@@ -112,6 +115,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
                 intCol("Sentinel", 1, 2, 3, 5)), frozen);
     }
 
+    @Test
     public void testNoKeys() {
         final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A"), intCol("Sentinel", 1));
         final Table frozen = FreezeBy.freezeBy(input);
@@ -171,12 +175,13 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         assertTableEquals(newExpect, frozen);
     }
 
+    @Test
     public void testDuplicates() {
         final QueryTable input =
                 TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"), intCol("Sentinel", 1, 2, 3));
         try {
             FreezeBy.freezeBy(input);
-            TestCase.fail("Expected exception.");
+            fail("Expected exception.");
         } catch (AggregationOperatorException aoe) {
             assertTrue(aoe.getCause() instanceof IllegalStateException);
             assertEquals("FreezeBy only allows one row per state!", aoe.getCause().getMessage());
@@ -203,7 +208,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
 
         try {
             FreezeBy.freezeBy(input, "Key");
-            TestCase.fail("Expected exception.");
+            fail("Expected exception.");
         } catch (AggregationOperatorException aoe) {
             assertTrue(aoe.getCause() instanceof IllegalStateException);
             assertEquals("FreezeBy only allows one row per state!", aoe.getCause().getMessage());

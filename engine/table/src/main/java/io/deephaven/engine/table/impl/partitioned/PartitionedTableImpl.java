@@ -696,7 +696,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             }
             final QueryTable child = parent.getSubTable(
                     parent.getRowSet(), parent.getModifiedColumnSetForUpdates(), parent.getAttributes());
-            parent.propagateFlatness(child);
+            parent.propagateFlatness(child, usePrev);
             return new Result<>(child, new BaseTable.ListenerImpl(getDescription(), parent, child) {
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {

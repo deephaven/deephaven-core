@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.annotations.InternalUseOnly;
 
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
@@ -31,8 +31,22 @@ public interface OrderedLongSet {
 
     void ixRelease();
 
-    @VisibleForTesting
+    /**
+     * @return The number of references outstanding to this set; a set with more than one copies itself before it can be
+     *         mutated
+     */
+    @InternalUseOnly
     int ixRefCount();
+
+    /**
+     * A measure of what a traversal of this OrderedLongSet costs, which is different for each implementation. This is
+     * used, for example, to determine if {@code a.insert(b)} or {@code b.insert(a)} is less expensive to compute. The
+     * unit is not identical across types: spans for an {@link RspBitmap}, positions in the packed array for a
+     * {@link SortedRanges}, or simply one for a {@link SingleRange}.
+     *
+     * @return The number of entries stored, zero when the set is empty
+     */
+    int ixEntryCount();
 
     OrderedLongSet ixInsert(long key);
 
@@ -224,6 +238,11 @@ public interface OrderedLongSet {
         @Override
         public int ixRefCount() {
             return 1;
+        }
+
+        @Override
+        public int ixEntryCount() {
+            return 0;
         }
 
         @Override

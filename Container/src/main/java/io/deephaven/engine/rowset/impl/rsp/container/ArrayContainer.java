@@ -25,10 +25,12 @@ public class ArrayContainer extends Container {
     // objects to 8 bytes boundaries.
     // So an array of 4 elements uses: 12 + 2*4 + 4 padding = 24 bytes = 3*8 bytes.
     // The 4 bytes of padding are wasted and can be used for another 2 short elements.
-    private static final int DEFAULT_INIT_SIZE = 6;
+    // The default initial capacity of 5 values plus the reserved slot is 6 shorts, which fills those 24 bytes.
+    private static final int DEFAULT_INIT_CAPACITY = 5;
 
-    // containers with DEFAULT_MAX_SZE or less integers should be ArrayContainers
-    static final int DEFAULT_MAX_SIZE = 4096 - 6; // 12 bytes of object overhead is 6 shorts.
+    // containers with DEFAULT_MAX_SIZE or less integers should be ArrayContainers; at that cardinality the content
+    // array (12 bytes of array header, the values, and the reserved slot) is exactly 8192 bytes, the size of a bitmap.
+    static final int DEFAULT_MAX_SIZE = 4096 - 6 - 1;
 
     public static final int SWITCH_CONTAINER_CARDINALITY_THRESHOLD = DEFAULT_MAX_SIZE - DEFAULT_MAX_SIZE / 16;
 
@@ -38,25 +40,107 @@ public class ArrayContainer extends Container {
 
     protected int cardinality = 0;
 
+    /**
+     * The values, in increasing unsigned order, at indices {@code [0, cardinality)}. The last element is reserved: it
+     * never holds a value, so a container's capacity is {@code content.length - 1}, and it is where the array's
+     * {@link #isContentShared(short[]) shared flag} lives; see {@link #getContent()}.
+     */
     protected short[] content;
 
-    protected boolean shared = false;
+    /**
+     * Bit set in the reserved last element of a content array once the array is shared, copy-on-write, by more than one
+     * owner. The remaining bits of the slot are unused.
+     */
+    private static final short CONTENT_SHARED_FLAG = 1;
 
+    /**
+     * The backing array of this container, which the caller may store in place of the container itself, as
+     * {@code io.deephaven.engine.rowset.impl.rsp.RspArray} does to avoid an object per small container. The array
+     * stands on its own: its values occupy indices {@code [0, cardinality)}, and its last element is reserved for the
+     * shared flag rather than a value, so a holder of the bare array can {@link #markContentShared(short[]) mark} it
+     * shared or {@link #isContentShared(short[]) ask} whether it is, without a container object to hold the flag.
+     *
+     * <p>
+     * The flag lives in the array, rather than in a word beside it, so that marking it is a write to the array itself
+     * and to nothing else: whoever holds a reference to the array can only ever affect that array by marking it, never
+     * a span the array's owner has since replaced it with. The flag is only ever set, never cleared; a shared array is
+     * never again written in place by anyone, so a stale set flag costs at most one copy.
+     *
+     * @return this container's backing array
+     */
     public short[] getContent() {
         return content;
     }
 
-    protected ArrayContainer(final short[] content, final int cardinality, final boolean shared) {
+    /**
+     * Whether the content array is shared, copy-on-write, by more than one owner; see {@link #getContent()}.
+     *
+     * @param content a content array, as returned by {@link #getContent()}
+     * @return whether the array is marked shared
+     */
+    public static boolean isContentShared(final short[] content) {
+        return (content[content.length - 1] & CONTENT_SHARED_FLAG) != 0;
+    }
+
+    /**
+     * Mark the content array shared, copy-on-write, by more than one owner; see {@link #getContent()}. Idempotent, and
+     * safe to call concurrently with another marking of the same array and with the owner's in-place writes of values,
+     * which never touch the reserved slot.
+     *
+     * @param content a content array, as returned by {@link #getContent()}
+     */
+    public static void markContentShared(final short[] content) {
+        content[content.length - 1] |= CONTENT_SHARED_FLAG;
+    }
+
+    /**
+     * The length of a content array able to hold {@code capacity} values: the values, the reserved slot, and whatever
+     * padding brings the array up to the next 8 byte boundary the allocator would round it to anyway.
+     */
+    private static int contentLength(final int capacity) {
+        return shortArraySizeRounding(capacity + 1);
+    }
+
+    /**
+     * A fresh, unshared content array able to hold {@code capacity} values, for a caller that fills it and then hands
+     * it to {@link #makeByWrapping(short[], int)}: the values go at indices {@code [0, capacity)}, and the array's
+     * reserved last slot and any rounding padding beyond them are already in place.
+     *
+     * @param capacity the number of values the array must be able to hold
+     * @return a new array, sized as this container would size its own
+     */
+    public static short[] allocateContent(final int capacity) {
+        return new short[contentLength(capacity)];
+    }
+
+    /** A fresh, unshared content array able to hold {@code capacity} values. */
+    private static short[] newContent(final int capacity) {
+        return allocateContent(capacity);
+    }
+
+    /** The number of values the content array can hold. */
+    int capacity() {
+        return content.length - 1;
+    }
+
+    /**
+     * Wrap an existing array without checks, for {@link #makeByWrapping} and for subclasses that install their content
+     * later.
+     */
+    protected ArrayContainer(final short[] content, final int cardinality) {
+        if (content != null && cardinality >= content.length) {
+            throw new IllegalArgumentException(
+                    "cardinality=" + cardinality + " leaves no reserved slot in an array of length " + content.length);
+        }
         this.content = content;
         this.cardinality = cardinality;
-        this.shared = shared;
     }
 
     /**
      * Create an array container with default capacity
      */
     public ArrayContainer() {
-        this(DEFAULT_INIT_SIZE);
+        this(DEFAULT_INIT_CAPACITY);
     }
 
     /**
@@ -65,7 +149,7 @@ public class ArrayContainer extends Container {
      * @param capacity The capacity of the container
      */
     public ArrayContainer(final int capacity) {
-        content = new short[shortArraySizeRounding(capacity)];
+        content = newContent(capacity);
     }
 
     /**
@@ -77,7 +161,7 @@ public class ArrayContainer extends Container {
      */
     ArrayContainer(final int firstOfRun, final int lastOfRun) {
         final int valuesInRange = lastOfRun - firstOfRun;
-        content = new short[shortArraySizeRounding(valuesInRange)];
+        content = newContent(valuesInRange);
         for (int i = 0; i < valuesInRange; ++i) {
             content[i] = (short) (firstOfRun + i);
         }
@@ -86,7 +170,7 @@ public class ArrayContainer extends Container {
 
     private ArrayContainer(final ArrayContainer src, final int startRank, final int endRank) {
         cardinality = endRank - startRank;
-        content = new short[shortArraySizeRounding(cardinality)];
+        content = newContent(cardinality);
         System.arraycopy(src.content, startRank, content, 0, cardinality);
     }
 
@@ -100,19 +184,14 @@ public class ArrayContainer extends Container {
      */
     private ArrayContainer(final int newCapacity, final short[] arr, final int offset, final int sz) {
         cardinality = sz;
-        final short[] cs = new short[shortArraySizeRounding(newCapacity)];
+        final short[] cs = newContent(newCapacity);
         System.arraycopy(arr, offset, cs, 0, sz);
         content = cs;
     }
 
-    public ArrayContainer(final short[] arr, final int sz) {
-        cardinality = sz;
-        content = arr;
-    }
-
     // Caller should ensure arguments provided in increasing unsigned order.
     ArrayContainer(final short v0, final short v1, final short v2) {
-        content = new short[DEFAULT_INIT_SIZE];
+        content = newContent(DEFAULT_INIT_CAPACITY);
         content[0] = v0;
         content[1] = v1;
         content[2] = v2;
@@ -121,14 +200,14 @@ public class ArrayContainer extends Container {
 
     // Caller should ensure arguments provided in increasing unsigned order.
     ArrayContainer(final short v0, final short v1) {
-        content = new short[DEFAULT_INIT_SIZE];
+        content = newContent(DEFAULT_INIT_CAPACITY);
         content[0] = v0;
         content[1] = v1;
         cardinality = 2;
     }
 
     ArrayContainer(final short v) {
-        content = new short[DEFAULT_INIT_SIZE];
+        content = newContent(DEFAULT_INIT_CAPACITY);
         content[0] = v;
         cardinality = 1;
     }
@@ -153,17 +232,29 @@ public class ArrayContainer extends Container {
     /**
      * Construct a new ArrayContainer using the provided array. The container takes ownership of the array.
      *
-     * @param arr array with values in increasing unsigned short order. The container takes ownership of this array.
-     * @param sz number of elements in arr.
+     * @param arr array with values in increasing unsigned short order, with at least one element beyond them for the
+     *        container's reserved last slot; whether that slot is marked shared is taken as is. The container takes
+     *        ownership of this array.
+     * @param sz number of values in arr.
      */
-    @SuppressWarnings("unused")
     public static ArrayContainer makeByWrapping(final short[] arr, final int sz) {
         return new ArrayContainer(arr, sz);
     }
 
-    public ArrayContainer(final short[] newContent) {
-        cardinality = newContent.length;
-        content = newContent;
+    /**
+     * Create a new container holding a copy of the values in the provided array. A convenience for tests; production
+     * code fills an array from {@link #allocateContent(int)} and hands it to {@link #makeByWrapping(short[], int)}
+     * instead, which allocates once.
+     *
+     * <p>
+     * Unlike {@code makeByWrapping}, the argument is plain values only: every element is a value, and there is no
+     * reserved slot in it. The container copies them into a content array of its own, allocated with the reserved last
+     * slot, and does not keep a reference to the argument.
+     *
+     * @param values array with values in increasing unsigned short order, all of which the container holds.
+     */
+    ArrayContainer(final short[] values) {
+        this(values.length, values, 0, values.length);
     }
 
     @Override
@@ -276,7 +367,7 @@ public class ArrayContainer extends Container {
     }
 
     private Container isetImplSecondHalf(final short x, final int loc, final PositionHint positionHintOut) {
-        if (cardinality >= content.length) {
+        if (cardinality >= capacity()) {
             increaseCapacity();
         }
         // insertion : shift the elements > x by one position to
@@ -355,7 +446,7 @@ public class ArrayContainer extends Container {
         if (value2.isEmpty()) {
             return cowRef();
         }
-        final ArrayContainer answer = new ArrayContainer(content.length);
+        final ArrayContainer answer = new ArrayContainer(capacity());
         int pos = 0;
         for (int k = 0; k < cardinality; ++k) {
             short val = content[k];
@@ -512,7 +603,7 @@ public class ArrayContainer extends Container {
                 return a.iset(x);
             }
             final ArrayContainer ans = deepcopyIfShared();
-            if (ans.cardinality >= ans.content.length) {
+            if (ans.cardinality >= ans.capacity()) {
                 ans.increaseCapacity();
             }
             // insertion : shift the elements > x by one position to
@@ -713,8 +804,8 @@ public class ArrayContainer extends Container {
          * always
          */
         final ArrayContainer ans;
-        if (newcardinality > content.length) {
-            short[] destination = new short[calculateCapacity(newcardinality)];
+        if (newcardinality > capacity()) {
+            short[] destination = newContent(calculateCapacity(newcardinality));
             // if b > 0, we copy from 0 to b. Do nothing otherwise.
             System.arraycopy(content, 0, destination, 0, indexstart);
             // set values from b to e
@@ -728,15 +819,15 @@ public class ArrayContainer extends Container {
             System.arraycopy(content, indexend,
                     destination, indexstart + rangelength,
                     cardinality - indexend);
-            if (shared) {
-                ans = new ArrayContainer(destination, newcardinality);
+            if (isShared()) {
+                ans = makeByWrapping(destination, newcardinality);
             } else {
                 content = destination;
                 cardinality = newcardinality;
                 ans = this;
             }
         } else {
-            if (shared) {
+            if (isShared()) {
                 ans = new ArrayContainer(calculateCapacity(newcardinality));
                 System.arraycopy(content, 0, ans.content, 0, indexstart);
             } else {
@@ -768,11 +859,12 @@ public class ArrayContainer extends Container {
         }
         final ArrayContainer ans;
         final int firstIndexNewRange = cardinality;
-        if (shared || newCardinality > content.length) {
-            short[] destination = new short[appendCapacity(newCardinality)];
+        final boolean shared = isShared();
+        if (shared || newCardinality > capacity()) {
+            short[] destination = newContent(appendCapacity(newCardinality));
             System.arraycopy(content, 0, destination, 0, cardinality);
             if (shared) {
-                ans = new ArrayContainer(destination, newCardinality);
+                ans = makeByWrapping(destination, newCardinality);
             } else {
                 content = destination;
                 cardinality = newCardinality;
@@ -849,24 +941,21 @@ public class ArrayContainer extends Container {
     }
 
     private static int nextCapacity(final int oldCapacity) {
-        return (oldCapacity == 0) ? DEFAULT_INIT_SIZE
-                : oldCapacity < 64 ? shortArraySizeRounding(oldCapacity * 2)
-                        : oldCapacity < 1067 ? shortArraySizeRounding(oldCapacity * 3 / 2)
-                                : shortArraySizeRounding(oldCapacity * 5 / 4);
+        return (oldCapacity == 0) ? DEFAULT_INIT_CAPACITY
+                : oldCapacity < 64 ? oldCapacity * 2
+                        : oldCapacity < 1067 ? oldCapacity * 3 / 2
+                                : oldCapacity * 5 / 4;
     }
 
     // temporarily allow an illegally large size, as long as the operation creating
     // the illegal container does not return it.
     private void increaseCapacity(final boolean allowIllegalSize) {
-        int newCapacity = nextCapacity(content.length);
-        if (newCapacity > ArrayContainer.DEFAULT_MAX_SIZE && !allowIllegalSize) {
-            newCapacity = ArrayContainer.DEFAULT_MAX_SIZE;
-        }
-        // if we are within ~1/16th of the max, go to max
+        int newCapacity = nextCapacity(capacity());
+        // if we are within ~1/16th of the max, or over, go to max
         if (newCapacity > ArrayContainer.DEFAULT_MAX_SIZE - 256 && !allowIllegalSize) {
             newCapacity = ArrayContainer.DEFAULT_MAX_SIZE;
         }
-        final short[] vs = new short[newCapacity];
+        final short[] vs = newContent(newCapacity);
         System.arraycopy(content, 0, vs, 0, cardinality);
         content = vs;
     }
@@ -888,18 +977,14 @@ public class ArrayContainer extends Container {
      * @return The capacity to allocate, always at least {@code newCardinality}
      */
     private int appendCapacity(final int newCardinality) {
-        final int newCapacity = Math.max(shortArraySizeRounding(newCardinality), nextCapacity(content.length));
+        final int newCapacity = Math.max(newCardinality, nextCapacity(capacity()));
         // Within ~1/16th of the max there is no point holding back room to grow.
         return newCapacity > DEFAULT_MAX_SIZE - 256 ? DEFAULT_MAX_SIZE : newCapacity;
     }
 
-    private int calculateCapacity(final int min) {
-        int newCapacity = shortArraySizeRounding(min);
+    private static int calculateCapacity(final int min) {
         // if we are within ~1/16th of the max, or over, go to max
-        if (newCapacity > ArrayContainer.DEFAULT_MAX_SIZE - 256) {
-            newCapacity = ArrayContainer.DEFAULT_MAX_SIZE;
-        }
-        return newCapacity;
+        return min > ArrayContainer.DEFAULT_MAX_SIZE - 256 ? ArrayContainer.DEFAULT_MAX_SIZE : min;
     }
 
     @Override
@@ -930,13 +1015,13 @@ public class ArrayContainer extends Container {
             if (newCardinality > DEFAULT_MAX_SIZE) {
                 return toBiggerCardinalityContainer(newCardinality).inot(firstOfRange, exclusiveEndOfRange);
             }
-            if (shared) {
+            if (isShared()) {
                 ans = new ArrayContainer(calculateCapacity(newCardinality));
                 System.arraycopy(content, 0, ans.content, 0, lastIndex + 1);
             } else {
                 ans = this;
-                if (newCardinality > content.length) {
-                    content = new short[calculateCapacity(newCardinality)];
+                if (newCardinality > capacity()) {
+                    content = newContent(calculateCapacity(newCardinality));
                     System.arraycopy(src, 0, content, 0, lastIndex + 1);
                 }
             }
@@ -945,11 +1030,11 @@ public class ArrayContainer extends Container {
                     cardinality - 1 - lastIndex);
             ans.negateRange(newValuesInRange, startIndex, lastIndex, firstOfRange, exclusiveEndOfRange);
         } else { // no alloc expansion needed
-            if (shared) {
+            if (isShared()) {
                 if (cardinalityChange == 0) {
                     ans = deepCopy();
                 } else {
-                    ans = new ArrayContainer(content.length);
+                    ans = new ArrayContainer(capacity());
                     System.arraycopy(content, 0, ans.content, 0, lastIndex + 1);
                 }
             } else {
@@ -969,7 +1054,7 @@ public class ArrayContainer extends Container {
 
     @Override
     public Container ior(final ArrayContainer value2) {
-        if (shared) {
+        if (isShared()) {
             return or(value2);
         }
         if (value2.isEmpty()) {
@@ -1002,7 +1087,7 @@ public class ArrayContainer extends Container {
             }
             return bc;
         }
-        if (sumOfCardinalities >= content.length) {
+        if (sumOfCardinalities >= capacity()) {
             int newCapacity = calculateCapacity(sumOfCardinalities);
             final ArrayContainer ans = new ArrayContainer(newCapacity);
             ans.cardinality =
@@ -1092,7 +1177,7 @@ public class ArrayContainer extends Container {
             return Container.twoValues(content[i0], content[i1]);
         }
         final ArrayContainer ans;
-        if (inPlace && !shared) {
+        if (inPlace && !isShared()) {
             ans = this;
         } else {
             ans = new ArrayContainer(calculateCapacity(newCardinality));
@@ -1295,7 +1380,7 @@ public class ArrayContainer extends Container {
     }
 
     private void forceAppend(final short val) {
-        if (cardinality == content.length) {
+        if (cardinality == capacity()) {
             increaseCapacity(true);
         }
         content[cardinality++] = val;
@@ -1443,11 +1528,12 @@ public class ArrayContainer extends Container {
     }
 
     private void compact() {
-        if (shared || content.length == cardinality || (cardinality == 0 && content.length == DEFAULT_INIT_SIZE)) {
+        final int compactCapacity = cardinality == 0 ? DEFAULT_INIT_CAPACITY : cardinality;
+        // Nothing to gain when the array is already the length the allocator would round a compact one up to.
+        if (isShared() || content.length == contentLength(compactCapacity)) {
             return;
         }
-        final short[] newContent =
-                new short[cardinality == 0 ? DEFAULT_INIT_SIZE : shortArraySizeRounding(cardinality)];
+        final short[] newContent = newContent(compactCapacity);
         System.arraycopy(content, 0, newContent, 0, cardinality);
         content = newContent;
     }
@@ -1500,7 +1586,7 @@ public class ArrayContainer extends Container {
 
     @Override
     public Container iandRange(final int start, final int end) {
-        return andRangeImpl(!shared, start, end);
+        return andRangeImpl(!isShared(), start, end);
     }
 
     @Override
@@ -1867,17 +1953,11 @@ public class ArrayContainer extends Container {
 
     @Override
     public final void setCopyOnWrite() {
-        if (shared) {
-            return;
-        }
-        shared = true;
-        onCopyOnWrite();
+        markContentShared(content);
     }
 
-    protected void onCopyOnWrite() {}
-
     private ArrayContainer deepcopyIfShared() {
-        return shared ? deepCopy() : this;
+        return isShared() ? deepCopy() : this;
     }
 
     @Override
@@ -1909,6 +1989,6 @@ public class ArrayContainer extends Container {
 
     @Override
     public boolean isShared() {
-        return shared;
+        return isContentShared(content);
     }
 }

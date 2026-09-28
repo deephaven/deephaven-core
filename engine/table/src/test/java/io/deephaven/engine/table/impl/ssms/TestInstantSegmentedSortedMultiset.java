@@ -18,13 +18,14 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for the Instant view of a {@link LongSegmentedSortedMultiset}.
@@ -53,18 +54,21 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
      * two views together rather than restate the expected contents: it is the drift between them that a hand-written
      * extension to replicated code can introduce.
      */
+    @Test
     public void testInstantExtensions() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantExtensions(NODE_SIZE, valueCount);
         }
     }
 
+    @Test
     public void testInstantSubArrays() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantSubArrays(NODE_SIZE, valueCount);
         }
     }
 
+    @Test
     public void testInstantSsmSourceWrapper() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantSsmSourceWrapper(NODE_SIZE, valueCount);
@@ -76,6 +80,7 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
      * itself as its own previous value and must be wrapped in place, while one that has accumulated deltas returns a
      * materialized LongVector that must be converted element by element.
      */
+    @Test
     public void testInstantSsmSourceWrapperColumnSource() {
         final LongSsmBackedSource source = new LongSsmBackedSource();
         source.ensureCapacity(2);

@@ -636,7 +636,7 @@ public final class SingletonContainer extends ImmutableContainer {
 
     @Override
     public Container toLargeContainer() {
-        return new ArrayContainer(new short[] {value});
+        return new ArrayContainer(value);
     }
 
     @Override

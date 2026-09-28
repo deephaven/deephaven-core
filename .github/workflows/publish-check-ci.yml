@@ -19,7 +19,7 @@ jobs:
       # Can't use it yet in this context, https://github.com/actions/download-artifact/issues/60
       - name: Download artifact
         id: download
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
@@ -52,7 +52,7 @@ jobs:
         run: unzip check-ci-results.zip
       - name: Publish Test Results
         if: steps.download.outputs.found == 'true'
-        uses: scacap/action-surefire-report@v1
+        uses: scacap/action-surefire-report@c38a2d74b9840ae8950a4387ae02b637421d0f39 # v1.13.0
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:

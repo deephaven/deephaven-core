@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
+import io.deephaven.base.testing.JMockRule;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import io.deephaven.base.verify.AssertionFailure;
@@ -34,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.ref.WeakReference;
@@ -48,13 +51,16 @@ import java.util.stream.IntStream;
 import static io.deephaven.engine.table.impl.locations.TableLocationState.NULL_SIZE;
 import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.REGION_CAPACITY_IN_ELEMENTS;
 import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link RegionedColumnSourceManager}.
  */
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase", "AutoBoxing", "unchecked",
-        "AnonymousInnerClassMayBeStatic"})
+@SuppressWarnings({"AutoBoxing", "unchecked", "AnonymousInnerClassMayBeStatic"})
 public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
 
     private static final int NUM_COLUMNS = 3;
     private static final int NUM_LOCATIONS = 4;
@@ -113,7 +119,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        componentFactory = mock(RegionedTableComponentFactory.class);
+        componentFactory = jmock.mock(RegionedTableComponentFactory.class);
 
         partitioningColumnDefinition = ColumnDefinition.ofString("RCS_0").withPartitioning();
         groupingColumnDefinition = ColumnDefinition.ofString("RCS_1");
@@ -123,13 +129,13 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         tableDefinition = TableDefinition.of(columnDefinitions);
 
         columnSources = columnDefinitions.stream()
-                .map(cd -> mock(RegionedColumnSource.class, cd.getName()))
+                .map(cd -> jmock.mock(RegionedColumnSource.class, cd.getName()))
                 .toArray(RegionedColumnSource[]::new);
         partitioningColumnSource = columnSources[PARTITIONING_INDEX];
         groupingColumnSource = columnSources[GROUPING_INDEX];
         normalColumnSource = columnSources[NORMAL_INDEX];
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createRegionedColumnSource(with(any(RegionedColumnSourceManager.class)),
                         with(same(partitioningColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
@@ -149,8 +155,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         columnLocations = new ColumnLocation[NUM_LOCATIONS][NUM_COLUMNS];
         IntStream.range(0, NUM_LOCATIONS).forEach(li -> IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
-            final ColumnLocation cl = columnLocations[li][ci] = mock(ColumnLocation.class, "CL_" + li + '_' + ci);
-            checking(new Expectations() {
+            final ColumnLocation cl = columnLocations[li][ci] = jmock.mock(ColumnLocation.class, "CL_" + li + '_' + ci);
+            jmock.checking(new Expectations() {
                 {
                     allowing((cl)).getName();
                     will(returnValue(columnDefinitions.get(ci).getName()));
@@ -171,7 +177,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         tableLocation1A = tableLocations[1];
         tableLocation0B = tableLocations[2];
         tableLocation1B = tableLocations[3];
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 for (final TableLocation tl : tableLocations) {
                     allowing(tl).tryRetainReference();
@@ -211,9 +217,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private TableLocation setUpTableLocation(final int li, @NotNull final String mockSuffix) {
         final String ip = Integer.toString(li % 2);
         final String cp = Character.toString((li / 2) == 0 ? 'A' : 'B');
-        final TableLocation tl = mock(TableLocation.class, "TL_" + ip + '_' + cp + mockSuffix);
+        final TableLocation tl = jmock.mock(TableLocation.class, "TL_" + ip + '_' + cp + mockSuffix);
         final ImmutableTableLocationKey tlk = makeTableKey(ip, cp);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 allowing(tl).getKey();
                 will(returnValue(tlk));
@@ -250,7 +256,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         });
         IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
             final ColumnLocation cl = columnLocations[li][ci];
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     allowing((tl)).getColumnLocation(with(columnDefinitions.get(ci).getName()));
                     will(returnValue(cl));
@@ -285,7 +291,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     private void expectPoison(final int regionIndex) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 exactly(1).of(partitioningColumnSource).invalidateRegion(regionIndex);
                 exactly(1).of(groupingColumnSource).invalidateRegion(regionIndex);
@@ -310,7 +316,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 if (li % 2 == 0) {
                     // Even locations don't support subscriptions
                     if (newLocation) {
-                        checking(new Expectations() {
+                        jmock.checking(new Expectations() {
                             {
                                 oneOf(tl).supportsSubscriptions();
                                 will(returnValue(false));
@@ -322,7 +328,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                     // Odd locations do
                     if (subscriptionBuffers[li] == null) {
                         assertTrue(newLocation);
-                        checking(new Expectations() {
+                        jmock.checking(new Expectations() {
                             {
                                 oneOf(tl).supportsSubscriptions();
                                 will(returnValue(true));
@@ -344,7 +350,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 }
             } else {
                 if (newLocation) {
-                    checking(new Expectations() {
+                    jmock.checking(new Expectations() {
                         {
                             oneOf(tl).refresh();
                         }
@@ -360,7 +366,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 } else {
                     regionIndex = regionCount++;
                     locationIndexToRegionIndex.put(li, regionIndex);
-                    IntStream.range(0, NUM_COLUMNS).forEach(ci -> checking(new Expectations() {
+                    IntStream.range(0, NUM_COLUMNS).forEach(ci -> jmock.checking(new Expectations() {
                         {
                             oneOf(columnSources[ci]).addRegion(with(columnDefinitions.get(ci)),
                                     with(columnLocations[li][ci]));
@@ -391,7 +397,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     private void checkIndexes() {
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         if (capturedRowSet == null) {
             assertNull(expectedAddedRowSet);
         } else {
@@ -476,7 +482,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         try (final RowSet first = RowSetFactory.fromRange(0, 49);
                 final RowSet second = RowSetFactory.fromRange(50, 99);
                 final RowSet third = RowSetFactory.fromRange(50, REGION_CAPACITY_IN_ELEMENTS)) {
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     oneOf(tableLocation1A).getDataIndex(groupingColumnDefinition.getName());
                     will(returnValue(new DataIndexImpl(TableFactory.newTable(
@@ -591,7 +597,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with an overflow
         lastSizes[0] = REGION_CAPACITY_IN_ELEMENTS + 1;
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(tableLocation0A).refresh();
             }
@@ -755,7 +761,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         // expect table locations to be cleaned up via LivenessScope release as the test exits
         IntStream.range(0, tableLocations.length).forEachOrdered(li -> {
             final TableLocation tl = tableLocations[li];
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     oneOf(tl).supportsSubscriptions();
                     if (li % 2 == 0) {
@@ -805,7 +811,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             SUT.removeLocationKey(tableLocation0A.getKey());
             SUT.refresh();
         });
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertEquals(Arrays.asList(tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
 
         final WhereFilter filter = WhereFilterFactory.getExpression("RCS_2 = `x`");
@@ -817,7 +823,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         // size 3 by the removal above.
         try (final RowSet region3Selection = RowSetFactory.fromRange(
                 RegionedColumnSource.getFirstRowKey(3), RegionedColumnSource.getFirstRowKey(3) + 1)) {
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     oneOf(tableLocation1B).estimatePushdownFilterCost(
                             with(same(filter)), with(any(RowSet.class)), with(false), with(same(context)),
@@ -840,12 +846,12 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
             assertNull("estimatePushdownFilterCost for the highest-indexed region must not throw", error.get());
             assertEquals(PushdownResult.REGION_METADATA_STATS_COST, cost.get());
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
         }
 
         try (final RowSet region3Selection = RowSetFactory.fromRange(
                 RegionedColumnSource.getFirstRowKey(3), RegionedColumnSource.getFirstRowKey(3) + 1)) {
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     oneOf(tableLocation1B).pushdownFilter(
                             with(same(filter)), with(any(RowSet.class)), with(false), with(same(context)),
@@ -873,7 +879,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             assertNotNull(result.get());
             assertRowSetEquals(region3Selection, result.get().maybeMatch());
             result.get().close();
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
         }
 
         // Region 1 (tableLocation1A, size 1000) sits at list position 0 in the post-removal
@@ -881,7 +887,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         // now holds tableLocation0B's entry. Before the fix, this silently queries the wrong location.
         try (final RowSet region1Selection = RowSetFactory.fromRange(
                 RegionedColumnSource.getFirstRowKey(1), RegionedColumnSource.getFirstRowKey(1) + 999)) {
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     oneOf(tableLocation1A).pushdownFilter(
                             with(same(filter)), with(any(RowSet.class)), with(false), with(same(context)),
@@ -910,7 +916,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             assertNotNull(result.get());
             assertRowSetEquals(region1Selection, result.get().maybeMatch());
             result.get().close();
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
         }
 
         // expect the still-included table locations to be cleaned up via LivenessScope release as the test exits.
@@ -918,7 +924,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         // through this cleanup path.
         IntStream.range(1, tableLocations.length).forEachOrdered(li -> {
             final TableLocation tl = tableLocations[li];
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     oneOf(tl).supportsSubscriptions();
                     if (li % 2 == 0) {

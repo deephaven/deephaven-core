@@ -3,9 +3,11 @@
 //
 package io.deephaven.configuration;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class PropertyInputStreamLoaderFactoryTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class PropertyInputStreamLoaderFactoryTest {
 
     /**
      * Check that {@link PropertyInputStreamLoaderFactory#newInstance()} is an instance of
@@ -16,6 +18,7 @@ public class PropertyInputStreamLoaderFactoryTest extends TestCase {
      * then this test will need to be updated to reflect new fishlib testing assumptions wrt
      * {@link PropertyInputStreamLoaderFactory}.
      */
+    @Test
     public void testInstanceIsTraditional() {
         assertTrue(PropertyInputStreamLoaderFactory.newInstance() instanceof PropertyInputStreamLoaderTraditional);
     }

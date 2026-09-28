@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.ColumnSource;
@@ -11,7 +12,8 @@ import org.junit.Test;
 import java.time.Instant;
 import java.time.ZoneId;
 
-@SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
+import static org.junit.Assert.*;
+
 public class TestRegionedColumnSourceInstant
         extends TstRegionedColumnSourceReferencing<Instant, Values, ColumnRegionLong<Values>> {
 
@@ -41,7 +43,7 @@ public class TestRegionedColumnSourceInstant
             final Instant output,
             final boolean prev,
             final boolean reinterpreted) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(cr[expectedRegionIndex]).getLong(elementIndex);
                 will(returnValue(DateTimeUtils.epochNanos(output)));
@@ -53,7 +55,7 @@ public class TestRegionedColumnSourceInstant
         } else {
             assertEquals(output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Override
@@ -67,6 +69,7 @@ public class TestRegionedColumnSourceInstant
     }
 
     @Override
+    @Test
     public void testGet() {
         fillRegions();
 
@@ -88,6 +91,7 @@ public class TestRegionedColumnSourceInstant
     }
 
     @Override
+    @Test
     public void testGetPrev() {
         fillRegions();
 

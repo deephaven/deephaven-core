@@ -80,8 +80,9 @@ import org.jetbrains.annotations.NotNull;
  * would have, but this search will be ultimately futile, because it will eventually reach an emptySlot. 3. When it is
  * finally done copying values over, the Writer will write null to the keysAndValues array inside 'updates' (this is a
  * volatile write). Writer's last write to 'baseline' happened before it wrote that null. When Reader consults 'updates'
- * and finds a null there, it will also see all the writes made to 'baseline' (acquire semantics). 4. Writer may need to
- * do a rehash. If it does, it will prepare the hashed array off to the side and then write it to
+ * and finds a null there, it will also see all the writes made to 'baseline' (acquire semantics). Note that the Writer
+ * never writes into an 'updates' array that a Reader might still be probing; it only ever releases it. 4. Writer may
+ * need to do a rehash. If it does, it will prepare the hashed array off to the side and then write it to
  * 'baseline.keysAndValues' with a volatile write. When reader reads 'baseline.keysAndValues' (volatile read) it will
  * either see the old array or the fully-populated new one.
  *
@@ -102,13 +103,17 @@ import org.jetbrains.annotations.NotNull;
  * 'baseline' hashtable are finished as of the time of the write of the null. Next time the Reader reads this reference
  * and finds it null, this will be an acquire and all the values in 'baseline' will be visible.
  *
+ * The 'updates' map remembers the capacity it reached, so the array allocated for the next generation is sized for the
+ * previous one rather than regrowing from the initial capacity through successive rehashes. Only the size is
+ * remembered, not the array, so the storage of a large update cycle is reclaimable while the map sits empty.
+ *
  * That takes care of the transition from Update to Idle. Regarding the transition from Idle to Update, the caller does
  * not have any special responsibility, but the first call to put() inside an Update generation causes a new
  * 'keysAndValues' array to be generated, which the Reader will start to see next time it looks.
  */
 public class WritableRowRedirectionLockFree implements WritableRowRedirection {
-    private static final float LOAD_FACTOR =
-            (float) Configuration.getInstance().getDoubleWithDefault("RowRedirectionK4V4Impl.loadFactor", 0.5);
+    private static final double LOAD_FACTOR =
+            Configuration.getInstance().getDoubleWithDefault("RowRedirectionK4V4Impl.loadFactor", 0.5);
     /**
      * The special "key not found" value used in the 'baseline' map is -1. However, for the 'updates' map, the "key not
      * found" value is -2. This allows us to use the updates map to remember removals and account for them properly.
@@ -158,7 +163,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
                 baseline.put(key, value);
             }
         });
-        updates.resetToNull();
+        // Publish null (a volatile write, see the class comment), retaining the capacity for the next allocation. We
+        // do not clear the old array in place, because a Reader@Idle may still be probing it.
+        updates.resetToNullRetainingCapacity();
     }
 
     /**
@@ -309,7 +316,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     }
 
     @NotNull
-    private static NullableLongLongMap createMapWithCapacity(int initialCapacity, float loadFactor,
+    private static NullableLongLongMap createMapWithCapacity(int initialCapacity, double loadFactor,
             long noEntryValue) {
         switch (hashBucketWidth) {
             case 1:

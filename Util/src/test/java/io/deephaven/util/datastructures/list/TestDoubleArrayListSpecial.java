@@ -7,8 +7,9 @@
 // @formatter:off
 package io.deephaven.util.datastructures.list;
 
-import junit.framework.TestCase;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestDoubleArrayListSpecial {
 
@@ -16,8 +17,8 @@ public class TestDoubleArrayListSpecial {
     public void testAddAndGetNaN() {
         final DoubleArrayList list = new DoubleArrayList();
         list.add(Double.NaN);
-        TestCase.assertEquals(1, list.size());
-        TestCase.assertTrue(Double.isNaN(list.getDouble(0)));
+        assertEquals(1, list.size());
+        assertTrue(Double.isNaN(list.getDouble(0)));
     }
 
     @Test
@@ -29,10 +30,10 @@ public class TestDoubleArrayListSpecial {
         final DoubleArrayList b = new DoubleArrayList();
         a.add(Double.NaN);
         b.add(Double.NaN);
-        TestCase.assertFalse(a.equals(b));
+        assertFalse(a.equals(b));
 
         // Reflexivity short-circuit still holds: a list equals itself.
-        TestCase.assertEquals(a, a);
+        assertEquals(a, a);
     }
 
     @Test
@@ -45,8 +46,8 @@ public class TestDoubleArrayListSpecial {
         final DoubleArrayList b = new DoubleArrayList();
         a.add(Double.NaN);
         b.add(Double.NaN);
-        TestCase.assertEquals(a.hashCode(), b.hashCode());
-        TestCase.assertEquals(a.hashCode(), a.hashCode());
+        assertEquals(a.hashCode(), b.hashCode());
+        assertEquals(a.hashCode(), a.hashCode());
     }
 
     @Test
@@ -58,7 +59,7 @@ public class TestDoubleArrayListSpecial {
         final DoubleArrayList negative = new DoubleArrayList();
         positive.add(0.0f);
         negative.add(-0.0f);
-        TestCase.assertEquals(positive, negative);
-        TestCase.assertEquals(positive.hashCode(), negative.hashCode());
+        assertEquals(positive, negative);
+        assertEquals(positive.hashCode(), negative.hashCode());
     }
 }

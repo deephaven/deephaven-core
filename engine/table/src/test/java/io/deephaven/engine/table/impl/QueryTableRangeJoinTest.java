@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import junit.framework.AssertionFailedError;
 
 import java.lang.reflect.Array;
 import java.time.Instant;
@@ -503,7 +502,7 @@ public class QueryTableRangeJoinTest {
                             final long expectedRangeSize = adjustment + (indexRangeSize - adjustment) * multiplier;
                             assertThat(actualRangeSize).isEqualTo(expectedRangeSize);
                         }
-                    } catch (AssertionFailedError e) {
+                    } catch (AssertionError e) {
                         throw new AssertionError(String.format("Failure for type %s at row position %s",
                                 type, rowPosition), e);
                     }

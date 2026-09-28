@@ -16,7 +16,6 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TestClock;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,6 +23,8 @@ import org.junit.Test;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link ColumnVectors}.
@@ -59,7 +60,7 @@ public class TestColumnVectors {
                         "Bl  = ii % 3 == 0 ? null        :         ii % 3 == 1",
                         "Str = ii % 3 == 0 ? null        :         Long.toString(ii)")
                 .tail(size);
-        TestCase.assertTrue(source.isEmpty());
+        assertTrue(source.isEmpty());
         TstUtils.assertTableEquals(source, copyTable(source, false));
 
         for (int si = 0; si < 10; ++si) {

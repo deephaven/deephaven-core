@@ -24,7 +24,6 @@ import io.deephaven.engine.table.impl.sort.partition.BytePartitionKernel;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -32,6 +31,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
 public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
@@ -394,12 +396,12 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
         for (int ii = 0; ii < size; ++ii) {
             final byte timSorted = byteChunk.get(ii);
             final byte javaSorted = javaTuples.get(ii).getFirstElement();
-            TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
+            assertEquals("values[" + ii + "]", javaSorted, timSorted);
 
             if (rowKeys != null) {
                 final long timIndex = rowKeys.get(ii);
                 final long javaIndex = javaTuples.get(ii).getSecondElement();
-                TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
+                assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
             }
         }
     }
@@ -415,12 +417,12 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
         // make sure that each partition is a subset of the rowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {
             final RowSet partition = results[ii];
-            TestCase.assertTrue("partition[" + ii + "].subsetOf(source)", partition.subsetOf(source));
-            TestCase.assertFalse("reconstructed[\" + ii + \"]..overlaps(partition)", reconstructed.overlaps(partition));
+            assertTrue("partition[" + ii + "].subsetOf(source)", partition.subsetOf(source));
+            assertFalse("reconstructed[\" + ii + \"]..overlaps(partition)", reconstructed.overlaps(partition));
             reconstructed.insert(partition);
         }
 
-        TestCase.assertEquals(source, reconstructed);
+        assertEquals(source, reconstructed);
 
         // now verify that each partition has keys less than the next larger partition
 
@@ -439,9 +441,9 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
                 final long index = partition.get(jj);
                 final byte value = columnSource.get(index);
                 if (gt(value, expectedPivotValue)) {
-                    TestCase.fail("pivot[" + ii + "] = " + expectedPivotValue + ", " + expectedPivotKey + ": is exceeded by" + value);
+                    fail("pivot[" + ii + "] = " + expectedPivotValue + ", " + expectedPivotKey + ": is exceeded by" + value);
                 } else if (value == expectedPivotValue && index > expectedPivotKey) {
-                    TestCase.fail("pivot[" + ii + "] = " + expectedPivotValue + ", " + expectedPivotKey + ": is exceeded by" + value + ", "  + index);
+                    fail("pivot[" + ii + "] = " + expectedPivotValue + ", " + expectedPivotKey + ": is exceeded by" + value + ", "  + index);
                 }
             }
         }
@@ -470,7 +472,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
                 System.out.println("expectedRowSet.minus(partition): " + expectedRowSet.minus(partition));
             }
 
-            TestCase.assertEquals(expectedRowSet, partition);
+            assertEquals(expectedRowSet, partition);
         }
 
 //
@@ -497,8 +499,8 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
             final long timIndex = rowKeys.get(ii);
             final long javaIndex = javaTuples.get(ii).getThirdElement();
 
-            TestCase.assertEquals("values[" + ii + "]", javaSorted, timSortedPrimary);
-            TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
+            assertEquals("values[" + ii + "]", javaSorted, timSortedPrimary);
+            assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
         }
     }
 

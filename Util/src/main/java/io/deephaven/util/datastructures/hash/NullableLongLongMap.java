@@ -9,7 +9,18 @@ import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
  * The interface we use for our Long2LongMaps that are the basis for a hashed redirection index.
  */
 public interface NullableLongLongMap {
+    /**
+     * Empty the map and release its backing array. The next put allocates a new array at the initial capacity.
+     */
     void resetToNull();
+
+    /**
+     * Empty the map and release its backing array, as {@link #resetToNull()} does, but remember the capacity the map
+     * had reached so that the next allocation is made at that size instead of regrowing from the initial capacity
+     * through successive rehashes. Like {@link #resetToNull()} and unlike {@link #clear()}, this never writes into the
+     * array a concurrent reader might be probing, so it is safe to call while unsynchronized readers are active.
+     */
+    void resetToNullRetainingCapacity();
 
     int capacity();
 
@@ -64,6 +75,9 @@ public interface NullableLongLongMap {
      */
     long remove(long key);
 
+    /**
+     * Empty the map in place, retaining its backing array and capacity. Not safe in the presence of concurrent readers.
+     */
     void clear();
 
     void forEach(LongLongBiConsumer consumer);

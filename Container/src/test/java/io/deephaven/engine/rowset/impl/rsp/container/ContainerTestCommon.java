@@ -9,11 +9,8 @@ import java.util.Random;
 import java.util.function.*;
 
 import static java.lang.Short.toUnsignedInt;
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 class ContainerTestCommon {
 

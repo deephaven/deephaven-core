@@ -11,7 +11,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.test.types.OutOfBandTest;
-import junit.framework.TestCase;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.List;
@@ -22,11 +22,13 @@ import java.util.stream.IntStream;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static org.junit.Assert.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
 
 @Category(OutOfBandTest.class)
 public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
+    @Test
     public void testSimple() {
         final Table source = TableTools.newTable(TableTools.intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 
@@ -47,6 +49,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         assertEquals(source.size(), filtered.size());
     }
 
+    @Test
     public void testSimpleRefreshingAppend() {
         final Table source =
                 TstUtils.testRefreshingTable(intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).assertAppendOnly();
@@ -94,6 +97,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         assertEquals(source.size(), filtered.size());
     }
 
+    @Test
     public void testSimpleRefreshingAddOnly() {
         final QueryTable source = TstUtils.testRefreshingTable(
                 i(0, 1, 2, 3, 4, 10, 11, 12, 13, 14).toTracking(),
@@ -137,6 +141,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         assertEquals(source.size(), filtered.size());
     }
 
+    @Test
     public void testBigTable() {
         final Table sourcePart = TableTools.emptyTable(1_000_000_000L);
         final List<Table> sourceParts = IntStream.range(0, 20).mapToObj(x -> sourcePart).collect(Collectors.toList());
@@ -159,6 +164,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         System.out.println("Cycles: " + cycles);
     }
 
+    @Test
     public void testWaitForCompletion() throws InterruptedException {
         final Table source = TableTools.emptyTable(1000).update("Sentinel=ii");
 
@@ -182,14 +188,14 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         }).start();
 
         if (source.size() == filtered.size()) {
-            TestCase.fail("Released rows before expected.");
+            fail("Released rows before expected.");
         }
 
         long start1 = System.currentTimeMillis();
         incrementalReleaseFilter.waitForCompletion(100);
         long end1 = System.currentTimeMillis();
         if (end1 - start1 < 100) {
-            TestCase.fail("Did not wait long enough.");
+            fail("Did not wait long enough.");
         }
 
         latch.countDown();
@@ -203,7 +209,6 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         // test the path where we don't wait at all
         incrementalReleaseFilter.waitForCompletion();
     }
-
 
     @SuppressWarnings("unused") // used by testAutoTuneCycle via an update query
     static public <T> T sleepValue(long duration, T retVal) {
@@ -220,6 +225,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         return retVal;
     }
 
+    @Test
     public void testAutoTune() {
         final int cycles50 = testAutoTuneCycle(50);
         final int cycles100 = testAutoTuneCycle(100);
@@ -229,6 +235,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         System.out.println("1000ms: " + cycles1000);
     }
 
+    @Test
     public void testAutoTune2() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -248,7 +255,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         while (filtered.size() < source.size()) {
             updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
             if (steps++ > 100) {
-                TestCase.fail("Did not release rows promptly.");
+                fail("Did not release rows promptly.");
             }
         }
 
@@ -273,7 +280,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
             updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
             System.out.println(filtered.size() + " / " + updated.size());
             if (cycles++ > (2 * (source.size() * 100) / cycleTime)) {
-                TestCase.fail("Did not release rows promptly.");
+                fail("Did not release rows promptly.");
             }
         }
         return cycles;

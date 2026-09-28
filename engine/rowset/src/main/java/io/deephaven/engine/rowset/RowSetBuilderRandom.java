@@ -65,6 +65,11 @@ public interface RowSetBuilderRandom {
         addRowKeysChunk(chunk);
     }
 
+    /**
+     * Add every row key in {@code rowSet}.
+     *
+     * @param rowSet The row set to add
+     */
     default void addRowSet(final RowSet rowSet) {
         Helper.add(this, rowSet);
     }

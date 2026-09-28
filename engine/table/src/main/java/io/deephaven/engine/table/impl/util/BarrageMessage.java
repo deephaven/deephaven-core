@@ -103,6 +103,9 @@ public class BarrageMessage implements SafeCloseable {
         if (modColumnData != null) {
             for (final ModColumnData mcd : modColumnData) {
                 if (mcd != null) {
+                    if (mcd.rowsModified != null) {
+                        mcd.rowsModified.close();
+                    }
                     closeChunkData(mcd.data);
                 }
             }

@@ -19,24 +19,26 @@ using io::deephaven::proto::backplane::grpc::TimeTableRequest;
 using io::deephaven::proto::backplane::grpc::Ticket;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest;
 using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
+using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
+using io::deephaven::proto::backplane::script::grpc::StartConsoleResponse;
 
 namespace deephaven::client::impl {
 namespace {
 Ticket MakeScopeReference(std::string_view table_name);
 }  // namespace
 
-std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::Create(std::optional<Ticket> console_id,
+std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::Create(std::string session_type,
     std::shared_ptr<ServerType> server, std::shared_ptr<ExecutorType> executor,
     std::shared_ptr<ExecutorType> flight_executor) {
-  return std::make_shared<TableHandleManagerImpl>(Private(), std::move(console_id),
+  return std::make_shared<TableHandleManagerImpl>(Private(), std::move(session_type),
       std::move(server), std::move(executor), std::move(flight_executor));
 }
 
-TableHandleManagerImpl::TableHandleManagerImpl(Private, std::optional<Ticket> &&console_id,
+TableHandleManagerImpl::TableHandleManagerImpl(Private, std::string &&session_type,
     std::shared_ptr<ServerType> &&server, std::shared_ptr<ExecutorType> &&executor,
     std::shared_ptr<ExecutorType> &&flight_executor) :
     me_(deephaven::dhcore::utility::ObjectId("TableHandleManagerImpl", this)),
-    consoleId_(std::move(console_id)),
+    sessionType_(std::move(session_type)),
     server_(std::move(server)),
     executor_(std::move(executor)),
     flightExecutor_(std::move(flight_executor)) {
@@ -140,13 +142,46 @@ std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::InputTable(
   return TableHandleImpl::Create(shared_from_this(), std::move(resp));
 }
 
-void TableHandleManagerImpl::RunScript(std::string code) {
-  if (!consoleId_.has_value()) {
+const Ticket &TableHandleManagerImpl::EnsureConsoleId() {
+  if (sessionType_.empty()) {
     auto message = DEEPHAVEN_LOCATION_STR("Client was created without specifying a script language");
     throw std::runtime_error(message);
   }
+  std::unique_lock guard(mutex_);
+  // Has the future been set up yet, or are we the first thread here?
+  if (consoleId_.valid()) {
+    // We're not the first one here. The future was set up by another thread.
+    // Our job is to wait (but not under lock) for the value or exception to show up.
+    guard.unlock();
+    return consoleId_.get();
+  }
+
+  // We're the first thread to arrive here. Set up the future, then release
+  // the lock.
+  std::promise<Ticket> promise;
+  consoleId_ = promise.get_future().share();
+  guard.unlock();
+
+  // Then (no longer holding the lock), do the RPC, and populate the future with
+  // the result or an exception.
+  try {
+    StartConsoleRequest req;
+    *req.mutable_result_id() = server_->NewTicket();
+    *req.mutable_session_type() = sessionType_;
+    StartConsoleResponse resp;
+    server_->SendRpc([&](grpc::ClientContext *ctx) {
+      return server_->ConsoleStub()->StartConsole(ctx, req, &resp);
+    });
+    promise.set_value(std::move(*resp.mutable_result_id()));
+  } catch (...) {
+    promise.set_exception(std::current_exception());
+  }
+  return consoleId_.get();
+}
+
+void TableHandleManagerImpl::RunScript(std::string code) {
   ExecuteCommandRequest req;
-  *req.mutable_console_id() = *consoleId_;
+  *req.mutable_console_id() = EnsureConsoleId();
   *req.mutable_code() = std::move(code);
   ExecuteCommandResponse resp;
   server_->SendRpc([&](grpc::ClientContext *ctx) {

@@ -24,6 +24,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static org.junit.Assert.*;
 
 /**
  * Test that the TableUpdateValidator can be put in the middle of an operation.

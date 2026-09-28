@@ -14,6 +14,7 @@
       },
       {
         "label": "Getting Started",
+        "collapsible": false,
         "items": [
           {
             "label": "Quickstarts",
@@ -118,6 +119,7 @@
       },
       {
         "label": "User Guide",
+        "collapsible": false,
         "items": [
           {
             "label": "Architectural details",
@@ -358,6 +360,10 @@
               {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
+              },
+              {
+                "label": "Keyed row selection",
+                "path": "how-to-guides/keyed-row-selection.md"
               },
               {
                 "label": "Transpose",
@@ -859,23 +865,23 @@
                   },
                   {
                     "label": "Fetch tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-FetchTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-FetchTable"
                   },
                   {
                     "label": "Import tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-ImportTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
                   },
                   {
                     "label": "Create input tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-InputTable"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
                   },
                   {
                     "label": "Run scripts",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-RunScript"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-RunScript"
                   },
                   {
                     "label": "Table operations",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-TableOps"
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-TableOps"
                   }
                 ]
               },
@@ -1205,112 +1211,67 @@
         ]
       },
       {
-        "label": "Cheat sheets",
-        "items": [
-          {
-            "label": "Ultimate cheat sheet",
-            "path": "reference/cheat-sheets/cheat-sheet.md"
-          },
-          {
-            "label": "Choose Python packages",
-            "path": "reference/cheat-sheets/choose-python-packages.md"
-          },
-          {
-            "label": "Data import / export",
-            "items": [
-              {
-                "label": "Simple table constructors",
-                "path": "reference/cheat-sheets/simple-table-constructors.md"
-              },
-              {
-                "label": "CSV",
-                "path": "reference/cheat-sheets/csv.md"
-              },
-              {
-                "label": "Kafka",
-                "path": "reference/cheat-sheets/kafka.md"
-              },
-              {
-                "label": "Parquet",
-                "path": "reference/cheat-sheets/parquet.md"
-              },
-              {
-                "label": "URI",
-                "path": "reference/cheat-sheets/uri-cheat-sheet.md"
-              }
-            ]
-          },
-          {
-            "label": "Performance tables",
-            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
-          },
-          {
-            "label": "Time operations",
-            "path": "reference/cheat-sheets/time-cheat-sheet.md"
-          }
-        ]
-      },
-      {
-        "label": "API documentation",
-        "items": [
-          {
-            "label": "Python (client)",
-            "href": "https://deephaven.io/core/client-api/python"
-          },
-          {
-            "label": "Python (server)",
-            "href": "https://deephaven.io/core/pydoc"
-          },
-          {
-            "label": "Java (client/server)",
-            "href": "https://deephaven.io/core/javadoc"
-          },
-          {
-            "label": "JavaScript (client)",
-            "items": [
-              {
-                "label": "Javascript API Concepts",
-                "path": "reference/js-api/concepts.md"
-              },
-              {
-                "label": "JavaScript",
-                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
-              }
-            ]
-          },
-          {
-            "label": "Go (client)",
-            "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
-          },
-          {
-            "label": "C++ (client)",
-            "href": "https://deephaven.io/core/client-api/cpp"
-          },
-          {
-            "label": "C++ (examples)",
-            "href": "https://deephaven.io/core/client-api/cpp-examples"
-          },
-          {
-            "label": "R (client)",
-            "href": "https://deephaven.io/core/client-api/r"
-          },
-          {
-            "label": "Barrage (communication)",
-            "href": "https://deephaven.io/barrage/docs/"
-          },
-          {
-            "label": "gRPC (communication)",
-            "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
-          },
-          {
-            "label": "Protobuf (communication)",
-            "href": "https://deephaven.io/core/client-api/protobuf/"
-          }
-        ]
-      },
-      {
         "label": "Reference",
+        "collapsible": false,
         "items": [
+          {
+            "label": "API documentation",
+            "items": [
+              {
+                "label": "Python (client)",
+                "href": "https://deephaven.io/core/client-api/python"
+              },
+              {
+                "label": "Python (server)",
+                "href": "https://deephaven.io/core/pydoc"
+              },
+              {
+                "label": "Java (client/server)",
+                "href": "https://deephaven.io/core/javadoc"
+              },
+              {
+                "label": "JavaScript (client)",
+                "items": [
+                  {
+                    "label": "JavaScript API concepts",
+                    "path": "reference/js-api/concepts.md"
+                  },
+                  {
+                    "label": "JavaScript",
+                    "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+                  }
+                ]
+              },
+              {
+                "label": "Go (client)",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+              },
+              {
+                "label": "C++ (client)",
+                "href": "https://deephaven.io/core/client-api/cpp"
+              },
+              {
+                "label": "C++ (examples)",
+                "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "R (client)",
+                "href": "https://deephaven.io/core/client-api/r"
+              },
+              {
+                "label": "Barrage (communication)",
+                "href": "https://deephaven.io/barrage/docs/"
+              },
+              {
+                "label": "gRPC (communication)",
+                "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
+              },
+              {
+                "label": "Protobuf (communication)",
+                "href": "https://deephaven.io/core/client-api/protobuf/"
+              }
+            ]
+          },
           {
             "label": "Engine",
             "items": [
@@ -1380,6 +1341,14 @@
                       {
                         "label": "without_attributes",
                         "path": "reference/table-operations/create/withoutAttributes.md"
+                      },
+                      {
+                        "label": "with_keys",
+                        "path": "reference/table-operations/create/withKeys.md"
+                      },
+                      {
+                        "label": "with_unique_keys",
+                        "path": "reference/table-operations/create/withUniqueKeys.md"
                       }
                     ]
                   },
@@ -1623,7 +1592,7 @@
                     "path": "reference/iceberg/adapter.md"
                   },
                   {
-                    "label": "adapater_aws_glue",
+                    "label": "adapter_aws_glue",
                     "path": "reference/iceberg/adapter-aws-glue.md"
                   },
                   {
@@ -1840,6 +1809,10 @@
                     "path": "reference/table-operations/filter/tail-pct.md"
                   },
                   {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
+                  },
+                  {
                     "label": "where",
                     "path": "reference/table-operations/filter/where.md"
                   },
@@ -1941,6 +1914,10 @@
                     "label": "Single aggregation",
                     "items": [
                       {
+                        "label": "abs_sum_by",
+                        "path": "reference/table-operations/group-and-aggregate/AbsSumBy.md"
+                      },
+                      {
                         "label": "avg_by",
                         "path": "reference/table-operations/group-and-aggregate/avgBy.md"
                       },
@@ -2008,10 +1985,6 @@
                       {
                         "label": "partitioned_agg_by",
                         "path": "reference/table-operations/group-and-aggregate/partitionedAggBy.md"
-                      },
-                      {
-                        "label": "abs_sum_by",
-                        "path": "reference/table-operations/group-and-aggregate/AbsSumBy.md"
                       },
                       {
                         "label": "abs_sum",
@@ -2213,7 +2186,7 @@
                     "path": "reference/table-operations/update-by-operations/rolling-count-time.md"
                   },
                   {
-                    "label": "rolling_count__where_tick",
+                    "label": "rolling_count_where_tick",
                     "path": "reference/table-operations/update-by-operations/rolling-count-where-tick.md"
                   },
                   {
@@ -2571,6 +2544,14 @@
                     "path": "reference/query-language/types/arrays.md"
                   },
                   {
+                    "label": "Barrier",
+                    "path": "reference/query-language/types/Barrier.md"
+                  },
+                  {
+                    "label": "ConcurrencyControl",
+                    "path": "reference/query-language/types/ConcurrencyControl.md"
+                  },
+                  {
                     "label": "date-time",
                     "path": "reference/query-language/types/date-time.md"
                   },
@@ -2780,7 +2761,55 @@
         ]
       },
       {
+        "label": "Cheat sheets",
+        "collapsible": false,
+        "items": [
+          {
+            "label": "Ultimate cheat sheet",
+            "path": "reference/cheat-sheets/cheat-sheet.md"
+          },
+          {
+            "label": "Choose Python packages",
+            "path": "reference/cheat-sheets/choose-python-packages.md"
+          },
+          {
+            "label": "Data import / export",
+            "items": [
+              {
+                "label": "Simple table constructors",
+                "path": "reference/cheat-sheets/simple-table-constructors.md"
+              },
+              {
+                "label": "CSV",
+                "path": "reference/cheat-sheets/csv.md"
+              },
+              {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
+                "label": "Parquet",
+                "path": "reference/cheat-sheets/parquet.md"
+              },
+              {
+                "label": "URI",
+                "path": "reference/cheat-sheets/uri-cheat-sheet.md"
+              }
+            ]
+          },
+          {
+            "label": "Performance tables",
+            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
+          },
+          {
+            "label": "Time operations",
+            "path": "reference/cheat-sheets/time-cheat-sheet.md"
+          }
+        ]
+      },
+      {
         "label": "Help and more",
+        "collapsible": false,
         "items": [
           {
             "label": "Deephaven example apps on GitHub",
@@ -2998,7 +3027,7 @@
                     "path": "reference/community-questions/convert-year-day-minute-instant.md"
                   },
                   {
-                    "label": "Why are my table operations producing incorrect results?",
+                    "label": "Why does my function with type hints throw an error on null values?",
                     "path": "reference/community-questions/why-do-my-python-type-hints-error.md"
                   },
                   {

@@ -14,7 +14,7 @@ jobs:
     if: github.event.pull_request.merged
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Trigger PR Merge Webhook
         env:
@@ -24,7 +24,7 @@ jobs:
           curl -X POST -H 'X-Automation-Webhook-Token: ${{ secrets.JIRA_WEBHOOK_SECRET_PR_MERGE }}' -H "Content-Type: application/json" --data "$WEBHOOK_DATA" ${{ secrets.JIRA_WEBHOOK_URL_PR_MERGE }}
 
       - name: Slack Failure Message
-        uses: slackapi/slack-github-action@v2.1.0
+        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
         id: slack-failure-message
         if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
         env:

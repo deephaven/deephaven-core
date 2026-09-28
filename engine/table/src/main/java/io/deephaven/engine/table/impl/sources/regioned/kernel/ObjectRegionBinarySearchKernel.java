@@ -7,6 +7,10 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
+import io.deephaven.engine.table.impl.select.AbstractRangeFilter;
+import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
+import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
+
 import java.util.Arrays;
 
 import io.deephaven.api.SortSpec;
@@ -16,6 +20,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sort.timsort.ObjectTimsortDescendingKernel;
 import io.deephaven.engine.table.impl.sort.timsort.ObjectTimsortKernel;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject;
@@ -25,6 +30,77 @@ import org.jetbrains.annotations.NotNull;
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
 
 public class ObjectRegionBinarySearchKernel {
+    // region binsearchRangeFilter
+    /**
+     * Performs a binary search on a sorted column region using bounds from an {@link AbstractRangeFilter} (either
+     * {@link SingleSidedComparableRangeFilter} or {@link ComparableRangeFilter}), returning the row keys that satisfy the
+     * filter.
+     *
+     * @param region The column region to search.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The range filter supplying bounds and their inclusive flags.
+     * @return A {@link RowSet} containing the row keys satisfying the filter.
+     */
+    public static RowSet binsearchRangeFilter(
+            @NotNull final ColumnRegionObject<?, ?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final AbstractRangeFilter filter) {
+        if (filter instanceof SingleSidedComparableRangeFilter) {
+            final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;
+            if (rangeFilter.isGreaterThan()) {
+                return binarySearchMin(region, firstKey, lastKey, sortColumn,
+                        rangeFilter.getPivot(), rangeFilter.isLowerInclusive());
+            } else {
+                return binarySearchMax(region, firstKey, lastKey, sortColumn,
+                        rangeFilter.getPivot(), rangeFilter.isUpperInclusive());
+            }
+        }
+        final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;
+        return binarySearchMinMax(region, firstKey, lastKey, sortColumn,
+                rangeFilter.getLower(), rangeFilter.getUpper(),
+                rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive());
+    }
+    // endregion binsearchRangeFilter
+
+    // region binsearchMatchFilter
+    /**
+     * Performs a binary search on a sorted column region for the values of a {@link MatchFilter}, returning the row
+     * keys that hold one of them. The filter's {@link io.deephaven.engine.table.MatchOptions#inverted() inverted} flag
+     * is not applied here; the caller must invert the result itself.
+     *
+     * <p>
+     * Ordering alone decides a match only for a type whose comparison is consistent with equality. For any other type
+     * the ordered search returns a superset, and {@link ComparableRegionBinarySearchKernel} picks the matches out of
+     * it by equality.
+     *
+     * @param region The column region to search.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The match filter supplying the values to find.
+     * @return A {@link RowSet} containing the row keys holding one of the filter's values.
+     */
+    public static RowSet binsearchMatchFilter(
+            @NotNull final ColumnRegionObject<?, ?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final MatchFilter filter) {
+        if (filter.getValues().length == 0) {
+            // Nothing to search for, so nothing matches, and the data need not be touched at all.
+            return RowSetFactory.empty();
+        }
+        return BinarySearchKernelHelper.compareConsistentWithEquality(filter.getColumnType())
+                ? binarySearchMatch(region, firstKey, lastKey, sortColumn, filter.getValues())
+                : ComparableRegionBinarySearchKernel.binarySearchMatch(region, firstKey, lastKey, sortColumn,
+                        filter.getValues());
+    }
+    // endregion binsearchMatchFilter
+
     /**
      * Performs a binary search on a given column region to find the positions (row keys) of specified keys. The method
      * returns the RowSet containing the matched row keys.
@@ -260,7 +336,7 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long lowerBoundAscending(
+    static long lowerBoundAscending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
@@ -309,7 +385,7 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value exceeds {@code max}.
      */
-    private static long upperBoundAscending(
+    static long upperBoundAscending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
@@ -360,7 +436,7 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long lowerBoundDescending(
+    static long lowerBoundDescending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
@@ -409,7 +485,7 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value falls below {@code min}.
      */
-    private static long upperBoundDescending(
+    static long upperBoundDescending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,

@@ -6,10 +6,9 @@ package io.deephaven.base.cache;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNotSame;
-import static junit.framework.TestCase.assertSame;
-import static junit.framework.TestCase.assertTrue;
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
 
 @SuppressWarnings({"UnnecessaryBoxing"})
 public class TestOpenAddressedCanonicalizationCache {

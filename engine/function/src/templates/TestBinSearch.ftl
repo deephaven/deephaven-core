@@ -4,20 +4,23 @@
 
 package io.deephaven.function;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 import io.deephaven.vector.*;
 
 import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 import static io.deephaven.function.BinSearch.*;
 
 /**
  * Test BinSearch.
  */
 @SuppressWarnings({"RedundantCast", "RedundantArrayCreation"})
-public class TestBinSearch extends BaseArrayTestCase {
+public class TestBinSearch {
 
     //////////////////////////// Object ////////////////////////////
 
+    @Test
     public void testGenericBinSearchIndex() {
         Short[] data = {1,3,4};
         assertEquals(NULL_INT, binSearchIndex((ObjectVector<Short>)null, (short) 0, BinSearchAlgo.BS_ANY));
@@ -37,6 +40,7 @@ public class TestBinSearch extends BaseArrayTestCase {
         assertEquals(3, binSearchIndex(data, (short)5, BinSearchAlgo.BS_ANY));
     }
 
+    @Test
     public void testGenericRawBinSearchIndex() {
         assertEquals(NULL_INT, rawBinSearchIndex((ObjectVector<Short>)null, (short) 0, BinSearchAlgo.BS_ANY));
         assertEquals(NULL_INT, rawBinSearchIndex((ObjectVector<Short>)null, (short) 0, BinSearchAlgo.BS_HIGHEST));
@@ -153,6 +157,7 @@ public class TestBinSearch extends BaseArrayTestCase {
 
     <#list primitiveTypes as pt>
 
+    @Test
     public void test${pt.boxed}BinSearchIndex() {
         assertEquals(NULL_INT, binSearchIndex((${pt.primitive}[]) null, (${pt.primitive}) 0, BinSearchAlgo.BS_ANY));
         assertEquals(0, binSearchIndex(new ${pt.primitive}[]{1,3,4}, (${pt.primitive})0, BinSearchAlgo.BS_ANY));
@@ -171,6 +176,7 @@ public class TestBinSearch extends BaseArrayTestCase {
         assertEquals(3, binSearchIndex(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,3,4}), (${pt.primitive})5, BinSearchAlgo.BS_ANY));
     }
 
+    @Test
     public void test${pt.boxed}RawBinSearchIndex() {
         assertEquals(NULL_INT, rawBinSearchIndex((${pt.vector})null, (${pt.primitive}) 0, BinSearchAlgo.BS_ANY));
         assertEquals(NULL_INT, rawBinSearchIndex((${pt.vector})null, (${pt.primitive}) 0, BinSearchAlgo.BS_HIGHEST));

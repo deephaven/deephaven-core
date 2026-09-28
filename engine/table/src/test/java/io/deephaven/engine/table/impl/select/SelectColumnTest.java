@@ -7,27 +7,31 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.literal.Literal;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SelectColumnTest extends TestCase {
+public class SelectColumnTest {
     private static final ColumnName FOO = ColumnName.of("Foo");
     private static final ColumnName BAR = ColumnName.of("Bar");
     private static final Literal V42 = Literal.of(42L);
 
+    @Test
     public void testSingleColumn() {
         expect(FOO, SourceColumn.class, "Foo=Foo");
     }
 
+    @Test
     public void testTwoColumns() {
         expect(Selectable.of(FOO, BAR), SourceColumn.class, "Foo=Bar");
     }
 
+    @Test
     public void testSelectLong() {
         expect(Selectable.of(FOO, V42), SwitchColumn.class, "Foo=42L");
     }
 
+    @Test
     public void testRawString() {
         expect(Selectable.of(FOO, RawString.of("foo(X-13)")), SwitchColumn.class, "Foo=foo(X-13)");
     }

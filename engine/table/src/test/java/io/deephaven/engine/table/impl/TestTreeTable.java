@@ -33,7 +33,7 @@ import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotTo
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestTreeTable extends RefreshingTableTestCase {

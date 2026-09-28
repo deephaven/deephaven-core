@@ -7,21 +7,26 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.function.Supplier;
+
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link ColumnRegionFloat}.
  */
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
+
 public class TstColumnRegionFloat {
 
     @SuppressWarnings("unused")
@@ -61,30 +66,29 @@ public class TstColumnRegionFloat {
 
     public static class TestNull extends TstColumnRegionPrimative<ColumnRegionFloat<Values>> {
 
-        @Override
+        @Before
         public void setUp() throws Exception {
-            super.setUp();
             SUT = ColumnRegionFloat.createNull(Long.MAX_VALUE);
         }
 
         @Override
+        @Test
         public void testGet() {
-            TestCase.assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(0));
-            TestCase.assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(1));
-            TestCase.assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(Integer.MAX_VALUE));
-            TestCase.assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat((1L << 40) - 2));
-            TestCase.assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(Long.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(0));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(1));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(Integer.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat((1L << 40) - 2));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(Long.MAX_VALUE));
         }
     }
 
     public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionFloat<Values>> {
 
-        @Override
+        @Before
         public void setUp() throws Exception {
-            super.setUp();
             // noinspection unchecked
-            regionSupplier = mock(Supplier.class, "R1");
-            checking(new Expectations() {
+            regionSupplier = jmock.mock(Supplier.class, "R1");
+            jmock.checking(new Expectations() {
                 {
                     oneOf(regionSupplier).get();
                     will(returnValue(new Identity()));
@@ -94,11 +98,12 @@ public class TstColumnRegionFloat {
         }
 
         @Override
+        @Test
         public void testGet() {
             assertEquals((float) 8, SUT.getFloat(8));
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
             assertEquals((float) 272, SUT.getFloat(272));
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
         }
     }
 }

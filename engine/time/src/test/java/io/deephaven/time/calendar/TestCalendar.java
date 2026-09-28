@@ -3,38 +3,43 @@
 //
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.time.*;
 import java.util.ArrayList;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static org.junit.Assert.*;
 
-public class TestCalendar extends BaseArrayTestCase {
+public class TestCalendar {
     protected final String name = "TEST CALENDAR";
     protected final String description = "This is a test";
     protected final ZoneId timeZone = ZoneId.of("America/Los_Angeles");
 
     protected Calendar calendar;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         calendar = new Calendar(name, description, timeZone);
     }
 
+    @Test
     public void testGetters() {
         assertEquals(name, calendar.name());
         assertEquals(description, calendar.description());
         assertEquals(timeZone, calendar.timeZone());
     }
 
+    @Test
     public void testToString() {
         assertEquals("Calendar{name='TEST CALENDAR', description='This is a test', timeZone=America/Los_Angeles}",
                 calendar.toString());
     }
 
+    @Test
     public void testDayOfWeek() {
         assertEquals(DateTimeUtils.dayOfWeek(calendar.calendarDate()), calendar.dayOfWeek());
         assertEquals(DayOfWeek.MONDAY, calendar.dayOfWeek("2020-03-02"));
@@ -58,6 +63,7 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals(NULL_INT, calendar.dayOfWeekValue((ZonedDateTime) null));
     }
 
+    @Test
     public void testPlusDays() {
         final ZoneId timeZone2 = ZoneId.of("America/New_York");
         final LocalDate d = LocalDate.of(2023, 2, 3);
@@ -112,6 +118,7 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals(DateTimeUtils.DAY + DateTimeUtils.HOUR, DateTimeUtils.minus(iDST2, iDST1));
     }
 
+    @Test
     public void testMinusDays() {
         final ZoneId timeZone2 = ZoneId.of("America/New_York");
         final LocalDate d = LocalDate.of(2023, 2, 3);
@@ -162,22 +169,26 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals(DateTimeUtils.DAY + DateTimeUtils.HOUR, DateTimeUtils.minus(iDST2, iDST1));
     }
 
+    @Test
     public void testCurrentDate() {
         assertEquals(calendar.calendarDate(), calendar.calendarDate());
     }
 
+    @Test
     public void testFutureDate() {
         assertEquals(calendar.plusDays(calendar.calendarDate(), 3), calendar.futureDate(3));
         assertEquals(calendar.plusDays(calendar.calendarDate(), -3), calendar.futureDate(-3));
         assertNull(calendar.futureDate(NULL_INT));
     }
 
+    @Test
     public void testPastDate() {
         assertEquals(calendar.minusDays(calendar.calendarDate(), 3), calendar.pastDate(3));
         assertEquals(calendar.minusDays(calendar.calendarDate(), -3), calendar.pastDate(-3));
         assertNull(calendar.pastDate(NULL_INT));
     }
 
+    @Test
     public void testCalendarDates() {
         final LocalDate start = LocalDate.of(2023, 2, 3);
         final LocalDate middle = LocalDate.of(2023, 2, 4);
@@ -241,6 +252,7 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals(targetLong.toArray(LocalDate[]::new), calendar.calendarDates(startLong, endLong));
     }
 
+    @Test
     public void testNumberCalendarDates() {
         final LocalDate start = LocalDate.of(2023, 2, 3);
         final LocalDate middle = LocalDate.of(2023, 2, 4);

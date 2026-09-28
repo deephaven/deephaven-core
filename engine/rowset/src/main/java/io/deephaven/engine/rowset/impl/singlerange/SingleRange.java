@@ -140,6 +140,11 @@ public abstract class SingleRange implements OrderedLongSet {
         return 1;
     }
 
+    @Override
+    public final int ixEntryCount() {
+        return 1;
+    }
+
     @SuppressWarnings("unused")
     private void ifDebugValidate() {
         if (debug) {

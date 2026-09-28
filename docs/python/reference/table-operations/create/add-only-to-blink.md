@@ -5,7 +5,7 @@ title: add_only_to_blink
 The `add_only_to_blink` method creates a blink table from the supplied add-only or append-only table. The blink table contains the rows added in the latest update cycle.
 
 > [!NOTE]
-> The use of this function should be limited to add-only or append-only tables that are not fully in-memory, or when blink-table specific aggregation semantics are desired. If the table is fully in-memory, creating a downstream blink table is not recommended because it doesn't achieve the main benefit of blink tables, which is to reduce memory usage but instead increases memory usage.
+> The use of this function should be limited to add-only or append-only tables that are not fully in-memory, or when blink-table specific aggregation semantics are desired. If the table is fully in-memory, creating a downstream blink table is not recommended because it does not achieve the main benefit of blink tables, which is to reduce memory usage but instead increases memory usage.
 
 ## Syntax
 
@@ -20,7 +20,7 @@ add_only_to_blink(table: Table) -> Table
 <ParamTable>
 <Param name="table" type="Table">
 
-The add-only or append-only table to convert to a blink table.
+The add-only or append-only table to convert to a blink table. The table **must** be refreshing.
 
 </Param>
 </ParamTable>
@@ -44,7 +44,11 @@ blink_result = add_only_to_blink(tt1)
 
 ![The above `tt1` and `blink_result` tables ticking side-by-side in the Deephaven console](../../../assets/reference/create/add-only-to-blink.gif)
 
-## Related Documentation
+## Related documentation
 
 - [`time_table`](./timeTable.md)
+- [`is_blink`](../metadata/is_blink.md)
+- [`remove_blink`](./remove-blink.md)
+- [`blink_to_append_only`](./blink-to-append-only.md)
+- [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables)
 - [Pydoc](/core/pydoc/code/deephaven.stream.html#deephaven.stream.add_only_to_blink)

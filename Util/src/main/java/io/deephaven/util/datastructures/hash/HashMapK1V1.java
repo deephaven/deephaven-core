@@ -4,7 +4,7 @@
 package io.deephaven.util.datastructures.hash;
 
 public abstract class HashMapK1V1 extends HashMapBase {
-    HashMapK1V1(int desiredInitialCapacity, float loadFactor, long noEntryValue) {
+    HashMapK1V1(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
     }
 
@@ -17,7 +17,7 @@ public abstract class HashMapK1V1 extends HashMapBase {
     }
 
     @Override
-    protected final long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly) {
+    final long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly) {
         // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         int location = getLocationFor(kvs, key);
         if (location >= 0) {
