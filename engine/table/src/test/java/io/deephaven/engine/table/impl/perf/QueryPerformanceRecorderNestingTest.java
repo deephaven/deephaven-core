@@ -121,6 +121,28 @@ public class QueryPerformanceRecorderNestingTest {
     }
 
     @Test
+    public void testStaleCloseableDoesNotUninstallALaterResume() {
+        final QueryPerformanceRecorder outer = newQuery("outer");
+        final QueryPerformanceRecorder inner = suspendedQuery("inner");
+
+        try (final SafeCloseable ignored = outer.startQuery()) {
+            final SafeCloseable first = inner.resumeQuery();
+            inner.suspendQuery();
+            try (final SafeCloseable ignored2 = inner.resumeQuery()) {
+                assertCurrentRecorder(inner);
+                // belongs to the earlier installation; the current one must be left alone
+                first.close();
+                assertCurrentRecorder(inner);
+                inner.endQuery();
+                assertCurrentRecorder(outer);
+            }
+            assertCurrentRecorder(outer);
+            outer.endQuery();
+        }
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    @Test
     public void testStartingWhileAnotherQueryOwnsTheThreadIsAnError() {
         final QueryPerformanceRecorder outer =
                 QueryPerformanceRecorder.newQuery("outer", null, QueryPerformanceNugget.DEFAULT_FACTORY);

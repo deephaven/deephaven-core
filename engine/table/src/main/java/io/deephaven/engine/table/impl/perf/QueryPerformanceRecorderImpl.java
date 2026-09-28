@@ -40,6 +40,8 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      * this query is not installed on a thread, or took an idle thread. Guarded by this, like the rest of the state.
      */
     private QueryPerformanceRecorder outerInstance;
+    /** Counts installations, so that a closeable only ever uninstalls the one it was returned for; guarded by this. */
+    private int installation;
 
     /**
      * Constructs a QueryPerformanceRecorderImpl.
@@ -144,16 +146,17 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         Assert.neqNull(catchAllNugget, "catchAllNugget");
         stopCatchAll(false);
 
-        uninstall();
+        uninstall(installation);
     }
 
     /**
      * Uninstalls this recorder from the current thread and hands the thread back to the query that was running when
-     * this one was resumed on top of it, if any. A no-op if this recorder is no longer installed, so that the closeable
-     * returned by {@link #resumeInternal} is safe to close after {@link #endQuery} or {@link #suspendQuery}.
+     * this one was resumed on top of it, if any. A no-op unless {@code forInstallation} is the current installation and
+     * it is still on this thread, so that the closeable returned by {@link #resumeInternal} is safe to close after
+     * {@link #endQuery} or {@link #suspendQuery}, and cannot disturb a later installation.
      */
-    private synchronized void uninstall() {
-        if (QueryPerformanceRecorderState.getInstance() != this) {
+    private synchronized void uninstall(final int forInstallation) {
+        if (forInstallation != installation || QueryPerformanceRecorderState.getInstance() != this) {
             return;
         }
         final QueryPerformanceRecorder outer = outerInstance;
@@ -196,6 +199,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             throw new IllegalStateException("Can't start a query while another query is in operation");
         }
         outerInstance = current == QueryPerformanceRecorderState.DUMMY_RECORDER ? null : current;
+        final int thisInstallation = ++installation;
         QueryPerformanceRecorderState.THE_LOCAL.set(this);
 
         queryNugget.onBaseEntryStart();
@@ -204,7 +208,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         startCatchAll();
 
         // ending or suspending the query hands the thread back itself; this covers an exit without either
-        return this::uninstall;
+        return () -> uninstall(thisInstallation);
     }
 
     private void startCatchAll() {
