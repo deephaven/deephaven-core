@@ -4750,6 +4750,21 @@ public class QueryTableAggregationTest {
         // a static aggregation has no states to reclaim, so any mode is accepted
         final QueryTable staticSum = ((QueryTable) table.snapshot()).aggNoMemo(sum, false, null, key,
                 StateReclaimMode.releaseBlocks(0.5));
+        // nor do add-only and blink aggregations, even with operators that cannot reclaim states
+        final List<Aggregation> addOnlyAggregations = List.of(AggMin("Min=x"), AggMax("Max=x"), AggFirst("First=x"),
+                AggLast("Last=x"), AggApproxPct(0.5, "P50=x"));
+        final AggregationContextFactory addOnlyOperators = AggregationProcessor.forAggregation(addOnlyAggregations);
+        final QueryTable addOnly = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+                stringCol("Key", "A", "B", "A", "C"), longCol("x", 1, 2, 3, 4));
+        addOnly.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        final QueryTable blink = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+                stringCol("Key", "A", "B", "A", "C"), longCol("x", 1, 2, 3, 4));
+        blink.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        for (final QueryTable input : List.of(addOnly, blink)) {
+            final QueryTable aggregated =
+                    input.aggNoMemo(addOnlyOperators, false, null, key, StateReclaimMode.releaseBlocks(0.5));
+            assertTableEquals(input.aggBy(addOnlyAggregations, "Key"), aggregated);
+        }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {

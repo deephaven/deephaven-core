@@ -99,8 +99,8 @@ A mode other than `none` can apply only when all of the following hold:
 
 - Every operator of the aggregation can reclaim states (`IterativeChunkedAggregationOperator.canReclaimStates()`, false
   by default). Group-by, partition-by, formula, and rollup operators cannot. Neither can the operators whose states
-  never become empty: the min, max, first, and last operators for add-only and blink input, and approximate
-  percentiles, whose t-digests cannot remove values.
+  never become empty: approximate percentiles, whose t-digests cannot remove values, and the min, max, first, and last
+  operators used only for add-only and blink input, which are accepted with any mode as described below.
 - The aggregation does not preserve empty groups.
 - The aggregation has no initial groups.
 
@@ -112,7 +112,8 @@ What happens when they do not hold depends on where the mode came from:
   aggregation with an `IllegalArgumentException` naming the reason — for example, the result columns whose operators
   cannot reclaim states. `StateReclaimMode.isConfigured()` tells the two apart.
 
-A static input table never reclaims states, since no state is ever removed, so any mode is accepted for it.
+Static, add-only, append-only, and blink input never reclaims states, since no state is ever removed (a blink
+aggregation ignores its input's removals), so any mode is accepted for it and none of these conditions is checked.
 
 ## Costs and limits
 

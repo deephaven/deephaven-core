@@ -223,16 +223,20 @@ public class ChunkedOperatorAggregationHelper {
             useSymbolTable = false;
         }
 
-        // Preserved empty groups are never removed, so there is nothing to reclaim. Initial groups reserve output
-        // positions for groups that are not in the result, which reclaiming does not model.
-        final String cannotReclaim = input.isRefreshing() && reclaimMode.reclaims()
+        // Static, add-only, append-only, and blink input never empties a state (a blink aggregation ignores removals),
+        // so there is nothing to reclaim and any mode is accepted. Preserved empty groups are never removed either.
+        // Initial groups reserve output positions for groups that are not in the result, which reclaiming does not
+        // model.
+        final boolean statesCanEmpty =
+                input.isRefreshing() && !input.isAddOnly() && !input.isAppendOnly() && !input.isBlink();
+        final String cannotReclaim = statesCanEmpty && reclaimMode.reclaims()
                 ? whyCannotReclaim(ac, preserveEmpty, initialKeys)
                 : null;
         if (cannotReclaim != null && !reclaimMode.isConfigured()) {
             throw new IllegalArgumentException(
                     "Aggregation cannot use " + reclaimMode + ": " + cannotReclaim);
         }
-        final boolean reclaimStates = input.isRefreshing() && reclaimMode.reclaims() && cannotReclaim == null;
+        final boolean reclaimStates = statesCanEmpty && reclaimMode.reclaims() && cannotReclaim == null;
         final MutableInt outputPosition = new MutableInt();
         final Supplier<OperatorAggregationStateManager> stateManagerSupplier =
                 () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac,

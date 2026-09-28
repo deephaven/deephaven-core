@@ -22,7 +22,8 @@ package io.deephaven.engine.table.impl.by;
  * <p>
  * A mode that reclaims states applies only to a refreshing aggregation whose operators can all reclaim states, and that
  * neither preserves empty groups nor has initial groups. An aggregation given such a mode explicitly fails if it cannot
- * reclaim; one given the {@link #configured()} mode uses {@link #none()} instead.
+ * reclaim; one given the {@link #configured()} mode uses {@link #none()} instead. An aggregation of static, add-only,
+ * append-only, or blink input never empties a state, so it accepts any mode and has nothing to reclaim.
  * <p>
  * Some engine operations use aggregations and depend on the behavior of {@code none}, assuming that the row key of an
  * aggregation state cannot change. Only a mode that moves states ({@link #movesStates()}) changes a group's row key
