@@ -34,16 +34,21 @@ final class OutputPositionBlockTracker {
     private static final int BLOCK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
     private static final int LOG_BLOCK_SIZE = Integer.numberOfTrailingZeros(BLOCK_SIZE);
     private static final long INDEX_MASK = BLOCK_SIZE - 1;
-    private static final int RELEASED = -1;
+    private static final short RELEASED = -1;
+
+    static {
+        // live counts run from 0 through BLOCK_SIZE, and are stored as shorts
+        assert BLOCK_SIZE <= Short.MAX_VALUE;
+    }
 
     /** The number of live states in each block, or {@link #RELEASED}. */
-    private int[] liveCounts = new int[0];
+    private short[] liveCounts = new short[0];
     /** Every position in the blocks below this one has been assigned. */
     private int closedBlocks;
     /** The blocks whose live count is {@link #RELEASED}; a released block is never assigned or moved onto again. */
     private final BitSet releasedBlocks = new BitSet();
     /** A closed block with at most this many live states is sparse, and may be collapsed. */
-    private final int sparseLiveLimit;
+    private final short sparseLiveLimit;
     /** The closed blocks that hold live states, but no more than {@link #sparseLiveLimit}. */
     private final BitSet sparseBlocks = new BitSet();
     /** The number of blocks in {@link #sparseBlocks}. */
@@ -57,7 +62,7 @@ final class OutputPositionBlockTracker {
      */
     OutputPositionBlockTracker(final RowSet initialStates, final int nextOutputPosition,
             final double collapseFreeFraction) {
-        sparseLiveLimit = collapseFreeFraction >= 1 ? 0 : (int) (BLOCK_SIZE * (1 - collapseFreeFraction));
+        sparseLiveLimit = collapseFreeFraction >= 1 ? 0 : (short) (BLOCK_SIZE * (1 - collapseFreeFraction));
         ensureCapacity(nextOutputPosition);
         addLive(initialStates);
         closedBlocks = nextOutputPosition >> LOG_BLOCK_SIZE;
@@ -96,7 +101,7 @@ final class OutputPositionBlockTracker {
                     currentBlock.set(bi);
                 }
                 assert liveCounts[bi] != RELEASED;
-                liveCounts[bi] -= (int) (rangeLast - rangeFirst + 1);
+                liveCounts[bi] -= (short) (rangeLast - rangeFirst + 1);
                 assert liveCounts[bi] >= 0;
                 rangeFirst = rangeLast + 1;
             }
@@ -199,7 +204,7 @@ final class OutputPositionBlockTracker {
                 final int block = collapsed.blocks[bi];
                 clearSparse(block);
                 final long blockLive = Math.max(0, Math.min(BLOCK_SIZE, runLive - ((long) bi << LOG_BLOCK_SIZE)));
-                liveCounts[block] = (int) blockLive;
+                liveCounts[block] = (short) blockLive;
                 if (blockLive == 0) {
                     release(block, releasedBuilder);
                 } else {
@@ -359,7 +364,7 @@ final class OutputPositionBlockTracker {
                 final long blockLast = ((long) bi << LOG_BLOCK_SIZE) + BLOCK_SIZE - 1;
                 final long rangeLast = Math.min(last, blockLast);
                 assert liveCounts[bi] != RELEASED;
-                liveCounts[bi] += (int) (rangeLast - rangeFirst + 1);
+                liveCounts[bi] += (short) (rangeLast - rangeFirst + 1);
                 assert liveCounts[bi] <= BLOCK_SIZE;
                 rangeFirst = rangeLast + 1;
             }
