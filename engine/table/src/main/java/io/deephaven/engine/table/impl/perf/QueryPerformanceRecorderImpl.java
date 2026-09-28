@@ -113,6 +113,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             }
             return false;
         }
+        checkOwnedByThisThread();
         state = QueryState.FINISHED;
         suspendInternal();
 
@@ -132,17 +133,23 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         if (state != QueryState.RUNNING) {
             throw new IllegalStateException("Can't suspend a query that isn't running");
         }
+        checkOwnedByThisThread();
         state = QueryState.SUSPENDED;
         suspendInternal();
         queryNugget.onBaseEntryEnd();
     }
 
-    private void suspendInternal() {
-        final QueryPerformanceRecorder threadLocalInstance = QueryPerformanceRecorderState.getInstance();
-        if (threadLocalInstance != this) {
+    /**
+     * A running query may only be suspended or ended by the thread it is installed on. Checked before any state
+     * changes, so that a rejected call leaves the query as it was for its owner.
+     */
+    private void checkOwnedByThisThread() {
+        if (QueryPerformanceRecorderState.getInstance() != this) {
             throw new IllegalStateException("Can't suspend a query that doesn't belong to this thread");
         }
+    }
 
+    private void suspendInternal() {
         Assert.neqNull(catchAllNugget, "catchAllNugget");
         stopCatchAll(false);
 

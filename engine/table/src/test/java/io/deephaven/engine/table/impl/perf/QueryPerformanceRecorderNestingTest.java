@@ -142,6 +142,96 @@ public class QueryPerformanceRecorderNestingTest {
         assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
     }
 
+    /**
+     * A running query belongs to the thread it is installed on; suspending or ending it from another thread is
+     * rejected, and must leave it exactly as it was so the owning thread can still finish it.
+     */
+    @Test
+    public void testSuspendingOrEndingFromAnotherThreadIsRejectedWithoutChangingState() throws InterruptedException {
+        final QueryPerformanceRecorder query = newQuery("query");
+        try (final SafeCloseable ignored = query.startQuery()) {
+            assertRejectedOnAnotherThread(query::suspendQuery);
+            Assert.eq(query.getState(), "query.getState()", QueryState.RUNNING);
+            assertCurrentRecorder(query);
+
+            assertRejectedOnAnotherThread(query::endQuery);
+            Assert.eq(query.getState(), "query.getState()", QueryState.RUNNING);
+            assertCurrentRecorder(query);
+
+            query.endQuery();
+            Assert.eq(query.getState(), "query.getState()", QueryState.FINISHED);
+        }
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    /**
+     * An abort may come from any thread and does not touch the thread-local: the aborted query stays installed until
+     * its owner ends it or leaves its scope, and either way the outer query gets the thread back.
+     */
+    @Test
+    public void testAbortedQueryStillHandsTheThreadBack() throws InterruptedException {
+        final QueryPerformanceRecorder outer = newQuery("outer");
+        final QueryPerformanceRecorder inner = suspendedQuery("inner");
+        final QueryPerformanceRecorder other = suspendedQuery("other");
+
+        try (final SafeCloseable ignored = outer.startQuery()) {
+            try (final SafeCloseable ignored2 = inner.resumeQuery()) {
+                assertCurrentRecorder(inner);
+                final Thread aborter = new Thread(inner::abortQuery, "aborter");
+                aborter.start();
+                aborter.join();
+                Assert.eq(inner.getState(), "inner.getState()", QueryState.INTERRUPTED);
+                assertCurrentRecorder(inner);
+                // ending an interrupted query reports nothing to log and leaves the thread to the scope
+                Assert.eqFalse(inner.endQuery(), "inner.endQuery()");
+                assertCurrentRecorder(inner);
+            }
+            assertCurrentRecorder(outer);
+
+            // the same without an explicit end: leaving the scope is enough
+            try (final SafeCloseable ignored2 = other.resumeQuery()) {
+                other.abortQuery();
+                assertCurrentRecorder(other);
+            }
+            assertCurrentRecorder(outer);
+            outer.endQuery();
+        }
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    @Test
+    public void testTransitionsFromTheWrongStateAreRejected() {
+        final QueryPerformanceRecorder query = newQuery("query");
+        // NOT_STARTED
+        assertIllegalState(query::resumeQuery);
+        assertIllegalState(query::suspendQuery);
+        assertIllegalState(query::endQuery);
+        query.abortQuery(); // a no-op
+        Assert.eq(query.getState(), "query.getState()", QueryState.NOT_STARTED);
+
+        // SUSPENDED
+        try (final SafeCloseable ignored = query.startQuery()) {
+            query.suspendQuery();
+        }
+        assertIllegalState(query::startQuery);
+        assertIllegalState(query::suspendQuery);
+        assertIllegalState(query::endQuery);
+        query.abortQuery(); // a no-op
+        Assert.eq(query.getState(), "query.getState()", QueryState.SUSPENDED);
+
+        // FINISHED
+        try (final SafeCloseable ignored = query.resumeQuery()) {
+            query.endQuery();
+        }
+        assertIllegalState(query::startQuery);
+        assertIllegalState(query::resumeQuery);
+        assertIllegalState(query::suspendQuery);
+        assertIllegalState(query::endQuery);
+        query.abortQuery(); // a no-op
+        Assert.eq(query.getState(), "query.getState()", QueryState.FINISHED);
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
     @Test
     public void testStartingWhileAnotherQueryOwnsTheThreadIsAnError() {
         final QueryPerformanceRecorder outer =
@@ -198,6 +288,29 @@ public class QueryPerformanceRecorderNestingTest {
         } catch (final IllegalStateException expected) {
             // the thread is owned by a running query
         }
+    }
+
+    private static void assertIllegalState(final Runnable transition) {
+        try {
+            transition.run();
+            Assert.statementNeverExecuted("the transition must be rejected");
+        } catch (final IllegalStateException expected) {
+            // rejected
+        }
+    }
+
+    private static void assertRejectedOnAnotherThread(final Runnable transition) throws InterruptedException {
+        final Throwable[] failure = new Throwable[1];
+        final Thread other = new Thread(() -> {
+            try {
+                transition.run();
+            } catch (final Throwable t) {
+                failure[0] = t;
+            }
+        }, "other");
+        other.start();
+        other.join();
+        Assert.eqTrue(failure[0] instanceof IllegalStateException, "failure[0] instanceof IllegalStateException");
     }
 
     private static void assertCurrentRecorder(final QueryPerformanceRecorder expected) {
