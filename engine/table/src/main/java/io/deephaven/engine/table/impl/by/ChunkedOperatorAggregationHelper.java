@@ -61,6 +61,23 @@ public class ChunkedOperatorAggregationHelper {
     static final boolean HASHED_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
 
+    /**
+     * Take the next output position for a new state. Output positions are never reused, so an aggregation that creates
+     * more states over its life than an {@code int} can index fails rather than wrapping around.
+     *
+     * @param nextOutputPosition the next output position to assign, which this advances
+     * @return the output position for the new state
+     */
+    public static int allocateOutputPosition(@NotNull final MutableInt nextOutputPosition) {
+        final int outputPosition = nextOutputPosition.getAndAdd(1);
+        if (outputPosition == Integer.MAX_VALUE) {
+            // the counter has wrapped, but the operation fails, so it is never read again
+            throw new UnsupportedOperationException(
+                    "Aggregation output positions exhausted: " + outputPosition + " states have been created");
+        }
+        return outputPosition;
+    }
+
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
             @NotNull final QueryTable input,
@@ -263,6 +280,8 @@ public class ChunkedOperatorAggregationHelper {
 
                 final StateChangeRecorder stateChangeRecorder =
                         preserveEmpty ? null : ac.getStateChangeRecorder();
+                // reused by every update, so that its bitset is allocated once and grows with the output positions
+                final BitmapRandomBuilder modifiedStatesBuilder = new BitmapRandomBuilder(0);
 
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
@@ -276,7 +295,7 @@ public class ChunkedOperatorAggregationHelper {
                     try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
                             reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
                             operatorInputModifiedColumnSets, stateChangeRecorder, upstreamToUse,
-                            outputPosition)) {
+                            outputPosition, modifiedStatesBuilder)) {
                         downstream = kuc.computeDownstreamIndicesAndCopyKeys(input.getRowSet(),
                                 keyColumnsRaw,
                                 keyColumnsCopied,
@@ -370,7 +389,7 @@ public class ChunkedOperatorAggregationHelper {
 
         private final RowSetBuilderRandom reincarnatedStatesBuilder;
         private final RowSetBuilderRandom emptiedStatesBuilder;
-        private final RowSetBuilderRandom modifiedStatesBuilder;
+        private final BitmapRandomBuilder modifiedStatesBuilder;
         private final boolean[] modifiedOperators;
 
         private final SafeCloseableList toClose;
@@ -418,7 +437,8 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final ModifiedColumnSet[] operatorInputUpstreamModifiedColumnSets,
                 @Nullable final StateChangeRecorder stateChangeRecorder,
                 @NotNull final TableUpdate upstream,
-                @NotNull final MutableInt outputPosition) {
+                @NotNull final MutableInt outputPosition,
+                @NotNull final BitmapRandomBuilder modifiedStatesBuilder) {
             this.ac = ac;
             this.incrementalStateManager = incrementalStateManager;
             this.reinterpretedKeySources = reinterpretedKeySources;
@@ -457,7 +477,8 @@ public class ChunkedOperatorAggregationHelper {
                 reincarnatedStatesBuilder = new EmptyRandomBuilder();
                 emptiedStatesBuilder = new EmptyRandomBuilder();
             }
-            modifiedStatesBuilder = new BitmapRandomBuilder(outputPosition.get());
+            this.modifiedStatesBuilder = modifiedStatesBuilder;
+            modifiedStatesBuilder.reset(outputPosition.get());
             modifiedOperators = new boolean[ac.size()];
 
             toClose = new SafeCloseableList();
@@ -647,9 +668,7 @@ public class ChunkedOperatorAggregationHelper {
                         copyKeyColumns(keyColumnsRaw, keyColumnsCopied, newStates);
                     }
 
-                    downstream.modified = modifiedStatesBuilder.build();
-                    downstream.modified().writableCast().remove(downstream.added());
-                    downstream.modified().writableCast().remove(downstream.removed());
+                    downstream.modified = modifiedStatesBuilder.build(downstream.added(), downstream.removed());
                 }
 
                 ac.propagateChangesToOperators(downstream, newStates);

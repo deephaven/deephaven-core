@@ -3,7 +3,10 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
@@ -27,6 +30,21 @@ public class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
     @Override
     public void addRange(final long firstRowKey, final long lastRowKey) {
         builder.addRange(firstRowKey, lastRowKey);
+    }
+
+    @Override
+    public void addOrderedRowKeysChunk(final LongChunk<? extends OrderedRowKeys> chunk) {
+        builder.addOrderedRowKeysChunk(chunk, 0, chunk.size());
+    }
+
+    @Override
+    public void addOrderedRowKeysChunk(final LongChunk<OrderedRowKeys> chunk, final int offset, final int length) {
+        builder.addOrderedRowKeysChunk(chunk, offset, length);
+    }
+
+    @Override
+    public void addOrderedRowKeysChunk(final IntChunk<? extends OrderedRowKeys> chunk) {
+        builder.addOrderedRowKeysChunk(chunk, 0, chunk.size());
     }
 
     @Override

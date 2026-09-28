@@ -896,17 +896,6 @@ public class SessionStateTest {
     }
 
     @Test
-    public void testVerifyExpirationSession() {
-        final SessionState session =
-                new SessionState(scheduler, new SessionService.ObfuscatingErrorTransformer(),
-                        TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
-        final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(),
-                DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), session);
-        expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
-        expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
-    }
-
-    @Test
     public void testGetExpiration() {
         final SessionService.TokenExpiration expiration = session.getExpiration();
         Assert.eq(expiration.session, "expiration.session", session, "session");

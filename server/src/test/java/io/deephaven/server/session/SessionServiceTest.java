@@ -14,6 +14,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -271,5 +272,59 @@ public class SessionServiceTest {
         // this one should not have made it
         final StatusRuntimeException tleaf = transformer.transform(leaf);
         Assert.notEquals(t0.getMessage(), "t0.getMessage()", tleaf.getMessage(), "tleaf.getMessage()");
+    }
+
+    /**
+     * A token maps to its session only until it passes its deadline or the session is closed. Once the session has
+     * expired and all of its tokens have aged out, nothing in the service may keep the session reachable.
+     */
+    @Test
+    public void testExpiredSessionIsNotRetainedAfterItsTokensExpire() throws InterruptedException {
+        final WeakReference<SessionState> sessionRef = createRotateAndExpireSession();
+        for (int i = 0; i < 100 && sessionRef.get() != null; ++i) {
+            System.gc();
+            Thread.sleep(10);
+        }
+        Assert.eqNull(sessionRef.get(), "sessionRef.get()");
+    }
+
+    @Test
+    public void testClosedSessionIsNotRetained() throws InterruptedException {
+        final WeakReference<SessionState> sessionRef = createRotateAndCloseSession();
+        for (int i = 0; i < 100 && sessionRef.get() != null; ++i) {
+            System.gc();
+            Thread.sleep(10);
+        }
+        Assert.eqNull(sessionRef.get(), "sessionRef.get()");
+    }
+
+    private WeakReference<SessionState> createRotateAndCloseSession() {
+        final SessionState session;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            session = sessionService.newSession(AUTH_CONTEXT);
+        }
+        scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
+        Assert.neqNull(sessionService.refreshToken(session), "sessionService.refreshToken(session)");
+        // an explicit close must not wait for the tokens to age out
+        sessionService.closeSession(session);
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
+        return new WeakReference<>(session);
+    }
+
+    private WeakReference<SessionState> createRotateAndExpireSession() {
+        final SessionState session;
+        // a throw-away scope, so that this test's liveness scope does not keep anything of the session alive
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            session = sessionService.newSession(AUTH_CONTEXT);
+        }
+        // rotate a few times so that several tokens map to this session
+        for (int i = 0; i < 3; ++i) {
+            scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
+            Assert.neqNull(sessionService.refreshToken(session), "sessionService.refreshToken(session)");
+        }
+        // let the newest token expire; the cleanup job expires the session and forgets its tokens
+        scheduler.runThrough(session.getExpiration().deadlineMillis);
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
+        return new WeakReference<>(session);
     }
 }
