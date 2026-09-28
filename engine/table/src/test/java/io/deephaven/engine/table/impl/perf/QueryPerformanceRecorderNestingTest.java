@@ -36,6 +36,11 @@ public class QueryPerformanceRecorderNestingTest {
             try (final SafeCloseable ignored2 = inner.resumeQuery()) {
                 assertCurrentRecorder(inner);
                 inner.endQuery();
+                // ending the inner query hands the thread back at once, not when its scope closes: the outer query is
+                // still running, so no new query may start here in the meantime
+                assertCurrentRecorder(outer);
+                assertCannotStartQuery("a new query cannot start while the outer query owns the thread");
+                assertCurrentRecorder(outer);
             }
             // the outer query owns the thread again, so it can be suspended and ended as usual
             assertCurrentRecorder(outer);
@@ -44,6 +49,71 @@ public class QueryPerformanceRecorderNestingTest {
         assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
 
         try (final SafeCloseable ignored = outer.resumeQuery()) {
+            assertCurrentRecorder(outer);
+            outer.endQuery();
+        }
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    @Test
+    public void testSuspendingTheInnerQueryHandsTheThreadBackAtOnce() {
+        final QueryPerformanceRecorder outer = newQuery("outer");
+        final QueryPerformanceRecorder inner = suspendedQuery("inner");
+
+        try (final SafeCloseable ignored = outer.startQuery()) {
+            try (final SafeCloseable ignored2 = inner.resumeQuery()) {
+                assertCurrentRecorder(inner);
+                inner.suspendQuery();
+                assertCurrentRecorder(outer);
+                assertCannotStartQuery("a new query cannot start while the outer query owns the thread");
+            }
+            assertCurrentRecorder(outer);
+            outer.endQuery();
+        }
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+
+        // the inner query is still suspended and finishes as usual
+        try (final SafeCloseable ignored = inner.resumeQuery()) {
+            assertCurrentRecorder(inner);
+            inner.endQuery();
+        }
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    @Test
+    public void testNestedResumesHandTheThreadBackInOrder() {
+        final QueryPerformanceRecorder a = newQuery("a");
+        final QueryPerformanceRecorder b = suspendedQuery("b");
+        final QueryPerformanceRecorder c = suspendedQuery("c");
+
+        try (final SafeCloseable ignored = a.startQuery()) {
+            try (final SafeCloseable ignored2 = b.resumeQuery()) {
+                assertCurrentRecorder(b);
+                try (final SafeCloseable ignored3 = c.resumeQuery()) {
+                    assertCurrentRecorder(c);
+                    c.endQuery();
+                    assertCurrentRecorder(b);
+                }
+                assertCurrentRecorder(b);
+                b.endQuery();
+                assertCurrentRecorder(a);
+            }
+            assertCurrentRecorder(a);
+            a.endQuery();
+        }
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    @Test
+    public void testLeavingTheInnerScopeWithoutEndingItRestoresTheOuterQuery() {
+        final QueryPerformanceRecorder outer = newQuery("outer");
+        final QueryPerformanceRecorder inner = suspendedQuery("inner");
+
+        try (final SafeCloseable ignored = outer.startQuery()) {
+            try (final SafeCloseable ignored2 = inner.resumeQuery()) {
+                assertCurrentRecorder(inner);
+                // neither ended nor suspended, as when an exception escapes the resumed work
+            }
             assertCurrentRecorder(outer);
             outer.endQuery();
         }
@@ -83,6 +153,29 @@ public class QueryPerformanceRecorderNestingTest {
             recorder.endQuery();
         }
         assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    private static QueryPerformanceRecorder newQuery(final String description) {
+        return QueryPerformanceRecorder.newQuery(description, null, QueryPerformanceNugget.DEFAULT_FACTORY);
+    }
+
+    /** A query that has been started and suspended, so that it may be resumed on a busy thread. */
+    private static QueryPerformanceRecorder suspendedQuery(final String description) {
+        final QueryPerformanceRecorder query = newQuery(description);
+        try (final SafeCloseable ignored = query.startQuery()) {
+            query.suspendQuery();
+        }
+        return query;
+    }
+
+    private static void assertCannotStartQuery(final String why) {
+        final QueryPerformanceRecorder fresh = newQuery("fresh");
+        try {
+            fresh.startQuery();
+            Assert.statementNeverExecuted(why);
+        } catch (final IllegalStateException expected) {
+            // the thread is owned by a running query
+        }
     }
 
     private static void assertCurrentRecorder(final QueryPerformanceRecorder expected) {

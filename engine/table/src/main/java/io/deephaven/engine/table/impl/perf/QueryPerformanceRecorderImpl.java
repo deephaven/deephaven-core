@@ -35,6 +35,11 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     private QueryState state = QueryState.NOT_STARTED;
     private volatile boolean hasSubQueries;
     private QueryPerformanceNugget catchAllNugget;
+    /**
+     * The query that owned the thread when this one was resumed on top of it, to hand the thread back to; null when
+     * this query is not installed on a thread, or took an idle thread. Only touched by the thread this query runs on.
+     */
+    private QueryPerformanceRecorder outerInstance;
 
     /**
      * Constructs a QueryPerformanceRecorderImpl.
@@ -139,8 +144,24 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         Assert.neqNull(catchAllNugget, "catchAllNugget");
         stopCatchAll(false);
 
-        // uninstall this instance from the thread local
+        uninstall();
+    }
+
+    /**
+     * Uninstalls this recorder from the current thread and hands the thread back to the query that was running when
+     * this one was resumed on top of it, if any. A no-op if this recorder is no longer installed, so that the closeable
+     * returned by {@link #resumeInternal} is safe to close after {@link #endQuery} or {@link #suspendQuery}.
+     */
+    private void uninstall() {
+        if (QueryPerformanceRecorderState.getInstance() != this) {
+            return;
+        }
+        final QueryPerformanceRecorder outer = outerInstance;
+        outerInstance = null;
         QueryPerformanceRecorderState.resetInstance();
+        if (outer != null) {
+            QueryPerformanceRecorderState.THE_LOCAL.set(outer);
+        }
     }
 
     /**
@@ -168,13 +189,14 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      * @return a closeable that hands the thread back to the query that was running before, if any
      */
     private SafeCloseable resumeInternal(final boolean allowNesting) {
-        final QueryPerformanceRecorder outerInstance = QueryPerformanceRecorderState.getInstance();
-        if (outerInstance == this) {
+        final QueryPerformanceRecorder current = QueryPerformanceRecorderState.getInstance();
+        if (current == this) {
             throw new IllegalStateException("Can't resume a query that is already in operation on this thread");
         }
-        if (!allowNesting && outerInstance != QueryPerformanceRecorderState.DUMMY_RECORDER) {
+        if (!allowNesting && current != QueryPerformanceRecorderState.DUMMY_RECORDER) {
             throw new IllegalStateException("Can't start a query while another query is in operation");
         }
+        outerInstance = current == QueryPerformanceRecorderState.DUMMY_RECORDER ? null : current;
         QueryPerformanceRecorderState.THE_LOCAL.set(this);
 
         queryNugget.onBaseEntryStart();
@@ -182,12 +204,8 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         Assert.eqNull(catchAllNugget, "catchAllNugget");
         startCatchAll();
 
-        return () -> {
-            QueryPerformanceRecorderState.resetInstance();
-            if (outerInstance != QueryPerformanceRecorderState.DUMMY_RECORDER) {
-                QueryPerformanceRecorderState.THE_LOCAL.set(outerInstance);
-            }
-        };
+        // ending or suspending the query hands the thread back itself; this covers an exit without either
+        return this::uninstall;
     }
 
     private void startCatchAll() {
