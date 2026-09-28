@@ -37,7 +37,7 @@ Key characteristics of Deephaven's client-server model:
 
 - **Server-side processing**: The vast majority of computational work happens on the server, where data is stored and transformed.
 - **Lightweight clients**: Clients do little to no real data processing. They send requests to the server and receive responses with the requested information.
-- **Ticking table support**: Some of Deephaven's client APIs (Python, JavaScript, Java, C++) support subscribing to ticking tables and receiving real-time updates. Other client APIs may receive static snapshots of table data at the time of the request.
+- **Ticking table support**: Some of Deephaven's client APIs (Python with the `pydeephaven-ticking` package, JavaScript, Java, C++) support subscribing to ticking tables and receiving real-time updates. Other client APIs may receive static snapshots of table data at the time of the request.
 - **Language-agnostic**: Clients are agnostic to the server-side API language being used. A Python client can connect to a server running Groovy code, and vice versa.
 
 ## Deephaven's language support
@@ -218,5 +218,6 @@ The examples and considerations throughout this document provide a framework for
 
 ## Related documentation
 
+- [What is Barrage?](./what-is-barrage.md)
 - [Core API design](./deephaven-core-api.md)
 - [URIs in Deephaven](../how-to-guides/use-uris.md)

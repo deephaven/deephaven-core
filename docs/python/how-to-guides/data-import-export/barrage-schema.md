@@ -5,7 +5,7 @@ sidebar_label: Barrage schema annotation
 
 Deephaven tables support Object-typed columns that can hold arbitrary Java objects. When exporting these tables over Flight using the Barrage format, Deephaven uses Apache Arrow schemas to describe the data. By default, if a column is typed as `Object`, the Arrow schema may not capture the intended structure of the data, which can lead to inefficient serialization or loss of type information. Use the `Table.BARRAGE_SCHEMA_ATTRIBUTE` to inject explicit Arrow schema information, which ensures that the Flight export uses the correct wire format.
 
-Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`).
+Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`), or when you want to opt into a wire-level encoding such as Run-End Encoding or dictionary encoding.
 
 ## When to use schema annotation
 
@@ -17,12 +17,12 @@ Schema annotation is needed when:
 
 ## How it works
 
-1. Extract a base schema with `BarrageUtil.schemaFromTable`.
+1. Extract a base schema with `BarrageUtil.schemaFromTable`. With encoding auto-detection disabled (the default), this gives each column its default Arrow type.
 2. Replace the target field with explicit Arrow types (e.g., `ArrowType.Utf8`, `ArrowType.Union`, `ArrowType.Map`).
 3. Attach the schema using [`with_attributes`](../../reference/table-operations/create/withAttributes.md).
 
 > [!NOTE]
-> `with_attributes` returns a new table. If you later transform the table (for example, with `select`, `view`, or `update`), attributes may not be preserved and you may need to re-apply the schema. Apply the schema as late as possible before export to minimize this risk.
+> `with_attributes` returns a new table. Filters (`where`, `where_in`, `where_not_in`), sorts (`sort`, `sort_descending`), `reverse`, `flatten`, `first_by`, `last_by`, and attribute-only operations such as `with_attributes` keep the schema attribute; `partition_by` copies it to each constituent table. Other transformations, such as `select`, `view`, `update`, `head`, or `agg_by`, drop it, and you must re-apply the schema. Apply the schema as late as possible before export.
 
 ## Supported types
 
@@ -31,6 +31,7 @@ The following complex Arrow types can be annotated:
 - **Union** (Dense or Sparse): For columns containing multiple possible types
 - **Map**: For key-value pair columns with explicit key/value type definitions
 - **Nested combinations**: Maps with Union values, etc.
+- **Run-End Encoding** and **dictionary encoding**: Transport-only encodings for columns with long runs of repeated values or few distinct values
 
 ## Working examples
 
@@ -42,6 +43,9 @@ Schema annotation requires direct manipulation of Apache Arrow Java types via `j
 - Annotating `Map<String, String>` columns
 - Annotating `Map<String, Integer>` columns
 - Annotating `Map<String, Union>` columns
+- Run-End Encoded (REE) columns
+- Dictionary-encoded columns
+- Verifying the encoding from a subscriber
 
 The Groovy patterns can be adapted for Python use with `jpy`, but require attention to how Python maps to Java types.
 
@@ -51,3 +55,4 @@ The Groovy patterns can be adapted for Python use with `jpy`, but require attent
 - [with_attributes](../../reference/table-operations/create/withAttributes.md)
 - [Groovy Barrage schema annotation guide](/core/groovy/docs/how-to-guides/data-import-export/barrage-schema)
 - [Arrow Flight integration](./arrow-flight.md)
+- [Use URIs to share tables](../use-uris.md)

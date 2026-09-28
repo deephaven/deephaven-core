@@ -10,9 +10,9 @@ sidebar_label: Arrow Flight
 - Maps have very limited support as Deephaven Column Sources cannot keep track of key or value types.
 - No support for large types such as LargeUtf8, LargeBinary, LargeList, and LargeListView (requires simulating 64-bit arrays).
 - No support for structs.
-- No support for run-end encoding.
-- No support for dictionary encoding.
 - No support for Utf8View or BinaryView.
+
+Run-end encoding and dictionary encoding are supported; see [Barrage schema annotation](./barrage-schema.md).
 
 ## Arrow Type Support Matrix
 
@@ -41,7 +41,7 @@ Deephaven supports a wide range of Arrow types. The following table summarizes t
 | `FixedSizeBinary(fixedLength)`        | `byte[]`                                                                        | `ByteVector, ByteBuffer`                                                       | —                                                                                                                                                                     |
 | `SparseUnion`/`DenseUnion`            | `Object`                                                                        | —                                                                              | Union types (dense or sparse) map to a generic `Object` column type.                                                                                                  |
 | `Null`                                | `Object`                                                                        | —                                                                              | Best when coupled with a Union.                                                                                                                                       |
-| `Map`                                 | `LinkedHashMap`                                                                 | —                                                                              | Cells are received as dictionaries.                                                                                                                                   |
+| `Map`                                 | `java.util.Map`                                                                 | —                                                                              | Cells are Java `LinkedHashMap` objects.                                                                                                                               |
 | `List` / `ListView` / `FixedSizeList` | Array of the inner field type                                                   | Supports conversion to Deephaven internal `Vector` types such as `LongVector`. | Fixed-size list wire formats will be truncated and/or null-padded to match the data as best as possible.                                                              |
 
 ### Integral Coercion
@@ -58,5 +58,6 @@ Please see the [Groovy documentation](/core/groovy/docs/how-to-guides/data-impor
 
 ## Related documentation
 
+- [What is Barrage?](../../conceptual/what-is-barrage.md)
 - [Barrage Extensions Package Summary](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/package-summary.html)
 - [Arrow Flight Package Summary](https://docs.deephaven.io/core/javadoc/org/apache/arrow/flight/package-summary.html)
