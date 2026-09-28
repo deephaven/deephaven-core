@@ -159,6 +159,30 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     /**
+     * Get the in-use bitset for {@code block}'s previous values, allocating the block's previous-value storage if this
+     * is its first write this cycle: bit {@code i} is set once position {@code i}'s previous value has been recorded.
+     * Previous values must be tracked.
+     *
+     * @param block the block about to be written
+     * @param prevBlocks this source's previous-value blocks
+     * @param recycler the recycler for previous-value blocks
+     * @return the block's in-use bitset
+     */
+    final long[] prevInUseFor(final int block, final UArray[] prevBlocks, final SoftRecycler<UArray> recycler) {
+        // If we want to track previous values, we make sure we are registered with the PeriodicUpdateGraph.
+        prevFlusher.maybeActivate();
+        if (prevBlocks[block] == null) {
+            prevBlocks[block] = recycler.borrowItem();
+            prevInUse[block] = inUseRecycler.borrowItem();
+            if (prevAllocated == null) {
+                prevAllocated = new IntArrayList();
+            }
+            prevAllocated.add(block);
+        }
+        return prevInUse[block];
+    }
+
+    /**
      * This method supports the 'set' method for its inheritors, doing some of the 'inUse' housekeeping that is common
      * to all inheritors.
      *
@@ -170,9 +194,6 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         if (prevFlusher == null) {
             return false;
         }
-        // If we want to track previous values, we make sure we are registered with the PeriodicUpdateGraph.
-        prevFlusher.maybeActivate();
-
         final int block = (int) (key >> LOG_BLOCK_SIZE);
         final int indexWithinBlock = (int) (key & INDEX_MASK);
         final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
@@ -180,18 +201,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
 
         boolean shouldRecordPrev = false;
 
-        // prevFlusher != null means we are tracking previous values.
-        final long[] inUse;
-        if (prevBlocks[block] == null) {
-            prevBlocks[block] = recycler.borrowItem();
-            prevInUse[block] = inUse = inUseRecycler.borrowItem();
-            if (prevAllocated == null) {
-                prevAllocated = new IntArrayList();
-            }
-            prevAllocated.add(block);
-        } else {
-            inUse = prevInUse[block];
-        }
+        final long[] inUse = prevInUseFor(block, prevBlocks, recycler);
         // Set value only if not already in use
         if ((inUse[indexWithinInUse] & maskWithinInUse) == 0) {
             shouldRecordPrev = true;

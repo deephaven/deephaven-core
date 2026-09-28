@@ -696,42 +696,115 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         }
     }
 
-    /**
-     * Move the values of {@code length} positions from {@code source} to {@code dest} for {@link #shift}. Unlike
-     * {@link #move}, each destination's previous value is recorded when previous values are tracked.
-     */
-    private void shiftRange(long source, long dest, long length) {
-        if (source == dest) {
-            return;
-        }
-        if (prevBlocks == null) {
-            move(source, dest, length);
-            return;
-        }
-        // one element at a time, so that each destination's previous value is recorded
-        if (source < dest && source + length >= dest) {
-            // moving up over the source, so start from the end
-            for (long ii = length - 1; ii >= 0; --ii) {
-                set(dest + ii, getUnsafe(source + ii));
-            }
-        } else {
-            for (long ii = 0; ii < length; ++ii) {
-                set(dest + ii, getUnsafe(source + ii));
-            }
-        }
-    }
 
     @Override
     public void shift(RowSetShiftData shiftData) {
         if (shiftData.empty()) {
             return;
         }
-        // Ranges are applied in an order in which no range reads the positions an earlier one vacated, though it may
-        // write them, so each range's vacated positions can be cleared as soon as it has moved.
-        shiftData.apply((s, e, d) -> {
-            shiftRange(s, s + d, e - s + 1);
-            clearVacated(s, e, d);
-        });
+        // RowSetShiftData.apply's order, by index: each run of ranges that move down goes first to last, and each run
+        // that moves up goes last to first, so that no range overwrites a source still to be read
+        final Shifter shifter = new Shifter();
+        final int size = shiftData.size();
+        int ri = 0;
+        while (ri < size) {
+            final boolean up = shiftData.getShiftDelta(ri) > 0;
+            int runEnd = ri;
+            while (runEnd + 1 < size && (shiftData.getShiftDelta(runEnd + 1) > 0) == up) {
+                ++runEnd;
+            }
+            for (int rj = up ? runEnd : ri; up ? rj >= ri : rj <= runEnd; rj += up ? -1 : 1) {
+                final long first = shiftData.getBeginRange(rj);
+                final long last = shiftData.getEndRange(rj);
+                final long delta = shiftData.getShiftDelta(rj);
+                shifter.shiftRange(first, last, delta);
+                // no range reads the positions an earlier one vacated, though it may write them, so each range's
+                // vacated positions can be cleared as soon as it has moved
+                clearVacated(first, last, delta);
+            }
+            ri = runEnd + 1;
+        }
+    }
+
+    /** Ranges no longer than this are copied with a loop rather than {@code System.arraycopy}. */
+    private static final int LOOP_COPY_LIMIT = 16;
+
+    /**
+     * Applies a shift one range at a time, keeping the arrays of the current source and destination blocks, and the
+     * destination's previous values and their in-use bitset, from one range to the next: the ranges of a collapse are
+     * short and mostly fall within the same pair of blocks. Each destination's previous value is recorded when previous
+     * values are tracked.
+     */
+    private final class Shifter {
+        private final boolean trackPrevious = prevFlusher != null;
+        private int sourceBlockIndex = -1;
+        private T[] sourceBlock;
+        private int destBlockIndex = -1;
+        private T[] destBlock;
+        private T[] prevBlock;
+        private long[] inUse;
+
+        private void sourceFor(final int blockIndex) {
+            if (blockIndex != sourceBlockIndex) {
+                sourceBlockIndex = blockIndex;
+                sourceBlock = blocks[blockIndex];
+            }
+        }
+
+        private void destinationFor(final int blockIndex) {
+            if (blockIndex != destBlockIndex) {
+                destBlockIndex = blockIndex;
+                destBlock = blocks[blockIndex];
+                if (trackPrevious) {
+                    inUse = prevInUseFor(blockIndex, prevBlocks, getRecycler());
+                    prevBlock = prevBlocks[blockIndex];
+                }
+            }
+        }
+
+        /**
+         * Move the values of {@code first} through {@code last} by {@code delta}, a piece at a time, each piece within
+         * one source block and one destination block.
+         */
+        private void shiftRange(final long first, final long last, final long delta) {
+            final long length = last - first + 1;
+            // moving up over the source must copy from the end
+            final boolean backward = delta > 0 && delta < length;
+            long done = 0;
+            while (done < length) {
+                final long remaining = length - done;
+                final long sourceKey = backward ? first + remaining - 1 : first + done;
+                final long destKey = sourceKey + delta;
+                final int sourceIndex = (int) (sourceKey & INDEX_MASK);
+                final int destIndex = (int) (destKey & INDEX_MASK);
+                final int count = (int) Math.min(remaining,
+                        backward ? Math.min(sourceIndex, destIndex) + 1
+                                : BLOCK_SIZE - Math.max(sourceIndex, destIndex));
+                sourceFor((int) (sourceKey >> LOG_BLOCK_SIZE));
+                destinationFor((int) (destKey >> LOG_BLOCK_SIZE));
+                final int step = backward ? -1 : 1;
+                if (trackPrevious) {
+                    for (int jj = 0; jj < count; ++jj) {
+                        final int di = destIndex + step * jj;
+                        final int word = di >> LOG_INUSE_BITSET_SIZE;
+                        final long mask = 1L << (di & IN_USE_MASK);
+                        if ((inUse[word] & mask) == 0) {
+                            inUse[word] |= mask;
+                            prevBlock[di] = destBlock[di];
+                        }
+                        destBlock[di] = sourceBlock[sourceIndex + step * jj];
+                    }
+                } else if (count > LOOP_COPY_LIMIT) {
+                    System.arraycopy(sourceBlock, backward ? sourceIndex - count + 1 : sourceIndex, destBlock,
+                            backward ? destIndex - count + 1 : destIndex, count);
+                } else {
+                    for (int jj = 0; jj < count; ++jj) {
+                        destBlock[destIndex + step * jj] = sourceBlock[sourceIndex + step * jj];
+                    }
+                }
+                done += count;
+            }
+        }
     }
 
     /**
