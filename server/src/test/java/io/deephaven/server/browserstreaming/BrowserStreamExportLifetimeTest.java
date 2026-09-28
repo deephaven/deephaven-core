@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.junit.Assert.assertThrows;
+
 /**
  * Browsers cannot open bidirectional gRPC streams, so the server emulates them: the first message of a stream is
  * exported under the client's rpc ticket so that later messages can find it. This test covers what happens to that
@@ -317,20 +319,15 @@ public class BrowserStreamExportLifetimeTest {
         final int rpcTicketId = 13;
         final Ticket rpcTicket = ExportTicketHelper.wrapExportIdInTicket(rpcTicketId);
 
-        try {
-            inStreamContext(new StreamData(rpcTicket, 1, false),
-                    () -> method.invokeOpen("first", new CapturingServerCallObserver<>()));
-            Assert.statementNeverExecuted("an open request must have sequence 0");
-        } catch (final StatusRuntimeException expected) {
-            Assert.eq(expected.getStatus().getCode(), "expected.getStatus().getCode()", Status.Code.INVALID_ARGUMENT);
-        }
-        try {
-            inStreamContext(new StreamData(rpcTicket, 0, false),
-                    () -> method.invokeNext("second", new NoopObserver<>()));
-            Assert.statementNeverExecuted("a next request must have a positive sequence");
-        } catch (final StatusRuntimeException expected) {
-            Assert.eq(expected.getStatus().getCode(), "expected.getStatus().getCode()", Status.Code.INVALID_ARGUMENT);
-        }
+        final StatusRuntimeException badOpen = assertThrows(StatusRuntimeException.class,
+                () -> inStreamContext(new StreamData(rpcTicket, 1, false),
+                        () -> method.invokeOpen("first", new CapturingServerCallObserver<>())));
+        Assert.eq(badOpen.getStatus().getCode(), "badOpen.getStatus().getCode()", Status.Code.INVALID_ARGUMENT);
+
+        final StatusRuntimeException badNext = assertThrows(StatusRuntimeException.class,
+                () -> inStreamContext(new StreamData(rpcTicket, 0, false),
+                        () -> method.invokeNext("second", new NoopObserver<>())));
+        Assert.eq(badNext.getStatus().getCode(), "badNext.getStatus().getCode()", Status.Code.INVALID_ARGUMENT);
         // neither request reached the session: no stream was built, and no export was defined or waited on
         Assert.eq(delegate.received.size(), "delegate.received.size()", 0);
         Assert.eqNull(session.getExportIfExists(rpcTicketId), "session.getExportIfExists(rpcTicketId)");
@@ -350,13 +347,9 @@ public class BrowserStreamExportLifetimeTest {
             final RecordingDelegate delegate = new RecordingDelegate();
             final BrowserStream.Factory<String, String> factory =
                     BrowserStream.factory(BrowserStream.Mode.IN_ORDER, delegate);
-            try {
-                factory.create(session, new StreamData(rpcTicket, 0, halfClose), new NoopObserver<>());
-                Assert.statementNeverExecuted("a stream cannot be created on an expired session");
-            } catch (final StatusRuntimeException expected) {
-                Assert.eq(expected.getStatus().getCode(), "expected.getStatus().getCode()",
-                        Status.Code.UNAUTHENTICATED);
-            }
+            final StatusRuntimeException expected = assertThrows(StatusRuntimeException.class,
+                    () -> factory.create(session, new StreamData(rpcTicket, 0, halfClose), new NoopObserver<>()));
+            Assert.eq(expected.getStatus().getCode(), "expected.getStatus().getCode()", Status.Code.UNAUTHENTICATED);
             Assert.neqNull(delegate.error, "delegate.error (halfClose=" + halfClose + ")");
             Assert.eqTrue(delegate.error instanceof StatusRuntimeException, "delegate.error instanceof SRE");
             Assert.eq(((StatusRuntimeException) delegate.error).getStatus().getCode(),
@@ -375,13 +368,10 @@ public class BrowserStreamExportLifetimeTest {
         // the client (mistakenly) reuses a ticket that already names another export
         session.newExport(rpcTicketId).submit(() -> "taken");
 
-        try {
-            inStreamContext(new StreamData(rpcTicket, 0, false),
-                    () -> method.invokeOpen("first", new NoopObserver<>()));
-            Assert.statementNeverExecuted("the open must fail when its ticket is already defined");
-        } catch (final IllegalStateException expected) {
-            // the export cannot be defined twice
-        }
+        // the export cannot be defined twice
+        assertThrows(IllegalStateException.class,
+                () -> inStreamContext(new StreamData(rpcTicket, 0, false),
+                        () -> method.invokeOpen("first", new NoopObserver<>())));
         // the stream that could not be exported must not linger on the session
         Assert.neqNull(delegate.error, "delegate.error");
         Assert.eqTrue(delegate.error instanceof IllegalStateException, "delegate.error instanceof ISE");
