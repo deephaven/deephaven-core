@@ -228,36 +228,15 @@ public class HasherConfig<T> {
         }
 
         /**
-         * Bound each partial rehash by the alternate slots it examines, at the rate the named constant gives.
+         * Bound each partial rehash by the alternate slots it examines, at the rate the named constant gives. The
+         * generated code refers to the constant, so a hasher whose constant is missing or is not an {@code int} fails
+         * to compile.
          *
          * @param owner the class that declares the constant
-         * @param constantName the name of a public static final {@code int} field of {@code owner}, which must be
-         *        positive
+         * @param constantName the name of a static {@code int} field of {@code owner}, which must be positive
          * @return this builder
          */
         public Builder<T> rehashSlotsPerEntry(final Class<?> owner, final String constantName) {
-            final java.lang.reflect.Field field;
-            try {
-                field = owner.getField(constantName);
-            } catch (NoSuchFieldException e) {
-                throw new IllegalArgumentException(owner.getName() + " has no public field " + constantName, e);
-            }
-            final int modifiers = field.getModifiers();
-            if (field.getType() != int.class || !java.lang.reflect.Modifier.isStatic(modifiers)
-                    || !java.lang.reflect.Modifier.isFinal(modifiers)) {
-                throw new IllegalArgumentException(owner.getName() + "." + constantName + " is not a static final int");
-            }
-            final int slotsPerEntry;
-            try {
-                slotsPerEntry = field.getInt(null);
-            } catch (IllegalAccessException e) {
-                throw new IllegalArgumentException(owner.getName() + "." + constantName + " is not readable", e);
-            }
-            if (slotsPerEntry <= 0) {
-                // zero would divide by zero, and a negative rate would examine no slots
-                throw new IllegalArgumentException(
-                        owner.getName() + "." + constantName + " is " + slotsPerEntry + ", not positive");
-            }
             this.rehashSlotsPerEntry = CodeBlock.of("$T.$L", owner, constantName);
             return this;
         }
