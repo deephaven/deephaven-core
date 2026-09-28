@@ -15,10 +15,8 @@ import java.nio.charset.StandardCharsets;
  * The stock {@code BinaryPlainValuesReader} allocates a {@link ByteBuffer} slice and a {@code Binary} wrapper per
  * value, both of which {@code toStringUsingUTF8()} immediately discards. Decoding from the array skips them, leaving
  * only the {@code String} and its {@code byte[]}, and reducing GC.
- *
- * @see PlainBinaryStringMaterializer
  */
-public final class PlainBinaryStringValuesReader extends ValuesReader {
+final class PlainBinaryStringValuesReader extends ValuesReader {
 
     final private byte[] array;
     /** Index into {@link #array} of the next value's length prefix. */
@@ -29,7 +27,7 @@ public final class PlainBinaryStringValuesReader extends ValuesReader {
     /**
      * @param in A heap-backed buffer positioned at the first value and limited to the end of the page
      */
-    public PlainBinaryStringValuesReader(final ByteBuffer in) {
+    PlainBinaryStringValuesReader(final ByteBuffer in) {
         if (!in.hasArray()) {
             throw new IllegalArgumentException("Page buffer is not heap-backed");
         }

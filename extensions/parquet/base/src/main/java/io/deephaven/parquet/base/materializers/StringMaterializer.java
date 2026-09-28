@@ -9,7 +9,7 @@ import org.apache.parquet.column.values.ValuesReader;
 
 public class StringMaterializer extends ObjectMaterializerBase<String> implements PageMaterializer {
 
-    public static final PageMaterializerFactory FACTORY = new PlainBinaryPageReaderFactory();
+    public static final PageMaterializerFactory FACTORY = new StringPageMaterializerFactory();
 
     private final ValuesReader dataReader;
 

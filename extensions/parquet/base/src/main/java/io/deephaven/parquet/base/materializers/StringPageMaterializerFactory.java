@@ -11,10 +11,9 @@ import java.nio.ByteBuffer;
 
 /**
  * Builds String materializers, reading PLAIN-encoded BINARY pages with its own {@link ValuesReader} rather than
- * parquet's. {@link io.deephaven.parquet.base.ColumnPageReader} offers a page to this type only when the page is one
- * {@link PlainBinaryStringValuesReader} can consume.
+ * parquet's. The page reader offers a page to this type only when the page is one that reader can consume.
  */
-public class PlainBinaryPageReaderFactory implements PageMaterializerFactory {
+public class StringPageMaterializerFactory implements PageMaterializerFactory {
 
     @Override
     public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {

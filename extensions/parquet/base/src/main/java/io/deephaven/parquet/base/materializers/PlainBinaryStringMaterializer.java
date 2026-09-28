@@ -10,7 +10,7 @@ import io.deephaven.parquet.base.PageMaterializer;
  *
  * @see StringMaterializer
  */
-public class PlainBinaryStringMaterializer extends ObjectMaterializerBase<String> implements PageMaterializer {
+final class PlainBinaryStringMaterializer extends ObjectMaterializerBase<String> implements PageMaterializer {
 
     private final PlainBinaryStringValuesReader dataReader;
 

@@ -4,10 +4,8 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.materializers.BlobMaterializer;
-import io.deephaven.parquet.base.materializers.PlainBinaryPageReaderFactory;
-import io.deephaven.parquet.base.materializers.PlainBinaryStringMaterializer;
-import io.deephaven.parquet.base.materializers.PlainBinaryStringValuesReader;
 import io.deephaven.parquet.base.materializers.StringMaterializer;
+import io.deephaven.parquet.base.materializers.StringPageMaterializerFactory;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.ValuesReader;
@@ -27,35 +25,37 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * The two halves of the selection rule for {@code PlainBinaryStringValuesReader}: whether the page may be offered at
- * all, and whether the factory is one that wants it. Verified here rather than through a parquet read because class
- * loading happens whether or not the branch is taken, so it is not evidence the path fired.
+ * Which pages {@code ColumnPageReaderImpl} offers to a {@link StringPageMaterializerFactory}. What that factory then
+ * builds is covered next to it, in {@code TestStringPageMaterializerFactory}.
  */
 class TestPlainBinaryStringReaderSelection {
 
     private static final ByteBuffer HEAP = ByteBuffer.allocate(64);
     private static final ByteBuffer DIRECT = ByteBuffer.allocateDirect(64);
 
-    /** The real factory opts in; the integration tests below use a recording stub, so this is the only check. */
-    @Test
-    void selectedForPlainBinaryStrings() {
-        assertThat(StringMaterializer.FACTORY).isInstanceOf(PlainBinaryPageReaderFactory.class);
-        assertThat(((PlainBinaryPageReaderFactory) StringMaterializer.FACTORY).makePlainBinaryValuesReader(HEAP))
-                .isInstanceOf(PlainBinaryStringValuesReader.class);
+    /** A stand-in for whatever the factory hands back; only its identity matters here. */
+    private static ValuesReader sentinelReader() {
+        return new ValuesReader() {
+            @Override
+            public void skip() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     /**
-     * Opting out is a correctness requirement, not a tuning choice: PlainBinaryStringValuesReader implements only bulk
+     * Opting in is a correctness requirement, not a tuning choice: the reader supplied by the hook implements only bulk
      * String decoding, so any other BINARY consumer handed one would throw from readBytes().
      */
     @Test
     void notImplementedByOtherBinaryMaterializers() {
-        assertThat(BlobMaterializer.FACTORY).isNotInstanceOf(PlainBinaryPageReaderFactory.class);
-        assertThat(PageMaterializerFactory.NULL_FACTORY).isNotInstanceOf(PlainBinaryPageReaderFactory.class);
+        assertThat(BlobMaterializer.FACTORY).isNotInstanceOf(StringPageMaterializerFactory.class);
+        assertThat(PageMaterializerFactory.NULL_FACTORY).isNotInstanceOf(StringPageMaterializerFactory.class);
+        assertThat(StringMaterializer.FACTORY).isInstanceOf(StringPageMaterializerFactory.class);
     }
 
     /** Records whether the hook was called, and hands back a reader that is trivially identifiable. */
-    private static final class RecordingFactory extends PlainBinaryPageReaderFactory {
+    private static final class RecordingFactory extends StringPageMaterializerFactory {
         private final ValuesReader supplied;
         private int calls;
 
@@ -85,7 +85,7 @@ class TestPlainBinaryStringReaderSelection {
      */
     @Test
     void getDataReaderConsultsTheFactory() {
-        final ValuesReader supplied = new PlainBinaryStringValuesReader(HEAP);
+        final ValuesReader supplied = sentinelReader();
         final RecordingFactory factory = new RecordingFactory(supplied);
 
         assertThat(readerFor(PrimitiveTypeName.BINARY, factory).getDataReader(Encoding.PLAIN, HEAP, 0, null))
@@ -107,7 +107,7 @@ class TestPlainBinaryStringReaderSelection {
      */
     @Test
     void getDataReaderSkipsTheFactoryForDirectBuffers() {
-        final RecordingFactory factory = new RecordingFactory(new PlainBinaryStringValuesReader(HEAP));
+        final RecordingFactory factory = new RecordingFactory(sentinelReader());
 
         assertThat(readerFor(PrimitiveTypeName.BINARY, factory).getDataReader(Encoding.PLAIN, DIRECT, 0, null))
                 .isInstanceOf(BinaryPlainValuesReader.class);
@@ -123,7 +123,7 @@ class TestPlainBinaryStringReaderSelection {
     void getDataReaderSkipsTheFactoryForDictionaryPages() {
         // noinspection deprecation
         for (final Encoding encoding : List.of(Encoding.RLE_DICTIONARY, Encoding.PLAIN_DICTIONARY)) {
-            final RecordingFactory factory = new RecordingFactory(new PlainBinaryStringValuesReader(HEAP));
+            final RecordingFactory factory = new RecordingFactory(sentinelReader());
             final ColumnPageReaderImpl reader = readerFor(PrimitiveTypeName.BINARY, factory);
 
             // NULL_DICTIONARY means "no dictionary was loaded", so reaching that branch is itself the assertion.
@@ -138,30 +138,10 @@ class TestPlainBinaryStringReaderSelection {
     @Test
     void getDataReaderSkipsTheFactoryForNonBinaryColumns() {
         for (final PrimitiveTypeName type : List.of(PrimitiveTypeName.INT32, PrimitiveTypeName.DOUBLE)) {
-            final RecordingFactory factory = new RecordingFactory(new PlainBinaryStringValuesReader(HEAP));
+            final RecordingFactory factory = new RecordingFactory(sentinelReader());
 
             readerFor(type, factory).getDataReader(Encoding.PLAIN, HEAP, 0, null);
             assertThat(factory.calls).as("type %s", type).isZero();
         }
-    }
-
-    /**
-     * The factory, not the materializer, picks the decode strategy. Falling through to {@link StringMaterializer} would
-     * still produce correct values, just slower, so only a type assertion catches it.
-     */
-    @Test
-    void factoryDispatchesOnReaderType() {
-        final PlainBinaryStringValuesReader fast = new PlainBinaryStringValuesReader(HEAP);
-        final BinaryPlainValuesReader stock = new BinaryPlainValuesReader();
-
-        assertThat(StringMaterializer.FACTORY.makeMaterializerNonNull(fast, 1))
-                .isInstanceOf(PlainBinaryStringMaterializer.class);
-        assertThat(StringMaterializer.FACTORY.makeMaterializerWithNulls(fast, null, 1))
-                .isInstanceOf(PlainBinaryStringMaterializer.class);
-
-        assertThat(StringMaterializer.FACTORY.makeMaterializerNonNull(stock, 1))
-                .isInstanceOf(StringMaterializer.class);
-        assertThat(StringMaterializer.FACTORY.makeMaterializerWithNulls(stock, null, 1))
-                .isInstanceOf(StringMaterializer.class);
     }
 }

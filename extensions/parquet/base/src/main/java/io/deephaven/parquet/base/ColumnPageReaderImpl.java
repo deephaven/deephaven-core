@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.parquet.base.materializers.IntMaterializer;
-import io.deephaven.parquet.base.materializers.PlainBinaryPageReaderFactory;
+import io.deephaven.parquet.base.materializers.StringPageMaterializerFactory;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -649,17 +649,14 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     /**
-     * Whether a factory may be offered this page. Encoding is per page, not per column, and offering a dictionary page
-     * would be a correctness bug rather than a missed optimization. Page buffers are heap-backed today, so the
-     * {@code hasArray} term never fires; it is what lets the factory hook be total.
+     * Encoding is per page, not per column, and offering a dictionary page to a PLAIN reader would be a correctness bug
+     * rather than a missed optimization.
      *
      * @param dataEncoding this page's encoding
      * @param primitiveTypeName the column's parquet primitive type
-     * @param in the page buffer
      */
-    private static boolean isPlainBinaryPage(
-            final Encoding dataEncoding, final PrimitiveTypeName primitiveTypeName, final ByteBuffer in) {
-        return dataEncoding == Encoding.PLAIN && primitiveTypeName == PrimitiveTypeName.BINARY && in.hasArray();
+    private static boolean isPlainBinaryPage(final Encoding dataEncoding, final PrimitiveTypeName primitiveTypeName) {
+        return dataEncoding == Encoding.PLAIN && primitiveTypeName == PrimitiveTypeName.BINARY;
     }
 
     @VisibleForTesting
@@ -671,10 +668,13 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         if (dataEncoding == Encoding.DELTA_BYTE_ARRAY) {
             throw new RuntimeException("DELTA_BYTE_ARRAY encoding not supported");
         }
-        if (pageMaterializerFactory instanceof PlainBinaryPageReaderFactory plainBinaryFactory
-                && isPlainBinaryPage(dataEncoding, path.getPrimitiveType().getPrimitiveTypeName(), in)) {
+        // The hook is total, so `hasArray` is checked here rather than by the factory. Page buffers are heap-backed
+        // today, so it never fires.
+        if (pageMaterializerFactory instanceof StringPageMaterializerFactory stringFactory
+                && isPlainBinaryPage(dataEncoding, path.getPrimitiveType().getPrimitiveTypeName())
+                && in.hasArray()) {
             // `in` is already positioned past the repetition and definition levels.
-            return plainBinaryFactory.makePlainBinaryValuesReader(in);
+            return stringFactory.makePlainBinaryValuesReader(in);
         }
         final ValuesReader dataReader;
         if (dataEncoding.usesDictionary()) {
