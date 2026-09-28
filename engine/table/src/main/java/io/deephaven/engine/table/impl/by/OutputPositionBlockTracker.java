@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -38,7 +39,7 @@ final class OutputPositionBlockTracker {
 
     static {
         // live counts run from 0 through BLOCK_SIZE, and are stored as shorts
-        assert BLOCK_SIZE <= Short.MAX_VALUE;
+        Assert.leq(BLOCK_SIZE, "BLOCK_SIZE", Short.MAX_VALUE, "Short.MAX_VALUE");
     }
 
     /** The number of live states in each block, or {@link #RELEASED}. */
