@@ -5206,6 +5206,46 @@ public class QueryTableAggregationTest {
         return values;
     }
 
+    /**
+     * A group whose Instant values are all null has no multiset, and its distinct cell must be null, as it is for the
+     * primitive types, rather than a vector that throws on every access. The TUV reads each cell's current and previous
+     * values as groups move into and out of that state.
+     */
+    @Test
+    public void testDistinctInstantAllNullGroup() {
+        final Instant t1 = Instant.ofEpochSecond(1);
+        final Instant t2 = Instant.ofEpochSecond(2);
+        final QueryTable table = testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("Key", "A", "B"), instantCol("T", t1, null));
+        final QueryTable distinct = (QueryTable) table.aggBy(AggDistinct("T"), "Key");
+        final Table sizes = distinct.view("Key", "Size = T == null ? -1 : T.intSize()");
+
+        final TableUpdateValidator validator = TableUpdateValidator.make("distinctInstant", distinct);
+        final FailureListener failureListener = new FailureListener();
+        validator.getResultTable().addUpdateListener(failureListener);
+
+        assertTableEquals(newTable(stringCol("Key", "A", "B"), intCol("Size", 1, -1)), sizes);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // A becomes all null, and B gains its first non-null value
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(0, 2), stringCol("Key", "A", "B"), instantCol("T", null, t2));
+            table.notifyListeners(i(2), i(), i(0));
+        });
+        assertTableEquals(newTable(stringCol("Key", "A", "B"), intCol("Size", -1, 1)), sizes);
+        final Table distinctB = distinct.where("Key == `B`");
+        assertArrayEquals(new Instant[] {t2}, ((ObjectVector<?>) distinctB.getColumnSource("T")
+                .get(distinctB.getRowSet().firstRowKey())).toArray());
+
+        // B loses its only non-null value
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(2));
+            table.notifyListeners(i(), i(2), i());
+        });
+        assertTableEquals(newTable(stringCol("Key", "A", "B"), intCol("Size", -1, -1)), sizes);
+    }
+
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
         final File directory = Files.createTempDirectory("QueryTableAggregationTest").toFile();
 
