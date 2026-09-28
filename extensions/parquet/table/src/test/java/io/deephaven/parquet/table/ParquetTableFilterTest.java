@@ -2033,15 +2033,16 @@ public final class ParquetTableFilterTest {
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         // Written at scale 0, so this value is equal to the rows of its run.
         queryScope.putParam("sortedBd500", new BigDecimal("500"));
-        // Ordering-equal to that same run, but equal to no member of it.
+        // Ordering-equal to that same run, at another scale; a BigDecimal match is decided by ordering, as the query
+        // language's == decides it, so this value matches the run too.
         queryScope.putParam("sortedBd500Scaled", new BigDecimal("500.00"));
         // Ordering-equal to no run at all.
         queryScope.putParam("sortedBdAbsent", new BigDecimal("500.5"));
 
         // Stated outright, so the oracle comparisons below cannot pass by both sides being wrong alike: the run is
-        // ten rows, and the ordering-equal value at another scale is equal to none of them.
+        // ten rows, and the ordering-equal value at another scale matches all of them.
         assertEquals(10, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500").size());
-        assertEquals(0, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500Scaled").size());
+        assertEquals(10, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500Scaled").size());
 
         verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == sortedBd500");
         verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd != sortedBd500");
