@@ -6,15 +6,15 @@ package io.deephaven.engine.table.impl.by;
 /**
  * How an incremental aggregation reclaims the states of groups whose rows have all been removed.
  * <p>
- * A group that empties leaves the result and the hash table at the end of the cycle, unless the mode is
- * {@link #none()}. A group that returns on a later cycle is a new state, after every existing one. Output positions are
- * never reused; the modes differ in whether the storage of removed states is freed:
+ * A group that empties leaves the result at the end of the cycle. Unless the mode is {@link #none()}, its state leaves
+ * the hash table as well, so a group that returns on a later cycle is a new state and, like any new group, gets a row
+ * key after every existing row's. The modes differ in whether the storage of removed states is freed:
  * <ul>
- * <li>{@link #none()}: states are never removed. An empty state keeps its output position, and a returning group reuses
- * it. Memory grows with every group ever seen.</li>
- * <li>{@link #releaseBlocks(double)}: the storage for a closed block of output positions, one whose positions have all
- * been assigned, is released once all of its states are removed. States move only to collapse runs of sparse blocks,
- * when the parameter allows.</li>
+ * <li>{@link #none()}: states are never removed. An empty group keeps its state, and a returning group gets its row key
+ * back. Memory grows with every group ever seen.</li>
+ * <li>{@link #releaseBlocks(double)}: when enough adjacent states are removed, free the underlying storage. If the
+ * {@code collapseFreeFraction} is less than 1.0, states may move to eliminate fragmentation that would otherwise
+ * prevent empty runs from being freed.</li>
  * </ul>
  * Only a mode that moves states ({@link #movesStates()}) changes a group's row key while it has rows; a consumer that
  * looks up a group's current row key and reads previous values there needs a mode that does not.
@@ -45,10 +45,10 @@ public final class StateReclaimMode {
     }
 
     /**
-     * @param collapseFreeFraction a closed block of output positions at least this fraction free is sparse, and runs of
-     *        sparse blocks separated only by released blocks are collapsed, keeping the states in order, so that the
-     *        blocks this empties can be released; 1 or more never collapses
-     * @return the mode that releases the storage for blocks of output positions whose states have all been removed
+     * @param collapseFreeFraction when at least this fraction of a run of row keys belongs to removed groups, the rows
+     *        that remain may move to lower row keys, keeping their order, so that the storage for the row keys this
+     *        empties can be freed; 1 or more never moves rows
+     * @return the mode that frees the storage for runs of adjacent row keys whose groups have all been removed
      * @throws IllegalArgumentException if {@code collapseFreeFraction} is NaN
      */
     public static StateReclaimMode releaseBlocks(final double collapseFreeFraction) {
@@ -92,14 +92,14 @@ public final class StateReclaimMode {
     }
 
     /**
-     * @return the fraction free at which a block of output positions is collapsed
+     * @return the fraction of a run of row keys that must belong to removed groups before the remaining rows may move
      */
     public double collapseFreeFraction() {
         return collapseFreeFraction;
     }
 
     /**
-     * @return whether a state's output position may change while its group has rows
+     * @return whether a group's row key may change while it has rows
      */
     public boolean movesStates() {
         return reclaim && collapseFreeFraction < 1;
