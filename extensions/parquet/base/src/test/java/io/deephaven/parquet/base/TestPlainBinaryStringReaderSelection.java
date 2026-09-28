@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.materializers.BlobMaterializer;
+import io.deephaven.parquet.base.materializers.PlainBinaryPageReaderFactory;
 import io.deephaven.parquet.base.materializers.PlainBinaryStringMaterializer;
 import io.deephaven.parquet.base.materializers.PlainBinaryStringValuesReader;
 import io.deephaven.parquet.base.materializers.StringMaterializer;
@@ -54,22 +55,12 @@ class TestPlainBinaryStringReaderSelection {
     }
 
     /** Records whether the hook was called, and hands back a reader that is trivially identifiable. */
-    private static final class RecordingFactory implements PlainBinaryPageReaderFactory {
+    private static final class RecordingFactory extends PlainBinaryPageReaderFactory {
         private final ValuesReader supplied;
         private int calls;
 
         private RecordingFactory(final ValuesReader supplied) {
             this.supplied = supplied;
-        }
-
-        @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            throw new UnsupportedOperationException();
         }
 
         @Override
