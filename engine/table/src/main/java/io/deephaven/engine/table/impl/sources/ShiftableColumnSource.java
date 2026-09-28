@@ -17,9 +17,15 @@ public interface ShiftableColumnSource<T> extends WritableColumnSource<T> {
 
     /**
      * Release the storage for every block that lies entirely within a range of row keys that hold no values. Partially
-     * covered blocks are left alone. The values in a released block must not be accessed, including as previous values,
-     * so this may only be called once the update cycle that removed those rows has completed. The caller must never
-     * write to a released block again: the capacity is unchanged, so {@code ensureCapacity} does not allocate it.
+     * covered blocks are left alone.
+     * <p>
+     * A released block's current values are gone, and so are the previous values of its rows: a row not written during
+     * the current cycle reads its previous value from the current block. Call this only once nothing can read either,
+     * after the logical clock has completed the update cycle that removed the rows. A {@code TerminalNotification} runs
+     * then. A concurrent snapshot that was still reading those rows' previous values fails its clock check and retries.
+     * <p>
+     * The caller must never write to a released block again: the capacity is unchanged, so {@code ensureCapacity} does
+     * not allocate it.
      *
      * @param firstKey the first row key of the range
      * @param lastKey the last row key of the range, inclusive
