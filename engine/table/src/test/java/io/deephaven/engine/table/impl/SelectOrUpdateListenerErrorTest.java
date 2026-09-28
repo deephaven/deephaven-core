@@ -8,12 +8,15 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.io.log.LogBufferPool;
+import io.deephaven.io.log.LogEntry;
+import io.deephaven.io.log.LogLevel;
+import io.deephaven.io.log.impl.LogEntryImpl;
+import io.deephaven.io.log.impl.LogOutputCsvImpl;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.io.logger.StringsLoggerImpl;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -53,8 +56,10 @@ public class SelectOrUpdateListenerErrorTest {
     private void doTestLayerFailureLogsDescription(final boolean parallel) {
         final boolean oldForceParallel = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
         final boolean oldEnableParallel = QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE;
-        final PrintStream oldErr = System.err;
-        final ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        final LogBufferPool buffers = LogBufferPool.of(16, 1024);
+        final StringsLoggerImpl<LogEntry> captured = new StringsLoggerImpl<>(
+                () -> new LogEntryImpl(buffers), 16, new LogOutputCsvImpl(buffers), LogLevel.INFO);
+        final Logger oldLog = InstrumentedTableListenerBase.setLoggerForUnitTests(captured);
         try {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = parallel;
             QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE = parallel;
@@ -66,22 +71,20 @@ public class SelectOrUpdateListenerErrorTest {
 
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             try (final RefreshingTableTestCase.ExpectingError ignored = base.new ExpectingError()) {
-                System.setErr(new PrintStream(captured, true, StandardCharsets.UTF_8));
                 updateGraph.runWithinUnitTestCycle(() -> {
                     addToTable(source, i(4), intCol("X", -1), intCol("Y", 5));
                     source.notifyListeners(i(), i(), i(4));
                 });
-            } finally {
-                System.setErr(oldErr);
             }
 
             assertTrue("result.isFailed()", result.isFailed());
-            final String log = captured.toString(StandardCharsets.UTF_8);
+            final String log = String.join("\n", captured.takeAll());
             assertTrue("log identifies the listener: " + log,
                     log.contains("Uncaught exception for entry ") && log.contains("Update([Boom, Twice, Sum])"));
             assertTrue("log includes the update: " + log, log.contains("modified.size()=1"));
             assertTrue("log includes the exception: " + log, log.contains("Intentional failure for value -1"));
         } finally {
+            InstrumentedTableListenerBase.setLoggerForUnitTests(oldLog);
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallel;
             QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE = oldEnableParallel;
         }

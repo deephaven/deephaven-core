@@ -27,6 +27,7 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.util.Utils;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +44,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private static final AtomicLongFieldUpdater<InstrumentedTableListenerBase> LAST_ENQUEUED_STEP_UPDATER =
             AtomicLongFieldUpdater.newUpdater(InstrumentedTableListenerBase.class, "lastEnqueuedStep");
 
-    private static final Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
+    private static volatile Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
 
     private final UpdateGraph updateGraph;
     private final String description;
@@ -84,6 +85,19 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     public static boolean setVerboseLogging(boolean enableVerboseLogging) {
         boolean original = InstrumentedTableListenerBase.verboseLogging;
         InstrumentedTableListenerBase.verboseLogging = enableVerboseLogging;
+        return original;
+    }
+
+    /**
+     * Replace the logger that reports listener failures, so that a test can inspect what is logged.
+     *
+     * @param newLog the logger to use
+     * @return the previous logger, which the test should restore
+     */
+    @TestUseOnly
+    static Logger setLoggerForUnitTests(@NotNull final Logger newLog) {
+        final Logger original = log;
+        log = newLog;
         return original;
     }
 
