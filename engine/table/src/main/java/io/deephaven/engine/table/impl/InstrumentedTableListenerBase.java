@@ -95,7 +95,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
      * @return the previous logger, which the test should restore
      */
     @TestUseOnly
-    static Logger setLoggerForUnitTests(@NotNull final Logger newLog) {
+    static synchronized Logger setLoggerForUnitTests(@NotNull final Logger newLog) {
         final Logger original = log;
         log = newLog;
         return original;

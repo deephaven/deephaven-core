@@ -66,9 +66,9 @@ public class SelectOrUpdateListenerErrorTest {
         final StringsLoggerImpl<LogEntry> captured = new StringsLoggerImpl<>(
                 () -> new LogEntryImpl(buffers), 16, new LogOutputCsvImpl(buffers), LogLevel.INFO);
         final Logger oldLog = InstrumentedTableListenerBase.setLoggerForUnitTests(captured);
+        QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = parallel;
+        QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE = parallel;
         try {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = parallel;
-            QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE = parallel;
             ExecutionContext.getContext().getQueryLibrary().importStatic(SelectOrUpdateListenerErrorTest.class);
 
             final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(),
