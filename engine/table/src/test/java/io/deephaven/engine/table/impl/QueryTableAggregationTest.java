@@ -5092,9 +5092,8 @@ public class QueryTableAggregationTest {
     }
 
     /**
-     * A column of every value type, with nulls in all but the Instant column, and with NaN and infinities in the
-     * floating point columns. The values depend on the row key and {@code salt}, so a modification with a new salt
-     * changes them.
+     * A column of every value type, with nulls, and with NaN and infinities in the floating point columns. The values
+     * depend on the row key and {@code salt}, so a modification with a new salt changes them.
      */
     private static ColumnHolder<?>[] allTypesColumns(final RowSet rows, final long[] keyOfRow, final int salt) {
         final int count = rows.intSize();
@@ -5133,8 +5132,7 @@ public class QueryTableAggregationTest {
             ss[pos] = isNull ? null : "S" + (value + 11);
             bis[pos] = isNull ? null : BigInteger.valueOf(value);
             bds[pos] = isNull ? null : BigDecimal.valueOf(value, 1);
-            // never null: reading the distinct Instants of a group with only null values fails (DH-23832)
-            ts[pos] = DateTimeUtils.epochNanosToInstant(1_700_000_000_000_000_000L + value * 1_000L);
+            ts[pos] = isNull ? null : DateTimeUtils.epochNanosToInstant(1_700_000_000_000_000_000L + value * 1_000L);
             ws[pos] = (int) (mixed % 5) + 1;
         });
         return new ColumnHolder<?>[] {stringCol("Key", keys), byteCol("vb", bs), shortCol("vsh", shs), intCol("vi", is),
