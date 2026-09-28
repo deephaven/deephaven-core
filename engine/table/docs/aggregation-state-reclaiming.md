@@ -463,6 +463,50 @@ earlier collapse that combined only adjacent sparse blocks retained 322 to 338 M
 between two sparse blocks kept them apart, until a shift removed it. The collapse now reaches across released blocks
 instead.
 
+### Reading block counts from the row set
+
+`OutputPositionBlockTracker` stores a live count for every block, and bitsets of the released and the sparse blocks. A
+prototype kept none of that. Every block's live count is already in the result's row set, as the difference of two
+ranks, and a closed block with no live states is a released one. Each cycle it examined only the blocks the cycle's
+removals touched and the blocks that closed: a block that had become empty was released, and one that had become sparse
+seeded a run, found by stepping to the previous and next live block across released ones. The only state it kept
+between cycles was the number of closed blocks and the sparse blocks whose run the budget of states to move had left
+for a later cycle.
+
+It made the same decisions. Two aggregations of the same random churn at a collapse fraction of 0.5, one with each
+tracker, had identical result row sets and identical shifts downstream in all of 600 cycles, 426 of which collapsed.
+
+It saved little memory:
+
+| Positions assigned | Blocks | Counting tracker | Row-set tracker |
+| --- | --- | --- | --- |
+| 10 million | 4,883 | about 17 KB: 2 byte counts for up to 7,824 blocks, and two bitsets | a few hundred bytes |
+| 2^31 - 1 | 1,048,576 | about 2.3 MB | a few hundred bytes |
+
+Even at the limit, the counts take 2 bytes a block, where every result column's array source already keeps an 8 byte
+reference a block.
+
+And it cost more time. The tracker's own work per cycle, timed around its calls, for 1,000,000 live states with 10,000
+removed at random and 10,000 added each cycle, over 2,000 cycles after 1,000 of warmup; two runs agreed within 3%:
+
+| Collapse fraction | Tracker | Update | Collapse | Total |
+| --- | --- | --- | --- | --- |
+| 1 | counting | 67 µs | — | 67 µs |
+| 1 | row set | 174 µs | — | 174 µs |
+| 0.5 | counting | 61 µs | 56 µs | 117 µs |
+| 0.5 | row set | 101 µs | 238 µs | 340 µs |
+
+A cycle of the random churn benchmark takes about 2.6 ms at 0.5, so the counting tracker is about 4.5% of it and the
+row-set tracker about 13%.
+
+Random churn touches nearly every block each cycle, and a block's count costs a search of the row set where the
+counting tracker adjusts an array element. At 0.5 each cycle touched 793 blocks, counted in one forward pass of an
+iterator over the live states, and seeded 99 runs, whose neighbors took about 191 searches for the previous or next
+live block. Those searches, `RspArray.get` and `find` in a profile, were the prototype's cost; a cache kept any block
+from being counted twice. Taking the next live block from the forward pass would remove about half of the neighbor
+searches, but not the previous live block's, since a block between two touched ones can be sparse, nor the counts of
+the touched blocks that are not sparse, 694 of the 793. It would likely remain 1.5 to 2 times the counting tracker.
+
 ### Compaction
 
 Compaction shifted the states after removed ones down into their positions, cell by cell where the positions did not
