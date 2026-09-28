@@ -718,9 +718,6 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 final long last = shiftData.getEndRange(rj);
                 final long delta = shiftData.getShiftDelta(rj);
                 shifter.shiftRange(first, last, delta);
-                // no range reads the positions an earlier one vacated, though it may write them, so each range's
-                // vacated positions can be cleared as soon as it has moved
-                clearVacated(first, last, delta);
             }
             ri = runEnd + 1;
         }
@@ -734,11 +731,19 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
      * destination's previous values and their in-use bitset, from one range to the next: the ranges of a collapse are
      * short and mostly fall within the same pair of blocks. Each destination's previous value is recorded when previous
      * values are tracked.
+     * <p>
+     * The positions a range moves values out of and does not move others into are cleared, so that they no longer hold
+     * references to the moved objects. No range reads the positions an earlier one vacated, though it may write them,
+     * so each piece's vacated positions can be cleared as soon as it has moved.
      */
     private final class Shifter {
         private final boolean trackPrevious = prevFlusher != null;
         private int sourceBlockIndex = -1;
         private T[] sourceBlock;
+        /** The block whose previous values {@link #sourcePrevBlock} and {@link #sourceInUse} are, or -1. */
+        private int sourcePrevBlockIndex = -1;
+        private T[] sourcePrevBlock;
+        private long[] sourceInUse;
         private int destBlockIndex = -1;
         private T[] destBlock;
         private T[] prevBlock;
@@ -748,6 +753,15 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
             if (blockIndex != sourceBlockIndex) {
                 sourceBlockIndex = blockIndex;
                 sourceBlock = blocks[blockIndex];
+            }
+        }
+
+        /** Fetch the current source block's previous values, allocating them if needed, to clear positions there. */
+        private void sourcePreviousFor() {
+            if (sourcePrevBlockIndex != sourceBlockIndex) {
+                sourcePrevBlockIndex = sourceBlockIndex;
+                sourceInUse = prevInUseFor(sourceBlockIndex, prevBlocks, getRecycler());
+                sourcePrevBlock = prevBlocks[sourceBlockIndex];
             }
         }
 
@@ -803,32 +817,40 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                         destBlock[destIndex + step * jj] = sourceBlock[sourceIndex + step * jj];
                     }
                 }
+                clearVacated(backward ? sourceKey - count + 1 : sourceKey, count, first, last, delta);
                 done += count;
             }
         }
-    }
 
-    /**
-     * Clear the positions a move of {@code first} through {@code last} by {@code delta} left behind, so that they no
-     * longer hold references to the moved objects, or to the objects of states no longer present.
-     */
-    private void clearVacated(final long first, final long last, final long delta) {
-        final long vacatedFirst = delta < 0 ? Math.max(first, last + delta + 1) : first;
-        final long vacatedLast = Math.min(delta < 0 ? last : Math.min(last, first + delta - 1), maxIndex);
-        for (long blockFirst = vacatedFirst; blockFirst <= vacatedLast;) {
-            final int blockIndex = (int) (blockFirst >> LOG_BLOCK_SIZE);
-            final long blockLast = Math.min(vacatedLast, ((long) blockIndex << LOG_BLOCK_SIZE) + BLOCK_SIZE - 1);
-            if (blocks[blockIndex] != null) {
-                if (prevFlusher != null) {
-                    for (long key = blockFirst; key <= blockLast; ++key) {
-                        set(key, null);
-                    }
-                } else {
-                    Arrays.fill(blocks[blockIndex], (int) (blockFirst & INDEX_MASK), (int) (blockLast & INDEX_MASK) + 1,
-                            null);
-                }
+        /**
+         * Clear the positions of one piece's source, {@code count} positions from {@code pieceFirstKey}, that the move
+         * of {@code first} through {@code last} by {@code delta} does not move values into: those after the range's
+         * destination when it moves down, and those before it when it moves up.
+         */
+        private void clearVacated(final long pieceFirstKey, final int count, final long first, final long last,
+                final long delta) {
+            final long pieceLastKey = pieceFirstKey + count - 1;
+            final long vacatedFirst = delta < 0 ? Math.max(pieceFirstKey, last + delta + 1) : pieceFirstKey;
+            final long vacatedLast = delta < 0 ? pieceLastKey : Math.min(pieceLastKey, first + delta - 1);
+            if (vacatedFirst > vacatedLast) {
+                return;
             }
-            blockFirst = blockLast + 1;
+            final int firstIndex = (int) (vacatedFirst & INDEX_MASK);
+            final int lastIndex = (int) (vacatedLast & INDEX_MASK);
+            if (!trackPrevious) {
+                Arrays.fill(sourceBlock, firstIndex, lastIndex + 1, null);
+                return;
+            }
+            sourcePreviousFor();
+            for (int si = firstIndex; si <= lastIndex; ++si) {
+                final int word = si >> LOG_INUSE_BITSET_SIZE;
+                final long mask = 1L << (si & IN_USE_MASK);
+                if ((sourceInUse[word] & mask) == 0) {
+                    sourceInUse[word] |= mask;
+                    sourcePrevBlock[si] = sourceBlock[si];
+                }
+                sourceBlock[si] = null;
+            }
         }
     }
 }
