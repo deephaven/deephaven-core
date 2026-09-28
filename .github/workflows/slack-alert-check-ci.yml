@@ -1,6 +1,6 @@
 name: Slack Alert Check
 
-# Exercises the action against a local stub, since every real call site is failure-gated and never runs. Does not reach Slack.
+# Exercises the action against a local stub; every real call site is failure-gated and never runs.
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
           .github/scripts/slack-alert-contract.py serve &
           .github/scripts/slack-alert-contract.py wait
 
-      # The three payload shapes in use. Keep these pins identical to the call sites so Dependabot bumps them together.
+      # The three payload shapes in use. Keep these pins matching the call sites.
 
       # As in nightly-check-ci, nightly-publish-ci, pr-merge-webhook, nightly-docs.
       - name: Send JSON object payload
@@ -51,7 +51,7 @@ jobs:
           retries: "0"
           payload: '{"repository": "deephaven/deephaven-core", "message": "slack alert contract check", "link": "https://github.com/deephaven/deephaven-core"}'
 
-      # As in publish-ci. Not valid JSON, so it is the only shape that depends on the action's YAML parser.
+      # As in publish-ci. Not JSON, so the only shape needing the YAML parser.
       - name: Send YAML key/value payload
         id: yaml-kv
         uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0

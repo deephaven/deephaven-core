@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Stub Slack webhook trigger endpoint, used by the Slack Alert Check workflow.
+"""Stub Slack webhook trigger endpoint for the Slack Alert Check workflow.
 
-Captures what slackapi/slack-github-action sends and replies the way Slack
-documents a successful trigger POST: HTTP 200 with a JSON body of {"ok": true}.
-The JSON reply matters -- since v4.0.0 the action parses the response as JSON.
+Captures what slackapi/slack-github-action sends and replies 200 {"ok": true},
+as Slack does; v4.0.0 onward parses the response as JSON.
 
-Subcommands: serve (capture until killed), wait (block until listening),
-verify (assert the captured requests match what the call sites should send).
+Subcommands: serve, wait, verify.
 """
 
+import glob
 import http.server
 import json
 import os
+import re
 import socket
 import sys
 import urllib.parse
@@ -19,8 +19,12 @@ import urllib.parse
 HOST = "127.0.0.1"
 PORT = 8899
 CAPTURE_FILE = os.environ.get("SLACK_CONTRACT_CAPTURES", "slack-contract-captures.jsonl")
+WORKFLOWS = ".github/workflows"
+SELF_WORKFLOW = "slack-alert-check-ci.yml"
+ACTION = "slackapi/slack-github-action"
+USES = re.compile(rf"^\s*-?\s*uses:\s*{re.escape(ACTION)}@(\S+)", re.M)
 
-# The three payload shapes the ten call sites use, each exercised separately.
+# The three payload shapes the ten call sites use.
 EXPECTED = {
     # nightly-check-ci, nightly-publish-ci, pr-merge-webhook, nightly-docs
     "json-block": {
@@ -91,19 +95,63 @@ def wait(timeout=30.0):
     sys.exit(f"stub did not start listening on {HOST}:{PORT} within {timeout}s")
 
 
+def verify_pins():
+    """Assert this check exercises the same pin as the real call sites.
+
+    Dependabot bumps every reference to an action in one PR, so matching pins
+    mean a bump is exercised here. On drift, this check would test a version
+    nobody uses.
+    """
+    pins = {}
+    for path in sorted(glob.glob(f"{WORKFLOWS}/*.yml")):
+        found = USES.findall(open(path, encoding="utf-8").read())
+        if found:
+            pins[os.path.basename(path)] = found
+
+    failures = []
+    mine = pins.get(SELF_WORKFLOW, [])
+    others = {f: p for f, p in pins.items() if f != SELF_WORKFLOW}
+
+    if not mine:
+        failures.append(
+            f"{SELF_WORKFLOW} no longer uses {ACTION} -- this check covers nothing"
+        )
+    if not others:
+        failures.append(f"no {ACTION} call sites found outside {SELF_WORKFLOW}")
+    if len(mine) < len(EXPECTED):
+        failures.append(
+            f"{SELF_WORKFLOW} has {len(mine)} call site(s) but {len(EXPECTED)} "
+            "payload shapes are asserted"
+        )
+
+    distinct = {p for found in pins.values() for p in found}
+    if len(distinct) > 1:
+        detail = "\n".join(f"      {f}: {sorted(set(p))}" for f, p in sorted(pins.items()))
+        failures.append(f"{ACTION} pins have drifted:\n{detail}")
+
+    if not failures:
+        total = sum(len(p) for p in pins.values())
+        print(
+            f"  ok  pins: {total} {ACTION} call sites across {len(pins)} workflows, "
+            f"all on {distinct.pop()}"
+        )
+    return failures
+
+
 def verify():
+    failures = verify_pins()
+    captured = {}
     if not os.path.exists(CAPTURE_FILE):
-        sys.exit(
+        failures.append(
             f"no requests were captured ({CAPTURE_FILE} missing) -- the action "
             "did not send anything"
         )
-    captured = {}
-    with open(CAPTURE_FILE, encoding="utf-8") as handle:
-        for line in handle:
-            entry = json.loads(line)
-            captured[entry["case"]] = entry
+    else:
+        with open(CAPTURE_FILE, encoding="utf-8") as handle:
+            for line in handle:
+                entry = json.loads(line)
+                captured[entry["case"]] = entry
 
-    failures = []
     for case, expected in EXPECTED.items():
         entry = captured.get(case)
         if entry is None:
