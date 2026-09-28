@@ -58,7 +58,7 @@ The package name under `src/` determines how users import your code. For example
 
 Deephaven requires a running server before using any Deephaven functionality. The server must be initialized in the same Python process that uses Deephaven:
 
-```python
+```python skip-test
 from deephaven_server import Server
 
 # Initialize and start the server
@@ -67,6 +67,7 @@ server.start()
 
 # Now you can import and use Deephaven
 from deephaven import read_csv
+
 data = read_csv("data/sample.csv")
 ```
 
@@ -86,7 +87,7 @@ Because `deephaven` modules cannot be imported until a server is running, the or
 
 The rule that follows:
 
-- In a package that defines commands, keep every module imported *before* the command starts its server free of imports that reach `deephaven`. In practice, that means `__init__.py` and the top level of command modules should stay import-light.
+- In a package that defines commands, keep every module imported _before_ the command starts its server free of imports that reach `deephaven`. In practice, that means `__init__.py` and the top level of command modules should stay import-light.
 - Import `deephaven` and any Deephaven-dependent library submodules lazily, inside the function that runs after the server has started.
 - A library-only package such as `my_dh_library` can safely re-export its functions from [`__init__.py`](https://github.com/deephaven-examples/deephaven-python-packaging/blob/main/my_dh_library/src/my_dh_library/__init__.py). It has no commands, so it is only ever imported after a server is running.
 
@@ -113,7 +114,7 @@ my_dh_library/
 
 **Usage:**
 
-```python
+```python skip-test
 from my_dh_library.queries import filter_by_threshold, add_computed_columns
 from deephaven import read_csv
 
@@ -178,7 +179,7 @@ my_dh_toolkit/
 
 **Usage:**
 
-```python
+```python skip-test
 # As a library
 from my_dh_toolkit.queries import filter_by_threshold
 from deephaven import read_csv
@@ -239,10 +240,10 @@ For CLI packages, add a `[project.scripts]` section:
 
 ```toml
 [project.scripts]
-my-dh-query = "my_dh_cli.cli:app"
+my-dh-query = "my_dh_cli.cli:main"
 ```
 
-This creates a command line entry point that calls the `app` function from [`my_dh_cli.cli`](https://github.com/deephaven-examples/deephaven-python-packaging/blob/main/my_dh_cli/src/my_dh_cli/cli.py) (see the CLI package's [`pyproject.toml`](https://github.com/deephaven-examples/deephaven-python-packaging/blob/main/my_dh_cli/pyproject.toml)). A package can define any number of commands in this section; the toolkit's [`pyproject.toml`](https://github.com/deephaven-examples/deephaven-python-packaging/blob/main/my_dh_toolkit/pyproject.toml) defines two.
+This creates a command line entry point that calls the `main` function from [`my_dh_cli.cli`](https://github.com/deephaven-examples/deephaven-python-packaging/blob/main/my_dh_cli/src/my_dh_cli/cli.py) (see the CLI package's [`pyproject.toml`](https://github.com/deephaven-examples/deephaven-python-packaging/blob/main/my_dh_cli/pyproject.toml)). A package can define any number of commands in this section; the toolkit's [`pyproject.toml`](https://github.com/deephaven-examples/deephaven-python-packaging/blob/main/my_dh_toolkit/pyproject.toml) defines two.
 
 ## Manage dependencies
 
