@@ -62,6 +62,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
@@ -4609,7 +4610,7 @@ public class QueryTableAggregationTest {
     public void testCollapseSparseBlocksRandomChurn() {
         final double original = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
         try (final SafeCloseable ignored = () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = original) {
-            for (final double collapseFreeFraction : new double[] {0.5, 0.75, 0.9}) {
+            for (final double collapseFreeFraction : new double[] {0.25, 0.5, 0.75, 0.9}) {
                 ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = collapseFreeFraction;
                 testCollapseSparseBlocksRandomChurn(collapseFreeFraction);
             }
@@ -4949,6 +4950,181 @@ public class QueryTableAggregationTest {
         });
         assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
         assertEquals(initialSize + 30, aggregated.getRowSet().lastRowKey());
+    }
+
+    /**
+     * Every value type through every operator that can reclaim states, under random churn in which blocks empty, sparse
+     * blocks collapse, and removed keys return. The result must match the same aggregation without reclaiming, cycle by
+     * cycle.
+     */
+    @Test
+    public void testReclaimAllTypes() {
+        final List<Aggregation> numeric = new ArrayList<>();
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd", "vc", "vbi", "vbd"}) {
+            numeric.add(AggSum("Sum_" + col + "=" + col));
+            numeric.add(AggAvg("Avg_" + col + "=" + col));
+            numeric.add(AggVar("Var_" + col + "=" + col));
+            numeric.add(AggStd("Std_" + col + "=" + col));
+        }
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd", "vbi", "vbd"}) {
+            numeric.add(AggAbsSum("AbsSum_" + col + "=" + col));
+        }
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd"}) {
+            numeric.add(AggWSum("vw", "WSum_" + col + "=" + col));
+            numeric.add(AggWAvg("vw", "WAvg_" + col + "=" + col));
+            numeric.add(AggPct(0.25, "P25_" + col + "=" + col));
+        }
+        final List<Aggregation> any = new ArrayList<>();
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd", "vc", "vbo", "vs", "vbi", "vbd",
+                "vt"}) {
+            any.add(AggMin("Min_" + col + "=" + col));
+            any.add(AggMax("Max_" + col + "=" + col));
+            any.add(AggFirst("First_" + col + "=" + col));
+            any.add(AggLast("Last_" + col + "=" + col));
+            any.add(AggCountDistinct("CD_" + col + "=" + col));
+            any.add(AggDistinct("D_" + col + "=" + col));
+            any.add(AggUnique("U_" + col + "=" + col));
+            any.add(AggSortedFirst("vl", "SF_" + col + "=" + col));
+            any.add(AggSortedLast("vd", "SL_" + col + "=" + col));
+        }
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd", "vc", "vs", "vbi", "vbd", "vt"}) {
+            any.add(AggMed("Med_" + col + "=" + col));
+        }
+        any.add(AggCount("N"));
+        any.add(AggCountWhere("CW", "vl > 0"));
+        final List<Aggregation> freeze =
+                List.of(Aggregation.of(AggSpec.freeze(), "vb", "vsh", "vi", "vl", "vf", "vd", "vc",
+                        "vbo", "vs", "vbi", "vbd", "vt"));
+
+        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        try (final SafeCloseable ignored =
+                () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse) {
+            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
+            for (final List<Aggregation> aggregations : List.of(numeric, any, freeze)) {
+                doTestReclaimAllTypes(aggregations);
+            }
+        }
+    }
+
+    private void doTestReclaimAllTypes(final List<Aggregation> aggregations) {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int initialSize = 4 * blockSize;
+        final int step = blockSize / 2;
+        final Random random = new Random(0);
+
+        // the key of each row, by row key; a key has at most one row, so freezeBy applies
+        final long[] keyOfRow = new long[initialSize + 40 * 2 * step];
+        for (int ii = 0; ii < initialSize; ++ii) {
+            keyOfRow[ii] = ii;
+        }
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
+                allTypesColumns(RowSetFactory.flat(initialSize), keyOfRow, 0));
+        final AggregationContextFactory factory = AggregationProcessor.forAggregation(aggregations);
+        final List<ColumnName> key = ColumnName.from("Key");
+        final QueryTable expected = table.aggNoMemo(factory, false, null, key, StateReclaimMode.none());
+        final QueryTable reclaimed = table.aggNoMemo(factory, false, null, key, StateReclaimMode.releaseBlocks(0.5));
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testReclaimAllTypes", reclaimed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+        final SimpleListener listener = new SimpleListener(reclaimed);
+        reclaimed.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final List<Long> removedKeys = new ArrayList<>();
+        long nextRowKey = initialSize;
+        long nextKey = initialSize;
+        int collapsingCycles = 0;
+        for (int cycle = 1; cycle <= 40; ++cycle) {
+            final RowSet liveRows = table.getRowSet();
+            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+            for (int ii = 0; ii < step; ++ii) {
+                removedBuilder.addKey(liveRows.get(random.nextInt(liveRows.intSize())));
+            }
+            final RowSet removed = removedBuilder.build();
+            final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
+            for (int ii = 0; ii < 64; ++ii) {
+                modifiedBuilder.addKey(liveRows.get(random.nextInt(liveRows.intSize())));
+            }
+            final RowSet modified = modifiedBuilder.build().minus(removed);
+
+            // new keys, and keys removed in earlier cycles coming back
+            final int addedCount = random.nextInt(step) + 1;
+            final RowSet added = RowSetFactory.fromRange(nextRowKey, nextRowKey + addedCount - 1);
+            for (int ii = 0; ii < addedCount; ++ii) {
+                keyOfRow[(int) nextRowKey + ii] = !removedKeys.isEmpty() && random.nextInt(4) == 0
+                        ? removedKeys.remove(random.nextInt(removedKeys.size()))
+                        : nextKey++;
+            }
+            removed.forAllRowKeys(row -> removedKeys.add(keyOfRow[(int) row]));
+            nextRowKey += addedCount;
+
+            final int salt = cycle;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(table, removed);
+                addToTable(table, modified, allTypesColumns(modified, keyOfRow, salt));
+                addToTable(table, added, allTypesColumns(added, keyOfRow, salt));
+                table.notifyListeners(added, removed, modified);
+            });
+            assertTableEquals(expected.sort("Key"), reclaimed.sort("Key"));
+            if (listener.getCount() > 0 && listener.getUpdate().shifted().nonempty()) {
+                ++collapsingCycles;
+            }
+            listener.reset();
+        }
+        // a run is only collapsed when that releases a block, so blocks were released too
+        assertTrue("collapsed in " + collapsingCycles + " cycles", collapsingCycles > 0);
+    }
+
+    /**
+     * A column of every value type, with nulls in all but the Instant column, and with NaN and infinities in the
+     * floating point columns. The values depend on the row key and {@code salt}, so a modification with a new salt
+     * changes them.
+     */
+    private static ColumnHolder<?>[] allTypesColumns(final RowSet rows, final long[] keyOfRow, final int salt) {
+        final int count = rows.intSize();
+        final String[] keys = new String[count];
+        final byte[] bs = new byte[count];
+        final short[] shs = new short[count];
+        final int[] is = new int[count];
+        final long[] ls = new long[count];
+        final float[] fs = new float[count];
+        final double[] ds = new double[count];
+        final char[] cs = new char[count];
+        final Boolean[] bos = new Boolean[count];
+        final String[] ss = new String[count];
+        final BigInteger[] bis = new BigInteger[count];
+        final BigDecimal[] bds = new BigDecimal[count];
+        final Instant[] ts = new Instant[count];
+        final int[] ws = new int[count];
+        final MutableInt ii = new MutableInt();
+        rows.forAllRowKeys(row -> {
+            final int pos = ii.getAndIncrement();
+            final long mixed = row * 31 + salt * 17L;
+            final int value = (int) (mixed % 23) - 11;
+            final boolean isNull = mixed % 53 == 0;
+            keys[pos] = "K" + keyOfRow[(int) row];
+            bs[pos] = isNull ? NULL_BYTE : (byte) value;
+            shs[pos] = isNull ? NULL_SHORT : (short) (value * 3);
+            is[pos] = isNull ? NULL_INT : value * 7;
+            ls[pos] = isNull ? NULL_LONG : value * 1000L;
+            final double special = mixed % 97 == 0 ? Double.NaN
+                    : mixed % 89 == 0 ? Double.POSITIVE_INFINITY
+                            : mixed % 83 == 0 ? Double.NEGATIVE_INFINITY : value * 0.5;
+            fs[pos] = isNull ? NULL_FLOAT : (float) special;
+            ds[pos] = isNull ? NULL_DOUBLE : special;
+            cs[pos] = isNull ? NULL_CHAR : (char) ('a' + value + 11);
+            bos[pos] = isNull ? null : value > 0;
+            ss[pos] = isNull ? null : "S" + (value + 11);
+            bis[pos] = isNull ? null : BigInteger.valueOf(value);
+            bds[pos] = isNull ? null : BigDecimal.valueOf(value, 1);
+            // never null: reading the distinct Instants of a group with only null values fails (DH-23832)
+            ts[pos] = DateTimeUtils.epochNanosToInstant(1_700_000_000_000_000_000L + value * 1_000L);
+            ws[pos] = (int) (mixed % 5) + 1;
+        });
+        return new ColumnHolder<?>[] {stringCol("Key", keys), byteCol("vb", bs), shortCol("vsh", shs), intCol("vi", is),
+                longCol("vl", ls), floatCol("vf", fs), doubleCol("vd", ds), charCol("vc", cs), booleanCol("vbo", bos),
+                stringCol("vs", ss), col("vbi", bis), col("vbd", bds), instantCol("vt", ts), intCol("vw", ws)};
     }
 
     private static ColumnHolder<?>[] shiftTestColumns(final long firstRowKey, final int count) {

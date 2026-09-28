@@ -28,7 +28,7 @@ public class TestOutputPositionBlockTracker {
         final int size = blocks * BLOCK_SIZE;
         for (int seed = 0; seed < 20; ++seed) {
             final Random random = new Random(seed);
-            final double collapseFreeFraction = 0.5 + 0.4 * random.nextDouble();
+            final double collapseFreeFraction = 0.2 + 0.7 * random.nextDouble();
             final OutputPositionBlockTracker tracker = new OutputPositionBlockTracker(size, collapseFreeFraction);
 
             // Empty some blocks entirely, leave a few full, and leave the rest sparse, so that runs are long and often
@@ -73,6 +73,29 @@ public class TestOutputPositionBlockTracker {
                     assertEquals("seed " + seed, expectedDense, dense);
                     assertTrue("seed " + seed, scattered.subsetOf(liveStates) && dense.subsetOf(liveStates));
                 }
+            }
+        }
+    }
+
+    /**
+     * Two adjacent sparse blocks whose states need both blocks are not collapsed: moving them would release nothing.
+     */
+    @Test
+    public void testRunThatWouldReleaseNothingIsLeft() {
+        final int size = 4 * BLOCK_SIZE;
+        final OutputPositionBlockTracker tracker = new OutputPositionBlockTracker(size, 0.25);
+        final int keep = BLOCK_SIZE * 3 / 4 - 36;
+        try (final WritableRowSet removed = RowSetFactory.fromRange(keep, BLOCK_SIZE - 1);
+                final WritableRowSet noneAdded = RowSetFactory.empty();
+                final WritableRowSet liveStates = RowSetFactory.flat(size)) {
+            removed.insertRange(BLOCK_SIZE + keep, 2L * BLOCK_SIZE - 1);
+            liveStates.remove(removed);
+            try (final WritableRowSet released = tracker.update(noneAdded, removed, size)) {
+                assertTrue(released.isEmpty());
+                final OutputPositionBlockTracker.Collapse collapse =
+                        tracker.collapseSparseBlocks(liveStates, Long.MAX_VALUE, released);
+                assertTrue(collapse.shift.empty());
+                assertTrue(released.isEmpty());
             }
         }
     }
