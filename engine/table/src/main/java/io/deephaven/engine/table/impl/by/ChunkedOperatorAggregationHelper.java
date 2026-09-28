@@ -306,9 +306,11 @@ public class ChunkedOperatorAggregationHelper {
             final IncrementalOperatorAggregationStateManager incrementalStateManager =
                     (IncrementalOperatorAggregationStateManager) stateManager;
             incrementalStateManager.startTrackingPrevValues();
+            // a reclaiming aggregation has no initial groups, so its result holds every position it assigned
+            assert !incrementalStateManager.canReclaim()
+                    || (resultRowSet.isFlat() && resultRowSet.size() == outputPosition.get());
             final OutputPositionBlockTracker blockTracker = incrementalStateManager.canReclaim()
-                    ? new OutputPositionBlockTracker(resultRowSet, outputPosition.get(),
-                            reclaimMode.collapseFreeFraction())
+                    ? new OutputPositionBlockTracker(outputPosition.get(), reclaimMode.collapseFreeFraction())
                     : null;
 
             final boolean isBlink = input.isBlink();
