@@ -507,9 +507,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             mainOutputPosition.set(slot, TOMBSTONE_STATE);
-            return;
+        } else {
+            alternateOutputPosition.set(slot, TOMBSTONE_STATE);
         }
-        alternateOutputPosition.set(slot, TOMBSTONE_STATE);
     }
 
     @Override
