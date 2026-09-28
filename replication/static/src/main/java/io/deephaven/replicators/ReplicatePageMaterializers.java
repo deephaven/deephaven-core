@@ -191,7 +191,7 @@ public class ReplicatePageMaterializers {
                 {"Milli", "Micro"},
                 {"milli", "micro"},
                 {"MILLI", "MICRO"},
-                {"1_000L", "1_000_000L"},
+                {"1_000", "1_000_000"},
         };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
@@ -200,7 +200,7 @@ public class ReplicatePageMaterializers {
                 {"Millis", "Nanos"},
                 {"millis", "nanos"},
                 {"MILLI", "NANO"},
-                {"1_000L", "1_000_000_000L"},
+                {"1_000", "1_000_000_000"},
         };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
