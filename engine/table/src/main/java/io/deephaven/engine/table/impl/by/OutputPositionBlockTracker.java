@@ -220,8 +220,8 @@ final class OutputPositionBlockTracker {
             }
         }
 
-        try (final RowSet newlyReleased = releasedBuilder.build()) {
-            released.insert(newlyReleased);
+        try (final WritableRowSet newlyReleased = releasedBuilder.build()) {
+            released.subsume(newlyReleased);
         }
         return new Collapse(shiftBuilder.build(), collapsedRuns);
     }
@@ -303,8 +303,8 @@ final class OutputPositionBlockTracker {
                         moving.forAllRowKeys(key -> moved.appendKey(run.position(liveStates.find(key) - firstRank)));
                     }
                     subset.removeRange(first, last);
-                    try (final RowSet movedKeys = moved.build()) {
-                        subset.insert(movedKeys);
+                    try (final WritableRowSet movedKeys = moved.build()) {
+                        subset.subsume(movedKeys);
                     }
                 }
                 liveStates.removeRange(first, last);
