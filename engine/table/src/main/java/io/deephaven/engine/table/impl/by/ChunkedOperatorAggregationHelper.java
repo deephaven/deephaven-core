@@ -770,35 +770,35 @@ public class ChunkedOperatorAggregationHelper {
             extractDownstreamModifiedColumnSet(downstream, resultModifiedColumnSet, modifiedOperators,
                     updateUpstreamModifiedColumnSet, resultModifiedColumnSetFactories);
 
-            if (blockTracker != null) {
-                resultRowset.remove(downstream.removed());
-                resultRowset.insert(downstream.added());
-                final WritableRowSet releasable =
-                        blockTracker.update(downstream.added(), downstream.removed(), outputPosition.get());
-                // the collapse moves no more states than this cycle's input rows
-                final long inputRows =
-                        upstream.added().size() + upstream.modified().size() + upstream.removed().size();
-                final OutputPositionBlockTracker.Collapse collapse =
-                        blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
-                if (collapse.shift.nonempty()) {
-                    incrementalStateManager.shiftOutputPositions(collapse.shift);
-                    // a block that closed this cycle may hold this cycle's new states and still be collapsed
-                    collapse.apply(resultRowset, downstream.added().writableCast(),
-                            downstream.modified().writableCast());
-                    downstream.shifted = collapse.shift;
-                    for (final IterativeChunkedAggregationOperator operator : ac.operators) {
-                        operator.shift(collapse.shift);
-                    }
-                    for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
-                        keyColumn.shift(collapse.shift);
-                    }
-                }
-                releaseEmptyBlocks(releasable, keyColumnsCopied);
+            if (blockTracker == null) {
+                // states are never removed, so the result keeps every state and nothing moves
+                resultRowset.update(downstream.added(), downstream.removed());
                 return downstream;
             }
 
-            // states are never removed, so the result keeps every state and nothing moves
-            resultRowset.update(downstream.added(), downstream.removed());
+            resultRowset.remove(downstream.removed());
+            resultRowset.insert(downstream.added());
+            final WritableRowSet releasable =
+                    blockTracker.update(downstream.added(), downstream.removed(), outputPosition.get());
+            // the collapse moves no more states than this cycle's input rows
+            final long inputRows =
+                    upstream.added().size() + upstream.modified().size() + upstream.removed().size();
+            final OutputPositionBlockTracker.Collapse collapse =
+                    blockTracker.collapseSparseBlocks(resultRowset, inputRows, releasable);
+            if (collapse.shift.nonempty()) {
+                incrementalStateManager.shiftOutputPositions(collapse.shift);
+                // a block that closed this cycle may hold this cycle's new states and still be collapsed
+                collapse.apply(resultRowset, downstream.added().writableCast(),
+                        downstream.modified().writableCast());
+                downstream.shifted = collapse.shift;
+                for (final IterativeChunkedAggregationOperator operator : ac.operators) {
+                    operator.shift(collapse.shift);
+                }
+                for (final ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                    keyColumn.shift(collapse.shift);
+                }
+            }
+            releaseEmptyBlocks(releasable, keyColumnsCopied);
             return downstream;
         }
 
