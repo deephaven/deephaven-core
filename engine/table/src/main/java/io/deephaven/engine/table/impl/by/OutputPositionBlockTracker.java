@@ -59,7 +59,7 @@ final class OutputPositionBlockTracker {
             final double collapseFreeFraction) {
         sparseLiveLimit = collapseFreeFraction >= 1 ? 0 : (int) (BLOCK_SIZE * (1 - collapseFreeFraction));
         ensureCapacity(nextOutputPosition);
-        adjust(initialStates, 1);
+        addLive(initialStates);
         closedBlocks = nextOutputPosition >> LOG_BLOCK_SIZE;
         for (int bi = 0; bi < closedBlocks; ++bi) {
             updateSparse(bi);
@@ -76,7 +76,7 @@ final class OutputPositionBlockTracker {
      */
     WritableRowSet update(final RowSet added, final RowSet removed, final int nextOutputPosition) {
         ensureCapacity(nextOutputPosition);
-        adjust(added, 1);
+        addLive(added);
 
         // A block's live count can only reach zero through a removal, or be zero already when it closes. The removed
         // positions are visited in increasing order, so each block they touch is finished once the walk moves past
@@ -348,7 +348,10 @@ final class OutputPositionBlockTracker {
         }
     }
 
-    private void adjust(final RowSet positions, final int delta) {
+    /**
+     * Count the states at {@code positions} as live in their blocks.
+     */
+    private void addLive(final RowSet positions) {
         positions.forAllRowKeyRanges((first, last) -> {
             long rangeFirst = first;
             while (rangeFirst <= last) {
@@ -356,8 +359,8 @@ final class OutputPositionBlockTracker {
                 final long blockLast = ((long) bi << LOG_BLOCK_SIZE) + BLOCK_SIZE - 1;
                 final long rangeLast = Math.min(last, blockLast);
                 assert liveCounts[bi] != RELEASED;
-                liveCounts[bi] += delta * (int) (rangeLast - rangeFirst + 1);
-                assert liveCounts[bi] >= 0;
+                liveCounts[bi] += (int) (rangeLast - rangeFirst + 1);
+                assert liveCounts[bi] <= BLOCK_SIZE;
                 rangeFirst = rangeLast + 1;
             }
         });
