@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -158,36 +159,36 @@ final class OutputPositionBlockTracker {
         final RowSetBuilderSequential releasedBuilder = RowSetFactory.builderSequential();
         long remainingShifts = maxShiftedStates;
 
-        // find the runs first, since collapsing a run changes the sparse set
-        final int[] sparse = sparseBlocks.stream().toArray();
-        final List<int[]> runs = new ArrayList<>();
-        int runStart = 0;
-        for (int si = 1; si <= sparse.length; ++si) {
-            // the next sparse block continues the run if every block before it, back to the last one, is released
-            if (si < sparse.length && releasedBlocks.nextClearBit(sparse[si - 1] + 1) == sparse[si]) {
-                continue;
-            }
-            if (si - runStart >= 2) {
-                runs.add(Arrays.copyOfRange(sparse, runStart, si));
-            }
-            runStart = si;
-        }
-
-        for (final int[] run : runs) {
-            // take as long a prefix of the run as the shift budget allows
+        // Each run is walked in increasing block order and collapsed before the walk moves on; collapsing a run changes
+        // the sparse set only within the run, behind the walk.
+        final IntArrayList run = new IntArrayList();
+        int next = sparseBlocks.nextSetBit(0);
+        boolean withinBudget = true;
+        while (next >= 0 && withinBudget) {
+            // take as long a prefix of the run as the shift budget allows, and stop after it if that is not all of it
+            run.clear();
             long runLive = 0;
-            int prefix = 0;
-            while (prefix < run.length && runLive + liveCounts[run[prefix]] <= remainingShifts) {
-                runLive += liveCounts[run[prefix]];
-                ++prefix;
+            while (true) {
+                final int block = next;
+                if (runLive + liveCounts[block] > remainingShifts) {
+                    withinBudget = false;
+                    break;
+                }
+                runLive += liveCounts[block];
+                run.add(block);
+                next = sparseBlocks.nextSetBit(block + 1);
+                // the next sparse block continues the run if every block before it, back to this one, is released
+                if (next < 0 || releasedBlocks.nextClearBit(block + 1) != next) {
+                    break;
+                }
             }
             final int blocksAfter = (int) ((runLive + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE);
-            if (prefix < 2 || blocksAfter >= prefix) {
+            if (run.size() < 2 || blocksAfter >= run.size()) {
                 continue;
             }
             remainingShifts -= runLive;
 
-            final Run collapsed = new Run(Arrays.copyOf(run, prefix), runLive);
+            final Run collapsed = new Run(run.toIntArray(), runLive);
             collapsedRuns.add(collapsed);
             try (final RowSequence runStates =
                     liveStates.getRowSequenceByKeyRange(collapsed.firstPosition(), collapsed.lastPosition())) {
@@ -205,7 +206,7 @@ final class OutputPositionBlockTracker {
                 });
             }
 
-            for (int bi = 0; bi < prefix; ++bi) {
+            for (int bi = 0; bi < collapsed.blocks.length; ++bi) {
                 final int block = collapsed.blocks[bi];
                 clearSparse(block);
                 final long blockLive = Math.max(0, Math.min(BLOCK_SIZE, runLive - ((long) bi << LOG_BLOCK_SIZE)));
@@ -215,9 +216,6 @@ final class OutputPositionBlockTracker {
                 } else {
                     updateSparse(block);
                 }
-            }
-            if (remainingShifts <= 0) {
-                break;
             }
         }
 
