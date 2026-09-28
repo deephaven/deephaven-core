@@ -351,6 +351,102 @@ public class TestArraySourceShift {
         assertEquals(0, later.getLong(5L * blockSize - 1));
     }
 
+    @Test
+    public void testEmptyShift() {
+        checkShift(RowSetShiftData.EMPTY, 100);
+    }
+
+    @Test
+    public void testConsecutiveUpwardRanges() {
+        // two ranges move up in a row, so they are applied as one run from the last to the first
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+        builder.shiftRange(100, 199, 50);
+        builder.shiftRange(300, 399, 50);
+        checkShift(builder.build(), 1000);
+    }
+
+    @Test
+    public void testAlternatingDirections() {
+        // runs down, up, up, and down, each ending where the direction changes
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+        builder.shiftRange(100, 199, -50);
+        builder.shiftRange(300, 399, 50);
+        builder.shiftRange(600, 699, 50);
+        builder.shiftRange(900, 999, -30);
+        checkShift(builder.build(), 1000);
+    }
+
+    @Test
+    public void testUpwardMoveFartherThanLength() {
+        // the destination does not overlap the source, so the range is copied forward
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+        builder.shiftRange(100, 109, 500);
+        checkShift(builder.build(), 1000);
+    }
+
+    /**
+     * Apply {@code shiftData} to long, object, and boolean sources whose row key {@code ii} holds {@code ii}, with and
+     * without previous-value tracking, and check every value, and every previous value when tracked. A row key that a
+     * range moves away from and nothing moves onto keeps its value, except in the object source, which clears it.
+     */
+    private static void checkShift(final RowSetShiftData shiftData, final int size) {
+        final long[] expected = new long[size];
+        final boolean[] vacated = new boolean[size];
+        for (int ii = 0; ii < size; ++ii) {
+            expected[ii] = ii;
+        }
+        for (int ri = 0; ri < shiftData.size(); ++ri) {
+            for (long ii = shiftData.getBeginRange(ri); ii <= shiftData.getEndRange(ri); ++ii) {
+                vacated[(int) ii] = true;
+            }
+        }
+        for (int ri = 0; ri < shiftData.size(); ++ri) {
+            final long delta = shiftData.getShiftDelta(ri);
+            for (long ii = shiftData.getBeginRange(ri); ii <= shiftData.getEndRange(ri); ++ii) {
+                expected[(int) (ii + delta)] = ii;
+                vacated[(int) (ii + delta)] = false;
+            }
+        }
+        for (final boolean trackPrev : new boolean[] {false, true}) {
+            final LongArraySource longs = new LongArraySource();
+            final ObjectArraySource<String> objects = new ObjectArraySource<>(String.class);
+            final BooleanArraySource booleans = new BooleanArraySource();
+            longs.ensureCapacity(size);
+            objects.ensureCapacity(size);
+            booleans.ensureCapacity(size);
+            for (int ii = 0; ii < size; ++ii) {
+                longs.set(ii, (long) ii);
+                objects.set(ii, Long.toString(ii));
+                booleans.set(ii, booleanFor(ii));
+            }
+            final Runnable shiftAndCheck = () -> {
+                longs.shift(shiftData);
+                objects.shift(shiftData);
+                booleans.shift(shiftData);
+                for (int ii = 0; ii < size; ++ii) {
+                    final String description = "trackPrev=" + trackPrev + ", ii=" + ii;
+                    assertEquals(description, expected[ii], longs.getLong(ii));
+                    assertEquals(description, vacated[ii] ? null : Long.toString(expected[ii]), objects.get(ii));
+                    assertEquals(description, booleanFor(expected[ii]), booleans.get(ii));
+                    if (trackPrev) {
+                        assertEquals(description, ii, longs.getPrevLong(ii));
+                        assertEquals(description, Long.toString(ii), objects.getPrev(ii));
+                        assertEquals(description, booleanFor(ii), booleans.getPrev(ii));
+                    }
+                }
+            };
+            if (trackPrev) {
+                longs.startTrackingPrevValues();
+                objects.startTrackingPrevValues();
+                booleans.startTrackingPrevValues();
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(shiftAndCheck::run);
+            } else {
+                shiftAndCheck.run();
+            }
+        }
+    }
+
     private static void shift(final ShiftableColumnSource<?> source, final boolean trackPrev, final long delta,
             final Runnable check) {
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
