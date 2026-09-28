@@ -174,6 +174,48 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         onFailureInternal(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
+    /**
+     * Log an exception that escaped this listener's processing of {@code update}, identifying the listener by its
+     * description (or by its full performance entry when verbose logging is enabled).
+     * <p>
+     * Listeners that complete their update asynchronously (e.g., on a
+     * {@link io.deephaven.engine.table.impl.util.JobScheduler JobScheduler}) must call this themselves before
+     * {@link #onFailure(Throwable, Entry) failing}, because the exception does not propagate out of {@code onUpdate}.
+     *
+     * @param e the exception
+     * @param update the update being processed when the exception occurred
+     */
+    protected final void logUncaughtException(@NotNull final Exception e, @NotNull final TableUpdate update) {
+        final LogEntry en = log.error().append("Uncaught exception for entry ");
+
+        final boolean useVerboseLogging = verboseLogging;
+        if (useVerboseLogging) {
+            en.append(entry);
+        } else {
+            if (entry != null) {
+                en.append("id=").append(entry.getId()).append(" ");
+            }
+            en.append(description);
+        }
+
+        en.append(", added.size()=").append(update.added().size())
+                .append(", modified.size()=").append(update.modified().size())
+                .append(", removed.size()=").append(update.removed().size())
+                .append(", shifted.size()=").append(update.shifted().size())
+                .append(", modifiedColumnSet=").append(update.modifiedColumnSet().toString())
+                .append(":\n").append(e).endl();
+
+        if (useVerboseLogging) {
+            // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
+            // clear what is actually going on in some cases of assertion failure related to the indices.
+            log.error().append("InstrumentedTableListenerBase is: ").append(this.toString()).endl();
+            log.error().append("Added: ").append(update.added().toString()).endl();
+            log.error().append("Modified: ").append(update.modified().toString()).endl();
+            log.error().append("Removed: ").append(update.removed().toString()).endl();
+            log.error().append("Shifted: ").append(update.shifted().toString()).endl();
+        }
+    }
+
     protected abstract void onFailureInternal(Throwable originalException, @Nullable Entry sourceEntry);
 
     protected final void onFailureInternalWithDependent(
@@ -337,34 +379,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 beforeRunNotification(currentStep);
                 invokeOnUpdate.run();
             } catch (Exception e) {
-                final LogEntry en = log.error().append("Uncaught exception for entry ");
-
-                final boolean useVerboseLogging = verboseLogging;
-                if (useVerboseLogging) {
-                    en.append(entry);
-                } else {
-                    if (entry != null) {
-                        en.append("id=").append(entry.getId()).append(" ");
-                    }
-                    en.append(description);
-                }
-
-                en.append(", added.size()=").append(update.added().size())
-                        .append(", modified.size()=").append(update.modified().size())
-                        .append(", removed.size()=").append(update.removed().size())
-                        .append(", shifted.size()=").append(update.shifted().size())
-                        .append(", modifiedColumnSet=").append(update.modifiedColumnSet().toString())
-                        .append(":\n").append(e).endl();
-
-                if (useVerboseLogging) {
-                    // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
-                    // clear what is actually going on in some cases of assertion failure related to the indices.
-                    log.error().append("InstrumentedTableListenerBase is: ").append(this.toString()).endl();
-                    log.error().append("Added: ").append(update.added().toString()).endl();
-                    log.error().append("Modified: ").append(update.modified().toString()).endl();
-                    log.error().append("Removed: ").append(update.removed().toString()).endl();
-                    log.error().append("Shifted: ").append(update.shifted().toString()).endl();
-                }
+                logUncaughtException(e, update);
 
                 // If the table has an error, we should cease processing further updates.
                 failed = true;
