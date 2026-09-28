@@ -92,7 +92,7 @@ final class OutputPositionBlockTracker {
         final int oldClosedBlocks = closedBlocks;
         final int newClosedBlocks = nextOutputPosition >> LOG_BLOCK_SIZE;
         closedBlocks = newClosedBlocks;
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential releasedBuilder = RowSetFactory.builderSequential();
         final MutableInt currentBlock = new MutableInt(-1);
         removed.forAllRowKeyRanges((first, last) -> {
             long rangeFirst = first;
@@ -100,7 +100,7 @@ final class OutputPositionBlockTracker {
                 final int bi = (int) (rangeFirst >> LOG_BLOCK_SIZE);
                 final long rangeLast = Math.min(last, ((long) bi << LOG_BLOCK_SIZE) + BLOCK_SIZE - 1);
                 if (bi != currentBlock.get()) {
-                    finishRemovedBlock(currentBlock.get(), oldClosedBlocks, builder);
+                    finishRemovedBlock(currentBlock.get(), oldClosedBlocks, releasedBuilder);
                     currentBlock.set(bi);
                 }
                 assert liveCounts[bi] != RELEASED;
@@ -109,26 +109,27 @@ final class OutputPositionBlockTracker {
                 rangeFirst = rangeLast + 1;
             }
         });
-        finishRemovedBlock(currentBlock.get(), oldClosedBlocks, builder);
+        finishRemovedBlock(currentBlock.get(), oldClosedBlocks, releasedBuilder);
         for (int bi = oldClosedBlocks; bi < newClosedBlocks; ++bi) {
-            finishClosedBlock(bi, builder);
+            finishClosedBlock(bi, releasedBuilder);
         }
-        return builder.build();
+        return releasedBuilder.build();
     }
 
     /**
      * Finish a block whose states were removed this cycle, unless it closed this cycle, in which case it is finished
      * with the other newly closed blocks.
      */
-    private void finishRemovedBlock(final int bi, final int oldClosedBlocks, final RowSetBuilderSequential builder) {
+    private void finishRemovedBlock(final int bi, final int oldClosedBlocks,
+            final RowSetBuilderSequential releasedBuilder) {
         if (bi >= 0 && bi < oldClosedBlocks) {
-            finishClosedBlock(bi, builder);
+            finishClosedBlock(bi, releasedBuilder);
         }
     }
 
-    private void finishClosedBlock(final int bi, final RowSetBuilderSequential builder) {
+    private void finishClosedBlock(final int bi, final RowSetBuilderSequential releasedBuilder) {
         if (liveCounts[bi] == 0) {
-            release(bi, builder);
+            release(bi, releasedBuilder);
         } else {
             updateSparse(bi);
         }
@@ -315,12 +316,12 @@ final class OutputPositionBlockTracker {
         }
     }
 
-    private void release(final int bi, final RowSetBuilderSequential builder) {
+    private void release(final int bi, final RowSetBuilderSequential releasedBuilder) {
         liveCounts[bi] = RELEASED;
         clearSparse(bi);
         releasedBlocks.set(bi);
         final long first = (long) bi << LOG_BLOCK_SIZE;
-        builder.appendRange(first, first + BLOCK_SIZE - 1);
+        releasedBuilder.appendRange(first, first + BLOCK_SIZE - 1);
     }
 
     private void updateSparse(final int bi) {
