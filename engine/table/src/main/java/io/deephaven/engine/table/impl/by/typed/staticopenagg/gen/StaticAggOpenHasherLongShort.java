@@ -19,6 +19,7 @@ import io.deephaven.chunk.util.hashing.LongChunkHasher;
 import io.deephaven.chunk.util.hashing.ShortChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableShortArraySource;
@@ -64,7 +65,7 @@ final class StaticAggOpenHasherLongShort extends StaticChunkedOperatorAggregatio
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainKeySource1.set(tableLocation, k1);
-                    outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = ChunkedOperatorAggregationHelper.allocateOutputPosition(nextOutputPosition);
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, tableLocation);

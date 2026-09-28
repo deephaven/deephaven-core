@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by.typed;
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.MethodSpec;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +39,8 @@ public class TypedAggregationFactory {
     }
 
     private static void buildInsertCommon(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("outputPosition = nextOutputPosition.getAndIncrement()");
+        builder.addStatement("outputPosition = $T.allocateOutputPosition(nextOutputPosition)",
+                ChunkedOperatorAggregationHelper.class);
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
         builder.addStatement("$L.set(tableLocation, outputPosition)", hasherConfig.mainStateName);
     }
