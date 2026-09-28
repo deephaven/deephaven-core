@@ -168,7 +168,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      * Resumes a suspend query.
      * <p>
      * The query may be resumed on a thread that is already running another query; that outer query gets the thread back
-     * when the returned closeable is closed.
+     * as soon as this one ends or suspends.
      *
      * @return a closeable that restores the query that was running on this thread before, if any
      */
@@ -183,16 +183,15 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     /**
      * Installs this recorder on the current thread and marks the query running.
      *
-     * @param allowNesting whether this query may take over a thread that is already running another query. A resumed
-     *        query may: an RPC that fails an export synchronously inside submit() can complete an unrelated request,
-     *        whose recorder then resumes here to finish. A newly started query may not.
+     * @param allowNesting whether this query may take over a thread that is already running another query: a resumed
+     *        query may, a newly started one may not
      * @return a closeable that hands the thread back to the query that was running before, if any
      */
     private SafeCloseable resumeInternal(final boolean allowNesting) {
         final QueryPerformanceRecorder current = QueryPerformanceRecorderState.getInstance();
-        if (current == this) {
-            throw new IllegalStateException("Can't resume a query that is already in operation on this thread");
-        }
+        // an installed query is RUNNING, and only a NOT_STARTED or SUSPENDED one gets here; handing the thread back
+        // to ourselves would otherwise leave it owned forever
+        Assert.neq(current, "current", this, "this");
         if (!allowNesting && current != QueryPerformanceRecorderState.DUMMY_RECORDER) {
             throw new IllegalStateException("Can't start a query while another query is in operation");
         }

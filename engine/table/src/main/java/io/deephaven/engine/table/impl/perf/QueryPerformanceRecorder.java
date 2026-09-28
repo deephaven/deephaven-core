@@ -250,12 +250,11 @@ public interface QueryPerformanceRecorder {
      * <p>
      * Unlike {@link #startQuery()}, a query may be resumed on a thread that is already running another query, for
      * example when completing one request synchronously finishes an unrelated one. The resumed query owns the thread
-     * until it is ended or suspended; closing the returned {@link SafeCloseable} hands the thread back to the query
-     * that was running before.
+     * until it is ended or suspended, which hands the thread back to the query that was running before; closing the
+     * returned {@link SafeCloseable} does the same for a scope left without either.
      *
      * @return a closeable that restores the query that was running on this thread before, if any
-     * @throws IllegalStateException if the query state isn't {@link QueryState#SUSPENDED SUSPENDED}, or this query is
-     *         already running on this thread
+     * @throws IllegalStateException if the query state isn't {@link QueryState#SUSPENDED SUSPENDED}
      */
     SafeCloseable resumeQuery();
 
