@@ -1204,10 +1204,6 @@
         "collapsible": false,
         "items": [
           {
-            "label": "Data types",
-            "path": "reference/python/deephaven-python-types.md"
-          },
-          {
             "label": "API documentation",
             "items": [
               {
@@ -2593,6 +2589,10 @@
                 ]
               }
             ]
+          },
+          {
+            "label": "Data types",
+            "path": "reference/python/deephaven-python-types.md"
           },
           {
             "label": "numpy",
