@@ -14,6 +14,7 @@
       },
       {
         "label": "Getting Started",
+        "collapsible": false,
         "items": [
           {
             "label": "Quickstarts",
@@ -118,6 +119,7 @@
       },
       {
         "label": "User Guide",
+        "collapsible": false,
         "items": [
           {
             "label": "Architectural details",
@@ -1209,112 +1211,67 @@
         ]
       },
       {
-        "label": "Cheat sheets",
-        "items": [
-          {
-            "label": "Ultimate cheat sheet",
-            "path": "reference/cheat-sheets/cheat-sheet.md"
-          },
-          {
-            "label": "Choose Python packages",
-            "path": "reference/cheat-sheets/choose-python-packages.md"
-          },
-          {
-            "label": "Data import / export",
-            "items": [
-              {
-                "label": "Simple table constructors",
-                "path": "reference/cheat-sheets/simple-table-constructors.md"
-              },
-              {
-                "label": "CSV",
-                "path": "reference/cheat-sheets/csv.md"
-              },
-              {
-                "label": "Kafka",
-                "path": "reference/cheat-sheets/kafka.md"
-              },
-              {
-                "label": "Parquet",
-                "path": "reference/cheat-sheets/parquet.md"
-              },
-              {
-                "label": "URI",
-                "path": "reference/cheat-sheets/uri-cheat-sheet.md"
-              }
-            ]
-          },
-          {
-            "label": "Performance tables",
-            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
-          },
-          {
-            "label": "Time operations",
-            "path": "reference/cheat-sheets/time-cheat-sheet.md"
-          }
-        ]
-      },
-      {
-        "label": "API documentation",
-        "items": [
-          {
-            "label": "Python (client)",
-            "href": "https://deephaven.io/core/client-api/python"
-          },
-          {
-            "label": "Python (server)",
-            "href": "https://deephaven.io/core/pydoc"
-          },
-          {
-            "label": "Java (client/server)",
-            "href": "https://deephaven.io/core/javadoc"
-          },
-          {
-            "label": "JavaScript (client)",
-            "items": [
-              {
-                "label": "Javascript API Concepts",
-                "path": "reference/js-api/concepts.md"
-              },
-              {
-                "label": "JavaScript",
-                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
-              }
-            ]
-          },
-          {
-            "label": "Go (client)",
-            "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
-          },
-          {
-            "label": "C++ (client)",
-            "href": "https://deephaven.io/core/client-api/cpp"
-          },
-          {
-            "label": "C++ (examples)",
-            "href": "https://deephaven.io/core/client-api/cpp-examples"
-          },
-          {
-            "label": "R (client)",
-            "href": "https://deephaven.io/core/client-api/r"
-          },
-          {
-            "label": "Barrage (communication)",
-            "href": "https://deephaven.io/barrage/docs/"
-          },
-          {
-            "label": "gRPC (communication)",
-            "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
-          },
-          {
-            "label": "Protobuf (communication)",
-            "href": "https://deephaven.io/core/client-api/protobuf/"
-          }
-        ]
-      },
-      {
         "label": "Reference",
+        "collapsible": false,
         "items": [
+          {
+            "label": "API documentation",
+            "items": [
+              {
+                "label": "Python (client)",
+                "href": "https://deephaven.io/core/client-api/python"
+              },
+              {
+                "label": "Python (server)",
+                "href": "https://deephaven.io/core/pydoc"
+              },
+              {
+                "label": "Java (client/server)",
+                "href": "https://deephaven.io/core/javadoc"
+              },
+              {
+                "label": "JavaScript (client)",
+                "items": [
+                  {
+                    "label": "JavaScript API concepts",
+                    "path": "reference/js-api/concepts.md"
+                  },
+                  {
+                    "label": "JavaScript",
+                    "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+                  }
+                ]
+              },
+              {
+                "label": "Go (client)",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+              },
+              {
+                "label": "C++ (client)",
+                "href": "https://deephaven.io/core/client-api/cpp"
+              },
+              {
+                "label": "C++ (examples)",
+                "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "R (client)",
+                "href": "https://deephaven.io/core/client-api/r"
+              },
+              {
+                "label": "Barrage (communication)",
+                "href": "https://deephaven.io/barrage/docs/"
+              },
+              {
+                "label": "gRPC (communication)",
+                "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
+              },
+              {
+                "label": "Protobuf (communication)",
+                "href": "https://deephaven.io/core/client-api/protobuf/"
+              }
+            ]
+          },
           {
             "label": "Engine",
             "items": [
@@ -2804,7 +2761,55 @@
         ]
       },
       {
+        "label": "Cheat sheets",
+        "collapsible": false,
+        "items": [
+          {
+            "label": "Ultimate cheat sheet",
+            "path": "reference/cheat-sheets/cheat-sheet.md"
+          },
+          {
+            "label": "Choose Python packages",
+            "path": "reference/cheat-sheets/choose-python-packages.md"
+          },
+          {
+            "label": "Data import / export",
+            "items": [
+              {
+                "label": "Simple table constructors",
+                "path": "reference/cheat-sheets/simple-table-constructors.md"
+              },
+              {
+                "label": "CSV",
+                "path": "reference/cheat-sheets/csv.md"
+              },
+              {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
+                "label": "Parquet",
+                "path": "reference/cheat-sheets/parquet.md"
+              },
+              {
+                "label": "URI",
+                "path": "reference/cheat-sheets/uri-cheat-sheet.md"
+              }
+            ]
+          },
+          {
+            "label": "Performance tables",
+            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
+          },
+          {
+            "label": "Time operations",
+            "path": "reference/cheat-sheets/time-cheat-sheet.md"
+          }
+        ]
+      },
+      {
         "label": "Help and more",
+        "collapsible": false,
         "items": [
           {
             "label": "Deephaven example apps on GitHub",
