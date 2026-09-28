@@ -2851,22 +2851,6 @@
         "collapsible": false,
         "items": [
           {
-            "label": "Deephaven example apps on GitHub",
-            "href": "https://github.com/deephaven-examples"
-          },
-          {
-            "label": "Engage in GitHub discussions",
-            "href": "https://github.com/deephaven/deephaven-core/discussions"
-          },
-          {
-            "label": "File GitHub issue",
-            "href": "https://github.com/deephaven/deephaven-core/issues"
-          },
-          {
-            "label": "Slack",
-            "href": "https://deephaven.io/slack"
-          },
-          {
             "label": "FAQs",
             "items": [
               {
@@ -3087,6 +3071,22 @@
                 ]
               }
             ]
+          },
+          {
+            "label": "Deephaven example apps on GitHub",
+            "href": "https://github.com/deephaven-examples"
+          },
+          {
+            "label": "Engage in GitHub discussions",
+            "href": "https://github.com/deephaven/deephaven-core/discussions"
+          },
+          {
+            "label": "File GitHub issue",
+            "href": "https://github.com/deephaven/deephaven-core/issues"
+          },
+          {
+            "label": "Slack",
+            "href": "https://deephaven.io/slack"
           }
         ]
       }
