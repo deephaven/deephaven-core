@@ -98,7 +98,9 @@ moves states. The tree table's source row lookup uses `none` for this reason, an
 A mode other than `none` can apply only when all of the following hold:
 
 - Every operator of the aggregation can reclaim states (`IterativeChunkedAggregationOperator.canReclaimStates()`, false
-  by default). Group-by, partition-by, formula, and rollup operators cannot.
+  by default). Group-by, partition-by, formula, and rollup operators cannot. Neither can the operators whose states
+  never become empty: the min, max, first, and last operators for add-only and blink input, and approximate
+  percentiles, whose t-digests cannot remove values.
 - The aggregation does not preserve empty groups.
 - The aggregation has no initial groups.
 
