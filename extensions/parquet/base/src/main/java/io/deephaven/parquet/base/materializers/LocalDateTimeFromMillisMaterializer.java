@@ -36,8 +36,8 @@ public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<
     public static LocalDateTime convertValue(long value) {
         // Floor semantics, so that pre-Epoch values yield the non-negative nano-of-second that
         // LocalDateTime.ofEpochSecond requires.
-        return LocalDateTime.ofEpochSecond(Math.floorDiv(value, 1_000L),
-                (int) (Math.floorMod(value, 1_000L) * MILLI),
+        return LocalDateTime.ofEpochSecond(Math.floorDiv(value, 1_000),
+                (int) (Math.floorMod(value, 1_000) * MILLI),
                 ZoneOffset.UTC);
     }
 
