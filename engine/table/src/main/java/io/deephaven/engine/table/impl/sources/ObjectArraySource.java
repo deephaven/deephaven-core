@@ -795,8 +795,9 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                         destBlock[di] = sourceBlock[sourceIndex + step * jj];
                     }
                 } else if (count > LOOP_COPY_LIMIT) {
-                    System.arraycopy(sourceBlock, backward ? sourceIndex - count + 1 : sourceIndex, destBlock,
-                            backward ? destIndex - count + 1 : destIndex, count);
+                    final int firstSourceIndex = backward ? sourceIndex - count + 1 : sourceIndex;
+                    final int firstDestIndex = backward ? destIndex - count + 1 : destIndex;
+                    System.arraycopy(sourceBlock, firstSourceIndex, destBlock, firstDestIndex, count);
                 } else {
                     for (int jj = 0; jj < count; ++jj) {
                         destBlock[destIndex + step * jj] = sourceBlock[sourceIndex + step * jj];
