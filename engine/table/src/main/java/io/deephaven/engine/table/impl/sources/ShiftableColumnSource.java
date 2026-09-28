@@ -24,5 +24,5 @@ public interface ShiftableColumnSource<T> extends WritableColumnSource<T> {
      * @param firstKey the first row key of the range
      * @param lastKey the last row key of the range, inclusive
      */
-    default void releaseBlocks(long firstKey, long lastKey) {}
+    void releaseBlocks(long firstKey, long lastKey);
 }
