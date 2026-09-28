@@ -50,7 +50,7 @@ This architecture means the same table can simultaneously serve a Python script,
 | Capability             | Traditional Approach                    | Deephaven                            |
 | ---------------------- | --------------------------------------- | ------------------------------------ |
 | **Batch + Real-time**  | Separate systems for each               | Unified table API for both           |
-| **Update model**       | Recompute full datasets                 | Incremental (only changed rows)      |
+| **Update model**       | Recompute full datasets                 | Incremental (only affected rows)     |
 | **Memory efficiency**  | Copy-on-write, data duplication         | Shared `RowSets` and `ColumnSources` |
 | **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock  |
 | **UI development**     | Separate front-end team/codebase        | Pure Python (`deephaven.ui`) or JS   |
@@ -59,7 +59,7 @@ This architecture means the same table can simultaneously serve a Python script,
 
 This document provides technical depth on each component. For a conceptual introduction to DAGs, start with our [DAG concept guide](./dag.md).
 
-<Svg src='../assets/conceptual/deephaven-architecture-overview.svg' style={{height: 'auto', maxWidth: '1100px'}} />
+<iframe src="../assets/conceptual/architecture/deephaven-architecture-overview.html" title="Diagram of the Deephaven architecture, from the Java query engine through language integration and network protocols to the client APIs" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1259', border: 'none'}} />
 
 ## Table update model
 
@@ -71,7 +71,7 @@ Queries automatically form a DAG where:
 
 - **Vertices** represent tables or data operations.
 - **Edges** represent dependencies and data flow.
-- **Updates** propagate incrementally - only changed data recomputes.
+- **Updates** propagate incrementally — only the affected data recomputes.
 - **Consistency** is guaranteed via a logical clock that coordinates update cycles.
 
 For example, consider this simple query:
@@ -91,7 +91,7 @@ aggregated = source.aggBy([AggSum("Value")])
 
 When `source` receives a new row, the DAG ensures that `filtered` and `aggregated` update automatically and consistently. The engine only recomputes what changed - if one row updates, only that row flows through the graph.
 
-**Performance impact**: Incremental updates mean a 1-row change to a million-row table triggers recomputation of only that single row, not the entire dataset. In a typical financial trading scenario with 1,000 updates per second to a 10-million-row table, Deephaven processes 1,000 rows per second while a full-recompute system would need to process 10 billion rows per second to maintain the same latency.
+**Performance impact**: Incremental updates mean a 1-row change to a million-row table recomputes only what that change affects, not the entire dataset. How far a change reaches depends on the operation: a filter or `update` touches the changed rows, while a join or aggregation updates the matching output rows or groups. In a typical financial trading scenario with 1,000 updates per second to a 10-million-row table, Deephaven's work scales with the 1,000 changed rows rather than the 10 million stored, while a full-recompute system would need to process 10 billion rows per second to maintain the same latency.
 
 ### Update graph (UG) cycles
 
@@ -122,6 +122,7 @@ At Deephaven, we have designed and implemented a unified table API that offers t
 
 ```groovy syntax
 import static io.deephaven.api.agg.Aggregation.AggAvg
+import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.kafka.KafkaTools
 
@@ -130,13 +131,26 @@ staticTrades = ParquetTools.readTable("/data/historical_trades.parquet")
 result1 = staticTrades.where("Price > 100").aggBy([AggAvg("Price")], "Symbol")
 
 // Identical code works with live Kafka stream
-liveTrades = KafkaTools.consumeToTable(["bootstrap.servers": "localhost:9092", "topic": "trades"])
+kafkaProps = new Properties()
+kafkaProps.put("bootstrap.servers", "localhost:9092")
+
+ColumnDefinition[] colDefs = [ColumnDefinition.ofString("Symbol"), ColumnDefinition.ofDouble("Price")]
+
+liveTrades = KafkaTools.consumeToTable(
+    kafkaProps,
+    "trades",
+    KafkaTools.ALL_PARTITIONS,
+    KafkaTools.ALL_PARTITIONS_DONT_SEEK,
+    KafkaTools.Consume.IGNORE,
+    KafkaTools.Consume.jsonSpec(colDefs, null, null),
+    KafkaTools.TableType.append()
+)
 result2 = liveTrades.where("Price > 100").aggBy([AggAvg("Price")], "Symbol")
 
 // result2 updates in real-time as new trades arrive
 ```
 
-<Svg src='../assets/conceptual/unified-batch-streaming.svg' style={{height: 'auto', maxWidth: '1000px'}} />
+<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1024', border: 'none'}} />
 
 ## Unified batch and streaming
 
@@ -174,7 +188,7 @@ renamed = source.view("A", "C = B")  // Shares A's ColumnSource
 // Only one copy of column A exists in memory, shared by all three tables
 ```
 
-<Svg src='../assets/conceptual/table-structure.svg' style={{height: 'auto', maxWidth: '1000px'}} />
+<iframe src="../assets/conceptual/architecture/table-structure.html" title="Diagram showing table structure with RowSets and ColumnSources" loading="lazy" style={{width: '100%', aspectRatio: '840 / 888', border: 'none'}} />
 
 _Filtering_ ([`where`](../how-to-guides/filters.md) operations) creates a new `RowSet` that is a subset of an existing `RowSet`; _sorting_ creates a new `RowSet` for the result — flat for static or blink sources, or a pre-allocated range for other refreshing sources so later updates can be inserted without constant rekeying — and applies a `RowRedirection` to the parent's `ColumnSource`s to reflect the new order.
 
@@ -278,7 +292,7 @@ Deephaven’s approach to mechanical sympathy can be summarized with a few key o
 
 The Deephaven query engine moves data around using a data structure called a _Chunk_. This subsystem is key to achieving mechanical sympathy in our implementation.
 
-<Svg src='../assets/conceptual/chunk-architecture.svg' style={{height: 'auto', maxWidth: '1000px'}} />
+<iframe src="../assets/conceptual/architecture/chunk-architecture.html" title="Diagram showing chunk-oriented architecture for bulk data processing" loading="lazy" style={{width: '100%', aspectRatio: '840 / 1178', border: 'none'}} />
 
 By working with chunks of data rather than single cells, we allow the engine to amortize data movement costs at every applicable level of the stack. For example, `ColumnSources` are _ChunkSources_, allowing bulk `getChunk` and `fillChunk` data transfers. These data transfers may in turn be implemented by wrapping or copying arrays, by reading the appropriate region of a file, or by evaluating a formula once for each result element.
 
