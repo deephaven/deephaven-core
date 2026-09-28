@@ -229,6 +229,19 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
     }
 
     /**
+     * Wait for {@code thread} to consume a pending interrupt. A parallel column snapshot clears the interrupt when its
+     * wait for the column jobs throws, and restores it only once those jobs are done, so a cleared flag means the
+     * interrupt has been seen while the jobs are still running.
+     */
+    private static void awaitInterruptConsumed(@NotNull final Thread thread) throws InterruptedException {
+        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+        while (thread.isInterrupted()) {
+            assertTrue("interrupt not consumed within " + TIMEOUT_SECONDS + "s", System.nanoTime() < deadline);
+            Thread.sleep(1);
+        }
+    }
+
+    /**
      * Regression test for DH-23460.
      *
      * <p>
@@ -477,6 +490,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
         try {
             assertTrue(fillStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
             snapshotThread.interrupt();
+            awaitInterruptConsumed(snapshotThread);
             // Give an unfixed snapshot time to abandon the still-running job and return.
             snapshotThread.join(500);
             assertTrue("snapshotThread.isAlive()", snapshotThread.isAlive());
@@ -532,6 +546,9 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
         try {
             assertTrue(fillStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
             snapshotThread.interrupt();
+            // A failure that completes the future before the waiting thread notices the interrupt would be reported by
+            // CompletableFuture.get in place of the interrupt, so let the interrupt land first.
+            awaitInterruptConsumed(snapshotThread);
         } finally {
             releaseFill.countDown();
             snapshotThread.join(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
