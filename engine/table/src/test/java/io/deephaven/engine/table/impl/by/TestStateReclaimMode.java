@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -25,6 +26,16 @@ public class TestStateReclaimMode {
         assertFalse(StateReclaimMode.releaseBlocks(0.5).isConfigured());
         assertFalse(StateReclaimMode.releaseBlocks(1).isConfigured());
         assertFalse(StateReclaimMode.none().isConfigured());
+    }
+
+    @Test
+    public void testClampsFraction() {
+        assertEquals(1.0, StateReclaimMode.releaseBlocks(2).collapseFreeFraction(), 0.0);
+        assertEquals(0.0, StateReclaimMode.releaseBlocks(-1).collapseFreeFraction(), 0.0);
+        assertEquals(0.0, StateReclaimMode.releaseBlocks(Double.NEGATIVE_INFINITY).collapseFreeFraction(), 0.0);
+        assertEquals(0.5, StateReclaimMode.releaseBlocks(0.5).collapseFreeFraction(), 0.0);
+        assertTrue(StateReclaimMode.releaseBlocks(-1).movesStates());
+        assertFalse(StateReclaimMode.releaseBlocks(Double.POSITIVE_INFINITY).movesStates());
     }
 
     @Test

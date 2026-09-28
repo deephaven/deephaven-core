@@ -6,6 +6,10 @@ package io.deephaven.engine.table.impl.by;
 /**
  * How an incremental aggregation reclaims the states of groups whose rows have all been removed.
  * <p>
+ * The public {@code aggBy} family uses {@link #configured()}, which in 43.0 defaults to {@code releaseBlocks(1.0)}:
+ * storage is freed when enough adjacent states are removed, and no state moves. Through 42.0, every aggregation behaved
+ * as {@link #none()}.
+ * <p>
  * A group that empties leaves the result at the end of the cycle. The modes differ in what happens to its state:
  * <ul>
  * <li>{@link #none()}: the state is kept, so a group that returns on a later cycle gets its row key back. Memory grows
@@ -15,12 +19,15 @@ package io.deephaven.engine.table.impl.by;
  * are removed, free the underlying storage. If the {@code collapseFreeFraction} is less than 1.0, states may move to
  * eliminate fragmentation that would otherwise prevent empty runs from being freed.</li>
  * </ul>
- * Only a mode that moves states ({@link #movesStates()}) changes a group's row key while it has rows; a consumer that
- * looks up a group's current row key and reads previous values there needs a mode that does not.
  * <p>
  * A mode that reclaims states applies only to a refreshing aggregation whose operators can all reclaim states, and that
  * neither preserves empty groups nor has initial groups. An aggregation given such a mode explicitly fails if it cannot
  * reclaim; one given the {@link #configured()} mode uses {@link #none()} instead.
+ * <p>
+ * Some engine operations use aggregations and depend on the behavior of {@code none}, assuming that the row key of an
+ * aggregation state cannot change. Only a mode that moves states ({@link #movesStates()}) changes a group's row key
+ * while it has rows; a consumer that looks up a group's current row key and reads previous values there needs a mode
+ * that does not.
  */
 public final class StateReclaimMode {
 
@@ -46,7 +53,8 @@ public final class StateReclaimMode {
     /**
      * @param collapseFreeFraction when at least this fraction of a run of row keys belongs to removed groups, the rows
      *        that remain may move to lower row keys, keeping their order, so that the storage for the row keys this
-     *        empties can be freed; 1 or more never moves rows
+     *        empties can be freed. It is clamped to the range 0 to 1: 0 moves rows whenever that frees storage, and 1
+     *        never moves rows.
      * @return the mode that frees the storage for runs of adjacent row keys whose groups have all been removed
      * @throws IllegalArgumentException if {@code collapseFreeFraction} is NaN
      */
@@ -55,16 +63,18 @@ public final class StateReclaimMode {
     }
 
     private static StateReclaimMode releaseBlocks(final double collapseFreeFraction, final boolean configured) {
-        // every comparison with NaN is false, so a NaN fraction would neither collapse nor be rejected as out of range
+        // a NaN fraction has no place in the range to clamp to
         if (Double.isNaN(collapseFreeFraction)) {
             throw new IllegalArgumentException("collapseFreeFraction must not be NaN");
         }
-        return new StateReclaimMode(true, collapseFreeFraction, configured);
+        return new StateReclaimMode(true, Math.max(0.0, Math.min(1.0, collapseFreeFraction)), configured);
     }
 
     /**
-     * The mode configured by the {@code ChunkedOperatorAggregationHelper} properties, as they are now. An aggregation
-     * that cannot reclaim states uses {@link #none()} instead of this mode, rather than failing.
+     * The mode configured by the {@code ChunkedOperatorAggregationHelper} properties, as they are now. In 43.0 the
+     * properties default to {@code releaseBlocks(1.0)}, which frees storage when enough adjacent states are removed and
+     * moves no state; through 42.0, aggregations behaved as {@link #none()}. An aggregation that cannot reclaim states
+     * uses {@link #none()} instead of this mode, rather than failing.
      *
      * @return the configured mode
      */
