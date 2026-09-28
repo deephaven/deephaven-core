@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -351,10 +352,10 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
 
     @Override
     public void shift(RowSetShiftData shiftData) {
-        if (touchedStates != null) {
-            // the states whose deltas are cleared at the end of the cycle move with the shift
-            shiftData.apply(touchedStates);
-        }
+        // the states whose deltas are cleared at the end of the cycle move with the shift; only a refreshing
+        // aggregation shifts, and it tracks them from startTrackingPrevValues
+        Assert.neqNull(touchedStates, "touchedStates");
+        shiftData.apply(touchedStates);
         ssms.shift(shiftData);
         resultColumn.shift(shiftData);
     }

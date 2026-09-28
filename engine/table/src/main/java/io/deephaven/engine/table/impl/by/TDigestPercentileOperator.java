@@ -10,7 +10,6 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
@@ -255,6 +254,12 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         }
     }
 
+    @Override
+    public boolean canReclaimStates() {
+        // t-digests cannot remove values, so no state becomes empty and there is nothing to reclaim
+        return false;
+    }
+
     private class TDigestContext implements SingletonContext, BucketedContext {
         final ToDoubleCast toDoubleCast;
 
@@ -367,6 +372,12 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         }
 
         @Override
+        public boolean canReclaimStates() {
+            // reads the primary operator's t-digests, which cannot remove values
+            return false;
+        }
+
+        @Override
         public void propagateUpdates(@NotNull final TableUpdate downstream, @NotNull final RowSet newDestinations) {
             downstream.added().forAllRowKeys(this::updateDestination);
             if (modifiedThisStep) {
@@ -376,42 +387,6 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
         private void updateDestination(final long destination) {
             resultColumn.set(destination, digestForSlot(destination).quantile(percentile));
-        }
-
-        @Override
-        public boolean canReclaimStates() {
-            return true;
-        }
-
-        @Override
-        public void shift(RowSetShiftData shiftData) {
-            resultColumn.shift(shiftData);
-        }
-
-        @Override
-        public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
-            resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
-        }
-    }
-
-    @Override
-    public boolean canReclaimStates() {
-        return true;
-    }
-
-    @Override
-    public void shift(RowSetShiftData shiftData) {
-        digests.shift(shiftData);
-        for (final DoubleArraySource resultColumn : resultColumns) {
-            resultColumn.shift(shiftData);
-        }
-    }
-
-    @Override
-    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
-        digests.releaseBlocks(firstOutputPosition, lastOutputPosition);
-        for (final DoubleArraySource resultColumn : resultColumns) {
-            resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
         }
     }
 }

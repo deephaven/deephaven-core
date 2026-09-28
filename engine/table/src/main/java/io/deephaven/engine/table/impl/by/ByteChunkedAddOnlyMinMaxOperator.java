@@ -10,7 +10,6 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.ByteComparisons;
@@ -187,16 +186,7 @@ class ByteChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public boolean canReclaimStates() {
-        return true;
-    }
-
-    @Override
-    public void shift(RowSetShiftData shiftData) {
-        resultColumn.shift(shiftData);
-    }
-
-    @Override
-    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
-        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        // only used for add-only and blink input, whose states never become empty, so there is nothing to reclaim
+        return false;
     }
 }
