@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -50,7 +51,8 @@ public class ObjectServiceTest extends DeephavenApiServerSingleAuthenticatedBase
 
     public static MyObject createMyObject() {
         return new MyObject(MY_OBJECT_SOME_STRING, MY_OBJECT_SOME_INT,
-                TableTools.emptyTable(MY_OBJECT_SOME_INT).view("I=i"), REF, UNREG);
+                TableTools.newTable(TableTools.intCol("I", IntStream.range(0, MY_OBJECT_SOME_INT).toArray())), REF,
+                UNREG);
     }
 
     @Test
