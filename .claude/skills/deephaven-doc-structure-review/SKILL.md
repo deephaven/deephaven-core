@@ -43,6 +43,12 @@ weigh:
 
 ## 1. Build the structure map before reading prose in depth
 
+- **State the page's purpose in one sentence first:** what will the reader be able to *do* (or
+  understand well enough to act on) after reading it? If you can't write that sentence from the
+  intro and headings alone, that's the top finding — every other structural check is secondary
+  to a page with no clear goal. Keep the sentence in view; several checks below ask whether a
+  section serves it.
+
 - Extract the full heading outline — but not with a naive `grep -n '^#'`: this doc set's fenced
   code blocks contain column-1 `#`-prefixed comments (Python) that a bare grep misreads as
   headings, and some pages nest a ` ``` ` example inside a ` ```` ` outer fence (e.g.
@@ -146,6 +152,46 @@ up front, rather than re-deriving them per check.
   check above) risk losing readers before they reach the summary. Treat any doc matching both
   conditions as a consolidation candidate even if no single example is individually flagged.
 
+- **Parent/child terminology continuity:** When an intro or parent section enumerates the things
+  its children cover ("Deephaven parallelizes in two ways: across tables and within a table"),
+  the child headings must use the same terms, in the same order, as that enumeration. A child
+  heading that renames the concept ("Concurrent row calculations" under a parent that said
+  "within a single table"), or a parent paragraph that never introduces a split its children
+  then rely on, is an effective terminology change the reader has to reconcile on their own.
+  Compare every enumeration in the intro and in each parent paragraph against the step-1 outline.
+  Fix: rename the headings or rewrite the enumeration so the two match exactly; if the children
+  genuinely subdivide further, say so in the parent paragraph.
+
+- **Level of abstraction:** For each section, ask "would a reader expect to find this here?"
+  given the page's category and the section's own heading. Implementation or configuration
+  detail inside a conceptual explanation is the common case: a Python-GIL/free-threading note
+  under "How parallelization works > Within a single table," or a property name and default in
+  parentheses in the middle of an explanation of what the engine does. A parenthetical is often
+  the tell — the author already sensed it didn't belong in the thought. Fix: move configuration
+  values into one Configuration section at the end of the page (or link to the configuration
+  reference, `conceptual/query-table-configuration.md`); move environment or version caveats
+  to a prerequisites note or the section they actually govern; leave a one-line pointer behind
+  only if the reader needs it at that point. This check is `deephaven-core-accuracy-check`'s
+  **Placement of configuration detail** seen from the structure side — accuracy decides what's
+  true, this check decides where it goes.
+
+- **Category consistency in tables and lists:** Every row of a table and every item in a list
+  should be the same *kind* of thing — all general categories, or all concrete examples, or all
+  operations, not a mix. A list of "reasons a formula needs serial execution" that mixes a general
+  category ("reads a column computed by an earlier row"), a single specific example ("a global
+  counter"), and an item that doesn't meet the list's criterion at all ("logging," which doesn't
+  change the output) forces the reader to work out what the list is actually about. For each
+  table or list, name the category its items share, then check each item against it. Fix: lift
+  specific examples to the category they illustrate (or move them into an example column), and
+  cut items that don't meet the list's criterion.
+
+- **List contents match the enclosing section:** A table or list sitting under a section heading
+  should contain only items that belong to that section's scope. A quick-reference table under
+  "Within a single table" that also lists across-table behavior, or a "What gets parallelized"
+  list under a heading about one operation, reads as though the section's scope is wider or
+  narrower than its heading says. Fix: move the list up to the parent that actually spans its
+  contents, or split it so each part sits under the section it describes.
+
 - **Closing-section and summary placement:** This is about structural placement, not the
   "Related documentation" requirement itself — that's `deephaven-writing-style`'s rule (with its
   own exemptions), don't re-derive it here. A closing summary (commonly "Key takeaways" in this
@@ -172,9 +218,9 @@ exactly the kind of edit that can quietly drop a caveat, break a cross-reference
 style violation.
 
 **When invoked as the middle step of `deephaven-docs-review-full`**, skip that re-run: the
-orchestrator's own steps 3 (targeted spot-check re-verification) and 4 (style) already cover it,
+orchestrator's own re-verify step (targeted spot-check re-verification) and style step already cover it,
 in a more scoped and correctly-ordered way than re-running the full accuracy and style skills
-here would. Running the full re-run here too would duplicate step 4 and pre-empt step 3 with a
+here would. Running the full re-run here too would duplicate the style step and pre-empt the re-verify step with a
 full accuracy pass before the orchestrator's lighter, targeted one — say so in your output
-("structural edits applied; deferring re-verification to the orchestrator's steps 3-4") rather
+("structural edits applied; deferring re-verification to the orchestrator's re-verify and style steps") rather
 than silently doing the full re-run.

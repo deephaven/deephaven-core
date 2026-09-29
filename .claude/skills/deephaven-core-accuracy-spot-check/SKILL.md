@@ -20,6 +20,14 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    the step number, since renumbering there has already gone stale once). Search source first;
    never correct an example from memory.
 
+   **Placement gate:** a verified-true fix can still be the wrong fix. If correcting the claim
+   would add a property name, default, threshold, hedge, or parenthetical caveat to Concept-guide
+   or Tutorial narrative, don't paste it inline — propose rewriting the sentence at the section's
+   level of abstraction and putting the precise detail in the page's Configuration section or a
+   link to the configuration reference (see `deephaven-core-accuracy-check`'s **Placement of
+   configuration detail**). If you can't verify the claim, raise an author query rather than
+   hedging the sentence.
+
 3. **Apply basic style to changed lines only.**
    
    > Skip this step entirely if invoked from `deephaven-docs-review-full` — that orchestrator runs a full `deephaven-writing-style` pass afterward.
