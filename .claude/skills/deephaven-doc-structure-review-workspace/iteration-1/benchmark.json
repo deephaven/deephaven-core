@@ -1,0 +1,154 @@
+{
+  "metadata": {
+    "skill_name": "deephaven-doc-structure-review",
+    "skill_path": ".claude/skills/deephaven-doc-structure-review",
+    "executor_model": "claude-opus-5-5",
+    "analyzer_model": "claude-opus-5-5 (inline grading by orchestrator)",
+    "timestamp": "2026-09-29T19:16:13Z",
+    "evals_run": [
+      1
+    ],
+    "runs_per_configuration": 1,
+    "baseline": "old_skill = the skill at upstream/main before deephaven/deephaven-core#8704 (snapshot in skill-snapshot/)"
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 196.6,
+        "tokens": 87706,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
+          "passed": true,
+          "evidence": "'What the page is for: after reading it, the reader should understand how Deephaven parallelizes work ...' under Category and purpose."
+        },
+        {
+          "text": "Flags that the intro's enumeration ('across tables, across rows, and across columns') doesn't match the headings ('Across tables' / 'Within a single table')",
+          "passed": true,
+          "evidence": "Finding 4 'Parent/child terminology mismatch (line 26 vs. lines 28, 54, 79)'."
+        },
+        {
+          "text": "Flags the Python GIL caution and/or inline configuration property values as the wrong level of abstraction for where they sit, and proposes moving them (e.g. to a Configuration section)",
+          "passed": true,
+          "evidence": "Finding 2 (config scattered, 'level of abstraction', add one ## Configuration section) and finding 9 (GIL caution 'at the wrong level of abstraction')."
+        },
+        {
+          "text": "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
+          "passed": true,
+          "evidence": "Finding 5: 'Its Scenario rows mix categories (\"Pure column math\"), a specific example (\"Global counter\") ... and logging, which doesn't change the output.'"
+        },
+        {
+          "text": "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)",
+          "passed": true,
+          "evidence": "Finding 10: '\"What does NOT get parallelized\" includes items outside its section ... Line 72 ... is about scheduling across tables, not within one table.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.4,
+        "passed": 2,
+        "failed": 3,
+        "total": 5,
+        "time_seconds": 157.0,
+        "tokens": 80428,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
+          "passed": false,
+          "evidence": "No statement of the page's purpose or what the reader will be able to do."
+        },
+        {
+          "text": "Flags that the intro's enumeration ('across tables, across rows, and across columns') doesn't match the headings ('Across tables' / 'Within a single table')",
+          "passed": true,
+          "evidence": "Finding 11: 'The section intro also promises three ways ... but the H3s are \"Across tables,\" \"Within a single table,\" and \"Query phases and thread pools\"'."
+        },
+        {
+          "text": "Flags the Python GIL caution and/or inline configuration property values as the wrong level of abstraction for where they sit, and proposes moving them (e.g. to a Configuration section)",
+          "passed": true,
+          "evidence": "Finding 12 moves the GIL caution ('in a section it doesn't belong to'). Lenient pass: it doesn't treat config values as misplaced \u2014 finding 7 proposes adding property names to the breaking-change callout."
+        },
+        {
+          "text": "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
+          "passed": false,
+          "evidence": "Finding 9 discusses only the implicit-barriers row; no finding about rows being different kinds of things (Global counter, logging)."
+        },
+        {
+          "text": "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)",
+          "passed": false,
+          "evidence": "No finding that a list's contents fall outside its enclosing section."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 196.6,
+        "stddev": 0.0,
+        "min": 196.6,
+        "max": 196.6
+      },
+      "tokens": {
+        "mean": 87706.0,
+        "stddev": 0.0,
+        "min": 87706,
+        "max": 87706
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.4,
+        "stddev": 0.0,
+        "min": 0.4,
+        "max": 0.4
+      },
+      "time_seconds": {
+        "mean": 157.0,
+        "stddev": 0.0,
+        "min": 157.0,
+        "max": 157.0
+      },
+      "tokens": {
+        "mean": 80428.0,
+        "stddev": 0.0,
+        "min": 80428,
+        "max": 80428
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.60",
+      "time_seconds": "+39.6",
+      "tokens": "+7278"
+    }
+  },
+  "notes": [
+    "Discriminating: purpose statement, mixed-kind table rows, list/section mismatch. The pre-PR run also proposed adding property names to the breaking-change callout \u2014 the opposite of the placement rule.",
+    "Expectation 3 passed for the pre-PR skill only leniently (it moved the GIL note but treated config values as content to add, not relocate). Consider splitting it into GIL and config expectations next iteration.",
+    "n=1 run per configuration: pass rates show whether each targeted behavior appeared, not a statistically meaningful rate."
+  ]
+}

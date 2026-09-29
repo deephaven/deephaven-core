@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "skill_name": "deephaven-docs-review-full",
+    "skill_path": ".claude/skills/deephaven-docs-review-full",
+    "executor_model": "claude-opus-5-5",
+    "analyzer_model": "claude-opus-5-5 (inline grading by orchestrator)",
+    "timestamp": "2026-09-29T19:16:13Z",
+    "evals_run": [
+      1
+    ],
+    "runs_per_configuration": 1,
+    "baseline": "old_skill = the skill at upstream/main before deephaven/deephaven-core#8704 (snapshot in skill-snapshot/)"
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 621.3,
+        "tokens": 182597,
+        "tool_calls": 50,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+          "passed": true,
+          "evidence": "'## Editorial summary' names the single biggest issue (with_serial prescribed where insufficient) and 'Developmental verdict: needs revision.'"
+        },
+        {
+          "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+          "passed": true,
+          "evidence": "'## Developmental notes' (key message, mental model, audience, scope) precede Accuracy/Structure/Examples/Style."
+        },
+        {
+          "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+          "passed": true,
+          "evidence": "A2: '\"What does NOT get parallelized: view, update_view, lazy_update\" is a wrong mental model' with the QueryTable guards."
+        },
+        {
+          "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+          "passed": true,
+          "evidence": "'## Author queries' AQ1\u2013AQ7."
+        },
+        {
+          "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+          "passed": true,
+          "evidence": "Style Y1\u2013Y8 as patterns with counts ('3 labels, about 10 uses', 'about 6', '5 terms')."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.2,
+        "passed": 1,
+        "failed": 4,
+        "total": 5,
+        "time_seconds": 765.6,
+        "tokens": 193987,
+        "tool_calls": 60,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+          "passed": false,
+          "evidence": "Opens with a two-sentence summary of findings; no readiness verdict."
+        },
+        {
+          "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+          "passed": false,
+          "evidence": "No developmental section; sections are Accuracy / Structure / Step 3 / Style."
+        },
+        {
+          "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+          "passed": false,
+          "evidence": "No finding about the view/update_view/lazy_update classification; A16 only notes lazy_update is missing from the with_serial restriction box."
+        },
+        {
+          "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+          "passed": false,
+          "evidence": "No author-queries section; one '\u26a0\ufe0f Needs SME input' inline and a follow-ups list."
+        },
+        {
+          "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+          "passed": true,
+          "evidence": "Style Y1\u2013Y8 grouped by issue type with line lists, not one row per instance."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 621.3,
+        "stddev": 0.0,
+        "min": 621.3,
+        "max": 621.3
+      },
+      "tokens": {
+        "mean": 182597.0,
+        "stddev": 0.0,
+        "min": 182597,
+        "max": 182597
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.2,
+        "stddev": 0.0,
+        "min": 0.2,
+        "max": 0.2
+      },
+      "time_seconds": {
+        "mean": 765.6,
+        "stddev": 0.0,
+        "min": 765.6,
+        "max": 765.6
+      },
+      "tokens": {
+        "mean": 193987.0,
+        "stddev": 0.0,
+        "min": 193987,
+        "max": 193987
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.80",
+      "time_seconds": "-144.3",
+      "tokens": "-11390"
+    }
+  },
+  "notes": [
+    "Discriminating on report shape (editorial summary + verdict, developmental notes, author queries) and on the key technical miss: the pre-PR full review did not flag the view/update_view/lazy_update misclassification.",
+    "Style-as-patterns passed in both arms \u2014 the pre-PR style pass already grouped by issue type.",
+    "The new skill's developmental pass surfaced a finding neither accuracy-check arm led with: the quick-reference table prescribes with_serial alone for shared resources across columns (A1). The pre-PR full review found it too (its A5), so it isn't unique to the new skill, but the new version ranked it as the single biggest issue.",
+    "n=1 run per configuration: pass rates show whether each targeted behavior appeared, not a statistically meaningful rate."
+  ]
+}

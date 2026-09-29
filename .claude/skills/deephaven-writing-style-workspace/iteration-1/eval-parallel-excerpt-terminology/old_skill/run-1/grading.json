@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "Flags 'across rows' / 'across tables' as ad-hoc or non-standard terminology and suggests a recognized term (e.g. 'concurrent row calculations')",
+      "passed": false,
+      "evidence": "Item 2 calls them coined vocabulary but 'good plain-language labels'; suggests tying them to 'serial', not a recognized term."
+    },
+    {
+      "text": "Suggests the standard term 'pure function' for 'only does math on its inputs and doesn't touch anything else'",
+      "passed": false,
+      "evidence": "Suggests 'doesn't read or modify any state outside its input columns ...'; never names 'pure function'."
+    },
+    {
+      "text": "Flags that 'stateless' and 'thread-safe' are used interchangeably (including the sentence saying they mean the same thing) although they are different properties",
+      "passed": true,
+      "evidence": "Item 1: 'A thread-safe function is also stateless ... This is the most serious problem'."
+    },
+    {
+      "text": "Flags the parenthetical carrying a configuration property ('controlled by QueryTable.statelessSelectByDefault') as not belonging mid-sentence",
+      "passed": true,
+      "evidence": "Item 4: 'An internal config property is dropped into a parenthetical ... Take it out of the parenthetical.'"
+    },
+    {
+      "text": "Flags `.with_serial()` in prose (leading dot and parentheses) \u2014 control assertion that both versions should pass",
+      "passed": true,
+      "evidence": "Mechanical checks table: 1 hit on `.with_serial()` for leading dot and for empty parentheses."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "execution_metrics": {
+    "total_tool_calls": 6,
+    "output_chars": 8022
+  },
+  "grader_note": "Graded inline by the orchestrating session against the saved report.md."
+}

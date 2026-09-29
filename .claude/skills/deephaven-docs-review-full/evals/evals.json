@@ -1,0 +1,20 @@
+{
+  "skill_name": "deephaven-docs-review-full",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/deephaven-docs-review-full/evals/files/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries \u2014 and it catches the view/update_view deferred-evaluation error.",
+      "files": [
+        "evals/files/parallelization-pre-review.md"
+      ],
+      "expectations": [
+        "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+        "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+        "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+        "Includes an author-queries section listing questions the review couldn't resolve from source",
+        "Reports style issues as patterns (with examples or counts) rather than one row per instance"
+      ]
+    }
+  ]
+}

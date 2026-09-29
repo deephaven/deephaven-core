@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "parallelization-pre-review-structure",
+  "prompt": "This parallelization concept guide feels hard to follow. Review its structure and organization: .claude/skills/deephaven-doc-structure-review/evals/files/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+  "assertions": [
+    "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
+    "Flags that the intro's enumeration ('across tables, across rows, and across columns') doesn't match the headings ('Across tables' / 'Within a single table')",
+    "Flags the Python GIL caution and/or inline configuration property values as the wrong level of abstraction for where they sit, and proposes moving them (e.g. to a Configuration section)",
+    "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
+    "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)"
+  ]
+}

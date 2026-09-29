@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Flags the 'What does NOT get parallelized' classification of view/update_view/lazy_update as wrong or misleading, because deferred formulas run on the reading thread and can run concurrently",
+      "passed": false,
+      "evidence": "No finding questions the view/update_view/lazy_update 'not parallelized' classification; the only view mention (Checked and correct) confirms with_serial can't be used with views."
+    },
+    {
+      "text": "Cites the engine guard that rejects stateful (non-stateless) columns in view/updateView (QueryTable, 'A stateful column cannot safely be used in a view or updateView') as evidence",
+      "passed": false,
+      "evidence": "Cites the same QueryTable guard, but only to confirm line 156 ('correct under the default setting'), not as evidence against the classification."
+    },
+    {
+      "text": "Recommends moving inline configuration property names/defaults out of the narrative (into a Configuration section or a link to the configuration reference), rather than proposing to add property names or defaults inline",
+      "passed": false,
+      "evidence": "No placement recommendation; finding 6 asks to document more properties on the config page and finding 7 adds default-dependency detail; never proposes moving config out of the narrative."
+    },
+    {
+      "text": "Records unverifiable claims as explicit author queries (AQ-style questions for an SME) rather than proposing hedged wording",
+      "passed": false,
+      "evidence": "No author-query section or SME questions; unverifiable items aren't recorded."
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 68,
+    "output_chars": 16670
+  },
+  "grader_note": "Graded inline by the orchestrating session against the saved report.md."
+}
