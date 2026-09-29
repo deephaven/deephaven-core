@@ -25,14 +25,14 @@ import java.util.function.Supplier;
  * <p>
  * The recycle bin holds at most its current capacity, which adapts to its traffic between the capacity it was created
  * with and a maximum. Items are commonly borrowed in bursts and returned together, as when an update cycle borrows
- * storage for previous values and returns it all when the cycle completes. When a window of time sees the bin turn
- * returned items away because it is full, and also construct new items because it is empty, the capacity grows to hold
- * the largest single burst, the most items borrowed between two returns, but by no more than the most items turned away
- * between two borrows, since items a burst keeps need no room. When a window sees the bin never empty, the fewest items
- * it held in that window were never needed, and the capacity discards the shrink fraction of them, rounded up, but
- * never goes below the capacity it was created with. The items the window did need are always kept: with a capacity of
- * 100 and a window that never drew the bin below 40 items, a fraction of 0.9 discards 36 of those 40, leaving a
- * capacity of 64, while a fraction of 0 keeps the capacity once grown. The maximum is
+ * storage for previous values and returns it all when the cycle completes. When a window of time and the one before it
+ * see the bin turn returned items away because it is full, and also construct new items because it is empty, the
+ * capacity grows to hold the largest single burst, the most items borrowed between two returns, but by no more than the
+ * most items turned away between two borrows, since items a burst keeps need no room. When a window sees the bin never
+ * empty, the fewest items it held in that window were never needed, and the capacity discards the shrink fraction of
+ * them, rounded up, but never goes below the capacity it was created with. The items the window did need are always
+ * kept: with a capacity of 100 and a window that never drew the bin below 40 items, a fraction of 0.9 discards 36 of
+ * those 40, leaving a capacity of 64, while a fraction of 0 keeps the capacity once grown. The maximum is
  * {@value #MAXIMUM_CAPACITY_PROPERTY} unless a constructor gives one; it defaults to no limit, since the garbage
  * collector reclaims the items under memory pressure. The window is {@value #WINDOW_MILLIS_PROPERTY} milliseconds, 1000
  * by default, and the fraction is {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default.
@@ -94,6 +94,14 @@ public class SoftRecycler<T> {
     private int windowMaxDropRun;
     /** The fewest items the recycle bin held in this window. */
     private int windowMinSize;
+    /**
+     * The previous window's {@link #windowMisses}, {@link #windowDrops}, {@link #windowMaxBurst}, and
+     * {@link #windowMaxDropRun}, judged with this window's so that a burst split by the end of a window still counts.
+     */
+    private int previousMisses;
+    private int previousDrops;
+    private int previousMaxBurst;
+    private int previousMaxDropRun;
 
     /**
      * @param capacity The capacity the recycler starts with, and the least it shrinks to; it grows with its traffic up
@@ -225,14 +233,22 @@ public class SoftRecycler<T> {
         if (now - windowStart < windowNanos) {
             return;
         }
-        if (windowDrops > 0 && windowMisses > 0) {
+        // A burst's misses and its drops may fall on either side of the end of a window, as when an update cycle
+        // borrows before the end of a window and returns after it, so this window is judged with the one before.
+        final int misses = windowMisses + previousMisses;
+        final int drops = windowDrops + previousDrops;
+        final int maxBurst = Math.max(windowMaxBurst, previousMaxBurst);
+        final int maxDropRun = Math.max(windowMaxDropRun, previousMaxDropRun);
+        if (drops > 0 && misses > 0) {
             // Items were thrown away and then constructed again, so a larger bin would have kept them. A bin as large
             // as the largest burst keeps every item a burst returns, however full it was when the burst began; the
             // items turned away at once bound the room that was missing.
-            final long needed = Math.min(windowMaxBurst, (long) capacity + windowMaxDropRun);
+            final long needed = Math.min(maxBurst, (long) capacity + maxDropRun);
             if (needed > capacity) {
                 capacity = (int) Math.min(maximumCapacity, needed);
             }
+            // the growth used this window's traffic, which the next window must not count again
+            windowMisses = windowDrops = windowMaxBurst = windowMaxDropRun = 0;
         } else if (windowMinSize > 0) {
             // rounded up, so that any fraction above 0 reaches the minimum
             final int shrink = (int) Math.ceil(windowMinSize * shrinkFraction);
@@ -242,6 +258,10 @@ public class SoftRecycler<T> {
             }
         }
         windowStart = now;
+        previousMisses = windowMisses;
+        previousDrops = windowDrops;
+        previousMaxBurst = windowMaxBurst;
+        previousMaxDropRun = windowMaxDropRun;
         windowMisses = 0;
         windowDrops = 0;
         windowMaxBurst = 0;

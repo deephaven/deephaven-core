@@ -122,6 +122,27 @@ public class SoftRecyclerTest {
     }
 
     @Test
+    public void testGrowsWhenEachBurstIsSplitByTheEndOfAWindow() {
+        // every burst borrows in one window and returns in the next, as an update cycle as long as the window might,
+        // so each window sees only misses or only drops
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.burst(10);
+        fixture.endWindow();
+        for (int burst = 0; burst < 4; ++burst) {
+            final List<long[]> items = new ArrayList<>();
+            for (int ii = 0; ii < 25; ++ii) {
+                items.add(fixture.recycler.borrowItem());
+            }
+            fixture.endWindow();
+            for (final long[] item : items) {
+                fixture.recycler.returnItem(item);
+            }
+            fixture.endWindow();
+        }
+        assertEquals(25, fixture.recycler.getCapacity());
+    }
+
+    @Test
     public void testGrowthStopsAtTheMaximum() {
         final Fixture fixture = new Fixture(10, 16);
         fixture.burst(40);
