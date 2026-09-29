@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.PagingContextHolder;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -155,7 +154,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         private static final ColumnRegionObject DEFAULT_INSTANCE =
                 new ColumnRegionObject.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
-        private ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
+        // Lazily initialized without locking; volatile so that a racing reader sees a fully constructed region. A race
+        // may build duplicates, which is harmless.
+        private volatile ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
 
         public Null(final long pageMask) {
             super(pageMask);
@@ -207,7 +208,9 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         private final DATA_TYPE value;
 
-        private ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
+        // Lazily initialized without locking; volatile so that a racing reader sees a fully constructed region. A race
+        // may build duplicates, which is harmless.
+        private volatile ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
 
         public Constant(final long pageMask, final DATA_TYPE value) {
             super(pageMask);
@@ -297,11 +300,11 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
             if (matches) {
                 // Promote all maybe rows to match.
                 try (final RowSet allMatch = input.match().union(input.maybeMatch())) {
-                    return PushdownResult.of(selection, allMatch, RowSetFactory.empty());
+                    return PushdownResult.exactMatch(selection, allMatch);
                 }
             }
             // None of these rows match, return the original match rows.
-            return PushdownResult.of(selection, input.match(), RowSetFactory.empty());
+            return PushdownResult.exactMatch(selection, input.match());
         }
     }
 
@@ -310,8 +313,10 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
             implements ColumnRegionObject<DATA_TYPE, ATTR> {
 
         private final ColumnLocation columnLocation;
-        private ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
-        private ColumnRegionObject<DATA_TYPE, ATTR> dictionaryValuesRegion;
+        // Lazily initialized without locking; volatile so that a racing reader sees a fully constructed region. A race
+        // may build duplicates, which is harmless.
+        private volatile ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
+        private volatile ColumnRegionObject<DATA_TYPE, ATTR> dictionaryValuesRegion;
 
         public StaticPageStore(@NotNull final Parameters parameters,
                 @NotNull final ColumnRegionObject<DATA_TYPE, ATTR>[] regions,
