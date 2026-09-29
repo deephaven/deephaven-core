@@ -313,6 +313,7 @@ public class SessionState {
      */
     @SuppressWarnings("unchecked")
     public <T> ExportObject<T> getExport(final int exportId) {
+        throwIfExpired();
         if (exportId == NON_EXPORT_ID) {
             // If this is a non-export request, then it is a user error.
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
@@ -322,7 +323,6 @@ public class SessionState {
         // Lock-free when the export exists. Export listeners look exports up from inside their callbacks, while an
         // export being created notifies those same listeners from under the exportMap monitor; taking that monitor
         // here would close the cycle.
-        throwIfExpired();
         final ExportObject<T> found = (ExportObject<T>) exportMap.get(exportId);
         if (found != null) {
             return found;
