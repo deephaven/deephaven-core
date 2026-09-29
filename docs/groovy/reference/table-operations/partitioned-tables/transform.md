@@ -46,7 +46,7 @@ A new `PartitionedTable` containing the results of applying `transformer` to all
 
 ## Examples
 
-The following example partitions a table by `IntCol` and applies a transformation that adds a new column, `IntCol2`, to each constituent. It then retrieves the constituent for key `3`. The closure opens the script session's `ExecutionContext` before it calls `update`.
+The following example partitions a table by `IntCol` and applies a transformation that adds a new column, `IntCol2`, to each constituent. It then retrieves the constituent for key `3`. The closure opens the script session's `ExecutionContext` before it calls [`update`](../select/update.md).
 
 ```groovy order=source,result3
 import io.deephaven.engine.context.ExecutionContext

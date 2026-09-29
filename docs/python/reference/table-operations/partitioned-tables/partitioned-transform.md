@@ -33,7 +33,7 @@ The other `PartitionedTable`, whose constituent tables will be passed in as the 
 </Param>
 <Param name="func" type="Callable[[Table, Table], Table]">
 
-A function that takes two Tables as arguments and returns a new Table. The function must be stateless, safe for concurrent use, and able to return a valid result for empty input tables.
+A function that takes two `Table` objects as arguments and returns a new `Table`. The function must be stateless, safe for concurrent use, and able to return a valid result for empty input tables.
 
 </Param>
 <Param name="dependencies" type="Optional[Sequence[Union[Table, PartitionedTable]]]" optional>
