@@ -230,7 +230,9 @@ public class SoftRecycler<T> {
             // as the largest burst keeps every item a burst returns, however full it was when the burst began; the
             // items turned away at once bound the room that was missing.
             final long needed = Math.min(windowMaxBurst, (long) capacity + windowMaxDropRun);
-            capacity = (int) Math.max(capacity, Math.min(maximumCapacity, needed));
+            if (needed > capacity) {
+                capacity = (int) Math.min(maximumCapacity, needed);
+            }
         } else if (windowMinSize > 0) {
             // rounded up, so that any fraction above 0 reaches the minimum
             final int shrink = (int) Math.ceil(windowMinSize * shrinkFraction);
