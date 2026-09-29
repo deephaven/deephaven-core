@@ -2601,6 +2601,28 @@ public class QueryTableAjTest {
     }
 
     /**
+     * An as-of join copies the column descriptions of the left table and of the right columns that it adds, under their
+     * result names, for aj and raj with and without exact match columns.
+     */
+    @Test
+    public void testColumnDescriptionsCopied() {
+        final Table left = testTable(i(0).toTracking(), col("Key", "A"), intCol("LeftStamp", 5))
+                .withColumnDescription("LeftStamp", "left stamp");
+        final Table right = testTable(i(0).toTracking(), col("Key", "A"), intCol("RightStamp", 1),
+                intCol("Sentinel", 7), intCol("Other", 8))
+                .withColumnDescriptions(Map.of("RightStamp", "right stamp", "Sentinel", "right value", "Other",
+                        "not added"));
+        final Map<String, String> expected = Map.of("LeftStamp", "left stamp", "RightStamp", "right stamp", "Renamed",
+                "right value");
+        for (final String match : new String[] {"LeftStamp>=RightStamp", "Key,LeftStamp>=RightStamp"}) {
+            assertEquals(match + " aj", expected, left.aj(right, match, "Renamed=Sentinel")
+                    .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+            assertEquals(match + " raj", expected, left.raj(right, match.replace(">=", "<="), "Renamed=Sentinel")
+                    .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+        }
+    }
+
+    /**
      * Shifts a range of rows of a refreshing test table by a positive delta, which may move rows onto keys that other
      * rows of the same range vacate, and notifies listeners.
      */

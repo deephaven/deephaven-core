@@ -60,6 +60,7 @@ public class AsOfJoinHelper {
             MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
         final QueryTable result = asOfJoinInternal(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                 disallowExactMatch);
+        leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
         // with a static right table, a result row changes only when its left row does
         if (!rightTable.isRefreshing()) {
