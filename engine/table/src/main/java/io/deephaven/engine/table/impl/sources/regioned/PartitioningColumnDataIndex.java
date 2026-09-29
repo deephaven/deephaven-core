@@ -199,9 +199,14 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
         }
         final RowSet removed = removedPositionsBuilder.build();
         modified.remove(removed);
+        // Positions are never reassigned, so an emptied bucket keeps its position and leaves the row set; if its key
+        // returns, the bucket comes back at the same position.
+        final WritableRowSet indexRowSet = indexTable.getRowSet().writableCast();
+        indexRowSet.remove(removed);
         try (final RowSet resurrected = resurrectedPositionsBuilder.build()) {
             added.insert(resurrected);
             modified.remove(resurrected);
+            indexRowSet.insert(resurrected);
         }
 
         // Send the downstream updates to any listeners of the index table
@@ -321,7 +326,16 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
     @Override
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions unusedOptions) {
-        return (final Object key, final boolean usePrev) -> keyPositionMap.getInt(key);
+        return (final Object key, final boolean usePrev) -> {
+            final int position = keyPositionMap.getInt(key);
+            if (position == KEY_NOT_FOUND) {
+                return RowSequence.NULL_ROW_KEY;
+            }
+            // A key whose bucket was emptied keeps its position but is not in the index table.
+            final TrackingRowSet indexRowSet = indexTable.getRowSet();
+            final long found = usePrev ? indexRowSet.findPrev(position) : indexRowSet.find(position);
+            return found < 0 ? RowSequence.NULL_ROW_KEY : position;
+        };
     }
 
     @Override
