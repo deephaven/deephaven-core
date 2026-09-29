@@ -1,0 +1,49 @@
+Skills used: deephaven-docs-review-full, which ran ref-deephaven-doc-categories, deephaven-core-accuracy-check, deephaven-doc-structure-review, deephaven-core-accuracy-spot-check (re-verify step) and deephaven-writing-style.
+
+# Full review: liveness scopes concept guide (Python and Groovy)
+
+**Category:** Concept guide (`docs/{python,groovy}/conceptual/`). The accuracy step found the same wrong claims in the Groovy page, so both pages were in scope for every step. I edited both working copies; no other file was touched.
+
+## Editorial summary
+The page was wrong about what releasing a scope does. The Python "solution" example opened a `LivenessScope` but never released it, and the Groovy page said `LivenessScopeStack.pop` releases a scope (it doesn't). Several other claims were wrong too: a column that doesn't exist, the wrong output tables, and a code line that creates a context manager rather than a scope. I fixed all of these in place. Beyond that, the page still needs revision: it is titled and shaped like a how-to guide, and its "problem" example never actually shows a problem. **Verdict: needs revision.**
+
+## What I changed
+
+The first three rows are the biggest fixes. "Both" means the change was made in both files.
+
+| # | Where | Change | Source that backs it |
+|---|---|---|---|
+| 1 | Both, "Demonstrating the problem" example 2 | **The scope-enclosed example now releases the scope.** Python gained `scope.preserve(crypto)`, `scope.preserve(combo_tree)` and `scope.release()`. Groovy gained `LivenessScopeStack.peek().manage(...)` for both tables, then `scope.release()`. The lead-in sentence now says the example keeps two tables and releases the rest. Without the preserve calls, a release would also destroy the tables the page says stay open. | `liveness_scope.py`: `preserve` "Manage[s] the object in the next outer scope on this thread". `AbstractScriptSession.evaluateScript` runs each script inside `LivenessScopeStack.open(queryScope, false)`, so `peek()` returns the session's scope once the try block closes. |
+| 2 | Groovy, push/pop example and the paragraph after it | **Corrected the claim that popping a scope releases it.** Fixed the code comment, added `scope.release()` to the example, and rewrote the sentence that said popping makes artifacts "eligible for garbage collection". | `LivenessScopeStack.pop` only calls `stack.pop()`. Releasing happens only in `PopAndReleaseOnClose` or through an explicit `release()`. |
+| 3 | Python, "How to create a liveness scope" | **Replaced `scope_from_method = liveness_scope()` with a `with liveness_scope() as scope_from_function:` block.** `liveness_scope` is a `@contextlib.contextmanager`, so calling it on its own returns a context manager, not a scope. | `liveness_scope.py` |
+| 4 | Both, intro to the problem example | "grouped by Sym" became "grouped by `Instrument`". "Two tables will open: `crypto` and `data`" became `crypto` and `combo_tree` (`comboTree` in Groovy), since `data` is set to `None`/`null`. | The query's own `first_by("Instrument")`, and the page's snapshot, which shows the outputs `crypto` and `combo_tree` |
+| 5 | Both, "How liveness scopes work" | "nodes ... to be **updated** proactively" became "**cleaned up**". This automatic cleanup is the liveness system's doing, not scopes'. Also rewrote the parent/child sentence: each refreshing child manages its parents, and when nothing references a node it is destroyed and drops its references to its parents. | `BaseTable.ListenerImpl`: `if (parent.isRefreshing()) { manage(parent); ... }`, and `destroy()` → `parent.removeUpdateListener(this)` |
+| 6 | Both, "How to use..." | "any objects that are no longer needed or are not refreshing are let go" became: the scope drops its references, and any object nothing else references is cleaned up. Groovy's last "How liveness scopes work" sentence ("release any referents that are no longer live") got the same correction. | `LivenessScope.release`: "Release all referents previously added to this scope" |
+| 7 | Python, methods list | `manage`/`unmanage` now act on "this scope", not "the current scope". `preserve` now says it hands the object to the next outer scope and must be called while this scope is open. `release` now "releases" rather than "closes". | `_BaseLivenessScope.manage` → `self.j_scope.manage`. `preserve` pops `self.j_scope` and fails if this scope isn't on top of the stack. |
+| 8 | Python, examples | Wrapped the `with liveness_scope()` example in `def get_table():` (it had a top-level `return`, a syntax error). Fixed the undefined `some_ticking_table` to `ticking_table`. | Python syntax, plus the example's own variables |
+| 9 | Python, headings and prose | "The method" became "The function", and "To use the method or the class?" became "To use the function or the class?". `liveness_scope` is a function. No page links to these anchors. The summary sentence now says the function releases objects on exit except ones handed on with `preserve`. | `def liveness_scope()`; I searched every page for inbound anchors and found none |
+| 10 | Both, "Why use a liveness scope?" | "much more control over ... garbage collection" became "more control over when unreferenced nodes ... are cleaned up". "a table, plot, or any other object" became "a table, a plot, or another query engine object". | Liveness has no control over JVM garbage collection. `FigureWidget` implements `DelegatingLivenessNode`. |
+| 11 | Groovy, code comment | "managed by the scope created above" became "managed by an anonymous scope" in the no-argument `open()` example. | `LivenessScopeStack.open()` creates a `new LivenessScope()` |
+| 12 | Style, both | <ul><li>Replaced "we will ... let's demonstrate" with present tense.</li><li>Pointed the first `LivenessScope` link to the reference page `../reference/engine/LivenessScope.md` (the target exists).</li><li>Hyphen to em dash (Groovy).</li><li>Backticked `SafeCloseable`, `LivenessScopeStack` and `LivenessScope` (Groovy).</li><li>`peek()` → `peek` in the link text, and fixed "useful enclosing" to "useful for enclosing" (Groovy).</li><li>`"A={a}"` → `"A = {a}"` (Python).</li></ul> | Style guide |
+
+**Re-verify step:** I checked each reworded sentence again against the source cited above. I also searched the rest of both files for the same claims restated and found none left. No sections were moved, merged or cut. I renamed headings only in Python and confirmed no page links to them. Five pages link to these two pages, all without anchors, so none of them needs changing.
+
+## Not resolved: recommendations for the author (these would be rewrites)
+1. **The "problem" example doesn't show a problem.** It runs, and the page just asserts that it "creates many objects that are not needed". It also uses static CSV tables. For static tables, children don't manage their parents (`addParentReference` only manages refreshing parents), so a liveness scope makes little difference to memory. I recommend replacing it with a ticking example, such as a time table with a `last_by`. The Python reference page `liveness-scope.md` already has a pattern like this.
+2. **Title and category mismatch.** "How to use liveness scopes" and "This guide discusses..." read like a how-to guide, but the page sits in `conceptual/`. Consider a conceptual title and an intro that states what the reader should take away: objects a script creates are managed by the session until it closes, and a scope lets you release them sooner.
+3. **The Python "How to use" section is split in two.** "The function" and "The class" come after a methods list that already describes both. The closing "To use the function or the class?" comparison belongs where both are first named, under "How to create".
+4. **Groovy "Methods" list.** It says "such as", but it leaves out `push`, which the page itself uses, and `computeEnclosed`. Either add them or state that the list is a selection.
+5. **Examples:** the two Python `skip-test` blocks use placeholder names (`some_ticking_source`, `other_ticking_table`, `key_cols`, `npt`, `np`, `dhnp`), so the snapshotter can't test them. The Groovy try-with-resources blocks have no `order=null` tag even though they produce no output.
+
+## Author queries
+- **AQ1 [Both, example 2]:** I added the preserve/manage and release lines after checking the source, but I couldn't run them. Please run both examples in a Python and a Groovy server before merging. They are `order=null` blocks, so the snapshotter will execute them.
+- **AQ2 [Both, "How to use..." para 1]:** "reference counting instrumentation will only clean up objects created purely for the GUI." The source partly supports this: `SessionState` exports are wrapped in `LivenessScopeStack.open()`, and console scripts are managed by the session's query scope until the session closes. An SME should confirm that "only ... the GUI" is the framing they want. I left the sentence as written.
+- **AQ3 [Both, "Demonstrating the problem" para after example 1]:** "This is best practice because it allows Deephaven to conserve memory." Is a scope really best practice for static queries like this one? See recommendation 1.
+
+## Strengths
+- The Groovy progression works well: push/pop to show the mechanism, then `open(scope, true)`, then the anonymous `open()`, then nesting.
+- The Python function-vs-class distinction, including decorator use, is right, and the decorator example `@liveness_scope()` is correct.
+
+Edited files:
+- /private/tmp/claude-501/-Users-margaretkennedy-deephaven-core/608a4061-7881-4a50-8095-8d9cda8cc669/scratchpad/editmode-sandbox/i5-with_skill-r1/python-liveness-scope-concept.md
+- /private/tmp/claude-501/-Users-margaretkennedy-deephaven-core/608a4061-7881-4a50-8095-8d9cda8cc669/scratchpad/editmode-sandbox/i5-with_skill-r1/groovy-liveness-scope-concept.md

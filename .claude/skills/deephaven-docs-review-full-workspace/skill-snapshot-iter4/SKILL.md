@@ -30,23 +30,10 @@ examples, and title. Findings that call for more than that are recommendations, 
 them and let the author decide. That includes a "needs restructuring" verdict, reordering or
 merging sections, replacing an example with a new one, and retitling the page. Two reasons: an
 author reviewing a PR can check a targeted fix but not a rewrite, and new or replaced examples
-can't be verified without running them. Do the full restructure only if the user explicitly
-asks for one ("restructure," "rewrite," "reorganize this page").
-
-The line is between *repairing* what the page has and *replacing* it:
-
-- **Targeted — apply these:** fixing broken code inside an existing example (a syntax error, an
-  undefined name, a missing import, a wrong method call);
-  adding the one or two lines an existing example needs to do what its own text says (for example, a
-  missing cleanup or close call); correcting a wrong sentence, heading term, or code comment;
-  deleting a duplicated sentence; moving one misplaced paragraph. A reviewer can check each of
-  these against the original in a glance.
-- **Rewrite — recommend, don't apply:** replacing an example with a different scenario or data
-  source, adding a new example section, reordering or merging sections, retitling, or rewriting
-  a section wholesale.
-
-When a fix is targeted, don't defer it just because the example it touches has bigger problems
-too; make the repair, and put the bigger change in the report.
+can't be verified without running them. Structural fixes that are local — renaming a heading
+whose term is wrong, deleting a duplicated sentence, moving one misplaced paragraph — are fine
+to apply. Do the full restructure only if the user explicitly asks for one ("restructure,"
+"rewrite," "reorganize this page").
 
 ## 0. Identify the doc's category
 
