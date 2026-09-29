@@ -724,6 +724,46 @@ public class SessionStateTest {
     }
 
     /**
+     * Server-side exports have negative ids, which the released-id set folds into its unsigned key space; a released
+     * server-side export must leave the map and still be answered as released, not as never having existed.
+     */
+    @Test
+    public void testReleasedServerSideExportRemovedFromMap() {
+        Assert.eq(session.numExports(), "session.numExports()", 0);
+
+        final int serverId;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final SessionState.ExportObject<Object> e1 = session.newServerSideExport(new Object());
+            serverId = ticketToExportId(e1.getExportId(), "test");
+            Assert.eqTrue(serverId < 0, "serverId < 0");
+            Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.EXPORTED);
+            Assert.eq(session.numExports(), "session.numExports()", 1);
+            e1.release();
+            Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
+        }
+        Assert.eq(session.numExports(), "session.numExports()", 0);
+
+        // a server-side id that was never created is a user error; one that was released is answered as released
+        final SessionState.ExportObject<Object> lookedUp = session.getExport(serverId);
+        Assert.eq(lookedUp.getState(), "lookedUp.getState()", ExportNotification.State.RELEASED);
+        Assert.eq(ticketToExportId(lookedUp.getExportId(), "test"), "lookedUp id", serverId);
+        final SessionState.ExportObject<Object> ifExists = session.getExportIfExists(serverId);
+        Assert.neqNull(ifExists, "ifExists");
+        Assert.eq(ifExists.getState(), "ifExists.getState()", ExportNotification.State.RELEASED);
+
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean ran = new MutableBoolean();
+        final SessionState.ExportObject<?> late = session.newExport(nextExportId++)
+                .require(lookedUp)
+                .onErrorHandler(err -> errored.setTrue())
+                .submit(ran::setTrue);
+        scheduler.runUntilQueueEmpty();
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(ran.booleanValue(), "ran.booleanValue()");
+        Assert.eq(late.getState(), "late.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
+    }
+
+    /**
      * An export listener is notified while its own monitor is held, and may look exports up from inside the callback
      * (ExportedTableUpdateListener does, for every EXPORTED notification). Meanwhile an export being created notifies
      * the same listeners from inside its constructor, which the export map runs under its own monitor. Looking up an
