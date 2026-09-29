@@ -11,11 +11,13 @@ Modern computers have multiple processors (called "cores") that can work simulta
 
 Deephaven distributes work across cores in three ways:
 
-1. **Across tables**: When multiple tables depend on the same live source, Deephaven's update graph can update them at the same time on different cores as new data arrives.
-2. **Across rows**: When computing values for a single table, Deephaven divides the rows among cores so each core handles a portion.
-3. **Across columns**: When you compute multiple columns in the same operation, Deephaven can calculate independent columns simultaneously.
+1. **Concurrent table updates**: When multiple tables depend on the same live source, Deephaven's update graph can update them at the same time on different cores as new data arrives.
+2. **Concurrent row calculations**: When computing values for a single table, Deephaven divides the rows among cores so each core handles a portion.
+3. **Concurrent column calculations**: When you compute multiple columns in the same operation, Deephaven can calculate independent columns simultaneously.
 
-### Across tables
+The examples on this page use small tables so you can read the output. Deephaven only splits one column's rows across cores once there are a few million rows to process, but separate tables and separate columns can run at the same time at any size.
+
+### Concurrent table updates
 
 When one table feeds into several downstream tables, Deephaven's update graph can update those downstream tables concurrently as new data arrives. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
 
@@ -37,9 +39,9 @@ by_symbol = trades.agg_by([agg.sum_("TotalVolume = Volume")], "Symbol")
 recent = trades.tail(100)
 ```
 
-When new data arrives in `trades`, Deephaven's update graph makes `high_value`, `by_symbol`, and `recent` eligible to update concurrently — whether they actually run at the same time depends on the update graph's thread pool (sized to your CPU cores by default).
+When new data arrives in `trades`, Deephaven's update graph makes `high_value`, `by_symbol`, and `recent` eligible to update concurrently.
 
-### Across rows
+### Concurrent row calculations
 
 Within a single table, Deephaven splits the data into chunks and processes the chunks in parallel:
 
@@ -51,12 +53,9 @@ large_table = empty_table(100).update(
 )
 ```
 
-> [!NOTE]
-> This example uses 100 rows for clarity — well below the threshold where Deephaven would actually parallelize it. With 20 million rows and 4 cores, Deephaven would divide each column's computation into four chunks of roughly 5 million rows each, independently for `Price`, `Quantity`, and `Total`. All four cores would compute their chunks simultaneously, so the work would complete faster than if a single core processed all rows sequentially. This assumes the default operation-initialization thread pool, which uses one thread per core; a differently-sized pool changes the chunk count, and scheduling overhead means the speedup is rarely a perfectly linear 4x.
+With millions of rows and four cores, Deephaven would divide each column's rows into four groups and compute them at the same time, so the work finishes sooner than on one core.
 
-Deephaven only splits a single column's row-wise computation across cores once a table is large enough (at least a few million rows). Below that threshold, that column's own computation runs on a single core, though independent columns and other downstream tables can still run concurrently.
-
-### Across columns
+### Concurrent column calculations
 
 When you compute multiple columns in the same operation, Deephaven can also calculate independent columns at the same time:
 
@@ -72,7 +71,7 @@ Since `A` and `B` don't depend on each other, Deephaven can compute them on diff
 
 Parallelization produces correct results when each row can be computed independently. This means the formula for row 50 doesn't need to know anything about row 49 or row 51 — it only uses values from its own row.
 
-These patterns are always safe to parallelize:
+Formulas like these are **stateless**, so they're safe to parallelize. For example:
 
 **Column arithmetic**:
 
@@ -155,7 +154,7 @@ def get_next_id() -> int:
 result = empty_table(100).update("ID = get_next_id()")
 ```
 
-The intent is for each row to get a unique ID: 1, 2, 3, and so on. On free-threaded Python builds with a table larger than the default `QueryTable.minimumParallelSelectRows` (about 4.2 million rows), Deephaven may parallelize Python-backed formulas, so multiple cores can call `get_next_id` at the same time. This doesn't throw an error — it silently produces wrong values like:
+The intent is for each row to get a unique ID: 1, 2, 3, and so on. On a free-threaded Python build with a table of millions of rows, Deephaven can split this column across cores, so several cores can call `get_next_id` at the same time. This doesn't throw an error — it silently produces wrong values like:
 
 | ID |
 | -- |
@@ -166,9 +165,6 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. On free-threa
 | 5  |
 | 5  |
 | 7  |
-
-> [!NOTE]
-> This example uses only 100 rows for clarity. With 100 rows, the formula is evaluated serially by default; the race and duplicate IDs shown above would appear only on a table above the default parallelization threshold (about 4.2 million rows) or with a lowered threshold.
 
 Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
@@ -195,15 +191,17 @@ result = empty_table(100).update(col)
 ```
 
 > [!NOTE]
-> This example uses only 100 rows, well below the threshold where Deephaven would actually parallelize it, so it wouldn't show the race from the broken version above even without `with_serial`. Use `with_serial` any time your formula depends on shared state or row order, regardless of table size — parallelization isn't the only way execution order can vary, and `with_serial` is the only thing that guarantees rows are processed one at a time, in order.
+> With only 100 rows, this example wouldn't show the race even without `with_serial`. Use `with_serial` whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and `with_serial` is what guarantees this formula's rows are processed one at a time, in order.
+
+`with_serial` keeps one column from running concurrently with itself. If several columns use the same state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). `with_serial` works with `update`, `select`, and `where`; `view` and `update_view` compute values when they're read, so they don't support it.
 
 **Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use `with_serial` when your formula requires it for correctness.
 
 ## Key takeaways
 
-- Deephaven runs formulas in parallel by default — this is fast but requires stateless code.
+- Deephaven assumes formulas are safe to run in parallel by default — this is fast but requires stateless code.
 - Shared state or row-order dependencies cause silent errors with parallelization.
-- Use `with_serial` to force sequential execution when your formula needs it.
+- Use `with_serial` when one formula updates shared state or needs its rows processed in order. When several formulas share state, you also need barriers.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.
 

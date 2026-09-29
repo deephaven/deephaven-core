@@ -6,18 +6,19 @@ sidebar_label: Parallelization
 Parallelization is running multiple calculations at the same time on different CPU cores instead of one after another. Deephaven automatically parallelizes table operations like [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) to make queries faster, with no configuration required. This guide explains how that parallelization works and when you need to control it.
 
 > [!IMPORTANT]
-> **Breaking change in Deephaven 41+**: Deephaven 40 and earlier assumed all formulas required sequential processing by default. Deephaven 41 and later assumes all formulas can run in parallel by default. Code that modifies shared variables or depends on rows being processed in a specific order will now produce incorrect results unless you mark it with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial).
+> **Breaking change in Deephaven 41.0**: In version 0.40 and earlier, Deephaven ran a formula in parallel only when it could tell the formula was safe, and ran the rest — such as formulas that call closures or read arrays — one row at a time. Deephaven 41.0 and later assumes all formulas can run in parallel by default. Code that modifies shared variables or depends on rows being processed in a specific order will now produce incorrect results unless you mark it with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial).
 >
 > **Quick check**: Does your code use global variables, depend on rows being processed in a specific order, or modify external state? If yes, see [Controlling execution order](#controlling-execution-order) below, or the [Crash Course guide](../../getting-started/crash-course/parallelization.md) for a faster introduction.
 
 ## Quick reference
 
-| Category                                        | Example                                            | Solution           |
-| ----------------------------------------------- | -------------------------------------------------- | ------------------ |
-| Pure function (no shared state or side effects) | `Total = Price * Quantity`                         | Default (parallel) |
-| Order-dependent or stateful function            | A running counter or sequential IDs                | `withSerial`       |
-| Non-thread-safe resource or library             | Writing to a file or log; an unsynchronized client | `withSerial`       |
-| Ordering between operations                     | Column B reads a cache that column A fills         | Barriers           |
+| Situation                                                        | Example                                            | Solution                            |
+| ---------------------------------------------------------------- | -------------------------------------------------- | ----------------------------------- |
+| A formula uses only its own row's values                         | `Total = Price * Quantity`                         | Default (parallel)                  |
+| One formula updates shared state or needs rows in order          | A running counter or sequential IDs                | `withSerial`                        |
+| One formula calls something that isn't thread-safe               | Writing to a file or log; an unsynchronized client | `withSerial`                        |
+| One column needs another column to finish first                  | Column B reads a cache that column A fills         | Barriers                            |
+| Several columns share the same state or non-thread-safe resource | Two columns that call the same counter closure     | `withSerial` on each, plus barriers |
 
 ## How parallelization works
 
@@ -41,7 +42,7 @@ highVolume = marketData.where("Volume > 1000000")
 recentTrades = marketData.tail(10)
 ```
 
-When new data arrives in `marketData`, the update graph schedules `withMetrics`, `highVolume`, and `recentTrades` as independent notifications, which can run concurrently on different cores. This requires the update graph to have more than one worker thread, which is the default.
+When new data arrives in `marketData`, the update graph schedules `withMetrics`, `highVolume`, and `recentTrades` as independent notifications, which can run concurrently on different cores.
 
 Deephaven tracks which tables depend on which through an internal structure called the [update graph](../dag.md). Independent tables (those that don't depend on each other) run in parallel automatically.
 
@@ -111,20 +112,14 @@ result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!NOTE]
-> These examples use small tables for clarity. Deephaven only splits work across cores once a table is large enough — a few million rows for `select`/`update`, and roughly a hundred thousand rows for `where` (see [Configuration](#configuration)). Below those sizes, Deephaven evaluates the formula on a single core regardless of whether it's marked stateless — these examples illustrate the correctness contract, not actual observed parallel speedup.
-
-You can change this default — see [Configuration](#configuration).
+> These examples use small tables for clarity. Deephaven only splits one column's rows across cores once there are enough rows to be worth it, but separate columns can run at the same time on a table of any size. The examples illustrate the correctness contract, not a speedup.
 
 ## Controlling execution order
 
-Most queries work correctly with automatic parallelization. Some code doesn't — for example, code that uses a counter or modifies shared state. Deephaven provides two mechanisms to control execution order:
-
-**Key concepts**:
+Most queries work correctly with automatic parallelization. Some code doesn't — for example, code that uses a counter or modifies shared state. Deephaven provides two controls for these cases, `withSerial` and barriers, which you apply to these objects:
 
 - **[`Selectable`](../../reference/query-language/types/Selectable.md)**: Represents a column expression, used in `select` or `update` operations.
 - **[`Filter`](../../reference/query-language/types/Filter.md)**: Represents a filter condition, used in `where` operations. Concurrency control works the same way for `Filter` as it does for `Selectable`.
-- **[`withSerial`](../../reference/query-language/types/Selectable.md#withserial)**: Forces rows to be processed one at a time, in order.
-- **[Barrier](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html#withDeclaredBarriers(java.lang.Object...))**: Ensures one operation completes before another starts. In Groovy, any Java object can serve as a barrier.
 
 **`withSerial` vs. barriers** — these solve different problems:
 
@@ -135,7 +130,7 @@ When shared state is involved, you often need both: `withSerial` to protect row-
 
 ### Serialization
 
-Serialization forces Deephaven to process rows one at a time, in order, on a single thread. Use it when your code cannot safely run in parallel — for example, when a formula reads or modifies global variables, calls external functions that aren't safe to call from multiple threads simultaneously, or depends on rows being processed in a specific order. Without it, parallel execution produces incorrect results: out-of-order values, gaps, or values that don't match what the formula intended.
+Serialization forces Deephaven to process rows one at a time, in order, and never run a column concurrently with itself. Use it when your code cannot safely run in parallel — for example, when a formula reads or modifies global variables, calls external functions that aren't safe to call from multiple threads simultaneously, or depends on rows being processed in a specific order. Without it, parallel execution produces incorrect results: out-of-order values, gaps, or values that don't match what the formula intended.
 
 > [!NOTE]
 > Most queries don't need serial execution. Use `withSerial` only when parallelization causes incorrect results.
@@ -155,20 +150,20 @@ counter = [0] as int[]
 
 getAndIncrement = { counter[0]++ }
 
-bad_result = emptyTable(5_000_000).update("A = getAndIncrement()", "B = getAndIncrement()")
+badResult = emptyTable(5_000_000).update("ID = getAndIncrement()")
 ```
 
-Without serialization, parallel execution causes race conditions where multiple threads read and update `counter` simultaneously. This doesn't throw an error — it silently produces wrong values. You may see results like:
+Without serialization, Deephaven splits this column across cores, and several threads read and update `counter` at the same time. This doesn't throw an error — it silently produces wrong values. You may see results like:
 
-| A | B |
-| - | - |
-| 0 | 2 |
-| 1 | 3 |
-| 5 | 6 |
-| 4 | 7 |
-| 9 | 8 |
+| ID |
+| -- |
+| 0  |
+| 1  |
+| 1  |
+| 4  |
+| 3  |
 
-Notice the out-of-order values (row 4 has `A=4` after row 3 has `A=5`), gaps (no 10-19 visible), and `B` not following `A + 1`.
+Notice the duplicate value (two rows got `1`) and the out-of-order values (`4` before `3`).
 
 To fix this, create a `Selectable` object and apply `withSerial`:
 
@@ -185,7 +180,7 @@ col = Selectable.parse("ID = getAndIncrement()").withSerial()
 result = emptyTable(5_000_000).update([col])
 ```
 
-When a Selectable is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), only one thread processes the column at a time, and global state updates happen sequentially without race conditions.
+When a `Selectable` is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), and the column never runs concurrently with itself. That protects state that only this column uses. If another column uses the same state, add a [barrier](#barriers) as well.
 
 #### Serial filters
 
@@ -210,7 +205,7 @@ When a [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filt
 
 Use barriers when one operation must finish all its rows before another operation begins — for example, when column A populates a map that column B reads from, when column A computes a running total that column B normalizes against, or when column A assigns sequential IDs that column B should continue from.
 
-A barrier creates an ordering dependency between two operations: one operation **declares** the barrier (it goes first), another **respects** it (it waits), and Deephaven guarantees the declaring operation completes all rows before the respecting operation begins. Each barrier can only be declared by one operation; multiple operations can respect the same barrier.
+A barrier creates an ordering dependency between two operations: one operation **declares** the barrier (it goes first), another **respects** it (it waits), and Deephaven guarantees the declaring operation completes all rows before the respecting operation begins. Each barrier can only be declared by one operation; multiple operations can respect the same barrier. In Groovy, any Java object can serve as a [barrier](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html#withDeclaredBarriers(java.lang.Object...)).
 
 #### Example: extending the counter with a barrier
 
@@ -286,14 +281,6 @@ The serial/barrier rules above apply to ordinary filters. _Partition filters_ �
 
 When you mark a partition filter as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default. This lets Deephaven relax ordering constraints for filters on partitioning columns, evaluate them per location rather than on every row, reorder common partition filters ahead of others, and avoid repeated evaluation against the same value. For example, the formula filter `Date=today()` is stateful if Deephaven treats filters as stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
 
-## Choosing an approach
-
-Use the [Quick reference](#quick-reference) table above for a fast lookup. In more detail:
-
-- **Use default parallel execution when** the formula only uses values from the current row, has no side effects, doesn't depend on row processing order, and is thread-safe — this covers most formulas, including the [stateless examples above](#when-parallelization-is-safe-by-default).
-- **Use `withSerial` when** rows must be processed in order within a single operation, or the formula updates global state sequentially, as in the [counter example above](#example-a-counter-needs-serialization). Common cases: sequential numbering, processing events in chronological sequence, cumulative calculations, and writing to a file or log from a formula.
-- **Use barriers when** you need to control ordering _between_ different operations — one must finish before another starts, as in the [barrier example above](#example-extending-the-counter-with-a-barrier). Common cases: one column or filter populates a cache or resource that another reads from.
-
 ## Configuration
 
 Parallelization needs no configuration. These properties tune it; defaults and full descriptions are in [Query table configuration](../query-table-configuration.md).
@@ -315,7 +302,7 @@ Deephaven automatically parallelizes queries across all available CPU cores. Mos
 - Deephaven assumes all formulas can run in parallel by default.
 - Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when your code has side effects, depends on rows being processed in a specific order, or calls functions that aren't safe to run from multiple threads.
 - Use **barriers** when one operation must complete before another starts.
-- Both thread pools use all CPU cores by default.
+- `withSerial` keeps one column from running concurrently with itself. When several columns share state, use `withSerial` and barriers together.
 
 For a quick introduction, see the [Crash Course](../../getting-started/crash-course/parallelization.md).
 
