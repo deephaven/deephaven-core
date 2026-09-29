@@ -145,95 +145,134 @@ space twice the number of groups in the table.
 
 The columns:
 
-- **Main:** main, which predates reclaiming.
-- **Main + #8676:** main with [#8676](https://github.com/deephaven/deephaven-core/pull/8676), which reuses the
-  aggregation's modified-states bitmap. Every percentage is the change against this column, the fair baseline for
-  this branch.
+- **Main:** main at c091e0578e, which predates reclaiming. Every percentage is the change against this column.
 - **`none`:** this branch without reclaiming, which isolates its other improvements to the update cycle.
 - **Blocks:** `releaseBlocks(1)`, the default, which releases blocks and never moves a state.
 - **Collapse 0.75** and **Collapse 0.5:** `releaseBlocks(0.75)` and `releaseBlocks(0.5)`, which also collapse runs of
   sparse blocks.
+- **Main again:** main once more, after every other configuration, to show any drift over the run.
 
-The Blocks and collapse columns come from a later run than the others. Blocks measured within the error bounds of the
-earlier run in every workload.
+The branch was measured at e631d807bb, before the block tracker walked sparse runs incrementally and applied a
+collapse to each row set once for all runs; those changes affect only the collapse columns.
+
+The numbers come from an Intel i9-14900KS (hybrid performance and efficiency cores) in an LXC container with 24 logical
+CPUs and 128 GB, with the performance governor and turbo boost enabled, and otherwise idle. Each configuration ran two
+JVM forks of three warmup and five measured batches; the error bounds are JMH's 99.9% intervals over the ten measured
+batches. Main and Main again are within the error of each other in every workload, so the run did not drift.
 
 ### Time
 
 Milliseconds per batch of 900 cycles; lower is better.
 
-| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse 0.75 | Collapse 0.5 |
+| Workload | Rows per group | Groups return | Main | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Main again |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 967 ± 141 (+2%) | 949 ± 116 | 954 ± 152 (+1%) | 875 ± 217 (−8%) | 891 ± 43 (−6%) | 986 ± 141 (+4%) |
-| Sliding window | 1 | No | 1457 ± 178 (+7%) | 1367 ± 87 | 1435 ± 61 (+5%) | 826 ± 14 (−40%) | 867 ± 116 (−37%) | 860 ± 30 (−37%) |
-| Sliding window | 1 | Yes | 618 ± 50 (+4%) | 595 ± 30 | 754 ± 561 (+27%) | 715 ± 31 (+20%) | 763 ± 59 (+28%) | 753 ± 24 (+27%) |
-| Random churn | 1 | No | 3131 ± 156 (+11%) | 2827 ± 127 | 2624 ± 73 (−7%) | 2411 ± 194 (−15%) | 2302 ± 109 (−19%) | 2325 ± 70 (−18%) |
-| Random churn | 1 | Yes | 2067 ± 122 (+10%) | 1873 ± 49 | 1589 ± 68 (−15%) | 2395 ± 159 (+28%) | 2242 ± 79 (+20%) | 2215 ± 23 (+18%) |
-| Add only | 100 | — | 116 ± 14 (−4%) | 120 ± 19 | 115 ± 18 (−4%) | 124 ± 12 (+3%) | 133 ± 18 (+11%) | 136 ± 38 (+13%) |
-| Sliding window | 100 | No | 203 ± 36 (+2%) | 200 ± 17 | 197 ± 17 (−2%) | 183 ± 15 (−8%) | 189 ± 11 (−5%) | 186 ± 10 (−7%) |
-| Sliding window | 100 | Yes | 200 ± 15 (+7%) | 187 ± 23 | 188 ± 10 (+0%) | 193 ± 14 (+3%) | 209 ± 15 (+12%) | 199 ± 12 (+6%) |
-| Random churn | 100 | No | 674 ± 21 (+6%) | 637 ± 40 | 635 ± 45 (−0%) | 638 ± 49 (+0%) | 649 ± 41 (+2%) | 641 ± 32 (+1%) |
-| Random churn | 100 | Yes | 608 ± 33 (+3%) | 591 ± 11 | 592 ± 24 (+0%) | 587 ± 19 (−1%) | 596 ± 36 (+1%) | 590 ± 21 (−0%) |
+| Add only | 1 | — | 1334 ± 39 | 1350 ± 69 (+1%) | 1287 ± 56 (−4%) | 1292 ± 152 (−3%) | 1291 ± 91 (−3%) | 1386 ± 90 (+4%) |
+| Sliding window | 1 | No | 2024 ± 97 | 2014 ± 155 (−0%) | 1309 ± 44 (−35%) | 1383 ± 78 (−32%) | 1358 ± 87 (−33%) | 1989 ± 79 (−2%) |
+| Sliding window | 1 | Yes | 1072 ± 61 | 1083 ± 60 (+1%) | 1179 ± 54 (+10%) | 1254 ± 60 (+17%) | 1258 ± 73 (+17%) | 1057 ± 35 (−1%) |
+| Random churn | 1 | No | 4537 ± 124 | 4228 ± 66 (−7%) | 3968 ± 103 (−13%) | 3468 ± 59 (−24%) | 3500 ± 85 (−23%) | 4517 ± 88 (−0%) |
+| Random churn | 1 | Yes | 2966 ± 84 | 2595 ± 76 (−13%) | 4134 ± 106 (+39%) | 3458 ± 100 (+17%) | 3459 ± 93 (+17%) | 2946 ± 74 (−1%) |
+| Add only | 100 | — | 170 ± 28 | 176 ± 23 (+3%) | 191 ± 26 (+12%) | 186 ± 17 (+9%) | 185 ± 38 (+9%) | 173 ± 20 (+2%) |
+| Sliding window | 100 | No | 286 ± 34 | 314 ± 64 (+10%) | 301 ± 32 (+5%) | 290 ± 15 (+1%) | 310 ± 32 (+8%) | 298 ± 24 (+4%) |
+| Sliding window | 100 | Yes | 306 ± 22 | 310 ± 24 (+1%) | 308 ± 20 (+1%) | 329 ± 25 (+7%) | 329 ± 36 (+7%) | 297 ± 27 (−3%) |
+| Random churn | 100 | No | 849 ± 75 | 836 ± 22 (−2%) | 789 ± 38 (−7%) | 857 ± 56 (+1%) | 827 ± 69 (−3%) | 808 ± 59 (−5%) |
+| Random churn | 100 | Yes | 791 ± 52 | 784 ± 72 (−1%) | 789 ± 74 (−0%) | 781 ± 49 (−1%) | 790 ± 80 (−0%) | 768 ± 65 (−3%) |
 
 ### Memory
 
-The heap retained at the end of a batch, in megabytes, after a garbage collection. It includes the source table and
-the benchmark's own data, so compare the modes with each other rather than reading the values as the aggregation's
-size.
+The heap retained at the end of a batch, in megabytes, after a garbage collection, averaged over the measured
+batches. It includes the source table and the benchmark's own data, so compare the modes with each other rather than
+reading the values as the aggregation's size.
 
-| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse 0.75 | Collapse 0.5 |
+| Workload | Rows per group | Groups return | Main | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Main again |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 673 (−0%) | 675 | 673 (−0%) | 569 (−16%) | 567 (−16%) | 570 (−16%) |
-| Sliding window | 1 | No | 670 (−1%) | 676 | 681 (+1%) | 175 (−74%) | 183 (−73%) | 183 (−73%) |
-| Sliding window | 1 | Yes | 178 (−1%) | 179 | 180 (+0%) | 119 (−34%) | 127 (−29%) | 127 (−29%) |
-| Random churn | 1 | No | 710 (−1%) | 715 | 717 (+0%) | 468 (−35%) | 259 (−64%) | 235 (−67%) |
-| Random churn | 1 | Yes | 217 (−0%) | 217 | 217 (+0%) | 432 (+99%) | 203 (−6%) | 178 (−18%) |
-| Add only | 100 | — | 28 (+0%) | 28 | 28 (+0%) | 27 (−4%) | 26 (−6%) | 26 (−7%) |
-| Sliding window | 100 | No | 28 (+0%) | 28 | 28 (+0%) | 23 (−18%) | 23 (−18%) | 23 (−18%) |
-| Sliding window | 100 | Yes | 20 (+0%) | 20 | 20 (+0%) | 23 (+15%) | 23 (+15%) | 23 (+15%) |
-| Random churn | 100 | No | 52 (+2%) | 51 | 51 (+0%) | 47 (−8%) | 49 (−4%) | 49 (−4%) |
-| Random churn | 100 | Yes | 42 (+2%) | 41 | 42 (+2%) | 41 (+0%) | 45 (+10%) | 44 (+7%) |
+| Add only | 1 | — | 675 | 674 (−0%) | 572 (−15%) | 578 (−14%) | 577 (−15%) | 675 (−0%) |
+| Sliding window | 1 | No | 680 | 684 (+1%) | 186 (−73%) | 186 (−73%) | 186 (−73%) | 679 (−0%) |
+| Sliding window | 1 | Yes | 181 | 182 (+0%) | 130 (−28%) | 130 (−28%) | 130 (−28%) | 181 (+0%) |
+| Random churn | 1 | No | 716 | 721 (+1%) | 472 (−34%) | 264 (−63%) | 239 (−67%) | 716 (−0%) |
+| Random churn | 1 | Yes | 219 | 220 (+0%) | 437 (+99%) | 208 (−5%) | 182 (−17%) | 219 (−0%) |
+| Add only | 100 | — | 29 | 29 (+0%) | 28 (−3%) | 32 (+10%) | 32 (+10%) | 29 (+0%) |
+| Sliding window | 100 | No | 30 | 29 (−2%) | 26 (−15%) | 26 (−13%) | 26 (−15%) | 30 (−1%) |
+| Sliding window | 100 | Yes | 21 | 21 (−1%) | 25 (+18%) | 25 (+18%) | 25 (+18%) | 21 (−1%) |
+| Random churn | 100 | No | 52 | 53 (+1%) | 48 (−9%) | 52 (−1%) | 52 (−2%) | 52 (−0%) |
+| Random churn | 100 | Yes | 42 | 43 (+1%) | 43 (+0%) | 47 (+11%) | 47 (+11%) | 42 (+0%) |
 
 ### Longest cycle
 
-The longest single cycle of a batch, in milliseconds, the worst over five batches. A single worst sample is noisy —
-the same configuration varied by a factor of two between runs — so read the percentages for the modes whose longest
-cycles are consistently high rather than for small differences. With 100 rows per group every longest cycle is a
-millisecond or two, where one slow sample swings the percentage widely.
+The longest single cycle of a batch, in milliseconds, the worst over the ten measured batches. A single worst sample is
+noisy, as the difference between Main and Main again shows, so read the percentages for the modes whose longest cycles
+are consistently high rather than for small differences. With 100 rows per group every longest cycle is a few
+milliseconds, where one slow sample swings the percentage widely.
 
-| Workload | Rows per group | Groups return | Main | Main + #8676 | `none` | Blocks | Collapse 0.75 | Collapse 0.5 |
+| Workload | Rows per group | Groups return | Main | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Main again |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Add only | 1 | — | 16.4 (−15%) | 19.3 | 26.8 (+39%) | 20.1 (+4%) | 18.2 (−6%) | 13.2 (−31%) |
-| Sliding window | 1 | No | 25.0 (−46%) | 46.4 | 33.1 (−29%) | 8.8 (−81%) | 9.6 (−79%) | 9.6 (−79%) |
-| Sliding window | 1 | Yes | 4.8 (−19%) | 5.9 | 8.8 (+49%) | 6.2 (+5%) | 7.6 (+28%) | 6.2 (+5%) |
-| Random churn | 1 | No | 11.1 (−23%) | 14.4 | 11.0 (−23%) | 10.9 (−24%) | 19.7 (+37%) | 9.9 (−31%) |
-| Random churn | 1 | Yes | 12.5 (+3%) | 12.1 | 10.9 (−10%) | 11.2 (−8%) | 10.1 (−17%) | 5.8 (−53%) |
-| Add only | 100 | — | 0.4 (+17%) | 0.4 | 0.5 (+34%) | 0.4 (+10%) | 0.6 (+57%) | 7.9 (+2085%) |
-| Sliding window | 100 | No | 2.7 (+368%) | 0.6 | 0.5 (−7%) | 0.6 (−3%) | 0.4 (−31%) | 0.4 (−31%) |
-| Sliding window | 100 | Yes | 0.6 (+26%) | 0.5 | 0.6 (+15%) | 0.4 (−13%) | 0.4 (−25%) | 0.4 (−20%) |
-| Random churn | 100 | No | 1.4 (−6%) | 1.5 | 1.5 (−0%) | 1.5 (+0%) | 1.4 (−9%) | 1.6 (+2%) |
-| Random churn | 100 | Yes | 1.9 (+72%) | 1.1 | 1.4 (+22%) | 1.3 (+16%) | 1.4 (+21%) | 1.3 (+15%) |
+| Add only | 1 | — | 62.5 | 62.5 (+0%) | 63.2 (+1%) | 65.4 (+5%) | 63.8 (+2%) | 64.9 (+4%) |
+| Sliding window | 1 | No | 73.4 | 64.5 (−12%) | 12.0 (−84%) | 18.2 (−75%) | 14.3 (−80%) | 70.7 (−4%) |
+| Sliding window | 1 | Yes | 10.9 | 13.2 (+21%) | 12.9 (+18%) | 15.5 (+42%) | 14.5 (+33%) | 20.4 (+87%) |
+| Random churn | 1 | No | 67.3 | 65.2 (−3%) | 17.6 (−74%) | 14.0 (−79%) | 16.9 (−75%) | 28.8 (−57%) |
+| Random churn | 1 | Yes | 11.5 | 10.5 (−8%) | 14.5 (+27%) | 14.2 (+24%) | 15.3 (+33%) | 11.0 (−4%) |
+| Add only | 100 | — | 2.6 | 1.4 (−45%) | 1.7 (−36%) | 1.0 (−61%) | 1.0 (−62%) | 1.0 (−62%) |
+| Sliding window | 100 | No | 1.3 | 2.6 (+98%) | 1.2 (−6%) | 1.1 (−17%) | 2.5 (+93%) | 2.0 (+56%) |
+| Sliding window | 100 | Yes | 1.3 | 2.4 (+81%) | 1.1 (−15%) | 1.1 (−14%) | 1.2 (−6%) | 1.0 (−21%) |
+| Random churn | 100 | No | 3.7 | 3.5 (−4%) | 3.4 (−9%) | 3.2 (−12%) | 2.6 (−29%) | 3.0 (−19%) |
+| Random churn | 100 | Yes | 3.2 | 3.8 (+19%) | 2.6 (−18%) | 3.1 (−4%) | 3.2 (+0%) | 3.3 (+4%) |
+
+### Ten million rows
+
+The same workloads with one row per group over a table of 10,000,000 rows, with 100,000 rows added and removed each
+cycle, run with a 48 GB heap.
+
+Milliseconds per batch of 900 cycles:
+
+| Workload | Groups return | Main | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Main again |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 15750 ± 232 | 15387 ± 349 (−2%) | 13888 ± 252 (−12%) | 14294 ± 204 (−9%) | 14349 ± 214 (−9%) | 15423 ± 342 (−2%) |
+| Sliding window | No | 21787 ± 721 | 21806 ± 202 (+0%) | 16175 ± 142 (−26%) | 16230 ± 224 (−26%) | 16092 ± 236 (−26%) | 22098 ± 560 (+1%) |
+| Sliding window | Yes | 12081 ± 124 | 12269 ± 88 (+2%) | 13512 ± 144 (+12%) | 13769 ± 117 (+14%) | 13889 ± 164 (+15%) | 12146 ± 153 (+1%) |
+| Random churn | No | 56480 ± 661 | 53407 ± 565 (−5%) | 49386 ± 468 (−13%) | 44943 ± 459 (−20%) | 43002 ± 583 (−24%) | 56393 ± 552 (−0%) |
+| Random churn | Yes | 38650 ± 382 | 34928 ± 343 (−10%) | 50184 ± 894 (+30%) | 42989 ± 471 (+11%) | 40911 ± 401 (+6%) | 38752 ± 595 (+0%) |
+
+Retained heap, in megabytes:
+
+| Workload | Groups return | Main | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Main again |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 5623 | 5622 (−0%) | 5083 (−10%) | 5091 (−9%) | 5090 (−9%) | 5624 (+0%) |
+| Sliding window | No | 5658 | 5691 (+1%) | 897 (−84%) | 900 (−84%) | 899 (−84%) | 5659 (+0%) |
+| Sliding window | Yes | 1426 | 1434 (+1%) | 897 (−37%) | 900 (−37%) | 899 (−37%) | 1427 (+0%) |
+| Random churn | No | 5896 | 5929 (+1%) | 4058 (−31%) | 1966 (−67%) | 1747 (−70%) | 5894 (−0%) |
+| Random churn | Yes | 1662 | 1672 (+1%) | 3810 (+129%) | 1526 (−8%) | 1300 (−22%) | 1663 (+0%) |
+
+Longest cycle, in milliseconds:
+
+| Workload | Groups return | Main | `none` | Blocks | Collapse 0.75 | Collapse 0.5 | Main again |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Add only | — | 489.3 | 500.9 (+2%) | 494.1 (+1%) | 533.4 (+9%) | 498.9 (+2%) | 505.3 (+3%) |
+| Sliding window | No | 498.3 | 497.1 (−0%) | 147.4 (−70%) | 147.1 (−70%) | 147.6 (−70%) | 498.1 (−0%) |
+| Sliding window | Yes | 137.6 | 110.4 (−20%) | 115.1 (−16%) | 149.6 (+9%) | 149.2 (+8%) | 142.6 (+4%) |
+| Random churn | No | 309.1 | 537.4 (+74%) | 155.0 (−50%) | 138.0 (−55%) | 145.4 (−53%) | 533.7 (+73%) |
+| Random churn | Yes | 137.3 | 84.5 (−38%) | 107.6 (−22%) | 162.9 (+19%) | 138.6 (+1%) | 108.6 (−21%) |
 
 ### Findings
 
-- #8676 makes random churn with one row per group about 10% faster: main takes 10% to 11% longer. Elsewhere main and
-  main with #8676 are within the error of each other, and they retain the same heap.
-- This branch without reclaiming (`none`) is 7% faster than main with #8676 for random churn when groups do not return,
-  and 15% faster when they do, from its other improvements to the update cycle. Elsewhere it is within the error.
-- When groups do not return, every reclaiming mode is faster than main with #8676 for the sliding window, by 37% to
-  40%, and retains about a quarter of its heap. For random churn, releasing blocks alone is 15% faster and retains
-  35% less heap; collapsing is 18% to 19% faster and retains a third of the heap.
-- When groups return, every reclaiming mode is 18% to 28% slower than main with #8676, since returning groups are new
-  states rather than reused ones. Every mode retains less heap for the sliding window. For random churn, releasing
-  blocks alone retains twice the heap of main with #8676, and collapsing 6% to 18% less.
+- This branch without reclaiming (`none`) is 7% faster than main for random churn with one row per group when groups
+  do not return, and 13% faster when they do, from its other improvements to the update cycle; at ten million rows,
+  5% and 10%. Elsewhere it is within the error.
+- When groups do not return, every reclaiming mode is faster than main for the sliding window, by 32% to 35%, and
+  retains about a quarter of its heap; at ten million rows, 26% faster with a sixth of the heap. For random churn,
+  releasing blocks alone is 13% faster and retains a third less heap; collapsing is 23% to 24% faster and retains a
+  third of the heap. At ten million rows, collapsing is 20% to 24% faster.
+- When groups return, every reclaiming mode is slower than main, since returning groups are new states rather than
+  reused ones: 10% to 17% for the sliding window, and for random churn 39% releasing blocks alone and 17% collapsing.
+  For random churn, releasing blocks alone retains twice the heap of main, and collapsing 5% to 17% less. At ten million
+  rows, random churn with returning groups costs 30% releasing blocks alone and 6% to 11% collapsing.
+- Collapsing is faster than releasing blocks alone for random churn: by 12% to 13% when groups do not return and 16%
+  when they do, and at ten million rows by 9% to 13% and 14% to 18%.
 - No mode gives output positions back, so every reclaiming mode assigns the same positions: with one row per group,
-  10 million when groups do not return, and 8.71 to 10 million when they do, where main with #8676 reuses 2 million;
-  with 100 rows per group, 100,000, or 20,000 for random churn with returning groups.
+  10 million when groups do not return, and 8.71 to 10 million when they do, where main reuses 2 million; with 100 rows
+  per group, 100,000, or 20,000 for random churn with returning groups.
 - With 100 rows per group, the modes are within the error of each other for time.
-- No mode has long cycles. For random churn with one row per group, the longest were 6 to 20 ms, against 12 to 14 ms
-  for main with #8676, and for the sliding window 9 to 10 ms against 46 ms.
-
-The numbers come from one machine and one JVM fork per configuration, with five measured batches each; treat
-differences within the error bounds as noise.
+- Reclaiming shortens the longest cycles when groups do not return: 12 to 18 ms against main's 67 to 73 ms for the
+  sliding window and random churn, and at ten million rows 138 to 155 ms against 309 to 534 ms for main and main
+  again. When groups return, the longest cycles are 10 to 16 ms for main and every mode.
 
 ## Long output positions
 
@@ -407,12 +446,12 @@ Rather than moving states to stay under it, an aggregation that needs more can m
 cost nothing, and a hash table that converts to `long` positions at a threshold pays their cost only once it is
 needed.
 
-Measured with the benchmark described in [Benchmark results](#benchmark-results), one row per group, with percentages
-against main with #8676 as there. Blocks releases blocks with no moves. The shifting modes were
-`releaseBlocks(0.75, 0, false)`, which collapsed and swept (Collapse, sweep); `releaseBlocks(1, 0, true)`, which
-shifted in bulk without collapsing (Bulk); and `releaseBlocks(0.75, 0, true)` and `releaseBlocks(0.5, 0, true)`, which
-collapsed and shifted in bulk. The last two columns collapse without shifting, from the later run in
-[Benchmark results](#benchmark-results).
+Measured with the benchmark described in [Benchmark results](#benchmark-results), one row per group, on an Apple
+silicon Mac, with percentages against main with #8676, which was not yet merged. Blocks releases blocks with no moves.
+The shifting modes were `releaseBlocks(0.75, 0, false)`, which collapsed and swept (Collapse, sweep);
+`releaseBlocks(1, 0, true)`, which shifted in bulk without collapsing (Bulk); and `releaseBlocks(0.75, 0, true)` and
+`releaseBlocks(0.5, 0, true)`, which collapsed and shifted in bulk. The last two columns collapse without shifting, from
+a later run on the same Mac.
 
 Time, in milliseconds per batch of 900 cycles:
 
