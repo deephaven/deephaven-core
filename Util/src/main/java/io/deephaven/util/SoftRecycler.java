@@ -28,12 +28,14 @@ import java.util.function.Supplier;
  * storage for previous values and returns it all when the cycle completes. When a window of time sees the bin turn
  * returned items away because it is full, and also construct new items because it is empty, the capacity grows to hold
  * the largest single burst, the most items borrowed between two returns, but by no more than the most items turned away
- * between two borrows, since items a burst keeps need no room. When a window sees the bin never empty, the capacity
- * shrinks by a fraction of the items it never needed, rounded up, but never below the capacity it was created with; a
- * fraction of 0 keeps the capacity once grown. The maximum is {@value #MAXIMUM_CAPACITY_PROPERTY} unless a constructor
- * gives one; it defaults to no limit, since the garbage collector reclaims the items under memory pressure. The window
- * is {@value #WINDOW_MILLIS_PROPERTY} milliseconds, 1000 by default, and the fraction is
- * {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default.
+ * between two borrows, since items a burst keeps need no room. When a window sees the bin never empty, the fewest items
+ * it held in that window were never needed, and the capacity discards the shrink fraction of them, rounded up, but
+ * never goes below the capacity it was created with. The items the window did need are always kept: with a capacity of
+ * 100 and a window that never drew the bin below 40 items, a fraction of 0.9 discards 36 of those 40, leaving a
+ * capacity of 64, while a fraction of 0 keeps the capacity once grown. The maximum is
+ * {@value #MAXIMUM_CAPACITY_PROPERTY} unless a constructor gives one; it defaults to no limit, since the garbage
+ * collector reclaims the items under memory pressure. The window is {@value #WINDOW_MILLIS_PROPERTY} milliseconds, 1000
+ * by default, and the fraction is {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default.
  *
  * <p>
  * Note that the caller has no special obligation to return a borrowed item nor to return borrowed items in any
@@ -47,8 +49,9 @@ public class SoftRecycler<T> {
     /** The property for the milliseconds of traffic each adjustment of the capacity is judged on. */
     public static final String WINDOW_MILLIS_PROPERTY = "SoftRecycler.windowMillis";
     /**
-     * The property for the fraction, from 0 to 1, of the items a window never needed that the capacity gives up: 0
-     * never shrinks, and 1 shrinks to what the window needed.
+     * The property for the fraction, from 0 to 1, of the items a window never needed that the capacity discards; the
+     * rest of them, and every item the window did need, are kept. 0 never shrinks, 0.9 discards 90% of the unneeded
+     * items and keeps 10%, and 1 shrinks to what the window needed.
      */
     public static final String SHRINK_FRACTION_PROPERTY = "SoftRecycler.shrinkFraction";
 
@@ -212,7 +215,7 @@ public class SoftRecycler<T> {
 
     /**
      * At the end of a window, grow to the largest burst if the recycle bin both turned items away and constructed new
-     * ones, or else shrink by the shrink fraction of the items it never needed. Called with the lock held.
+     * ones, or else discard the shrink fraction of the items it never needed. Called with the lock held.
      */
     private void adapt() {
         if ((++operations & clockReadMask) != 0) {
