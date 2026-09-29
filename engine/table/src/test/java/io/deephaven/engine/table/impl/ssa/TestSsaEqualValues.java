@@ -10,6 +10,7 @@ import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -154,7 +155,8 @@ public class TestSsaEqualValues {
                 final WritableLongChunk<RowKeys> rightKeys = keys(0);
                 final WritableObjectChunk<Object, Values> insertValues = objects(fresh("b"));
                 final WritableLongChunk<RowKeys> insertKeys = keys(1);
-                final WritableObjectChunk<Object, Values> nextValues = WritableObjectChunk.makeWritableChunk(1)) {
+                final WritableObjectChunk<Object, Values> nextValues = WritableObjectChunk.makeWritableChunk(1);
+                final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             leftSsa.insert(leftValues, leftKeys);
             rightSsa.insert(rightValues, rightKeys);
             final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Object, false);
@@ -166,7 +168,7 @@ public class TestSsaEqualValues {
             // the inserted value is the last one in the right SSA
             assertEquals(0, valuesWithNext);
             stamp.processInsertion(leftSsa, insertValues, insertKeys, nextValues, redirection,
-                    RowSetFactory.builderRandom(), true, true);
+                    RowSetFactory.builderRandom(), modifiedKeys, true, true);
             assertEquals(RowSequence.NULL_ROW_KEY, redirection.get(0));
             assertEquals(0, redirection.get(1));
         }
@@ -188,7 +190,8 @@ public class TestSsaEqualValues {
                 final WritableLongChunk<RowKeys> rightKeys = keys(0, 1);
                 final WritableObjectChunk<Object, Values> removeValues = objects(fresh("b"));
                 final WritableLongChunk<RowKeys> removeKeys = keys(1);
-                final WritableLongChunk<RowKeys> priorKeys = WritableLongChunk.makeWritableChunk(1)) {
+                final WritableLongChunk<RowKeys> priorKeys = WritableLongChunk.makeWritableChunk(1);
+                final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             leftSsa.insert(leftValues, leftKeys);
             rightSsa.insert(rightValues, rightKeys);
             final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Object, false);
@@ -199,7 +202,7 @@ public class TestSsaEqualValues {
             rightSsa.removeAndGetPrior(removeValues, removeKeys, priorKeys);
             assertEquals(0, priorKeys.get(0));
             stamp.processRemovals(leftSsa, removeValues, removeKeys, priorKeys, redirection,
-                    RowSetFactory.builderRandom(), true);
+                    RowSetFactory.builderRandom(), modifiedKeys, true);
             assertEquals(0, redirection.get(1));
             assertEquals(0, redirection.get(2));
         }
@@ -221,7 +224,8 @@ public class TestSsaEqualValues {
                 final WritableLongChunk<RowKeys> rightKeys = keys(0);
                 final WritableDoubleChunk<Values> insertValues = doubles(Double.NaN);
                 final WritableLongChunk<RowKeys> insertKeys = keys(1);
-                final WritableDoubleChunk<Values> nextValues = WritableDoubleChunk.makeWritableChunk(1)) {
+                final WritableDoubleChunk<Values> nextValues = WritableDoubleChunk.makeWritableChunk(1);
+                final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             leftSsa.insert(leftValues, leftKeys);
             rightSsa.insert(rightValues, rightKeys);
             final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Double, false);
@@ -231,7 +235,7 @@ public class TestSsaEqualValues {
             final int valuesWithNext = rightSsa.insertAndGetNextValue(insertValues, insertKeys, nextValues);
             assertEquals(0, valuesWithNext);
             stamp.processInsertion(leftSsa, insertValues, insertKeys, nextValues, redirection,
-                    RowSetFactory.builderRandom(), true, true);
+                    RowSetFactory.builderRandom(), modifiedKeys, true, true);
             assertEquals(0, redirection.get(1));
         }
     }

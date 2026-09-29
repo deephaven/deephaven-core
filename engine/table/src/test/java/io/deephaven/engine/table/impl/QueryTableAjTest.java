@@ -2623,6 +2623,97 @@ public class QueryTableAjTest {
     }
 
     /**
+     * With both sides refreshing, a single right cycle that inserts, modifies, and removes right rows in many buckets,
+     * each changing the match of more left rows than the bucket has right rows, restamps every bucket correctly and
+     * reports exactly the affected left rows, for aj and raj with and without exact match columns.
+     */
+    @Test
+    public void testRightChangesRestampManyLeftRowsPerBucket() {
+        final int bucketCount = 20;
+        final int leftPerBucket = 10;
+        final String[] leftKeys = new String[bucketCount * leftPerBucket];
+        final int[] leftStamps = new int[bucketCount * leftPerBucket];
+        for (int bucket = 0; bucket < bucketCount; ++bucket) {
+            for (int row = 0; row < leftPerBucket; ++row) {
+                leftKeys[bucket * leftPerBucket + row] = "K" + bucket;
+                leftStamps[bucket * leftPerBucket + row] = 100 + row;
+            }
+        }
+        final String[] rightKeys = new String[bucketCount];
+        final int[] rightStamps = new int[bucketCount];
+        final int[] rightSentinels = new int[bucketCount];
+        final String[] insertedKeys = new String[bucketCount];
+        final int[] insertedStamps = new int[bucketCount];
+        final int[] insertedSentinels = new int[bucketCount];
+        for (int bucket = 0; bucket < bucketCount; ++bucket) {
+            rightKeys[bucket] = "K" + bucket;
+            rightStamps[bucket] = 50;
+            rightSentinels[bucket] = bucket;
+            insertedKeys[bucket] = "K" + bucket;
+            insertedStamps[bucket] = 102;
+            insertedSentinels[bucket] = 1000 + bucket;
+        }
+
+        for (final boolean bucketed : new boolean[] {false, true}) {
+            for (final boolean reverse : new boolean[] {false, true}) {
+                final String description = (bucketed ? "bucketed" : "zero key") + (reverse ? " raj" : " aj");
+                final QueryTable left = testRefreshingTable(RowSetFactory.flat(leftKeys.length).toTracking(),
+                        stringCol("Key", leftKeys), intCol("LeftStamp", leftStamps));
+                final QueryTable right = testRefreshingTable(
+                        RowSetFactory.fromRange(0, bucketCount - 1).toTracking(), stringCol("Key", rightKeys),
+                        intCol("RightStamp", rightStamps), intCol("Sentinel", rightSentinels));
+                final String stamp = reverse ? "LeftStamp<=RightStamp" : "LeftStamp>=RightStamp";
+                final String match = bucketed ? "Key," + stamp : stamp;
+                final QueryTable result = (QueryTable) (reverse ? left.raj(right, match, "Sentinel")
+                        : left.aj(right, match, "Sentinel"));
+                final SimpleListener listener = new SimpleListener(result);
+                result.addUpdateListener(listener);
+
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                // insert one right row per bucket that takes over the match of most of that bucket's left rows
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(right, RowSetFactory.fromRange(100, 100 + bucketCount - 1),
+                            stringCol("Key", insertedKeys), intCol("RightStamp", insertedStamps),
+                            intCol("Sentinel", insertedSentinels));
+                    right.notifyListeners(RowSetFactory.fromRange(100, 100 + bucketCount - 1), i(), i());
+                });
+                final Table afterInsert = reverse ? left.snapshot().raj(right.snapshot(), match, "Sentinel")
+                        : left.snapshot().aj(right.snapshot(), match, "Sentinel");
+                assertTableEquals(afterInsert, result);
+                assertEquals(description, 1, listener.getCount());
+                final RowSet changedByInsert = listener.getUpdate().modified().copy();
+
+                // modify the added column of the inserted rows, then remove them
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final int[] modifiedSentinels = new int[bucketCount];
+                    Arrays.setAll(modifiedSentinels, bucket -> 2000 + bucket);
+                    addToTable(right, RowSetFactory.fromRange(100, 100 + bucketCount - 1),
+                            stringCol("Key", insertedKeys), intCol("RightStamp", insertedStamps),
+                            intCol("Sentinel", modifiedSentinels));
+                    right.notifyListeners(new TableUpdateImpl(i(), i(),
+                            RowSetFactory.fromRange(100, 100 + bucketCount - 1), RowSetShiftData.EMPTY,
+                            right.newModifiedColumnSet("Sentinel")));
+                });
+                assertTableEquals(reverse ? left.snapshot().raj(right.snapshot(), match, "Sentinel")
+                        : left.snapshot().aj(right.snapshot(), match, "Sentinel"), result);
+                assertEquals(description, changedByInsert, listener.getUpdate().modified());
+
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    removeRows(right, RowSetFactory.fromRange(100, 100 + bucketCount - 1));
+                    right.notifyListeners(i(), RowSetFactory.fromRange(100, 100 + bucketCount - 1), i());
+                });
+                assertTableEquals(reverse ? left.snapshot().raj(right.snapshot(), match, "Sentinel")
+                        : left.snapshot().aj(right.snapshot(), match, "Sentinel"), result);
+                assertEquals(description, changedByInsert, listener.getUpdate().modified());
+                assertTrue(description, changedByInsert.size() > bucketCount);
+
+                changedByInsert.close();
+                result.removeUpdateListener(listener);
+            }
+        }
+    }
+
+    /**
      * Shifts a range of rows of a refreshing test table by a positive delta, which may move rows onto keys that other
      * rows of the same range vacate, and notifies listeners.
      */

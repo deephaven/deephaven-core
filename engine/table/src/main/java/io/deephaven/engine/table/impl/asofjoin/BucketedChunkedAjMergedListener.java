@@ -185,7 +185,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final WritableLongChunk<RowKeys> rightKeysForLeft =
                         leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(cycleLeftChunkSize) : null;
                 final LongSortKernel<Values, RowKeys> sortKernel = LongSortKernel.makeContext(stampChunkType, order,
-                        Math.max(cycleLeftChunkSize, cycleRightChunkSize), true)) {
+                        Math.max(cycleLeftChunkSize, cycleRightChunkSize), true);
+                final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
 
             // first we remove anything that is not of interest from the left hand side, because we don't want to
             // process the relevant right hand side changes
@@ -392,7 +393,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                         rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
 
                                         ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys,
-                                                priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
+                                                priorRedirections, rowRedirection, modifiedBuilder, modifiedKeys,
+                                                disallowExactMatch);
                                     }
                                 }
                                 if (rightSsa.size() == 0) {
@@ -625,8 +627,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                         stampCompact.compact(stampChunk, retainStamps);
 
                                         ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices,
-                                                nextRightValue, rowRedirection, modifiedBuilder, endsWithLastValue,
-                                                disallowExactMatch);
+                                                nextRightValue, rowRedirection, modifiedBuilder, modifiedKeys,
+                                                endsWithLastValue, disallowExactMatch);
                                     }
                                 }
                             }
@@ -669,7 +671,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                             sortKernel.sort(rightStampIndices, rightStampChunk);
 
                                             ssaSsaStamp.findModified(leftSsa, rowRedirection, rightStampChunk,
-                                                    rightStampIndices, modifiedBuilder, disallowExactMatch);
+                                                    rightStampIndices, modifiedBuilder, modifiedKeys,
+                                                    disallowExactMatch);
                                         }
                                     }
                                 }
