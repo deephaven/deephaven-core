@@ -143,6 +143,10 @@ addition creates one; with 100, most changes add rows to or remove rows from gro
 "returns" when its key comes back after its state has been removed; with returning groups, the keys cycle through a
 space twice the number of groups in the table.
 
+The same results are charted in
+[aggregation-state-reclaiming-benchmarks.html](aggregation-state-reclaiming-benchmarks.html); open that file in a
+browser, since GitHub shows only its source.
+
 The columns:
 
 - **Main:** main at c091e0578e, which predates reclaiming. Every percentage is the change against this column.

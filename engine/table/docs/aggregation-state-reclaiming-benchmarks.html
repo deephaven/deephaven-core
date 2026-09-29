@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>State Reclaiming Benchmarks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7;
+  --surface: #ffffff;
+  --ink: #1a2228;
+  --muted: #5a6670;
+  --faint: #8a949c;
+  --rule: #d8dee2;
+  --band: rgba(90, 102, 112, 0.13);
+  --accent: #0e6c73;
+  --good: #1d7438;
+  --good-bg: #e3f2e7;
+  --bad: #ad2a1f;
+  --bad-bg: #fbe6e3;
+  --c0: #56626d;
+  --c1: #8466b3;
+  --c2: #0e7f87;
+  --c3: #c07811;
+  --c4: #b3452a;
+  --c5: #a6b0b8;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #11161a; --surface: #182026; --ink: #e2e8ec; --muted: #9aa6ae; --faint: #6d7982; --rule: #2b353d;
+    --band: rgba(170, 185, 196, 0.13); --accent: #3fb6bd;
+    --good: #6fcf8a; --good-bg: #173424; --bad: #f28b7e; --bad-bg: #3d1d19;
+    --c0: #9aa7b3; --c1: #ae93dc; --c2: #34b8c0; --c3: #e6a441; --c4: #e8795a; --c5: #56626c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #11161a; --surface: #182026; --ink: #e2e8ec; --muted: #9aa6ae; --faint: #6d7982; --rule: #2b353d;
+  --band: rgba(170, 185, 196, 0.13); --accent: #3fb6bd;
+  --good: #6fcf8a; --good-bg: #173424; --bad: #f28b7e; --bad-bg: #3d1d19;
+  --c0: #9aa7b3; --c1: #ae93dc; --c2: #34b8c0; --c3: #e6a441; --c4: #e8795a; --c5: #56626c;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; }
+h1, h2, h3 { font-family: var(--cond); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 2.1rem; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 1.5rem; font-weight: 600; }
+h3 { font-size: 1.12rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--mono); font-size: 0.9em; }
+a { color: var(--accent); }
+.eyebrow { font: 500 0.74rem/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+header.top { display: flex; flex-direction: column; gap: 12px; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
+.lede { font-size: 1.05rem; color: var(--ink); }
+.spec { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px 28px; padding-block: 22px; border-bottom: 1px solid var(--rule); }
+.spec dt { font: 500 0.72rem/1.3 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.spec dd { margin: 0; font-size: 0.93rem; }
+.intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; padding-block: 24px; border-bottom: 1px solid var(--rule); }
+@media (max-width: 760px) { .intro { grid-template-columns: 1fr; } }
+.cfgs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.cfgs li { display: grid; grid-template-columns: 14px 1fr; gap: 10px; align-items: baseline; font-size: 0.93rem; }
+.sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; transform: translateY(1px); }
+.s0 { background: var(--c0); } .s1 { background: var(--c1); } .s2 { background: var(--c2); }
+.s3 { background: var(--c3); } .s4 { background: var(--c4); } .s5 { background: var(--c5); }
+.wls { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; font-size: 0.93rem; }
+.note { border-left: 3px solid var(--c3); padding: 10px 14px; background: var(--surface); font-size: 0.92rem; max-width: 80ch; }
+.note.drift { border-left-color: var(--c0); }
+.findings { padding-block: 26px; border-bottom: 1px solid var(--rule); }
+.findings ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 10px; max-width: 80ch; }
+.findings li::marker { color: var(--accent); }
+nav.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--rule); padding-block: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; }
+nav.bar .links { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.9rem; }
+nav.bar .links a { text-decoration: none; color: var(--muted); }
+nav.bar .links a:hover, nav.bar .links a:focus-visible { color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg button { font: 500 0.82rem/1 var(--sans); color: var(--muted); background: none; border: 0; padding: 8px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.seg button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section.phase { padding-top: 34px; display: flex; flex-direction: column; gap: 22px; }
+.phase-head { display: flex; flex-direction: column; gap: 6px; }
+.metric { display: flex; flex-direction: column; gap: 12px; padding-top: 10px; }
+.metric > p { color: var(--muted); font-size: 0.92rem; }
+.fig-label { font: 500 0.78rem/1.3 var(--mono); color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 6px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.colhead { font: 500 0.74rem/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); padding-left: 2px; }
+@media (max-width: 700px) { .grid { grid-template-columns: 1fr; } .colhead { display: none; } }
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.card h4 { margin: 0; font: 600 0.92rem/1.3 var(--sans); display: flex; justify-content: space-between; gap: 8px; }
+.card h4 span { font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+.card svg { width: 100%; height: auto; display: block; }
+.legend { background: none; border: 1px dashed var(--rule); font-size: 0.84rem; color: var(--muted); gap: 7px; justify-content: center; }
+.legend .row { display: flex; align-items: center; gap: 9px; }
+.legend .row svg { width: 34px; flex: none; }
+svg text { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
+svg text.lab { fill: var(--ink); font-family: var(--sans); font-size: 11px; }
+svg text.val { fill: var(--ink); }
+svg text.val.dim { fill: var(--faint); }
+svg .axis { stroke: var(--rule); stroke-width: 1; }
+svg .zero { stroke: var(--faint); stroke-width: 1; }
+svg .grid-l { stroke: var(--rule); stroke-width: 0.6; stroke-dasharray: 2 3; }
+svg .bandr { fill: var(--band); }
+svg .wh { stroke: var(--ink); stroke-width: 1.1; fill: none; }
+.f0 { fill: var(--c0); stroke: var(--c0); } .f1 { fill: var(--c1); stroke: var(--c1); } .f2 { fill: var(--c2); stroke: var(--c2); }
+.f3 { fill: var(--c3); stroke: var(--c3); } .f4 { fill: var(--c4); stroke: var(--c4); } .f5 { fill: var(--c5); stroke: var(--c5); }
+svg rect.bar { stroke-width: 1; }
+svg rect.bar.dim { fill-opacity: 0.22; }
+.tables { display: flex; flex-direction: column; gap: 22px; padding-top: 12px; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; font-variant-numeric: tabular-nums; }
+caption { text-align: left; padding: 10px 12px 4px; font: 600 0.95rem/1.3 var(--sans); caption-side: top; }
+caption span { font-weight: 400; color: var(--muted); font-size: 0.84rem; }
+th, td { padding: 7px 10px; text-align: right; border-top: 1px solid var(--rule); white-space: nowrap; vertical-align: top; }
+thead th { font: 500 0.74rem/1.3 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); border-top: 0; vertical-align: bottom; }
+th.l, td.l { text-align: left; }
+td .v { font-family: var(--mono); display: block; }
+td .e { color: var(--faint); font-family: var(--mono); font-size: 0.9em; }
+.chip { display: inline-block; font: 500 0.78rem/1.4 var(--mono); padding: 0 5px; border-radius: 3px; margin-top: 2px; color: var(--muted); }
+.chip.good { color: var(--good); background: var(--good-bg); }
+.chip.bad { color: var(--bad); background: var(--bad-bg); }
+tbody tr.grp td { border-top: 2px solid var(--rule); }
+.key { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.84rem; color: var(--muted); align-items: center; }
+.warn { color: var(--bad); font-size: 0.9rem; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.84rem; }
+@media (max-width: 480px) { .wrap { padding-inline: 16px; } h1 { font-size: 1.7rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">deephaven-core #8631 · DH-23798</div>
+    <h1>Aggregation state reclaiming: JMH results</h1>
+    <p class="lede">Incremental keyed aggregations now remove groups that empty from their hash table and release the storage of fully empty 2048-position blocks; an optional collapse also packs sparse blocks together. These results compare upstream main with the PR in each mode, so you can see where reclaiming saves time, memory and cycle latency, and what it costs when groups return.</p>
+  </header>
+
+  <dl class="spec">
+    <div><dt>Measured</dt><dd><code>AggregationIncrementalBenchmark</code>: batches of 900 update cycles of a keyed <code>sumBy</code>. 1M rows with 10k added and removed per cycle, and 10M rows with 100k per cycle (48 GB heap).</dd></div>
+    <div><dt>Method</dt><dd>Two JVM forks, each with three warmup and five measured batches. Time is JMH's score; error bars are JMH's 99.9% intervals over the ten measured batches.</dd></div>
+    <div><dt>Machine</dt><dd>Intel i9-14900KS (hybrid P/E cores) in an LXC container, 24 logical CPUs online, 128 GB, performance governor, turbo boost enabled, otherwise idle.</dd></div>
+    <div><dt>Commits</dt><dd>Main at <code id="mainCommit"></code>; the PR at <code id="prCommit"></code>.</dd></div>
+  </dl>
+
+  <div class="intro">
+    <div class="stack">
+      <h3>Configurations</h3>
+      <ul class="cfgs">
+        <li><i class="sw s0"></i><span><b>Main</b>: upstream main, which predates reclaiming. The baseline; every percentage is relative to it.</span></li>
+        <li><i class="sw s1"></i><span><b><code>none</code></b>: the PR without reclaiming, which isolates its other improvements to the update cycle.</span></li>
+        <li><i class="sw s2"></i><span><b>Blocks</b>: <code>releaseBlocks(1)</code>, the default. Releases empty blocks and never moves a state.</span></li>
+        <li><i class="sw s3"></i><span><b>Collapse 0.75</b>: <code>releaseBlocks(0.75)</code>, which also collapses runs of sparse blocks.</span></li>
+        <li><i class="sw s4"></i><span><b>Collapse 0.5</b>: <code>releaseBlocks(0.5)</code>.</span></li>
+        <li><i class="sw s5"></i><span><b>Main again</b>: main rerun after every other configuration, to show drift over the run.</span></li>
+      </ul>
+    </div>
+    <div class="stack">
+      <h3>Workloads</h3>
+      <ul class="wls">
+        <li><b>Add only</b>: rows are only added, each with a new group.</li>
+        <li><b>Sliding window</b>: each cycle removes the oldest rows, so groups empty in the order they were created.</li>
+        <li><b>Random churn</b>: each cycle removes rows chosen at random, so blocks thin out unevenly.</li>
+        <li><b>Rows per group</b>: 1 or 100 consecutive rows. With one, every removal empties a group and every addition creates one; with 100, most changes touch groups that already exist. The 10M-row runs use one row per group only.</li>
+        <li><b>Groups return</b>: a group's key comes back after its state has been removed; the keys cycle through a space twice the number of groups in the table.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stack" style="padding-block: 20px;">
+    <p class="note drift" id="driftNote"></p>
+    <p class="note">The PR was measured before two later changes to the collapse code: the block tracker now walks sparse runs incrementally, and a collapse is applied to each row set once for all runs. Those changes affect only the Collapse columns, which may move in a rerun.</p>
+  </div>
+
+  <section class="findings stack" id="findings">
+    <h2>Findings</h2>
+    <ul>
+      <li>The PR without reclaiming (<code>none</code>) is 7% faster than main for random churn with one row per group when groups do not return, and 13% faster when they do, from its other improvements to the update cycle; at ten million rows, 5% and 10%. Elsewhere it is within the error.</li>
+      <li>When groups do not return, every reclaiming mode is faster than main for the sliding window, by 32% to 35%, and retains about a quarter of its heap; at ten million rows, 26% faster with a sixth of the heap. For random churn, releasing blocks alone is 13% faster and retains a third less heap; collapsing is 23% to 24% faster and retains about a third of the heap. At ten million rows, collapsing is 20% to 24% faster. Add only at ten million rows is also faster with reclaiming, by 9% to 12%.</li>
+      <li>When groups return, the reclaiming modes are slower than main, since returning groups are new states rather than reused ones: 10% to 17% for the sliding window (Blocks' 10% is inside the combined error; the collapse modes' 17% is not; at ten million rows 12% to 15%), and for random churn 39% releasing blocks alone and 17% collapsing. For random churn, releasing blocks alone retains twice the heap of main, and collapsing 5% to 17% less. At ten million rows, random churn with returning groups costs 30% releasing blocks alone and 6% to 11% collapsing.</li>
+      <li>Collapsing is faster than releasing blocks alone for random churn: by 12% to 13% when groups do not return and 16% when they do; at ten million rows, by 9% to 13% and 14% to 18%.</li>
+      <li>No mode gives output positions back, so every reclaiming mode assigns the same positions: with one row per group, 10 million when groups do not return, and 8.71 to 10 million when they do, where main reuses 2 million; with 100 rows per group, 100,000, or 20,000 for random churn with returning groups.</li>
+      <li>With 100 rows per group, the modes are within the error of each other for time.</li>
+      <li>Reclaiming shortens the longest cycles when groups do not return: 12 to 18 ms against main's 67 to 73 ms for the sliding window and random churn, and at ten million rows 138 to 155 ms against 309 to 534 ms for Main and Main again. When groups return, the longest cycles are 10 to 16 ms for Main and every PR mode; Main again reached 20.4 ms once for the sliding window.</li>
+    </ul>
+    <p id="warnings" class="warn" hidden></p>
+  </section>
+
+  <nav class="bar" aria-label="Sections">
+    <div class="links">
+      <a href="#findings">Findings</a>
+      <a href="#tables">1M rows</a>
+      <a href="#tables-tbl">1M tables</a>
+      <a href="#large">10M rows</a>
+      <a href="#large-tbl">10M tables</a>
+    </div>
+    <div class="seg" role="group" aria-label="Chart scale">
+      <button type="button" id="modePct" aria-pressed="true">% vs Main</button>
+      <button type="button" id="modeAbs" aria-pressed="false">Absolute</button>
+    </div>
+  </nav>
+
+  <div id="phases"></div>
+
+  <footer>
+    Values: time is the JMH score (ms per batch) ± its 99.9% error; heap is the mean retained heap over the measured batches, in MB, after a garbage collection, and includes the source table and the benchmark's own data; longest cycle is the worst single cycle over the measured batches; positions is the mean number of output positions assigned. Generated by <code>agg-bench-gen.py</code> from <code>results.csv</code> and the JMH summary CSVs.
+  </footer>
+</div>
+
+<script>
+const DATA = {"mainCommit":"c091e0578e","prCommit":"e631d807bb","configs":["Main","none","Blocks","Collapse 0.75","Collapse 0.5","Main again"],"phases":[{"id":"tables","workloads":[{"b":"addOnly","rpk":1,"kr":false,"time":[[1334.182,39.362],[1349.873,69.279],[1287.045,55.68],[1292.431,152.064],[1290.555,91.308],[1386.24,89.958]],"heap":[675.4,674.4,572.3,577.8,577.4,675.0],"cycle":[62.459,62.51,63.229,65.404,63.844,64.928],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":false,"time":[[2023.795,96.909],[2014.016,154.876],[1309.105,43.858],[1382.51,78.127],[1358.454,87.328],[1988.508,79.099]],"heap":[679.7,684.4,186.2,186.3,186.4,679.4],"cycle":[73.357,64.479,11.965,18.224,14.322,70.717],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":true,"time":[[1071.611,61.069],[1083.046,60.178],[1178.503,53.821],[1253.683,59.651],[1258.128,73.219],[1057.213,35.388]],"heap":[181.0,181.8,130.0,130.3,130.2,181.0],"cycle":[10.898,13.156,12.883,15.511,14.467,20.374],"pos":[2000000,2000000,10000000,10000000,10000000,2000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":false,"time":[[4536.709,124.173],[4227.76,66.22],[3967.803,103.273],[3468.006,59.181],[3500.117,85.052],[4517.485,88.39]],"heap":[716.1,720.6,472.1,263.5,239.0,715.6],"cycle":[67.296,65.161,17.599,13.992,16.947,28.771],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":true,"time":[[2966.053,83.961],[2594.769,76.256],[4133.682,106.456],[3457.842,99.709],[3458.675,92.931],[2945.871,73.723]],"heap":[219.2,220.0,436.9,208.0,182.0,219.0],"cycle":[11.489,10.533,14.55,14.236,15.251,10.988],"pos":[2000000,2000000,8705854,8705854,8705854,2000000],"n":[10,10,10,10,10,10]},{"b":"addOnly","rpk":100,"kr":false,"time":[[170.434,28.282],[175.917,23.392],[191.271,26.025],[185.826,16.638],[185.265,37.579],[173.182,20.006]],"heap":[29.0,29.0,28.0,31.9,31.9,29.0],"cycle":[2.615,1.441,1.679,1.023,0.986,0.989],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":100,"kr":false,"time":[[286.386,34.037],[314.222,63.868],[300.552,31.694],[289.688,15.109],[309.537,32.124],[297.819,23.535]],"heap":[30.0,29.3,25.5,26.0,25.5,29.6],"cycle":[1.297,2.567,1.218,1.081,2.508,2.025],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":100,"kr":true,"time":[[306.269,22.081],[309.792,24.413],[308.429,20.292],[328.547,25.115],[328.993,35.747],[297.095,26.782]],"heap":[21.2,21.0,25.0,25.0,25.0,21.0],"cycle":[1.299,2.352,1.104,1.114,1.216,1.029],"pos":[20000,20000,100000,100000,100000,20000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":100,"kr":false,"time":[[848.918,74.634],[835.947,22.175],[788.932,38.306],[857.086,55.638],[827.299,68.511],[808.389,58.669]],"heap":[52.5,53.0,48.0,52.0,51.7,52.4],"cycle":[3.667,3.534,3.353,3.225,2.615,2.984],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":100,"kr":true,"time":[[790.932,52.166],[784.402,72.199],[788.988,73.633],[780.847,49.29],[790.11,79.97],[767.524,64.509]],"heap":[42.5,43.0,42.7,47.0,47.0,42.5],"cycle":[3.219,3.82,2.629,3.081,3.233,3.335],"pos":[20000,20000,20000,20000,20000,20000],"n":[10,10,10,10,10,10]}]},{"id":"large","workloads":[{"b":"addOnly","rpk":1,"kr":false,"time":[[15749.511,232.264],[15386.939,349.331],[13888.201,252.372],[14293.666,203.803],[14348.759,213.717],[15422.84,341.974]],"heap":[5623.3,5621.7,5082.8,5091.0,5089.9,5624.2],"cycle":[489.27,500.925,494.137,533.443,498.889,505.292],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":false,"time":[[21787.069,721.19],[21806.134,201.977],[16175.32,142.446],[16229.761,223.599],[16092.202,235.687],[22097.622,559.955]],"heap":[5658.1,5691.1,897.2,899.5,899.3,5659.3],"cycle":[498.29,497.087,147.383,147.144,147.579,498.147],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":true,"time":[[12081.172,124.039],[12269.41,88.107],[13511.711,144.197],[13768.859,117.495],[13889.358,163.702],[12145.622,153.48]],"heap":[1426.2,1434.5,896.6,900.5,898.8,1427.2],"cycle":[137.56,110.374,115.117,149.553,149.151,142.65],"pos":[20000000,20000000,100000000,100000000,100000000,20000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":false,"time":[[56480.188,661.475],[53406.992,565.103],[49386.004,468.395],[44943.429,459.499],[43002.126,582.998],[56392.849,551.506]],"heap":[5896.2,5929.0,4057.5,1966.0,1747.4,5894.0],"cycle":[309.075,537.373,154.986,137.99,145.356,533.723],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":true,"time":[[38650.311,382.018],[34927.973,342.545],[50184.074,894.492],[42988.759,471.044],[40911.283,401.113],[38751.774,595.484]],"heap":[1662.5,1671.5,3810.2,1525.7,1299.5,1663.1],"cycle":[137.251,84.46,107.576,162.937,138.603,108.597],"pos":[20000000,20000000,87047354,87047354,87047354,20000000],"n":[10,10,10,10,10,10]}]}],"warnings":[]};
+const CFG = DATA.configs;
+const WL = { addOnly: 'Add only', slidingWindow: 'Sliding window', randomChurn: 'Random churn' };
+const PHASES = {
+  tables: { title: '1 million rows', sub: '10,000 rows added and removed per cycle' },
+  large: { title: '10 million rows', sub: '100,000 rows added and removed per cycle, one row per group, 48 GB heap' },
+};
+const METRICS = {
+  time: { title: 'Time per batch', unit: 'ms', desc: 'Milliseconds per batch of 900 cycles; lower is better. Whiskers are 99.9% intervals; the grey band is Main’s interval. Faded bars are within the combined error of Main.' },
+  heap: { title: 'Retained heap', unit: 'MB', desc: 'Heap retained at the end of a batch after a garbage collection, averaged over the measured batches. It includes the source table and the benchmark’s own data, so compare modes with each other rather than reading a value as the aggregation’s size.' },
+  cycle: { title: 'Longest cycle', unit: 'ms', desc: 'The worst single cycle over the ten measured batches. One sample is noisy, as the gap between Main and Main again shows, so read the modes whose longest cycles are consistently high rather than small differences. With 100 rows per group every longest cycle is a few milliseconds, and one slow sample swings the percentage widely.' },
+  pos: { title: 'Positions assigned', unit: '', desc: '' },
+};
+const SHORT = ['Main', 'none', 'Blocks', 'Collapse 0.75', 'Collapse 0.5', 'Main again'];
+let mode = 'pct';
+try { const m = localStorage.getItem('aggbench-mode'); if (m === 'abs' || m === 'pct') mode = m; } catch (e) {}
+
+document.getElementById('mainCommit').textContent = DATA.mainCommit;
+document.getElementById('prCommit').textContent = DATA.prCommit;
+
+const val = (w, metric, i) => metric === 'time' ? (w.time[i] ? w.time[i][0] : null) : w[metric][i];
+const err = (w, metric, i) => metric === 'time' && w.time[i] ? w.time[i][1] : 0;
+const within = (w, i) => { const a = w.time[0], b = w.time[i]; return a && b && Math.abs(a[0] - b[0]) <= a[1] + b[1]; };
+function pctStr(v, ref) {
+  const p = 100 * (v - ref) / ref;
+  const r = Math.abs(Math.round(p));
+  return (p < 0 ? '−' : '+') + r + '%';
+}
+function fmt(metric, v) {
+  if (v == null) return '–';
+  if (metric === 'cycle') return v.toFixed(1);
+  if (metric === 'pos') return (v / 1e6).toFixed(2) + 'M';
+  return Math.round(v).toLocaleString('en-US');
+}
+
+// Drift note computed from the data.
+(function () {
+  const drift = [];
+  for (const ph of DATA.phases) for (const w of ph.workloads) if (!within(w, 5)) drift.push(WL[w.b] + (ph.id === 'large' ? ' (10M)' : ' (' + w.rpk + ' row/group)'));
+  document.getElementById('driftNote').textContent = drift.length === 0
+    ? 'Main and Main again agree within error for time in every workload, so the run did not drift.'
+    : 'Main and Main again differ beyond error for time in: ' + drift.join(', ') + '. Treat small differences with care.';
+  if (DATA.warnings.length) { const el = document.getElementById('warnings'); el.hidden = false; el.textContent = 'Data warnings: ' + DATA.warnings.join('; '); }
+})();
+
+function niceTicks(lo, hi, n) {
+  const span = hi - lo, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(s => s * mag).find(s => span / s <= n) || 10 * mag;
+  const out = [];
+  const first = Math.ceil(lo / step - 1e-9);
+  for (let k = first; k * step <= hi + 1e-9; k++) out.push(k === 0 ? 0 : +(k * step).toPrecision(6));
+  return out;
+}
+
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+// Compute the drawn quantities of one workload card.
+function cardSeries(w, metric) {
+  const ref = val(w, metric, 0), refE = err(w, metric, 0);
+  return CFG.map((_, i) => {
+    const v = val(w, metric, i), e = err(w, metric, i);
+    if (v == null) return null;
+    const dim = metric === 'time' && i > 0 && within(w, i);
+    if (mode === 'pct') {
+      return { x: 100 * (v / ref - 1), lo: metric === 'time' ? 100 * ((v - e) / ref - 1) : null, hi: metric === 'time' ? 100 * ((v + e) / ref - 1) : null,
+        label: i === 0 ? 'baseline' : (dim ? '≈ ' : '') + pctStr(v, ref), dim, base: i === 0 };
+    }
+    return { x: v, lo: metric === 'time' ? v - e : null, hi: metric === 'time' ? v + e : null, label: fmt(metric, v), dim, base: false };
+  }).map((s, i) => s && Object.assign(s, { band: metric === 'time' ? (mode === 'pct' ? [-100 * refE / ref, 100 * refE / ref] : [ref - refE, ref + refE]) : null }));
+}
+
+function drawCard(card, series, dom, metric) {
+  const W = 360, labW = 84, valW = 70, rowH = 19, top = 4, axisH = 18;
+  const H = top + rowH * CFG.length + axisH;
+  const x0 = labW, x1 = W - valW;
+  const sx = v => x0 + (v - dom[0]) / (dom[1] - dom[0]) * (x1 - x0);
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img' }, card);
+  const plotB = top + rowH * CFG.length;
+  const ticks = niceTicks(dom[0], dom[1], 4);
+  for (const t of ticks) {
+    el('line', { x1: sx(t), x2: sx(t), y1: top, y2: plotB, class: t === 0 ? 'zero' : 'grid-l' }, svg);
+    el('text', { x: sx(t), y: plotB + 13, 'text-anchor': 'middle' }, svg, mode === 'pct' ? (t > 0 ? '+' : t < 0 ? '−' : '') + Math.abs(t) + '%' : Math.abs(t) >= 1000 ? (t / 1000) + 'k' : String(t));
+  }
+  const band = series[0] && series[0].band;
+  if (band) el('rect', { x: sx(band[0]), y: top, width: Math.max(1, sx(band[1]) - sx(band[0])), height: plotB - top, class: 'bandr' }, svg);
+  el('line', { x1: x0, x2: x1, y1: plotB, y2: plotB, class: 'axis' }, svg);
+  const origin = mode === 'pct' ? 0 : Math.max(0, dom[0]);
+  series.forEach((s, i) => {
+    const cy = top + rowH * i + rowH / 2;
+    el('text', { x: 0, y: cy + 4, class: 'lab' }, svg, SHORT[i]);
+    if (!s) return;
+    if (!s.base) {
+      const a = sx(origin), b = sx(s.x);
+      el('rect', { x: Math.min(a, b), y: cy - 6, width: Math.max(1.5, Math.abs(b - a)), height: 12, rx: 1.5, class: 'bar f' + i + (s.dim ? ' dim' : '') }, svg);
+    } else {
+      el('line', { x1: sx(0), x2: sx(0), y1: cy - 7, y2: cy + 7, class: 'wh f0', 'stroke-width': 3 }, svg);
+    }
+    if (s.lo != null && !s.base) {
+      const l = sx(s.lo), h = sx(s.hi);
+      el('path', { d: `M${l},${cy - 4}V${cy + 4}M${l},${cy}H${h}M${h},${cy - 4}V${cy + 4}`, class: 'wh' }, svg);
+    }
+    el('text', { x: W, y: cy + 4, 'text-anchor': 'end', class: 'val' + (s.dim || s.base ? ' dim' : '') }, svg, s.label);
+  });
+  const t = el('title', {}, svg, 'Bars for ' + SHORT.join(', '));
+  svg.insertBefore(t, svg.firstChild);
+}
+
+function legendCard(metric) {
+  const d = document.createElement('div');
+  d.className = 'card legend';
+  const row = (svgInner, text) => `<div class="row"><svg viewBox="0 0 34 14" aria-hidden="true">${svgInner}</svg><span>${text}</span></div>`;
+  let h = '';
+  h += row('<rect x="2" y="3" width="28" height="8" rx="1.5" class="bar f2"></rect>', mode === 'pct' ? 'Change against Main; left of zero is lower' : 'Absolute value, ' + (METRICS[metric].unit || 'count'));
+  if (metric === 'time') {
+    h += row('<path d="M4,3V11M4,7H30M30,3V11" class="wh"></path>', '99.9% interval');
+    h += row('<rect x="8" y="0" width="18" height="14" class="bandr"></rect>', 'Main’s 99.9% interval');
+    h += row('<rect x="2" y="3" width="28" height="8" rx="1.5" class="bar f2 dim"></rect>', '≈ within the combined error of Main');
+  } else {
+    h += row('', 'No error bound: ' + (metric === 'cycle' ? 'use Main again as a sense of the noise' : 'compare modes with each other'));
+  }
+  d.innerHTML = h;
+  return d;
+}
+
+function figure(parent, phase, metric, rpk) {
+  const wls = phase.workloads.filter(w => w.rpk === rpk);
+  const all = wls.map(w => cardSeries(w, metric));
+  let lo = Infinity, hi = -Infinity;
+  for (const ser of all) for (const s of ser) if (s) {
+    lo = Math.min(lo, s.x, s.lo ?? s.x, s.band ? s.band[0] : s.x);
+    hi = Math.max(hi, s.x, s.hi ?? s.x, s.band ? s.band[1] : s.x);
+  }
+  if (mode === 'abs') lo = 0; else { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+  const pad = (hi - lo) * 0.04; const dom = [mode === 'abs' ? 0 : lo - pad, hi + pad];
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  grid.innerHTML = '<div class="colhead">Groups don’t return</div><div class="colhead">Groups return</div>';
+  const order = [['addOnly', false], ['legend'], ['slidingWindow', false], ['slidingWindow', true], ['randomChurn', false], ['randomChurn', true]];
+  for (const o of order) {
+    if (o[0] === 'legend') { grid.appendChild(legendCard(metric)); continue; }
+    const idx = wls.findIndex(w => w.b === o[0] && w.kr === o[1]);
+    if (idx < 0) continue;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<h4>${WL[o[0]]}<span>${o[0] === 'addOnly' ? 'new groups only' : o[1] ? 'groups return' : 'groups don’t return'}</span></h4>`;
+    drawCard(card, all[idx], dom, metric);
+    grid.appendChild(card);
+  }
+  parent.appendChild(grid);
+}
+
+function chipClass(metric, w, i) {
+  const v = val(w, metric, i), ref = val(w, metric, 0);
+  if (metric === 'time' && within(w, i)) return '';
+  const p = 100 * (v - ref) / ref;
+  if (metric !== 'time' && Math.abs(p) < 5) return '';
+  return p < 0 ? 'good' : 'bad';
+}
+
+function table(parent, phase, metric) {
+  const m = METRICS[metric];
+  const showRpk = phase.id === 'tables';
+  const wrap = document.createElement('div');
+  wrap.className = 'tbl-wrap';
+  let h = `<table><caption>${m.title} <span>${metric === 'time' ? '(ms per batch, ± 99.9% error)' : metric === 'heap' ? '(MB)' : metric === 'cycle' ? '(ms)' : '(mean per batch)'}</span></caption><thead><tr><th class="l">Workload</th>${showRpk ? '<th>Rows per group</th>' : ''}<th class="l">Groups return</th>`;
+  h += CFG.map(c => `<th>${c === 'none' ? '<code>none</code>' : c}</th>`).join('') + '</tr></thead><tbody>';
+  let prev = null;
+  for (const w of phase.workloads) {
+    h += `<tr${prev != null && prev !== w.rpk ? ' class="grp"' : ''}><td class="l">${WL[w.b]}</td>${showRpk ? `<td>${w.rpk}</td>` : ''}<td class="l">${w.b === 'addOnly' ? '—' : w.kr ? 'Yes' : 'No'}</td>`;
+    prev = w.rpk;
+    CFG.forEach((_, i) => {
+      const v = val(w, metric, i);
+      if (v == null) { h += '<td>–</td>'; return; }
+      let cell = `<span class="v">${fmt(metric, v)}${metric === 'time' ? ` <span class="e">± ${Math.round(w.time[i][1])}</span>` : ''}</span>`;
+      if (i > 0) {
+        const cc = chipClass(metric, w, i);
+        const approx = metric === 'time' && within(w, i);
+        cell += `<span class="chip ${cc}">${approx ? '≈ ' : ''}${pctStr(v, val(w, metric, 0))}</span>`;
+      }
+      h += `<td>${cell}</td>`;
+    });
+    h += '</tr>';
+  }
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
+  parent.appendChild(wrap);
+}
+
+function render() {
+  const root = document.getElementById('phases');
+  root.innerHTML = '';
+  for (const ph of DATA.phases) {
+    const P = PHASES[ph.id];
+    const sec = document.createElement('section');
+    sec.className = 'phase';
+    sec.id = ph.id;
+    sec.innerHTML = `<div class="phase-head"><div class="eyebrow">${ph.id === 'tables' ? '1M' : '10M'} rows</div><h2>${P.title}</h2><p>${P.sub}.</p></div>`;
+    for (const metric of ['time', 'heap', 'cycle']) {
+      const m = METRICS[metric];
+      const div = document.createElement('div');
+      div.className = 'metric';
+      div.innerHTML = `<h3>${m.title}</h3><p>${m.desc}${mode === 'abs' ? ' Absolute bars start at zero; each panel group shares one scale.' : ''}</p>`;
+      const rpks = [...new Set(ph.workloads.map(w => w.rpk))];
+      for (const r of rpks) {
+        if (rpks.length > 1) { const l = document.createElement('div'); l.className = 'fig-label'; l.textContent = r + (r === 1 ? ' row' : ' rows') + ' per group'; div.appendChild(l); }
+        figure(div, ph, metric, r);
+      }
+      sec.appendChild(div);
+    }
+    const tb = document.createElement('div');
+    tb.className = 'tables';
+    tb.id = ph.id + '-tbl';
+    tb.innerHTML = `<div class="stack"><h3>${P.title}: tables</h3><div class="key"><span><span class="chip good">−12%</span> lower than Main</span><span><span class="chip bad">+12%</span> higher</span><span><span class="chip">≈ +3%</span> time within the combined 99.9% error</span><span>Heap, cycle and positions have no error bound; they are coloured at a change of 5% or more.</span></div></div>`;
+    for (const metric of ['time', 'heap', 'cycle', 'pos']) table(tb, ph, metric);
+    sec.appendChild(tb);
+    root.appendChild(sec);
+  }
+}
+
+function setMode(m) {
+  mode = m;
+  try { localStorage.setItem('aggbench-mode', m); } catch (e) {}
+  document.getElementById('modePct').setAttribute('aria-pressed', String(m === 'pct'));
+  document.getElementById('modeAbs').setAttribute('aria-pressed', String(m === 'abs'));
+  render();
+}
+document.getElementById('modePct').addEventListener('click', () => setMode('pct'));
+document.getElementById('modeAbs').addEventListener('click', () => setMode('abs'));
+setMode(mode);
+</script>
+</body>
+</html>
