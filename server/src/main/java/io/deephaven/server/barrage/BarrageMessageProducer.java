@@ -244,7 +244,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     private final BaseTable<?> parent;
     private final long updateIntervalMs;
-    private volatile long lastUpdateTime = 0;
+    private volatile long lastUpdateTime;
     private volatile long lastScheduledUpdateTime = 0;
 
     private final boolean isBlinkTable;
@@ -379,6 +379,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         this.propagationRowSet = RowSetFactory.empty();
         this.updateIntervalMs = updateIntervalMs;
+        // start one interval back so the first update is not throttled
+        this.lastUpdateTime = -updateIntervalMs;
         this.onGetSnapshot = onGetSnapshot;
 
         this.parentTableSize = parent.size();
