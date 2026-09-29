@@ -14,6 +14,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.compare.ShortComparisons;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jetbrains.annotations.Nullable;
@@ -1576,7 +1577,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
     // region comparison functions
     private static int doComparison(short lhs, short rhs) {
-        return Short.compare(lhs, rhs);
+        return ShortComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -1598,7 +1599,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
     private static boolean eq(short lhs, short rhs) {
         // region equality function
-        return lhs == rhs;
+        return ShortComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

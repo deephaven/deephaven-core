@@ -12,7 +12,6 @@ import java.lang.reflect.Array;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 
 import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;

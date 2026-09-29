@@ -4,8 +4,6 @@
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
-import io.deephaven.util.QueryConstants;
-import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -231,26 +229,6 @@ public class ReplicateSortKernel {
     }
 
 
-    public static List<String> fixupNanComparisons(List<String> lines, String type, boolean ascending) {
-        final String lcType = type.toLowerCase();
-
-        lines = ReplicationUtils.addImport(lines, "import io.deephaven.util.compare." + type + "Comparisons;");
-
-        lines = replaceRegion(lines, "comparison functions",
-                Arrays.asList("    private static int doComparison(" + lcType + " lhs, " + lcType + " rhs) {",
-                        "        return " + (ascending ? "" : "-1 * ") + type + "Comparisons.compare(lhs, rhs);",
-                        "    }"));
-        return lines;
-    }
-
-    public static List<String> fixupCharNullComparisons(List<String> lines, boolean ascending) {
-        lines = replaceRegion(lines, "comparison functions",
-                Arrays.asList("    private static int doComparison(char lhs, char rhs) {",
-                        "        return " + (ascending ? "" : "-1 * ") + "CharComparisons.compare(lhs, rhs);",
-                        "    }"));
-        return lines;
-    }
-
     public static List<String> fixupObjectComparisons(List<String> lines) {
         return fixupObjectComparisons(lines, true);
     }
@@ -270,7 +248,16 @@ public class ReplicateSortKernel {
         lines = simpleFixup(
                 lines,
                 "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)");
-        return addImport(lines, "import java.util.Objects;", "import io.deephaven.util.compare.ObjectComparisons;");
+        lines = addMissingImports(lines, "import io.deephaven.util.compare.ObjectComparisons;");
+        if (lines.stream().anyMatch(line -> line.contains("Objects."))) {
+            lines = addMissingImports(lines, "import java.util.Objects;");
+        }
+        return lines;
+    }
+
+    private static List<String> addMissingImports(List<String> lines, String... importStrings) {
+        final String[] missing = Arrays.stream(importStrings).filter(is -> !lines.contains(is)).toArray(String[]::new);
+        return missing.length == 0 ? lines : addImport(lines, missing);
     }
 
     public static List<String> invertComparisons(List<String> lines) {

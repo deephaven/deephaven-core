@@ -12,6 +12,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.LongComparisons;
 
 
 public class LongNoExactReverseStampKernel implements StampKernel {
@@ -80,7 +81,7 @@ public class LongNoExactReverseStampKernel implements StampKernel {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(long lhs, long rhs) {
-        return -1 * Long.compare(lhs, rhs);
+        return -1 * LongComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -94,7 +95,7 @@ public class LongNoExactReverseStampKernel implements StampKernel {
 
     private static boolean eq(long lhs, long rhs) {
         // region equality function
-        return lhs == rhs;
+        return LongComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

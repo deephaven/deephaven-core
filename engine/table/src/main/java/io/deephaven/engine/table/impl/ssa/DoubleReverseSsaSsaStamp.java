@@ -9,8 +9,6 @@
 
 package io.deephaven.engine.table.impl.ssa;
 
-import io.deephaven.util.compare.DoubleComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -19,6 +17,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.util.compare.DoubleComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -292,6 +291,7 @@ public class DoubleReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     // region comparison functions
+    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(double lhs, double rhs) {
         return -1 * DoubleComparisons.compare(lhs, rhs);
     }

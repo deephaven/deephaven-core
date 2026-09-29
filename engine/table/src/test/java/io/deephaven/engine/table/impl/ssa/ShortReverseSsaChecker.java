@@ -20,6 +20,7 @@ import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.util.compare.ShortComparisons;
 
 public class ShortReverseSsaChecker implements SsaChecker {
     static ShortReverseSsaChecker INSTANCE = new ShortReverseSsaChecker();
@@ -79,7 +80,7 @@ public class ShortReverseSsaChecker implements SsaChecker {
 
     private static boolean eq(short lhs, short rhs) {
         // region equality function
-        return lhs == rhs;
+        return ShortComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }
