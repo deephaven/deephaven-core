@@ -2402,6 +2402,82 @@ public class QueryTableAjTest {
     }
 
     /**
+     * With both sides refreshing and exact match columns, modifying a right column that the join does not add leaves
+     * the left rows that match the modified right row unmodified, even when the same cycle modifies another left row.
+     */
+    @Test
+    public void testBucketedRightModificationOfColumnNotAdded() {
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "A", "A", "A"),
+                intCol("LeftStamp", 1, 2, 3), intCol("LeftOther", 0, 0, 0));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "A", "A"),
+                intCol("RightStamp", 1, 3), intCol("Sentinel", 10, 11), intCol("RightOther", 0, 0));
+        final QueryTable result = (QueryTable) left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(2), col("Key", "A"), intCol("LeftStamp", 3), intCol("LeftOther", 1));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("LeftOther")));
+            // right row 0 matches left rows 0 and 1, but RightOther is not a column of the result
+            addToTable(right, i(0), col("Key", "A"), intCol("RightStamp", 1), intCol("Sentinel", 10),
+                    intCol("RightOther", 1));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("RightOther")));
+        });
+
+        Asserts.assertEquals(new int[] {10, 10, 11}, ColumnVectors.ofInt(result, "Sentinel").toArray());
+        assertEquals(1, listener.getCount());
+        assertEquals(i(2), listener.getUpdate().modified());
+        assertEquals(result.newModifiedColumnSet("LeftOther"), listener.getUpdate().modifiedColumnSet());
+        result.removeUpdateListener(listener);
+    }
+
+    /**
+     * With a refreshing right side, a cycle that modifies a right column the join does not add and also adds a right
+     * row reports only the left row that the added right row matches, for either left refresh mode and with or without
+     * exact match columns.
+     */
+    @Test
+    public void testRightModificationOfColumnNotAddedWithRightAdd() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean bucketed : new boolean[] {false, true}) {
+                final String description = "leftRefreshing=" + leftRefreshing + ", bucketed=" + bucketed;
+                final QueryTable left = leftRefreshing
+                        ? testRefreshingTable(i(0, 1, 2, 3).toTracking(), col("Key", "A", "A", "A", "B"),
+                                intCol("LeftStamp", 1, 2, 3, 20))
+                        : testTable(i(0, 1, 2, 3).toTracking(), col("Key", "A", "A", "A", "B"),
+                                intCol("LeftStamp", 1, 2, 3, 20));
+                final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "A", "A"),
+                        intCol("RightStamp", 1, 3), intCol("Sentinel", 10, 11), intCol("RightOther", 0, 0));
+                final QueryTable result = (QueryTable) left.aj(right,
+                        bucketed ? "Key,LeftStamp>=RightStamp" : "LeftStamp>=RightStamp", "Sentinel");
+                final SimpleListener listener = new SimpleListener(result);
+                result.addUpdateListener(listener);
+
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    // right row 0 matches left rows 0 and 1, but RightOther is not a column of the result
+                    addToTable(right, i(0), col("Key", "A"), intCol("RightStamp", 1), intCol("Sentinel", 10),
+                            intCol("RightOther", 1));
+                    // right row 5 is the match for left row 3 only
+                    addToTable(right, i(5), col("Key", "B"), intCol("RightStamp", 15), intCol("Sentinel", 12),
+                            intCol("RightOther", 0));
+                    right.notifyListeners(new TableUpdateImpl(i(5), i(), i(0), RowSetShiftData.EMPTY,
+                            right.newModifiedColumnSet("RightOther")));
+                });
+
+                Asserts.assertEquals(description, new int[] {10, 10, 11, 12},
+                        ColumnVectors.ofInt(result, "Sentinel").toArray());
+                assertEquals(description, 1, listener.getCount());
+                assertEquals(description, i(3), listener.getUpdate().modified());
+                result.removeUpdateListener(listener);
+            }
+        }
+    }
+
+    /**
      * With both sides refreshing, the first right row of a bucket that held only left rows modifies just the left rows
      * that it matches.
      */

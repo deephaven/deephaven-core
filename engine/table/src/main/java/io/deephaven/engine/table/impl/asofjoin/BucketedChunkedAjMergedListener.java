@@ -62,6 +62,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     private final ModifiedColumnSet rightKeyColumns;
     private final ModifiedColumnSet leftStampColumn;
     private final ModifiedColumnSet rightStampColumn;
+    private final ModifiedColumnSet rightColumnsToAdd;
     private final ModifiedColumnSet allRightColumns;
     private final ModifiedColumnSet.Transformer leftTransformer;
     private final ModifiedColumnSet.Transformer rightTransformer;
@@ -127,6 +128,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
         leftKeyColumns = leftTable.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToMatch));
         rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
+        rightColumnsToAdd = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
         allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         leftTransformer =
                 leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
@@ -631,8 +633,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         }
                     }
 
-                    // if the stamp was not modified, then we need to figure out the responsive rows to mark as modified
-                    if (!rightStampModified && !rightKeysModified && rightRecorder.getModified().isNonempty()) {
+                    // if the stamp was not modified, then we need to figure out the responsive rows to mark as
+                    // modified; only a modified column that the result adds changes a responsive row
+                    if (!rightStampModified && !rightKeysModified && rightRecorder.getModified().isNonempty()
+                            && rightRecorder.getModifiedColumnSet().containsAny(rightColumnsToAdd)) {
 
                         final int modifiedSlotCount =
                                 asOfJoinStateManager.gatherModifications(rightRecorder.getModified(),

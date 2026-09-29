@@ -655,6 +655,8 @@ public class AsOfJoinHelper {
         final ModifiedColumnSet rightMatchColumns =
                 rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
         final ModifiedColumnSet rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
+        final ModifiedColumnSet rightColumnsToAdd =
+                rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
         final ModifiedColumnSet rightAddedColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         final ModifiedColumnSet.Transformer rightTransformer =
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
@@ -909,9 +911,10 @@ public class AsOfJoinHelper {
                         }
 
                         // and then finally we handle the case where the keys and stamps were not modified, but we must
-                        // identify
-                        // the responsive modifications.
-                        if (!keysModified && !stampModified && upstream.modified().isNonempty()) {
+                        // identify the responsive modifications; only a modified column that the result adds changes a
+                        // responsive row
+                        if (!keysModified && !stampModified && upstream.modified().isNonempty()
+                                && upstream.modifiedColumnSet().containsAny(rightColumnsToAdd)) {
                             // next we do the additions
                             final int modifiedSlotCount = asOfJoinStateManager.gatherModifications(upstream.modified(),
                                     rightSources, slots, sequentialBuilders);
