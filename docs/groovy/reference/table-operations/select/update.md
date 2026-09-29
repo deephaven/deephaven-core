@@ -57,7 +57,7 @@ result = source.update("A", "X = B", "Y = sqrt(C)")
 
 ## Serial execution
 
-By default, Deephaven parallelizes `update` calculations across multiple CPU cores. If your formula has side effects or depends on row order, use `withSerial` to force sequential processing.
+By default, Deephaven can parallelize `update` calculations across multiple CPU cores when the input is large enough. If your formula has side effects or depends on row order, use `withSerial` to force sequential processing.
 
 ```groovy order=result
 import io.deephaven.api.Selectable

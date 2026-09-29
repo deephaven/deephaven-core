@@ -18,7 +18,7 @@ Once created, you can chain concurrency control methods like `with_serial` befor
 
 ## Methods
 
-These methods control how Deephaven executes the column calculation. By default, Deephaven parallelizes calculations across multiple CPU cores. Use these methods when your formula requires sequential processing or coordination between columns.
+These methods control how Deephaven executes the column calculation. By default, Deephaven can parallelize calculations across multiple CPU cores when the input is large enough. Use these methods when your formula requires sequential processing or coordination between columns.
 
 ### `with_serial`
 

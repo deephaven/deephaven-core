@@ -50,7 +50,7 @@ The `deephaven.filters` module provides functions for creating filters. These re
 
 ## Methods
 
-These methods control how Deephaven evaluates the filter. By default, Deephaven parallelizes filter evaluation across multiple CPU cores. Use these methods when your filter has side effects or requires coordination with other filters.
+These methods control how Deephaven evaluates the filter. By default, Deephaven can parallelize filter evaluation across multiple CPU cores when the input is large enough. Use these methods when your filter has side effects or requires coordination with other filters.
 
 ### `with_serial`
 
