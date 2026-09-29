@@ -10,6 +10,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
@@ -469,7 +470,22 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         // A tombstone keeps its key: probes and builds stop at a tombstone whose key matches, which is only correct
         // if a deleted slot cannot be mistaken for a live key's slot. The keys are released when a rehash drops the
         // tombstone or a new state reuses the slot.
-        removed.forAllRowKeys(this::tombstone);
+        if (removed.isEmpty()) {
+            return;
+        }
+        // look the removed states' hash slots up a chunk at a time, rather than one row key callback at a time
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, removed.size());
+        try (final RowSequence.Iterator it = removed.getRowSequenceIterator();
+                final ChunkSource.FillContext fillContext = outputPositionToHashSlot.makeFillContext(chunkSize);
+                final WritableIntChunk<Values> hashSlots = WritableIntChunk.makeWritableChunk(chunkSize)) {
+            while (it.hasMore()) {
+                final RowSequence positions = it.getNextRowSequenceWithLength(chunkSize);
+                outputPositionToHashSlot.fillChunk(fillContext, hashSlots, positions);
+                for (int ii = 0; ii < hashSlots.size(); ++ii) {
+                    tombstoneSlot(hashSlots.get(ii));
+                }
+            }
+        }
     }
 
     @Override
@@ -501,9 +517,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         outputPositionToHashSlot.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 
-    private void tombstone(final long outputPosition) {
-        // we never actually delete anything from the output position table; the state is live, so it is in range
-        final int hashSlot = outputPositionToHashSlot.getUnsafe(outputPosition);
+    private void tombstoneSlot(final int hashSlot) {
         final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             mainOutputPosition.set(slot, TOMBSTONE_STATE);
