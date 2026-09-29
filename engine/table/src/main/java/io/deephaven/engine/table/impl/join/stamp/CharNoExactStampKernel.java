@@ -7,6 +7,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.CharComparisons;
 
 
 public class CharNoExactStampKernel implements StampKernel {
@@ -74,7 +75,7 @@ public class CharNoExactStampKernel implements StampKernel {
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return Character.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

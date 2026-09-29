@@ -7,6 +7,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.compare.CharComparisons;
 import org.jetbrains.annotations.NotNull;
 
 public class CharDupCompactKernel implements DupCompactKernel {
@@ -102,7 +103,7 @@ public class CharDupCompactKernel implements DupCompactKernel {
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return Character.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

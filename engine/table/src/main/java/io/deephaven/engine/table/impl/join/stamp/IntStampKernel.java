@@ -11,6 +11,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.IntComparisons;
 
 
 public class IntStampKernel implements StampKernel {
@@ -81,7 +82,7 @@ public class IntStampKernel implements StampKernel {
 
     // region comparison functions
     private static int doComparison(int lhs, int rhs) {
-        return Integer.compare(lhs, rhs);
+        return IntComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

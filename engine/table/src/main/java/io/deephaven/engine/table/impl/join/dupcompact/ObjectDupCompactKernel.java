@@ -8,12 +8,12 @@
 package io.deephaven.engine.table.impl.join.dupcompact;
 
 import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.compare.ObjectComparisons;
 import org.jetbrains.annotations.NotNull;
 
 public class ObjectDupCompactKernel implements DupCompactKernel {

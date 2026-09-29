@@ -14,6 +14,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.compare.ByteComparisons;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jetbrains.annotations.Nullable;
@@ -1576,7 +1577,7 @@ public final class ByteSegmentedSortedArray implements SegmentedSortedArray {
 
     // region comparison functions
     private static int doComparison(byte lhs, byte rhs) {
-        return Byte.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

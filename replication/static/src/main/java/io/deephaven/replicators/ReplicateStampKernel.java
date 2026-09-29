@@ -40,10 +40,6 @@ public class ReplicateStampKernel {
         stampKernels.add(objectStamp);
         stampKernels.add(objectNoExactStamp);
 
-        stampKernels.add(ReplicateDupCompactKernel.fixupCharNullComparisons(charStampPath));
-        stampKernels.add(ReplicateDupCompactKernel.fixupCharNullComparisons(
-                charNoExactStampPath));
-
         for (String stampKernel : stampKernels) {
             final String stampReversePath = stampKernel.replaceAll("StampKernel", "ReverseStampKernel");
             invertSense(stampKernel, stampReversePath);

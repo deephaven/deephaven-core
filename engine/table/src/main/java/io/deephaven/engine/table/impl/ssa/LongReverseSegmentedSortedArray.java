@@ -16,6 +16,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.compare.LongComparisons;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jetbrains.annotations.Nullable;
@@ -1579,7 +1580,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(long lhs, long rhs) {
-        return -1 * Long.compare(lhs, rhs);
+        return -1 * LongComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

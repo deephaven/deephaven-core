@@ -28,11 +28,6 @@ public class ReplicateSegmentedSortedArray {
         final List<String> ssas = charToAllButBoolean(TASK, charSsaPath);
         ssas.add(charSsaPath);
 
-        invertSense(charSsaPath, descendingPath(charSsaPath));
-
-        final String charNullSsaPath = ReplicateDupCompactKernel.fixupCharNullComparisons(charSsaPath);
-        invertSense(charNullSsaPath, descendingPath(charNullSsaPath));
-
         final String objectSsa = charToObject(TASK, charSsaPath);
         fixupObjectSsa(objectSsa, true);
 
@@ -54,16 +49,6 @@ public class ReplicateSegmentedSortedArray {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharChunkSsaStamp.java";
         final List<String> chunkSsaStamps = charToAllButBoolean(TASK, charChunkSsaStampPath);
         chunkSsaStamps.add(charChunkSsaStampPath);
-
-        invertSense(charChunkSsaStampPath, descendingPath(charChunkSsaStampPath));
-
-        final String charNullChunkSsaStampPath =
-                ReplicateDupCompactKernel.fixupCharNullComparisons(charChunkSsaStampPath);
-        final String descendingCharNullChunkSsaStampPath = descendingPath(charNullChunkSsaStampPath);
-        invertSense(charNullChunkSsaStampPath, descendingCharNullChunkSsaStampPath);
-        fixupSsaName(charNullChunkSsaStampPath, "CharSegmentedSortedArray", "NullAwareCharSegmentedSortedArray");
-        fixupSsaName(descendingCharNullChunkSsaStampPath, "CharReverseSegmentedSortedArray",
-                "NullAwareCharReverseSegmentedSortedArray");
 
         final String objectSsaStamp = charToObject(TASK, charChunkSsaStampPath);
         fixupObjectSsa(objectSsaStamp, true);
@@ -87,15 +72,6 @@ public class ReplicateSegmentedSortedArray {
         final List<String> ssaSsaStamps = charToAllButBoolean(TASK, charSsaSsaStampPath);
         ssaSsaStamps.add(charSsaSsaStampPath);
 
-        invertSense(charSsaSsaStampPath, descendingPath(charSsaSsaStampPath));
-
-        final String charNullSsaSsaStampPath = ReplicateDupCompactKernel.fixupCharNullComparisons(charSsaSsaStampPath);
-        final String descendingCharNullSsaSsaStampPath = descendingPath(charNullSsaSsaStampPath);
-        invertSense(charNullSsaSsaStampPath, descendingCharNullSsaSsaStampPath);
-        fixupSsaName(charNullSsaSsaStampPath, "CharSegmentedSortedArray", "NullAwareCharSegmentedSortedArray");
-        fixupSsaName(descendingCharNullSsaSsaStampPath, "CharReverseSegmentedSortedArray",
-                "NullAwareCharReverseSegmentedSortedArray");
-
         final String objectSsaSsaStamp = charToObject(TASK, charSsaSsaStampPath);
         fixupObjectSsa(objectSsaSsaStamp, true);
         ssaSsaStamps.add(objectSsaSsaStamp);
@@ -118,8 +94,6 @@ public class ReplicateSegmentedSortedArray {
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/CharSsaChecker.java";
         final List<String> ssaCheckers = charToAllButBoolean(TASK, charSsaCheckerPath);
         ssaCheckers.add(charSsaCheckerPath);
-
-        invertSense(charSsaCheckerPath, descendingPath(charSsaCheckerPath));
 
         final String objectSsaChecker = charToObject(TASK, charSsaCheckerPath);
         fixupObjectSsa(objectSsaChecker, true);
@@ -168,19 +142,6 @@ public class ReplicateSegmentedSortedArray {
 
         System.out.println("Generating descending file " + descendingPath);
         FileUtils.writeLines(new File(descendingPath), lines);
-    }
-
-    private static void fixupSsaName(String path, String oldName, String newName) throws IOException {
-        final File file = new File(path);
-        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-
-        // Skip, re-add file header
-        lines = Stream.concat(
-                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
-
-        lines = globalReplacements(lines, oldName, newName);
-        FileUtils.writeLines(new File(path), lines);
     }
 
     @NotNull
