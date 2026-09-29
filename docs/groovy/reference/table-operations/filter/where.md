@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine does not guarantee it evaluates filters in argument order: stateless filters (the default) are scheduled by estimated pushdown cost, so a cheaper-to-evaluate filter can run before one that appears earlier in the argument list. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or barriers to guarantee it.
+> The engine does not guarantee it evaluates filters in argument order: when the data source supports pushdown for a stateless filter (the default), the engine estimates its cost and can run a cheaper filter before one that appears earlier in the argument list. Filters without pushdown support, and filters with equal estimated cost, keep their argument order. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or barriers to guarantee it.
 
 ## Syntax
 
