@@ -16,7 +16,7 @@ Commonly asked questions about Deephaven Community Core.
 
 <div className="row">
 
-<CoreTutorialCard to="/core/docs/reference/community-questions/is-docker-compose-required/">
+<CoreTutorialCard to="/core/docs/reference/community-questions/how-do-i-find-a-specific-build/">
 
 ## Install and upgrade
 
@@ -46,13 +46,13 @@ Commonly asked questions about Deephaven Community Core.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/reference/community-questions/display-objects/">
+<CoreTutorialCard to="/core/docs/reference/community-questions/utility-to-pretty-print-table/">
 
 ## Console and IDE
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/reference/community-questions/find-how-much-memory-a-table-is-using/">
+<CoreTutorialCard to="/core/docs/reference/community-questions/query-memoization/">
 
 ## Performance and memory
 

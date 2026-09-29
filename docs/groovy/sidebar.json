@@ -2861,16 +2861,16 @@
                 "label": "Install and upgrade",
                 "items": [
                   {
+                    "label": "How can I find which Core version to which a feature or fix was added?",
+                    "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
+                  },
+                  {
                     "label": "Is docker compose required?",
                     "path": "reference/community-questions/is-docker-compose-required.md"
                   },
                   {
                     "label": "Why do ticking tables stall on WSL 2?",
                     "path": "reference/community-questions/wsl2-clock-drift.md"
-                  },
-                  {
-                    "label": "How can I find which Core version to which a feature or fix was added?",
-                    "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
                   }
                 ]
               },
@@ -2898,12 +2898,12 @@
                     "path": "reference/community-questions/manage-thread-pool-size.md"
                   },
                   {
-                    "label": "How do I increase the maximum message size?",
-                    "path": "reference/community-questions/message-larger-than-max.md"
-                  },
-                  {
                     "label": "Where can I find the password for the Deephaven IDE?",
                     "path": "reference/community-questions/find-password-for-ide.md"
+                  },
+                  {
+                    "label": "How do I increase the maximum message size?",
+                    "path": "reference/community-questions/message-larger-than-max.md"
                   }
                 ]
               },
@@ -2952,10 +2952,6 @@
                     "path": "reference/community-questions/shifts.md"
                   },
                   {
-                    "label": "How do I create a partitioned blink table?",
-                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
-                  },
-                  {
                     "label": "How do I automatically execute Groovy code based on a Deephaven table column value?",
                     "path": "reference/community-questions/automatically-execute-groovy-code.md"
                   },
@@ -2968,24 +2964,28 @@
                     "path": "reference/community-questions/blink-ring.md"
                   },
                   {
-                    "label": "Why isn't `lastBy` ticking?",
-                    "path": "reference/community-questions/last-by-not-ticking.md"
-                  },
-                  {
-                    "label": "How do I convert vector columns to primitive array columns?",
-                    "path": "reference/community-questions/convert-array-types.md"
-                  },
-                  {
-                    "label": "How do I shift values in columns?",
-                    "path": "reference/community-questions/how-do-i-shift-values-in-columns.md"
+                    "label": "How do I create a partitioned blink table?",
+                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
                   },
                   {
                     "label": "Does it make any difference if I separate table operations or chain them together?",
                     "path": "reference/community-questions/chained-operations.md"
                   },
                   {
+                    "label": "How do I convert vector columns to primitive array columns?",
+                    "path": "reference/community-questions/convert-array-types.md"
+                  },
+                  {
+                    "label": "Why isn't `lastBy` ticking?",
+                    "path": "reference/community-questions/last-by-not-ticking.md"
+                  },
+                  {
                     "label": "How efficient are my table selection operations?",
                     "path": "reference/community-questions/selection-method-properties.md"
+                  },
+                  {
+                    "label": "How do I shift values in columns?",
+                    "path": "reference/community-questions/how-do-i-shift-values-in-columns.md"
                   }
                 ]
               },
@@ -3010,12 +3010,12 @@
                 "label": "Console and IDE",
                 "items": [
                   {
-                    "label": "How do I control what objects are displayed in the console?",
-                    "path": "reference/community-questions/display-objects.md"
-                  },
-                  {
                     "label": "Is there a utility to pretty print a table to log?",
                     "path": "reference/community-questions/utility-to-pretty-print-table.md"
+                  },
+                  {
+                    "label": "How do I control what objects are displayed in the console?",
+                    "path": "reference/community-questions/display-objects.md"
                   }
                 ]
               },
@@ -3023,16 +3023,16 @@
                 "label": "Performance and memory",
                 "items": [
                   {
-                    "label": "Is there a way to find out how much memory a table is using?",
-                    "path": "reference/community-questions/find-how-much-memory-a-table-is-using.md"
-                  },
-                  {
                     "label": "Why do queries run faster the second time they are run?",
                     "path": "reference/community-questions/query-memoization.md"
                   },
                   {
                     "label": "What's the best approach to monitor Deephaven server health?",
                     "path": "reference/community-questions/monitor-dh-server-health.md"
+                  },
+                  {
+                    "label": "Is there a way to find out how much memory a table is using?",
+                    "path": "reference/community-questions/find-how-much-memory-a-table-is-using.md"
                   }
                 ]
               },
