@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BasePushdownFilterContextImpl;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -23,6 +24,8 @@ import io.deephaven.engine.util.TableTools;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -188,6 +191,33 @@ public class DataIndexPushdownManagerTest {
     @Test
     public void estimateAgreesWithPushdownAtThresholdWithWrappedMatcher() {
         checkEstimateAgreesWithPushdownAtThreshold(new RecordingMatcher());
+    }
+
+    /**
+     * Building the manager happens during filter setup on every {@code where()}, before anyone knows whether the index
+     * will be used. It needs only the index table's row count, so it must not force a lazily merged index to read and
+     * merge every location's row sets.
+     */
+    @Test
+    public void constructionDoesNotRequestFullIndexTable() {
+        final Table table = indexedTable();
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final List<DataIndexOptions> requests = new ArrayList<>();
+        final DataIndex recording = (DataIndex) Proxy.newProxyInstance(
+                DataIndex.class.getClassLoader(),
+                new Class<?>[] {DataIndex.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("table")) {
+                        final DataIndexOptions options = args == null ? DataIndexOptions.DEFAULT
+                                : (DataIndexOptions) args[0];
+                        requests.add(options);
+                        return dataIndex.table(options);
+                    }
+                    return method.invoke(dataIndex, args);
+                });
+
+        assertThat(DataIndexPushdownManager.wrap(recording, null)).isInstanceOf(DataIndexPushdownManager.class);
+        assertThat(requests).allMatch(DataIndexOptions::operationUsesPartialTable);
     }
 
     private static void checkEstimateAgreesWithPushdownAtThreshold(final PushdownFilterMatcher wrapped) {

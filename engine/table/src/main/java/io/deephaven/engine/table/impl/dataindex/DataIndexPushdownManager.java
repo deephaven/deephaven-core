@@ -45,7 +45,9 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         this.dataIndex = dataIndex;
         this.wrappedMatcher = wrappedMatcher;
 
-        selectionThreshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+        // Only the row count is needed, which the partial table reports without merging every location's row sets.
+        selectionThreshold = (long) (dataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).size()
+                / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
     }
 
     /**
