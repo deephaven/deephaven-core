@@ -26,9 +26,9 @@
       "evidence": "'Decline | The note directly under the example already says so. The example was deliberately shrunk in round 94a2e9e467 to avoid the build cost.'"
     },
     {
-      "text": "For C9, proposes a corrected takeaway at tutorial resolution (e.g. 'treats formulas as safe to run in parallel') rather than enumerating the conditions or naming properties",
-      "passed": true,
-      "evidence": "C9 is declined, but the report proposes an optional reword with no conditions: 'By default, Deephaven treats formulas as safe to run in parallel \u2014 this is fast, but it requires stateless code.'"
+      "text": "Treats C9 as a defect to fix (apply, or apply with a different fix): proposes a corrected takeaway at tutorial resolution (e.g. 'treats formulas as safe to run in parallel') rather than enumerating the conditions or naming properties. Declining C9, or offering the rewording only as optional, fails",
+      "passed": false,
+      "evidence": "Rescored after the expectation was tightened: the triage table declines C9 and offers the tutorial-level rewording only as optional. Original grader evidence: C9 is declined, but the report proposes an optional reword with no conditions: 'By default, Deephaven treats formulas as safe to run in parallel \u2014 this is fast, but it requires stateless code.'"
     },
     {
       "text": "For C10, verifies the claim against source (e.g. the SelectColumn.isParallelizable javadoc: the engine may evaluate a non-parallelizable column out of order) and keeps the clause or asks, rather than deleting it or adding a hedge",
@@ -42,10 +42,10 @@
     }
   ],
   "summary": {
-    "passed": 8,
-    "failed": 0,
+    "passed": 7,
+    "failed": 1,
     "total": 8,
-    "pass_rate": 1.0
+    "pass_rate": 0.88
   },
   "execution_metrics": {
     "total_tool_calls": 31,

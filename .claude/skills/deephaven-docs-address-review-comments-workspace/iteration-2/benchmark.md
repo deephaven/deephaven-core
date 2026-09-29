@@ -8,13 +8,13 @@
 
 | Metric | With Skill | Old Skill | Delta |
 |--------|------------|---------------|-------|
-| Pass Rate | 100% ± 0% | 92% ± 7% | +0.08 |
+| Pass Rate | 96% ± 7% | 92% ± 7% | +0.04 |
 | Time | 312.7s ± 16.3s | 293.1s ± 14.0s | +19.5s |
 | Tokens | 125680 ± 4467 | 116186 ± 3608 | +9494 |
 
 ## Notes
 
-- Result: new 24/24 vs baseline 22/24 (the baseline's 3 runs regraded blind; they scored 22/24 in iteration 1 too, so grading was consistent).
+- Result: new 23/24 vs baseline 22/24 after the C9 expectation was tightened (originally 24/24; see the last note). The baseline's 3 runs regraded blind; they scored 22/24 in iteration 1 too, so grading was consistent.
 - C10 (reviewer calls a true claim unsupported): new 3/3 vs baseline 1/3 (iteration 1: 1/3 for both). The fix separates what a comment says about the page from what it says about the source.
 - C3 (overstated with_serial prescription): new 3/3 (iteration 1: 2/3). An overstated prescription now counts as flatly wrong, so the late-round bar no longer pushes it to redirect.
 - All 3 new runs checked their proposed anchors against the reviewed tree (step 4a). No run proposed a nonexistent anchor, where iteration 1 had one.
