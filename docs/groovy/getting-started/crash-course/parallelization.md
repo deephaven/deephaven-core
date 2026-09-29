@@ -161,7 +161,7 @@ result = emptyTable(100).update([col])
 > [!NOTE]
 > With only 100 rows, this example wouldn't show the race even without `withSerial`. Use `withSerial` whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and `withSerial` is what guarantees this formula's rows are processed one at a time, in order.
 
-`withSerial` keeps one column from running concurrently with itself. If several columns use the same state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). `withSerial` works with `update`, `select`, and `where`; `view` and `updateView` compute values when they're read, so they don't support it.
+`withSerial` keeps one column from running concurrently with itself. If several columns use the same state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). If several tables use it, `withSerial` and barriers can't coordinate them, so make the shared code itself thread-safe (for example, protect it with a lock). `withSerial` works with `update`, `select`, and `where`; `view` and `updateView` compute values when they're read, so they don't support it.
 
 **Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use `withSerial` when your formula requires it for correctness.
 
@@ -169,7 +169,7 @@ result = emptyTable(100).update([col])
 
 - Deephaven assumes formulas are safe to run in parallel by default — this is fast but requires stateless code.
 - Shared state or row-order dependencies cause silent errors with parallelization.
-- Use `withSerial` when one formula updates shared state or needs its rows processed in order. When several formulas share state, you also need barriers.
+- Use `withSerial` when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need barriers; when several tables do, the shared code must be thread-safe.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.
 

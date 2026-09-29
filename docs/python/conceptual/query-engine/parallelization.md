@@ -12,13 +12,14 @@ Parallelization is running multiple calculations at the same time on different C
 
 ## Quick reference
 
-| Situation                                                        | Example                                            | Solution                             |
-| ---------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------ |
-| A formula uses only its own row's values                         | `Total = Price * Quantity`                         | Default (parallel)                   |
-| One formula updates shared state or needs rows in order          | A running counter or sequential IDs                | `with_serial`                        |
-| One formula calls something that isn't thread-safe               | Writing to a file or log; an unsynchronized client | `with_serial`                        |
-| One column needs another column to finish first                  | Column B reads a cache that column A fills         | Barriers                             |
-| Several columns share the same state or non-thread-safe resource | Two columns that call the same counter function    | `with_serial` on each, plus barriers |
+| Situation                                                        | Example                                                  | Solution                                                   |
+| ---------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
+| A formula uses only its own row's values                         | `Total = Price * Quantity`                               | Default (parallel)                                         |
+| One formula updates shared state or needs rows in order          | A running counter or sequential IDs                      | `with_serial`                                              |
+| One formula calls something that isn't thread-safe               | Writing to a file or log; an unsynchronized client       | `with_serial`                                              |
+| One column needs another column to finish first                  | Column B reads a cache that column A fills               | Barriers                                                   |
+| Several columns share the same state or non-thread-safe resource | Two columns that call the same counter function          | `with_serial` on each, plus barriers                       |
+| Several tables share the same state or non-thread-safe resource  | Two tables whose formulas call the same counter function | Thread-safe code (barriers only work within one operation) |
 
 ## How parallelization works
 
@@ -87,9 +88,9 @@ Both pools use all CPU cores by default. See [Configuration](#configuration) to 
 
 ## Python formulas and free-threading
 
-Most Python builds use the GIL (global interpreter lock), which prevents concurrent execution of Python code across threads. Deephaven only splits a Python-backed filter or formula across cores on a [free-threaded Python build](https://docs.python.org/3/howto/free-threading-python.html). On a standard (GIL-enabled) build, each one runs on a single core. To get parallel execution of Python-backed formulas and filters, switch to a free-threaded Python build; no other Deephaven configuration is required.
+Most Python builds use the GIL (global interpreter lock), which prevents concurrent execution of Python code across threads. Deephaven only splits a Python-backed filter or formula across cores on a [free-threaded Python build](https://docs.python.org/3/howto/free-threading-python.html). On a standard (GIL-enabled) build, two different Python-backed columns in the same `update` can still run at the same time on different threads, so shared state is not safe there either. To get parallel execution of Python-backed formulas and filters, switch to a free-threaded Python build; no other Deephaven configuration is required.
 
-Not running concurrently is not the same guarantee `with_serial` provides. The engine may still evaluate a non-parallelizable column out of row-set order. If your formula or filter has side effects that depend on row order, use `with_serial` regardless of which Python build you're running.
+Not being split across cores is not the same guarantee `with_serial` provides. The engine may still evaluate a non-parallelizable column out of row-set order. If your formula or filter has side effects that depend on row order, use `with_serial` regardless of which Python build you're running.
 
 ## When parallelization is safe by default
 
@@ -205,7 +206,7 @@ col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
 result = empty_table(5_000_000).update(col)
 ```
 
-When a `Selectable` is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), and the column never runs concurrently with itself. That protects state that only this column uses. If another column uses the same state, add a [barrier](#barriers) as well.
+When a `Selectable` is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), and the column never runs concurrently with itself. That protects state that only this column uses. If another column uses the same state, add a [barrier](#barriers) as well. Barriers only order columns and filters within one operation, so if another table's formulas use the same state, make the shared code itself thread-safe (for example, protect it with a lock).
 
 #### Serial filters
 
@@ -346,7 +347,7 @@ Deephaven automatically parallelizes queries across all available CPU cores. Mos
 - Deephaven assumes all formulas can run in parallel by default.
 - Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when your code has side effects, depends on rows being processed in a specific order, or calls functions that aren't safe to run from multiple threads.
 - Use **barriers** when one operation must complete before another starts.
-- `with_serial` keeps one column from running concurrently with itself. When several columns share state, use `with_serial` and barriers together.
+- `with_serial` keeps one column from running concurrently with itself. When several columns share state, use `with_serial` and barriers together. When several tables share state, make the shared code itself thread-safe (for example, protect it with a lock).
 
 For a quick introduction, see the [Crash Course](../../getting-started/crash-course/parallelization.md).
 

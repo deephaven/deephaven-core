@@ -31,7 +31,7 @@ col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
 result = empty_table(10).update(col)
 ```
 
-When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), and the expression never runs concurrently with itself. That protects state that only this expression uses. State shared with other expressions also needs barriers.
+When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), and the expression never runs concurrently with itself. That protects state that only this expression uses. State shared with other expressions in the same operation also needs barriers. Barriers don't reach across tables, so state shared with another table's formulas needs code that is itself thread-safe.
 
 > [!NOTE]
 > Not running concurrently is not the same guarantee `with_serial` provides — the engine may still evaluate a non-serial expression out of row-set order. Use `with_serial` any time your formula or filter depends on shared state or row order, not just when you expect concurrent execution.
