@@ -12,6 +12,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
@@ -1056,6 +1057,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
+    private static boolean isCancellation(final Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof CancellationException
+                    || cause instanceof java.util.concurrent.CancellationException
+                    || cause instanceof InterruptedException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Apply the filter to the data index table and return the result.
      */
@@ -1096,10 +1108,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     });
                 }
             } catch (final Exception e) {
-                // TODO: Exception occurs here if we have a data type mismatch between the index and the filter.
-                // When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
-                // to remove the catch block and let any exception propagate. For now, just swallow the exception
-                // and return a copy of the original input, skipping pushdown filtering.
+                // A cancelled query must stop, not carry on filtering without the index.
+                if (isCancellation(e)) {
+                    throw e;
+                }
+                // Filtering the index fails when the read instructions changed the indexed column's type, since the
+                // index is read with the types it was written with (DH-19443). Leave every row to the filter itself.
+                log.warn().append("Skipping data index pushdown for filter ").append(String.valueOf(filter))
+                        .append(": ").append(String.valueOf(e)).endl();
                 return result.copy();
             }
         }
