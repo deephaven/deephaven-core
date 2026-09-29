@@ -18,7 +18,7 @@ import urllib.parse
 
 HOST = "127.0.0.1"
 PORT = 8899
-CAPTURE_FILE = os.environ.get("SLACK_CONTRACT_CAPTURES", "slack-contract-captures.jsonl")
+CAPTURE_FILE = "slack-contract-captures.jsonl"
 WORKFLOWS = ".github/workflows"
 SELF_WORKFLOW = "slack-alert-check-ci.yml"
 ACTION = "slackapi/slack-github-action"
@@ -179,10 +179,12 @@ def verify():
         failures.append(f"unexpected cases reached the stub: {sorted(unexpected)}")
 
     if failures:
+        # Leave the captures in place; they are the evidence for debugging.
         print("\nSlack alert contract check FAILED:", file=sys.stderr)
         for failure in failures:
             print(f"  - {failure}", file=sys.stderr)
         sys.exit(1)
+    os.remove(CAPTURE_FILE)
     print(f"\nall {len(EXPECTED)} payload shapes sent as expected")
 
 
