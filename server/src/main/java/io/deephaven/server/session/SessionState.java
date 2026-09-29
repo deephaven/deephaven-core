@@ -1687,7 +1687,9 @@ public class SessionState {
          * <p>
          * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
          * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
-         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}.
+         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}, catching
+         * the UNAUTHENTICATED it throws once the session has expired, as it has when session teardown is what cancelled
+         * this export.
          *
          * @param errorHandler the error handler to be notified
          * @return this builder
@@ -1711,7 +1713,9 @@ public class SessionState {
          * <p>
          * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
          * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
-         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}.
+         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}, catching
+         * the UNAUTHENTICATED it throws once the session has expired, as it has when session teardown is what cancelled
+         * this export.
          *
          * @param errorHandler the error handler to be notified
          * @return this builder
@@ -1730,7 +1734,8 @@ public class SessionState {
          * {@code onError} is caught and logged rather than propagated.
          * <p>
          * The observer's {@code onError} runs while holding the export's monitor and must not release, cancel, or look
-         * up exports; queue such work via {@link SessionState#nonExport()}.
+         * up exports; queue such work via {@link SessionState#nonExport()}, catching the UNAUTHENTICATED it throws once
+         * the session has expired, as it has when session teardown is what cancelled this export.
          *
          * @param streamObserver the streamObserver to be notified of any error
          * @return this builder
@@ -1750,8 +1755,9 @@ public class SessionState {
          * <p>
          * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
          * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
-         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}. Do
-         * fallible work in {@link #submit}; use this only to deliver an already-computed result.
+         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}, catching
+         * the UNAUTHENTICATED it throws once the session has expired, as it has when session teardown is what cancelled
+         * this export. Do fallible work in {@link #submit}; use this only to deliver an already-computed result.
          *
          * @param successHandler the onSuccess handler to be notified
          * @return this builder
@@ -1775,8 +1781,9 @@ public class SessionState {
          * <p>
          * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
          * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
-         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}. Do
-         * fallible work in {@link #submit}; use this only to deliver an already-computed result.
+         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}, catching
+         * the UNAUTHENTICATED it throws once the session has expired, as it has when session teardown is what cancelled
+         * this export. Do fallible work in {@link #submit}; use this only to deliver an already-computed result.
          *
          * @param successHandler the onSuccess handler to be notified
          * @return this builder
@@ -1795,7 +1802,8 @@ public class SessionState {
          * logged rather than propagated.
          * <p>
          * The observer's {@code onCompleted} runs while holding the export's monitor and must not release, cancel, or
-         * look up exports; queue such work via {@link SessionState#nonExport()}.
+         * look up exports; queue such work via {@link SessionState#nonExport()}, catching the UNAUTHENTICATED it throws
+         * once the session has expired, as it has when session teardown is what cancelled this export.
          *
          * @param streamObserver the streamObserver to be notified
          * @return this builder
