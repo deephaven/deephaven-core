@@ -1668,6 +1668,9 @@ public class SessionState {
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
          * be set. Exactly one of the onError and onSuccess handlers will be invoked.
          * <p>
+         * Not synchronized: a callback that writes to a gRPC stream observer must synchronize on it itself, as
+         * {@code GrpcUtil.safely*} does.
+         * <p>
          * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
          * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
          * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}.
@@ -1689,7 +1692,12 @@ public class SessionState {
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
          * be set. Exactly one of the onError and onSuccess handlers will be invoked.
          * <p>
-         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         * Not synchronized: a callback that writes to a gRPC stream observer must synchronize on it itself, as
+         * {@code GrpcUtil.safely*} does.
+         * <p>
+         * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
+         * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
+         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}.
          *
          * @param errorHandler the error handler to be notified
          * @return this builder
@@ -1704,7 +1712,11 @@ public class SessionState {
          * onSuccess handlers will be invoked.
          * <p>
          * Invoking onError will be synchronized on the StreamObserver instance, so callers can rely on that mechanism
-         * to deal with more than one thread trying to write to the stream.
+         * to deal with more than one thread trying to write to the stream, and an exception from the observer's
+         * {@code onError} is caught and logged rather than propagated.
+         * <p>
+         * The observer's {@code onError} runs while holding the export's monitor and must not release, cancel, or look
+         * up exports; queue such work via {@link SessionState#nonExport()}.
          *
          * @param streamObserver the streamObserver to be notified of any error
          * @return this builder
@@ -1719,8 +1731,13 @@ public class SessionState {
          * Invoke this method to set the onSuccess handler to be notified if this export succeeds. Only one success
          * handler may be set. Exactly one of the onError and onSuccess handlers will be invoked.
          * <p>
-         * Same contract as {@link #onError(ExportErrorHandler)}. Do fallible work in {@link #submit}; use this only to
-         * deliver an already-computed result.
+         * Not synchronized: a callback that writes to a gRPC stream observer must synchronize on it itself, as
+         * {@code GrpcUtil.safely*} does.
+         * <p>
+         * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
+         * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
+         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}. Do
+         * fallible work in {@link #submit}; use this only to deliver an already-computed result.
          *
          * @param successHandler the onSuccess handler to be notified
          * @return this builder
@@ -1739,7 +1756,13 @@ public class SessionState {
          * Invoke this method to set the onSuccess handler to be notified if this export succeeds. Only one success
          * handler may be set. Exactly one of the onError and onSuccess handlers will be invoked.
          * <p>
-         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         * Not synchronized: a callback that writes to a gRPC stream observer must synchronize on it itself, as
+         * {@code GrpcUtil.safely*} does.
+         * <p>
+         * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
+         * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
+         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}. Do
+         * fallible work in {@link #submit}; use this only to deliver an already-computed result.
          *
          * @param successHandler the onSuccess handler to be notified
          * @return this builder
@@ -1754,7 +1777,11 @@ public class SessionState {
          * export succeeds. Only one success handler may be set. Exactly one of the onError and onSuccess handlers will
          * be invoked.
          * <p>
-         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         * Completion is synchronized on the observer, and an exception from its {@code onCompleted} is caught and
+         * logged rather than propagated.
+         * <p>
+         * The observer's {@code onCompleted} runs while holding the export's monitor and must not release, cancel, or
+         * look up exports; queue such work via {@link SessionState#nonExport()}.
          *
          * @param streamObserver the streamObserver to be notified
          * @return this builder
