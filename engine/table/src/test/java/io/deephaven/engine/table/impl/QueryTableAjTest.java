@@ -56,6 +56,7 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -2501,6 +2502,45 @@ public class QueryTableAjTest {
         assertEquals(1, listener.getCount());
         assertEquals(i(1, 2), listener.getUpdate().modified());
         result.removeUpdateListener(listener);
+    }
+
+    /**
+     * The result of an as-of join with a blink left table is itself a blink table, for aj and raj with and without
+     * exact match columns and against a static or refreshing right table, so a downstream aggregation accumulates over
+     * every row the left table has produced.
+     */
+    @Test
+    public void testBlinkLeftResultIsBlink() {
+        final QueryTable source = testRefreshingTable(i(0).toTracking(), col("Key", "A"), intCol("LeftStamp", 5));
+        final Table blinkLeft = source.assertBlink();
+        final QueryTable staticRight = testTable(i(0).toTracking(), col("Key", "A"), intCol("RightStamp", 1),
+                intCol("Sentinel", 7));
+        final QueryTable refreshingRight = testRefreshingTable(i(0).toTracking(), col("Key", "A"),
+                intCol("RightStamp", 1), intCol("Sentinel", 7));
+
+        final List<Table> counts = new ArrayList<>();
+        for (final QueryTable right : new QueryTable[] {staticRight, refreshingRight}) {
+            for (final String match : new String[] {"LeftStamp>=RightStamp", "Key,LeftStamp>=RightStamp"}) {
+                final QueryTable ajResult = (QueryTable) blinkLeft.aj(right, match, "Sentinel");
+                assertTrue(match + " aj", ajResult.isBlink());
+                counts.add(ajResult.countBy("N"));
+                final QueryTable rajResult =
+                        (QueryTable) blinkLeft.raj(right, match.replace(">=", "<="), "Sentinel");
+                assertTrue(match + " raj", rajResult.isBlink());
+                counts.add(rajResult.countBy("N"));
+            }
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(0));
+            addToTable(source, i(1), col("Key", "A"), intCol("LeftStamp", 6));
+            source.notifyListeners(i(1), i(0), i());
+        });
+
+        for (final Table count : counts) {
+            assertEquals(2L, ColumnVectors.ofLong(count, "N").get(0));
+        }
     }
 
     /**

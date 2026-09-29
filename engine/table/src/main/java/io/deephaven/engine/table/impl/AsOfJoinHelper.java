@@ -58,6 +58,14 @@ public class AsOfJoinHelper {
 
     static Table asOfJoin(JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
+        final QueryTable result = asOfJoinInternal(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
+                disallowExactMatch);
+        leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
+        return result;
+    }
+
+    private static QueryTable asOfJoinInternal(JoinControl control, QueryTable leftTable, QueryTable rightTable,
+            MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         if (columnsToMatch.length == 0) {
@@ -147,7 +155,7 @@ public class AsOfJoinHelper {
     }
 
     @NotNull
-    private static Table rightStaticAj(JoinControl control,
+    private static QueryTable rightStaticAj(JoinControl control,
             QueryTable leftTable,
             QueryTable rightTable,
             MatchPair[] columnsToMatch,
@@ -490,7 +498,7 @@ public class AsOfJoinHelper {
         }
     }
 
-    private static Table zeroKeyAj(JoinControl control, QueryTable leftTable, QueryTable rightTable,
+    private static QueryTable zeroKeyAj(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource, ColumnSource<?> rightStampSource, SortingOrder order,
             boolean disallowExactMatch, final WritableRowRedirection rowRedirection) {
@@ -506,7 +514,7 @@ public class AsOfJoinHelper {
         }
     }
 
-    private static Table rightTickingLeftStaticAj(JoinControl control,
+    private static QueryTable rightTickingLeftStaticAj(JoinControl control,
             QueryTable leftTable,
             QueryTable rightTable,
             MatchPair[] columnsToMatch,
@@ -974,7 +982,7 @@ public class AsOfJoinHelper {
     public interface SsaFactory extends Function<RowSet, SegmentedSortedArray>, SafeCloseable {
     }
 
-    private static Table bothIncrementalAj(JoinControl control,
+    private static QueryTable bothIncrementalAj(JoinControl control,
             QueryTable leftTable,
             QueryTable rightTable,
             MatchPair[] columnsToMatch,
@@ -1167,7 +1175,7 @@ public class AsOfJoinHelper {
         return result;
     }
 
-    private static Table zeroKeyAjBothIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable,
+    private static QueryTable zeroKeyAjBothIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
             final WritableRowRedirection rowRedirection) {
@@ -1286,7 +1294,8 @@ public class AsOfJoinHelper {
         }
     }
 
-    private static Table zeroKeyAjRightIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable,
+    private static QueryTable zeroKeyAjRightIncremental(JoinControl control, QueryTable leftTable,
+            QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
             final WritableRowRedirection rowRedirection) {
@@ -1599,7 +1608,7 @@ public class AsOfJoinHelper {
         }
     }
 
-    private static Table zeroKeyAjRightStatic(QueryTable leftTable, Table rightTable, MatchPair[] columnsToAdd,
+    private static QueryTable zeroKeyAjRightStatic(QueryTable leftTable, Table rightTable, MatchPair[] columnsToAdd,
             MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
             final WritableRowRedirection rowRedirection) {
