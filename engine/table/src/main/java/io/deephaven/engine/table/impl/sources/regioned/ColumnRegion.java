@@ -98,6 +98,9 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                     break;
                 }
             }
+        } catch (final Exception e) {
+            onError.accept(e);
+            return;
         } finally {
             SafeCloseable.closeAll(regionEstimateCtx, locationEstimateCtx);
         }
@@ -159,10 +162,14 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                     break;
                 }
             }
-            onComplete.accept(result);
+        } catch (final Exception e) {
+            // A failed action has closed the result it was given, the only one outstanding.
+            onError.accept(e);
+            return;
         } finally {
             SafeCloseable.closeAll(regionCtx, locationCtx);
         }
+        onComplete.accept(result);
     }
 
     abstract class Null<ATTR extends Any>

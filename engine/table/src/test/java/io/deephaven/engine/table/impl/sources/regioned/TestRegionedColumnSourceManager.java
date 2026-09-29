@@ -8,6 +8,7 @@ import io.deephaven.base.testing.JMockRule;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
@@ -27,6 +28,8 @@ import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterImpl;
+import io.deephaven.engine.table.impl.sources.IntegerSingleValueSource;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -1074,6 +1077,76 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         expectIncludedLocationCleanup();
         assertEquals("sanity: both regions completed", 2, completed.size());
         completed.forEach(TestRegionedColumnSourceManager::assertClosed);
+    }
+
+    /** A filter on {@code A}, with no chunk filter, that fails whenever it is evaluated. */
+    private static final class FailingFilter extends WhereFilterImpl {
+        static final String MESSAGE = "injected filter failure";
+
+        @Override
+        public List<String> getColumns() {
+            return List.of("A");
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return List.of();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {}
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection,
+                @NotNull final RowSet fullSet,
+                @NotNull final Table table,
+                final boolean usePrev) {
+            throw new IllegalStateException(MESSAGE);
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return true;
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener result) {}
+
+        @Override
+        public WhereFilter copy() {
+            return this;
+        }
+    }
+
+    /**
+     * A region pushdown action that fails must be delivered to the pushdown's error handler, not thrown.
+     */
+    @Test
+    public void testRegionPushdownFailureDeliveredToOnError() {
+        // The fixture expects every test to build a manager, though this one exercises a region directly.
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        final ColumnRegionInt<Values> region =
+                new ColumnRegionInt.Constant<>(RegionedColumnSourceBase.PARAMETERS.regionMask, 5);
+        final WhereFilter filter = new FailingFilter();
+        final IntegerSingleValueSource source = new IntegerSingleValueSource();
+        source.set(5);
+
+        try (final PushdownFilterContext context = new RegionedPushdownFilterContextImpl(
+                filter, List.of(source), List.of(ColumnDefinition.ofInt("A")), Map.of());
+                final RowSet selection = RowSetFactory.flat(10)) {
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            region.pushdownFilter(filter, selection, false, context, Long.MAX_VALUE, new ImmediateJobScheduler(),
+                    result -> {
+                        result.close();
+                        fail("the pushdown must fail");
+                    }, error::set);
+            assertNotNull("the failure must reach onError", error.get());
+            assertEquals(FailingFilter.MESSAGE, error.get().getMessage());
+        }
     }
 
     private static void maybePrintStackTrace(@NotNull final Exception e) {
