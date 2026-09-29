@@ -1,85 +1,67 @@
 name: Slack Alert Check
 
-# Exercises the action against a local stub; every real call site is failure-gated and never runs.
+# Sends each real call-site payload through the action against a local stub, since every call site is failure-gated and never runs.
 
 on:
   pull_request:
     branches: [ 'main', 'rc/v*' ]
     paths:
       - '.github/workflows/**'
-      - '.github/scripts/slack-alert-contract.py'
+      - '.github/scripts/slack-alert-check.py'
   workflow_dispatch:
 
 jobs:
-  slack-alert-check:
+  sites:
     runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.list.outputs.sites }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check every call site is on one pin
+        run: .github/scripts/slack-alert-check.py pins
+
+      - name: List the call sites
+        id: list
+        run: echo "sites=$(.github/scripts/slack-alert-check.py sites)" >> "$GITHUB_OUTPUT"
+
+  send:
+    needs: sites
+    name: ${{ matrix.site.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        site: ${{ fromJSON(needs.sites.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Start Slack webhook stub
         run: |
-          .github/scripts/slack-alert-contract.py serve &
-          .github/scripts/slack-alert-contract.py wait
+          .github/scripts/slack-alert-check.py serve &
+          .github/scripts/slack-alert-check.py wait
 
-      # The three payload shapes in use. Keep these pins matching the call sites.
-
-      # As in nightly-check-ci, nightly-publish-ci, pr-merge-webhook, nightly-docs.
-      - name: Send JSON object payload
-        id: json-block
+      # Keep this pin matching the call sites so Dependabot bumps them together.
+      - name: Send the call site payload
+        id: send
         uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
-          webhook: http://127.0.0.1:8899/hook?case=json-block
+          webhook: http://127.0.0.1:8899/hook?case=${{ matrix.site.name }}
           webhook-type: webhook-trigger
           errors: true
           retries: "0"
-          payload: |
-            {
-              "repository": "deephaven/deephaven-core",
-              "message": "slack alert contract check",
-              "link": "https://github.com/deephaven/deephaven-core"
-            }
-
-      # As in nightly-image-check.
-      - name: Send single-line JSON payload
-        id: json-inline
-        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
-        with:
-          webhook: http://127.0.0.1:8899/hook?case=json-inline
-          webhook-type: webhook-trigger
-          errors: true
-          retries: "0"
-          payload: '{"repository": "deephaven/deephaven-core", "message": "slack alert contract check", "link": "https://github.com/deephaven/deephaven-core"}'
-
-      # As in publish-ci. Not JSON, so the only shape needing the YAML parser.
-      - name: Send YAML key/value payload
-        id: yaml-kv
-        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
-        with:
-          webhook: http://127.0.0.1:8899/hook?case=yaml-kv
-          webhook-type: webhook-trigger
-          errors: true
-          retries: "0"
-          payload: |
-            step_id: "slack-alert-contract"
-            action_url: "https://github.com/deephaven/deephaven-core"
+          payload: ${{ matrix.site.payload }}
 
       - name: Check the action reported success
         env:
-          OK_JSON_BLOCK: ${{ steps.json-block.outputs.ok }}
-          OK_JSON_INLINE: ${{ steps.json-inline.outputs.ok }}
-          OK_YAML_KV: ${{ steps.yaml-kv.outputs.ok }}
+          OK: ${{ steps.send.outputs.ok }}
         run: |
-          set -o errexit
-          status=0
-          for name in OK_JSON_BLOCK OK_JSON_INLINE OK_YAML_KV; do
-            value="${!name}"
-            if [ "${value}" != "true" ]; then
-              echo "${name} was '${value}', expected 'true'"
-              status=1
-            fi
-          done
-          exit "${status}"
+          if [ "${OK}" != "true" ]; then
+            echo "the action reported ok='${OK}', expected 'true'"
+            exit 1
+          fi
 
       - name: Check what the action sent
-        run: .github/scripts/slack-alert-contract.py verify
+        run: .github/scripts/slack-alert-check.py verify "${{ matrix.site.name }}"
