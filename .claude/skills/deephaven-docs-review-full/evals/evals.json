@@ -13,7 +13,9 @@
         "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
         "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
         "Includes an author-queries section listing questions the review couldn't resolve from source",
-        "Reports style issues as patterns (with examples or counts) rather than one row per instance"
+        "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+        "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+        "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link"
       ]
     }
   ]

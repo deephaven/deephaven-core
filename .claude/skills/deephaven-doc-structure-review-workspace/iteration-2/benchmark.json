@@ -1,0 +1,164 @@
+{
+  "metadata": {
+    "skill_name": "deephaven-doc-structure-review",
+    "skill_path": ".claude/skills/deephaven-doc-structure-review",
+    "executor_model": "claude-opus-5-5",
+    "analyzer_model": "claude-opus-5-5 (independent blind grader agents; reports shuffled and labeled A-F)",
+    "timestamp": "2026-09-29T19:39:03Z",
+    "evals_run": [
+      1
+    ],
+    "runs_per_configuration": 1,
+    "baseline": "Regrade only: iteration-1 outputs (with_skill = PR skill, old_skill = pre-PR skill) re-graded by a blind grader against the revised expectations (expectation 3 split into GIL and config). The skill did not change in iteration 2, so there were no new runs."
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 196.6,
+        "tokens": 87706,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
+          "passed": true,
+          "evidence": "\"What the page is for: after reading it, the reader should understand how Deephaven parallelizes work (across tables, rows, and columns), which formulas are safe to run in parallel by default, and when and how to use `with_serial` and barriers.\""
+        },
+        {
+          "text": "Flags that the intro's enumeration ('across tables, across rows, and across columns') doesn't match the headings ('Across tables' / 'Within a single table')",
+          "passed": true,
+          "evidence": "Finding 4: \"Line 26 promises 'across tables, across rows, and across columns'. The children are 'Across tables', 'Within a single table' (rows and columns appear only as bold labels)...\""
+        },
+        {
+          "text": "Flags the Python GIL caution as sitting at the wrong level of abstraction or in the wrong section, and proposes moving it",
+          "passed": true,
+          "evidence": "Finding 9: \"The GIL caution is at the wrong level of abstraction (74\u201377, under 'Within a single table')... Fix: move it to the start of 'When parallelization is safe by default', or to a note after the intro.\""
+        },
+        {
+          "text": "Flags inline configuration property names/defaults in the narrative as misplaced and proposes consolidating them (a Configuration section or a link to the configuration reference), without proposing to add property names elsewhere in the narrative",
+          "passed": true,
+          "evidence": "Finding 2: \"Configuration detail is scattered and there's no Configuration section... Fix: add one `## Configuration` section before Key takeaways, as a table of property, default and effect, linking to `../query-table-configuration.md`. Replace the inline mentions with concept wording.\" Other findings also move properties to Configuration; none adds property names to the narrative."
+        },
+        {
+          "text": "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
+          "passed": true,
+          "evidence": "Finding 5: \"Its Scenario rows mix categories ('Pure column math'), a specific example ('Global counter'), a restated requirement... and logging, which doesn't change the output.\""
+        },
+        {
+          "text": "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)",
+          "passed": true,
+          "evidence": "Finding 10: \"'What does NOT get parallelized' includes items outside its section... Line 72, about waiting for dependencies, is about scheduling across tables, not within one table.\""
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.33,
+        "passed": 2,
+        "failed": 4,
+        "total": 6,
+        "time_seconds": 157.0,
+        "tokens": 80428,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
+          "passed": false,
+          "evidence": "The report states only the category (Concept guide) and never states what the reader will be able to do, or says it can't be stated. Finding 7's \"The page's thesis, the default in 41+ and how to change it\" is about how content is split, not a statement of the reader's goal."
+        },
+        {
+          "text": "Flags that the intro's enumeration ('across tables, across rows, and across columns') doesn't match the headings ('Across tables' / 'Within a single table')",
+          "passed": true,
+          "evidence": "Finding 11: \"The section intro also promises three ways ('across tables, across rows, and across columns,' 26), but the H3s are 'Across tables,' 'Within a single table,' and 'Query phases and thread pools,' so the third H3 doesn't match the list.\""
+        },
+        {
+          "text": "Flags the Python GIL caution as sitting at the wrong level of abstraction or in the wrong section, and proposes moving it",
+          "passed": true,
+          "evidence": "Finding 12: \"The GIL caution is in a section it doesn't belong to, lines 74\u201377... Fix: Move it to 'When parallelization is safe by default' (after the 123 NOTE).\""
+        },
+        {
+          "text": "Flags inline configuration property names/defaults in the narrative as misplaced and proposes consolidating them (a Configuration section or a link to the configuration reference), without proposing to add property names elsewhere in the narrative",
+          "passed": false,
+          "evidence": "No Configuration section or consolidation is proposed. Instead, finding 6 proposes moving the `select`/`update`/`where` thresholds into the 'What gets parallelized' bullets, and finding 7 proposes adding `QueryTable.statelessSelectByDefault`/`statelessFiltersByDefault` to the opening callout, which adds property names to the narrative. Finding 5 drops only one property name at line 50."
+        },
+        {
+          "text": "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
+          "passed": false,
+          "evidence": "Finding 9 flags only the table's 'Barriers or implicit barriers' disagreeing with the body, and finding 5 flags terms used before they're defined. Neither says the rows mix kinds of items, such as 'Global counter' or logging."
+        },
+        {
+          "text": "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)",
+          "passed": false,
+          "evidence": "No finding says a list's or table's contents fall outside its section. Finding 6 says thresholds are split across two sections, and finding 13 says the view/update_view fact is duplicated. The dependency-waiting item in 'What does NOT get parallelized' isn't mentioned."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 196.6,
+        "stddev": 0.0,
+        "min": 196.6,
+        "max": 196.6
+      },
+      "tokens": {
+        "mean": 87706.0,
+        "stddev": 0.0,
+        "min": 87706,
+        "max": 87706
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.33,
+        "stddev": 0.0,
+        "min": 0.33,
+        "max": 0.33
+      },
+      "time_seconds": {
+        "mean": 157.0,
+        "stddev": 0.0,
+        "min": 157.0,
+        "max": 157.0
+      },
+      "tokens": {
+        "mean": 80428.0,
+        "stddev": 0.0,
+        "min": 80428,
+        "max": 80428
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.67",
+      "time_seconds": "+39.6",
+      "tokens": "+7278"
+    }
+  },
+  "notes": [
+    "Blind regrade: new skill 6/6, pre-PR skill 2/6. The split confirms the iteration-1 lenient call: the pre-PR run passes the GIL half and fails the config half, because it proposed adding property names to the breaking-change callout.",
+    "The independent grader also failed the pre-PR run on the purpose statement, mixed-kind table rows, and list/section mismatch, matching the iteration-1 inline grading.",
+    "n=1 per configuration (iteration-1 outputs)."
+  ]
+}

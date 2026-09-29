@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Flags the prescription to use with_serial whenever a formula depends on shared state (the NOTE after the fix and/or the Key takeaways) as insufficient when more than one column or formula shares that state, because with_serial only prevents an expression from running concurrently with itself",
+      "passed": true,
+      "evidence": "Finding 1: \"That holds for a **single** column. It fails when two columns in the same `update` share state... `with_serial` only covers its own column... two `with_serial` columns calling the same counter can still run at the same time and race.\""
+    },
+    {
+      "text": "Treats the inline QueryTable.minimumParallelSelectRows mention in the broken-counter narrative as a placement problem for a Tutorial (recommends removing it from the narrative or linking to the configuration reference), rather than proposing more precise inline configuration detail",
+      "passed": true,
+      "evidence": "Finding 7: \"The property name itself doesn't belong in Crash Course narrative... Put the property name behind a link to `../../conceptual/query-table-configuration.md#parallel-processing-with-select`\""
+    },
+    {
+      "text": "Corrects the threshold description: the comparison is against the rows processed in that pass (the whole table at initialization, added plus modified rows on update) using >=, not the table's size (control expectation: tests ordinary verification, not a new rule)",
+      "passed": false,
+      "evidence": "It never mentions >= or that rows are counted per update. Its proposed fix even keeps \"a table larger than the parallelization threshold\"."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 1,
+    "total": 3,
+    "pass_rate": 0.67
+  },
+  "execution_metrics": {
+    "total_tool_calls": 39,
+    "output_chars": 9097
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label D in packet acc-crash-i2); grader did not know which skill version wrote the report."
+}

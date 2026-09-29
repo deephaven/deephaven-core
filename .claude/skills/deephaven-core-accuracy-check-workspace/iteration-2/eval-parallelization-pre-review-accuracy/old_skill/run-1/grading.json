@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "Flags the 'What does NOT get parallelized' classification of view/update_view/lazy_update as wrong or misleading, because deferred formulas run on the reading thread and can run concurrently",
+      "passed": true,
+      "evidence": "1.2: \"Their formulas run later, on whatever thread reads the column... the formula runs concurrently on those threads\" and \"Listing these under 'not parallelized' gives readers the wrong idea\""
+    },
+    {
+      "text": "Cites the engine guard that rejects stateful (non-stateless) columns in view/updateView (QueryTable, 'A stateful column cannot safely be used in a view or updateView') as evidence",
+      "passed": true,
+      "evidence": "1.2: \"`QueryTable.viewOrUpdateView` throws `\"A stateful column cannot safely be used in a view or updateView.\"` when `STATELESS_SELECT_BY_DEFAULT` is on.\""
+    },
+    {
+      "text": "Recommends moving inline configuration property names/defaults out of the narrative (into a Configuration section or a link to the configuration reference), rather than proposing to add property names or defaults inline",
+      "passed": true,
+      "evidence": "Section 3: \"Move the property names and values to one Configuration section at the end of the page, or to the configuration reference.\""
+    },
+    {
+      "text": "Records unverifiable claims as explicit author queries (AQ-style questions for an SME) rather than proposing hedged wording",
+      "passed": true,
+      "evidence": "Section 6: AQ1 (line 135 filter/selectable), AQ2 (counter example), \"AQ3 [What gets parallelized]: Is this list meant to be exhaustive?\""
+    },
+    {
+      "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource (file I/O or logging, non-thread-safe library, or global counter) as insufficient when more than one column can touch the resource (barriers or implicit barriers are also needed)",
+      "passed": false,
+      "evidence": "Missing. The report never flags the Quick reference 'Global counter', 'File I/O or logging', or 'Non-thread-safe library' \u2192 with_serial rows. It only mentions line 21 ('Multiple operations sharing state \u2192 Barriers or implicit barriers') for not saying implicit barriers are off by default."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5,
+    "pass_rate": 0.8
+  },
+  "execution_metrics": {
+    "total_tool_calls": 57,
+    "output_chars": 16528
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label E in packet acc-pre-i2); grader did not know which skill version wrote the report."
+}

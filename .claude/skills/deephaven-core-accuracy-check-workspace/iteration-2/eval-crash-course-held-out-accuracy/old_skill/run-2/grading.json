@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Flags the prescription to use with_serial whenever a formula depends on shared state (the NOTE after the fix and/or the Key takeaways) as insufficient when more than one column or formula shares that state, because with_serial only prevents an expression from running concurrently with itself",
+      "passed": true,
+      "evidence": "Finding 2: \"`with_serial` only stops a formula from running concurrently *with itself*... if the shared state is used by two columns ... `with_serial` alone doesn't protect it. That case needs barriers.\""
+    },
+    {
+      "text": "Treats the inline QueryTable.minimumParallelSelectRows mention in the broken-counter narrative as a placement problem for a Tutorial (recommends removing it from the narrative or linking to the configuration reference), rather than proposing more precise inline configuration detail",
+      "passed": true,
+      "evidence": "Finding 6: \"a property name dropped into Crash Course prose is configuration detail in the narrative... leave the property to the linked concept guide or `docs/python/conceptual/query-table-configuration.md`. Don't add it inline.\""
+    },
+    {
+      "text": "Corrects the threshold description: the comparison is against the rows processed in that pass (the whole table at initialization, added plus modified rows on update) using >=, not the table's size (control expectation: tests ordinary verification, not a new rule)",
+      "passed": true,
+      "evidence": "Finding 6: \"The check is `>=`, not 'larger than'. It's measured on the rows in the update, not the table size.\" Finding 4: \"rows added plus modified in *that update* \u2265 threshold. This counts rows in the update, not the table's size.\""
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 36,
+    "output_chars": 12229
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label C in packet acc-crash-i2); grader did not know which skill version wrote the report."
+}

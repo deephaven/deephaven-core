@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Flags the prescription to use with_serial whenever a formula depends on shared state (the NOTE after the fix and/or the Key takeaways) as insufficient when more than one column or formula shares that state, because with_serial only prevents an expression from running concurrently with itself",
+      "passed": false,
+      "evidence": "Its only with_serial finding is the minor one about \"the only thing\", arguing that statelessSelectByDefault=false is another route. It never raises the case where several columns share state, or barriers."
+    },
+    {
+      "text": "Treats the inline QueryTable.minimumParallelSelectRows mention in the broken-counter narrative as a placement problem for a Tutorial (recommends removing it from the narrative or linking to the configuration reference), rather than proposing more precise inline configuration detail",
+      "passed": true,
+      "evidence": "Finding 1: \"The placement is wrong. A Tutorial shouldn't carry an inline property name... Fix: drop the property name\""
+    },
+    {
+      "text": "Corrects the threshold description: the comparison is against the rows processed in that pass (the whole table at initialization, added plus modified rows on update) using >=, not the table's size (control expectation: tests ordinary verification, not a new rule)",
+      "passed": false,
+      "evidence": "It never mentions the >= comparison or that the rows are counted per update or pass rather than by table size."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.33
+  },
+  "execution_metrics": {
+    "total_tool_calls": 44,
+    "output_chars": 9057
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label B in packet acc-crash-i2); grader did not know which skill version wrote the report."
+}

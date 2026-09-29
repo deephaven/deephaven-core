@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "Flags the 'What does NOT get parallelized' classification of view/update_view/lazy_update as wrong or misleading, because deferred formulas run on the reading thread and can run concurrently",
+      "passed": true,
+      "evidence": "Finding 3: \"Their formulas run on whichever thread reads the column... so the formula can run concurrently, and repeatedly for the same row.\" and \"Filing these as 'not parallelized' gives readers the wrong model\""
+    },
+    {
+      "text": "Cites the engine guard that rejects stateful (non-stateless) columns in view/updateView (QueryTable, 'A stateful column cannot safely be used in a view or updateView') as evidence",
+      "passed": true,
+      "evidence": "\"The engine's own guard confirms this. In `QueryTable.viewOrUpdateView` it throws ... 'A stateful column cannot safely be used in a view or updateView.'\""
+    },
+    {
+      "text": "Recommends moving inline configuration property names/defaults out of the narrative (into a Configuration section or a link to the configuration reference), rather than proposing to add property names or defaults inline",
+      "passed": true,
+      "evidence": "Section D: \"put the exact properties and values in one Configuration section at the end, linked to that reference. Don't add more inline parentheticals.\""
+    },
+    {
+      "text": "Records unverifiable claims as explicit author queries (AQ-style questions for an SME) rather than proposing hedged wording",
+      "passed": true,
+      "evidence": "Section E: \"AQ1 [What does NOT get parallelized, bullet 3]: 'Operations waiting for dependencies' doesn't correspond to any class of operation I can find in source. Should it be removed...?\" and AQ2 on the serial filter example"
+    },
+    {
+      "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource (file I/O or logging, non-thread-safe library, or global counter) as insufficient when more than one column can touch the resource (barriers or implicit barriers are also needed)",
+      "passed": true,
+      "evidence": "Finding 1: \"`with_serial` only protects a resource when a single column touches it. Several rows prescribe it on its own...\" lists lines 18, 20, 22; Fix: \"qualify each as 'when only this column uses it,' or pair it with barriers.\""
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 54,
+    "output_chars": 17635
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label A in packet acc-pre-i2); grader did not know which skill version wrote the report."
+}

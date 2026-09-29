@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
+      "passed": true,
+      "evidence": "\"What the page is for: after reading it, the reader should understand how Deephaven parallelizes work (across tables, rows, and columns), which formulas are safe to run in parallel by default, and when and how to use `with_serial` and barriers.\""
+    },
+    {
+      "text": "Flags that the intro's enumeration ('across tables, across rows, and across columns') doesn't match the headings ('Across tables' / 'Within a single table')",
+      "passed": true,
+      "evidence": "Finding 4: \"Line 26 promises 'across tables, across rows, and across columns'. The children are 'Across tables', 'Within a single table' (rows and columns appear only as bold labels)...\""
+    },
+    {
+      "text": "Flags the Python GIL caution as sitting at the wrong level of abstraction or in the wrong section, and proposes moving it",
+      "passed": true,
+      "evidence": "Finding 9: \"The GIL caution is at the wrong level of abstraction (74\u201377, under 'Within a single table')... Fix: move it to the start of 'When parallelization is safe by default', or to a note after the intro.\""
+    },
+    {
+      "text": "Flags inline configuration property names/defaults in the narrative as misplaced and proposes consolidating them (a Configuration section or a link to the configuration reference), without proposing to add property names elsewhere in the narrative",
+      "passed": true,
+      "evidence": "Finding 2: \"Configuration detail is scattered and there's no Configuration section... Fix: add one `## Configuration` section before Key takeaways, as a table of property, default and effect, linking to `../query-table-configuration.md`. Replace the inline mentions with concept wording.\" Other findings also move properties to Configuration; none adds property names to the narrative."
+    },
+    {
+      "text": "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
+      "passed": true,
+      "evidence": "Finding 5: \"Its Scenario rows mix categories ('Pure column math'), a specific example ('Global counter'), a restated requirement... and logging, which doesn't change the output.\""
+    },
+    {
+      "text": "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)",
+      "passed": true,
+      "evidence": "Finding 10: \"'What does NOT get parallelized' includes items outside its section... Line 72, about waiting for dependencies, is about scheduling across tables, not within one table.\""
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 9,
+    "output_chars": 12371
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label A in packet structure-regrade-i2); grader did not know which skill version wrote the report."
+}

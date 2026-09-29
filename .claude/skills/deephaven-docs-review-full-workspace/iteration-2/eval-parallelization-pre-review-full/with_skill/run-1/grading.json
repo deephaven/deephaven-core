@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+      "passed": true,
+      "evidence": "\"The biggest problem is the mental model the summary sections teach... say with_serial alone handles a global counter... Verdict: needs revision.\""
+    },
+    {
+      "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+      "passed": true,
+      "evidence": "'## Developmental notes' (Purpose/key message, Audience fit, Scope) comes before '## Style'."
+    },
+    {
+      "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+      "passed": true,
+      "evidence": "A2: \"produce view column sources whose formulas run on whatever thread reads the cell. A parallel update, a parallel where, or a chunked downstream read can therefore evaluate them concurrently.\""
+    },
+    {
+      "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+      "passed": true,
+      "evidence": "'## Author queries' AQ1-AQ6, e.g. \"AQ3: Where did the sample output come from?\""
+    },
+    {
+      "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+      "passed": true,
+      "evidence": "\"Coined labels (pattern, about 6 instances)\"; \"Passive voice (pattern, about 6 instances)\""
+    },
+    {
+      "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+      "passed": true,
+      "evidence": "Dev note 1 / A1: \"Quick reference rows 'Global counter,' 'File I/O or logging,' and 'Non-thread-safe library'... two serial columns calling the same counter, logger, or library can still run at the same time\"; fix: \"shared by several columns -> with_serial on each, plus barriers\"."
+    },
+    {
+      "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+      "passed": true,
+      "evidence": "S1 sends all properties to a Configuration section table and rewrites the narrative at concept level (\"sort, once the table is large enough to be worth splitting\"). Style says explicitly: \"the fix is a Configuration section, not a separate sentence in the same paragraph.\""
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 51,
+    "output_chars": 25488
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label F in packet full-i2); grader did not know which skill version wrote the report."
+}

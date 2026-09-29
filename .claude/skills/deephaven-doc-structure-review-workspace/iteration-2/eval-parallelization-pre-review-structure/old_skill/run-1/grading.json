@@ -1,0 +1,45 @@
+{
+  "expectations": [
+    {
+      "text": "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
+      "passed": false,
+      "evidence": "The report states only the category (Concept guide) and never states what the reader will be able to do, or says it can't be stated. Finding 7's \"The page's thesis, the default in 41+ and how to change it\" is about how content is split, not a statement of the reader's goal."
+    },
+    {
+      "text": "Flags that the intro's enumeration ('across tables, across rows, and across columns') doesn't match the headings ('Across tables' / 'Within a single table')",
+      "passed": true,
+      "evidence": "Finding 11: \"The section intro also promises three ways ('across tables, across rows, and across columns,' 26), but the H3s are 'Across tables,' 'Within a single table,' and 'Query phases and thread pools,' so the third H3 doesn't match the list.\""
+    },
+    {
+      "text": "Flags the Python GIL caution as sitting at the wrong level of abstraction or in the wrong section, and proposes moving it",
+      "passed": true,
+      "evidence": "Finding 12: \"The GIL caution is in a section it doesn't belong to, lines 74\u201377... Fix: Move it to 'When parallelization is safe by default' (after the 123 NOTE).\""
+    },
+    {
+      "text": "Flags inline configuration property names/defaults in the narrative as misplaced and proposes consolidating them (a Configuration section or a link to the configuration reference), without proposing to add property names elsewhere in the narrative",
+      "passed": false,
+      "evidence": "No Configuration section or consolidation is proposed. Instead, finding 6 proposes moving the `select`/`update`/`where` thresholds into the 'What gets parallelized' bullets, and finding 7 proposes adding `QueryTable.statelessSelectByDefault`/`statelessFiltersByDefault` to the opening callout, which adds property names to the narrative. Finding 5 drops only one property name at line 50."
+    },
+    {
+      "text": "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
+      "passed": false,
+      "evidence": "Finding 9 flags only the table's 'Barriers or implicit barriers' disagreeing with the body, and finding 5 flags terms used before they're defined. Neither says the rows mix kinds of items, such as 'Global counter' or logging."
+    },
+    {
+      "text": "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)",
+      "passed": false,
+      "evidence": "No finding says a list's or table's contents fall outside its section. Finding 6 says thresholds are split across two sections, and finding 13 says the view/update_view fact is duplicated. The dependency-waiting item in 'What does NOT get parallelized' isn't mentioned."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 4,
+    "total": 6,
+    "pass_rate": 0.33
+  },
+  "execution_metrics": {
+    "total_tool_calls": 9,
+    "output_chars": 15536
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label B in packet structure-regrade-i2); grader did not know which skill version wrote the report."
+}

@@ -1,0 +1,387 @@
+{
+  "metadata": {
+    "skill_name": "deephaven-docs-review-full",
+    "skill_path": ".claude/skills/deephaven-docs-review-full",
+    "executor_model": "claude-opus-5-5",
+    "analyzer_model": "claude-opus-5-5 (independent blind grader agents; reports shuffled and labeled A-F)",
+    "timestamp": "2026-09-29T19:39:03Z",
+    "evals_run": [
+      1
+    ],
+    "runs_per_configuration": 3,
+    "baseline": "old_skill = iteration-1 skill set (snapshot in skill-snapshot-iter1/); with_skill picks up both iteration-2 fixes through the accuracy and style steps"
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 467.8,
+        "tokens": 170057,
+        "tool_calls": 51,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+          "passed": true,
+          "evidence": "\"The biggest problem is the mental model the summary sections teach... say with_serial alone handles a global counter... Verdict: needs revision.\""
+        },
+        {
+          "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+          "passed": true,
+          "evidence": "'## Developmental notes' (Purpose/key message, Audience fit, Scope) comes before '## Style'."
+        },
+        {
+          "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+          "passed": true,
+          "evidence": "A2: \"produce view column sources whose formulas run on whatever thread reads the cell. A parallel update, a parallel where, or a chunked downstream read can therefore evaluate them concurrently.\""
+        },
+        {
+          "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+          "passed": true,
+          "evidence": "'## Author queries' AQ1-AQ6, e.g. \"AQ3: Where did the sample output come from?\""
+        },
+        {
+          "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+          "passed": true,
+          "evidence": "\"Coined labels (pattern, about 6 instances)\"; \"Passive voice (pattern, about 6 instances)\""
+        },
+        {
+          "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+          "passed": true,
+          "evidence": "Dev note 1 / A1: \"Quick reference rows 'Global counter,' 'File I/O or logging,' and 'Non-thread-safe library'... two serial columns calling the same counter, logger, or library can still run at the same time\"; fix: \"shared by several columns -> with_serial on each, plus barriers\"."
+        },
+        {
+          "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+          "passed": true,
+          "evidence": "S1 sends all properties to a Configuration section table and rewrites the narrative at concept level (\"sort, once the table is large enough to be worth splitting\"). Style says explicitly: \"the fix is a Configuration section, not a separate sentence in the same paragraph.\""
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 567.8,
+        "tokens": 178734,
+        "tool_calls": 56,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+          "passed": true,
+          "evidence": "\"The biggest problem is the mental model in the prescriptive parts... say with_serial alone fixes a shared counter, file I/O, or a non-thread-safe library... Verdict: needs revision.\""
+        },
+        {
+          "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+          "passed": true,
+          "evidence": "'## Developmental notes' (mental model, Scope, Audience fit) comes before '## Style'."
+        },
+        {
+          "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+          "passed": true,
+          "evidence": "A3: \"listed as 'not parallelized' is the wrong model... Their formulas run on whatever thread reads the cell, including the threads of a parallel downstream update or where.\""
+        },
+        {
+          "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+          "passed": true,
+          "evidence": "'## Author queries' AQ1-AQ5, e.g. \"AQ1: ...can rows really be evaluated 'out of order'?... Please have an engine SME confirm\""
+        },
+        {
+          "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+          "passed": true,
+          "evidence": "\"Configuration injection in narrative: 7 places (lines 50, 66, ...). Example: line 66...\"; \"Passive voice: about 5 instances. Example: ...\""
+        },
+        {
+          "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+          "passed": true,
+          "evidence": "A1: \"Global counter: with_serial is enough only if a single expression touches the counter. The page's own counter example has two columns\"; Dev note 1: \"every row that involves a resource shared by more than one column... should read 'with_serial + barrier (or implicit barriers)'\""
+        },
+        {
+          "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+          "passed": true,
+          "evidence": "Proposed narrative rewrites stay at concept level (\"once the table is large enough to be worth splitting\", \"with_serial + barrier (or implicit barriers)\"). Properties go to \"one 'Configuration' section at the end, or point to ../query-table-configuration.md\". The mention of serialSelectImplicitBarriers=true in A2 is analysis, not replacement text."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.86,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 429.4,
+        "tokens": 164064,
+        "tool_calls": 45,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+          "passed": true,
+          "evidence": "\"The biggest issue is that the page says with_serial alone is enough for shared state... Developmental verdict: needs revision.\""
+        },
+        {
+          "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+          "passed": true,
+          "evidence": "'## Developmental notes' (key message, Audience fit, Scope) comes before '## Style'."
+        },
+        {
+          "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+          "passed": true,
+          "evidence": "A3: \"Their formulas run on whatever thread reads the column, which includes a parallel update or where downstream... 'Not parallelized' is the wrong model.\""
+        },
+        {
+          "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+          "passed": true,
+          "evidence": "'## Author queries' AQ1-AQ6, e.g. \"AQ2: Is there a real code path where doSerialApplyUpdate doesn't follow row-set order?\""
+        },
+        {
+          "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+          "passed": true,
+          "evidence": "\"Configuration detail wedged into sentences (7 instances). Examples: line 50...\"; \"Passive voice (about 5 instances)\""
+        },
+        {
+          "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+          "passed": true,
+          "evidence": "A1: \"The prescriptive rows say with_serial alone is enough. It isn't whenever more than one column touches the resource. Where: Quick reference lines 18, 20, 22...\""
+        },
+        {
+          "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+          "passed": false,
+          "evidence": "Structure 2 proposes narrative text containing a default: \"The narrative then says 'once a table is large enough' or 'uses all cores by default.'\" That puts the thread-pool default into narrative prose."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 470.4,
+        "tokens": 161100,
+        "tool_calls": 47,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+          "passed": true,
+          "evidence": "\"But it gives the reader two wrong ideas about the engine: Deferred operations... The Python GIL... Verdict: needs revision.\""
+        },
+        {
+          "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+          "passed": true,
+          "evidence": "'## Developmental notes' (Purpose and key message, implementation detail/scope, Audience fit) comes before '## Style'."
+        },
+        {
+          "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+          "passed": true,
+          "evidence": "Accuracy 1: \"Their formulas run later, on whichever thread reads the column, and that reader can be a parallel update, where, or chunked read.\""
+        },
+        {
+          "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+          "passed": true,
+          "evidence": "'## Author queries' AQ1-AQ6, e.g. \"AQ1: Was this output captured from a real run, and on which Python build?\""
+        },
+        {
+          "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+          "passed": true,
+          "evidence": "\"Made-up labels (pattern, about 10 uses)\"; \"Passive voice (about 5 uses): 'are lazily evaluated' (70)...\""
+        },
+        {
+          "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+          "passed": true,
+          "evidence": "Accuracy 6: \"with_serial on both isn't guaranteed to be enough... The same gap appears in Quick reference ('Global counter -> with_serial')\"; Accuracy 10: \"Two different columns or filters using the same file or library can still run at the same time.\""
+        },
+        {
+          "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+          "passed": true,
+          "evidence": "Rewrites are concept-level (\"Fix at the right level: 'once the table is large enough to be worth splitting.'\", the intro sentence, the reclassification text). Properties go to \"one Configuration section at the end, or behind a link to query-table-configuration.md\"."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "old_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.86,
+        "passed": 6,
+        "failed": 1,
+        "total": 7,
+        "time_seconds": 425.3,
+        "tokens": 169435,
+        "tool_calls": 50,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+          "passed": true,
+          "evidence": "\"The biggest problem is the reader's mental model. The 'What does NOT get parallelized' list puts view, update_view and lazy_update in the safe-from-concurrency bucket... Verdict: needs revision.\""
+        },
+        {
+          "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+          "passed": true,
+          "evidence": "'## Developmental notes' (Purpose, Key message, Audience fit, Scope, Progression) comes before '## Style'."
+        },
+        {
+          "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+          "passed": true,
+          "evidence": "Accuracy 1: \"Their formulas run later, on whichever thread reads the column. That thread may be a parallel update/where downstream\"; the fix says \"their formulas run on the reader's threads, possibly concurrently\"."
+        },
+        {
+          "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+          "passed": true,
+          "evidence": "'## Author queries' AQ1-AQ6, e.g. \"AQ3: Did the sample output come from a real run?\""
+        },
+        {
+          "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+          "passed": true,
+          "evidence": "\"Configuration detail in parentheses (about 7 places): for example, line 50...\"; \"Passive voice (about 4): lines 70, 83 and 87\""
+        },
+        {
+          "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+          "passed": false,
+          "evidence": "Only the 'Column A must finish before Column B -> Barriers' row is flagged (Accuracy 4). The Global counter / File I/O / Non-thread-safe library with_serial rows are never called insufficient. Examples 2 notes that two serial columns can interfere, but only about the counter example, not the Quick reference."
+        },
+        {
+          "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+          "passed": true,
+          "evidence": "Narrative rewrites stay at concept level (\"once a table is large enough to be worth splitting\"). Accuracy 5's \"off by default; on when statelessSelectByDefault=false\" is about the Implicit barriers subsection, which Dev note 5 and Structure 1 send to \"one Configuration section at the end, or behind a link to conceptual/query-table-configuration.md\"."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "old_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.71,
+        "passed": 5,
+        "failed": 2,
+        "total": 7,
+        "time_seconds": 428.7,
+        "tokens": 156330,
+        "tool_calls": 45,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+          "passed": true,
+          "evidence": "\"The biggest problem is the mental model. The 'What does NOT get parallelized' list tells readers that view, update_view and lazy_update are a safe place for stateful code... Verdict: needs revision.\""
+        },
+        {
+          "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+          "passed": true,
+          "evidence": "'## Developmental notes' (Purpose, Key message, Audience fit, Scope) comes before Accuracy, Structure, Examples and '## Style'."
+        },
+        {
+          "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+          "passed": true,
+          "evidence": "A1: \"'Not parallelized' is the wrong model... formulas run on whatever thread reads them. When a parallel update, select or where downstream reads the column, the formula runs concurrently on those threads.\""
+        },
+        {
+          "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+          "passed": true,
+          "evidence": "'## Author queries' with AQ1-AQ6, e.g. \"AQ2: Was this output observed? On which Python build and configuration?\""
+        },
+        {
+          "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+          "passed": true,
+          "evidence": "\"Parenthetical caveats (about 6: lines 50, 66, 71, 83, 124, 285)\", \"Passive or impersonal voice (about 8). Examples: ...\""
+        },
+        {
+          "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+          "passed": false,
+          "evidence": "Never flags the Global counter / File I/O / Non-thread-safe library rows as insufficient. The only Quick reference accuracy note is that the 'Multiple operations sharing state' row recommends implicit barriers; A4(b) and Examples 1 touch on two-column issues but not the Quick reference with_serial rows."
+        },
+        {
+          "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+          "passed": false,
+          "evidence": "A4's fix tells the author to add to the breaking-change callout (narrative) item (b), \"The same change flipped the default of QueryTable.serialSelectImplicitBarriers ... from true to false\": \"Add (b), because it is the break that bites users\". That puts a property default change into the callout instead of a Configuration section. Other rewrites (e.g. \"once the table is large enough to be worth splitting\") are fine."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9533,
+        "stddev": 0.0808,
+        "min": 0.86,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 488.3333,
+        "stddev": 71.4483,
+        "min": 429.4,
+        "max": 567.8
+      },
+      "tokens": {
+        "mean": 170951.6667,
+        "stddev": 7375.8082,
+        "min": 164064,
+        "max": 178734
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.8567,
+        "stddev": 0.145,
+        "min": 0.71,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 441.4667,
+        "stddev": 25.1146,
+        "min": 425.3,
+        "max": 470.4
+      },
+      "tokens": {
+        "mean": 162288.3333,
+        "stddev": 6632.8243,
+        "min": 156330,
+        "max": 169435
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.10",
+      "time_seconds": "+46.9",
+      "tokens": "+8663"
+    }
+  },
+  "notes": [
+    "Prescriptive quick-reference expectation: new 3/3 vs iteration-1 1/3. The fix propagates through the orchestrated accuracy step.",
+    "No-reinjection expectation: 2/3 in both arms. The new-skill miss is a strict grader call: the proposed narrative wording 'uses all cores by default' was counted as a default in prose. An iteration-1 run failed for proposing a property default change in the breaking-change callout.",
+    "Report-shape expectations (editorial summary and verdict, developmental notes first, view/update_view misclassification, author queries, style as patterns) passed in all 6 runs. The iteration-1 developmental pass and report format are stable across runs.",
+    "Full reviews cost about 160-180k tokens and 7-10 minutes per run in both arms."
+  ]
+}

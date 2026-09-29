@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+      "passed": true,
+      "evidence": "\"The biggest problem is the mental model. The 'What does NOT get parallelized' list tells readers that view, update_view and lazy_update are a safe place for stateful code... Verdict: needs revision.\""
+    },
+    {
+      "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+      "passed": true,
+      "evidence": "'## Developmental notes' (Purpose, Key message, Audience fit, Scope) comes before Accuracy, Structure, Examples and '## Style'."
+    },
+    {
+      "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+      "passed": true,
+      "evidence": "A1: \"'Not parallelized' is the wrong model... formulas run on whatever thread reads them. When a parallel update, select or where downstream reads the column, the formula runs concurrently on those threads.\""
+    },
+    {
+      "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+      "passed": true,
+      "evidence": "'## Author queries' with AQ1-AQ6, e.g. \"AQ2: Was this output observed? On which Python build and configuration?\""
+    },
+    {
+      "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+      "passed": true,
+      "evidence": "\"Parenthetical caveats (about 6: lines 50, 66, 71, 83, 124, 285)\", \"Passive or impersonal voice (about 8). Examples: ...\""
+    },
+    {
+      "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+      "passed": false,
+      "evidence": "Never flags the Global counter / File I/O / Non-thread-safe library rows as insufficient. The only Quick reference accuracy note is that the 'Multiple operations sharing state' row recommends implicit barriers; A4(b) and Examples 1 touch on two-column issues but not the Quick reference with_serial rows."
+    },
+    {
+      "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+      "passed": false,
+      "evidence": "A4's fix tells the author to add to the breaking-change callout (narrative) item (b), \"The same change flipped the default of QueryTable.serialSelectImplicitBarriers ... from true to false\": \"Add (b), because it is the break that bites users\". That puts a property default change into the callout instead of a Configuration section. Other rewrites (e.g. \"once the table is large enough to be worth splitting\") are fine."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 2,
+    "total": 7,
+    "pass_rate": 0.71
+  },
+  "execution_metrics": {
+    "total_tool_calls": 45,
+    "output_chars": 25013
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label A in packet full-i2); grader did not know which skill version wrote the report."
+}

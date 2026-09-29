@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "Flags the 'What does NOT get parallelized' classification of view/update_view/lazy_update as wrong or misleading, because deferred formulas run on the reading thread and can run concurrently",
+      "passed": true,
+      "evidence": "1.6: \"their formulas run later, on whatever thread reads the column... So they can run concurrently.\" Fix: \"don't list these as 'not parallelized'.\""
+    },
+    {
+      "text": "Cites the engine guard that rejects stateful (non-stateless) columns in view/updateView (QueryTable, 'A stateful column cannot safely be used in a view or updateView') as evidence",
+      "passed": true,
+      "evidence": "1.6: \"With `statelessSelectByDefault=true` it also throws `\"A stateful column cannot safely be used in a view or updateView.\"`\""
+    },
+    {
+      "text": "Recommends moving inline configuration property names/defaults out of the narrative (into a Configuration section or a link to the configuration reference), rather than proposing to add property names or defaults inline",
+      "passed": true,
+      "evidence": "Section 2 \"(move it, don't delete it)\": \"put these in one Configuration section at the end, or link to `../query-table-configuration.md`.\""
+    },
+    {
+      "text": "Records unverifiable claims as explicit author queries (AQ-style questions for an SME) rather than proposing hedged wording",
+      "passed": true,
+      "evidence": "Section 5: \"AQ2 [Multiple barriers, L316]: 'most filters are stateless and don't need barriers' is a usage claim with nothing in the source behind it. SME to confirm or drop it.\""
+    },
+    {
+      "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource (file I/O or logging, non-thread-safe library, or global counter) as insufficient when more than one column can touch the resource (barriers or implicit barriers are also needed)",
+      "passed": true,
+      "evidence": "1.4: \"L20 ('Serialize access to shared resource') overstate it. `with_serial` doesn't serialize access from other columns, filters, or tables that touch the same file, logger, or library. L22 ('Forces single-threaded access') has the same problem.\" (It flags multi-column insufficiency but does not explicitly name barriers as the remedy.)"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 50,
+    "output_chars": 16680
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label F in packet acc-pre-i2); grader did not know which skill version wrote the report."
+}

@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "Flags 'row fan-out' / 'column fan-out' as coined labels and suggests recognized terms",
+      "passed": true,
+      "evidence": "Finding 1: \"These are invented labels... Use standard terms... concurrent row calculations... concurrent column calculations\""
+    },
+    {
+      "text": "Suggests the standard term 'pure function' for 'output depends only on its arguments and that changes nothing outside itself'",
+      "passed": true,
+      "evidence": "Finding 2 heading: \"The definition has a standard name: 'pure function'\""
+    },
+    {
+      "text": "Flags that 'thread-safe' (Which formulas section) and 'stateless' (Formulas that need care) are used for the same idea although they are different properties",
+      "passed": true,
+      "evidence": "Finding 3: \"Line 9 says the qualifying formulas are 'thread-safe'. Line 15 describes the non-qualifying formula as not 'stateless'. The two words describe different properties.\""
+    },
+    {
+      "text": "Flags the standalone sentence naming QueryTable.minimumParallelSelectRows and its default as configuration detail that doesn't belong in concept-guide narrative, and recommends a Configuration section or reference link",
+      "passed": true,
+      "evidence": "Finding 4: \"A Concept guide should not name a property or its default in the explanation... send readers to the configuration reference... Or put the property and default in a single Configuration section at the end of the page.\""
+    },
+    {
+      "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+      "passed": true,
+      "evidence": "Proposed text: \"Row-level parallelism only happens once a table is large enough to be worth dividing. See [Query table configuration](...) for the setting that controls this threshold.\" No property or default"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 7,
+    "output_chars": 5958
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label C in packet style-fan-i2); grader did not know which skill version wrote the report."
+}

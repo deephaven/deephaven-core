@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
+      "passed": true,
+      "evidence": "\"The biggest issue is that the page says with_serial alone is enough for shared state... Developmental verdict: needs revision.\""
+    },
+    {
+      "text": "Includes developmental findings (purpose, key message, audience, or scope) ordered before line-level style findings",
+      "passed": true,
+      "evidence": "'## Developmental notes' (key message, Audience fit, Scope) comes before '## Style'."
+    },
+    {
+      "text": "Flags the view/update_view/lazy_update 'not parallelized' classification as wrong or misleading because deferred evaluation can run concurrently on reading threads",
+      "passed": true,
+      "evidence": "A3: \"Their formulas run on whatever thread reads the column, which includes a parallel update or where downstream... 'Not parallelized' is the wrong model.\""
+    },
+    {
+      "text": "Includes an author-queries section listing questions the review couldn't resolve from source",
+      "passed": true,
+      "evidence": "'## Author queries' AQ1-AQ6, e.g. \"AQ2: Is there a real code path where doSerialApplyUpdate doesn't follow row-set order?\""
+    },
+    {
+      "text": "Reports style issues as patterns (with examples or counts) rather than one row per instance",
+      "passed": true,
+      "evidence": "\"Configuration detail wedged into sentences (7 instances). Examples: line 50...\"; \"Passive voice (about 5 instances)\""
+    },
+    {
+      "text": "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
+      "passed": true,
+      "evidence": "A1: \"The prescriptive rows say with_serial alone is enough. It isn't whenever more than one column touches the resource. Where: Quick reference lines 18, 20, 22...\""
+    },
+    {
+      "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+      "passed": false,
+      "evidence": "Structure 2 proposes narrative text containing a default: \"The narrative then says 'once a table is large enough' or 'uses all cores by default.'\" That puts the thread-pool default into narrative prose."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 1,
+    "total": 7,
+    "pass_rate": 0.86
+  },
+  "execution_metrics": {
+    "total_tool_calls": 45,
+    "output_chars": 21394
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label E in packet full-i2); grader did not know which skill version wrote the report."
+}

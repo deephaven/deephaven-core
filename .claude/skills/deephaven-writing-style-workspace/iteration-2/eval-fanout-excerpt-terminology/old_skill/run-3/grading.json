@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "Flags 'row fan-out' / 'column fan-out' as coined labels and suggests recognized terms",
+      "passed": true,
+      "evidence": "Finding 1: \"The terms 'row fan-out' and 'column fan-out' are made up... Suggested replacements: 'concurrent row calculations'... 'concurrent column calculations'\""
+    },
+    {
+      "text": "Suggests the standard term 'pure function' for 'output depends only on its arguments and that changes nothing outside itself'",
+      "passed": true,
+      "evidence": "Finding 2: \"is the standard definition of a **pure function**\"; rewrite includes \"(a pure function)\""
+    },
+    {
+      "text": "Flags that 'thread-safe' (Which formulas section) and 'stateless' (Formulas that need care) are used for the same idea although they are different properties",
+      "passed": true,
+      "evidence": "Finding 3: \"'Thread-safe' and 'stateless' are used as if they were synonyms (lines 9 and 15)... Read together, these tell the reader the two words mean the same thing, and they don't.\""
+    },
+    {
+      "text": "Flags the standalone sentence naming QueryTable.minimumParallelSelectRows and its default as configuration detail that doesn't belong in concept-guide narrative, and recommends a Configuration section or reference link",
+      "passed": false,
+      "evidence": "Never flags line 11 as configuration detail out of place. Finding 6 only calls the number a hedge, and finding 7 offers an 'Optional' link to the property. It never recommends moving it out of the narrative."
+    },
+    {
+      "text": "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
+      "passed": false,
+      "evidence": "Finding 6 proposes narrative text with the default: \"State the number exactly: 'defaults to 4,194,304 (`1L << 22`) rows'\""
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "execution_metrics": {
+    "total_tool_calls": 8,
+    "output_chars": 5204
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label E in packet style-fan-i2); grader did not know which skill version wrote the report."
+}

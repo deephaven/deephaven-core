@@ -11,7 +11,8 @@
       "expectations": [
         "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
         "Flags that the intro's enumeration ('across tables, across rows, and across columns') doesn't match the headings ('Across tables' / 'Within a single table')",
-        "Flags the Python GIL caution and/or inline configuration property values as the wrong level of abstraction for where they sit, and proposes moving them (e.g. to a Configuration section)",
+        "Flags the Python GIL caution as sitting at the wrong level of abstraction or in the wrong section, and proposes moving it",
+        "Flags inline configuration property names/defaults in the narrative as misplaced and proposes consolidating them (a Configuration section or a link to the configuration reference), without proposing to add property names elsewhere in the narrative",
         "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
         "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)"
       ]
