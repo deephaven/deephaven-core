@@ -1,0 +1,70 @@
+{
+  "expectations": [
+    {
+      "text": "Corrects the demo description in both languages: the tree table is not 'grouped by Sym', and the tables left open are not 'crypto and data'",
+      "passed": true,
+      "evidence": "The wrong sentence is removed in both files with the CSV demo, which is replaced by an accurately described time_table/last_by snapshot example; report: \"it said 'grouped by Sym' (the key is `Instrument`)...\""
+    },
+    {
+      "text": "Removes or corrects `scope_from_method = liveness_scope()` (calling the context-manager function outside a `with` block or decorator, which the page itself says not to do)",
+      "passed": true,
+      "evidence": "\"-scope_from_method = liveness_scope()\" removed; prose: \"Calling `liveness_scope` outside of a `with` statement or decorator doesn't open a scope.\""
+    },
+    {
+      "text": "Fixes the invalid example code: `return table` at module level (outside any function) and the undefined `some_ticking_table` in the class example",
+      "passed": true,
+      "evidence": "\"-return table\" and \"-        return some_ticking_table, scope\" removed; replaced by \"+    return filtered, scope\" inside make_filtered_table"
+    },
+    {
+      "text": "Does not change the decorator `@liveness_scope()` to `@liveness_scope` (the doc's form is the correct one for a contextlib.contextmanager factory, even though the module docstring shows it without parentheses)",
+      "passed": true,
+      "evidence": "\"+@liveness_scope()\\n+def get_latest_prices():\"; check: bare present False"
+    },
+    {
+      "text": "Addresses that the LivenessScope demo never releases the scope (adds release()/preserve, or corrects the text claiming the scope releases the objects), in Python and in the Groovy sibling where the same demo appears",
+      "passed": true,
+      "evidence": "Python: \"with liveness_scope() as scope:\" + \"scope.preserve(latest_prices)\"; Groovy: \"LivenessScopeStack.open()\" + \"outerScope.manage(latestPrices)\"; class examples add \"scope_a.release()\" / \"scope.release()\""
+    },
+    {
+      "text": "Does not leave the claim that reference counting 'will only clean up objects created purely for the GUI' silently unchanged: corrects it against source, removes it, or records an author query (verifying it with a quoted source and keeping it also passes)",
+      "passed": true,
+      "evidence": "Removed in both; report: \"This overstated absolute is gone, replaced by the console-session-scope explanation\" (AbstractScriptSession), with AQ2 recorded"
+    },
+    {
+      "text": "Makes the terminology consistent: `liveness_scope` is a function, so headings and prose don't call it 'the method' while the intro calls it a function",
+      "passed": true,
+      "evidence": "\"+### The `liveness_scope` function\", \"+### The `LivenessScope` class\"; the 'method' headings are removed"
+    },
+    {
+      "text": "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
+      "passed": true,
+      "evidence": "Paths unchanged (title only); the new links to lastBy.md, snapshot.md and to-numpy.md all check 'ok'"
+    },
+    {
+      "text": "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
+      "passed": false,
+      "evidence": "Adds hedges and caveats: \"Most queries never need one\", \"which can take an unpredictable amount of time\", \"that you open, possibly more than once\", \"\u2014 here, the console session's scope\", \"Don't manage an object that the scope already manages automatically\", and a caveat paragraph \"_even if a Python variable still refers to it_\""
+    },
+    {
+      "text": "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
+      "passed": true,
+      "evidence": "\"Re-verify step: every rewritten claim above was checked. No other page links to an anchor on these pages... All relative links resolve.\" plus a Style section"
+    },
+    {
+      "text": "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+      "passed": true,
+      "evidence": "Fences 8/12 balanced. The restructured sections leave no duplicates: the NOTE callout became prose once, and the old sections are fully removed."
+    }
+  ],
+  "summary": {
+    "passed": 10,
+    "failed": 1,
+    "total": 11,
+    "pass_rate": 0.91
+  },
+  "execution_metrics": {
+    "total_tool_calls": 42,
+    "output_chars": 7881
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label F in packet editmode-i3); grader did not know which skill version wrote the report."
+}

@@ -1,0 +1,499 @@
+--- a/docs/python/conceptual/liveness-scope-concept.md
++++ b/docs/python/conceptual/liveness-scope-concept.md
+@@ -1,173 +1,134 @@
+ ---
+-title: How to use liveness scopes
++title: Liveness scopes
+ sidebar_label: Liveness scope
+ ---
+ 
+-This guide discusses liveness scopes. It covers what a liveness scope is, how to use one, and why queries can benefit from its use.
++A liveness scope lets you decide when the tables and other objects a query creates stop updating and leave the [query update graph](./table-update-model.md), rather than waiting for the Java garbage collector to find them. Most queries never need one. This guide explains how liveness works, the problem a liveness scope solves, and how to use the [`liveness_scope`](../reference/engine/liveness-scope.md) function and the [`LivenessScope`](../reference/engine/LivenessScope.md) class.
+ 
+-Liveness scopes give users a finer degree of control over cleanup of unreferenced nodes in the [query update graph](./table-update-model.md). A node in the update graph can be a table, plot, or any other object. A liveness scope automatically manages reference counting of the nodes created within it. Resources can be programmatically freed from a liveness scope.
++## How liveness works
+ 
+-## Why use a liveness scope?
++Deephaven tracks whether each node in the update graph — a table, a plot, or another query object — is still needed by counting references to it. This is called the node's liveness. A table that depends on a refreshing parent holds a reference to that parent, and a liveness scope holds a reference to every node created on the same thread while the scope is open.
+ 
+-Deephaven's engine runs in Java, in which garbage collection is handled by the JVM. Users have little control over when garbage collection takes place, as the JVM tries to optimize when it occurs to minimize GC runtime and maximize the amount of memory left available after it's run.
++When a node's reference count drops to zero, Deephaven destroys it immediately: the node stops listening for updates from its parents and gives up its own references to them. A parent that nothing else needs is destroyed in turn, so cleanup can cascade up the graph.
+ 
+-Liveness scopes give users much more control over the query update graph and over garbage collection. Without liveness scope, queries rely solely on the JVM to perform garbage collection to clean up unreferenced nodes in the DAG. In most cases, this is acceptable. However, there are cases where a query can benefit from the use of a liveness scope.
++Destroying a node takes it out of the update graph, but it doesn't free the node's memory. The JVM's garbage collector still does that, and it decides on its own when to run. Liveness changes _when a node stops doing work_, not when its memory is reclaimed.
+ 
+-## How liveness scopes work
++## Why use a liveness scope?
+ 
+-Deephaven's liveness scopes allow the nodes in a refreshing query's update propagation graph to be updated proactively by assessing the nodes' "liveness" (whether or not they are active), rather than only via actions of the Java garbage collector. This does not replace garbage collection (GC), but it does allow cleanup to happen immediately when objects in the GUI are not needed. This is accomplished internally via reference counting, and works automatically for all users.
++Code you run in the console executes inside a scope that belongs to the console session, and that scope isn't released until the session ends. Until then, a refreshing table that no variable points to isn't destroyed. It keeps processing updates on every update cycle until the garbage collector reclaims it, which can take an unpredictable amount of time.
+ 
+-When a table is live in Deephaven, the update propagation graph accumulates parent nodes that produce data (data sources) at the top, and all the child nodes that stream down the graph. Deephaven's liveness scope system keeps track of these referents: when child objects cease to be referenced and the parents' liveness count goes down, they will be cleaned up immediately without waiting for GC.
++For most queries, that's fine. It matters when a query creates refreshing tables it needs only briefly — an aggregation used once to take a static snapshot, or tables created in a loop or inside a function that runs repeatedly. In this example, the [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) table exists only to produce a [`snapshot`](../reference/table-operations/snapshot/snapshot.md):
+ 
+-## Demonstrating the problem
++```python ticking-table order=null
++from deephaven import time_table
+ 
+-Before we demonstrate liveness scopes in action, let's demonstrate the problem that liveness scopes solve.
++source = time_table("PT1s").update(
++    ["Sym = (ii % 2 == 0) ? `A` : `B`", "Price = ii * 1.5"]
++)
+ 
+-This query creates a simple tree table grouped by Sym. Two tables will open: `crypto` and `data`.
++# The last_by table is only needed long enough to take a static snapshot
++latest_prices = source.last_by("Sym").snapshot()
++```
+ 
+-```python order=null
+-from deephaven.csv import read as read_csv
+-from deephaven import merge
++No variable refers to the `last_by` table, but it keeps updating every second until the garbage collector reclaims it.
+ 
+-crypto = (
+-    read_csv(
+-        "https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv"
+-    )
+-    .first_by("Instrument")
+-    .update(["ID = Instrument", "Parent = (String)null"])
+-    .update(
+-        [
+-            "Timestamp = (Instant)null",
+-            "Exchange = (String)null",
+-            "Price = (Double)null",
+-            "Size = (Double)null",
+-        ]
+-    )
+-)
++Wrapping the same query in a liveness scope ends the `last_by` table's work as soon as the block exits:
+ 
+-data = read_csv(
+-    "https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv"
+-).update(["ID = String.valueOf(ii)", "Parent = Instrument"])
++```python ticking-table order=null
++from deephaven import time_table
++from deephaven.liveness_scope import liveness_scope
+ 
+-combo = merge([crypto, data])
++source = time_table("PT1s").update(
++    ["Sym = (ii % 2 == 0) ? `A` : `B`", "Price = ii * 1.5"]
++)
+ 
+-combo_tree = combo.tree("ID", "Parent")
+-
+-data = None
+-combo = None
++with liveness_scope() as scope:
++    latest_prices = source.last_by("Sym").snapshot()
++    # Keep the snapshot after the scope is released
++    scope.preserve(latest_prices)
+ ```
+ 
+-The above example works, but the query creates many objects that are not needed after it is run. The [`LivenessScope`](https://docs.deephaven.io/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope) can manage these objects and release them when they are no longer needed. This is best practice because it allows Deephaven to conserve memory.
++When the `with` block exits, Deephaven releases the scope, and the `last_by` table is destroyed. `latest_prices` survives because `preserve` hands it to the next scope out — here, the console session's scope.
+ 
+-In this example, we will run the same query, but enclose it in a [`LivenessScope`](https://docs.deephaven.io/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope).
++Releasing a scope destroys every object it manages that nothing else still needs, _even if a Python variable still refers to it_. Liveness counts references from the query graph and from scopes, not from variables. Preserve anything you want to keep using after the scope is released.
+ 
+-```python order=null
+-from deephaven.liveness_scope import LivenessScope
+-from deephaven.csv import read as read_csv
+-from deephaven import merge
++## Create and use a liveness scope
+ 
+-scope = LivenessScope()
++Python offers two ways to create a liveness scope:
+ 
+-with scope.open():
+-    crypto = (
+-        read_csv(
+-            "https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv"
+-        )
+-        .first_by("Instrument")
+-        .update(["ID = Instrument", "Parent = (String)null"])
+-        .update(
+-            [
+-                "Timestamp = (Instant)null",
+-                "Exchange = (String)null",
+-                "Price = (Double)null",
+-                "Size = (Double)null",
+-            ]
+-        )
+-    )
++- The [`liveness_scope`](../reference/engine/liveness-scope.md) function opens a scope for one `with` block or one function call and releases it automatically when that block or call ends. Use it when the scope's lifetime matches a block of code.
++- The [`LivenessScope`](../reference/engine/LivenessScope.md) class creates a scope that you open, possibly more than once, and release yourself. Use it when the objects must stay live for a while after the code that creates them finishes.
+ 
+-    data = read_csv(
+-        "https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv"
+-    ).update(["ID = String.valueOf(ii)", "Parent = Instrument"])
++### The `liveness_scope` function
+ 
+-    combo = merge([crypto, data])
++`liveness_scope` works in a [`with`](https://peps.python.org/pep-0343/) statement, as shown above, or as a function decorator. It creates a [`SimpleLivenessScope`](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.SimpleLivenessScope), which Deephaven opens and releases for you; you can't reopen it. Calling `liveness_scope` outside of a `with` statement or decorator doesn't open a scope.
+ 
+-    combo_tree = combo.tree("ID", "Parent")
++As a decorator, `liveness_scope` opens a fresh scope for each call to the function and releases it when the function returns. In this example, each call creates a temporary `last_by` table and returns a copy of its data as a NumPy array with [`to_numpy`](../reference/numpy/to-numpy.md). The table stops updating as soon as the function returns:
+ 
+-data = None
+-combo = None
+-```
++```python ticking-table order=null
++from deephaven import time_table
++from deephaven.liveness_scope import liveness_scope
++import deephaven.numpy as dhnp
+ 
+-## How to create a liveness scope
++source = time_table("PT1s").update(
++    ["Sym = (ii % 2 == 0) ? `A` : `B`", "Price = ii * 1.5"]
++)
+ 
+-Creating a liveness scope is easy, as it takes no input parameters. It can be created from the [`liveness_scope`](../reference/engine/liveness-scope.md) function or the [`LivenessScope`](../reference/engine/LivenessScope.md) class directly. The former is intended to be used _only_ in a [`with`](https://peps.python.org/pep-0343/) block or as a function decorator. The latter gives a finer degree of control by allowing a scope to be opened more than once. It also allows the explicit release of resources that it manages.
+ 
+-```python order=null
+-from deephaven.liveness_scope import liveness_scope, LivenessScope
++@liveness_scope()
++def get_latest_prices():
++    latest = source.last_by("Sym")
++    return dhnp.to_numpy(latest, cols=["Price"])
+ 
+-scope_from_method = liveness_scope()
+-scope_from_class = LivenessScope()
++
++prices = get_latest_prices()
+ ```
+ 
+-## How to use a liveness scope
++### The `LivenessScope` class
+ 
+-Deephaven's reference counting instrumentation will only clean up objects created purely for the GUI. This can be augmented by creating a [`LivenessScope`](https://docs.deephaven.io/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope) for your query. When the scope is released, any objects that are no longer needed or are not refreshing are let go.
++A `LivenessScope` stays open only inside a `with scope.open():` block, but you choose when to release it. Until you call `release`, every object it manages stays live. In this example, a function returns a filtered ticking table along with the scope that manages it, so the caller can release the table when it's done with it:
+ 
+-A liveness scope, once created, has several methods that can be used:
++```python ticking-table order=null
++from deephaven import time_table
++from deephaven.liveness_scope import LivenessScope
+ 
+-- `manage(referent)` explicitly manages the object in the current scope.
+-- `preserve(referent)` preserves the object in the scope outside the current scope.
+-- `unmanage(referent)` causes the current scope to no longer manage the given object.
+-- `open` opens a liveness scope. This is meant to be used in a `with` statement. This method is _only_ available to liveness scopes created directly from the class.
+-- `release` closes a liveness scope and all of its managed resources. This method is _only_ available to liveness scopes created directly from the class.
+ 
+-### The method
++def make_filtered_table(sym: str):
++    scope = LivenessScope()
++    with scope.open():
++        source = time_table("PT1s").update(
++            ["Sym = (ii % 2 == 0) ? `A` : `B`", "Price = ii * 1.5"]
++        )
++        filtered = source.where(f"Sym = `{sym}`")
++    return filtered, scope
+ 
+-Using the method creates a [`SimpleLivenessScope`](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.SimpleLivenessScope), which can only be opened once. If the method is used, it must be done in a `with` block or as a decorator. Any and all objects created within the scope will be automatically managed by it.
+ 
+-```python skip-test
+-with liveness_scope() as scope:
+-    ticking_table = some_ticking_source()
+-    table = ticking_table.snapshot().join(table=other_ticking_table, on=key_cols)
+-    scope.preserve(table)
+-return table
++table_a, scope_a = make_filtered_table("A")
+ 
+-
+-@liveness_scope()
+-def get_values() -> npt.NDArray[np.double]:
+-    ticking_table = some_ticking_source().last_by(["Sym"])
+-    return dhnp.to_numpy(ticking_table)
++# When table_a is no longer needed, release its scope
++scope_a.release()
++table_a = None
+ ```
+ 
+-### The class
++Releasing `scope_a` destroys both `filtered` and its `source`, and `source` stops ticking.
+ 
+-Creating the class directly gives greater control. It allows a scope to be opened more than once. The scope can also release the resources it manages when it is no longer needed. Users writing queries with many objects that will eventually need to be garbage collected should consider using a liveness scope to control when the objects are deleted and the memory freed.
++### Scope methods
+ 
+-```python skip-test
+-def make_table_and_scope(a: int):
+-    scope = LivenessScope()
+-    with scope.open():
+-        ticking_table = some_ticking_source().where(f"A={a}")
+-        return some_ticking_table, scope
++Both kinds of scope provide these methods:
+ 
++- `preserve(referent)` hands the object to the next scope outside this one, so it stays live after this scope is released. Call it while this scope is open.
++- `manage(referent)` makes this scope manage the object. Don't manage an object that the scope already manages automatically.
++- `unmanage(referent)` stops this scope from managing the object.
+ 
+-t1, s1 = make_table_and_scope(1)
+-# .. wait for a while
+-s1.release()
+-t2, s2 = make_table_and_scope(2)
+-# .. wait for a while again
+-s2.release()
+-```
++Only scopes created from the `LivenessScope` class have these methods:
+ 
+-## To use the method or the class?
++- `open` makes the scope the current scope for the duration of a `with` block. You can open the same scope more than once.
++- `release` releases the scope and every object it manages that nothing else still needs.
+ 
+-Queries with simpler use cases for a liveness scope will typically find the method to be sufficient for their needs. It automatically manages objects created within it, and stops managing any objects outside of the scope unless it's explicitly told otherwise via `preserve`.
+-
+-For queries in which more fine-grained control over the lifespan of objects is required, the class is recommended.
+-
+ ## Related documentation
+ 
+ - [`LivenessScope`](../reference/engine/LivenessScope.md)
+ - [`liveness_scope`](../reference/engine/liveness-scope.md)
+-- [Execution Context](./execution-context.md)
+-- [Table Update Model](./table-update-model.md)
++- [Execution context](./execution-context.md)
++- [Incremental update model](./table-update-model.md)
+ - [Pydoc](/core/pydoc/code/deephaven.liveness_scope.html#module-deephaven.liveness_scope)
+--- a/docs/groovy/conceptual/liveness-scope-concept.md
++++ b/docs/groovy/conceptual/liveness-scope-concept.md
+@@ -1,164 +1,148 @@
+ ---
+-title: How to use liveness scopes
++title: Liveness scopes
+ sidebar_label: Liveness scope
+ ---
+ 
+-This guide discusses liveness scopes. It covers what a liveness scope is, how to use one, and why queries can benefit from its use.
++A liveness scope lets you decide when the tables and other objects a query creates stop updating and leave the [query update graph](./table-update-model.md), rather than waiting for the Java garbage collector to find them. Most queries never need one. This guide explains how liveness works, the problem a liveness scope solves, and how to use the [`LivenessScope`](../reference/engine/LivenessScope.md) and [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html) classes.
+ 
+-Liveness scopes give users a finer degree of control over cleanup of unreferenced nodes in the [query update graph](./table-update-model.md). A node in the update graph can be a table, plot, or any other object. A liveness scope automatically manages reference counting of the nodes created within it. Resources can be programmatically freed from a liveness scope.
++## How liveness works
+ 
+-## Why use a liveness scope?
++Deephaven tracks whether each node in the update graph — a table, a plot, or another query object — is still needed by counting references to it. This is called the node's liveness. A table that depends on a refreshing parent holds a reference to that parent, and a liveness scope holds a reference to every node created on the same thread while the scope is open.
+ 
+-Deephaven's engine runs in Java, in which garbage collection is handled by the JVM. Users have little control over when garbage collection takes place, as the JVM tries to optimize when it occurs to minimize GC runtime and maximize the amount of memory left available after it's run.
++When a node's reference count drops to zero, Deephaven destroys it immediately: the node stops listening for updates from its parents and gives up its own references to them. A parent that nothing else needs is destroyed in turn, so cleanup can cascade up the graph.
+ 
+-Liveness scopes give users much more control over the query update graph and over garbage collection. Without liveness scope, queries rely solely on the JVM to perform garbage collection to clean up unreferenced nodes in the DAG. In most cases, this is acceptable. However, there are cases where a query can benefit from the use of a liveness scope.
++Destroying a node takes it out of the update graph, but it doesn't free the node's memory. The JVM's garbage collector still does that, and it decides on its own when to run. Liveness changes _when a node stops doing work_, not when its memory is reclaimed.
+ 
+-## How liveness scopes work
++## Why use a liveness scope?
+ 
+-Deephaven's liveness scopes allow the nodes in a refreshing query's update propagation graph to be updated proactively by assessing the nodes' "liveness" (whether or not they are active), rather than only via actions of the Java garbage collector. This does not replace garbage collection (GC), but it does allow cleanup to happen immediately when objects in the GUI are not needed. This is accomplished internally via reference counting, and works automatically for all users. For developers building new functionality using the Deephaven query engine, the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) and [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html) classes allow a finer degree of control over the reference counts of various query engine artifacts. Constructing an external scope before running a refreshing query will hold together the related artifacts created in its query update propagation graph. Releasing the scope after the query runs will release any referents that are no longer "live".
++Code you run in the console executes inside a scope that belongs to the console session, and that scope isn't released until the session ends. Until then, a refreshing table that no variable points to isn't destroyed. It keeps processing updates on every update cycle until the garbage collector reclaims it, which can take an unpredictable amount of time.
+ 
+-When a table is live in Deephaven, the update propagation graph accumulates parent nodes that produce data (data sources) at the top, and all the child nodes that stream down the graph. Deephaven's liveness scope system keeps track of these referents: when child objects cease to be referenced and the parents' liveness count goes down, they will be cleaned up immediately without waiting for GC.
++For most queries, that's fine. It matters when a query creates refreshing tables it needs only briefly — an aggregation used once to take a static snapshot, or tables created in a loop or inside a closure that runs repeatedly. In this example, the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) table exists only to produce a [`snapshot`](../reference/table-operations/snapshot/snapshot.md):
+ 
+-## Demonstrating the problem
++```groovy ticking-table order=null
++source = timeTable("PT1s").update("Sym = (ii % 2 == 0) ? `A` : `B`", "Price = ii * 1.5")
+ 
+-Before we demonstrate liveness scopes in action, let's demonstrate the problem that liveness scopes solve.
++// The lastBy table is only needed long enough to take a static snapshot
++latestPrices = source.lastBy("Sym").snapshot()
++```
+ 
+-This query creates a simple tree table grouped by Sym. Two tables will open: `crypto` and `data`.
++No variable refers to the `lastBy` table, but it keeps updating every second until the garbage collector reclaims it.
+ 
+-```groovy order=null
+-import static io.deephaven.csv.CsvTools.readCsv
++Wrapping the same query in a liveness scope ends the `lastBy` table's work as soon as the block exits:
+ 
+-crypto = readCsv(
+-    "https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv"
+-).firstBy("Instrument").update("ID = Instrument", "Parent = (String)null").update("Timestamp = (Instant)null", "Exchange = (String)null", "Price = (Double)null", "Size = (Double)null")
++```groovy ticking-table order=null
++import io.deephaven.engine.liveness.LivenessScopeStack
++import io.deephaven.util.SafeCloseable
+ 
+-data = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv").update("ID = Long.toString(ii)", "Parent = Instrument")
++source = timeTable("PT1s").update("Sym = (ii % 2 == 0) ? `A` : `B`", "Price = ii * 1.5")
+ 
+-combo = merge(crypto, data)
++// The console session's scope, which is current before the new scope opens
++def outerScope = LivenessScopeStack.peek()
+ 
+-comboTree = combo.tree("ID", "Parent")
++try (SafeCloseable ignored = LivenessScopeStack.open()) {
++    latestPrices = source.lastBy("Sym").snapshot()
++    // Keep the snapshot after the new scope is released
++    outerScope.manage(latestPrices)
++}
++```
+ 
+-data = null
++When the `try` block exits, Deephaven releases the scope, and the `lastBy` table is destroyed. `latestPrices` survives because the console session's scope also manages it.
+ 
+-combo = null
+-```
++Releasing a scope destroys every object it manages that nothing else still needs, _even if a Groovy variable still refers to it_. Liveness counts references from the query graph and from scopes, not from variables. Manage anything you want to keep using in an outer scope before the inner scope is released.
+ 
+-The above example works, but the query creates many objects that are not needed after it is run. The [`LivenessScope`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) can manage these objects and release them when they are no longer needed. This is best practice because it allows Deephaven to conserve memory.
++## Create and use a liveness scope
+ 
+-In this example, we will run the same query, but enclose it in a [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html).
++Scopes live on the [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html), a per-thread stack. The scope at the top of the stack is the current scope, and it manages every new object created on that thread. Use a try-with-resources block to put a scope on the stack, so the scope comes off the stack even if the query throws an exception.
+ 
+-```groovy order=null
+-import io.deephaven.engine.liveness.*
+-import static io.deephaven.csv.CsvTools.readCsv
++`LivenessScopeStack.open` with no arguments creates an anonymous scope and releases it when the block exits:
++
++```groovy
++import io.deephaven.engine.liveness.LivenessScopeStack
+ import io.deephaven.util.SafeCloseable
+ 
+-scope = new LivenessScope()
++try (SafeCloseable ignored = LivenessScopeStack.open()) {
+ 
+-try ( SafeCloseable ignored = LivenessScopeStack.open(scope, false) ) {
++    // Your query here, managed by the anonymous scope
+ 
+-    crypto = readCsv(
+-        "https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv"
+-    ).firstBy("Instrument").update("ID = Instrument", "Parent = (String)null").update("Timestamp = (Instant)null", "Exchange = (String)null", "Price = (Double)null", "Size = (Double)null")
++}
++```
+ 
+-    data = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv").update("ID = Long.toString(ii)", "Parent = Instrument")
++To keep a reference to the scope, create a [`LivenessScope`](../reference/engine/LivenessScope.md) yourself and pass it to `LivenessScopeStack.open(scope, releaseOnClose)`. When the second argument is `true`, the scope is released when the block exits. When it's `false`, the scope only comes off the stack, and everything it manages stays live until you call `release` on the scope:
+ 
+-    combo = merge(crypto, data)
++```groovy
++import io.deephaven.engine.liveness.LivenessScope
++import io.deephaven.engine.liveness.LivenessScopeStack
++import io.deephaven.util.SafeCloseable
+ 
+-    comboTree = combo.tree("ID", "Parent")
++scope = new LivenessScope()
+ 
+-}
++try (SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
+ 
+-data = null
++    // Your query here, managed by scope
+ 
+-combo = null
++}
++
++// Later, when the query's results are no longer needed
++scope.release()
+ ```
+ 
+-## How to use a `LivenessScope`
++### Push and pop a scope manually
+ 
+-Deephaven's reference counting instrumentation will only clean up objects created purely for the GUI. This can be augmented by creating a [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) for your query. When the scope is released, any objects that are no longer needed or are not refreshing are let go.
++`LivenessScopeStack.open` is a wrapper around `LivenessScopeStack.push` and `LivenessScopeStack.pop`. You can call them directly, but a try-with-resources block is safer, because an exception between `push` and `pop` leaves the scope on the stack:
+ 
+-The following syntax creates a [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) that can preface any Deephaven query:
+-
+ ```groovy skip-test
+-import io.deephaven.engine.liveness.*
++import io.deephaven.engine.liveness.LivenessScope
++import io.deephaven.engine.liveness.LivenessScopeStack
+ 
+-// Create a new LivenessScope
+ scope = new LivenessScope()
+ 
+-// Add scope to the LivenessScopeStack. This makes the scope the current scope for the current thread.
++// Make scope the current scope for this thread
+ LivenessScopeStack.push(scope)
+ 
+ // Your query here
+ 
+-// Release the scope from the stack. This will release the scope's references to the Liveness Referents it manages.
++// Remove scope from the stack. Its objects stay live until the scope is released.
+ LivenessScopeStack.pop(scope)
+-```
+ 
+-> [!NOTE]
+-> This example is intended to illustrate how the LivenessScopeStack manages LivenessScopes. In practice, you should use try-with-resources blocks to manage scopes.
+-
+-In the example above, we first import the `liveness` package, and then create a new [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html). Next, we push the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) onto the [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html). This automatically opens the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html), and it will manage any query artifacts created when the scope is open. After we have run our query (or queries) in the console, we use `LivenessScopeStack.pop(scope)` to remove the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) from the stack, making the query artifacts it was managing eligible for garbage collection.
+-
+-You can also enclose a scope in a try-with-resources block using the `LivenessScopeStack.open(LivenessScope, boolean)` method. Setting the second parameter to `true` will automatically release the scope when the block is exited.
+-
+-```groovy
+-import io.deephaven.engine.liveness.*
+-import io.deephaven.util.SafeCloseable
+-
+-scope = new LivenessScope()
+-
+-try ( SafeCloseable ignored = LivenessScopeStack.open(scope, true) ) {
+-
+-    // Your query here
+-
+-}
++// Release the scope's references to the objects it manages
++scope.release()
+ ```
+ 
+-`LivenessScopeStack.open()` can be called with no parameters to create an anonymous scope and automatically release it.
++`pop` only removes the scope from the stack; it doesn't release anything. The objects the scope manages stay live until you call `release` on the scope.
+ 
+-```groovy
+-import io.deephaven.engine.liveness.*
+-import io.deephaven.util.SafeCloseable
++### Nested scopes
+ 
+-try ( SafeCloseable ignored = LivenessScopeStack.open() ) {
++Liveness scopes can be nested. The most recently opened scope is the current one, and when it comes off the stack, the scope below it becomes current again:
+ 
+-    // Your query here, managed by the scope created above
+-
+-}
+-```
+-
+-## Multiple LivenessScopes
+-
+-Liveness scopes can be nested. The [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html) will use the scopes in the order they are pushed onto the stack - that is, the active [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) will be the one that was most recently pushed to the [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html). When a scope is popped from the stack, the next scope in the stack will become the active scope. This can be done manually with `LivenessScopeStack.push(scope)` and `LivenessScopeStack.pop(scope)`, but best practice is to use try-with-resources blocks.
+-
+ ```groovy
+-import io.deephaven.engine.liveness.*
++import io.deephaven.engine.liveness.LivenessScopeStack
+ import io.deephaven.util.SafeCloseable
+ 
++try (SafeCloseable ignored = LivenessScopeStack.open()) {
+ 
+-try ( SafeCloseable ignored = LivenessScopeStack.open() ) {
+-
+     // Your query here, managed by an anonymous scope
+ 
+-    try ( SafeCloseable ignored2 = LivenessScopeStack.open() ) {
++    try (SafeCloseable ignored2 = LivenessScopeStack.open()) {
+ 
+-        // Your query here, managed by a second anonymous scope that is enclosed by the first
++        // Your query here, managed by a second anonymous scope nested inside the first
++
+     }
+ }
+ ```
+ 
+-## Methods
++## `LivenessScopeStack` methods
+ 
+-The [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html) class provides additional methods for controlling how the reference counts of various query engine artifacts are managed, such as the order of a scope on the stack.
++The [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html) class provides these methods for putting scopes on the current thread's stack and taking them off:
+ 
+-- [`LivenessScopeStack.peek()`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#peek()) - Get the scope at the top of the current thread's scope stack, or the base manager if no scopes have been pushed but not popped on this thread. This determines which scope automatically manages new query artifacts.
+-- [`LivenessScopeStack.pop(scope)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#pop(io.deephaven.engine.liveness.LivenessManager)) - Pop the scope from the top of the current thread's scope stack.
+-- [`LivenessScopeStack.open(scope, true)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open(io.deephaven.engine.liveness.ReleasableLivenessManager,boolean)) - Push a scope onto the scope stack, and get a SafeCloseable that pops it. The first parameter specifies the scope; the second boolean parameter determines whether the scope should release when the result is closed. This is useful for enclosing scope usage in a try-with-resources block.
+-- [`LivenessScopeStack.open()`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open()) - Push an anonymous scope onto the scope stack, and get a SafeCloseable that pops it and then uses LivenessScope.release(). This is useful enclosing a series of query engine actions whose results must be explicitly retained externally in order to preserve liveness.
++- [`LivenessScopeStack.push(scope)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#push(io.deephaven.engine.liveness.LivenessManager)) — Push a scope onto the current thread's scope stack.
++- [`LivenessScopeStack.pop(scope)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#pop(io.deephaven.engine.liveness.LivenessManager)) — Pop the scope from the current thread's scope stack. The scope must be at the top of the stack.
++- [`LivenessScopeStack.peek`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#peek()) — Get the scope at the top of the current thread's scope stack, or the base manager if no scopes have been pushed but not popped on this thread. This determines which scope automatically manages new query artifacts.
++- [`LivenessScopeStack.open(scope, releaseOnClose)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open(io.deephaven.engine.liveness.ReleasableLivenessManager,boolean)) — Push a scope onto the scope stack, and get a `SafeCloseable` that pops it. The second parameter determines whether the scope is also released when the `SafeCloseable` is closed. This is useful for enclosing scope usage in a try-with-resources block.
++- [`LivenessScopeStack.open`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open()) with no arguments — Push an anonymous scope onto the scope stack, and get a `SafeCloseable` that pops it and then releases it. This is useful for enclosing a series of query engine actions whose results must be explicitly retained externally in order to preserve liveness.
+ 
+ ## Related documentation
+ 
+ - [`LivenessScope`](../reference/engine/LivenessScope.md)
+ - [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html)
+-- [Execution Context](./execution-context.md)
+-- [Table Update Model](./table-update-model.md)
++- [Execution context](./execution-context.md)
++- [Incremental update model](./table-update-model.md)

@@ -1,0 +1,10 @@
+{
+  "total_tokens": 147040,
+  "duration_ms": 430791,
+  "total_duration_seconds": 430.8,
+  "tool_uses": 35,
+  "edit_source": [
+    "python: from sandbox edits",
+    "groovy: from sandbox edits"
+  ]
+}
