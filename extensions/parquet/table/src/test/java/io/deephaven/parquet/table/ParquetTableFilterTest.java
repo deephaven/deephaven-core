@@ -2888,6 +2888,28 @@ public final class ParquetTableFilterTest {
         }
     }
 
+    /**
+     * A location trusts a data index only when its own file declares it, so a sidecar left behind by an earlier write
+     * of the same path is never paired with a rewritten file that did not write one.
+     */
+    @Test
+    public void testLeftoverIndexSidecarIgnored() {
+        final String fileName = "leftoverIndexSidecar.parquet";
+        final String destPath = Path.of(rootFile.getPath(), fileName).toString();
+        final ParquetInstructions indexA = ParquetInstructions.builder().addIndexColumns("A").build();
+        writeTable(TableTools.emptyTable(10_000).update("A = ii % 97", "B = ii"), destPath, indexA);
+        final File sidecar = new File(rootFile, ParquetTools.getRelativeIndexFilePath(fileName, "A"));
+        assertTrue(sidecar.exists());
+
+        final Table rewritten = TableTools.emptyTable(20_000).update("A = ii % 89", "B = ii");
+        writeTable(rewritten, destPath, EMPTY);
+        assertTrue("the earlier write's sidecar is still on disk", sidecar.exists());
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        assertFalse(DataIndexer.hasDataIndex(diskTable, "A"));
+        assertTableEquals(rewritten.where("A == 5"), diskTable.where("A == 5"));
+    }
+
     @Test
     public void testPartitioningTableColumnRegions() {
         // Partitioning columns are automatically added to a data index. We have to disable use of the data index

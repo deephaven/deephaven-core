@@ -290,6 +290,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return dataIndexColumns;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * An index is trusted when this location's own file declares it and the index file exists; nothing else about the
+     * index is checked against the file it indexes, and {@link #pushdownDataIndex} treats every row the index does not
+     * place under a matching key as not matching. An index file must therefore be written together with, and never
+     * outlive, the file that declares it: a writer that replaces one without the other makes filters silently drop
+     * rows. Deephaven's own writers commit a file and its indexes together.
+     */
     @Override
     public boolean hasDataIndex(@NotNull final String... columns) {
         initialize();
@@ -1069,7 +1078,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Apply the filter to the data index table and return the result.
+     * Apply the filter to the data index table and return the result. The result has no maybe matches: rows the index
+     * does not place under a matching key are treated as not matching, so the index must be complete and current for
+     * the rows it covers (see {@link #hasDataIndex}).
      */
     @NotNull
     public static PushdownResult pushdownDataIndex(
