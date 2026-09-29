@@ -211,8 +211,20 @@ public interface JobScheduler {
                         break;
                     }
                     final TaskInvoker taskInvoker = new TaskInvoker(context, tii, initialTaskIndex);
-                    scheduler.submit(executionContext, taskInvoker::execute, description,
-                            IterationManager::onUnexpectedJobError);
+                    try {
+                        scheduler.submit(executionContext, taskInvoker::execute, description,
+                                IterationManager::onUnexpectedJobError);
+                    } catch (Exception e) {
+                        if (!taskInvoker.failIfNotStarted(e)) {
+                            // The scheduler ran the task inline, and the task has released its own resources.
+                            throw e;
+                        }
+                        break;
+                    } catch (Error e) {
+                        // Deliver before rethrowing, as TaskInvoker.execute does.
+                        taskInvoker.failIfNotStarted(asDeliverableException(e));
+                        throw e;
+                    }
                 }
             } finally {
                 decrementReferenceCount();
@@ -282,6 +294,7 @@ public interface JobScheduler {
 
             private boolean closed;
             private boolean running;
+            private boolean started;
 
             /**
              * Construct a TaskInvoker which will iteratively reschedule itself to perform parallel tasks as needed.
@@ -303,6 +316,7 @@ public interface JobScheduler {
             }
 
             private synchronized void execute() {
+                started = true;
                 int runningTaskIndex;
                 do {
                     if (exception.get() != null) {
@@ -363,6 +377,22 @@ public interface JobScheduler {
                 } else if (!running) {
                     execute();
                 }
+            }
+
+            /**
+             * Fail the iteration with {@code e} if this TaskInvoker has not started, as when the scheduler refused to
+             * submit it: nothing else will ever run or close it. A scheduler that runs tasks inline may instead throw
+             * from {@code submit} after this TaskInvoker ran, in which case it has already released its resources.
+             *
+             * @param e the failure
+             * @return whether this TaskInvoker had not started, and so has now been closed
+             */
+            private synchronized boolean failIfNotStarted(@NotNull final Exception e) {
+                if (started) {
+                    return false;
+                }
+                reportError(e);
+                return true;
             }
 
             private synchronized void reportError(@NotNull final Exception e) {
