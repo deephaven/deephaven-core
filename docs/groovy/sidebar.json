@@ -14,6 +14,7 @@
       },
       {
         "label": "Getting Started",
+        "collapsible": false,
         "items": [
           {
             "label": "Quickstart",
@@ -23,7 +24,7 @@
             "label": "A Crash Course in Deephaven",
             "items": [
               {
-                "label": "Overview",
+                "label": "Crash Course Overview",
                 "path": "getting-started/crash-course/overview.md"
               },
               {
@@ -82,10 +83,6 @@
               {
                 "label": "Source code",
                 "path": "getting-started/launch-build.md"
-              },
-              {
-                "label": "Production application",
-                "path": "getting-started/production-application.md"
               }
             ]
           }
@@ -93,21 +90,18 @@
       },
       {
         "label": "User Guide",
+        "collapsible": false,
         "items": [
           {
-            "label": "Architectural Details",
+            "label": "Core concepts",
             "items": [
-              {
-                "label": "Deephaven's design",
-                "path": "conceptual/deephaven-design.md"
-              },
               {
                 "label": "Patterns of use",
                 "path": "conceptual/deephaven-mental-model.md"
               },
               {
-                "label": "The Table API",
-                "path": "conceptual/table-api.md"
+                "label": "Table types",
+                "path": "conceptual/table-types.md"
               },
               {
                 "label": "Incremental update model",
@@ -118,32 +112,12 @@
                 "path": "conceptual/dag.md"
               },
               {
-                "label": "Table types",
-                "path": "conceptual/table-types.md"
-              },
-              {
-                "label": "Column types",
-                "path": "conceptual/column-types.md"
-              },
-              {
                 "label": "Initialization and updates",
                 "path": "how-to-guides/initialization-and-updates.md"
               },
               {
-                "label": "Deephaven Vectors",
-                "path": "conceptual/arrays-vs-vectors.md"
-              },
-              {
-                "label": "Core API design",
-                "path": "conceptual/deephaven-core-api.md"
-              },
-              {
-                "label": "Servers & clients",
-                "path": "conceptual/client-server-model.md"
-              },
-              {
-                "label": "What is Barrage?",
-                "path": "conceptual/what-is-barrage.md"
+                "label": "Column types",
+                "path": "conceptual/column-types.md"
               }
             ]
           },
@@ -189,6 +163,18 @@
                 ]
               },
               {
+                "label": "Replay",
+                "path": "how-to-guides/replay-data.md"
+              },
+              {
+                "label": "Arrow Flight",
+                "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
+              },
+              {
                 "label": "CSV",
                 "items": [
                   {
@@ -217,14 +203,6 @@
                     "path": "how-to-guides/data-import-export/html-export.md"
                   }
                 ]
-              },
-              {
-                "label": "Arrow Flight",
-                "path": "how-to-guides/data-import-export/arrow-flight.md"
-              },
-              {
-                "label": "Arrow/Barrage Schema",
-                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
@@ -273,38 +251,16 @@
                 ]
               },
               {
-                "label": "SQL",
-                "items": [
-                  {
-                    "label": "SQL queries in Deephaven",
-                    "path": "how-to-guides/data-import-export/execute-sql-queries.md"
-                  }
-                ]
-              },
-              {
-                "label": "URI",
-                "path": "how-to-guides/use-uris.md"
+                "label": "SQL queries in Deephaven",
+                "path": "how-to-guides/data-import-export/execute-sql-queries.md"
               },
               {
                 "label": "Table data service",
                 "path": "how-to-guides/data-import-export/table-data-service.md"
               },
               {
-                "label": "Table listeners",
-                "items": [
-                  {
-                    "label": "Table listeners",
-                    "path": "how-to-guides/table-listeners-groovy.md"
-                  }
-                ]
-              },
-              {
-                "label": "Iterate over tables",
-                "path": "how-to-guides/iterate-table-vectors.md"
-              },
-              {
-                "label": "Replay",
-                "path": "how-to-guides/replay-data.md"
+                "label": "URI",
+                "path": "how-to-guides/use-uris.md"
               }
             ]
           },
@@ -344,13 +300,8 @@
                 "path": "how-to-guides/keyed-row-selection.md"
               },
               {
-                "label": "Transpose",
-                "items": [
-                  {
-                    "label": "Keyed transpose",
-                    "path": "how-to-guides/keyed-transpose.md"
-                  }
-                ]
+                "label": "Keyed transpose",
+                "path": "how-to-guides/keyed-transpose.md"
               },
               {
                 "label": "Merge",
@@ -374,6 +325,19 @@
                   {
                     "label": "Rolling aggregations",
                     "path": "how-to-guides/rolling-aggregations.md"
+                  }
+                ]
+              },
+              {
+                "label": "Hierarchical tables",
+                "items": [
+                  {
+                    "label": "Rollup tables",
+                    "path": "how-to-guides/rollup-table.md"
+                  },
+                  {
+                    "label": "Tree tables",
+                    "path": "how-to-guides/tree-table.md"
                   }
                 ]
               },
@@ -418,6 +382,23 @@
                     "path": "how-to-guides/downsampling.md"
                   }
                 ]
+              },
+              {
+                "label": "Use table data in code",
+                "items": [
+                  {
+                    "label": "Table listeners",
+                    "path": "how-to-guides/table-listeners-groovy.md"
+                  },
+                  {
+                    "label": "Iterate over tables",
+                    "path": "how-to-guides/iterate-table-vectors.md"
+                  },
+                  {
+                    "label": "Extract table values",
+                    "path": "how-to-guides/extract-table-value.md"
+                  }
+                ]
               }
             ]
           },
@@ -427,6 +408,26 @@
               {
                 "label": "Overview",
                 "path": "how-to-guides/query-string-overview.md"
+              },
+              {
+                "label": "Data types",
+                "path": "how-to-guides/data-types.md"
+              },
+              {
+                "label": "Nulls, infs, and NaNs",
+                "path": "how-to-guides/null-inf-nan.md"
+              },
+              {
+                "label": "Arrays",
+                "path": "how-to-guides/work-with-arrays.md"
+              },
+              {
+                "label": "Strings",
+                "path": "how-to-guides/work-with-strings.md"
+              },
+              {
+                "label": "Java classes & objects",
+                "path": "how-to-guides/java-classes.md"
               },
               {
                 "label": "Literals",
@@ -507,26 +508,6 @@
                     "path": "how-to-guides/groovy-classes.md"
                   }
                 ]
-              },
-              {
-                "label": "Data types",
-                "path": "how-to-guides/data-types.md"
-              },
-              {
-                "label": "Nulls, infs, and NaNs",
-                "path": "how-to-guides/null-inf-nan.md"
-              },
-              {
-                "label": "Arrays",
-                "path": "how-to-guides/work-with-arrays.md"
-              },
-              {
-                "label": "Strings",
-                "path": "how-to-guides/work-with-strings.md"
-              },
-              {
-                "label": "Java classes & objects",
-                "path": "how-to-guides/java-classes.md"
               }
             ]
           },
@@ -555,13 +536,17 @@
             "label": "Plot",
             "items": [
               {
+                "label": "Plot without writing queries",
+                "path": "how-to-guides/user-interface/chart-builder.md"
+              },
+              {
                 "label": "Built-in plotting API",
                 "path": "how-to-guides/plotting/api-plotting.md"
               }
             ]
           },
           {
-            "label": "GUI",
+            "label": "Dashboards and the GUI",
             "items": [
               {
                 "label": "Use the GUI",
@@ -589,6 +574,18 @@
                   {
                     "label": "Markdown widgets",
                     "path": "how-to-guides/user-interface/markdown-widget.md"
+                  },
+                  {
+                    "label": "Format tables in the UI",
+                    "path": "how-to-guides/user-interface/formatting-tables.md"
+                  },
+                  {
+                    "label": "Filter without writing queries",
+                    "path": "how-to-guides/user-interface/filters.md"
+                  },
+                  {
+                    "label": "Clickable links",
+                    "path": "how-to-guides/user-interface/add-clickable-links.md"
                   }
                 ]
               },
@@ -596,51 +593,12 @@
                 "label": "Customize the GUI",
                 "items": [
                   {
-                    "label": "Real-time dashboards",
-                    "items": [
-                      {
-                        "label": "Format tables in the UI",
-                        "path": "how-to-guides/user-interface/formatting-tables.md"
-                      },
-                      {
-                        "label": "Plot without writing queries",
-                        "path": "how-to-guides/user-interface/chart-builder.md"
-                      },
-                      {
-                        "label": "Filter without writing queries",
-                        "path": "how-to-guides/user-interface/filters.md"
-                      },
-                      {
-                        "label": "Clickable links",
-                        "path": "how-to-guides/user-interface/add-clickable-links.md"
-                      },
-                      {
-                        "label": "Rollup and tree tables",
-                        "items": [
-                          {
-                            "label": "Tree tables",
-                            "path": "how-to-guides/tree-table.md"
-                          },
-                          {
-                            "label": "Rollup tables",
-                            "path": "how-to-guides/rollup-table.md"
-                          }
-                        ]
-                      }
-                    ]
+                    "label": "Custom themes",
+                    "path": "how-to-guides/custom-themes.md"
                   },
                   {
-                    "label": "GUI customizations",
-                    "items": [
-                      {
-                        "label": "Custom themes",
-                        "path": "how-to-guides/custom-themes.md"
-                      },
-                      {
-                        "label": "Use IFrames",
-                        "path": "how-to-guides/use-iframes.md"
-                      }
-                    ]
+                    "label": "Use IFrames",
+                    "path": "how-to-guides/use-iframes.md"
                   }
                 ]
               }
@@ -649,6 +607,60 @@
           {
             "label": "Client APIs",
             "items": [
+              {
+                "label": "C++",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/index.html"
+                  },
+                  {
+                    "label": "Getting started",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/getting_started.html"
+                  },
+                  {
+                    "label": "Resource management",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/resource_mgmt.html"
+                  },
+                  {
+                    "label": "Data I/O",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/input_output.html"
+                  },
+                  {
+                    "label": "Fluent interface",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/fluent.html"
+                  }
+                ]
+              },
+              {
+                "label": "Go",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go#section-readme"
+                  },
+                  {
+                    "label": "Fetch tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-FetchTable"
+                  },
+                  {
+                    "label": "Import tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
+                  },
+                  {
+                    "label": "Create input tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
+                  },
+                  {
+                    "label": "Run scripts",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-RunScript"
+                  },
+                  {
+                    "label": "Table operations",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-TableOps"
+                  }
+                ]
+              },
               {
                 "label": "Java",
                 "items": [
@@ -728,60 +740,6 @@
                 ]
               },
               {
-                "label": "C++",
-                "items": [
-                  {
-                    "label": "Overview",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/index.html"
-                  },
-                  {
-                    "label": "Getting started",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/getting_started.html"
-                  },
-                  {
-                    "label": "Resource management",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/resource_mgmt.html"
-                  },
-                  {
-                    "label": "Data I/O",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/input_output.html"
-                  },
-                  {
-                    "label": "Fluent interface",
-                    "href": "https://deephaven.io/core/client-api/cpp-examples/fluent.html"
-                  }
-                ]
-              },
-              {
-                "label": "Go",
-                "items": [
-                  {
-                    "label": "Overview",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go#section-readme"
-                  },
-                  {
-                    "label": "Fetch tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-FetchTable"
-                  },
-                  {
-                    "label": "Import tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
-                  },
-                  {
-                    "label": "Create input tables",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
-                  },
-                  {
-                    "label": "Run scripts",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-RunScript"
-                  },
-                  {
-                    "label": "Table operations",
-                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-TableOps"
-                  }
-                ]
-              },
-              {
                 "label": "R",
                 "items": [
                   {
@@ -815,13 +773,25 @@
                 "path": "how-to-guides/flight-sql.md"
               },
               {
-                "label": "Protobuf",
-                "items": [
-                  {
-                    "label": "Protobuf and RPC",
-                    "path": "how-to-guides/protobuf.md"
-                  }
-                ]
+                "label": "Protobuf and RPC",
+                "path": "how-to-guides/protobuf.md"
+              }
+            ]
+          },
+          {
+            "label": "Plugins",
+            "items": [
+              {
+                "label": "Install and use plugins",
+                "path": "how-to-guides/install-use-plugins.md"
+              },
+              {
+                "label": "Create your own plugin",
+                "path": "how-to-guides/create-plugins.md"
+              },
+              {
+                "label": "Create a JavaScript plugin",
+                "path": "how-to-guides/create-js-plugins.md"
               }
             ]
           },
@@ -899,15 +869,6 @@
                 ]
               },
               {
-                "label": "Configuration",
-                "items": [
-                  {
-                    "label": "Application Mode configuration",
-                    "path": "reference/app-mode/application-mode-config.md"
-                  }
-                ]
-              },
-              {
                 "label": "Errors and troubleshooting",
                 "items": [
                   {
@@ -925,151 +886,74 @@
                   {
                     "label": "Retrieve logs",
                     "path": "how-to-guides/logs.md"
-                  },
-                  {
-                    "label": "Debugging",
-                    "items": [
-                      {
-                        "label": "Overview",
-                        "path": "how-to-guides/debugging/debugging-landing.md"
-                      },
-                      {
-                        "label": "Docker setup",
-                        "path": "how-to-guides/debugging/docker-setup.md"
-                      },
-                      {
-                        "label": "Source setup",
-                        "path": "how-to-guides/debugging/source-setup.md"
-                      },
-                      {
-                        "label": "Common problems",
-                        "path": "how-to-guides/debugging/common-problems.md"
-                      }
-                    ]
                   }
                 ]
               },
               {
-                "label": "Extract table values",
-                "path": "how-to-guides/extract-table-value.md"
+                "label": "Debugging",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "path": "how-to-guides/debugging/debugging-landing.md"
+                  },
+                  {
+                    "label": "Docker setup",
+                    "path": "how-to-guides/debugging/docker-setup.md"
+                  },
+                  {
+                    "label": "Source setup",
+                    "path": "how-to-guides/debugging/source-setup.md"
+                  },
+                  {
+                    "label": "Common problems",
+                    "path": "how-to-guides/debugging/common-problems.md"
+                  }
+                ]
               }
             ]
           },
           {
-            "label": "System setup and admin",
+            "label": "Architecture and design",
             "items": [
               {
-                "label": "Update Deephaven",
-                "path": "how-to-guides/configuration/updating-deephaven.md"
+                "label": "Deephaven's design",
+                "path": "conceptual/deephaven-design.md"
               },
               {
-                "label": "Authentication",
-                "items": [
-                  {
-                    "label": "Pre-shared key",
-                    "path": "how-to-guides/authentication/auth-psk.md"
-                  },
-                  {
-                    "label": "Anonymous",
-                    "path": "how-to-guides/authentication/auth-anon.md"
-                  },
-                  {
-                    "label": "Keycloak",
-                    "path": "how-to-guides/authentication/auth-keycloak.md"
-                  },
-                  {
-                    "label": "mTLS",
-                    "path": "how-to-guides/authentication/auth-mtls.md"
-                  },
-                  {
-                    "label": "Username/password",
-                    "path": "how-to-guides/authentication/auth-uname-pw.md"
-                  }
-                ]
+                "label": "The Table API",
+                "path": "conceptual/table-api.md"
               },
               {
-                "label": "Configuration",
-                "items": [
-                  {
-                    "label": "Docker data volumes",
-                    "path": "conceptual/docker-data-volumes.md"
-                  },
-                  {
-                    "label": "Adjust heap size",
-                    "path": "how-to-guides/heap-size.md"
-                  },
-                  {
-                    "label": "Deephaven console service",
-                    "path": "how-to-guides/configuration/console-service.md"
-                  },
-                  {
-                    "label": "Deephaven Docker application",
-                    "path": "how-to-guides/configuration/docker-application.md"
-                  },
-                  {
-                    "label": "Periodic Update Graph configuration",
-                    "path": "conceptual/periodic-update-graph-configuration.md"
-                  },
-                  {
-                    "label": "Formula validation configuration",
-                    "path": "conceptual/formula-validation-configuration.md"
-                  },
-                  {
-                    "label": "Query table configuration",
-                    "path": "conceptual/query-table-configuration.md"
-                  },
-                  {
-                    "label": "Application Mode",
-                    "items": [
-                      {
-                        "label": "Application Mode",
-                        "path": "how-to-guides/application-mode.md"
-                      },
-                      {
-                        "label": "Application Mode libraries",
-                        "path": "how-to-guides/application-mode-libraries.md"
-                      },
-                      {
-                        "label": "Application Mode scripts",
-                        "path": "how-to-guides/application-mode-script.md"
-                      }
-                    ]
-                  },
-                  {
-                    "label": "JS plugins",
-                    "path": "how-to-guides/configuration/js-plugins.md"
-                  },
-                  {
-                    "label": "Install packages",
-                    "path": "how-to-guides/install-packages.md"
-                  },
-                  {
-                    "label": "Install and use Java packages",
-                    "path": "how-to-guides/install-and-use-java-packages.md"
-                  },
-                  {
-                    "label": "Production application",
-                    "path": "how-to-guides/configuration/configure-production-application.md"
-                  },
-                  {
-                    "label": "Deephaven configuration files",
-                    "path": "how-to-guides/configuration/config-file.md"
-                  },
-                  {
-                    "label": "Configuration properties",
-                    "path": "how-to-guides/configuration/configuration-properties.md"
-                  },
-                  {
-                    "label": "Web Defaults",
-                    "path": "how-to-guides/configuration/configure-web.md"
-                  },
-                  {
-                    "label": "Custom environmental variables",
-                    "path": "how-to-guides/custom-environmental-variables.md"
-                  }
-                ]
+                "label": "Core API design",
+                "path": "conceptual/deephaven-core-api.md"
+              },
+              {
+                "label": "Servers & clients",
+                "path": "conceptual/client-server-model.md"
+              },
+              {
+                "label": "What is Barrage?",
+                "path": "conceptual/what-is-barrage.md"
+              },
+              {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
               }
             ]
+          }
+        ]
+      },
+      {
+        "label": "Deploy and administer",
+        "collapsible": false,
+        "items": [
+          {
+            "label": "Install the production application",
+            "path": "getting-started/production-application.md"
+          },
+          {
+            "label": "Update Deephaven",
+            "path": "how-to-guides/configuration/updating-deephaven.md"
           },
           {
             "label": "Cloud deployment",
@@ -1083,125 +967,174 @@
                 "path": "how-to-guides/gcp-linux.md"
               }
             ]
-          }
-        ]
-      },
-      {
-        "label": "Cheat sheets",
-        "items": [
-          {
-            "label": "Ultimate cheat sheet",
-            "path": "reference/cheat-sheets/cheat-sheet.md"
           },
           {
-            "label": "Data import / export",
+            "label": "Authentication",
             "items": [
               {
-                "label": "Simple table constructors",
-                "path": "reference/cheat-sheets/simple-table-constructors.md"
+                "label": "Anonymous",
+                "path": "how-to-guides/authentication/auth-anon.md"
               },
               {
-                "label": "CSV",
-                "path": "reference/cheat-sheets/csv.md"
+                "label": "Keycloak",
+                "path": "how-to-guides/authentication/auth-keycloak.md"
               },
               {
-                "label": "Kafka",
-                "path": "reference/cheat-sheets/kafka.md"
+                "label": "mTLS",
+                "path": "how-to-guides/authentication/auth-mtls.md"
               },
               {
-                "label": "Parquet",
-                "path": "reference/cheat-sheets/parquet.md"
+                "label": "Pre-shared key",
+                "path": "how-to-guides/authentication/auth-psk.md"
               },
               {
-                "label": "URI",
-                "path": "reference/cheat-sheets/uri-cheat-sheet.md"
+                "label": "Username/password",
+                "path": "how-to-guides/authentication/auth-uname-pw.md"
               }
             ]
           },
           {
-            "label": "Performance tables",
-            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
-          },
-          {
-            "label": "Time operations",
-            "path": "reference/cheat-sheets/datetime-cheat-sheet.md"
-          }
-        ]
-      },
-      {
-        "label": "API documentation",
-        "items": [
-          {
-            "label": "Pydoc (client)",
-            "href": "https://deephaven.io/core/client-api/python"
-          },
-          {
-            "label": "Pydoc (server)",
-            "href": "https://deephaven.io/core/pydoc"
-          },
-          {
-            "label": "Javascript API (client/server)",
+            "label": "Configuration",
             "items": [
               {
-                "label": "Javascript",
-                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+                "label": "Docker data volumes",
+                "path": "conceptual/docker-data-volumes.md"
+              },
+              {
+                "label": "Adjust heap size",
+                "path": "how-to-guides/heap-size.md"
+              },
+              {
+                "label": "Deephaven console service",
+                "path": "how-to-guides/configuration/console-service.md"
+              },
+              {
+                "label": "Deephaven Docker application",
+                "path": "how-to-guides/configuration/docker-application.md"
+              },
+              {
+                "label": "Install packages",
+                "path": "how-to-guides/install-packages.md"
+              },
+              {
+                "label": "Install and use Java packages",
+                "path": "how-to-guides/install-and-use-java-packages.md"
+              },
+              {
+                "label": "Configure the production application",
+                "path": "how-to-guides/configuration/configure-production-application.md"
+              },
+              {
+                "label": "Deephaven configuration files",
+                "path": "how-to-guides/configuration/config-file.md"
+              },
+              {
+                "label": "Configuration properties",
+                "path": "how-to-guides/configuration/configuration-properties.md"
+              },
+              {
+                "label": "Web Defaults",
+                "path": "how-to-guides/configuration/configure-web.md"
+              },
+              {
+                "label": "JS plugins",
+                "path": "how-to-guides/configuration/js-plugins.md"
+              },
+              {
+                "label": "Custom environmental variables",
+                "path": "how-to-guides/custom-environmental-variables.md"
+              },
+              {
+                "label": "Periodic Update Graph configuration",
+                "path": "conceptual/periodic-update-graph-configuration.md"
+              },
+              {
+                "label": "Formula validation configuration",
+                "path": "conceptual/formula-validation-configuration.md"
+              },
+              {
+                "label": "Query table configuration",
+                "path": "conceptual/query-table-configuration.md"
+              },
+              {
+                "label": "Application Mode",
+                "items": [
+                  {
+                    "label": "Application Mode",
+                    "path": "how-to-guides/application-mode.md"
+                  },
+                  {
+                    "label": "Application Mode libraries",
+                    "path": "how-to-guides/application-mode-libraries.md"
+                  },
+                  {
+                    "label": "Application Mode scripts",
+                    "path": "how-to-guides/application-mode-script.md"
+                  }
+                ]
               }
             ]
-          },
-          {
-            "label": "Javadoc (client/server)",
-            "href": "https://deephaven.io/core/javadoc"
-          },
-          {
-            "label": "Godoc",
-            "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
-          },
-          {
-            "label": "C++ (client)",
-            "href": "https://deephaven.io/core/client-api/cpp"
-          },
-          {
-            "label": "C++ (examples)",
-            "href": "https://deephaven.io/core/client-api/cpp-examples"
-          },
-          {
-            "label": "R (client)",
-            "href": "https://deephaven.io/core/client-api/r"
-          },
-          {
-            "label": "Barrage (Deephaven's Arrow Flight extension",
-            "href": "https://deephaven.io/barrage/docs/"
-          },
-          {
-            "label": "gRPC",
-            "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
-          },
-          {
-            "label": "Protobuf",
-            "href": "https://deephaven.io/core/client-api/protobuf/"
-          }
-        ]
-      },
-      {
-        "label": "Plugins",
-        "items": [
-          {
-            "label": "Install and use plugins",
-            "path": "how-to-guides/install-use-plugins.md"
-          },
-          {
-            "label": "Create your own plugin",
-            "path": "how-to-guides/create-plugins.md"
-          },
-          {
-            "label": "Create a JavaScript plugin",
-            "path": "how-to-guides/create-js-plugins.md"
           }
         ]
       },
       {
         "label": "Reference",
+        "collapsible": false,
         "items": [
+          {
+            "label": "API documentation",
+            "items": [
+              {
+                "label": "Pydoc (client)",
+                "href": "https://deephaven.io/core/client-api/python"
+              },
+              {
+                "label": "Pydoc (server)",
+                "href": "https://deephaven.io/core/pydoc"
+              },
+              {
+                "label": "JavaScript API (client/server)",
+                "items": [
+                  {
+                    "label": "JavaScript",
+                    "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+                  }
+                ]
+              },
+              {
+                "label": "Javadoc (client/server)",
+                "href": "https://deephaven.io/core/javadoc"
+              },
+              {
+                "label": "Godoc",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+              },
+              {
+                "label": "C++ (client)",
+                "href": "https://deephaven.io/core/client-api/cpp"
+              },
+              {
+                "label": "C++ (examples)",
+                "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "R (client)",
+                "href": "https://deephaven.io/core/client-api/r"
+              },
+              {
+                "label": "Barrage (Deephaven's Arrow Flight extension)",
+                "href": "https://deephaven.io/barrage/docs/"
+              },
+              {
+                "label": "gRPC",
+                "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
+              },
+              {
+                "label": "Protobuf",
+                "href": "https://deephaven.io/core/client-api/protobuf/"
+              }
+            ]
+          },
           {
             "label": "Engine",
             "items": [
@@ -2733,10 +2666,6 @@
                     "path": "reference/query-language/types/periods.md"
                   },
                   {
-                    "label": "SelectableDataSetOneClick",
-                    "path": "reference/query-language/types/SelectableDataSetOneClick.md"
-                  },
-                  {
                     "label": "Strings",
                     "path": "reference/query-language/types/strings.md"
                   }
@@ -2790,6 +2719,19 @@
               {
                 "label": "plotStyle",
                 "path": "reference/plot/plotStyle.md"
+              },
+              {
+                "label": "SelectableDataSetOneClick",
+                "path": "reference/query-language/types/SelectableDataSetOneClick.md"
+              }
+            ]
+          },
+          {
+            "label": "Configuration",
+            "items": [
+              {
+                "label": "Application Mode configuration",
+                "path": "reference/app-mode/application-mode-config.md"
               }
             ]
           },
@@ -2862,12 +2804,52 @@
         ]
       },
       {
-        "label": "Help and more",
+        "label": "Cheat sheets",
+        "collapsible": false,
         "items": [
           {
-            "label": "Deephaven example apps on GitHub",
-            "href": "https://github.com/deephaven-examples"
+            "label": "Ultimate cheat sheet",
+            "path": "reference/cheat-sheets/cheat-sheet.md"
           },
+          {
+            "label": "Performance tables",
+            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
+          },
+          {
+            "label": "Time operations",
+            "path": "reference/cheat-sheets/datetime-cheat-sheet.md"
+          },
+          {
+            "label": "Data import / export",
+            "items": [
+              {
+                "label": "Simple table constructors",
+                "path": "reference/cheat-sheets/simple-table-constructors.md"
+              },
+              {
+                "label": "CSV",
+                "path": "reference/cheat-sheets/csv.md"
+              },
+              {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
+                "label": "Parquet",
+                "path": "reference/cheat-sheets/parquet.md"
+              },
+              {
+                "label": "URI",
+                "path": "reference/cheat-sheets/uri-cheat-sheet.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Help and more",
+        "collapsible": false,
+        "items": [
           {
             "label": "FAQs",
             "items": [
@@ -3091,11 +3073,15 @@
             ]
           },
           {
+            "label": "Deephaven example apps on GitHub",
+            "href": "https://github.com/deephaven-examples"
+          },
+          {
             "label": "Engage in GitHub discussions",
             "href": "https://github.com/deephaven/deephaven-core/discussions"
           },
           {
-            "label": "File GitHub issue",
+            "label": "File GitHub issues",
             "href": "https://github.com/deephaven/deephaven-core/issues"
           },
           {

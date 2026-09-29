@@ -43,10 +43,10 @@ public class NullAwareCharReverseChunkSsaStamp implements ChunkSsaStamp {
     private static void processEntry(CharChunk<Values> leftStampValues, Chunk<RowKeys> leftStampKeys,
             NullAwareCharReverseSegmentedSortedArray ssa, WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
         final int leftSize = leftStampKeys.size();
+        rightKeysForLeft.setSize(leftSize);
         final long rightSize = ssa.size();
         if (rightSize == 0) {
             rightKeysForLeft.fillWithValue(0, leftSize, RowSequence.NULL_ROW_KEY);
-            rightKeysForLeft.setSize(leftSize);
             return;
         }
 
