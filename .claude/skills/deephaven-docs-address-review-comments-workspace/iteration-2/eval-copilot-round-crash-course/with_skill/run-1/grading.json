@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "Gives an explicit decision (apply, redirect, decline, ask, or equivalent) for every one of the 10 comments",
+      "passed": true,
+      "evidence": "Triage table: Apply (C1, C2, C3, C9), Ask (C4), Redirect (C5, C7), Decline (C6, C8), and 'Decline the removal and reword in the C3 edit' (C10)."
+    },
+    {
+      "text": "Accepts C1 (missing empty_table import), C2 (prose says 'both return 6' but the table has no 6), and C3 (with_serial alone is insufficient when several columns share state); the C3 fix points readers to barriers or the concept guide",
+      "passed": true,
+      "evidence": "C1, C2 and C3 are Apply. The C3 paragraph says: 'They also need [barriers](../../conceptual/query-engine/parallelization.md#barriers) to control which column goes first.'"
+    },
+    {
+      "text": "Does not accept C4 as written: declines it or asks, citing that Crash Course page titles are title case by established convention (or an earlier reviewer decision)",
+      "passed": true,
+      "evidence": "'Ask | All 15 Python and 13 Groovy Crash Course titles use Title Case ... Changing only this one breaks the series.'"
+    },
+    {
+      "text": "For C5, C6 and C7, does not propose adding the property names, defaults or exact threshold values to the tutorial narrative (redirects to a Configuration section/reference link or declines, with reasons)",
+      "passed": true,
+      "evidence": "C5 and C7 are Redirect, via a link to the thread pools and 'The row threshold ... is listed in [Query table configuration]' with no value given. C6 is Decline because the note already covers it."
+    },
+    {
+      "text": "Declines C8: does not propose enlarging the executed corrected example above the ~4.2M-row threshold (cites docs-build cost and/or that the page already explains the small size)",
+      "passed": true,
+      "evidence": "'Decline | ... A 4M+ row table would demonstrate nothing for most readers and would slow the docs build. The note already says this.'"
+    },
+    {
+      "text": "For C9, proposes a corrected takeaway at tutorial resolution (e.g. 'treats formulas as safe to run in parallel') rather than enumerating the conditions or naming properties",
+      "passed": true,
+      "evidence": "'- Deephaven treats formulas as stateless by default, so it can run them in parallel \u2014 this is fast, but it means your code must actually be stateless.'"
+    },
+    {
+      "text": "For C10, verifies the claim against source (e.g. the SelectColumn.isParallelizable javadoc: the engine may evaluate a non-parallelizable column out of order) and keeps the clause or asks, rather than deleting it or adding a hedge",
+      "passed": true,
+      "evidence": "'The source supports the point. The ordering promise (\"Rows are evaluated sequentially in row set order\") is part of the serial contract only.' The removal is declined and the idea is kept as 'without it, Deephaven makes no promise about evaluation order'."
+    },
+    {
+      "text": "Drafts a reply for every comment, and every reply for a comment that isn't applied gives a reason",
+      "passed": true,
+      "evidence": "The Draft replies section covers C1-C10. The replies for C4-C8 and C10 give reasons (series consistency, tutorial level, note already covers it, free-threading and build cost, contract supports the point)."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 26,
+    "output_chars": 12964
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label F in packet review-comments-i2); grader did not know which skill version wrote the report."
+}

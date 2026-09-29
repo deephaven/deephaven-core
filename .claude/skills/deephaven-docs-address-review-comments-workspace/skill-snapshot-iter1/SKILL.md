@@ -44,12 +44,6 @@ or a reviewer stated it confidently). Record one of: **true**, **false**, **true
 already handles it** (the doc says it elsewhere, or says it correctly at a lower resolution), or
 **unverifiable** (becomes an author query).
 
-Separate what a comment says about **the doc** from what it says about **the engine**. "This
-claim is unsupported" or "nothing on the page backs this up" is a claim about the source, not the
-page: check whether the source supports the doc's claim. If it does, the doc's claim stays — the
-comment's premise is false, even if the page doesn't explain the mechanism. Never delete or hedge
-a true statement because a reviewer couldn't see its basis; at most, add a plain-language reason.
-
 A comment can be true about the engine and still not describe a defect in the doc. "Sorts also
 parallelize, at a different threshold" is true; a how-to paragraph about `update` that doesn't
 mention sorting is still correct.
@@ -60,12 +54,7 @@ Put each comment in exactly one bucket:
 
 - **Apply** — the doc is wrong at its own level of detail: a false or contradicted claim, code
   that won't run or doesn't show what the text says, a broken link or anchor, a house-style rule
-  violation (see `deephaven-writing-style`), or a prescription that overstates what its remedy
-  does ("use X whenever Y" when X alone isn't enough for Y — see `deephaven-core-accuracy-check`'s
-  **Prescriptive rows claim sufficiency**). An overstated prescription is flatly wrong, not a
-  precision request: apply it even in late rounds, and fix it at the page's level — usually one
-  plain sentence plus a link to where the full treatment lives. "The full detail belongs on another
-  page" is a reason to keep the fix short, not a reason to leave the overstatement in place. Fix it at the page's level of abstraction. This
+  violation (see `deephaven-writing-style`). Fix it at the page's level of abstraction. This
   often means making the sentence *less* specific, not more.
 - **Redirect** — the premise is true, but the detail the comment asks for belongs somewhere else:
   a Configuration section at the end of the page, the configuration reference
@@ -115,18 +104,6 @@ If the user asked for edits:
    parentheticals, property names, or repeated pointers to the same setting have accumulated —
    from this round or earlier ones — consolidate before finishing. If a Python page changed,
    check whether the Groovy sibling needs the same Apply fixes (and only those).
-
-## 4a. Check your own proposed text
-
-Everything you propose to add is a new claim and a possible new defect. Before reporting:
-
-- Verify each proposed sentence against source, the same way you verified the comments.
-- Confirm every link and anchor you propose exists in the version of the docs you're reviewing —
-  open the target file and find the heading; don't reconstruct an anchor from memory or from an
-  old link elsewhere in the corpus.
-- Check that your proposed replacements, read together with the rest of the section, don't
-  reintroduce what you declined for another comment (a property name, a caveat, a repeated
-  pointer).
 
 ## 5. Report and replies
 

@@ -1,0 +1,7 @@
+{
+  "total_tokens": 112693,
+  "duration_ms": 277720,
+  "total_duration_seconds": 277.7,
+  "tool_uses": 25,
+  "note": "copied from iteration-1 (baseline unchanged)"
+}
