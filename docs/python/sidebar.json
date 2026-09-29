@@ -2976,10 +2976,6 @@
                     "path": "reference/community-questions/dynamically-update-dataframe.md"
                   },
                   {
-                    "label": "How do I get data out of a table?",
-                    "path": "reference/community-questions/how-do-i-get-data-out-of-a-deephaven-table.md"
-                  },
-                  {
                     "label": "How do I create unrollable columns in the Python IDE?",
                     "path": "reference/community-questions/python-unrollable-column.md"
                   },

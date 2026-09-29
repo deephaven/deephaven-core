@@ -2127,10 +2127,6 @@
                   {
                     "label": "transform",
                     "path": "reference/table-operations/partitioned-tables/transform.md"
-                  },
-                  {
-                    "label": "Partitioned table transform",
-                    "path": "reference/table-operations/group-and-aggregate/transform.md"
                   }
                 ]
               },
