@@ -22,7 +22,7 @@ Read `ref-deephaven-doc-categories` and determine which of the four categories (
 Crash Course only, How-to guide, Concept guide, Reference guide) this doc is — check that file's
 "Pages outside the four categories" section first if it doesn't obviously fit one (e.g.
 `intro.md`, or a contributor-facing tooling README); for an out-of-taxonomy page, skip the
-category weighting below entirely and apply only the generic structural checks in step 2. For a
+category weighting below entirely and apply only the generic structural checks in **Named structural pitfalls to check**. For a
 page that does fit one of the four, category changes how severely several checks below should
 weigh:
 
@@ -96,7 +96,7 @@ up front, rather than re-deriving them per check.
   telling the two apart. Fix: merge redundant full explanations into one at first substantive use;
   later mentions should link back or explicitly recap, not silently re-explain.
 
-- **Near-verbatim repeated examples:** Using your example list from step 1, cluster examples by
+- **Near-verbatim repeated examples:** Using your example list from the structure map, cluster examples by
   the underlying scenario they illustrate (e.g., multiple "shared counter" examples, multiple
   "cache" examples). Two or more examples with the same structural setup teaching the same point
   is a red flag — the reader is shown the same lesson repeatedly with cosmetic variation instead
@@ -104,7 +104,7 @@ up front, rather than re-deriving them per check.
   reused via cross-references or callbacks ("using the same `counter` example from above...")
   rather than restated fresh each time.
 
-- **Duplicated callouts with drifting wording:** Using your callout list from step 1, check for
+- **Duplicated callouts with drifting wording:** Using your callout list from the structure map, check for
   the same warning or breaking-change notice appearing more than once. Repetition for emphasis
   can be fine, but if the wording or level of detail differs between copies, it reads as though
   two different things happened. Fix: state it once, in the most prominent relevant location;
@@ -158,7 +158,7 @@ up front, rather than re-deriving them per check.
   heading that renames the concept ("Concurrent row calculations" under a parent that said
   "within a single table"), or a parent paragraph that never introduces a split its children
   then rely on, is an effective terminology change the reader has to reconcile on their own.
-  Compare every enumeration in the intro and in each parent paragraph against the step-1 outline.
+  Compare every enumeration in the intro and in each parent paragraph against the structure-map outline.
   Fix: rename the headings or rewrite the enumeration so the two match exactly; if the children
   genuinely subdivide further, say so in the parent paragraph.
 
@@ -179,8 +179,8 @@ up front, rather than re-deriving them per check.
   should be the same *kind* of thing — all general categories, or all concrete examples, or all
   operations, not a mix. A list of "reasons a formula needs serial execution" that mixes a general
   category ("reads a column computed by an earlier row"), a single specific example ("a global
-  counter"), and an item that doesn't meet the list's criterion at all ("logging," which doesn't
-  change the output) forces the reader to work out what the list is actually about. For each
+  counter"), and an item that doesn't meet the list's criterion at all (a row-local calculation
+  that reads only its own row's inputs) forces the reader to work out what the list is actually about. For each
   table or list, name the category its items share, then check each item against it. Fix: lift
   specific examples to the category they illustrate (or move them into an example column), and
   cut items that don't meet the list's criterion.
@@ -205,7 +205,7 @@ up front, rather than re-deriving them per check.
 
 Output a clear, concise bullet list, one bullet per finding, each naming the specific pattern
 (from the list above or a new one you observed), citing the concrete location(s) in the document
-(heading names and/or line numbers — build these from your step-1 outline, don't estimate), and
+(heading names and/or line numbers — build these from your structure-map outline, don't estimate), and
 proposing a specific fix (merge X into Y, move section Z before W, promote the table at line N
 to appear after the intro) rather than a vague "this feels redundant." Order findings by how much
 they'd actually confuse a first-time reader, not by document order.

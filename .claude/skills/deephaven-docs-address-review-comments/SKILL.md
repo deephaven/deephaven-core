@@ -18,7 +18,7 @@ So the job is not "make every comment go away." It is: fix what is wrong, put de
 belongs, decline what would make the page worse, and say why for each one.
 
 **Report by default.** Unless the user asked for the fixes to be applied, produce the triage and
-proposed replies (step 5) and stop. Never post replies or resolve threads on GitHub unless the user
+proposed replies (see **Report and replies**) and stop. Never post replies or resolve threads on GitHub unless the user
 explicitly asks — replying is outward-facing.
 
 ## 1. Gather and orient
@@ -26,7 +26,7 @@ explicitly asks — replying is outward-facing.
 - Get every comment with its location: from the PR (`gh api repos/<owner>/<repo>/pulls/<n>/comments`,
   plus review bodies from `.../reviews`), or from what the user pasted. Note which comments are
   from bots and which review round each belongs to — how many rounds this page has already had
-  matters in step 3.
+  matters for triage.
 - Read `ref-deephaven-doc-categories` and identify the page's category. Placement rules differ:
   in a Concept guide or Tutorial, configuration names, defaults, thresholds, and edge-case
   conditions stay out of the narrative; in a Reference guide or configuration page they *are* the
@@ -60,7 +60,8 @@ Put each comment in exactly one bucket:
 
 - **Apply** — the doc is wrong at its own level of detail: a false or contradicted claim, code
   that won't run or doesn't show what the text says, a broken link or anchor, a house-style rule
-  violation (see `deephaven-writing-style`), or a prescription that overstates what its remedy
+  violation (see `deephaven-writing-style`), a summary or takeaway that contradicts the page's own
+  body, or a prescription that overstates what its remedy
   does ("use X whenever Y" when X alone isn't enough for Y — see `deephaven-core-accuracy-check`'s
   **Prescriptive rows claim sufficiency**). An overstated prescription is flatly wrong, not a
   precision request: apply it even in late rounds, and fix it at the page's level — usually one
@@ -104,7 +105,7 @@ If the user asked for edits:
 
 1. Apply the **Apply** items first, verifying each rewritten sentence with
    `deephaven-core-accuracy-spot-check`. Run the duplicate-claim sweep from
-   `deephaven-core-accuracy-check` (step 8) for Apply items only — the same wrong claim often
+   `deephaven-core-accuracy-check` (its **Completeness sweep**) for Apply items only — the same wrong claim often
    appears in a table, a summary, a code comment, or the cross-language sibling. Don't propagate
    a redirected or declined suggestion to other sentences.
 2. Then make the **Redirect** moves (create or extend the Configuration section, add the

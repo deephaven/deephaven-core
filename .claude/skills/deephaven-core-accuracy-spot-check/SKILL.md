@@ -16,8 +16,7 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 2. **Verify each changed claim or code snippet against source.** Use the same source map as
    `deephaven-core-accuracy-check` (engine/server code, `py/server/deephaven/`, configuration
    properties under `Configuration/` and `props/`, gRPC definitions under `proto/`, etc. — see
-   that skill's step 4 ("Technical accuracy review") for the full path list — use the heading, not
-   the step number, since renumbering there has already gone stale once). Search source first;
+   that skill's "Technical accuracy review" step for the full path list). Search source first;
    never correct an example from memory.
 
    **Placement gate:** a verified-true fix can still be the wrong fix. If correcting the claim

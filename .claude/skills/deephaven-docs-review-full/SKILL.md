@@ -172,8 +172,11 @@ structural edit introduces into content nobody re-reads afterward.
 
 ## 5. Examples
 
-For each code example (the structure review's step-1 example list has them), check what no other
-step does — the accuracy check has already verified that it runs and behaves as claimed:
+For each code example (the structure review's structure map lists them), check what no other
+step does. The accuracy check has verified its API use and claimed behavior against source, but it
+doesn't run snippets. The docs snapshotter runs them when snapshots are regenerated
+(`docs/README.md`), so an example edited in this review hasn't been run until then — say so in the
+report rather than assuming it works. Then check:
 
 - **Does it illustrate the concept its lead-in names?** An example introduced as "a formula with
   side effects" that has none, or a barrier example where the barrier isn't what makes the output
