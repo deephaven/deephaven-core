@@ -281,8 +281,9 @@ The same benchmarks as [Benchmark results](#benchmark-results), one row per grou
 positions with each experiment; milliseconds per batch of 900 cycles. An asterisk marks a difference outside the error
 bounds. Unless a table says otherwise, the numbers come from an Apple silicon Mac.
 
-**The complete conversion, without reclaiming.** Only the downstream positions are wider, and nothing measurable
-changes:
+**The complete conversion, without reclaiming.** Both position domains are widened, but without reclaiming the
+aggregation uses a hash table that never reclaims, which keeps `int` positions. So only the downstream positions are
+wider in this benchmark, and nothing measurable changes:
 
 | Size | Workload | Groups return | `int` | `long` | Change | Heap, MB |
 | --- | --- | --- | --- | --- | --- | --- |
