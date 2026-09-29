@@ -12,25 +12,23 @@ Parallelization is running multiple calculations at the same time on different C
 
 ## Quick reference
 
-| Scenario                             | Solution                      | Why                                 |
-| ------------------------------------ | ----------------------------- | ----------------------------------- |
-| Pure column math                     | Default (parallel)            | Thread-safe, no shared state        |
-| Global counter                       | `withSerial`                  | Needs sequential row processing     |
-| Column A must finish before Column B | Barriers                      | Controls cross-operation ordering   |
-| File I/O or logging                  | `withSerial`                  | Serialize access to shared resource |
-| Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
-| Non-thread-safe library              | `withSerial`                  | Forces single-threaded access       |
+| Category                                        | Example                                            | Solution           |
+| ----------------------------------------------- | -------------------------------------------------- | ------------------ |
+| Pure function (no shared state or side effects) | `Total = Price * Quantity`                         | Default (parallel) |
+| Order-dependent or stateful function            | A running counter or sequential IDs                | `withSerial`       |
+| Non-thread-safe resource or library             | Writing to a file or log; an unsynchronized client | `withSerial`       |
+| Ordering between operations                     | Column B reads a cache that column A fills         | Barriers           |
 
 ## How parallelization works
 
-Deephaven uses all available CPU cores to process queries faster, in three ways: across tables, across rows, and across columns.
+Deephaven uses all available CPU cores to process queries faster in three ways: concurrent table updates, concurrent row calculations, and concurrent column calculations.
 
-### Across tables
+### Concurrent table updates
 
 When you create multiple tables from the same source, Deephaven's update graph can update them concurrently. In this example, three independent tables derive from `marketData`:
 
 ```groovy ticking-table order=null
-// Create a live table that adds a row every second
+// Create a live table with rows arriving at one-second intervals
 marketData = timeTable("PT1s").update(
     "Symbol = `SYM` + (int)(i % 5)",
     "Price = 100 + randomGaussian(0, 10)",
@@ -43,41 +41,44 @@ highVolume = marketData.where("Volume > 1000000")
 recentTrades = marketData.tail(10)
 ```
 
-When new data arrives in `marketData`, the update graph schedules `withMetrics`, `highVolume`, and `recentTrades` as independent notifications, which can run concurrently on different cores. (This depends on `PeriodicUpdateGraph.updateThreads` being greater than 1, which is the default — see [Thread pools](#query-phases-and-thread-pools) below.)
+When new data arrives in `marketData`, the update graph schedules `withMetrics`, `highVolume`, and `recentTrades` as independent notifications, which can run concurrently on different cores. This requires the update graph to have more than one worker thread, which is the default.
 
 Deephaven tracks which tables depend on which through an internal structure called the [update graph](../dag.md). Independent tables (those that don't depend on each other) run in parallel automatically.
 
-### Within a single table
+### Concurrent row calculations
 
-Deephaven also parallelizes calculations within a single table, in two ways:
+Within a single table, Deephaven can split one column's calculation across cores. When you run `source.update("Total = Price * Quantity")`, Deephaven divides the rows into groups, assigns each group to a different CPU core, has each core calculate `Total` for its rows independently, and combines the results into the final `Total` column.
 
-**Across rows**: When you run `source.update("Total = Price * Quantity")`, Deephaven divides the rows into groups, assigns each group to a different CPU core, has each core calculate `Total` for its rows independently, and combines the results into the final `Total` column.
+### Concurrent column calculations
 
-**Across columns**: When you compute multiple columns in the same operation, Deephaven can calculate independent columns simultaneously. For example, in `source.update("A = X * 2", "B = Y + 1")`, columns `A` and `B` can be computed on different cores at the same time because neither depends on the other.
+Also within a single table, when you compute multiple columns in the same operation, Deephaven can calculate independent columns simultaneously. For example, in `source.update("A = X * 2", "B = Y + 1")`, columns `A` and `B` can be computed on different cores at the same time because neither depends on the other.
 
-**What gets parallelized**:
+### What is and isn't parallelized
+
+The three mechanisms above apply to operations that compute and store their results when they run:
 
 - Column calculations in [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md).
 - Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
-- [`sort`](../../reference/table-operations/sort/sort.md), once the table is large enough (`QueryTable.minimumParallelSortRows`, about 1 million rows by default) — disable with `QueryTable.parallelSort=false`.
+- [`sort`](../../reference/table-operations/sort/sort.md), once the table is large enough to be worth splitting.
 
-**What does NOT get parallelized**:
+Two other cases look like exceptions but work differently:
 
-- [`view`](../../reference/table-operations/select/view.md), [`updateView`](../../reference/table-operations/select/update-view.md), and [`lazyUpdate`](../../reference/table-operations/select/lazy-update.md) — these are lazily evaluated when cells are accessed, not computed upfront.
-- Operations marked with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) (you control this — see [Controlling execution order](#controlling-execution-order) below).
-- Operations waiting for dependencies (automatic in the update graph).
+- **Deferred evaluation**: [`view`](../../reference/table-operations/select/view.md), [`updateView`](../../reference/table-operations/select/update-view.md), and [`lazyUpdate`](../../reference/table-operations/select/lazy-update.md) don't compute anything when you call them. They store the formula and evaluate it whenever a cell is read, on whichever thread reads it. That evaluation can itself happen in parallel — for example, when a downstream `update` that reads the column is split across cores — and a row can be evaluated more than once. This is also why `withSerial` is rejected for `view` and `updateView`: there is no single evaluation pass to serialize.
+- **Serialization you request**: an expression marked with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) always runs one row at a time — see [Controlling execution order](#controlling-execution-order).
+
+Separately, the update graph never updates a table before the tables it depends on have finished; that ordering is automatic.
 
 ### Query phases and thread pools
 
 Queries execute in two phases, and Deephaven uses a separate thread pool for each.
 
-**Initialization**: Each time you create a table operation (like [`where`](../../reference/table-operations/filter/where.md) or [`update`](../../reference/table-operations/select/update.md)) — whether it's the first line of a script or something you type into a running console later — Deephaven computes that operation's initial result using all existing data, dividing the rows among CPU cores (the "across rows" parallelism described above). This is handled by the **Operation Initialization Thread Pool**, configured with `OperationInitializationThreadPool.threads` (default `-1`, meaning use all available cores).
+**Initialization**: Every table operation is computed once when you call it — whether at the top of a script or later in a running console. Deephaven computes the initial result from all existing data, splitting the rows across cores as described above. This work runs on the operation initialization thread pool.
 
-For live (refreshing) tables, Deephaven also registers the table in the [update graph](../dag.md) during initialization so it can receive future updates.
+For live (refreshing) tables, Deephaven also registers the result in the [update graph](../dag.md) during initialization so it receives future updates.
 
-**Updates**: After initialization, live tables update whenever their source data changes, parallelizing across rows and across columns just like during initialization, plus across tables: independent downstream tables' update-graph notifications are processed concurrently, so two tables that both depend on the same changed source can each finish updating on their own core without waiting for each other. This is handled by the **Update Graph Processor Thread Pool**, configured with `PeriodicUpdateGraph.updateThreads` (default `-1`, meaning use all available cores).
+**Updates**: After initialization, a live table updates whenever its source data changes. Each update uses the same concurrent row and column calculations as initialization, and independent tables update concurrently. This work runs on the update graph thread pool.
 
-Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup. Set either property to a specific number to limit parallelism during that phase.
+Both pools use all CPU cores by default. See [Configuration](#configuration) to size them.
 
 ## When parallelization is safe by default
 
@@ -110,9 +111,9 @@ result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!NOTE]
-> These examples use small tables for clarity. Deephaven only splits a `select`/`update` computation across cores once a table crosses `QueryTable.minimumParallelSelectRows` (about 4.2 million rows by default), and `where` has its own, much smaller threshold: more than twice `QueryTable.parallelWhereRowsPerSegment` (about 131,072 rows total with the default 65,536-row segment size). Below those thresholds, Deephaven evaluates the formula on a single core regardless of whether it's marked stateless — these examples illustrate the correctness contract, not actual observed parallel speedup.
+> These examples use small tables for clarity. Deephaven only splits work across cores once a table is large enough — a few million rows for `select`/`update`, and roughly a hundred thousand rows for `where` (see [Configuration](#configuration)). Below those sizes, Deephaven evaluates the formula on a single core regardless of whether it's marked stateless — these examples illustrate the correctness contract, not actual observed parallel speedup.
 
-You can change the default behavior using configuration properties: `QueryTable.statelessSelectByDefault` for [`select`](../../reference/table-operations/select/select.md)/[`update`](../../reference/table-operations/select/update.md), and `QueryTable.statelessFiltersByDefault` for filters. See [Query table configuration](../query-table-configuration.md) for details on these and other engine configuration properties.
+You can change this default — see [Configuration](#configuration).
 
 ## Controlling execution order
 
@@ -272,12 +273,12 @@ Barriers work the same way for [`Filter`](../../reference/query-language/types/F
 
 #### Implicit barriers
 
-When `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is enabled, serial operations automatically create barriers between each other — two serial columns in the same `update` execute one after the other without explicit barriers. This behavior is controlled by the `QueryTable.serialSelectImplicitBarriers` configuration property:
+When implicit barriers are enabled, serial operations automatically create barriers between each other — two serial columns in the same `update` execute one after the other without explicit barriers:
 
 - **Stateless mode (default)**: Serial operations only enforce row order within themselves, not between each other. Use explicit barriers if you need cross-operation ordering.
-- **Stateful mode**: Serial operations automatically wait for each other. This is useful when operations share global state. Enable by setting `QueryTable.serialSelectImplicitBarriers=true`.
+- **Stateful mode**: Serial operations automatically wait for each other. This is useful when operations share global state.
 
-Most users don't need to change this setting.
+Most users don't need to change this setting — see [Configuration](#configuration).
 
 ### Stateful partition filters
 
@@ -290,8 +291,22 @@ When you mark a partition filter as serial, Deephaven cannot reorder it and must
 Use the [Quick reference](#quick-reference) table above for a fast lookup. In more detail:
 
 - **Use default parallel execution when** the formula only uses values from the current row, has no side effects, doesn't depend on row processing order, and is thread-safe — this covers most formulas, including the [stateless examples above](#when-parallelization-is-safe-by-default).
-- **Use `withSerial` when** rows must be processed in order within a single operation, or the formula updates global state sequentially, as in the [counter example above](#example-a-counter-needs-serialization). Common cases: sequential numbering, processing events in chronological sequence, cumulative calculations, file I/O or logging.
+- **Use `withSerial` when** rows must be processed in order within a single operation, or the formula updates global state sequentially, as in the [counter example above](#example-a-counter-needs-serialization). Common cases: sequential numbering, processing events in chronological sequence, cumulative calculations, and writing to a file or log from a formula.
 - **Use barriers when** you need to control ordering _between_ different operations — one must finish before another starts, as in the [barrier example above](#example-extending-the-counter-with-a-barrier). Common cases: one column or filter populates a cache or resource that another reads from.
+
+## Configuration
+
+Parallelization needs no configuration. These properties tune it; defaults and full descriptions are in [Query table configuration](../query-table-configuration.md).
+
+| Property                                                                      | Controls                                                                 |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `OperationInitializationThreadPool.threads`                                   | Thread count for the initialization phase (default: all cores)           |
+| `PeriodicUpdateGraph.updateThreads`                                           | Thread count for the update phase (default: all cores)                   |
+| `QueryTable.minimumParallelSelectRows`                                        | Minimum table size before `select`/`update` split rows across cores      |
+| `QueryTable.parallelWhereRowsPerSegment`                                      | Segment size for `where`; splitting starts above twice this many rows    |
+| `QueryTable.parallelSort`, `QueryTable.minimumParallelSortRows`               | Whether, and from what size, `sort` runs in parallel                     |
+| `QueryTable.statelessSelectByDefault`, `QueryTable.statelessFiltersByDefault` | Whether formulas and filters are assumed stateless (parallel) by default |
+| `QueryTable.serialSelectImplicitBarriers`                                     | Whether serial selectables get implicit barriers between each other      |
 
 ## Key takeaways
 
