@@ -238,7 +238,13 @@ public interface JobScheduler {
         }
 
         private void onTaskError(@NotNull final Exception e) {
-            exception.compareAndSet(null, e);
+            if (!exception.compareAndSet(null, e)) {
+                // The first failure is the one delivered; keep the later ones with it rather than dropping them.
+                final Exception first = exception.get();
+                if (first != e) {
+                    first.addSuppressed(e);
+                }
+            }
         }
 
         @Override

@@ -21,6 +21,8 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
@@ -658,6 +660,41 @@ public final class TestJobScheduler {
 
         observer.assertDidNotCallComplete();
         assertSame(scheduler.rejection, observer.error());
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * When more than one task fails, the first failure is delivered, and the later ones must not be lost.
+     */
+    @Test
+    public void testParallelErrorsAreAllReported() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(2);
+        final List<Consumer<Exception>> taskErrorConsumers = new ArrayList<>();
+
+        scheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                2,
+                // Leave each task outstanding, so that both fail.
+                (context, idx, nec, resume) -> taskErrorConsumers.add(nec),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+        scheduler.runAccepted();
+        assertEquals("sanity: both tasks started", 2, taskErrorConsumers.size());
+
+        final Exception first = new IllegalStateException("first");
+        final Exception second = new IllegalStateException("second");
+        taskErrorConsumers.get(0).accept(first);
+        Assert.eqNull(observer.error(), "observer.error()");
+        taskErrorConsumers.get(1).accept(second);
+
+        observer.assertDidNotCallComplete();
+        assertSame(first, observer.error());
+        assertArrayEquals(new Throwable[] {second}, first.getSuppressed());
         observer.assertNoOpenContexts();
     }
 
