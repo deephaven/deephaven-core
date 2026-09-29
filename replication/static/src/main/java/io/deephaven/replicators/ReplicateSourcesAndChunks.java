@@ -685,7 +685,22 @@ public class ReplicateSourcesAndChunks {
                 ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
         writableBooleanChunkClassLines =
                 ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
-        writableBooleanChunkClassLines = ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "sort");
+        // There is no boolean sort kernel; false sorts before true, so counting the false values suffices.
+        writableBooleanChunkClassLines = ReplicationUtils.replaceRegion(writableBooleanChunkClassLines, "sort",
+                Arrays.asList(
+                        "    @Override",
+                        "    public final void sort(int start, int length) {",
+                        "        final int from = offset + start;",
+                        "        final int to = from + length;",
+                        "        int falseCount = 0;",
+                        "        for (int ii = from; ii < to; ++ii) {",
+                        "            if (!data[ii]) {",
+                        "                ++falseCount;",
+                        "            }",
+                        "        }",
+                        "        Arrays.fill(data, from, from + falseCount, false);",
+                        "        Arrays.fill(data, from + falseCount, to, true);",
+                        "    }"));
         FileUtils.writeLines(writableBooleanChunkClassFile, writableBooleanChunkClassLines);
     }
 
