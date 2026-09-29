@@ -6,7 +6,6 @@ package io.deephaven.server.flightsql;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
-import io.deephaven.base.clock.Clock;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -79,8 +78,7 @@ public class FlightSqlTestModule {
     Scheduler provideScheduler(ScheduledExecutorService concurrentExecutor) {
         return new Scheduler.DelegatingImpl(
                 Executors.newSingleThreadExecutor(),
-                concurrentExecutor,
-                Clock.system());
+                concurrentExecutor);
     }
 
     @Provides

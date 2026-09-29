@@ -11,6 +11,7 @@ import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -149,6 +150,7 @@ public class SessionService {
                     "maxStackTraceDepth", 50);
 
     private final Scheduler scheduler;
+    private final Clock clock;
     private final SessionState.Factory sessionFactory;
 
     private final long tokenExpireMs;
@@ -171,11 +173,12 @@ public class SessionService {
     private final SessionListener sessionListener;
 
     @Inject
-    public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
+    public SessionService(final Scheduler scheduler, final Clock clock, final SessionState.Factory sessionFactory,
             @Named("session.tokenExpireMs") final long tokenExpireMs,
             Map<String, AuthenticationRequestHandler> authRequestHandlers,
             Set<SessionListener> sessionListeners) {
         this.scheduler = scheduler;
+        this.clock = clock;
         this.sessionFactory = sessionFactory;
         this.tokenExpireMs = tokenExpireMs;
         this.authRequestHandlers = authRequestHandlers;
@@ -282,7 +285,7 @@ public class SessionService {
     private TokenExpiration checkTokenAndRotate(final SessionState session, boolean initialToken) {
         UUID newUUID;
         TokenExpiration expiration;
-        final long nowMillis = scheduler.currentTimeMillis();
+        final long nowMillis = clock.currentTimeMillis();
 
         synchronized (session) {
             expiration = session.getExpiration();
@@ -337,7 +340,7 @@ public class SessionService {
                 final TokenExpiration next = peekNextExpiration();
                 if (next != null) {
                     cleanupJobInstalled = true;
-                    scheduler.runAtTime(next.deadlineMillis, sessionCleanupJob);
+                    scheduleCleanupAt(next.deadlineMillis);
                 }
             }
         }
@@ -439,7 +442,7 @@ public class SessionService {
     public SessionState getSessionForToken(final UUID token) {
         final TokenExpiration expiration = tokenToSession.get(token);
         if (expiration == null || expiration.session.isExpired()
-                || expiration.deadlineMillis <= scheduler.currentTimeMillis()) {
+                || expiration.deadlineMillis <= clock.currentTimeMillis()) {
             return null;
         }
         return expiration.session;
@@ -521,10 +524,17 @@ public class SessionService {
         }
     }
 
+    /**
+     * Schedules the cleanup job for a wall-clock deadline, measuring the delay when it is scheduled.
+     */
+    private void scheduleCleanupAt(final long deadlineMillis) {
+        scheduler.runAfterDelay(deadlineMillis - clock.currentTimeMillis(), sessionCleanupJob);
+    }
+
     private final class SessionCleanupJob implements Runnable {
         @Override
         public void run() {
-            final long nowMillis = scheduler.currentTimeMillis();
+            final long nowMillis = clock.currentTimeMillis();
 
             for (final TokenExpiration next : outstandingCookies) {
                 if (next.deadlineMillis > nowMillis) {
@@ -548,7 +558,7 @@ public class SessionService {
                 if (next == null) {
                     cleanupJobInstalled = false;
                 } else {
-                    scheduler.runAtTime(next.deadlineMillis, this);
+                    scheduleCleanupAt(next.deadlineMillis);
                 }
             }
         }

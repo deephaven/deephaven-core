@@ -192,7 +192,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 return false;
             }
             isScheduled = true;
-            final long now = scheduler.currentTimeMillis();
+            final long now = scheduler.monotonicTimeMillis();
             final long nextMin = lastScheduledMillis + UPDATE_INTERVAL_MS;
             if (now >= nextMin) {
                 lastScheduledMillis = now;

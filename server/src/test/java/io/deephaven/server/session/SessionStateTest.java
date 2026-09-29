@@ -62,7 +62,7 @@ public class SessionStateTest {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
         scheduler = new TestControlledScheduler();
-        session = new SessionState(scheduler, new SessionService.ObfuscatingErrorTransformer(),
+        session = new SessionState(scheduler, scheduler, new SessionService.ObfuscatingErrorTransformer(),
                 TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                 DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), session));
@@ -190,8 +190,9 @@ public class SessionStateTest {
 
         final MutableBoolean otherSuccess = new MutableBoolean();
         final MutableBoolean otherError = new MutableBoolean();
-        final SessionState other = new SessionState(scheduler, new SessionService.ObfuscatingErrorTransformer(),
-                TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
+        final SessionState other =
+                new SessionState(scheduler, scheduler, new SessionService.ObfuscatingErrorTransformer(),
+                        TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         other.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                 DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), other));
         final SessionState.ExportObject<Object> otherExportObj;
