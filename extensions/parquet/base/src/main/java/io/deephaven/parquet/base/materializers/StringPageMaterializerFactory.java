@@ -17,15 +17,16 @@ public class StringPageMaterializerFactory implements PageMaterializerFactory {
 
     @Override
     public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-        return dataReader instanceof PlainBinaryStringValuesReader plainBinaryReader
-                ? new PlainBinaryStringMaterializer(plainBinaryReader, (String) nullValue, numValues)
+        return dataReader instanceof PlainBinaryStringValuesReader
+                ? new PlainBinaryStringMaterializer(
+                        (PlainBinaryStringValuesReader) dataReader, (String) nullValue, numValues)
                 : new StringMaterializer(dataReader, (String) nullValue, numValues);
     }
 
     @Override
     public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-        return dataReader instanceof PlainBinaryStringValuesReader plainBinaryReader
-                ? new PlainBinaryStringMaterializer(plainBinaryReader, numValues)
+        return dataReader instanceof PlainBinaryStringValuesReader
+                ? new PlainBinaryStringMaterializer((PlainBinaryStringValuesReader) dataReader, numValues)
                 : new StringMaterializer(dataReader, numValues);
     }
 

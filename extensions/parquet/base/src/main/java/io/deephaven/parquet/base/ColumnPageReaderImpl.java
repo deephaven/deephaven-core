@@ -670,11 +670,11 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
         // The hook is total, so `hasArray` is checked here rather than by the factory. Page buffers are heap-backed
         // today, so it never fires.
-        if (pageMaterializerFactory instanceof StringPageMaterializerFactory stringFactory
+        if (pageMaterializerFactory instanceof StringPageMaterializerFactory
                 && isPlainBinaryPage(dataEncoding, path.getPrimitiveType().getPrimitiveTypeName())
                 && in.hasArray()) {
             // `in` is already positioned past the repetition and definition levels.
-            return stringFactory.makePlainBinaryValuesReader(in);
+            return ((StringPageMaterializerFactory) pageMaterializerFactory).makePlainBinaryValuesReader(in);
         }
         final ValuesReader dataReader;
         if (dataEncoding.usesDictionary()) {
