@@ -26,12 +26,13 @@ import java.util.function.Supplier;
  * The recycle bin holds at most its current capacity, which adapts to its traffic between the capacity it was created
  * with and a maximum. Items are commonly borrowed in bursts and returned together, as when an update cycle borrows
  * storage for previous values and returns it all when the cycle completes. When a window of time sees the bin turn
- * returned items away because it is full, and also construct new items because it is empty, the capacity grows by the
- * largest shortfall of a single burst, the most items constructed between two returns. When a window sees the bin never
- * empty, the capacity shrinks by a fraction of the items it never needed, rounded up, but never below the capacity it
- * was created with; a fraction of 0 keeps the capacity once grown. The maximum is {@value #MAXIMUM_CAPACITY_PROPERTY}
- * unless a constructor gives one; it defaults to no limit, since the garbage collector reclaims the items under memory
- * pressure. The window is {@value #WINDOW_MILLIS_PROPERTY} milliseconds, 1000 by default, and the fraction is
+ * returned items away because it is full, and also construct new items because it is empty, the capacity grows to hold
+ * the largest single burst, the most items borrowed between two returns, but by no more than the most items turned away
+ * between two borrows, since items a burst keeps need no room. When a window sees the bin never empty, the capacity
+ * shrinks by a fraction of the items it never needed, rounded up, but never below the capacity it was created with; a
+ * fraction of 0 keeps the capacity once grown. The maximum is {@value #MAXIMUM_CAPACITY_PROPERTY} unless a constructor
+ * gives one; it defaults to no limit, since the garbage collector reclaims the items under memory pressure. The window
+ * is {@value #WINDOW_MILLIS_PROPERTY} milliseconds, 1000 by default, and the fraction is
  * {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default.
  *
  * <p>
@@ -80,16 +81,20 @@ public class SoftRecycler<T> {
     private int windowMisses;
     /** The items turned away because the recycle bin was full, in this window. */
     private int windowDrops;
-    /** The items constructed since the last return: the shortfall of the current burst. */
-    private int missRun;
-    /** The largest {@link #missRun} of this window. */
-    private int windowMaxMissRun;
+    /** The items borrowed since the last return: the size of the current burst. */
+    private int burstBorrows;
+    /** The largest {@link #burstBorrows} of this window. */
+    private int windowMaxBurst;
+    /** The items turned away since the last borrow. */
+    private int dropRun;
+    /** The largest {@link #dropRun} of this window. */
+    private int windowMaxDropRun;
     /** The fewest items the recycle bin held in this window. */
     private int windowMinSize;
 
     /**
-     * @param capacity Capacity of the recycler, which it grows from with its traffic, up to
-     *        {@value #MAXIMUM_CAPACITY_PROPERTY}, and never shrinks below
+     * @param capacity The capacity the recycler starts with, and the least it shrinks to; it grows with its traffic up
+     *        to {@value #MAXIMUM_CAPACITY_PROPERTY}
      * @param constructItem A callback that creates a new item
      * @param sanitizeItem Optional. A callback that sanitizes the item before reuse. Pass null if no sanitization is
      *        needed.
@@ -99,7 +104,8 @@ public class SoftRecycler<T> {
     }
 
     /**
-     * @param capacity Capacity of the recycler, which it grows from with its traffic and never shrinks below
+     * @param capacity The capacity the recycler starts with, and the least it shrinks to; it grows with its traffic up
+     *        to {@code maximumCapacity}
      * @param maximumCapacity The most items the recycler may grow to hold, at least {@code capacity}
      * @param constructItem A callback that creates a new item
      * @param sanitizeItem Optional. A callback that sanitizes the item before reuse. Pass null if no sanitization is
@@ -147,6 +153,8 @@ public class SoftRecycler<T> {
     public T borrowItem() {
         synchronized (this) {
             adapt();
+            windowMaxBurst = Math.max(windowMaxBurst, ++burstBorrows);
+            dropRun = 0;
             // Working backwards, try to find an item that is still live
             while (!recycleBin.isEmpty()) {
                 // Peel off the last SoftReference. If it still has a value, return that value to the caller. Otherwise,
@@ -159,7 +167,6 @@ public class SoftRecycler<T> {
             }
             windowMinSize = 0;
             ++windowMisses;
-            windowMaxMissRun = Math.max(windowMaxMissRun, ++missRun);
         }
 
         // Recycle bin empty, so make a new item.
@@ -172,7 +179,7 @@ public class SoftRecycler<T> {
             sanitizeItem.accept(item);
         }
         synchronized (this) {
-            missRun = 0;
+            burstBorrows = 0;
             adapt();
             // Get the expired SoftReferences out of the queue so we have an accurate count.
             cleanup();
@@ -180,6 +187,7 @@ public class SoftRecycler<T> {
             if (size >= capacity) {
                 // Sorry, recycle bin full.
                 ++windowDrops;
+                windowMaxDropRun = Math.max(windowMaxDropRun, ++dropRun);
                 return;
             }
             recycleBin.add(new SoftReferenceWithIndex<>(item, retirementQueue, size));
@@ -203,9 +211,8 @@ public class SoftRecycler<T> {
     }
 
     /**
-     * At the end of a window, grow by the largest shortfall of one burst if the recycle bin both turned items away and
-     * constructed new ones, or else shrink by the shrink fraction of the items it never needed. Called with the lock
-     * held.
+     * At the end of a window, grow to the largest burst if the recycle bin both turned items away and constructed new
+     * ones, or else shrink by the shrink fraction of the items it never needed. Called with the lock held.
      */
     private void adapt() {
         if ((++operations & clockReadMask) != 0) {
@@ -216,10 +223,11 @@ public class SoftRecycler<T> {
             return;
         }
         if (windowDrops > 0 && windowMisses > 0) {
-            // Items were thrown away and then constructed again, so a larger bin would have kept them. Grow by one
-            // burst's shortfall rather than the window's total: every burst reuses the same items.
-            final long grown = (long) capacity + Math.min(windowMaxMissRun, windowDrops);
-            capacity = (int) Math.min(maximumCapacity, grown);
+            // Items were thrown away and then constructed again, so a larger bin would have kept them. A bin as large
+            // as the largest burst keeps every item a burst returns, however full it was when the burst began; the
+            // items turned away at once bound the room that was missing.
+            final long needed = Math.min(windowMaxBurst, (long) capacity + windowMaxDropRun);
+            capacity = (int) Math.max(capacity, Math.min(maximumCapacity, needed));
         } else if (windowMinSize > 0) {
             // rounded up, so that any fraction above 0 reaches the minimum
             final int shrink = (int) Math.ceil(windowMinSize * shrinkFraction);
@@ -231,7 +239,8 @@ public class SoftRecycler<T> {
         windowStart = now;
         windowMisses = 0;
         windowDrops = 0;
-        windowMaxMissRun = 0;
+        windowMaxBurst = 0;
+        windowMaxDropRun = 0;
         windowMinSize = recycleBin.size();
     }
 

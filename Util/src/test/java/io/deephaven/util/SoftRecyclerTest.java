@@ -70,7 +70,7 @@ public class SoftRecyclerTest {
     }
 
     @Test
-    public void testGrowsByOneBurstsShortfall() {
+    public void testGrowsToTheLargestBurst() {
         final Fixture fixture = new Fixture(10, 1000);
         // fill the bin, so that the first burst below is not short of every item it needs
         fixture.burst(10);
@@ -82,7 +82,7 @@ public class SoftRecyclerTest {
         assertEquals(10, fixture.recycler.getCapacity());
         fixture.endWindow();
         fixture.burst(25);
-        // one burst's shortfall, not the window's total of 15 per burst
+        // the largest burst, not the window's total of 15 constructed per burst
         assertEquals(25, fixture.recycler.getCapacity());
 
         // with room for a whole burst, nothing is constructed again
@@ -92,6 +92,33 @@ public class SoftRecyclerTest {
             fixture.burst(25);
         }
         assertEquals(constructed, fixture.constructed.get());
+    }
+
+    @Test
+    public void testGrowsToTheLargestBurstFromAnEmptyBin() {
+        // from an empty bin, the first burst constructs every item it needs, which is more than the bin was short of
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.burst(25);
+        fixture.endWindow();
+        fixture.burst(25);
+        assertEquals(25, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testItemsABurstKeepsNeedNoRoom() {
+        // each burst borrows 5 items it keeps, as storage that stays in use, and 20 it returns
+        final Fixture fixture = new Fixture(10, 1000);
+        for (int window = 0; window < 3; ++window) {
+            for (int ii = 0; ii < 5; ++ii) {
+                for (int jj = 0; jj < 5; ++jj) {
+                    fixture.recycler.borrowItem();
+                }
+                fixture.burst(20);
+            }
+            fixture.endWindow();
+        }
+        fixture.recycler.borrowItem();
+        assertEquals(20, fixture.recycler.getCapacity());
     }
 
     @Test
