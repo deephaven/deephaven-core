@@ -167,7 +167,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         private static final long UPDATE_INTERVAL_MS = 250;
 
         // guarded by parent sync
-        private long lastScheduledMillis = 0;
+        private long lastScheduledMillis = -UPDATE_INTERVAL_MS;
         private boolean isScheduled = false;
 
         @Override
