@@ -23,6 +23,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
@@ -121,7 +122,15 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                             return;
                         }
 
-                        // Skipping the data index filter, continue the wrapped filter up to the cost ceiling.
+                        // Skipping the data index filter, continue the wrapped filter up to the cost ceiling. The
+                        // first result is released once, when its matches are combined or when the second round
+                        // fails; a consumer that throws may be reported to onError after the combination.
+                        final AtomicBoolean resultReleased = new AtomicBoolean();
+                        final Runnable releaseResult = () -> {
+                            if (resultReleased.compareAndSet(false, true)) {
+                                result.close();
+                            }
+                        };
                         wrappedMatcher.pushdownFilter(
                                 filter,
                                 result.maybeMatch(),
@@ -131,10 +140,16 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                                 jobScheduler,
                                 nextResult -> {
                                     // Combine the match results from earlier pushdown
-                                    nextResult.match().insert(result.match());
+                                    try (final SafeCloseable ignored = releaseResult::run) {
+                                        nextResult.match().insert(result.match());
+                                    }
                                     onComplete.accept(nextResult);
                                 },
-                                onError);
+                                e -> {
+                                    try (final SafeCloseable ignored = releaseResult::run) {
+                                        onError.accept(e);
+                                    }
+                                });
                     },
                     onError);
             return;
@@ -210,6 +225,8 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
     /**
      * Apply the filter to the data index table and return the result.
+     *
+     * @param result the result of any pushdown so far, whose maybe rows the index filters; this method closes it
      */
     @NotNull
     private PushdownResult pushdownDataIndex(
@@ -218,42 +235,44 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
-        final WritableRowSet matching;
-        // One row set per index row that passes the filter, so the unfiltered index bounds them. The batcher owns
-        // what it gathers, and outliving the liveness scope and the iterator leaves nothing that can throw between
-        // building the result and the caller taking it.
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(dataIndex.table().size())) {
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                // Extract the fundamental filter, ignoring barriers.
-                final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
-                final Table toFilter;
-                if (!renameMap.isEmpty()) {
-                    final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                            .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                    ColumnName.of(entry.getKey())))
-                            .collect(Collectors.toList());
-                    toFilter = dataIndex.table().renameColumns(renamePairs);
-                } else {
-                    toFilter = dataIndex.table();
-                }
-                try {
-                    final Table filteredTable = toFilter.where(copiedFilter);
-                    try (final CloseableIterator<RowSet> it =
-                            ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
-                                    .iterator()) {
-                        it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
+        try (result) {
+            final WritableRowSet matching;
+            // One row set per index row that passes the filter, so the unfiltered index bounds them. The batcher owns
+            // what it gathers, and outliving the liveness scope and the iterator leaves nothing that can throw between
+            // building the result and the caller taking it.
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(dataIndex.table().size())) {
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    // Extract the fundamental filter, ignoring barriers.
+                    final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
+                    final Table toFilter;
+                    if (!renameMap.isEmpty()) {
+                        final Collection<Pair> renamePairs = renameMap.entrySet().stream()
+                                .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                                        ColumnName.of(entry.getKey())))
+                                .collect(Collectors.toList());
+                        toFilter = dataIndex.table().renameColumns(renamePairs);
+                    } else {
+                        toFilter = dataIndex.table();
                     }
-                } catch (final Exception e) {
-                    throw new TableInitializationException(
-                            "Error applying filter " + copiedFilter + " to data index table", e);
+                    try {
+                        final Table filteredTable = toFilter.where(copiedFilter);
+                        try (final CloseableIterator<RowSet> it =
+                                ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
+                                        .iterator()) {
+                            it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
+                        }
+                    } catch (final Exception e) {
+                        throw new TableInitializationException(
+                                "Error applying filter " + copiedFilter + " to data index table", e);
+                    }
                 }
+                matching = batcher.build();
             }
-            matching = batcher.build();
-        }
-        // Retain only the maybe rows and add the previously found matches.
-        try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
-            matching.insert(result.match());
-            return PushdownResult.of(selection, matching, empty);
+            // Retain only the maybe rows and add the previously found matches.
+            try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
+                matching.insert(result.match());
+                return PushdownResult.of(selection, matching, empty);
+            }
         }
     }
 
