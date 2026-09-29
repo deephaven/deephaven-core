@@ -48,6 +48,14 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         selectionThreshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
     }
 
+    /**
+     * Whether a selection of {@code size} rows is large enough, relative to the index table, for the index to pay off.
+     * The estimate and the pushdown must agree, or the estimate advertises a round that the pushdown then declines.
+     */
+    private boolean worthUsingIndex(final long size) {
+        return size > selectionThreshold;
+    }
+
     @Override
     public void estimatePushdownFilterCost(
             @NotNull final WhereFilter filter,
@@ -60,9 +68,9 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
         final DataIndexPushdownContext ctx = (DataIndexPushdownContext) context;
 
-        final long dataIndexCost = selection.size() < selectionThreshold
-                ? PushdownResult.UNSUPPORTED_ACTION_COST
-                : PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST;
+        final long dataIndexCost = worthUsingIndex(selection.size())
+                ? PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST
+                : PushdownResult.UNSUPPORTED_ACTION_COST;
 
         if (wrappedMatcher != null) {
             // Retrieve the wrapped cost and return the minimum of it and the data index cost.
@@ -110,8 +118,8 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST - 1,
                     jobScheduler,
                     result -> {
-                        // Run the data index filter if under the threshold.
-                        if (result.maybeMatch().size() > selectionThreshold) {
+                        // Run the data index filter if the selection is large enough.
+                        if (worthUsingIndex(result.maybeMatch().size())) {
                             onComplete.accept(pushdownDataIndex(
                                     selection,
                                     filter,
@@ -140,8 +148,8 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             return;
         }
 
-        // Run the data index filter if under the threshold.
-        if (selection.size() > selectionThreshold) {
+        // Run the data index filter if the selection is large enough.
+        if (worthUsingIndex(selection.size())) {
             onComplete.accept(pushdownDataIndex(
                     selection,
                     filter,
