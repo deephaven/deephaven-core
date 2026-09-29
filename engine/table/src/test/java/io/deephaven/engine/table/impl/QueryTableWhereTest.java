@@ -1929,6 +1929,72 @@ public abstract class QueryTableWhereTest {
     }
 
     /**
+     * A disjunction accumulates its components' results; every one of them must be closed or become the result.
+     */
+    @Test
+    public void testDisjunctiveFilterClosesComponentResults() {
+        final Table source = TableTools.emptyTable(10).update("A = i");
+        try (final OutputRecordingFilter filterA = new OutputRecordingFilter(RawString.of("A < 3"));
+                final OutputRecordingFilter filterB = new OutputRecordingFilter(RawString.of("A > 7"))) {
+            final Table result = source.where(Filter.or(filterA, filterB));
+            try (final RowSet expected = i(0, 1, 2, 8, 9)) {
+                assertEquals(expected, result.getRowSet());
+            }
+            filterA.assertAllClosed();
+            filterB.assertAllClosed();
+        }
+    }
+
+    /**
+     * When a later component of a disjunction throws, the results accumulated from the earlier ones must be closed.
+     */
+    @Test
+    public void testDisjunctiveFilterClosesComponentResultsOnError() {
+        final Table source = TableTools.emptyTable(10).update("A = i");
+        try (final OutputRecordingFilter filterA = new OutputRecordingFilter(RawString.of("A < 3"));
+                final RowSetCapturingFilter filterB = new RowSetCapturingFilter(RawString.of("A > 7")) {
+                    @NotNull
+                    @Override
+                    public WritableRowSet filter(
+                            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table,
+                            boolean usePrev) {
+                        throw new IllegalStateException("injected component failure");
+                    }
+
+                    @Override
+                    public WhereFilter copy() {
+                        return this;
+                    }
+                }) {
+            final Exception thrown = assertThrows(Exception.class, () -> source.where(Filter.or(filterA, filterB)));
+            boolean found = false;
+            for (Throwable t = thrown; t != null; t = t.getCause()) {
+                found |= "injected component failure".equals(t.getMessage());
+            }
+            assertTrue("injected failure not found in cause chain of " + thrown, found);
+            filterA.assertAllClosed();
+        }
+    }
+
+    /**
+     * A disjunction of no filters matches nothing, and so does the inverse of a conjunction of no filters.
+     */
+    @Test
+    public void testEmptyDisjunctionMatchesNothing() {
+        final Table source = TableTools.emptyTable(10);
+        final WhereFilter emptyOr = DisjunctiveFilter.makeDisjunctiveFilter();
+        final WhereFilter emptyAnd = ConjunctiveFilter.makeConjunctiveFilter();
+        try (final WritableRowSet orResult =
+                emptyOr.filter(source.getRowSet(), source.getRowSet(), source, false);
+                final WritableRowSet andInverseResult =
+                        emptyAnd.filterInverse(source.getRowSet(), source.getRowSet(), source, false)) {
+            assertTrue("an empty disjunction matches nothing, but matched " + orResult, orResult.isEmpty());
+            assertTrue("the inverse of an empty conjunction matches nothing, but matched " + andInverseResult,
+                    andInverseResult.isEmpty());
+        }
+    }
+
+    /**
      * An {@link AbstractColumnSource} -- so it resolves as its own pushdown matcher -- whose pushdown context
      * construction fails.
      */
