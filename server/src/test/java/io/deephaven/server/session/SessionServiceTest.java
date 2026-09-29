@@ -284,10 +284,10 @@ public class SessionServiceTest {
     }
 
     /**
-     * A shutdown or fatal-error notification sends to every termination listener while holding the SessionService
-     * monitor; each send locks the listener's stream observer. A gRPC thread that is closing a call holds that same
-     * observer monitor while it refreshes the session token, which locks the SessionService when the token rotates.
-     * Both orders must be able to complete.
+     * This regression test covers the former lock ordering: shutdown or fatal-error notification held the
+     * SessionService monitor before locking each listener's stream observer, while a gRPC thread closing a call can
+     * hold that observer monitor before token rotation locks SessionService. Both paths must now complete without
+     * deadlocking.
      */
     @Test
     public void testShutdownNotificationDoesNotDeadlockWithTokenRotation() throws InterruptedException {
