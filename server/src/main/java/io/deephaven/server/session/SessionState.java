@@ -419,20 +419,22 @@ public class SessionState {
     }
 
     /**
-     * Drop a released export's shell from {@code exportMap} and remember that its id was consumed. Callers must hold
-     * the {@code exportMap} monitor. Skipped during session expiration, where the entire map is cleared and
-     * {@code releasedExports} is closed under that same monitor.
+     * Drop a released export's shell from {@code exportMap} and remember that its id was consumed. Called after the
+     * export has left its own monitor: the export map monitor must not be held while waiting for an export's monitor,
+     * since a listener notified under an export's monitor may create exports. Skipped during session expiration, where
+     * the entire map is cleared and {@code releasedExports} is closed under that same monitor.
      *
      * @param exportId the id that has transitioned to {@link ExportNotification.State#RELEASED}
      */
     private void markExportReleased(final int exportId) {
-        Assert.assertion(Thread.holdsLock(exportMap), "Thread.holdsLock(exportMap)");
-        if (isExpired()) {
-            // Teardown owns clearing the map and closing releasedExports; don't mutate them here.
-            return;
+        synchronized (exportMap) {
+            if (isExpired()) {
+                // Teardown owns clearing the map and closing releasedExports; don't mutate them here.
+                return;
+            }
+            exportMap.removeKey(exportId);
+            releasedExports.insert(exportIdToKey(exportId));
         }
-        exportMap.removeKey(exportId);
-        releasedExports.insert(exportIdToKey(exportId));
     }
 
     /**
@@ -1317,20 +1319,26 @@ public class SessionState {
             if (session == null) {
                 throw new UnsupportedOperationException("Session-less exports cannot be released");
             }
-            // Acquire the export map monitor before our own to match the ordering used during session expiration, so
-            // that dropping our released shell from the map cannot deadlock with teardown.
-            synchronized (session.exportMap) {
-                synchronized (this) {
-                    if (state == ExportNotification.State.EXPORTED) {
-                        if (isNonExport()) {
-                            return;
-                        }
-                        setState(ExportNotification.State.RELEASED);
-                        session.markExportReleased(exportId);
-                    } else if (!isExportStateTerminal(state)) {
+            // Transition under our own monitor only, and drop our shell from the map afterwards: the export map monitor
+            // must not be held while waiting for an export's monitor (see markExportReleased). Until the shell is
+            // dropped, a lookup may still find it, already RELEASED.
+            final boolean released;
+            synchronized (this) {
+                if (state == ExportNotification.State.EXPORTED) {
+                    if (isNonExport()) {
+                        return;
+                    }
+                    setState(ExportNotification.State.RELEASED);
+                    released = true;
+                } else {
+                    if (!isExportStateTerminal(state)) {
                         session.nonExport().require(this).submit(this::release);
                     }
+                    released = false;
                 }
+            }
+            if (released) {
+                session.markExportReleased(exportId);
             }
         }
 
@@ -1341,19 +1349,24 @@ public class SessionState {
             if (session == null) {
                 throw new UnsupportedOperationException("Session-less exports cannot be cancelled");
             }
-            // See release(): take the export map monitor before our own to preserve a consistent lock ordering.
-            synchronized (session.exportMap) {
-                synchronized (this) {
-                    if (state == ExportNotification.State.EXPORTED) {
-                        if (isNonExport()) {
-                            return;
-                        }
-                        setState(ExportNotification.State.RELEASED);
-                        session.markExportReleased(exportId);
-                    } else if (!isExportStateTerminal(state)) {
+            // See release(): transition under our own monitor only, then drop our shell from the map.
+            final boolean released;
+            synchronized (this) {
+                if (state == ExportNotification.State.EXPORTED) {
+                    if (isNonExport()) {
+                        return;
+                    }
+                    setState(ExportNotification.State.RELEASED);
+                    released = true;
+                } else {
+                    if (!isExportStateTerminal(state)) {
                         setState(ExportNotification.State.CANCELLED);
                     }
+                    released = false;
                 }
+            }
+            if (released) {
+                session.markExportReleased(exportId);
             }
         }
 
@@ -1606,10 +1619,11 @@ public class SessionState {
                     // See getExport: expiration may be flagged before teardown acquires this monitor; answer as
                     // expired rather than resurrecting or reporting the id as released.
                     throwIfExpired();
-                    released = isReleased(exportId);
                     // noinspection unchecked
-                    found = released ? null
+                    found = isReleased(exportId) ? null
                             : (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+                    // a shell that has been released but not yet dropped from the map (see release()) is gone too
+                    released = found == null || found.getState() == ExportNotification.State.RELEASED;
                 }
                 // Redefining work at a released id must fail cleanly rather than resurrecting the id; hand back a
                 // released marker so submit() reports the failure via the error handler.

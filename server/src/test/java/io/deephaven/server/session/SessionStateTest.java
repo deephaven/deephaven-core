@@ -13,6 +13,7 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -26,6 +27,9 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.*;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MonitorInfo;
+import java.lang.management.ThreadInfo;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -804,6 +808,79 @@ public class SessionStateTest {
         Assert.eqTrue(lookedUp.booleanValue(), "lookedUp.booleanValue()");
         Assert.eqFalse(creator[0].isAlive(), "creator[0].isAlive()");
         Assert.neqNull(session.getExportIfExists(createdId), "session.getExportIfExists(createdId)");
+    }
+
+    /**
+     * A listener's initial refresh notifies it while holding each export's monitor, and a listener may create exports
+     * from its callback (see {@link #testExportListenerNewExportAtRefreshTail}), which needs the export map monitor. A
+     * concurrent release of that same export must therefore not hold the export map monitor while it waits for the
+     * export's monitor, or the two deadlock.
+     */
+    @Test
+    public void testReleaseDoesNotDeadlockWithListenerCreatingExportsDuringRefresh() throws InterruptedException {
+        final int existingId = nextExportId++;
+        final SessionState.ExportObject<Object> existing = session.newExport(existingId).submit(Object::new);
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(existing.getState(), "existing.getState()", ExportNotification.State.EXPORTED);
+
+        final int createdId = nextExportId++;
+        final Thread[] releaser = new Thread[1];
+        final Throwable[] failure = new Throwable[1];
+        final StreamObserver<ExportNotification> listener = new StreamObserver<>() {
+            @Override
+            public void onNext(final ExportNotification notification) {
+                if (getExportId(notification) != existingId || releaser[0] != null
+                        || notification.getExportState() != ExportNotification.State.EXPORTED) {
+                    // only the refresh's notification of the still-exported export; not the release's own later one
+                    return;
+                }
+                // We are inside the refresh, holding the export's monitor. Release the export from another thread; it
+                // blocks on our monitor, and must not be holding the export map monitor while it does.
+                releaser[0] = new Thread(existing::release, "SessionStateTest-releaser");
+                releaser[0].start();
+                final long deadlineNanos = System.nanoTime() + 10_000_000_000L;
+                while (releaser[0].getState() != Thread.State.BLOCKED) {
+                    if (!releaser[0].isAlive() || System.nanoTime() > deadlineNanos) {
+                        failure[0] = new IllegalStateException("releasing the export did not block on its monitor");
+                        return;
+                    }
+                    Thread.onSpinWait();
+                }
+                // Inspect what the blocked releaser holds, rather than trying to take the export map ourselves: if it
+                // holds the map, creating an export here would deadlock instead of failing.
+                final ThreadInfo info = ManagementFactory.getThreadMXBean()
+                        .getThreadInfo(new long[] {releaser[0].getId()}, true, false)[0];
+                for (final MonitorInfo held : info.getLockedMonitors()) {
+                    if (held.getClassName().equals(KeyedIntObjectHashMap.class.getName())) {
+                        failure[0] = new IllegalStateException(
+                                "a release holds the export map monitor while waiting on the export's monitor");
+                        return;
+                    }
+                }
+                // The releaser holds nothing, so a listener may create an export from its callback, as one does in
+                // testExportListenerNewExportAtRefreshTail.
+                session.newExport(createdId);
+                // returning releases the export's monitor, which lets the releaser finish
+            }
+
+            @Override
+            public void onError(final Throwable t) {}
+
+            @Override
+            public void onCompleted() {}
+        };
+        session.addExportListener(listener);
+
+        Assert.neqNull(releaser[0], "releaser[0]");
+        releaser[0].join(5_000);
+        if (failure[0] != null) {
+            throw new AssertionFailure("release must not deadlock with a listener creating exports", failure[0]);
+        }
+        Assert.eqFalse(releaser[0].isAlive(), "releaser[0].isAlive()");
+        Assert.eq(existing.getState(), "existing.getState()", ExportNotification.State.RELEASED);
+        Assert.neqNull(session.getExportIfExists(createdId), "session.getExportIfExists(createdId)");
+        // the release still dropped the shell: only the created export remains
+        Assert.eq(session.numExports(), "session.numExports()", 1);
     }
 
     @Test
