@@ -331,11 +331,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return null;
         }
         final RowSet locationRowSet = getRowSet();
-        final Table adjustedTable = locationRowSet.isFlat() ? table
-                : table.updateView(List.of(new FunctionalColumn<>(
-                        INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
-                        INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
-                        (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
+        if (locationRowSet.isFlat()) {
+            // Index row positions are row keys, so the index table needs no adjustment.
+            locationRowSet.close();
+            return StandaloneDataIndex.from(table, columns, INDEX_ROW_SET_COLUMN_NAME);
+        }
+        // The adjusted table maps positions to row keys lazily, so it keeps the location's row set for its lifetime.
+        final Table adjustedTable = table.updateView(List.of(new FunctionalColumn<>(
+                INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
         return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
     }
 
@@ -1025,7 +1030,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 // row group.
                 final long subRegionFirstKey = getSubRegionFirstKey(rgIdx);
                 final int CHUNK_SIZE = 4096;
-                try (final RowSet shiftedRowSet = rs.asRowSet().shift(-subRegionFirstKey);
+                try (final RowSet rowSet = rs.asRowSet();
+                        final RowSet shiftedRowSet = rowSet.shift(-subRegionFirstKey);
                         final RowSequence.Iterator it = shiftedRowSet.getRowSequenceIterator();
                         final ChunkSource.GetContext getContext = valueStore.makeGetContext(CHUNK_SIZE);
                         final WritableLongChunk<OrderedRowKeys> results =
