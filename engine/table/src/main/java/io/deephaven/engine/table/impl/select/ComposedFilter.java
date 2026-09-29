@@ -164,4 +164,9 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     public boolean isSerial() {
         return Arrays.stream(componentFilters).anyMatch(WhereFilter::isSerial);
     }
+
+    @Override
+    public boolean hasVirtualRowVariables() {
+        return Arrays.stream(componentFilters).anyMatch(WhereFilter::hasVirtualRowVariables);
+    }
 }

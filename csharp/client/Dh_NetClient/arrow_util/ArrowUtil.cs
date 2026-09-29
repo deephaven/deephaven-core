@@ -38,8 +38,11 @@ public static class ArrowUtil {
     for (var i = 0; i != ncols; ++i) {
       var columnSource = clientTable.GetColumn(i);
       var arrowArray = ArrowArrayConverter.ColumnSourceToArray(columnSource, nrows);
-      var field = clientTable.Schema.GetFieldByIndex(i);
-      var column = new ArrowColumn(field, [arrowArray]);
+      var schemaField = clientTable.Schema.GetFieldByIndex(i);
+      // Adapt the schema field to the array type, since the array type may have more information (in particular,
+      // the Name field of underlying types) than the schema field.
+      var fieldToUse = new Field(schemaField.Name, arrowArray.Data.DataType, schemaField.IsNullable, schemaField.Metadata);
+      var column = new ArrowColumn(fieldToUse, [arrowArray]);
       columns.Add(column);
     }
 

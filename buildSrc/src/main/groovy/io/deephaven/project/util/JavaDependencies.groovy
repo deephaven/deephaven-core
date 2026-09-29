@@ -96,7 +96,7 @@ class JavaDependencies {
 
     private static void verifyConfigurationHasPublicDependencies(Project project, Configuration configuration) {
         allDependencies(configuration, { dependency ->
-            def dp = dependency.dependencyProject
+            def dp = project.project(dependency.path)
             if (ProjectType.JAVA_PUBLIC_SHADOW == ProjectType.getType(dp)) {
                 verifyShadowConfiguration(project, dependency)
             } else {
@@ -108,7 +108,7 @@ class JavaDependencies {
         })
         allDependencyConstraints(configuration, { dependency ->
             verifyDefaultConfiguration(project, dependency)
-            def dp = dependency.dependencyProject
+            def dp = project.project(dependency.path)
             if (!ProjectType.isPublic(dp)) {
                 throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency constraint on a non-public project '${dp.name}' [${ProjectType.getType(dp)}]")
             }
@@ -117,7 +117,7 @@ class JavaDependencies {
 
     private static void verifyConfigurationHasNoPublicTestingDependencies(Project project, Configuration configuration) {
         allDependencies(configuration, { dependency ->
-            def dp = dependency.dependencyProject
+            def dp = project.project(dependency.path)
             if (ProjectType.JAVA_PUBLIC_SHADOW == ProjectType.getType(dp)) {
                 verifyShadowConfiguration(project, dependency)
             } else {
@@ -129,7 +129,7 @@ class JavaDependencies {
         })
         allDependencyConstraints(configuration, { dependency ->
             verifyDefaultConfiguration(project, dependency)
-            def dp = dependency.dependencyProject
+            def dp = project.project(dependency.path)
             if (ProjectType.getType(dp) == ProjectType.JAVA_PUBLIC_TESTING) {
                 throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency constraint on a testing project '${dp.name}' [${ProjectType.getType(dp)}]")
             }

@@ -19,12 +19,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Provide the details for a chart.
+ * Provides the details for a chart.
  */
 @JsType(name = "Chart", namespace = "dh.plot")
 public class JsChart extends HasEventHandling {
     /**
-     * A new series was added to this chart as part of a multi-series. The series instance is the detail for this event.
+     * Fired when a new series is added to this chart as part of a multi-series chart. The event detail is the added
+     * series instance.
      */
     public static final String EVENT_SERIES_ADDED = "seriesadded";
 
@@ -52,30 +53,40 @@ public class JsChart extends HasEventHandling {
         JsObject.freeze(multiSeries);
     }
 
+    /**
+     * The column position of this chart in the figure layout.
+     */
     @JsProperty
     public int getColumn() {
         return descriptor.getColumn();
     }
 
+    /**
+     * The row position of this chart in the figure layout.
+     */
     @JsProperty
     public int getRow() {
         return descriptor.getRow();
     }
 
+    /**
+     * The number of columns this chart spans in the figure layout.
+     */
     @JsProperty
     public int getColspan() {
         return descriptor.getColspan();
     }
 
+    /**
+     * The number of rows this chart spans in the figure layout.
+     */
     @JsProperty
     public int getRowspan() {
         return descriptor.getRowspan();
     }
 
     /**
-     * The type of this chart, see {@code ChartType} enum for more details.
-     * 
-     * @return int
+     * The type of this chart. See {@link JsChartType} for more details.
      */
     @JsProperty
     @TsTypeRef(JsChartType.class)
@@ -85,8 +96,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The title of the chart.
-     * 
-     * @return String
      */
     @JsProperty
     @JsNullable
@@ -97,42 +106,66 @@ public class JsChart extends HasEventHandling {
         return null;
     }
 
+    /**
+     * The font used to render the chart title.
+     */
     @JsProperty
     public String getTitleFont() {
         return descriptor.getTitleFont();
     }
 
+    /**
+     * The color used to render the chart title.
+     */
     @JsProperty
     public String getTitleColor() {
         return descriptor.getTitleColor();
     }
 
+    /**
+     * Whether the chart legend is shown.
+     */
     @JsProperty
     public boolean isShowLegend() {
         return descriptor.getShowLegend();
     }
 
+    /**
+     * The font used to render the chart legend.
+     */
     @JsProperty
     public String getLegendFont() {
         return descriptor.getLegendFont();
     }
 
+    /**
+     * The color used to render the chart legend.
+     */
     @JsProperty
     public String getLegendColor() {
         return descriptor.getLegendColor();
     }
 
+    /**
+     * Whether this chart is rendered in 3D.
+     */
     @JsProperty(name = "is3d")
     public boolean isIs3d() {
         return descriptor.getIs3D();
     }
 
+    /**
+     * Gets a copy of the chart series array.
+     */
     // exposed for JS, do not use this from java methods
     @JsProperty(name = "series")
     public JsSeries[] getExportedSeriesArray() {
         return Js.uncheckedCast(Js.<JsArray<JsSeries>>uncheckedCast(series).slice());
     }
 
+    /**
+     * Gets the chart multi-series array.
+     */
     // exposed for JS, do not use this from java methods
     @JsProperty(name = "multiSeries")
     public JsMultiSeries[] getExportedMultiSeriesArray() {
@@ -141,8 +174,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The series data for display in this chart.
-     * 
-     * @return dh.plot.Series
      */
     @JsIgnore
     public JsSeries[] getSeries() {
@@ -151,8 +182,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The multi-series data for display in this chart.
-     * 
-     * @return dh.plot.MultiSeries
      */
     @JsIgnore
     public JsMultiSeries[] getMultiSeries() {
@@ -161,8 +190,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The axes used in this chart.
-     * 
-     * @return dh.plot.Axis
      */
     @JsProperty
     public JsAxis[] getAxes() {

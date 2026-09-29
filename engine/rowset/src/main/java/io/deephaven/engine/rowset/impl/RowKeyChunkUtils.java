@@ -107,7 +107,7 @@ public class RowKeyChunkUtils {
         srcOffset += srcOffset % 2; // ensure that we are using the correct range edges
 
         long numElements = 0;
-        for (int idx = 0; idx < chunk.size(); idx += 2) {
+        for (int idx = srcOffset; idx + 1 < chunk.size(); idx += 2) {
             numElements += chunk.get(idx + 1) - chunk.get(idx) + 1;
         }
 

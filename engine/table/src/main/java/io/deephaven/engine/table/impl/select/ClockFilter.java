@@ -47,7 +47,9 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
     }
 
     @Override
-    public final void init(@NotNull final TableDefinition tableDefinition) {}
+    public final void init(@NotNull final TableDefinition tableDefinition) {
+        tableDefinition.checkHasColumn(columnName, Instant.class);
+    }
 
     @Override
     public final List<String> getColumns() {

@@ -3,17 +3,17 @@
 //
 package io.deephaven.configuration;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import junit.framework.TestCase;
 import org.apache.commons.compress.utils.IOUtils;
+import org.junit.Test;
 
-public class PropertyInputStreamLoaderTraditionalTest extends TestCase {
+public class PropertyInputStreamLoaderTraditionalTest {
 
     private static final PropertyInputStreamLoaderTraditional loader = new PropertyInputStreamLoaderTraditional();
 
@@ -21,10 +21,12 @@ public class PropertyInputStreamLoaderTraditionalTest extends TestCase {
         return loader.openConfiguration(name);
     }
 
+    @Test
     public void testPriorityIs100() {
         assertEquals(100, loader.getPriority());
     }
 
+    @Test
     public void testContentFromResource() throws IOException {
         final byte[] bytes;
         try (final InputStream in = open("hello-world.prop")) {
@@ -33,6 +35,7 @@ public class PropertyInputStreamLoaderTraditionalTest extends TestCase {
         assertArrayEquals("hello=world\n".getBytes(), bytes);
     }
 
+    @Test
     public void testContentFromFile() throws IOException, URISyntaxException {
         // ensure that the resource hello-world.prop is fully scoped out as a filesystem path
         String path = Paths
@@ -45,6 +48,7 @@ public class PropertyInputStreamLoaderTraditionalTest extends TestCase {
         assertArrayEquals("hello=world\n".getBytes(), bytes);
     }
 
+    @Test
     public void testMissingOpenException() {
         try {
             open("missing.prop");
@@ -55,7 +59,7 @@ public class PropertyInputStreamLoaderTraditionalTest extends TestCase {
         }
     }
 
-
+    @Test
     public void testInvalidFilePath() {
         try {
             // the only "invalid" file path is one which includes a Nul char

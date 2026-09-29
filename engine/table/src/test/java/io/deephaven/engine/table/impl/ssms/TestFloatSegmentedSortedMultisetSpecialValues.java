@@ -8,6 +8,11 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.vector.FloatVectorDirect;
+import io.deephaven.vector.ObjectVectorDirect;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link FloatSegmentedSortedMultiset} behavior around the special float values that
@@ -61,6 +66,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * AND the delta-tracking should recognize that the removal cancels the prior addition, leaving both added and
      * removed sets empty.
      */
+    @Test
     public void testInsertNegativeZeroThenRemovePositiveZero() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
 
@@ -82,6 +88,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * Insert {@code +0.0f} then remove {@code -0.0f} -- the mirror of the previous test. Same FloatComparisons
      * semantics apply.
      */
+    @Test
     public void testInsertPositiveZeroThenRemoveNegativeZero() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
 
@@ -99,6 +106,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * Remove {@code +0.0f} from an SSM that contains {@code -0.0f} placed there outside of the tracked cycle. The
      * removal should match the existing entry and be recorded in {@code removed} exactly once.
      */
+    @Test
     public void testRemoveZeroAcrossSign() {
         final FloatSegmentedSortedMultiset ssm = new FloatSegmentedSortedMultiset(NODE_SIZE);
         // Seed the leaf without delta tracking.
@@ -116,6 +124,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * so the leaf must collapse them into a single entry with count 2 and the delta-tracking added set must contain
      * exactly one NaN entry.
      */
+    @Test
     public void testNaNsWithDifferentBitPatternsAreSameValue() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
         final float nanA = Float.NaN; // canonical 0x7fc00000
@@ -137,6 +146,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * Insert one NaN bit pattern then remove a different NaN bit pattern. FloatComparisons treats them as equal, so the
      * leaf empties and the delta tracking should net to no change.
      */
+    @Test
     public void testInsertOneNaNThenRemoveAnotherNaN() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
         final float nanA = Float.NaN;
@@ -158,6 +168,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * Remove a NaN with one bit pattern from an SSM seeded (outside the tracked cycle) with NaN of a different bit
      * pattern. The removal should find the existing entry and record exactly one removal.
      */
+    @Test
     public void testRemoveNaNAcrossBitPattern() {
         final FloatSegmentedSortedMultiset ssm = new FloatSegmentedSortedMultiset(NODE_SIZE);
         final float nanA = Float.NaN;
@@ -169,5 +180,81 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
         assertEquals(0L, ssm.totalSize());
         assertEquals(0, ssm.getAddedSize());
         assertEquals("removed should record the single NaN removal", 1, ssm.getRemovedSize());
+    }
+
+    /**
+     * Two SSMs differing only in which NaN bit pattern they store hold, per FloatComparisons, the same value. They must
+     * therefore compare equal -- against each other and against every other Vector spelling of those contents -- and
+     * hash alike. {@link FloatSegmentedSortedMultiset#hashCode()} hashes elements with
+     * {@link io.deephaven.util.compare.FloatComparisons#hashCode(float)}, which collapses NaN bit patterns, so
+     * comparing elements with {@code ==} here would break the hashCode contract.
+     */
+    @Test
+    public void testEqualsAcrossNaNBitPatterns() {
+        final float nanA = Float.NaN; // canonical 0x7fc00000
+        final float nanB = Float.intBitsToFloat(0x7fc12345); // alternate NaN bit pattern
+
+        final float[] withA = new float[] {Float.NEGATIVE_INFINITY, 0.0f, Float.MAX_VALUE, nanA};
+        final float[] withB = new float[] {Float.NEGATIVE_INFINITY, 0.0f, Float.MAX_VALUE, nanB};
+
+        final FloatSegmentedSortedMultiset ssmA = new FloatSegmentedSortedMultiset(NODE_SIZE);
+        insert(ssmA, withA, new int[] {1, 1, 1, 1});
+        final FloatSegmentedSortedMultiset ssmB = new FloatSegmentedSortedMultiset(NODE_SIZE);
+        insert(ssmB, withB, new int[] {1, 1, 1, 1});
+
+        assertEqualBothWays(ssmA, ssmB);
+        assertEqualBothWays(ssmA, ssmB.getDirect());
+        assertEqualBothWays(ssmA, new FloatVectorDirect(withB));
+
+        // a boxed Vector of the same values is a different Vector type, and so not equal in either direction
+        final Float[] boxedB = new Float[withB.length];
+        for (int ii = 0; ii < withB.length; ++ii) {
+            boxedB[ii] = withB[ii];
+        }
+        assertNotEqualBothWays(ssmA, new ObjectVectorDirect<>(boxedB));
+    }
+
+    /**
+     * The same requirement for signed zero: FloatComparisons treats {@code -0.0f} and {@code +0.0f} as one value and
+     * hashes them alike, so an SSM seeded with one must compare equal to every Vector spelling of the other.
+     */
+    @Test
+    public void testEqualsAcrossSignedZero() {
+        final float[] withNegative = new float[] {-0.0f, Float.MAX_VALUE};
+        final float[] withPositive = new float[] {0.0f, Float.MAX_VALUE};
+
+        final FloatSegmentedSortedMultiset ssmNegative = new FloatSegmentedSortedMultiset(NODE_SIZE);
+        insert(ssmNegative, withNegative, new int[] {1, 1});
+        final FloatSegmentedSortedMultiset ssmPositive = new FloatSegmentedSortedMultiset(NODE_SIZE);
+        insert(ssmPositive, withPositive, new int[] {1, 1});
+
+        assertEqualBothWays(ssmNegative, ssmPositive);
+        assertEqualBothWays(ssmNegative, ssmPositive.getDirect());
+        assertEqualBothWays(ssmNegative, new FloatVectorDirect(withPositive));
+
+        final Float[] boxedPositive = new Float[withPositive.length];
+        for (int ii = 0; ii < withPositive.length; ++ii) {
+            boxedPositive[ii] = withPositive[ii];
+        }
+        assertNotEqualBothWays(ssmNegative, new ObjectVectorDirect<>(boxedPositive));
+    }
+
+    /**
+     * Assert that two Vectors agree that they are equal no matter which is the receiver, and that they hash alike as
+     * {@link Object#hashCode()} then requires.
+     */
+    private void assertEqualBothWays(final Object lhs, final Object rhs) {
+        assertTrue(lhs + " should equal " + rhs, lhs.equals(rhs));
+        assertTrue(rhs + " should equal " + lhs, rhs.equals(lhs));
+        assertEquals("equal values must hash alike", lhs.hashCode(), rhs.hashCode());
+    }
+
+    /**
+     * Assert that two Vectors agree that they are unequal no matter which is the receiver. Their hash codes are
+     * unconstrained -- unequal values are permitted to collide.
+     */
+    private void assertNotEqualBothWays(final Object lhs, final Object rhs) {
+        assertFalse(lhs + " should not equal " + rhs, lhs.equals(rhs));
+        assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
     }
 }

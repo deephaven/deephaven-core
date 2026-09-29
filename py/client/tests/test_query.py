@@ -57,6 +57,17 @@ class QueryTestCase(BaseTestCase):
         result_table = query.exec()
         self.assertTrue(result_table.size > 0)
 
+        query = self.session.query(test_table)
+        (
+            query.drop_columns(cols=["c"])
+            .where(["a > 10"])
+            .tail(10)
+            .join(right_table, on=["a"], reserve_bits=2)
+        )
+
+        result_table = query.exec()
+        self.assertTrue(result_table.size > 0)
+
     def test_update_by(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)

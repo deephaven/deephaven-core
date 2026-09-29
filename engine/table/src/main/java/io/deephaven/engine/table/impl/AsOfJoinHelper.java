@@ -760,14 +760,16 @@ public class AsOfJoinHelper {
 
                         final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot);
 
-                        final RowSet rightAdded = sequentialBuilders.get(slotIndex).build();
-                        sequentialBuilders.set(slotIndex, null);
+                        final int rightSize;
+                        try (final RowSet rightAdded = sequentialBuilders.get(slotIndex).build()) {
+                            sequentialBuilders.set(slotIndex, null);
 
-                        final int rightSize = rightAdded.intSize();
+                            rightSize = rightAdded.intSize();
 
-                        rightStampSource.fillChunk(rightStampFillContext.ensureCapacity(rightSize),
-                                rightStampChunk.ensureCapacity(rightSize), rightAdded);
-                        rightAdded.fillRowKeyChunk(insertedIndices.ensureCapacity(rightSize));
+                            rightStampSource.fillChunk(rightStampFillContext.ensureCapacity(rightSize),
+                                    rightStampChunk.ensureCapacity(rightSize), rightAdded);
+                            rightAdded.fillRowKeyChunk(insertedIndices.ensureCapacity(rightSize));
+                        }
                         sortContext.ensureCapacity(rightSize).sort(insertedIndices.get(), rightStampChunk.get());
 
                         final int valuesWithNext = rightSsa.insertAndGetNextValue(rightStampChunk.get(),

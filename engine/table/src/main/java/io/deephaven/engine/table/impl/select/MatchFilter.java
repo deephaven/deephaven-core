@@ -122,6 +122,55 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
     }
 
+    /**
+     * Returns {@code searchValues} with any NaN removed, or {@code searchValues} itself when there is nothing to
+     * remove. This is what upholds the {@link #getValues()} contract for primitive floating-point columns.
+     *
+     * <p>
+     * Without {@link MatchOptions#nanMatch()} a match follows IEEE 754, where NaN is equal to nothing at all -- itself
+     * included -- so a NaN among the values can never match a row. Removing it therefore does not change what this
+     * filter selects, and it leaves a value set that means the same thing to a consumer matching with NaN equal to
+     * itself, which is what consumers are permitted to do.
+     */
+    private Object[] maybeDropNaN(final Object[] searchValues) {
+        if (searchValues == null || matchOptions.nanMatch()
+                || (columnType != double.class && columnType != float.class)) {
+            return searchValues;
+        }
+        int nanCount = 0;
+        for (final Object value : searchValues) {
+            if (isNaN(value)) {
+                ++nanCount;
+            }
+        }
+        if (nanCount == 0) {
+            return searchValues;
+        }
+        final Object[] retained = new Object[searchValues.length - nanCount];
+        int nextIndex = 0;
+        for (final Object value : searchValues) {
+            if (!isNaN(value)) {
+                retained[nextIndex++] = value;
+            }
+        }
+        return retained;
+    }
+
+    private static boolean isNaN(final Object value) {
+        return value instanceof Double && ((Double) value).isNaN()
+                || value instanceof Float && ((Float) value).isNaN();
+    }
+
+    /**
+     * The values this filter matches against, normalized so that they may be matched by value equality that holds NaN
+     * equal to itself -- the type's {@code *Comparisons.eq}, or {@link java.util.Objects#equals}, for instance.
+     *
+     * <p>
+     * The filter's own NaN semantics are already applied here, so a consumer does not need to consult
+     * {@link MatchOptions#nanMatch()} to match correctly. On a primitive floating-point column without that option a
+     * match follows IEEE 754, under which NaN matches nothing, and any NaN has been removed accordingly; anywhere NaN
+     * remains, matching it is what this filter intends.
+     */
     public Object[] getValues() {
         return values;
     }
@@ -159,6 +208,22 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     }
 
     @Override
+    public boolean hasVirtualRowVariables() {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke hasVirtualRowVariables");
+        }
+        final WhereFilter failover = getFailoverFilterIfCached();
+        return failover != null && failover.hasVirtualRowVariables();
+    }
+
+    @Override
+    public boolean canPushdown() {
+        // The failover is not visible to a walk of the filter tree, so answer for it here.
+        final WhereFilter failover = getFailoverFilterIfCached();
+        return failover == null || failover.canPushdown();
+    }
+
+    @Override
     public void init(@NotNull TableDefinition tableDefinition) {
         init(tableDefinition, QueryCompilerRequestProcessor.immediate());
     }
@@ -186,6 +251,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             }
             columnType = column.getDataType();
             if (strValues == null) {
+                values = maybeDropNaN(values);
                 initialized = true;
                 return;
             }
@@ -196,7 +262,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
-            values = valueList.toArray();
+            values = maybeDropNaN(valueList.toArray());
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;
@@ -874,9 +940,28 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     public WhereFilter copy() {
         final MatchFilter copy;
         if (strValues != null) {
-            copy = new MatchFilter(
-                    failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
-                    matchOptions, columnName, strValues, null);
+            if (!initialized) {
+                // Wrap the failover filter supplier if it exists.
+                final CachingSupplier<ConditionFilter> copiedSupplier =
+                        failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy());
+                copy = new MatchFilter(copiedSupplier, matchOptions, columnName, strValues, null);
+            } else {
+                final ConditionFilter cachedFilter = getFailoverFilterIfCached();
+                if (cachedFilter == null) {
+                    // Not failing over, we will do normal matching. The supplier is never invoked by the copy, but it
+                    // is provided so that a renameFilter() of the copy can still fail over.
+                    copy = new MatchFilter(
+                            failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
+                            matchOptions, columnName, strValues, null);
+                } else {
+                    // Already in failover mode. The cached filter is copied and wrapped in a new supplier for the copy.
+                    final ConditionFilter copiedFilter = cachedFilter.copy();
+                    final CachingSupplier<ConditionFilter> copiedSupplier = new CachingSupplier<>(() -> copiedFilter);
+                    // Force the copied supplier to populate the cache.
+                    copiedSupplier.get();
+                    copy = new MatchFilter(copiedSupplier, matchOptions, columnName, strValues, null);
+                }
+            }
         } else {
             // when we're constructed with values then there is no failover filter
             copy = new MatchFilter(matchOptions, columnName, values);

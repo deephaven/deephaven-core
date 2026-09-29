@@ -3,7 +3,7 @@
 //
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
 import java.time.LocalDate;
 import java.util.Iterator;
@@ -13,8 +13,10 @@ import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static org.junit.Assert.*;
+
 @SuppressWarnings({"DataFlowIssue", "ConstantValue"})
-public class TestYearMonthSummaryCache extends BaseArrayTestCase {
+public class TestYearMonthSummaryCache {
 
     private static class Value extends ReadOptimizedConcurrentCache.Pair<String> {
         Value(int key, String value) {
@@ -22,6 +24,7 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testKeys() {
         final int y = 2021;
         final int m = 3;
@@ -31,6 +34,7 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         assertEquals(m, YearMonthSummaryCache.monthFromYearMonthKey(key));
     }
 
+    @Test
     public void testGetters() {
         final int[] monthCount = new int[] {0};
         final int[] yearCount = new int[] {0};
@@ -99,6 +103,7 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         return StreamSupport.stream(spliterator, false);
     }
 
+    @Test
     public void testIteratorInclusive() {
         final YearMonthSummaryCache<Value> cache =
                 new YearMonthSummaryCache<>(i -> new Value(i, "month" + i), i -> new Value(i, "year" + i));
@@ -193,6 +198,7 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         assertEquals(target, actual);
     }
 
+    @Test
     public void testIteratorExclusiveInclusive() {
         final YearMonthSummaryCache<Value> cache =
                 new YearMonthSummaryCache<>(i -> new Value(i, "month" + i), i -> new Value(i, "year" + i));

@@ -87,7 +87,14 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public RowSequence getRowSequenceByPosition(final long pos, long length) {
+    public RowSequence getRowSequenceByPosition(final long posIn, long length) {
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long pos = Math.max(posIn, 0);
+        if (posIn < 0) {
+            length += posIn;
+        }
         if (length <= 0 || pos >= size) {
             return RowSequenceFactory.EMPTY;
         }
@@ -219,7 +226,9 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public long getAverageRunLengthEstimate() {
-        return size / (endIdx - startIdx + 1);
+        // A slice can touch more array entries than it holds keys (two keys across three entries), and the estimate is
+        // at least one by contract.
+        return Math.max(1, size / (endIdx - startIdx + 1));
     }
 
     @Override
@@ -257,6 +266,11 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
                     if (!lac.accept(v)) {
                         return false;
                     }
+                    if (v == iValue) {
+                        // Stepping past the end wraps when it is the last key of the key space, and the wrapped value
+                        // compares as still inside the range.
+                        break;
+                    }
                 }
                 pendingStart = -1;
             } else {
@@ -276,10 +290,14 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
         }
         final long iData = sar.unpackedGet(endIdx);
         if (iData < 0) {
-            final long iValue = -iData;
-            for (long v = pendingStart + 1; v <= iValue + endOffset; ++v) {
+            final long lastValue = -iData + endOffset;
+            for (long v = pendingStart + 1; v <= lastValue; ++v) {
                 if (!lac.accept(v)) {
                     return false;
+                }
+                if (v == lastValue) {
+                    // As above: the final range may end at the last key of the key space.
+                    break;
                 }
             }
         } else {

@@ -3,10 +3,13 @@
 //
 package io.deephaven.plot.util.tables;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
-public class TestSwappableTable extends BaseArrayTestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
 
+public class TestSwappableTable {
+
+    @Test
     public void testSwappableTableOneClickMap() {
         // todo
     }

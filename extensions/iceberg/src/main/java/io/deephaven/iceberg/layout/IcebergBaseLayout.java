@@ -91,6 +91,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * Create a new {@link IcebergTableLocationKey} for the given {@link ManifestFile}, {@link DataFile} and
      * {@link URI}.
      *
+     * @param manifestPartitionSpec The {@link PartitionSpec} that applies to the manifest file from which the data file
+     *        was discovered
      * @param manifestFile The manifest file from which the data file was discovered
      * @param dataFile The data file that backs the keyed location
      * @param fileUri The {@link URI} for the file that backs the keyed location

@@ -114,5 +114,6 @@ The threads used for formulas that result in a Table are evaluated in exactly th
 
 ## Related documentation
 
+- [Track processing time](track-processing-time.md)
 - [Parallelizing queries](../../conceptual/query-engine/parallelization.md)
 - [Periodic Update Graph](../../conceptual/periodic-update-graph-configuration.md)

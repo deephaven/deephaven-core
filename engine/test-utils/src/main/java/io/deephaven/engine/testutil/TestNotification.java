@@ -4,7 +4,8 @@
 package io.deephaven.engine.testutil;
 
 import io.deephaven.engine.updategraph.AbstractNotification;
-import junit.framework.TestCase;
+
+import static org.junit.Assert.*;
 
 public class TestNotification extends AbstractNotification {
 
@@ -30,10 +31,10 @@ public class TestNotification extends AbstractNotification {
     }
 
     public void assertInvoked() {
-        TestCase.assertTrue(invoked);
+        assertTrue(invoked);
     }
 
     public void assertNotInvoked() {
-        TestCase.assertFalse(invoked);
+        assertFalse(invoked);
     }
 }

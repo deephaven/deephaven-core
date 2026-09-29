@@ -52,6 +52,7 @@ from deephaven.table import (
     Selectable,
     Table,
     TableDefinition,
+    TailInitializationFilter,
     table_diff,
 )
 from tests.testbase import BaseTestCase, table_equals
@@ -507,6 +508,30 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.join(right_table, joins="e")
             self.assertTrue(result_table.size > left_table.size)
 
+    def test_cross_join_with_reserve_bits(self):
+        left_table = self.test_table.drop_columns(cols=["e"])
+        right_table = self.test_table.where(["a % 2 > 0 && b % 3 == 1"]).drop_columns(
+            cols=["b", "c", "d"]
+        )
+        with self.subTest("with some join keys"):
+            result_table = left_table.join(
+                right_table, on=["a"], joins=["e"], reserve_bits=2
+            )
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with some join keys"):
+            result_table = left_table.join(
+                right_table, on="a", joins="e", reserve_bits=2
+            )
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with no join keys"):
+            result_table = left_table.join(
+                right_table, on=[], joins=["e"], reserve_bits=2
+            )
+            self.assertTrue(result_table.size > left_table.size)
+        with self.subTest("with no join keys"):
+            result_table = left_table.join(right_table, joins="e", reserve_bits=2)
+            self.assertTrue(result_table.size > left_table.size)
+
     def test_as_of_join(self):
         left_table = self.test_table.drop_columns(["d", "e"])
         right_table = self.test_table.where(["a % 2 > 0"]).drop_columns(
@@ -790,11 +815,10 @@ class TableTestCase(BaseTestCase):
         with update_graph.shared_lock(t):
             snapshot_hist = self.test_table.snapshot_when(t, history=True)
             self.assertFalse(snapshot_hist.is_failed)
-        self.wait_ticking_table_update(t, row_count=10, timeout=2)
-        # we have not waited for a whole cycle yet, wait for the shared lock to guarantee cycle is over
-        # to ensure snapshot_hist has had the opportunity to process the update we just saw
-        with update_graph.shared_lock(t):
-            self.assertTrue(snapshot_hist.is_failed)
+        # a history snapshot fails when its trigger table is not append-only, but the tail only
+        # begins removing rows after its parent has grown past 10 rows, which takes an unpredictable
+        # number of update cycles
+        self.wait_ticking_table_failure(snapshot_hist, timeout=30)
 
     def test_agg_all_by(self):
         test_table = empty_table(10)
@@ -1239,6 +1263,34 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(len(attrs), len(rt_attrs) + 1)
         self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
 
+    def test_with_keys(self):
+        rt = self.test_table.with_keys("a")
+        self.assertEqual({"keyColumns": "a"}, rt.attributes())
+        self.assertEqual({}, self.test_table.attributes())
+
+        rt = self.test_table.with_keys(["a", "b"])
+        self.assertEqual({"keyColumns": "a,b"}, rt.attributes())
+
+        with self.assertRaises(DHError):
+            self.test_table.with_keys([])
+
+        with self.assertRaises(DHError):
+            self.test_table.with_keys("NotAColumn")
+
+    def test_with_unique_keys(self):
+        rt = self.test_table.with_unique_keys("a")
+        self.assertEqual({"keyColumns": "a", "uniqueKeys": True}, rt.attributes())
+        self.assertEqual({}, self.test_table.attributes())
+
+        rt = self.test_table.with_unique_keys(["a", "b"])
+        self.assertEqual({"keyColumns": "a,b", "uniqueKeys": True}, rt.attributes())
+
+        with self.assertRaises(DHError):
+            self.test_table.with_unique_keys([])
+
+        with self.assertRaises(DHError):
+            self.test_table.with_unique_keys("NotAColumn")
+
     def test_remove_blink(self):
         t_blink = time_table("PT1s", blink_table=True)
         t_no_blink = t_blink.remove_blink()
@@ -1629,6 +1681,83 @@ class TableTestCase(BaseTestCase):
         )
         with self.assertRaises(DHError):
             t = empty_table(10).update([swcc_c, swcc_b])
+
+    def test_tail_initialization_most_recent(self):
+        from datetime import timedelta
+
+        with self.subTest("keep rows within a period of the newest timestamp (str)"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            rt = TailInitializationFilter.most_recent(
+                source, "Timestamp", "PT00:00:00.1"
+            )
+            self.assertTrue(rt.is_refreshing)
+            self.assertLessEqual(rt.size, source.size)
+            self.assertGreater(rt.size, 0)
+
+        with self.subTest("period as int nanoseconds"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            rt = TailInitializationFilter.most_recent(source, "Timestamp", 100_000_000)
+            self.assertTrue(rt.is_refreshing)
+            self.assertLessEqual(rt.size, source.size)
+
+        with self.subTest("period as datetime.timedelta"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            rt = TailInitializationFilter.most_recent(
+                source, "Timestamp", timedelta(milliseconds=100)
+            )
+            self.assertTrue(rt.is_refreshing)
+            self.assertLessEqual(rt.size, source.size)
+
+        with self.subTest("static snapshot keeps only rows within the window"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            static = source.snapshot()
+            # a static (non-refreshing) table is a single partition and is add-only
+            rt = TailInitializationFilter.most_recent(static, "Timestamp", 0)
+            # with a zero period only rows sharing the newest timestamp survive
+            self.assertGreaterEqual(rt.size, 1)
+            self.assertLessEqual(rt.size, static.size)
+            self.assertFalse(rt.is_refreshing)
+
+    def test_tail_initialization_most_recent_rows(self):
+        with self.subTest("static snapshot keeps an exact number of rows"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            static = source.snapshot()
+            rt = TailInitializationFilter.most_recent_rows(static, 10)
+            self.assertEqual(rt.size, 10)
+            self.assertFalse(rt.is_refreshing)
+
+        with self.subTest("refreshing source stays refreshing"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            rt = TailInitializationFilter.most_recent_rows(source, 10)
+            self.assertTrue(rt.is_refreshing)
+            self.assertGreaterEqual(rt.size, 10)
+
+    def test_tail_initialization_errors(self):
+        with self.subTest("non-add-only source raises"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=10, timeout=60)
+            # last_by produces modifies, so the result is not add-only
+            not_add_only = source.last_by()
+            with self.assertRaises(DHError):
+                TailInitializationFilter.most_recent(not_add_only, "Timestamp", "PT1S")
+            with self.assertRaises(DHError):
+                TailInitializationFilter.most_recent_rows(not_add_only, 5)
+
+        with self.subTest("null timestamps raise"):
+            static = empty_table(10).update(["Timestamp = (Instant) null"])
+            with self.assertRaises(DHError):
+                TailInitializationFilter.most_recent(static, "Timestamp", "PT1S")
+
+        with self.subTest("missing timestamp column raises"):
+            static = empty_table(10).update(["X = i"])
+            with self.assertRaises(DHError):
+                TailInitializationFilter.most_recent(static, "Timestamp", "PT1S")
 
 
 if __name__ == "__main__":

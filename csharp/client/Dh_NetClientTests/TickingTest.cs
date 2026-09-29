@@ -90,6 +90,29 @@ public class TickingTest {
       }
     }
   }
+
+  [Test]
+  public async Task TickingListSnapshotCanConvertToArrow() {
+    using var ctx = CommonContextForTests.Create(new ClientOptions());
+    var thm = ctx.Client.Manager;
+
+    using var table = thm.TimeTable(TimeSpan.FromMilliseconds(500))
+      .Update("Key = (long)(ii % 10)", "Value = ii")
+      .By("Key");
+
+    var callback = new TickingListSnapshotCallback();
+    using var cookie = table.Subscribe(callback);
+
+    while (true) {
+      var (done, exception) = await callback.WaitForUpdateAsync();
+      if (done) {
+        break;
+      }
+      if (exception != null) {
+        throw new Exception("Caught exception", exception);
+      }
+    }
+  }
 }
 
 public abstract class CommonBase : IObserver<TickingUpdate> {
@@ -234,5 +257,16 @@ public sealed class AllValuesGreaterThanNCallback : CommonBase {
     if (allGreater) {
       NotifyDone();
     }
+  }
+}
+
+public sealed class TickingListSnapshotCallback : CommonBase {
+  public override void OnNext(TickingUpdate update) {
+    var current = update.Current;
+    if (current.NumRows == 0) {
+      return;
+    }
+    current.ToArrowTable();
+    NotifyDone();
   }
 }

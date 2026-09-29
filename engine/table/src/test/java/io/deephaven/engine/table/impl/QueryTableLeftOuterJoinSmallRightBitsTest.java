@@ -4,12 +4,14 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.util.mutable.MutableInt;
+import org.junit.Test;
 
 public class QueryTableLeftOuterJoinSmallRightBitsTest extends QueryTableLeftOuterJoinTestBase {
     public QueryTableLeftOuterJoinSmallRightBitsTest() {
         super(1);
     }
 
+    @Test
     public void testIncrementalWithKeyColumnsShallow() {
         final int size = 10;
 

@@ -33,7 +33,7 @@ public abstract sealed class BarrageColumnType
         BarrageColumnType.FixedSizeList, BarrageColumnType.Map, BarrageColumnType.Duration,
         BarrageColumnType.LargeBinary, BarrageColumnType.LargeUtf8, BarrageColumnType.LargeList,
         BarrageColumnType.RunEndEncoded, BarrageColumnType.BinaryView, BarrageColumnType.Utf8View,
-        BarrageColumnType.ListView, BarrageColumnType.LargeListView {
+        BarrageColumnType.ListView, BarrageColumnType.LargeListView, BarrageColumnType.DictionaryEncoded {
 
     /**
      * Best effort mapping from string type info to supported Flight/Deephaven types.
@@ -99,6 +99,19 @@ public abstract sealed class BarrageColumnType
         java.util.Map<String, String> customMetadata =
                 WebBarrageUtils.keyValuePairs("", field.customMetadataLength(), field::customMetadata);
         String columnName = field.name();
+        if (field.dictionary() != null) {
+            final org.apache.arrow.flatbuf.DictionaryEncoding dictEncoding = field.dictionary();
+            final long dictId = dictEncoding.id();
+            final org.apache.arrow.flatbuf.Int indexTypeInfo = dictEncoding.indexType();
+            final int indexBitWidth = indexTypeInfo != null ? indexTypeInfo.bitWidth() : 32;
+            final BarrageColumnType valuesType = fromArrowFieldValueType(field, customMetadata, columnName);
+            return new DictionaryEncoded(columnName, dictId, indexBitWidth, valuesType, customMetadata);
+        }
+        return fromArrowFieldValueType(field, customMetadata, columnName);
+    }
+
+    private static BarrageColumnType fromArrowFieldValueType(Field field,
+            java.util.Map<String, String> customMetadata, String columnName) {
         switch (field.typeType()) {
             case Type.Null:
                 return new Null(columnName, customMetadata);
@@ -261,6 +274,9 @@ public abstract sealed class BarrageColumnType
             childrenVector = Field.createChildrenVector(builder, childrenOffsets);
         }
 
+        // Must be written before Field.startField (nested tables must precede their parent table).
+        int dictOffset = writeDictionaryEncoding(builder);
+
         final int nameOffset;
         if (columnName != null) {
             nameOffset = builder.createString(columnName);
@@ -278,8 +294,20 @@ public abstract sealed class BarrageColumnType
         if (childrenOffsets != null) {
             Field.addChildren(builder, childrenVector);
         }
+        if (dictOffset != 0) {
+            Field.addDictionary(builder, dictOffset);
+        }
 
         return Field.endField(builder);
+    }
+
+    /**
+     * Returns a non-zero FlatBuffer offset for the DictionaryEncoding table if this field is dictionary-encoded, or
+     * zero if not. Must be called before {@link Field#startField} since nested objects must be written before their
+     * parent in FlatBuffers.
+     */
+    protected int writeDictionaryEncoding(FlatBufferBuilder builder) {
+        return 0;
     }
 
     protected int[] writeChildren(FlatBufferBuilder builder) {
@@ -1330,6 +1358,68 @@ public abstract sealed class BarrageColumnType
         @Override
         protected @Nullable Class<?> componentType() {
             return componentType.type();
+        }
+    }
+
+    /**
+     * Represents an Arrow dictionary-encoded column. In the Arrow IPC format, such a column stores integer indices in
+     * the RecordBatch; the actual values arrive in preceding DictionaryBatch messages keyed by {@link #dictId()}.
+     * <p>
+     * Unlike RunEndEncoded, dictionary encoding is not a type variant in the Arrow {@link Type} enum — it is metadata
+     * on the Field itself ({@code field.getDictionary() != null}). The field's own typeType is the value type (e.g.
+     * {@link Type#Utf8}). {@link #typeType()} and {@link #writeType} therefore delegate to the inner
+     * {@link #valuesType()}, and {@link #writeDictionaryEncoding} adds the DictionaryEncoding table to the field.
+     */
+    public static final class DictionaryEncoded extends BarrageColumnType {
+        private final long dictId;
+        private final int indexBitWidth;
+        private final BarrageColumnType valuesType;
+
+        public DictionaryEncoded(@Nullable String columnName, long dictId, int indexBitWidth,
+                BarrageColumnType valuesType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+            this.dictId = dictId;
+            this.indexBitWidth = indexBitWidth;
+            this.valuesType = valuesType;
+        }
+
+        public long dictId() {
+            return dictId;
+        }
+
+        public int indexBitWidth() {
+            return indexBitWidth;
+        }
+
+        public BarrageColumnType valuesType() {
+            return valuesType;
+        }
+
+        @Override
+        protected byte typeType() {
+            return valuesType.typeType();
+        }
+
+        @Override
+        protected int writeType(FlatBufferBuilder builder) {
+            return valuesType.writeType(builder);
+        }
+
+        @Override
+        protected int writeDictionaryEncoding(FlatBufferBuilder builder) {
+            int indexTypeOffset = org.apache.arrow.flatbuf.Int.createInt(builder, indexBitWidth, true);
+            return org.apache.arrow.flatbuf.DictionaryEncoding.createDictionaryEncoding(
+                    builder, dictId, indexTypeOffset, false, (short) 0);
+        }
+
+        @Override
+        protected String inferDeephavenType() {
+            return valuesType.deephavenType();
+        }
+
+        @Override
+        protected Class<?> type() {
+            return valuesType.type();
         }
     }
 }

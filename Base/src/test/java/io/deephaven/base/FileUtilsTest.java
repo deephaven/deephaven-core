@@ -14,17 +14,20 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.DosFileAttributeView;
 import java.util.UUID;
 
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import org.junit.Test;
 
-public class FileUtilsTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class FileUtilsTest {
 
     /**
      * Create a randomized directory-structure and delete it recursively
      *
      * @throws IOException
      */
+    @Test
     public void testRecursiveDelete() throws IOException {
         final Path tmpRoot = Files.createTempDirectory("testRecursiveDelete");
         makeRandomDirectoryStructure(tmpRoot);
@@ -40,6 +43,7 @@ public class FileUtilsTest extends TestCase {
      *
      * @throws IOException
      */
+    @Test
     public void testRecursiveDeleteNFS() throws IOException {
         final Path tmpRoot = Files.createTempDirectory("testRecursiveDeleteNFS");
         makeRandomDirectoryStructure(tmpRoot);
@@ -72,6 +76,7 @@ public class FileUtilsTest extends TestCase {
         }
     }
 
+    @Test
     public void testConvertToFileURI() throws IOException {
         final File currentDir = new File("").getAbsoluteFile();
         fileUriTestHelper(currentDir.toString(), true, currentDir.toURI().toString());
@@ -103,6 +108,7 @@ public class FileUtilsTest extends TestCase {
         Assert.assertEquals(expectedURIString, FileUtils.convertToURI(Path.of(filePath), isDirectory).toString());
     }
 
+    @Test
     public void testConvertToS3URI() throws URISyntaxException {
         Assert.assertEquals("s3://bucket/key", FileUtils.convertToURI("s3://bucket/key", false).toString());
 
@@ -138,6 +144,7 @@ public class FileUtilsTest extends TestCase {
      * final URI uri = convertToURI(relativeFile, true);
      * }</pre>
      */
+    @Test
     public void testInvalidURIPaths() {
         badUriString("s3://bucket/path with spaces/cool", false,
                 "Failed to convert to URI: 's3://bucket/path with spaces/cool'");
@@ -147,6 +154,7 @@ public class FileUtilsTest extends TestCase {
         badUriString("file:/bad/file uri/", true, "Failed to convert to URI: 'file:/bad/file uri/'");
     }
 
+    @Test
     public void testStartsWithScheme() {
         Assert.assertTrue(FileUtils.startsWithScheme("myScheme:something"));
         Assert.assertTrue(FileUtils.startsWithScheme("dh+plain://localhost"));
@@ -163,6 +171,7 @@ public class FileUtilsTest extends TestCase {
         Assert.assertFalse(FileUtils.startsWithScheme("/file/path:something"));
     }
 
+    @Test
     public void testGoodFileURIs() {
         assertEqualUriString(URI.create("file:/"), FileUtils.convertToURI("file:/", false));
         assertEqualUriString(URI.create("file:/"), FileUtils.convertToURI("file:/", true));
@@ -175,6 +184,7 @@ public class FileUtilsTest extends TestCase {
         assertEqualUriString(URI.create("file:/foo/"), FileUtils.convertToURI("file:///foo", true));
     }
 
+    @Test
     public void testFileSourceWithNoScheme() {
         checkFileSource("my/foo-fake-name");
         checkFileSource("my/foo-fake-name/");
@@ -185,6 +195,7 @@ public class FileUtilsTest extends TestCase {
         checkFileSource("/my/foo fake name with spaces/");
     }
 
+    @Test
     public void testBadFileURIs() {
         // If the user explicitly passes a file: scheme, we should not be more lenient than new File(uri)
         badFileURI(URI.create("file:foo"), "URI is not hierarchical");

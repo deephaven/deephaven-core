@@ -79,6 +79,7 @@ import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
@@ -666,7 +667,7 @@ public abstract class SqliteCatalogBase {
                 Types.NestedField.optional(1, "floatCol", Types.FloatType.get()));
         final MessageType expectedParquetSchema =
                 buildMessage()
-                        .addField(optional(FLOAT).id(1).named("floatCol"))
+                        .addField(optional(FLOAT).columnOrder(ColumnOrder.typeDefined()).id(1).named("floatCol"))
                         .named("root");
 
         readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
@@ -687,7 +688,7 @@ public abstract class SqliteCatalogBase {
                 Types.NestedField.optional(1, "doubleCol", Types.DoubleType.get()));
         final MessageType expectedParquetSchema =
                 buildMessage()
-                        .addField(optional(DOUBLE).id(1).named("doubleCol"))
+                        .addField(optional(DOUBLE).columnOrder(ColumnOrder.typeDefined()).id(1).named("doubleCol"))
                         .named("root");
 
         readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
@@ -1194,7 +1195,7 @@ public abstract class SqliteCatalogBase {
         final MessageType expectedParquetSchema =
                 buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
                         .addField(repeatedGroup()
-                                .addField(optional(FLOAT).named("element"))
+                                .addField(optional(FLOAT).columnOrder(ColumnOrder.typeDefined()).named("element"))
                                 .named("list"))
                         .named("floatList")).named("root");
 
@@ -1269,7 +1270,7 @@ public abstract class SqliteCatalogBase {
         final MessageType expectedParquetSchema =
                 buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
                         .addField(repeatedGroup()
-                                .addField(optional(DOUBLE).named("element"))
+                                .addField(optional(DOUBLE).named("element").withColumnOrder(ColumnOrder.typeDefined()))
                                 .named("list"))
                         .named("doubleList")).named("root");
 
@@ -1624,7 +1625,7 @@ public abstract class SqliteCatalogBase {
             final MessageType expectedSchema = buildMessage()
                     .addFields(
                             optional(INT32).id(1).as(intType(32, true)).named("intCol"),
-                            optional(DOUBLE).id(2).named("doubleCol"))
+                            optional(DOUBLE).columnOrder(ColumnOrder.typeDefined()).id(2).named("doubleCol"))
                     .named("root");
             verifySchema(parquetFiles.get(0), expectedSchema);
         }
@@ -1654,12 +1655,12 @@ public abstract class SqliteCatalogBase {
             final MessageType expectedSchema0 = buildMessage()
                     .addFields(
                             optional(INT32).id(1).as(intType(32, true)).named("newIntCol"),
-                            optional(DOUBLE).id(2).named("newDoubleCol"))
+                            optional(DOUBLE).columnOrder(ColumnOrder.typeDefined()).id(2).named("newDoubleCol"))
                     .named("root");
             final MessageType expectedSchema1 = buildMessage()
                     .addFields(
                             optional(INT32).id(1).as(intType(32, true)).named("intCol"),
-                            optional(DOUBLE).id(2).named("doubleCol"))
+                            optional(DOUBLE).columnOrder(ColumnOrder.typeDefined()).id(2).named("doubleCol"))
                     .named("root");
             verifySchema(parquetFiles.get(0), expectedSchema0);
             verifySchema(parquetFiles.get(1), expectedSchema1);
@@ -2397,6 +2398,73 @@ public abstract class SqliteCatalogBase {
 
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
         assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
+    /**
+     * Regression test for a bug where a refreshing Iceberg table with a filtered child crashed with an
+     * {@link IndexOutOfBoundsException} when a commit replaced a partition's data file (remove + add). The
+     * pushdown-filter helpers in {@code RegionedColumnSourceManager} resolved locations by indexing the
+     * included-locations list (which is compacted on removal) with the region index (which is never reused), so after a
+     * removal the newly-added region's index exceeded the list size.
+     */
+    @Test
+    void testManualRefreshingFilteredPartitionReplace() {
+        final Table part1 = TableTools.emptyTable(10)
+                .update("intCol = (int) i");
+        final Table part2 = TableTools.emptyTable(10)
+                .update("intCol = (int) 100 + i");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofString("PC").withPartitioning());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(tableDefinition)
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(part1, part2)
+                .addAllPartitionPaths(List.of("PC=apple", "PC=boy"))
+                .build());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                        .build());
+
+        // Filter on a non-partitioning column, so it executes (with pushdown) against the regioned column sources
+        // rather than being satisfied from partition values. The filter window must cover rows in both the
+        // replacement data file and the surviving one.
+        final Table filtered = fromIcebergRefreshing.where("intCol >= 5");
+        final Table expected = TableTools.merge(
+                part1.update("PC = `apple`"),
+                part2.update("PC = `boy`"))
+                .where("intCol >= 5");
+        assertTableEquals(expected, filtered.sort("intCol"));
+
+        // Replace partition PC=apple: one commit removes its data file, another adds a replacement, and a single
+        // refresh observes both. The reader drops the removed file's region (index 0) -- compacting the
+        // included-locations list -- and assigns the replacement file the next region index (2), so region indices
+        // no longer correspond to positions in that list.
+        tableAdapter.icebergTable().newDelete()
+                .deleteFromRowFilter(Expressions.equal("PC", "apple"))
+                .commit();
+        final Table part1Replacement = TableTools.emptyTable(10)
+                .update("intCol = (int) 50 + i");
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(part1Replacement)
+                .addPartitionPaths("PC=apple")
+                .build());
+
+        fromIcebergRefreshing.update();
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        final Table expected2 = TableTools.merge(
+                part1Replacement.update("PC = `apple`"),
+                part2.update("PC = `boy`"))
+                .where("intCol >= 5");
+        assertTableEquals(expected2, filtered.sort("intCol"));
     }
 
     @Test

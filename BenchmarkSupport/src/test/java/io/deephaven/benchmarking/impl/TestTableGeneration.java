@@ -8,11 +8,14 @@ import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
+import org.junit.Test;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static org.junit.Assert.*;
 
 public class TestTableGeneration extends QueryTableTestBase {
 
+    @Test
     public void testCreateHistorical() {
         final PersistentBenchmarkTableBuilder builder = BenchmarkTools.persistentTableBuilder("Carlos", 2000);
         final BenchmarkTable bt = builder.setSeed(0xDEADBEEF)
@@ -35,13 +38,13 @@ public class TestTableGeneration extends QueryTableTestBase {
         // Make sure we can generate more
         bt.cleanup();
 
-
         // Next make sure it's repeatable
         bt.reset();
 
         assertTableEquals(bt.getTable(), historicalTable);
     }
 
+    @Test
     public void testCreateIntraday() {
         final BenchmarkTableBuilder builder = BenchmarkTools.persistentTableBuilder("Carlos", 2000);
         final BenchmarkTable bt = builder.setSeed(0xDEADBEEF)
@@ -66,6 +69,7 @@ public class TestTableGeneration extends QueryTableTestBase {
         assertTableEquals(bt.getTable(), intradayTable);
     }
 
+    @Test
     public void testCreateSparseInMemory() {
         final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("Carlos", 200000);
         final BenchmarkTable bt = builder.setSeed(0xDEADBEEF)

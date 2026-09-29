@@ -4,13 +4,14 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.annotations.VisibleForTesting;
+
+import java.util.function.LongSupplier;
 
 public interface ChunkFilter {
     /**
@@ -134,45 +135,25 @@ public interface ChunkFilter {
      */
     static WritableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
             ChunkFilter chunkFilter) {
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        return applyChunkFilter(selection, columnSource, usePrev, chunkFilter, System::currentTimeMillis);
+    }
 
-        final int contextSize = (int) Math.min(FILTER_CHUNK_SIZE, selection.size());
-        long chunksBetweenChecks = INITIAL_INTERRUPTION_SIZE / FILTER_CHUNK_SIZE;
-        long filteredChunks = 0;
-        long lastInterruptCheck = System.currentTimeMillis();
-
-        try (final ColumnSource.GetContext getContext = columnSource.makeGetContext(contextSize);
-                final WritableLongChunk<OrderedRowKeys> longChunk = WritableLongChunk.makeWritableChunk(contextSize);
-                final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
-            while (rsIt.hasMore()) {
-                if (filteredChunks++ == chunksBetweenChecks) {
-                    if (Thread.interrupted()) {
-                        throw new CancellationException("interrupted while filtering data");
-                    }
-
-                    final long now = System.currentTimeMillis();
-                    final long checkDuration = now - lastInterruptCheck;
-
-                    // tune so that we check at the desired interval, never less than one chunk
-                    chunksBetweenChecks = Math.max(1, Math.min(1, checkDuration <= 0 ? chunksBetweenChecks * 2
-                            : chunksBetweenChecks * INTERRUPTION_GOAL_MILLIS / checkDuration));
-                    lastInterruptCheck = now;
-                    filteredChunks = 0;
-                }
-                final RowSequence okChunk = rsIt.getNextRowSequenceWithLength(contextSize);
-                final LongChunk<OrderedRowKeys> keyChunk = okChunk.asRowKeyChunk();
-
-                final Chunk<? extends Values> dataChunk;
-                if (usePrev) {
-                    dataChunk = columnSource.getPrevChunk(getContext, okChunk);
-                } else {
-                    dataChunk = columnSource.getChunk(getContext, okChunk);
-                }
-                chunkFilter.filter(dataChunk, keyChunk, longChunk);
-
-                builder.appendOrderedRowKeysChunk(longChunk);
-            }
-        }
-        return builder.build();
+    /**
+     * Apply a chunk filter to a RowSet and column source, reading the time from {@code clockMillis} when tuning how
+     * often to check for interruption. Exists so that tests can drive the tuning with a deterministic clock instead of
+     * wall time.
+     *
+     * @param selection the RowSet to filter
+     * @param columnSource the column source to filter
+     * @param usePrev should we use previous values from the column source?
+     * @param chunkFilter the chunk filter to apply
+     * @param clockMillis the source of the current time, in milliseconds
+     *
+     * @return A new WritableRowSet representing the filtered values, owned by the caller
+     */
+    @VisibleForTesting
+    static WritableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
+            ChunkFilter chunkFilter, LongSupplier clockMillis) {
+        return ChunkFilterApplier.applyChunkFilter(selection, columnSource, usePrev, chunkFilter, clockMillis);
     }
 }

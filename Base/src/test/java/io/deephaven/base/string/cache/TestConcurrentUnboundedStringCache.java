@@ -3,12 +3,14 @@
 //
 package io.deephaven.base.string.cache;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.nio.ByteBuffer;
 
+import static org.junit.Assert.*;
+
 @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-public class TestConcurrentUnboundedStringCache extends TestCase {
+public class TestConcurrentUnboundedStringCache {
 
     @SuppressWarnings("unchecked")
     private static StringCacheTypeAdapter<? extends CompressedString>[] COMPRESSED_TYPE_ADAPTERS =
@@ -17,6 +19,7 @@ public class TestConcurrentUnboundedStringCache extends TestCase {
                     StringCacheTypeAdapterMappedCompressedStringImpl.INSTANCE
             };
 
+    @Test
     public void testStringPopulation() {
         final StringCache<String> debugCache =
                 new ConcurrentUnboundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, true);
@@ -31,6 +34,7 @@ public class TestConcurrentUnboundedStringCache extends TestCase {
         }
     }
 
+    @Test
     public void testCharSequencePopulation() {
         final StringCache<String> debugCache =
                 new ConcurrentUnboundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, true);
@@ -58,6 +62,7 @@ public class TestConcurrentUnboundedStringCache extends TestCase {
         }
     }
 
+    @Test
     public void testByteBufferPopulation() {
         final StringCache<String> debugCache =
                 new ConcurrentUnboundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, true);
@@ -85,6 +90,7 @@ public class TestConcurrentUnboundedStringCache extends TestCase {
         }
     }
 
+    @Test
     public void testByteArrayPopulation() {
         final StringCache<String> debugCache =
                 new ConcurrentUnboundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, true);
@@ -110,6 +116,7 @@ public class TestConcurrentUnboundedStringCache extends TestCase {
         }
     }
 
+    @Test
     public void testStringPopulationCompressed() {
         for (StringCacheTypeAdapter<? extends CompressedString> typeAdapter : COMPRESSED_TYPE_ADAPTERS) {
             final StringCache<? extends CompressedString> debugCache =
@@ -127,6 +134,7 @@ public class TestConcurrentUnboundedStringCache extends TestCase {
         }
     }
 
+    @Test
     public void testByteBufferPopulationCompressed() {
         for (StringCacheTypeAdapter<? extends CompressedString> typeAdapter : COMPRESSED_TYPE_ADAPTERS) {
             final StringCache<? extends CompressedString> debugCache =
@@ -154,6 +162,7 @@ public class TestConcurrentUnboundedStringCache extends TestCase {
         }
     }
 
+    @Test
     public void testByteArrayPopulationCompressed() {
         for (StringCacheTypeAdapter<? extends CompressedString> typeAdapter : COMPRESSED_TYPE_ADAPTERS) {
             final StringCache<? extends CompressedString> debugCache =

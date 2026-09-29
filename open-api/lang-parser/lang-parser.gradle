@@ -42,8 +42,8 @@ compileJavacc {
 
 
 jjdoc {
-    inputDirectory = file(project.buildDir.absolutePath + '/generated/jjtree')
-    outputDirectory = file(project.buildDir.absolutePath + '/generated/jjdoc')
+    inputDirectory = layout.buildDirectory.dir('generated/jjtree').get().asFile
+    outputDirectory = layout.buildDirectory.dir('generated/jjdoc').get().asFile
     arguments = [html: 'true']
 }
 

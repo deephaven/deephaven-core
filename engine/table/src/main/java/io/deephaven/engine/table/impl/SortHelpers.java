@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
@@ -11,6 +12,8 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.PoisonedOperationInitializer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -22,28 +25,42 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
+import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.ComparatorLongTimsortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.sort.timsort.ParallelTimsort;
+import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.table.impl.util.GroupedWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.StaticWrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.LongPredicate;
 import java.util.stream.IntStream;
 
@@ -103,6 +120,14 @@ public class SortHelpers {
      */
     @VisibleForTesting
     static int sortChunkSize = Configuration.getInstance().getIntegerWithDefault("QueryTable.sortChunkSize", 1 << 30);
+
+    /**
+     * The minimum number of rows in each segment of a parallel sort. A parallel sort is split into at most the
+     * {@link OperationInitializer#parallelismFactor() parallelism factor} of the current context's operation
+     * initializer, using fewer (larger) segments when the parallelism factor would make the segments smaller than this.
+     */
+    public static long parallelSortSegmentSize = Configuration.getInstance()
+            .getLongWithDefault("QueryTable.parallelSortSegmentSize", 1L << 18);
 
     interface SortMapping extends LongSizedDataStructure {
         long size();
@@ -265,6 +290,47 @@ public class SortHelpers {
     }
 
     /**
+     * The indices of the sort columns that actually participate in a sort. Columns whose source is row-key agnostic are
+     * dropped: every row holds the same value, so the column cannot disambiguate any pair of rows. A column is only
+     * dropped when its comparator respects equality; a comparator with respectsEquality=false may still rely on the
+     * column's sort pass for tie-handling order.
+     */
+    private static int[] effectiveSortColumns(
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final boolean[] comparatorsRespectEquality) {
+        return IntStream.range(0, columnsToSortBy.length)
+                .filter(ii -> !isSkippableConstantSortColumn(columnsToSortBy[ii], comparatorsRespectEquality[ii]))
+                .toArray();
+    }
+
+    /**
+     * Resolve (compiling on demand if necessary) the multi-column sort kernel that {@link #getSortedKeys} will use for
+     * these sort columns, so that a later sort on a thread whose ExecutionContext cannot compile — an update graph
+     * thread — finds the kernel already cached. The row-key agnostic columns that getSortedKeys drops are dropped here
+     * too, so the shape prepared is the shape used.
+     */
+    static void prepareSortKernel(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final Comparator[] comparators,
+            final boolean[] comparatorsRespectEquality) {
+        final int[] survivors = effectiveSortColumns(columnsToSortBy, comparatorsRespectEquality);
+        if (survivors.length == 0) {
+            return;
+        }
+        final ChunkType[] chunkTypes = new ChunkType[survivors.length];
+        final SortingOrder[] effectiveOrder = new SortingOrder[survivors.length];
+        final Comparator[] effectiveComparators = new Comparator[survivors.length];
+        for (int dst = 0; dst < survivors.length; ++dst) {
+            final int ii = survivors[dst];
+            chunkTypes[dst] = columnsToSortBy[ii].getChunkType();
+            effectiveOrder[dst] = order[ii];
+            effectiveComparators[dst] = comparators[ii];
+        }
+        IndirectTimsortKernelFactory.prepareKernel(chunkTypes, effectiveOrder, effectiveComparators);
+    }
+
+    /**
      * SortMapping that emits the input RowSet's row keys in their natural order without allocating an array up front.
      * Used when every sort column is row-key agnostic, so the sort is a no-op.
      */
@@ -320,37 +386,25 @@ public class SortHelpers {
             return EMPTY_SORT_MAPPING;
         }
 
-        // Drop sort columns whose source is row-key agnostic: every row holds the same value, so the column cannot
-        // disambiguate any pair of rows. We can only skip when the comparator respects equality - a comparator with
-        // respectsEquality=false may still rely on the column's sort pass for tie-handling order.
-        final ColumnSource<Comparable<?>>[] columnsToSortByForFilter = columnsToSortBy;
-        final boolean[] comparatorsRespectEqualityForFilter = comparatorsRespectEquality;
-        final int survivors = (int) IntStream.range(0, columnsToSortBy.length)
-                .filter(ii -> !isSkippableConstantSortColumn(
-                        columnsToSortByForFilter[ii], comparatorsRespectEqualityForFilter[ii]))
-                .count();
-        if (survivors == 0) {
+        final int[] survivors = effectiveSortColumns(columnsToSortBy, comparatorsRespectEquality);
+        if (survivors.length == 0) {
             return new IdentitySortMapping(rowSetToSort);
         }
-        if (survivors < columnsToSortBy.length) {
-            final SortingOrder[] newOrder = new SortingOrder[survivors];
+        if (survivors.length < columnsToSortBy.length) {
+            final SortingOrder[] newOrder = new SortingOrder[survivors.length];
             // noinspection unchecked
-            final ColumnSource<Comparable<?>>[] newOriginalColumnsToSortBy = new ColumnSource[survivors];
+            final ColumnSource<Comparable<?>>[] newOriginalColumnsToSortBy = new ColumnSource[survivors.length];
             // noinspection unchecked
-            final ColumnSource<Comparable<?>>[] newColumnsToSortBy = new ColumnSource[survivors];
-            final Comparator[] newComparators = new Comparator[survivors];
-            final boolean[] newComparatorsRespectEquality = new boolean[survivors];
-            int dst = 0;
-            for (int ii = 0; ii < columnsToSortBy.length; ++ii) {
-                if (isSkippableConstantSortColumn(columnsToSortBy[ii], comparatorsRespectEquality[ii])) {
-                    continue;
-                }
+            final ColumnSource<Comparable<?>>[] newColumnsToSortBy = new ColumnSource[survivors.length];
+            final Comparator[] newComparators = new Comparator[survivors.length];
+            final boolean[] newComparatorsRespectEquality = new boolean[survivors.length];
+            for (int dst = 0; dst < survivors.length; ++dst) {
+                final int ii = survivors[dst];
                 newOrder[dst] = order[ii];
                 newOriginalColumnsToSortBy[dst] = originalColumnsToSortBy[ii];
                 newColumnsToSortBy[dst] = columnsToSortBy[ii];
                 newComparators[dst] = comparators[ii];
                 newComparatorsRespectEquality[dst] = comparatorsRespectEquality[ii];
-                ++dst;
             }
             order = newOrder;
             originalColumnsToSortBy = newOriginalColumnsToSortBy;
@@ -657,6 +711,29 @@ public class SortHelpers {
             final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
             rowSequence.fillRowKeyChunk(rowKeys);
 
+            if (QueryTable.USE_INDIRECT_SORT_KERNELS) {
+                // the factory provides indirect kernels for Object columns, with or without a comparator; primitive
+                // columns are declined and use the direct kernels below
+                final ChunkType[] chunkTypes = {values.getChunkType()};
+                final Comparator[] comparators = {comparator};
+                if (IndirectTimsortKernelFactory.hasKernel(chunkTypes, comparators)) {
+                    // noinspection unchecked
+                    multiColumnSort(chunkTypes, new SortingOrder[] {order}, comparators, rowKeys,
+                            new WritableChunk[] {values}, chunkSize);
+                    return rowKeysArray;
+                }
+            }
+
+            final int sortSegments = parallelSortSegments(chunkSize);
+            if (sortSegments > 1 && values.getChunkType() != ChunkType.Boolean) {
+                // the direct kernels sort segments of the values and row keys in place, merging pairwise; the
+                // boolean radix kernel has no segment primitives (and radix sorts of three-valued data are cheap)
+                ParallelTimsort.sortDirect(
+                        taskSize -> getSortContext(columnSource, order, taskSize, comparator, false),
+                        rowKeys, values, sortSegments);
+                return rowKeysArray;
+            }
+
             try (final LongSortKernel<Values, RowKeys> sortContext =
                     getSortContext(columnSource, order, chunkSize, comparator, false)) {
                 sortContext.sort(rowKeys, values);
@@ -753,6 +830,14 @@ public class SortHelpers {
 
         final long[] rowKeysArray = new long[sortSize];
         final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
+
+        if (QueryTable.USE_INDIRECT_SORT_KERNELS && dataIndex == null) {
+            final SortMapping multiColumnMapping = tryMultiColumnSortMapping(
+                    order, columnSources, comparators, rowSet, usePrev, sortSize, rowKeysArray, rowKeys);
+            if (multiColumnMapping != null) {
+                return multiColumnMapping;
+            }
+        }
 
         WritableIntChunk<ChunkPositions> offsetsOut = WritableIntChunk.makeWritableChunk((sortSize + 1) / 2);
         WritableIntChunk<ChunkLengths> lengthsOut = WritableIntChunk.makeWritableChunk((sortSize + 1) / 2);
@@ -893,6 +978,66 @@ public class SortHelpers {
         return new ArraySortMapping(rowKeysArray);
     }
 
+    /**
+     * Attempt to sort all of the key columns in a single pass with a generated multi-column timsort kernel that
+     * compares each column in turn (using each column's comparator, when present, in place of the natural ordering),
+     * rather than sorting one column at a time with run finding in between. Returns null only when no kernel is
+     * available for the column types (e.g., a boolean chunk); the caller then falls back to the one-column-at-a-time
+     * path.
+     */
+    @Nullable
+    private static SortMapping tryMultiColumnSortMapping(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] columnSources,
+            @NotNull final Comparator[] comparators,
+            final RowSet rowSet,
+            final boolean usePrev,
+            final int sortSize,
+            final long[] rowKeysArray,
+            final WritableLongChunk<RowKeys> rowKeys) {
+        final ChunkType[] chunkTypes =
+                Arrays.stream(columnSources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
+        if (!IndirectTimsortKernelFactory.hasKernel(chunkTypes, comparators)) {
+            return null;
+        }
+        rowSet.fillRowKeyChunk(rowKeys);
+        // noinspection unchecked
+        final WritableChunk<Values>[] values = new WritableChunk[columnSources.length];
+        try {
+            for (int ci = 0; ci < columnSources.length; ++ci) {
+                values[ci] = makeAndFillValues(usePrev, rowSet, columnSources[ci]);
+            }
+            multiColumnSort(chunkTypes, order, comparators, rowKeys, values, sortSize);
+        } finally {
+            SafeCloseable.closeAll(values);
+        }
+        return new ArraySortMapping(rowKeysArray);
+    }
+
+    /**
+     * Sort the row keys by the filled value chunks with a kernel from IndirectTimsortKernelFactory, splitting the sort
+     * into parallel segments with pairwise merges when the sort is large enough.
+     */
+    private static void multiColumnSort(
+            final ChunkType[] chunkTypes,
+            final SortingOrder[] order,
+            final Comparator[] comparators,
+            final WritableLongChunk<RowKeys> rowKeys,
+            final WritableChunk<Values>[] values,
+            final int sortSize) {
+        final int sortSegments = parallelSortSegments(sortSize);
+        if (sortSegments > 1) {
+            ParallelTimsort.sortIndirect(
+                    taskSize -> IndirectTimsortKernelFactory.makeContext(chunkTypes, order, comparators, taskSize),
+                    rowKeys, values, sortSegments);
+            return;
+        }
+        try (final MultiColumnSortKernel<RowKeys> sortContext =
+                IndirectTimsortKernelFactory.makeContext(chunkTypes, order, comparators, sortSize)) {
+            sortContext.sort(rowKeys, values);
+        }
+    }
+
     private static WritableChunk<Values> fetchSecondaryValues(boolean usePrev, ColumnSource<?> columnSource,
             WritableLongChunk<RowKeys> indicesToFetch, WritableIntChunk<ChunkPositions> originalPositions,
             LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortIndexContext,
@@ -949,6 +1094,12 @@ public class SortHelpers {
 
         final WritableChunk<Values> values = columnSource.getChunkType().makeWritableChunk(sortSize);
 
+        final int fillSegments = parallelFillSegments(sortSize);
+        if (fillSegments > 1) {
+            fillValuesParallel(usePrev, ok, columnSource, values, sortSize, fillSegments);
+            return values;
+        }
+
         try (final ColumnSource.FillContext primaryColumnSourceContext = columnSource.makeFillContext(sortSize)) {
             if (usePrev) {
                 columnSource.fillPrevChunk(primaryColumnSourceContext, values, ok);
@@ -958,6 +1109,131 @@ public class SortHelpers {
         }
 
         return values;
+    }
+
+    /**
+     * The number of segments to split a values fill of the given size into: one (i.e., no parallelism) when
+     * {@link QueryTable#PARALLEL_SORT} is off, {@link QueryTable#MINIMUM_PARALLEL_SORT_ROWS} is non-positive, the fill
+     * is smaller than it, or the current thread may not parallelize; otherwise the parallelism factor of the current
+     * context's operation initializer.
+     */
+    private static int parallelFillSegments(final int sortSize) {
+        final long minimumSize = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
+        if (!QueryTable.PARALLEL_SORT || minimumSize <= 0 || sortSize < minimumSize) {
+            return 1;
+        }
+        final OperationInitializer operationInitializer = parallelizableOperationInitializer();
+        if (operationInitializer == null) {
+            return 1;
+        }
+        return Math.min(sortSize, Math.max(1, operationInitializer.parallelismFactor()));
+    }
+
+    /**
+     * The current context's operation initializer if it may be used to parallelize a sort, otherwise null. Update graph
+     * refresh threads have the poisoned ExecutionContext, whose operation initializer throws rather than answering
+     * {@link OperationInitializer#canParallelize()}; a sort listener running there sorts serially.
+     */
+    private static OperationInitializer parallelizableOperationInitializer() {
+        final OperationInitializer operationInitializer = ExecutionContext.getContext().getOperationInitializer();
+        if (operationInitializer instanceof PoisonedOperationInitializer || !operationInitializer.canParallelize()) {
+            return null;
+        }
+        return operationInitializer;
+    }
+
+    /**
+     * The number of segments to split a sort of the given size into: the operation initializer's parallelism factor,
+     * limited so that every segment is at least {@link #parallelSortSegmentSize} rows (i.e., biased towards fewer
+     * segments); one (no parallelism) when {@link QueryTable#PARALLEL_SORT} is off,
+     * {@link QueryTable#MINIMUM_PARALLEL_SORT_ROWS} is non-positive, the sort is smaller than it, or the current thread
+     * may not parallelize.
+     */
+    private static int parallelSortSegments(final int sortSize) {
+        final long minimumSize = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
+        if (!QueryTable.PARALLEL_SORT || minimumSize <= 0 || sortSize < minimumSize) {
+            return 1;
+        }
+        final OperationInitializer operationInitializer = parallelizableOperationInitializer();
+        if (operationInitializer == null) {
+            return 1;
+        }
+        final long segmentSize = Math.max(1, parallelSortSegmentSize);
+        return (int) Math.max(1, Math.min(operationInitializer.parallelismFactor(), sortSize / segmentSize));
+    }
+
+    /**
+     * Fill the values chunk from the column source in parallel: each segment fills its own slice of the shared output
+     * chunk from the corresponding positions of the input row sequence, using its own fill context. Blocks until every
+     * segment is complete.
+     */
+    private static void fillValuesParallel(final boolean usePrev, final RowSequence ok,
+            final ColumnSource<?> columnSource, final WritableChunk<Values> values, final int sortSize,
+            final int requestedSegments) {
+        final int segmentSize = ParallelTimsort.segmentSize(sortSize, requestedSegments);
+        final int fillSegments = ParallelTimsort.segmentCount(sortSize, segmentSize);
+
+        // slice the input positions serially; the fills proceed in parallel
+        final RowSequence[] segmentRows = new RowSequence[fillSegments];
+        try {
+            for (int segment = 0; segment < fillSegments; ++segment) {
+                final long startPosition = (long) segment * segmentSize;
+                segmentRows[segment] =
+                        ok.getRowSequenceByPosition(startPosition, Math.min(segmentSize, sortSize - startPosition));
+            }
+
+            // must be an operation initializer scheduler, not the update graph's: we block on the future, so tasks
+            // may not run on the threads a listener-initiated sort blocks; see ParallelTimsort.sortTree
+            final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
+            final CompletableFuture<Void> waitForFill = new CompletableFuture<>();
+            jobScheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    logOutput -> logOutput.append("SortHelpers.fillValuesParallel"),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0, fillSegments,
+                    (context, segment, nestedErrorConsumer) -> {
+                        final int startPosition = segment * segmentSize;
+                        final int sliceSize = Math.min(segmentSize, sortSize - startPosition);
+                        try (final ColumnSource.FillContext fillContext = columnSource.makeFillContext(sliceSize);
+                                final ResettableWritableChunk<Any> resettableSlice =
+                                        columnSource.getChunkType().makeResettableWritableChunk()) {
+                            // noinspection unchecked
+                            final WritableChunk<Any> slice = resettableSlice.resetFromChunk(
+                                    (WritableChunk<Any>) (WritableChunk<?>) values, startPosition, sliceSize);
+                            if (usePrev) {
+                                columnSource.fillPrevChunk(fillContext, slice, segmentRows[segment]);
+                            } else {
+                                columnSource.fillChunk(fillContext, slice, segmentRows[segment]);
+                            }
+                        }
+                    },
+                    () -> waitForFill.complete(null),
+                    () -> {
+                    },
+                    waitForFill::completeExceptionally);
+            try {
+                waitForFill.get();
+            } catch (final InterruptedException e) {
+                throw new CancellationException("Interrupted while filling sort values in parallel");
+            } catch (final ExecutionException e) {
+                throw new UncheckedDeephavenException("Exception while filling sort values in parallel", e.getCause());
+            } finally {
+                accumulateSchedulerPerformance(jobScheduler);
+            }
+        } finally {
+            SafeCloseable.closeAll(segmentRows);
+        }
+    }
+
+    /**
+     * Fold the performance of a scheduler's off-thread tasks into the enclosing operation's performance entry, so that
+     * parallel sort work is attributed to the sort.
+     */
+    public static void accumulateSchedulerPerformance(final JobScheduler jobScheduler) {
+        final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
+        if (baseEntry != null) {
+            QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
+        }
     }
 
     @NotNull

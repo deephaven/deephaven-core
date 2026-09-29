@@ -14,9 +14,10 @@ import java.util.TimerTask;
 
 import io.deephaven.base.Predicate;
 import io.deephaven.base.verify.Require;
-import junit.framework.Assert;
-import junit.framework.AssertionFailedError;
-import junit.framework.ComparisonFailure;
+import org.junit.Assert;
+import org.junit.ComparisonFailure;
+
+import static org.junit.Assert.*;
 
 public class SimpleTestSupport {
 
@@ -88,7 +89,7 @@ public class SimpleTestSupport {
                             collectionToSearch.contains(item));
                 }
             }
-        } catch (AssertionFailedError e) {
+        } catch (AssertionError e) {
             System.err.println("Expected (" + itemsToFind.length + " items):");
             for (E item : itemsToFind) {
                 System.err.println("    " + item);

@@ -6,7 +6,6 @@ package io.deephaven.util.datastructures.hash;
 import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
-import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -18,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.BiFunction;
+
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class TestLongLongMap {
@@ -62,8 +63,8 @@ public class TestLongLongMap {
     public void zeroKey() {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         map.put(0, 12345);
-        TestCase.assertEquals(map.get(0), 12345);
-        TestCase.assertEquals(map.size(), 1);
+        assertEquals(map.get(0), 12345);
+        assertEquals(map.size(), 1);
     }
 
     @Test
@@ -75,13 +76,13 @@ public class TestLongLongMap {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         try {
             map.put(HashMapBase.SPECIAL_KEY_FOR_DELETED_SLOT, 12345);
-            TestCase.fail("SPECIAL_KEY_FOR_DELETED_SLOT should not be accepted");
+            fail("SPECIAL_KEY_FOR_DELETED_SLOT should not be accepted");
         } catch (io.deephaven.base.verify.AssertionFailure e) {
             // do nothing
         }
         try {
             map.put(HashMapBase.REDIRECTED_KEY_FOR_EMPTY_SLOT, 12345);
-            TestCase.fail("REDIRECTED_KEY_FOR_EMPTY_SLOT should not be accepted");
+            fail("REDIRECTED_KEY_FOR_EMPTY_SLOT should not be accepted");
         } catch (io.deephaven.base.verify.AssertionFailure e) {
             // do nothing
         }
@@ -99,7 +100,7 @@ public class TestLongLongMap {
         map.put(2, 3);
         map.resetToNull();
         for (int ii = 0; ii < 4; ++ii) {
-            TestCase.assertEquals(map.get(ii), noEntryValue);
+            assertEquals(map.get(ii), noEntryValue);
         }
     }
 
@@ -115,7 +116,7 @@ public class TestLongLongMap {
             for (long key = beginKey; key < endKey; ++key) {
                 final long expectedPrevious = valueBase == beginValue ? noEntryValue : key + valueBase - 1;
                 final long actualPrevious = map.put(key, key + valueBase);
-                TestCase.assertEquals(expectedPrevious, actualPrevious);
+                assertEquals(expectedPrevious, actualPrevious);
             }
         }
     }
@@ -128,12 +129,12 @@ public class TestLongLongMap {
         final long noEntryValue = map.defaultReturnValue();
         for (long key = beginKey; key < endKey; ++key) {
             final long previous = map.put(key, key - 10000);
-            TestCase.assertEquals(previous, noEntryValue);
+            assertEquals(previous, noEntryValue);
         }
         for (long key = beginKey; key < endKey; ++key) {
             final long expectedPrevious = key - 10000;
             final long actualPrevious = map.remove(key);
-            TestCase.assertEquals(expectedPrevious, actualPrevious);
+            assertEquals(expectedPrevious, actualPrevious);
         }
     }
 
@@ -145,17 +146,17 @@ public class TestLongLongMap {
         final long noEntryValue = map.defaultReturnValue();
         for (long key = beginKey; key < endKey; key += 2) {
             final long previous = map.put(key, key + 5000);
-            TestCase.assertEquals(previous, noEntryValue);
+            assertEquals(previous, noEntryValue);
         }
         for (long key = beginKey; key < endKey; ++key) {
             final long expectedPrevious = (key % 2) == 0 ? key + 5000 : noEntryValue;
             final long actualPrevious = map.putIfAbsent(key, key + 10000);
-            TestCase.assertEquals(expectedPrevious, actualPrevious);
+            assertEquals(expectedPrevious, actualPrevious);
         }
         for (long key = beginKey; key < endKey; ++key) {
             final long expectedValue = (key % 2) == 0 ? key + 5000 : key + 10000;
             final long actualValue = map.get(key);
-            TestCase.assertEquals(expectedValue, actualValue);
+            assertEquals(expectedValue, actualValue);
         }
     }
 
@@ -165,11 +166,11 @@ public class TestLongLongMap {
         final int sizeAtWhichToClear = 10000;
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         for (int iteration = 0; iteration < numIterations; ++iteration) {
-            TestCase.assertEquals(map.size(), 0);
+            assertEquals(map.size(), 0);
             for (long ii = 0; ii < sizeAtWhichToClear; ++ii) {
                 map.put(ii, ii + 1);
             }
-            TestCase.assertEquals(map.size(), sizeAtWhichToClear);
+            assertEquals(map.size(), sizeAtWhichToClear);
             map.clear();
         }
     }
@@ -184,11 +185,11 @@ public class TestLongLongMap {
         final int sizeAtWhichToClear = 10000;
         NullableLongLongMap map = (NullableLongLongMap) factory.create(initialCapacity, loadFactor);
         for (int iteration = 0; iteration < numIterations; ++iteration) {
-            TestCase.assertEquals(map.size(), 0);
+            assertEquals(map.size(), 0);
             for (long ii = 0; ii < sizeAtWhichToClear; ++ii) {
                 map.put(ii, ii + 1);
             }
-            TestCase.assertEquals(map.size(), sizeAtWhichToClear);
+            assertEquals(map.size(), sizeAtWhichToClear);
             map.resetToNull();
         }
     }
@@ -199,8 +200,8 @@ public class TestLongLongMap {
         final long specialKey = HashMapBase.SPECIAL_KEY_FOR_EMPTY_SLOT;
         map.put(specialKey, 12345);
         final long[] keys = ((NullableLongLongMapTestAccessors) map).keyArray();
-        TestCase.assertEquals(1, keys.length);
-        TestCase.assertEquals(specialKey, keys[0]);
+        assertEquals(1, keys.length);
+        assertEquals(specialKey, keys[0]);
     }
 
     @Test
@@ -219,32 +220,32 @@ public class TestLongLongMap {
             expectedValues[nextIndex] = entry.getValue();
             ++nextIndex;
         }
-        TestCase.assertEquals(nextIndex, reference.size());
-        TestCase.assertEquals(reference.size(), test.size());
+        assertEquals(nextIndex, reference.size());
+        assertEquals(reference.size(), test.size());
 
         final long[] actualKeys = test.keyArray();
         final long[] actualValues = test.valueArray();
-        TestCase.assertEquals(expectedKeys.length, actualKeys.length);
-        TestCase.assertEquals(expectedValues.length, actualValues.length);
+        assertEquals(expectedKeys.length, actualKeys.length);
+        assertEquals(expectedValues.length, actualValues.length);
 
         Arrays.sort(expectedKeys);
         Arrays.sort(expectedValues);
         Arrays.sort(actualKeys);
         Arrays.sort(actualValues);
 
-        TestCase.assertTrue(Arrays.equals(expectedKeys, actualKeys));
-        TestCase.assertTrue(Arrays.equals(expectedValues, actualValues));
+        assertTrue(Arrays.equals(expectedKeys, actualKeys));
+        assertTrue(Arrays.equals(expectedValues, actualValues));
 
         if (test instanceof HashMapBase) {
             // Also exercise the caller-provided-space overloads.
             final long[] keySpace = new long[reference.size()];
             final long[] valueSpace = new long[reference.size()];
-            TestCase.assertSame(keySpace, test.keyArray(keySpace));
-            TestCase.assertSame(valueSpace, test.valueArray(valueSpace));
+            assertSame(keySpace, test.keyArray(keySpace));
+            assertSame(valueSpace, test.valueArray(valueSpace));
             Arrays.sort(keySpace);
             Arrays.sort(valueSpace);
-            TestCase.assertTrue(Arrays.equals(expectedKeys, keySpace));
-            TestCase.assertTrue(Arrays.equals(expectedValues, valueSpace));
+            assertTrue(Arrays.equals(expectedKeys, keySpace));
+            assertTrue(Arrays.equals(expectedValues, valueSpace));
         }
     }
 
@@ -258,21 +259,21 @@ public class TestLongLongMap {
         for (long key = beginKey; key < endKey; ++key) {
             map.put(key, key + 1000000);
         }
-        TestCase.assertEquals(map.size(), size);
+        assertEquals(map.size(), size);
         // These lookups should fail
         for (long key = beginKey - size; key < beginKey; ++key) {
             final long result = map.get(key);
-            TestCase.assertEquals(result, noEntryValue);
+            assertEquals(result, noEntryValue);
         }
         // These lookups should succeed
         for (long key = beginKey; key < endKey; ++key) {
             final long result = map.get(key);
-            TestCase.assertEquals(result, key + 1000000);
+            assertEquals(result, key + 1000000);
         }
         // These lookups should fail
         for (long key = endKey; key < endKey + size; ++key) {
             final long result = map.get(key);
-            TestCase.assertEquals(result, noEntryValue);
+            assertEquals(result, noEntryValue);
         }
     }
 
@@ -289,11 +290,11 @@ public class TestLongLongMap {
         for (long key = beginKey; key < endKey; key += 2) {
             map.remove(key);
         }
-        TestCase.assertEquals(map.size(), size / 2);
+        assertEquals(map.size(), size / 2);
         for (long key = beginKey; key < endKey; ++key) {
             final long expectedResult = (key % 2) == 0 ? noEntryValue : key + 1000000;
             final long actualResult = map.get(key);
-            TestCase.assertEquals(expectedResult, actualResult);
+            assertEquals(expectedResult, actualResult);
         }
     }
 
@@ -305,12 +306,12 @@ public class TestLongLongMap {
         Random rng = new Random(12345);
         populate(rng, 1000000, 10000, 0.75, reference, test);
 
-        TestCase.assertEquals(reference.size(), test.size());
+        assertEquals(reference.size(), test.size());
 
         Entries masterEntries = Entries.create(reference);
         Entries targetEntries = Entries.create(test);
 
-        TestCase.assertTrue(masterEntries.destructivelyEquals(targetEntries));
+        assertTrue(masterEntries.destructivelyEquals(targetEntries));
     }
 
     @Test
@@ -352,7 +353,48 @@ public class TestLongLongMap {
         final int actualCapacity = map.capacity();
         if (actualCapacity > fudgedLimit) {
             String message = String.format("actualCapacity (%d) <= fudgedLimit (%d)", actualCapacity, fudgedLimit);
-            TestCase.assertTrue(message, actualCapacity <= fudgedLimit);
+            assertTrue(message, actualCapacity <= fudgedLimit);
+        }
+    }
+
+    @Test
+    public void resetToNullRetainingCapacityRemembersCapacity() {
+        // The reference fastutil implementation doesn't have resetToNullRetainingCapacity
+        if (factory == referenceFactory) {
+            return;
+        }
+        final int size = 1000;
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final long noEntryValue = map.defaultReturnValue();
+
+        // Resetting a never-allocated map is a no-op.
+        map.resetToNullRetainingCapacity();
+        assertEquals(0, map.capacity());
+        assertEquals(noEntryValue, map.get(0));
+
+        for (int ii = 0; ii < size; ++ii) {
+            map.put(ii * 7, ii);
+        }
+        final int filledCapacity = map.capacity();
+        map.resetToNullRetainingCapacity();
+
+        // The array is released, so the map holds no storage while it sits empty.
+        assertEquals(0, map.size());
+        assertTrue(map.isEmpty());
+        assertEquals(0, map.capacity());
+        for (int ii = 0; ii < size; ++ii) {
+            assertEquals(noEntryValue, map.get(ii * 7));
+        }
+
+        // The remembered capacity is restored by the next allocation, so refilling to the same size never rehashes.
+        map.put(0, 1);
+        assertEquals(filledCapacity, map.capacity());
+        for (int ii = 1; ii < size; ++ii) {
+            map.put(ii * 7, ii + 1);
+        }
+        assertEquals(filledCapacity, map.capacity());
+        for (int ii = 1; ii < size; ++ii) {
+            assertEquals(ii + 1, map.get(ii * 7));
         }
     }
 
@@ -376,7 +418,7 @@ public class TestLongLongMap {
         map.forEach((key, value) -> {
             count.increment();
         });
-        TestCase.assertEquals(0, count.get());
+        assertEquals(0, count.get());
     }
 
     static class Factory {
@@ -409,7 +451,7 @@ public class TestLongLongMap {
                 values[nextIndex] = entry.getValue();
                 ++nextIndex;
             }
-            TestCase.assertEquals(nextIndex, size);
+            assertEquals(nextIndex, size);
             return new Entries(keys, values);
         }
 
@@ -422,7 +464,7 @@ public class TestLongLongMap {
                 keys[nextIndex.get()] = key;
                 values[nextIndex.getAndIncrement()] = value;
             });
-            TestCase.assertEquals(size, nextIndex.get());
+            assertEquals(size, nextIndex.get());
             return new Entries(keys, values);
         }
 
@@ -430,7 +472,7 @@ public class TestLongLongMap {
         private final long[] values;
 
         Entries(long[] keys, long[] values) {
-            TestCase.assertEquals(keys.length, values.length);
+            assertEquals(keys.length, values.length);
             this.keys = keys;
             this.values = values;
         }
@@ -472,6 +514,11 @@ public class TestLongLongMap {
 
         @Override
         public void resetToNull() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void resetToNullRetainingCapacity() {
             throw new UnsupportedOperationException();
         }
 

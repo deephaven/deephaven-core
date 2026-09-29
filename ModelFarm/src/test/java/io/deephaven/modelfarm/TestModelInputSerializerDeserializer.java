@@ -3,16 +3,17 @@
 //
 package io.deephaven.modelfarm;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class TestModelInputSerializerDeserializer extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestModelInputSerializerDeserializer {
 
-
+    @Test
     public void testSerializeDeserialize() throws IOException, ClassNotFoundException {
         final Path path = Files.createTempFile("test", "TestModelInputSerializerDeserializer.ser");
         try {

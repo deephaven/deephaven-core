@@ -17,7 +17,7 @@ from deephaven.calendar import calendar
 cal = nyse_cal = calendar("USNYSE_EXAMPLE")
 
 trades = (
-    time_table("PT00:00:01", "2024-09-01T00:00 ET")
+    time_table("PT00:00:01", "2025-05-01T00:00 ET")
     .update(
         [
             "Date = formatDate(Timestamp, 'ET')",

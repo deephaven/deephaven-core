@@ -65,6 +65,7 @@ import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
 import io.deephaven.web.client.api.barrage.WebChunkWriterFactory;
+import io.deephaven.web.client.api.barrage.WebDictionaryWriterRegistryImpl;
 import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.AuthenticationInterceptor;
@@ -1154,8 +1155,10 @@ public class WorkerConnection {
 
         BarrageMessageWriter barrageMessageWriter =
                 bmwFactory.newMessageWriter(msg, chunkWriters, BarrageMessageWriter.WriteMetricsConsumer.NO_OP);
-        listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder()
-                .useDeephavenNulls(true).build()));
+        listener.onNext(barrageMessageWriter.getSnapshotView(
+                BarrageSnapshotOptions.builder().useDeephavenNulls(true).build(),
+                null, false, null, null,
+                new WebDictionaryWriterRegistryImpl()));
 
         listener.onCompleted();
     }

@@ -100,6 +100,16 @@ def gwtOutput = tasks.register('gwtOutput', Sync) {
         include 'dhapi/**'
         eachFile { it.path = 'jsapi/' + it.path.substring('dhapi/'.length()) }
     }
+    from(tasks.getByName('gwtCompile').outputs.files) {
+        // from the extras dir, copy sourcemaps to output
+        include 'extra/dhapi/symbolMaps/*.json'
+        eachFile { it.path = 'jsapi/' + it.path.substring('extra/dhapi/symbolMaps/'.length()) }
+    }
+    from(tasks.getByName('gwtCompile').outputs.files) {
+        // copy sources for sourcemap support
+        include 'extra/dhapi/src/**/*'
+        eachFile { it.path = 'jsapi/' + it.path.substring('extra/dhapi/src/'.length()) }
+    }
     into jsOutput
 }
 
@@ -113,6 +123,10 @@ def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
     }
     destinationDir = dtsOutput.get().asFile
     options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
+    // TsDoclet doesn't recognize -notimestamp; its presence before -sourcepath causes the
+    // doclet's option parser to misinterpret the sourcepath value as a package name.
+    options.noTimestamp = false
+    options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
 artifacts {
