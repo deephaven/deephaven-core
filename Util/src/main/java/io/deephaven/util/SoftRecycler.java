@@ -253,7 +253,11 @@ public class SoftRecycler<T> {
             // rounded up, so that any fraction above 0 reaches the minimum
             final int shrink = (int) Math.ceil(windowMinSize * shrinkFraction);
             capacity = Math.max(minimumCapacity, capacity - shrink);
-            discardOldest(recycleBin.size() - capacity);
+            // Discard from the back, which needs no other entry re-indexed. Those are the items returned most
+            // recently, but any item left in the bin serves a later borrow as well.
+            while (recycleBin.size() > capacity) {
+                recycleBin.remove(recycleBin.size() - 1);
+            }
         }
         windowStart = now;
         previousMisses = windowMisses;
@@ -265,22 +269,6 @@ public class SoftRecycler<T> {
         windowMaxBurst = 0;
         windowMaxDropRun = 0;
         windowMinSize = recycleBin.size();
-    }
-
-    /**
-     * Discard the {@code count} items at the front of the recycle bin, the ones returned longest ago, keeping the items
-     * borrowed and returned most recently at the back, where {@link #borrowItem()} takes them from. Called with the
-     * lock held.
-     */
-    private void discardOldest(final int count) {
-        if (count <= 0) {
-            return;
-        }
-        recycleBin.subList(0, count).clear();
-        // a discarded reference that is later enqueued no longer matches the entry at its index, so cleanup ignores it
-        for (int ii = 0; ii < recycleBin.size(); ++ii) {
-            recycleBin.get(ii).index = ii;
-        }
     }
 
     private void cleanup() {

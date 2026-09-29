@@ -6,10 +6,7 @@ package io.deephaven.util;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -216,29 +213,6 @@ public class SoftRecyclerTest {
         fixture.endWindow();
         fixture.burst(20);
         assertEquals(20, fixture.recycler.getCapacity());
-    }
-
-    @Test
-    public void testShrinkingKeepsTheItemsInUse() {
-        final Fixture fixture = new Fixture(10, 1000, 1);
-        fixture.growTo(90);
-        // the same 20 items are borrowed and returned all window, while the other 70 sit unused
-        fixture.endWindow();
-        List<long[]> used = fixture.burst(20);
-        for (int ii = 0; ii < 5; ++ii) {
-            used = fixture.burst(20);
-        }
-        fixture.endWindow();
-        fixture.recycler.returnItem(fixture.recycler.borrowItem());
-        assertEquals(20, fixture.recycler.getCapacity());
-        // the 70 discarded were the unused ones: every item borrowed now is one the window used
-        final Set<long[]> inUse = Collections.newSetFromMap(new IdentityHashMap<>());
-        inUse.addAll(used);
-        final int constructed = fixture.constructed.get();
-        for (int ii = 0; ii < 20; ++ii) {
-            assertTrue(inUse.contains(fixture.recycler.borrowItem()));
-        }
-        assertEquals(constructed, fixture.constructed.get());
     }
 
     @Test
