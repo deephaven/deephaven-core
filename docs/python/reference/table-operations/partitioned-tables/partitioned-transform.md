@@ -18,7 +18,8 @@ The `partitioned_transform` method applies a transformation function to _two_ pa
 ```python syntax
 partitioned_transform(
   other: PartitionedTable,
-  func: Callable[[Table, Table], Table]
+  func: Callable[[Table, Table], Table],
+  dependencies: Optional[Sequence[Union[Table, PartitionedTable]]] = None,
 ) -> PartitionedTable
 ```
 
@@ -32,7 +33,12 @@ The other `PartitionedTable`, whose constituent tables will be passed in as the 
 </Param>
 <Param name="func" type="Callable[[Table, Table], Table]">
 
-A function that takes two Tables as arguments and returns a new Table.
+A function that takes two Tables as arguments and returns a new Table. The function must be stateless, safe for concurrent use, and able to return a valid result for empty input tables.
+
+</Param>
+<Param name="dependencies" type="Optional[Sequence[Union[Table, PartitionedTable]]]" optional>
+
+Additional dependencies that must be satisfied before applying `func` to added, modified, or newly-matched constituents during update processing. If `func` uses any other refreshing table or refreshing partitioned table, include it in this argument. The default is `None`.
 
 </Param>
 </ParamTable>

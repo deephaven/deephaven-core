@@ -28,7 +28,7 @@ For other ways to get data out of a table, see:
 
 - [Extract table values](../../how-to-guides/extract-table-value.md): read individual values, iterate over a column with a `for` loop, and access values by row key.
 - [Table iterators](../../how-to-guides/iterate-table-data.md): loop over rows as dictionaries or tuples, one row or one chunk at a time.
-- [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md): move data between tables and NumPy in static and real-time machine-learning workflows.
+- [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md): gather table data into Python objects for calculations and scatter the results back into new table columns.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
