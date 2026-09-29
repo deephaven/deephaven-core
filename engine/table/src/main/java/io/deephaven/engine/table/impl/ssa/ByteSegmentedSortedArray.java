@@ -1599,7 +1599,7 @@ public final class ByteSegmentedSortedArray implements SegmentedSortedArray {
 
     private static boolean eq(byte lhs, byte rhs) {
         // region equality function
-        return lhs == rhs;
+        return ByteComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

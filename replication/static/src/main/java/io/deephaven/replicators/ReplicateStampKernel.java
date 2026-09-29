@@ -43,14 +43,6 @@ public class ReplicateStampKernel {
         for (String stampKernel : stampKernels) {
             final String stampReversePath = stampKernel.replaceAll("StampKernel", "ReverseStampKernel");
             invertSense(stampKernel, stampReversePath);
-
-            if (stampKernel.contains("Double")) {
-                ReplicateDupCompactKernel.nanFixup(stampKernel, "Double", true);
-                ReplicateDupCompactKernel.nanFixup(stampReversePath, "Double", false);
-            } else if (stampKernel.contains("Float")) {
-                ReplicateDupCompactKernel.nanFixup(stampKernel, "Float", true);
-                ReplicateDupCompactKernel.nanFixup(stampReversePath, "Float", false);
-            }
         }
     }
 

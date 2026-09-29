@@ -96,7 +96,7 @@ public class LongStampKernel implements StampKernel {
 
     private static boolean eq(long lhs, long rhs) {
         // region equality function
-        return lhs == rhs;
+        return LongComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

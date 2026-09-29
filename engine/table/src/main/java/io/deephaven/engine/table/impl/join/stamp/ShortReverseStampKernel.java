@@ -98,7 +98,7 @@ public class ShortReverseStampKernel implements StampKernel {
 
     private static boolean eq(short lhs, short rhs) {
         // region equality function
-        return lhs == rhs;
+        return ShortComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

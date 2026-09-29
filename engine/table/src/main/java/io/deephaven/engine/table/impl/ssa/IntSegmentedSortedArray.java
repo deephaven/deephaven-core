@@ -1599,7 +1599,7 @@ public final class IntSegmentedSortedArray implements SegmentedSortedArray {
 
     private static boolean eq(int lhs, int rhs) {
         // region equality function
-        return lhs == rhs;
+        return IntComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

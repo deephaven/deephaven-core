@@ -31,14 +31,6 @@ public class ReplicateDupCompactKernel {
         for (String kernel : kernelsToInvert) {
             final String dupCompactReversePath = kernel.replaceAll("DupCompactKernel", "ReverseDupCompactKernel");
             invertSense(kernel, dupCompactReversePath);
-
-            if (kernel.contains("Float")) {
-                nanFixup(kernel, "Float", true);
-                nanFixup(dupCompactReversePath, "Float", false);
-            } else if (kernel.contains("Double")) {
-                nanFixup(kernel, "Double", true);
-                nanFixup(dupCompactReversePath, "Double", false);
-            }
         }
     }
 
@@ -56,18 +48,6 @@ public class ReplicateDupCompactKernel {
         }
 
         FileUtils.writeLines(new File(descendingPath), lines);
-    }
-
-    public static void nanFixup(String path, String type, boolean ascending) throws IOException {
-        final File file = new File(path);
-
-        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-
-        lines = ReplicateSortKernel.fixupNanComparisons(lines, type, ascending);
-
-        lines = simpleFixup(lines, "equality", "lhs == rhs", type + "Comparisons.eq(lhs, rhs)");
-
-        FileUtils.writeLines(file, lines);
     }
 
     @NotNull

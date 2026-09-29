@@ -35,14 +35,6 @@ public class ReplicateSegmentedSortedArray {
         for (String ssa : ssas) {
             final String ssaReverse = descendingPath(ssa);
             invertSense(ssa, ssaReverse);
-
-            if (ssa.contains("Double")) {
-                ReplicateDupCompactKernel.nanFixup(ssa, "Double", true);
-                ReplicateDupCompactKernel.nanFixup(ssaReverse, "Double", false);
-            } else if (ssa.contains("Float")) {
-                ReplicateDupCompactKernel.nanFixup(ssa, "Float", true);
-                ReplicateDupCompactKernel.nanFixup(ssaReverse, "Float", false);
-            }
         }
 
         final String charChunkSsaStampPath =
@@ -57,14 +49,6 @@ public class ReplicateSegmentedSortedArray {
         for (String chunkSsaStamp : chunkSsaStamps) {
             final String chunkSsaStampReverse = descendingPath(chunkSsaStamp);
             invertSense(chunkSsaStamp, chunkSsaStampReverse);
-
-            if (chunkSsaStamp.contains("Double")) {
-                ReplicateDupCompactKernel.nanFixup(chunkSsaStamp, "Double", true);
-                ReplicateDupCompactKernel.nanFixup(chunkSsaStampReverse, "Double", false);
-            } else if (chunkSsaStamp.contains("Float")) {
-                ReplicateDupCompactKernel.nanFixup(chunkSsaStamp, "Float", true);
-                ReplicateDupCompactKernel.nanFixup(chunkSsaStampReverse, "Float", false);
-            }
         }
 
         final String charSsaSsaStampPath =
@@ -79,14 +63,6 @@ public class ReplicateSegmentedSortedArray {
         for (String ssaSsaStamp : ssaSsaStamps) {
             final String ssaSsaStampReverse = descendingPath(ssaSsaStamp);
             invertSense(ssaSsaStamp, ssaSsaStampReverse);
-
-            if (ssaSsaStamp.contains("Double")) {
-                ReplicateDupCompactKernel.nanFixup(ssaSsaStamp, "Double", true);
-                ReplicateDupCompactKernel.nanFixup(ssaSsaStampReverse, "Double", false);
-            } else if (ssaSsaStamp.contains("Float")) {
-                ReplicateDupCompactKernel.nanFixup(ssaSsaStamp, "Float", true);
-                ReplicateDupCompactKernel.nanFixup(ssaSsaStampReverse, "Float", false);
-            }
         }
 
         // the checkers exist only to validate an SSA's contents from a test, so they live in the test source set
@@ -102,14 +78,6 @@ public class ReplicateSegmentedSortedArray {
         for (String ssaChecker : ssaCheckers) {
             final String ssaCheckerReverse = descendingPath(ssaChecker);
             invertSense(ssaChecker, ssaCheckerReverse);
-
-            if (ssaChecker.contains("Double")) {
-                ReplicateDupCompactKernel.nanFixup(ssaChecker, "Double", true);
-                ReplicateDupCompactKernel.nanFixup(ssaCheckerReverse, "Double", false);
-            } else if (ssaChecker.contains("Float")) {
-                ReplicateDupCompactKernel.nanFixup(ssaChecker, "Float", true);
-                ReplicateDupCompactKernel.nanFixup(ssaCheckerReverse, "Float", false);
-            }
         }
     }
 

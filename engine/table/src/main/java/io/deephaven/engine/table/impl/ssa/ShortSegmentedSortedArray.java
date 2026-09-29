@@ -1599,7 +1599,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
     private static boolean eq(short lhs, short rhs) {
         // region equality function
-        return lhs == rhs;
+        return ShortComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

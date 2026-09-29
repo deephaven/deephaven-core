@@ -9,8 +9,6 @@
 
 package io.deephaven.engine.table.impl.ssa;
 
-import java.util.Objects;
-
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
@@ -1605,7 +1603,7 @@ public final class ObjectReverseSegmentedSortedArray implements SegmentedSortedA
 
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return Objects.equals(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

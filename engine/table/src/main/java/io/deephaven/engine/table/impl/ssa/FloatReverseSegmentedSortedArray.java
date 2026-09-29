@@ -1578,6 +1578,7 @@ public final class FloatReverseSegmentedSortedArray implements SegmentedSortedAr
     }
 
     // region comparison functions
+    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(float lhs, float rhs) {
         return -1 * FloatComparisons.compare(lhs, rhs);
     }

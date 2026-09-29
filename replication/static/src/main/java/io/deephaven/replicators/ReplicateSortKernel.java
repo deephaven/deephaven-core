@@ -229,18 +229,6 @@ public class ReplicateSortKernel {
     }
 
 
-    public static List<String> fixupNanComparisons(List<String> lines, String type, boolean ascending) {
-        final String lcType = type.toLowerCase();
-
-        lines = addMissingImports(lines, "import io.deephaven.util.compare." + type + "Comparisons;");
-
-        lines = replaceRegion(lines, "comparison functions",
-                Arrays.asList("    private static int doComparison(" + lcType + " lhs, " + lcType + " rhs) {",
-                        "        return " + (ascending ? "" : "-1 * ") + type + "Comparisons.compare(lhs, rhs);",
-                        "    }"));
-        return lines;
-    }
-
     public static List<String> fixupObjectComparisons(List<String> lines) {
         return fixupObjectComparisons(lines, true);
     }
@@ -260,8 +248,11 @@ public class ReplicateSortKernel {
         lines = simpleFixup(
                 lines,
                 "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)");
-        return addMissingImports(lines, "import java.util.Objects;",
-                "import io.deephaven.util.compare.ObjectComparisons;");
+        lines = addMissingImports(lines, "import io.deephaven.util.compare.ObjectComparisons;");
+        if (lines.stream().anyMatch(line -> line.contains("Objects."))) {
+            lines = addMissingImports(lines, "import java.util.Objects;");
+        }
+        return lines;
     }
 
     private static List<String> addMissingImports(List<String> lines, String... importStrings) {

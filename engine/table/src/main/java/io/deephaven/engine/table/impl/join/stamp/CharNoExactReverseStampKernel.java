@@ -95,7 +95,7 @@ public class CharNoExactReverseStampKernel implements StampKernel {
 
     private static boolean eq(char lhs, char rhs) {
         // region equality function
-        return lhs == rhs;
+        return CharComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

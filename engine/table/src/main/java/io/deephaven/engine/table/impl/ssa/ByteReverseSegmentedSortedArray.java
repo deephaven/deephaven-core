@@ -1602,7 +1602,7 @@ public final class ByteReverseSegmentedSortedArray implements SegmentedSortedArr
 
     private static boolean eq(byte lhs, byte rhs) {
         // region equality function
-        return lhs == rhs;
+        return ByteComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

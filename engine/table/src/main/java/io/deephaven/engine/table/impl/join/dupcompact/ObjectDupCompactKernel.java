@@ -7,8 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.join.dupcompact;
 
-import java.util.Objects;
-
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -120,7 +118,7 @@ public class ObjectDupCompactKernel implements DupCompactKernel {
 
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return Objects.equals(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }
