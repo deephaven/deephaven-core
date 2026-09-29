@@ -28,9 +28,9 @@ public class ReplicateSortKernelTests {
         charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/timsort/BaseTestCharTimSortKernel.java");
         charToAllButBoolean(TASK,
-                "engine/benchmark/src/benchmark/java/io/deephaven/benchmark/engine/sort/timsort/CharSortKernelBenchmark.java");
+                "engine/benchmark/src/main/java/io/deephaven/benchmark/engine/sort/timsort/CharSortKernelBenchmark.java");
         charToAllButBoolean(TASK,
-                "engine/benchmark/src/benchmark/java/io/deephaven/benchmark/engine/partition/CharPartitionKernelBenchmark.java");
+                "engine/benchmark/src/main/java/io/deephaven/benchmark/engine/partition/CharPartitionKernelBenchmark.java");
         charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/permute/TestCharPermuteKernel.java");
 
@@ -44,7 +44,7 @@ public class ReplicateSortKernelTests {
         charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/timsort/TestCharTimSortKernel.java");
         charToObject(TASK,
-                "engine/benchmark/src/benchmark/java/io/deephaven/benchmark/engine/sort/timsort/CharSortKernelBenchmark.java");
+                "engine/benchmark/src/main/java/io/deephaven/benchmark/engine/sort/timsort/CharSortKernelBenchmark.java");
 
         final String objectMegaMergePath = charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/megamerge/TestCharLongMegaMerge.java");

@@ -44,9 +44,9 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.mutable.MutableInt;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
@@ -64,7 +64,7 @@ import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
@@ -120,6 +120,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testTreeTableFilter() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable source = TstUtils.testRefreshingTable(
                 RowSetFactory.flat(10).toTracking(),
@@ -179,6 +180,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(table3, table4);
     }
 
+    @Test
     public void testFlatten() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"));
@@ -214,6 +216,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(table, flat3);
     }
 
+    @Test
     public void testUngroupRollingGroup() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("Sym", "a", "b", "a"), intCol("x", 1, 2, 3));
@@ -247,6 +250,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(expect2, ungroup2);
     }
 
+    @Test
     public void testUngroupRollingGroupTimed() throws ExecutionException, InterruptedException, TimeoutException {
         final Instant baseTime = DateTimeUtils.parseInstant("2025-01-01T09:30:00 NY");
         final Duration rev = Duration.ofSeconds(15);
@@ -296,6 +300,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(expect2, ungroup2);
     }
 
+    @Test
     public void testUpdateView() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"));
@@ -334,6 +339,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, updateView3);
     }
 
+    @Test
     public void testView() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"));
@@ -371,6 +377,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, updateView3);
     }
 
+    @Test
     public void testShiftedColumnsConcurrent()
             throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
@@ -416,6 +423,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, shifted);
     }
 
+    @Test
     public void testUpdateViewShifted() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3));
@@ -456,6 +464,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, view3);
     }
 
+    @Test
     public void testDropColumns() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table =
                 TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
@@ -494,10 +503,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, dropColumns3);
     }
 
+    @Test
     public void testWhere() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereInternal(false);
     }
 
+    @Test
     public void testWhereIndexed() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereInternal(true);
     }
@@ -555,6 +566,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, filter3);
     }
 
+    @Test
     public void testWhere2() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
@@ -596,21 +608,25 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(testUpdate, filter3);
     }
 
+    @Test
     public void testWhereSortedColumnBinarySearchAsc()
             throws ExecutionException, InterruptedException, TimeoutException {
         testWhereSortedColumnBinarySearchInternal(true);
     }
 
+    @Test
     public void testWhereSortedColumnBinarySearchDesc()
             throws ExecutionException, InterruptedException, TimeoutException {
         testWhereSortedColumnBinarySearchInternal(false);
     }
 
+    @Test
     public void testWhereSortedColumnBinarySearchStringAsc()
             throws ExecutionException, InterruptedException, TimeoutException {
         testWhereSortedColumnBinarySearchStringInternal(true);
     }
 
+    @Test
     public void testWhereSortedColumnBinarySearchStringDesc()
             throws ExecutionException, InterruptedException, TimeoutException {
         testWhereSortedColumnBinarySearchStringInternal(false);
@@ -880,6 +896,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testWhereDynamic() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(false, false);
         testWhereNotInDynamicInternal(false, false);
@@ -888,6 +905,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testWhereDynamicInternalStaticSource(false, false);
     }
 
+    @Test
     public void testWhereDynamicIndexedSource() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(true, false);
         testWhereNotInDynamicInternal(true, false);
@@ -896,6 +914,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testWhereDynamicInternalStaticSource(true, false);
     }
 
+    @Test
     public void testWhereDynamicIndexedSet() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(false, true);
         testWhereNotInDynamicInternal(false, true);
@@ -904,6 +923,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testWhereDynamicInternalStaticSource(false, true);
     }
 
+    @Test
     public void testWhereDynamicIndexedBoth() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(true, true);
         testWhereNotInDynamicInternal(true, true);
@@ -1237,14 +1257,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
      * key columns, so the filter searches for a partial index, which used to assert the lock and throw
      * {@code IllegalStateException}.
      */
+    @Test
     public void testWhereDynamicInputTableWithoutLock() throws Exception {
         testWhereDynamicInputTableWithoutLockInternal(SourceIndex.NONE);
     }
 
+    @Test
     public void testWhereDynamicInputTableWithoutLockPartialIndex() throws Exception {
         testWhereDynamicInputTableWithoutLockInternal(SourceIndex.PARTIAL);
     }
 
+    @Test
     public void testWhereDynamicInputTableWithoutLockFullIndex() throws Exception {
         testWhereDynamicInputTableWithoutLockInternal(SourceIndex.FULL);
     }
@@ -1323,6 +1346,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(expectedAfterSetDelete, filteredWhereIn);
     }
 
+    @Test
     public void testIncrementalReleaseFilter() throws ExecutionException, InterruptedException, TimeoutException {
         testIncrementalReleaseFilter(false);
         testIncrementalReleaseFilter(true);
@@ -1374,10 +1398,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(table.slice(0, 1), filter3);
     }
 
+    @Test
     public void testSort() throws ExecutionException, InterruptedException, TimeoutException {
         testSortInternal(false);
     }
 
+    @Test
     public void testSortIndexed() throws ExecutionException, InterruptedException, TimeoutException {
         testSortInternal(true);
     }
@@ -1425,6 +1451,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, sort3);
     }
 
+    @Test
     public void testReverse() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"));
@@ -1487,6 +1514,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate3, reverse3);
     }
 
+    @Test
     public void testUngroup() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 intCol("Key", 1, 2, 3), col("Value", new int[] {101}, new int[] {201, 202}, new int[] {301}));
@@ -1575,6 +1603,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate3, ungroupv4);
     }
 
+    @Test
     public void testUngroupBadSize() throws ExecutionException, InterruptedException, TimeoutException {
         testUngroupBadSize(t -> t);
         testUngroupBadSize(t -> QueryTableUngroupTest.convertToUngroupable(t, "Value", "Value2"));
@@ -1627,6 +1656,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 ise1.getMessage());
     }
 
+    @Test
     public void testUngroupSizeChanges() throws ExecutionException, InterruptedException, TimeoutException {
         testUngroupTransformed(false, t -> t.update("Value=new io.deephaven.vector.IntVectorDirect(Value)"));
         testUngroupTransformed(false, t -> t.update("Value2=new io.deephaven.vector.DoubleVectorDirect(Value2)"));
@@ -1634,6 +1664,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testUngroupTransformed(true, t -> t.update("Value2=new io.deephaven.vector.DoubleVectorDirect(Value2)"));
     }
 
+    @Test
     public void testUngroupUngroupableColumnSource() throws ExecutionException, InterruptedException, TimeoutException {
         testUngroupUngroupableColumnSource(false);
         testUngroupUngroupableColumnSource(true);
@@ -1748,6 +1779,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate3, ungroupv4);
     }
 
+    @Test
     public void testSortOfPartitionBy() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "a", "a"));
@@ -1781,6 +1813,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         updateGraph.completeCycleForUnitTests();
     }
 
+    @Test
     public void testChain() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
@@ -1824,6 +1857,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, chain3);
     }
 
+    @Test
     public void testIterative() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(t -> t.updateView("i4=intCol * 4"));
@@ -1835,6 +1869,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testIterative(transformations, 0, new MutableInt(50));
     }
 
+    @Test
     public void testIterativeQuickFilter() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(t -> t.where("boolCol2"));
@@ -1845,6 +1880,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testIterative(transformations);
     }
 
+    @Test
     public void testIterativeDisjunctiveCondition() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(
@@ -1873,7 +1909,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                         new BooleanGenerator(),
                         new BooleanGenerator(),
                         new DoubleGenerator(0, 100)));
-
 
         final Callable<Table> complete = () -> {
             Table t = table;
@@ -1908,7 +1943,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 return complete.call();
             } catch (Exception e) {
                 e.printStackTrace();
-                TestCase.fail(e.getMessage());
+                fail(e.getMessage());
                 throw new RuntimeException(e);
             }
         });
@@ -2100,7 +2135,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                                 @Override
                                 public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                                     originalException.printStackTrace(System.err);
-                                    TestCase.fail(originalException.getMessage());
+                                    fail(originalException.getMessage());
                                 }
                             };
                     listeners.add(listener);
@@ -2239,16 +2274,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                                 ", hash=" + Objects.hashCode(checkTable));
                         showWithRowSet(checkTable);
                     }
-                    TestCase.assertEquals("", diff);
+                    assertEquals("", diff);
                 }
 
             }
         } catch (Exception e) {
             e.printStackTrace();
-            TestCase.fail(e.getMessage());
+            fail(e.getMessage());
         }
     }
 
+    @Test
     public void testSelectDistinct() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 col("y", "a", "b", "a", "c"));
@@ -2328,6 +2364,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testSelectDistinctReset() throws ExecutionException, InterruptedException, TimeoutException {
         final BarrierFunction barrierFunction = new BarrierFunction();
         QueryScope.addParam("barrierFunction", barrierFunction);
@@ -2361,23 +2398,28 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testSumBy() throws Exception {
         testByConcurrent(t -> t.sumBy("KeyColumn"));
         testByConcurrent(t -> t.absSumBy("KeyColumn"));
     }
 
+    @Test
     public void testAvgBy() throws Exception {
         testByConcurrent(t -> t.avgBy("KeyColumn"));
     }
 
+    @Test
     public void testVarBy() throws Exception {
         testByConcurrent(t -> t.varBy("KeyColumn"));
     }
 
+    @Test
     public void testStdBy() throws Exception {
         testByConcurrent(t -> t.varBy("KeyColumn"));
     }
 
+    @Test
     public void testCountBy() throws Exception {
         testByConcurrent(t -> t.varBy("KeyColumn"));
     }
@@ -2387,6 +2429,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         return (T) table.withAttributes(Map.of(Table.ADD_ONLY_TABLE_ATTRIBUTE, true));
     }
 
+    @Test
     public void testMinMaxBy() throws Exception {
         testByConcurrent(t -> t.maxBy("KeyColumn"));
         testByConcurrent(t -> t.minBy("KeyColumn"));
@@ -2394,24 +2437,29 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testByConcurrent(t -> setAddOnly(t).maxBy("KeyColumn"), true, false, false, true);
     }
 
+    @Test
     public void testFirstLastBy() throws Exception {
         testByConcurrent(t -> t.firstBy("KeyColumn"));
         testByConcurrent(t -> t.lastBy("KeyColumn"));
     }
 
+    @Test
     public void testSortedFirstLastBy() throws Exception {
         testByConcurrent(t -> SortedBy.sortedFirstBy(t, "IntCol", "KeyColumn"));
         testByConcurrent(t -> SortedBy.sortedLastBy(t, "IntCol", "KeyColumn"));
     }
 
+    @Test
     public void testKeyedBy() throws Exception {
         testByConcurrent(t -> t.groupBy("KeyColumn"));
     }
 
+    @Test
     public void testNoKeyBy() throws Exception {
         testByConcurrent(Table::groupBy, false, false, true, true);
     }
 
+    @Test
     public void testPercentileBy() throws Exception {
         final Function<Table, String[]> nonKeyColumnNames = t -> t.getDefinition().getColumnStream()
                 .map(ColumnDefinition::getName).filter(cn -> !cn.equals("KeyColumn")).toArray(String[]::new);
@@ -2422,11 +2470,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testByConcurrent(t -> t.medianBy("KeyColumn"));
     }
 
+    @Test
     public void testAggCombo() throws Exception {
         testByConcurrent(t -> t.aggBy(List.of(AggAvg("AvgInt=IntCol"), AggCount("NumInts"),
                 AggSum("SumDouble=DoubleCol"), AggMax("MaxDouble=DoubleCol")), "KeyColumn"));
     }
 
+    @Test
     public void testWavgBy() throws Exception {
         testByConcurrent(t -> t.wavgBy("IntCol", "KeyColumn"), true, true, true, false);
         testByConcurrent(t -> t.wavgBy("IntCol", "KeyColumn"), true, false, true, false);
@@ -2570,6 +2620,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testPartitionByConcurrent() throws Exception {
         testPartitionByConcurrent(false);
         testPartitionByConcurrent(true);
@@ -2580,7 +2631,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final QueryTable table = makeByConcurrentBaseTable(false);
         final QueryTable table2 = makeByConcurrentStep2Table(true, false);
-
 
         final Callable<PartitionedTable> callable;
         final Table slowed;
@@ -2693,7 +2743,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     BigInteger.valueOf(300000), BigInteger.valueOf(400000)));
         }
 
-
         return TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
     }
@@ -2748,10 +2797,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.addToTable(table, i(5, 9), columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
     }
 
+    @Test
     public void testConstructSnapshotException() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 col("y", "a", "b", "c", "d"));
-
 
         final Future<String[]> future = pool.submit(() -> {
             final MutableObject<String[]> result = new MutableObject<>();
@@ -2799,6 +2848,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(answer));
     }
 
+    @Test
     public void testStaticSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
@@ -2836,6 +2886,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, snap3);
     }
 
+    @Test
     public void testSnapshotLiveness() {
         final QueryTable trigger, base, snap;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
@@ -2870,6 +2921,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(snap, base);
     }
 
+    @Test
     public void testSourceDependencyWithoutListener() {
         final QueryTable rootTable = TstUtils.testRefreshingTable(i(10).toTracking(), intCol("Sentinel", 10));
         final QueryTable tickTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("Ticking", 1));
@@ -2900,6 +2952,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         });
     }
 
+    @Test
     public void testMergedTableFilterPushdown() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable source1 = TstUtils.testRefreshingTable(
                 RowSetFactory.flat(10).toTracking(),

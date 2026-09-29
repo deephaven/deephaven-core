@@ -14,20 +14,17 @@ import io.deephaven.vector.Vector;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetTools;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.io.*;
 import java.nio.file.Files;
 
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
-public class TestAggregatedSelect extends TestCase {
-
-    public TestAggregatedSelect() {
-        super("TestAggregatedSelect()");
-    }
+public class TestAggregatedSelect {
 
     private static File tableDirectory;
     private SafeCloseable executionContext;
@@ -90,6 +87,7 @@ public class TestAggregatedSelect extends TestCase {
         return (sumEnd - sumStart) / count;
     }
 
+    @Test
     public void testSelectType() {
         Table table = createTestTable();
         Table selectedTable = table.select();
@@ -98,11 +96,12 @@ public class TestAggregatedSelect extends TestCase {
         for (String colName : colNames) {
             ColumnDefinition<?> cdFresh = table.getDefinition().getColumn(colName);
             ColumnDefinition<?> cdSelected = selectedTable.getDefinition().getColumn(colName);
-            TestCase.assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
-            TestCase.assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
+            assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
+            assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
         }
     }
 
+    @Test
     public void testUngroup() {
         Table freshTable = doAggregatedQuery();
 
@@ -124,8 +123,8 @@ public class TestAggregatedSelect extends TestCase {
         for (String colName : colNames) {
             ColumnDefinition<?> cdFresh = t1.getDefinition().getColumn(colName);
             ColumnDefinition<?> cdSelected = t2.getDefinition().getColumn(colName);
-            TestCase.assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
-            TestCase.assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
+            assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
+            assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
         }
 
         t2 = t2.ungroup();
@@ -139,8 +138,8 @@ public class TestAggregatedSelect extends TestCase {
         for (String colName : colNames) {
             ColumnDefinition<?> cdFresh = s1.getDefinition().getColumn(colName);
             ColumnDefinition<?> cdSelected = s1s.getDefinition().getColumn(colName);
-            TestCase.assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
-            TestCase.assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
+            assertEquals(cdFresh.getDataType(), cdSelected.getDataType());
+            assertEquals(cdFresh.getComponentType(), cdSelected.getComponentType());
         }
 
         TableTools.show(s1);

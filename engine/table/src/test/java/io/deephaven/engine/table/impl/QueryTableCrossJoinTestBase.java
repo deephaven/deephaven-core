@@ -31,6 +31,7 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.*;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 import static java.util.Collections.emptyList;
 
 @Category(OutOfBandTest.class)
@@ -57,6 +59,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 new IntGenerator(10, 100000));
     }
 
+    @Test
     public void testZeroKeyJoinBitExpansionOnAdd() {
         // Looking to force our row set space to need more keys.
         final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
@@ -91,6 +94,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         Assert.eq(listener.update.shifted().size(), "listener.update.shifted.size()", lTable.size(), "lTable.size()");
     }
 
+    @Test
     public void testZeroKeyJoinBitExpansionOnBoundaryShift() {
         // Looking to force our row set space to need more keys.
         final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
@@ -132,6 +136,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 "2 * lTable.size()");
     }
 
+    @Test
     public void testZeroKeyJoinBitExpansionWithInnerShift() {
         // Looking to force our row set space to need more keys.
         final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
@@ -170,6 +175,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 "3 * lTable.size()");
     }
 
+    @Test
     public void testZeroKeyJoinCompoundShift() {
         // rightTable shift, leftTable shift, and bit expansion
         final QueryTable lTable = testRefreshingTable(col("X", "a", "b", "c", "d"));
@@ -216,6 +222,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
     }
 
+    @Test
     public void testIncrementalZeroKeyJoin() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {
@@ -223,6 +230,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testCrossJoinShift() {
         final QueryTable left = (QueryTable) TableTools.newTable(intCol("LK", 1, 2, 3), intCol("LS", 1, 2, 3));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RK", 1, 2, 3), intCol("RS", 10, 20, 30));
@@ -302,6 +310,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testSmallStaticJoin() {
         final String[] types = new String[] {"single", "none", "multi"};
         final int[] cardinality = new int[] {1, 0, 3};
@@ -321,6 +330,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testLargeStaticJoin() {
         final String[] types = new String[26];
         final int[] cardinality = new int[26];
@@ -338,6 +348,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testLargeStaticOverflow() {
         final String[] types = new String[26];
         final int[] cardinality = new int[26];
@@ -517,6 +528,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         return sentinelAdded ? ungroupedResult.dropColumns("__sentinel__") : ungroupedResult;
     }
 
+    @Test
     public void testStaticVsNaturalJoin() {
         final int size = 10000;
         final Table x = TableTools.emptyTable(size).update("Col1=i");
@@ -528,6 +540,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         assertTableEquals(z3, z);
     }
 
+    @Test
     public void testStaticVsNaturalJoin2() {
         final int size = 10000;
 
@@ -558,6 +571,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         assertTableEquals(z3, z);
     }
 
+    @Test
     public void testIncrementalOverflow() {
         final int[] sizes = {10, 100, 10000};
 
@@ -649,6 +663,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testIncrementalWithKeyColumns() {
         final int[] sizes = {10, 100, 1000};
 
@@ -712,6 +727,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testColumnSourceCanReuseContextWithSmallerRowSequence() {
         final QueryTable t1 = testRefreshingTable(i(0, 1).toTracking());
         final QueryTable t2 = (QueryTable) t1.update("K=k", "A=1");
@@ -733,6 +749,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testShiftingDuringRehash() {
         final int maxSteps = 2500;
         final MutableInt numSteps = new MutableInt();

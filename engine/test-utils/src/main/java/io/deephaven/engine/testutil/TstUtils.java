@@ -64,9 +64,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.TypeUtils;
-import junit.framework.AssertionFailedError;
-import junit.framework.ComparisonFailure;
-import junit.framework.TestCase;
+import org.junit.ComparisonFailure;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,6 +79,8 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 /**
  * Utility functions to create and update test tables, compare results, and otherwise make unit testing more pleasant.
@@ -824,8 +824,8 @@ public class TstUtils {
 
     public static void assertRowSetEquals(@NotNull final RowSet expected, @NotNull final RowSet actual) {
         try {
-            TestCase.assertEquals(expected, actual);
-        } catch (AssertionFailedError error) {
+            org.junit.Assert.assertEquals(expected, actual);
+        } catch (AssertionError error) {
             System.err.println("TrackingWritableRowSet equality check failed:"
                     + "\n\texpected: " + expected
                     + "\n\tactual: " + actual
@@ -996,7 +996,7 @@ public class TstUtils {
         } catch (final Exception ignored) {
             threwException = true;
         }
-        TestCase.assertTrue(threwException);
+        assertTrue(threwException);
     }
 
     public static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {

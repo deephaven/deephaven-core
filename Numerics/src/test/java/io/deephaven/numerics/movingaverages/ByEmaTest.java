@@ -6,14 +6,16 @@ package io.deephaven.numerics.movingaverages;
 import io.deephaven.base.testing.RecordingMockObject;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.time.Instant;
+
+import static org.junit.Assert.*;
 
 /**
  * Test ByEma.
  */
-public class ByEmaTest extends TestCase {
+public class ByEmaTest {
     private final static long SECOND = 1000;
     private final static long MINUTE = 60 * SECOND;
     private final static long HOUR = 60 * MINUTE;
@@ -71,6 +73,7 @@ public class ByEmaTest extends TestCase {
     private static final double NAN = Double.NaN;
     private static final double NULL = QueryConstants.NULL_DOUBLE;
 
+    @Test
     public void testEverything() {
 
         ByEma.BadDataBehavior nullBehavior = ByEma.BadDataBehavior.BD_RESET;

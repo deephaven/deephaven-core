@@ -3,12 +3,13 @@
 //
 package io.deephaven.engine.table.impl;
 
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.io.*;
 
-public class TestUtfAssumptions extends TestCase {
+import static org.junit.Assert.*;
+
+public class TestUtfAssumptions {
 
     @Test
     public void testUtfAssumptions1() throws IOException {
@@ -19,11 +20,11 @@ public class TestUtfAssumptions extends TestCase {
         out.flush();
 
         final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
-        TestCase.assertEquals(4, in.available());
+        assertEquals(4, in.available());
         final String bad = in.readUTF();
-        TestCase.assertEquals(1, bad.length());
-        TestCase.assertEquals('\0', bad.charAt(0));
-        TestCase.assertEquals(0, in.available());
+        assertEquals(1, bad.length());
+        assertEquals('\0', bad.charAt(0));
+        assertEquals(0, in.available());
     }
 
     static final byte MAGIC_NUMBER = (byte) 0b10001111;
@@ -39,14 +40,14 @@ public class TestUtfAssumptions extends TestCase {
         out.flush();
 
         final ObjectInputStream in1 = new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
-        TestCase.assertEquals(4, in1.available());
-        TestCase.assertEquals(2, in1.readUnsignedShort());
-        TestCase.assertEquals(MAGIC_NUMBER, in1.readByte());
-        TestCase.assertEquals(1, in1.readByte());
-        TestCase.assertEquals(0, in1.available());
+        assertEquals(4, in1.available());
+        assertEquals(2, in1.readUnsignedShort());
+        assertEquals(MAGIC_NUMBER, in1.readByte());
+        assertEquals(1, in1.readByte());
+        assertEquals(0, in1.available());
 
         final ObjectInputStream in2 = new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
-        TestCase.assertEquals(4, in2.available());
+        assertEquals(4, in2.available());
         try {
             in2.readUTF();
             fail("Excpected UTF data format exception!");

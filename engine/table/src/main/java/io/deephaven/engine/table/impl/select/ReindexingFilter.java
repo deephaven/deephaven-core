@@ -13,6 +13,18 @@ import org.jetbrains.annotations.Nullable;
 public interface ReindexingFilter extends WhereFilter {
 
     /**
+     * A reindexing filter's {@code filter()} call is not a pure predicate: it establishes the row set that subsequent
+     * filters must see, and implementations such as {@link ClockFilter} use it to initialize the state their per-cycle
+     * refresh consumes. A pushdown that fully resolves the filter would skip that call entirely.
+     *
+     * @return false
+     */
+    @Override
+    default boolean canPushdown() {
+        return false;
+    }
+
+    /**
      * @return True iff getSortColumns will return a non-null, non-empty array of column names to sort on.
      */
     boolean requiresSorting();

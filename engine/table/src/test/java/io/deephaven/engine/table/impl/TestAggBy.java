@@ -41,7 +41,6 @@ import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
-import junit.framework.TestCase;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -56,10 +55,11 @@ import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestAggBy extends RefreshingTableTestCase {
@@ -213,8 +213,8 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(2, minMax.size());
 
         DoubleVector consts = ColumnVectors.ofDouble(minMax, "f_const");
-        assertEquals(9.0, consts.get(0));
-        assertEquals(9.0, consts.get(1));
+        assertEquals(9.0, consts.get(0), 0.0);
+        assertEquals(9.0, consts.get(1), 0.0);
 
         IntVector mins = ColumnVectors.ofInt(minMax, "Min");
         assertEquals(1, mins.get(0));
@@ -495,9 +495,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                 .build();
         try {
             table.aggBy(List.of(AggCountWhere("count", filter)));
-            TestCase.fail("expected AggCountWhere to reject a filter that may be refreshing");
+            fail("expected AggCountWhere to reject a filter that may be refreshing");
         } catch (final UnsupportedOperationException expected) {
-            TestCase.assertTrue(expected.getMessage(), expected.getMessage().contains("refreshing filters"));
+            assertTrue(expected.getMessage(), expected.getMessage().contains("refreshing filters"));
         }
     }
 
@@ -1324,7 +1324,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         for (String colName : columnNames) {
             if (!colName.equalsIgnoreCase(doubleColName) && !colName.equalsIgnoreCase(intColName) &&
                     !ColumnFormatting.isFormattingColumn(colName)) {
-                TestCase.fail("Result table should have two original columns and one formatting column");
+                fail("Result table should have two original columns and one formatting column");
             }
         }
         assertEquals(1, result.size());
@@ -1589,6 +1589,7 @@ public class TestAggBy extends RefreshingTableTestCase {
 
     // @Test
     @Ignore
+    @Test
     public void testAggUniquePerf() {
         final Table input = TableTools.emptyTable(7_250_000).update("X=Long.toHexString(ii)", "Y=X.toUpperCase()",
                 "Z=X.toLowerCase()", "A=Long.toString(i)", "Bucket=ii%100 == 0 ? 0 : ii");
@@ -1606,6 +1607,7 @@ public class TestAggBy extends RefreshingTableTestCase {
 
     // @Test
     @Ignore
+    @Test
     public void testAggUniquePerfWithRollup() {
         final Table input = TableTools.emptyTable(2_500_000).update("X=Long.toHexString(ii % 10000)",
                 "Y=X.toUpperCase()",

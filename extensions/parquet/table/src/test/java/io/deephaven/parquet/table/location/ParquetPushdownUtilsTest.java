@@ -26,7 +26,7 @@ public class ParquetPushdownUtilsTest {
     }
 
     private static Statistics<?> doubleStats(final double minInc, final double maxInc, final long numNulls) {
-        final PrimitiveType col = Types.required(DOUBLE).named("doubleCol");
+        final PrimitiveType col = Types.required(DOUBLE).columnOrder(ColumnOrder.typeDefined()).named("doubleCol");
         return Statistics.getBuilderForReading(col)
                 .withMin(BytesUtils.longToBytes(Double.doubleToLongBits(minInc)))
                 .withMax(BytesUtils.longToBytes(Double.doubleToLongBits(maxInc)))
@@ -38,7 +38,7 @@ public class ParquetPushdownUtilsTest {
      * Statistics without a {@code null_count}, as an optional-field-omitting writer produces.
      */
     private static Statistics<?> doubleStatsWithoutNullCount(final double minInc, final double maxInc) {
-        final PrimitiveType col = Types.required(DOUBLE).named("doubleCol");
+        final PrimitiveType col = Types.required(DOUBLE).columnOrder(ColumnOrder.typeDefined()).named("doubleCol");
         return Statistics.getBuilderForReading(col)
                 .withMin(BytesUtils.longToBytes(Double.doubleToLongBits(minInc)))
                 .withMax(BytesUtils.longToBytes(Double.doubleToLongBits(maxInc)))

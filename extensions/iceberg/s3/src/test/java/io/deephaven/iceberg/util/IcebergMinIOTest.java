@@ -8,6 +8,7 @@ import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.base.OSUtil;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
@@ -19,6 +20,7 @@ import static org.apache.iceberg.aws.s3.S3FileIOProperties.ENDPOINT;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.SECRET_ACCESS_KEY;
 
 @Tag("testcontainers")
+@Disabled("The MinIO container is disabled")
 @Deprecated
 public class IcebergMinIOTest extends IcebergToolsTest {
 

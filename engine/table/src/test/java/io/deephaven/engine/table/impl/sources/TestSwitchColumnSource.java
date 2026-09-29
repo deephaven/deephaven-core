@@ -17,6 +17,9 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestSwitchColumnSource extends RefreshingTableTestCase {
 
@@ -118,6 +121,7 @@ public class TestSwitchColumnSource extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testContextsFollowDelegate() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final TypedContextSource first = new TypedContextSource(1);

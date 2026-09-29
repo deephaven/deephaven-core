@@ -20,6 +20,7 @@ import org.junit.Test;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertNotSame;
@@ -173,21 +174,35 @@ public class TestSharedSetKernel {
     }
 
     /**
-     * Registration is idempotent. A filter is given its recompute listener once per snapshot attempt, and a retried
-     * instantiation would otherwise leave one registration per attempt for the same filter, each producing a redundant
-     * recompute request.
+     * Registration is idempotent, so that a filter given its recompute listener once per snapshot attempt leaves one
+     * registration rather than one per attempt, each of which would produce a redundant recompute request.
      */
     @Test
     public void testRegistrationIsIdempotent() {
         final DynamicWhereFilter filter = new DynamicWhereFilter(refreshingSet(), true, pairs());
         final SharedSetKernel shared = filter.sharedSet();
+        final long unchanged = shared.lastStateChangeStep();
 
-        shared.addFilter(filter);
+        assertTrue(shared.addFilter(filter, unchanged));
         assertEquals(1, shared.registeredFilterCount());
-        shared.addFilter(filter);
+        assertTrue(shared.addFilter(filter, unchanged));
         assertEquals(1, shared.registeredFilterCount());
 
         shared.removeFilter(filter);
+        assertEquals(0, shared.registeredFilterCount());
+    }
+
+    /**
+     * Registration is refused when the shared keys have changed since the registering operation read them. Such an
+     * operation would begin following the set having already missed a change, so its attempt must be rejected instead
+     * of committing a result that is quietly stale.
+     */
+    @Test
+    public void testRegistrationIsRefusedAfterAKeyChange() {
+        final DynamicWhereFilter filter = new DynamicWhereFilter(refreshingSet(), true, pairs());
+        final SharedSetKernel shared = filter.sharedSet();
+
+        assertFalse(shared.addFilter(filter, shared.lastStateChangeStep() - 1));
         assertEquals(0, shared.registeredFilterCount());
     }
 }

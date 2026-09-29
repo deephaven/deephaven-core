@@ -4,7 +4,7 @@
 package io.deephaven.base.testing;
 
 import io.deephaven.base.*;
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import java.util.function.Supplier;
 

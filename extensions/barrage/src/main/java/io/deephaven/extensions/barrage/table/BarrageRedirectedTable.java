@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.io.log.LogLevel;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -392,26 +393,35 @@ public class BarrageRedirectedTable extends BarrageTable {
 
         UpdateCoalescer coalescer = null;
         boolean acknowledged = false;
-        for (final BarrageMessage update : localPendingUpdates) {
-            final long startTm = System.nanoTime();
-            // A snapshot carrying no viewport is how the server acknowledges that a full subscription is satisfied.
-            acknowledged |= update.isSnapshot && update.snapshotRowSet == null;
-            coalescer = processUpdate(update, coalescer);
-            update.close();
-            recordMetric(stats -> stats.processUpdate, System.nanoTime() - startTm);
-        }
+        try {
+            for (final BarrageMessage update : localPendingUpdates) {
+                final long startTm = System.nanoTime();
+                // A snapshot carrying no viewport is how the server acknowledges that a full subscription is
+                // satisfied.
+                acknowledged |= update.isSnapshot && update.snapshotRowSet == null;
+                coalescer = processUpdate(update, coalescer);
+                update.close();
+                recordMetric(stats -> stats.processUpdate, System.nanoTime() - startTm);
+            }
 
-        if (!wasIncomplete) {
-            return coalescer != null ? coalescer.coalesce() : null;
-        }
+            if (!wasIncomplete) {
+                return coalescer != null ? coalescer.coalesce() : null;
+            }
 
-        if (acknowledged) {
-            // This table is complete, and therefore live from here on, so it must begin tracking previous values. Its
-            // contents are the initial state for any listener that attaches now; there is no update to publish.
-            incomplete = false;
-            maybeEnablePrevTracking();
+            if (acknowledged) {
+                // This table is complete, and therefore live from here on, so it must begin tracking previous values.
+                // Its contents are the initial state for any listener that attaches now; there is no update to
+                // publish.
+                incomplete = false;
+                maybeEnablePrevTracking();
+            }
+            return null;
+        } finally {
+            // A batch that publishes nothing abandons the coalescer, which is where its row sets would otherwise be
+            // lost; after a coalesce this releases only what the coalescer kept for itself.
+            try (final SafeCloseable ignored = coalescer) {
+            }
         }
-        return null;
     }
 
     @Override

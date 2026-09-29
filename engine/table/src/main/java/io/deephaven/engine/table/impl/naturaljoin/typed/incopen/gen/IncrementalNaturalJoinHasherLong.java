@@ -15,6 +15,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.LongChunkHasher;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -23,7 +24,6 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.IncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
-import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
@@ -76,7 +76,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -123,7 +125,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -169,7 +173,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
                                 if (!leftEmpty && inputKey == newKey) {
                                     // we have a new output key for the LHS rows;
-                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMainRightAdd(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                                 }
                             } else {
                                 final long inputKey = rowKeyChunk.get(chunkPosition);
@@ -177,26 +181,30 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                     final long newKey = Math.min(existingRightRowKey, inputKey);
                                     if (newKey != existingRightRowKey) {
                                         alternateRightRowKey.set(alternateTableLocation, newKey);
-                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMainRightAdd(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                                     }
                                 } else if (addOnly && joinType == NaturalJoinType.LAST_MATCH) {
                                     final long newKey = Math.max(existingRightRowKey, inputKey);
                                     if (newKey != existingRightRowKey) {
                                         alternateRightRowKey.set(alternateTableLocation, newKey);
-                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMainRightAdd(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                                     }
                                 } else {
                                     final long duplicateLocation = allocateDuplicateLocation();
                                     final WritableRowSet duplicates = RowSetFactory.fromKeys(existingRightRowKey, inputKey);
                                     rightSideDuplicateRowSets.set(duplicateLocation, duplicates);
                                     alternateRightRowKey.set(alternateTableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                    if (duplicateCreationChangesState(duplicates, existingRightRowKey, joinType)) {
+                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMainRightAdd(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                    }
                                 }
                             }
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (firstDeletedLocation >= 0) {
@@ -233,7 +241,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                         final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
                         if (!leftEmpty && inputKey == newKey) {
                             // we have a new output key for the LHS rows;
-                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                         }
                     } else {
                         final long inputKey = rowKeyChunk.get(chunkPosition);
@@ -241,26 +249,30 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                             final long newKey = Math.min(existingRightRowKey, inputKey);
                             if (newKey != existingRightRowKey) {
                                 mainRightRowKey.set(tableLocation, newKey);
-                                mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             }
                         } else if (addOnly && joinType == NaturalJoinType.LAST_MATCH) {
                             final long newKey = Math.max(existingRightRowKey, inputKey);
                             if (newKey != existingRightRowKey) {
                                 mainRightRowKey.set(tableLocation, newKey);
-                                mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             }
                         } else {
                             final long duplicateLocation = allocateDuplicateLocation();
                             final WritableRowSet duplicates = RowSetFactory.fromKeys(existingRightRowKey, inputKey);
                             rightSideDuplicateRowSets.set(duplicateLocation, duplicates);
                             mainRightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            if (duplicateCreationChangesState(duplicates, existingRightRowKey, joinType)) {
+                                mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            }
                         }
                     }
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -297,7 +309,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                             final long rightRowKey;
                             if (rightRowKeyForState <= FIRST_DUPLICATE) {
                                 if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                                    throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                                 }
                                 final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                                 final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -311,7 +323,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (firstDeletedLocation >= 0) {
@@ -342,7 +356,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     final long rightRowKey;
                     if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                            throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                         }
                         final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -356,7 +370,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -403,18 +419,19 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     } else {
                         final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
                         if (leftEmpty) {
-                            mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
-                            liveEntries--;
+                            tombstoneSlot(true, tableLocation, modifiedSlotTracker);
                         } else {
                             mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
+                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                         }
-                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     }
                     found = true;
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -451,18 +468,19 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 } else {
                                     final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
                                     if (leftEmpty) {
-                                        alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
-                                        liveEntries--;
+                                        tombstoneSlot(false, alternateTableLocation, modifiedSlotTracker);
                                     } else {
                                         alternateRightRowKey.set(alternateTableLocation, RowSet.NULL_ROW_KEY);
+                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                                     }
-                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                                 }
                                 alternateFound = true;
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -506,7 +524,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -536,7 +556,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -592,7 +614,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -632,7 +656,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -668,8 +694,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                         left.remove(rowKeyChunk.get(chunkPosition));
                         if (rightState == RowSet.NULL_ROW_KEY) {
                             // no right match remains, so the slot is now dead
-                            mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
-                            liveEntries--;
+                            tombstoneSlot(true, tableLocation, modifiedSlotTracker);
                         }
                     } else {
                         // multi-row slot: accumulate for one bulk remove per slot
@@ -679,7 +704,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -700,8 +727,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                     left.remove(rowKeyChunk.get(chunkPosition));
                                     if (rightState == RowSet.NULL_ROW_KEY) {
                                         // no right match remains, so the slot is now dead
-                                        alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
-                                        liveEntries--;
+                                        tombstoneSlot(false, alternateTableLocation, modifiedSlotTracker);
                                     }
                                 } else {
                                     // multi-row slot: accumulate for one bulk remove per slot
@@ -711,7 +737,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -722,8 +750,8 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         }
     }
 
-    protected void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
-            IncrementalNaturalJoinStateManagerTypedBase.ProbeContext pc) {
+    protected void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final LongChunk<Values> keyChunk0 = sourceKeyChunks[0].asLongChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -741,19 +769,15 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                         searchAlternate = false;
                         break;
                     }
-                    final WritableRowSet leftRowSetForState = mainLeftRowSet.getUnsafe(tableLocation);
-                    final long keyToShift = rowKeyChunk.get(chunkPosition);
-                    if (shiftDelta < 0) {
-                        shiftOneKey(leftRowSetForState, keyToShift, shiftDelta);
-                    } else {
-                        pc.pendingShifts.set(pc.pendingShiftPointer++, (long)tableLocation);
-                        pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
-                    }
+                    // accumulate the post-shift key for one bulk remove and insert per slot and shift range
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftShift(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), stateValue));
                     found = true;
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -768,19 +792,15 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 if (isStateDeleted(stateValue)) {
                                     break;
                                 }
-                                final WritableRowSet leftRowSetForState = alternateLeftRowSet.getUnsafe(alternateTableLocation);
-                                final long keyToShift = rowKeyChunk.get(chunkPosition);
-                                if (shiftDelta < 0) {
-                                    shiftOneKey(leftRowSetForState, keyToShift, shiftDelta);
-                                } else {
-                                    pc.pendingShifts.set(pc.pendingShiftPointer++, (long)(AlternatingColumnSource.ALTERNATE_SWITCH_MASK | alternateTableLocation));
-                                    pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
-                                }
+                                // accumulate the post-shift key for one bulk remove and insert per slot and shift range
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftShift(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), stateValue));
                                 alternateFound = true;
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -841,13 +861,16 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
     @Override
     protected int rehashInternalPartial(int entriesToRehash,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        int rehashedEntries = 0;
-        while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, false, modifiedSlotTracker)) {
-                rehashedEntries++;
-            }
+        final long slotsToExamine = (long) entriesToRehash * IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY;
+        long examinedSlots = 0;
+        while (rehashPointer > 0 && examinedSlots < slotsToExamine) {
+            migrateOneLocation(--rehashPointer, false, modifiedSlotTracker);
+            ++examinedSlots;
         }
-        return rehashedEntries;
+        if (rehashPointer == 0) {
+            return entriesToRehash;
+        }
+        return (int) (examinedSlots / IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY);
     }
 
     @Override
@@ -901,7 +924,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
-                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+                if (destinationTableLocation == firstDestinationTableLocation) {
+                    throw Assert.statementNeverExecuted("destinationTableLocation wraps around to firstDestinationTableLocation");
+                }
             }
         }
     }

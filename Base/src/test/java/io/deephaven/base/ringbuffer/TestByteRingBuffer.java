@@ -9,13 +9,14 @@ package io.deephaven.base.ringbuffer;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.AssertionFailure;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertThrows;
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
-public class TestByteRingBuffer extends TestCase {
+public class TestByteRingBuffer {
 
     final byte SENTINEL = Byte.MIN_VALUE;
 
@@ -105,6 +106,7 @@ public class TestByteRingBuffer extends TestCase {
     byte E = 'E';
     byte F = 'F';
 
+    @Test
     public void testAddRemove() {
 
         ByteRingBuffer rb = new ByteRingBuffer(3);
@@ -185,6 +187,7 @@ public class TestByteRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testOfferPoll() {
         ByteRingBuffer rb = new ByteRingBuffer(3);
 
@@ -244,6 +247,7 @@ public class TestByteRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowSimple() {
         ByteRingBuffer rb = new ByteRingBuffer(4);
 
@@ -268,6 +272,7 @@ public class TestByteRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowComplex() {
         ByteRingBuffer rb = new ByteRingBuffer(5);
 
@@ -297,6 +302,7 @@ public class TestByteRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testIterator() {
         ByteRingBuffer rb = new ByteRingBuffer(3);
 
@@ -355,6 +361,7 @@ public class TestByteRingBuffer extends TestCase {
                 iterFinal::remove);
     }
 
+    @Test
     public void testBack() {
         ByteRingBuffer rb = new ByteRingBuffer(5);
 
@@ -366,6 +373,7 @@ public class TestByteRingBuffer extends TestCase {
         assertEquals(rb.back(), C);
     }
 
+    @Test
     public void testBackWhenEmpty() {
         ByteRingBuffer rb = new ByteRingBuffer(5);
         try {
@@ -376,6 +384,7 @@ public class TestByteRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testBackTailIsZero() {
         ByteRingBuffer rb = new ByteRingBuffer(5, false);
 
@@ -390,6 +399,7 @@ public class TestByteRingBuffer extends TestCase {
         assertEquals(rb.back(), F);
     }
 
+    @Test
     public void testLargeAmounts() {
         ByteRingBuffer rb = new ByteRingBuffer(3);
 
@@ -409,6 +419,7 @@ public class TestByteRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testAddExceptionWhenFull() {
         ByteRingBuffer rb = new ByteRingBuffer(4, false);
         assert (rb.add(A));
@@ -421,6 +432,7 @@ public class TestByteRingBuffer extends TestCase {
                 () -> rb.add(E));
     }
 
+    @Test
     public void testAddOverwriteAndOffer() {
         ByteRingBuffer rb = new ByteRingBuffer(4, false);
         assert (4 == rb.remaining());
@@ -466,7 +478,7 @@ public class TestByteRingBuffer extends TestCase {
         assert (A == rb.peekBack(A));
     }
 
-
+    @Test
     public void testMultipleRemove() {
         ByteRingBuffer rb = new ByteRingBuffer(10, false);
 
@@ -509,6 +521,7 @@ public class TestByteRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testAddRemoveUnsafe() {
         ByteRingBuffer rbNoGrow = new ByteRingBuffer(3, false);
 
@@ -532,7 +545,6 @@ public class TestByteRingBuffer extends TestCase {
         assertEquals(rbNoGrow.removeUnsafe(), C);
         assertEmpty(rbNoGrow);
 
-
         ByteRingBuffer rbGrow = new ByteRingBuffer(3, true);
 
         for (int size = 10; size < 1_000_000; size *= 10) {
@@ -544,6 +556,7 @@ public class TestByteRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testOverflow() {
         ByteRingBuffer rbA = new ByteRingBuffer(0);
         // this should throw

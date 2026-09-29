@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.engine.testutil.TstUtils;
+import org.junit.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.TreeMap;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 public class TestColumnDescriptionInheritance extends QueryTableTestBase {
 
@@ -24,12 +26,12 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
                 col("doubleCol", 0.1, 0.2, 0.4, 0.6));
     }
 
+    @Test
     public void testMaybeCopyColumnDescriptions() {
         final QueryTable sourceTable = (QueryTable) genTestTable();
         final QueryTable withDescriptions = (QueryTable) sourceTable
                 .withColumnDescription("Sym", "Symbol Column")
                 .withColumnDescription("doubleCol", "Double Column");
-
 
         System.out.println("Running basic \"maybeCopyColumnDescriptions\" tests...");
         final QueryTable destTable =
@@ -47,7 +49,6 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
         copiedDest = destTable.copy();
         withDescriptions.maybeCopyColumnDescriptions(copiedDest);
         assertEquals(descriptionMap, copiedDest.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
-
 
         System.out.println("Running table-operation level column-description tests...");
         final Map<String, String> droppedColumnMap = new HashMap<>(descriptionMap);
@@ -83,7 +84,6 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
                 .dropColumns("intCol")
                 .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
-
         System.out.println("Running update-operation level column-description tests...");
         assertEquals(descriptionMap, withDescriptions
                 .update("New=Sym", "New2=intCol + ` @ ` + doubleCol")
@@ -114,7 +114,6 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
                 .dropColumns("Temp")
                 .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
-
         System.out.println("Running rename-operation level column-description tests...");
         final Map<String, String> renamedColumnMap = new HashMap<>(descriptionMap);
         renamedColumnMap.put("RenamedSym", renamedColumnMap.remove("Sym"));
@@ -136,7 +135,6 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
         assertNull(sourceTable
                 .renameColumns("RenamedSym=Sym")
                 .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
-
 
         System.out.println("Running join-operation level column-description tests...");
         final Table rightTable = withDescriptions
@@ -167,10 +165,10 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
                         "rightInt,rightDouble")
                 .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
-
         System.out.println("Success");
     }
 
+    @Test
     public void testColumnDescriptionCopy() {
         final Table t = newTable(stringCol("Str", "Apple", "Banana", "Carot", "Date"), intCol("Fib", 1, 1, 2, 3));
         final Table sdesc = t.withColumnDescription("Str", "Fruit");

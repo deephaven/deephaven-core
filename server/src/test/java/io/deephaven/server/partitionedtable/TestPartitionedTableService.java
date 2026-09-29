@@ -5,7 +5,7 @@ package io.deephaven.server.partitionedtable;
 
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
-import io.deephaven.base.testing.BaseCachedJMockTestCase;
+import io.deephaven.base.testing.JMockRule;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
@@ -22,12 +22,18 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
-public class TestPartitionedTableService extends BaseCachedJMockTestCase {
+public class TestPartitionedTableService {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
+
     @Test
     public void testGetTable() {
         final PartitionedTableServiceGrpcImpl service = makeService();
@@ -135,6 +141,7 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         updateGraph.resetForUnitTests(true);
     }
 
+    @Test
     public void testCrossGraphs() {
         final PartitionedTableServiceGrpcImpl service = makeService();
 
@@ -168,11 +175,10 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
     }
 
     private @NotNull PartitionedTableServiceGrpcImpl makeService() {
-        final TicketRouter ticketRouter = mock(TicketRouter.class);
-        final SessionService sessionService = mock(SessionService.class);
+        final TicketRouter ticketRouter = jmock.mock(TicketRouter.class);
+        final SessionService sessionService = jmock.mock(SessionService.class);
         final PartitionedTableServiceContextualAuthWiring authWiring =
-                mock(PartitionedTableServiceContextualAuthWiring.class);
-
+                jmock.mock(PartitionedTableServiceContextualAuthWiring.class);
 
         return new PartitionedTableServiceGrpcImpl(ticketRouter, sessionService, authWiring);
     }

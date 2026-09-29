@@ -385,7 +385,7 @@ public class LeaderTableFilter {
                     }
                 }
                 try (final WritableRowSet added = addedBatch.build()) {
-                    followerResultRowSets[tt].insert(added);
+                    followerResultRowSets[tt].subsume(added);
                 }
             }
         }
@@ -504,7 +504,7 @@ public class LeaderTableFilter {
 
                     removed = removedBatch.build();
                     added = addedBatch.build();
-                } catch (final RuntimeException | Error e) {
+                } catch (final Throwable e) {
                     SafeCloseable.closeAll(removed, added);
                     throw e;
                 }
@@ -630,12 +630,12 @@ public class LeaderTableFilter {
 
         state.pendingRows = pendingBuilder.build();
         if (addMatches) {
-            try (final RowSet newMatches = matchedBuilder.build()) {
-                state.matchedRows.insert(newMatches);
+            try (final WritableRowSet newMatches = matchedBuilder.build()) {
+                state.matchedRows.subsume(newMatches);
             }
             if (state.currentIdBuilder != null) {
-                try (final RowSet curentMatches = state.currentIdBuilder.build()) {
-                    state.matchedRows.insert(curentMatches);
+                try (final WritableRowSet curentMatches = state.currentIdBuilder.build()) {
+                    state.matchedRows.subsume(curentMatches);
                     state.currentIdBuilder = null;
                 }
             }

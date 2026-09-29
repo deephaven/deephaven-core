@@ -41,10 +41,10 @@ public class ObjectReverseChunkSsaStamp implements ChunkSsaStamp {
     private static void processEntry(ObjectChunk<Object, Values> leftStampValues, Chunk<RowKeys> leftStampKeys,
             ObjectReverseSegmentedSortedArray ssa, WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
         final int leftSize = leftStampKeys.size();
+        rightKeysForLeft.setSize(leftSize);
         final long rightSize = ssa.size();
         if (rightSize == 0) {
             rightKeysForLeft.fillWithValue(0, leftSize, RowSequence.NULL_ROW_KEY);
-            rightKeysForLeft.setSize(leftSize);
             return;
         }
 

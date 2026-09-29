@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -29,8 +30,10 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -98,9 +101,26 @@ public class TestOperationSnapshotControlEx {
      */
     private static class TestAwareDependency extends TestDependency implements NotificationAwareDependency {
 
+        /** How many operations this dependency currently delivers state changes to. */
+        int subscriptions;
+
         @Override
-        public boolean stateChangedOnStep(final long step) {
-            return recordedStep == step;
+        public long lastStateChangeStep() {
+            return recordedStep;
+        }
+
+        @Override
+        public boolean subscribe(final long requiredLastStateChangeStep) {
+            if (recordedStep != requiredLastStateChangeStep) {
+                return false;
+            }
+            ++subscriptions;
+            return true;
+        }
+
+        @Override
+        public void unsubscribe() {
+            --subscriptions;
         }
     }
 
@@ -139,6 +159,200 @@ public class TestOperationSnapshotControlEx {
             assertTrue(control.snapshotConsistent(clockValue, false));
         } finally {
             pool.shutdownNow();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * A successful commit subscribes every aware extra, each requiring the state it guards to be as the attempt found
+     * it, so that from then on the extra's changes reach the result the attempt is handing out.
+     */
+    @Test
+    public void testCommitSubscribesEveryAwareExtra() {
+        final QueryTable source = refreshingSource();
+        final TestAwareDependency first = new TestAwareDependency();
+        final TestAwareDependency second = new TestAwareDependency();
+        final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, first, second);
+        final QueryTable result = refreshingSource();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+            assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(null, result);
+
+            assertTrue(control.snapshotCompletedConsistently(clockValue, true));
+            assertEquals(1, first.subscriptions);
+            assertEquals(1, second.subscriptions);
+        } finally {
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * An aware extra that has changed since the attempt read it refuses at the commit, which rejects the attempt and
+     * undoes the extras subscribed before it. Nothing is left following anything, so the change cannot reach a result
+     * that will never be handed out, and the retry reads the changed state directly.
+     * <p>
+     * The change here is on an earlier step than the one being snapshotted, which is the case the completion check
+     * cannot see: it asks only whether an extra changed on this step.
+     */
+    @Test
+    public void testCommitUndoesEveryAwareExtraWhenOneRefuses() {
+        final QueryTable source = refreshingSource();
+        final TestAwareDependency first = new TestAwareDependency();
+        final TestAwareDependency second = new TestAwareDependency();
+        final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, first, second);
+        final QueryTable result = refreshingSource();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+            assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(null, result);
+
+            second.recordedStep = LogicalClock.getStep(clockValue) - 1;
+            assertTrue("a change on an earlier step is not what the completion check looks for",
+                    control.snapshotConsistent(clockValue, true));
+
+            assertFalse(control.snapshotCompletedConsistently(clockValue, true));
+            assertEquals("the extra subscribed before the refusal was undone", 0, first.subscriptions);
+            assertEquals(0, second.subscriptions);
+        } finally {
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * An aware extra can finish changing its state on the step an attempt begins, between the attempt recording that
+     * state and finding the extra satisfied. The attempt then reads current values, which include the change, so its
+     * commit must subscribe against the changed state rather than refuse it.
+     */
+    @Test
+    public void testCommitAcceptsAChangeCompletedBeforeTheAwareExtraWasSatisfied() throws Exception {
+        final QueryTable source = refreshingSource();
+        final TestAwareDependency aware = new TestAwareDependency() {
+            @Override
+            public boolean satisfied(final long step) {
+                // The change lands as the attempt asks: the extra's listener has just finished for this step.
+                recordedStep = step;
+                return true;
+            }
+        };
+        final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, aware);
+        final QueryTable result = refreshingSource();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutorService pool = Executors.newSingleThreadExecutor();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+            source.setLastNotificationStep(LogicalClock.getStep(clockValue));
+
+            // Decided off-thread with a timeout, so that a wait shows up as a failure rather than a hang.
+            final Future<Boolean> decision = pool.submit(() -> control.usePreviousValues(clockValue));
+            assertEquals(Boolean.FALSE, decision.get(5, TimeUnit.SECONDS));
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(null, result);
+
+            assertTrue("the commit must accept the state the attempt read",
+                    control.snapshotCompletedConsistently(clockValue, false));
+            assertEquals(1, aware.subscriptions);
+        } finally {
+            pool.shutdownNow();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * A source that fails after an attempt has read it refuses that attempt's subscription by throwing, because nothing
+     * can listen to it again. The dependencies subscribed just before must be undone all the same, so that what they
+     * guard cannot reach a result that is about to be released.
+     */
+    @Test
+    public void testAThrowingSourceSubscriptionUndoesTheDependencies() {
+        final QueryTable source = refreshingSource();
+        final QueryTable result = refreshingSource();
+        final int[] subscribedDependencies = new int[1];
+        final OperationSnapshotControl control = new OperationSnapshotControl(source) {
+            @Override
+            boolean maybeSubscribeDependencies() {
+                ++subscribedDependencies[0];
+                return true;
+            }
+
+            @Override
+            void maybeUnsubscribeDependencies() {
+                --subscribedDependencies[0];
+            }
+
+            @Override
+            protected boolean isInInitialNotificationWindow() {
+                // The source failed after this attempt's read, which is for the subscription to discover.
+                return true;
+            }
+        };
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+            control.usePreviousValues(clockValue);
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(new ListenerRecorder("recorder", source, result), result);
+            try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+                source.notifyListenersOnError(new RuntimeException("source failure"), null);
+            }
+
+            assertThrows(TableAlreadyFailedException.class,
+                    () -> control.snapshotCompletedConsistently(clockValue, true));
+            assertEquals("the dependencies subscribed before the source threw were undone", 0,
+                    subscribedDependencies[0]);
+        } finally {
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * A control is reused across attempts, so a new attempt must forget the listener and result the previous one set.
+     * Otherwise an attempt whose function fails without setting them would commit its predecessor's result, which has
+     * already been released: stamping its last notification step, subscribing its listener, and registering whatever
+     * else the commit registers on its behalf.
+     */
+    @Test
+    public void testANewAttemptForgetsThePreviousAttemptsListenerAndResult() {
+        final QueryTable source = refreshingSource();
+        final QueryTable result = refreshingSource();
+        final OperationSnapshotControl control = new OperationSnapshotControl(source);
+        // Recorded in place of the result table, whose own notification step cannot show whether the commit stamped it.
+        final long[] stampedStep = {NotificationStepReceiver.NULL_NOTIFICATION_STEP};
+        final NotificationStepReceiver stampRecorder = step -> stampedStep[0] = step;
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+
+            // An attempt whose function set the listener and result, but which is not committed.
+            assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            control.setListenerAndResult(new ListenerRecorder("recorder", source, result), stampRecorder);
+
+            // The next attempt's function fails before setting them, so this attempt has nothing to commit.
+            assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            assertThrows(IllegalStateException.class, () -> control.snapshotCompletedConsistently(clockValue, true));
+            assertFalse("the previous attempt's listener was not subscribed", source.hasListeners());
+            assertEquals("the previous attempt's result was not stamped",
+                    NotificationStepReceiver.NULL_NOTIFICATION_STEP, stampedStep[0]);
+        } finally {
             updateGraph.markSourcesRefreshedForUnitTests();
             updateGraph.completeCycleForUnitTests();
         }
@@ -188,13 +402,14 @@ public class TestOperationSnapshotControlEx {
         final TestAwareDependency aware = new TestAwareDependency();
         final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, aware);
         final ListenerRecorder listener = new ListenerRecorder("test", source, result);
-        control.setListenerAndResult(listener, result);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests(false);
         try {
             final long clockValue = updateGraph.clock().currentValue();
             assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(listener, result);
 
             aware.recordedStep = LogicalClock.getStep(clockValue);
             assertFalse(control.snapshotCompletedConsistently(clockValue, true));
@@ -299,7 +514,7 @@ public class TestOperationSnapshotControlEx {
         assertTrue(filter instanceof NotificationAwareDependency);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        assertFalse(filter.stateChangedOnStep(updateGraph.clock().currentStep()));
+        assertNotEquals(updateGraph.clock().currentStep(), filter.lastStateChangeStep());
 
         // Changing the set table changes the kernel, which must be reported against that step.
         final long[] changedStep = new long[1];
@@ -308,7 +523,7 @@ public class TestOperationSnapshotControlEx {
             TstUtils.addToTable(setTable, i(1), intCol("Z", 2));
             setTable.notifyListeners(i(1), i(), i());
         });
-        assertTrue(filter.stateChangedOnStep(changedStep[0]));
+        assertEquals(changedStep[0], filter.lastStateChangeStep());
 
         // A cycle that leaves the set table alone must report no change, so that snapshots are not retried for a
         // kernel that did not change.
@@ -316,10 +531,10 @@ public class TestOperationSnapshotControlEx {
         updateGraph.runWithinUnitTestCycle(() -> {
             quietStep[0] = updateGraph.clock().currentStep();
         });
-        assertFalse(filter.stateChangedOnStep(quietStep[0]));
+        assertNotEquals(quietStep[0], filter.lastStateChangeStep());
 
-        // The earlier change is still reported against its own step.
-        assertTrue(filter.stateChangedOnStep(changedStep[0]));
+        // The earlier change is still the last one reported.
+        assertEquals(changedStep[0], filter.lastStateChangeStep());
     }
 
     /**

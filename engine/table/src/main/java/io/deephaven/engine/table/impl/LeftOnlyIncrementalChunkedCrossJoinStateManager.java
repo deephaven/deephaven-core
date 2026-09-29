@@ -400,14 +400,14 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 }
             }, null);
         }
-        try (final RowSet added = addBuilder.build();
+        try (final WritableRowSet added = addBuilder.build();
              final RowSet removed = rmBuilder.build();
              final RowSet postShiftRemoved = rmResultBuilder.build()) {
             downstream.removed().writableCast().insert(removed);
             downstream.added().writableCast().insert(added);
             // must remove before adding as removed.intersect(added) may be non-empty
             resultRowSet.remove(postShiftRemoved);
-            resultRowSet.insert(added);
+            resultRowSet.subsume(added);
         }
         downstream.modified = modBuilder.build();
     }

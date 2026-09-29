@@ -10,6 +10,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIterator;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.LongSsmBackedSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -18,13 +19,14 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for the Instant view of a {@link LongSegmentedSortedMultiset}.
@@ -53,18 +55,21 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
      * two views together rather than restate the expected contents: it is the drift between them that a hand-written
      * extension to replicated code can introduce.
      */
+    @Test
     public void testInstantExtensions() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantExtensions(NODE_SIZE, valueCount);
         }
     }
 
+    @Test
     public void testInstantSubArrays() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantSubArrays(NODE_SIZE, valueCount);
         }
     }
 
+    @Test
     public void testInstantSsmSourceWrapper() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantSsmSourceWrapper(NODE_SIZE, valueCount);
@@ -76,6 +81,7 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
      * itself as its own previous value and must be wrapped in place, while one that has accumulated deltas returns a
      * materialized LongVector that must be converted element by element.
      */
+    @Test
     public void testInstantSsmSourceWrapperColumnSource() {
         final LongSsmBackedSource source = new LongSsmBackedSource();
         source.ensureCapacity(2);
@@ -102,8 +108,14 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
         assertArrayEquals(asInstants(initial), wrapper.getPrev(0).toArray());
         assertArrayEquals(asInstants(instantNanos(7)), wrapper.get(0).toArray());
 
-        // a row that never had an SSM has no previous value at all
+        // a row that never had an SSM has no current or previous value at all
+        assertNull(wrapper.get(1));
         assertNull(wrapper.getPrev(1));
+        assertNull(wrapper.get(RowSequence.NULL_ROW_KEY));
+
+        // an SSM that is cleared, as the distinct operators do once a state holds no values, is null again
+        source.clear(0);
+        assertNull(wrapper.get(0));
     }
 
     private void checkInstantExtensions(final int nodeSize, final int valueCount) {

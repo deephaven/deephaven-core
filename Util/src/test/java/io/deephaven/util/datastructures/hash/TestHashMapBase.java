@@ -3,10 +3,11 @@
 //
 package io.deephaven.util.datastructures.hash;
 
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.util.Random;
+
+import static org.junit.Assert.*;
 
 public class TestHashMapBase {
     private static final double[] LOAD_FACTORS = {0.5, 0.75, 0.9};
@@ -42,13 +43,13 @@ public class TestHashMapBase {
         if (capacity == Integer.MAX_VALUE) {
             // No int capacity can promise this count at this load factor; the request saturates and the map instead
             // clamps to its maximum capacity, running at the nearly-full threshold.
-            TestCase.assertTrue(message, (int) ((Integer.MAX_VALUE - 1) * loadFactor) <= expected);
+            assertTrue(message, (int) ((Integer.MAX_VALUE - 1) * loadFactor) <= expected);
             return;
         }
         final int threshold = (int) (capacity * loadFactor);
-        TestCase.assertTrue(message + ", threshold=" + threshold, threshold > expected);
+        assertTrue(message + ", threshold=" + threshold, threshold > expected);
         // Minimality: one entry less would not have sufficed.
-        TestCase.assertTrue(message, (int) ((capacity - 1) * loadFactor) <= expected);
+        assertTrue(message, (int) ((capacity - 1) * loadFactor) <= expected);
     }
 
     /**
@@ -76,7 +77,7 @@ public class TestHashMapBase {
         for (int ii = 2; ii <= expected; ++ii) {
             map.put(ii, ii);
         }
-        TestCase.assertEquals(String.format("%s: loadFactor=%f, expected=%d", name, loadFactor, expected),
+        assertEquals(String.format("%s: loadFactor=%f, expected=%d", name, loadFactor, expected),
                 initialCapacity, map.capacity());
     }
 
@@ -87,7 +88,7 @@ public class TestHashMapBase {
     public void hugeRequestsSaturate() {
         for (final double loadFactor : LOAD_FACTORS) {
             for (final int expected : new int[] {Integer.MAX_VALUE, Integer.MAX_VALUE - 1, 2_000_000_000}) {
-                TestCase.assertEquals(Integer.MAX_VALUE,
+                assertEquals(Integer.MAX_VALUE,
                         HashMapBase.capacityForExpectedEntries(expected, loadFactor));
             }
         }
@@ -102,8 +103,8 @@ public class TestHashMapBase {
         for (final int entriesPerBucket : new int[] {1, 2, 4}) {
             final int buckets = HashMapBase.desiredBucketCount(Integer.MAX_VALUE, entriesPerBucket);
             final int expected = (int) (((long) Integer.MAX_VALUE + entriesPerBucket - 1) / entriesPerBucket);
-            TestCase.assertTrue("buckets > 0 for width " + entriesPerBucket, buckets > 0);
-            TestCase.assertEquals(expected, buckets);
+            assertTrue("buckets > 0 for width " + entriesPerBucket, buckets > 0);
+            assertEquals(expected, buckets);
         }
     }
 }

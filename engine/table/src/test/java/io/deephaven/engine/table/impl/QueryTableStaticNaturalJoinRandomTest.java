@@ -27,6 +27,7 @@ import io.deephaven.tuple.ArrayTuple;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -210,12 +211,12 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             TableTools.showWithRowSet(joined, 0, 10);
         }
 
-
         // now make sure it works
         assertTableEquals(updated, joined);
         QueryScope.addParam("rightMap", null);
     }
 
+    @Test
     public void testNaturalJoinRandomStatic() {
         for (int leftSize = 10; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10; rightSize <= 100_000; rightSize *= 10) {
@@ -232,6 +233,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinRandomSmallTypes() {
         for (int leftSize = 10; leftSize <= 100_000; leftSize *= 10) {
             final int rightSize = 100;
@@ -248,6 +250,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
     }
 
     // let's force some collisions by making our table small
+    @Test
     public void testNaturalJoinRandomStaticRedirectionBuild() {
         for (int leftSize = 10_000; leftSize <= 10_000; leftSize *= 10) {
             for (int rightSize = 10_000; rightSize <= 10_000; rightSize *= 10) {

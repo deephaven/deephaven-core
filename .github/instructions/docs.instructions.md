@@ -13,10 +13,14 @@ When reviewing Markdown files in the `docs/` directory, check for the following:
 
 ## Method names in prose
 
-- Do NOT include parentheses after method names in prose text.
+- Do NOT include empty parentheses after a bare method name in prose text — they add no value.
 - ✅ Correct: "Use `where` to filter rows"
 - ❌ Incorrect: "Use `where()` to filter rows"
-- Exception: Parentheses are fine in code blocks and when showing signatures
+- Exception: parentheses *with* an argument are fine in prose when the argument itself conveys
+  useful information to the reader (e.g. `isNaN(value)` shows what's being tested) — that's a
+  small usage example, not just a method name. Also fine in code blocks and when showing
+  signatures.
+- ✅ Correct: "Use `isNaN(value)` to explicitly test for `NaN`"
 
 ## Backticks
 
