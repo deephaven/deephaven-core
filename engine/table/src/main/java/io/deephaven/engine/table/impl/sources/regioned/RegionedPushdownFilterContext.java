@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager;
 
 import java.util.List;
 import java.util.Map;
@@ -23,4 +24,14 @@ public interface RegionedPushdownFilterContext extends BasePushdownFilterContext
      */
     Map<String, String> filterColumnToManagerColumnName();
 
+    /**
+     * Whether sorted-data (binary search) filtering may be used for this filter: it is a range or match filter, and
+     * sorted-column pushdown is not blocked for it (DH-23750, see
+     * {@link SortedColumnPushdownManager#isKnownIncorrectForSortedPushdown}). Implementations may compute this once.
+     */
+    default boolean supportsSortedDataFiltering() {
+        return (rangeFilter() != null || matchFilter() != null)
+                && !SortedColumnPushdownManager.isKnownIncorrectForSortedPushdown(
+                        columnDefinitions().get(0).getDataType(), matchFilter(), rangeFilter());
+    }
 }

@@ -151,6 +151,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
             // We don't know, so we bail out to "false"
             return false;
         }
+        boolean sawDataPage = false;
         for (final PageEncodingStats encodingStat : columnMeta.encoding_stats) {
             if (encodingStat.page_type != PageType.DATA_PAGE
                     && encodingStat.page_type != PageType.DATA_PAGE_V2) {
@@ -158,12 +159,16 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 continue;
             }
             // This is a data page
+            sawDataPage = true;
             if (encodingStat.encoding != PLAIN_DICTIONARY
                     && encodingStat.encoding != RLE_DICTIONARY) {
                 return false;
             }
         }
-        return true;
+        // An empty (or data-page-free) encoding_stats list proves nothing about the data pages, so answer "false" as
+        // for a missing list. Answering "true" would let dictionary pushdown exclude plain-encoded rows (and let
+        // dictionary-format consumers treat plain pages as dictionary keys). DH-23750, wrong-answer finding PD-067.
+        return sawDataPage;
     }
 
     @Override

@@ -32,9 +32,20 @@ import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
@@ -197,6 +208,51 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
         return ObjectColumnBinarySearchKernel.binsearchRangeFilter(source, selection, sortColumn, rangeFilter, usePrev);
     }
 
+    /**
+     * DH-23750 (42.x only): Object column types whose {@code compareTo} is consistent with {@code equals}. The Object
+     * binary search kernels navigate by {@code compareTo} but accept a match by {@code equals} at a single landing
+     * position, which is only correct when {@code compareTo(x) == 0} implies {@code equals(x)}.
+     */
+    private static final Set<Class<?>> COMPARE_CONSISTENT_WITH_EQUALS_TYPES = Set.of(
+            String.class, Boolean.class, BigInteger.class, Instant.class,
+            LocalDate.class, LocalTime.class, LocalDateTime.class, ZonedDateTime.class);
+
+    /**
+     * DH-23750 (42.x only): returns {@code true} when sorted-column pushdown is blocked for this filter against a
+     * sorted column of {@code dataType} by one of the {@link QueryTable#DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT},
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_SORTED_CHAR_NULL_MATCH} or
+     * {@link QueryTable#DISABLE_WHERE_PUSHDOWN_SORTED_INCONSISTENT_OBJECT_MATCH} configuration items. Sorted pushdown
+     * emits exact results, so nothing downstream would correct a wrong answer; blocked filters are left to regular
+     * filtering. Used by both the table-level manager ({@link #wrap}) and the parquet region-level sorted actions.
+     *
+     * @param dataType the column's data type
+     * @param matchFilter the match filter being pushed down, or {@code null}
+     * @param rangeFilter the range filter being pushed down, or {@code null}
+     * @return whether sorted-column pushdown must be declined
+     */
+    public static boolean isKnownIncorrectForSortedPushdown(
+            @NotNull final Class<?> dataType,
+            @Nullable final MatchFilter matchFilter,
+            @Nullable final AbstractRangeFilter rangeFilter) {
+        if (dataType == float.class || dataType == Float.class
+                || dataType == double.class || dataType == Double.class) {
+            return QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_FLOATING_POINT;
+        }
+        if (matchFilter == null) {
+            return false;
+        }
+        final Object[] values = matchFilter.getValues();
+        if (dataType == char.class || dataType == Character.class) {
+            return QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_CHAR_NULL_MATCH
+                    && values != null && values.length > 1
+                    && Arrays.stream(values).anyMatch(value -> value == null
+                            || (value instanceof Character && (Character) value == QueryConstants.NULL_CHAR));
+        }
+        return QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_INCONSISTENT_OBJECT_MATCH
+                && !dataType.isPrimitive() && !TypeUtils.isBoxedType(dataType)
+                && !COMPARE_CONSISTENT_WITH_EQUALS_TYPES.contains(dataType);
+    }
+
     private static boolean isSupportedRangeFilter(final AbstractRangeFilter rangeFilter) {
         return rangeFilter instanceof ByteRangeFilter
                 || rangeFilter instanceof ShortRangeFilter
@@ -233,6 +289,10 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
         final boolean supportedRangeFilter = rangeFilter != null
                 && isSupportedRangeFilter(rangeFilter);
         if (!supportedRangeFilter && !supportedMatchFilter) {
+            return executor;
+        }
+        if (isKnownIncorrectForSortedPushdown(filterSources.get(0).getType(), matchFilter, rangeFilter)) {
+            // DH-23750 (42.x only): see isKnownIncorrectForSortedPushdown.
             return executor;
         }
 

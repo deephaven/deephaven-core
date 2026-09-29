@@ -7,8 +7,15 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.filter.ExtractReindexingFilters;
+import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
+import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.NoPredicatePushdown;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 
 import java.util.List;
@@ -137,15 +144,66 @@ public interface PushdownFilterMatcher {
     }
 
     /**
-     * Check if the given filter can be pushed down.
+     * Check if the given filter can be pushed down. Filters that use virtual row variables ({@code i}, {@code ii},
+     * {@code k}) anywhere, and reindexing filters (e.g. {@code ClockFilter}), are never pushed down. A reindexing
+     * filter initializes in {@code filter()} the state it relies on in later update cycles, so any pushdown that
+     * resolves it (e.g. through a data index) would skip that call (DH-23750, wrong-answer finding PD-034).
      *
      * @param filter The {@link WhereFilter filter} to check.
      * @return {@code true} if the filter can be pushed down, {@code false} otherwise.
      */
     static boolean canPushdownFilter(final WhereFilter filter) {
         return !filter.getColumns().isEmpty()
-                && !filter.hasVirtualRowVariables()
+                && !usesVirtualRowVariables(filter)
                 && filter.getColumnArrays().isEmpty()
-                && !(filter instanceof NoPredicatePushdown);
+                && !(filter instanceof NoPredicatePushdown)
+                && ExtractReindexingFilters.of(filter).isEmpty();
+    }
+
+    /**
+     * Whether {@code filter} uses virtual row variables ({@code i}, {@code ii}, {@code k}) anywhere, including inside
+     * composed (and/or) and wrapper (inverted, serial, barrier) filters. {@link WhereFilter#hasVirtualRowVariables()}
+     * alone is not propagated by those filters, so e.g. {@code A = 5 || ii % 2 == 0} would otherwise pass the pushdown
+     * gate and be evaluated against data-index positions, or against the one-row stand-in table used for single-value
+     * (constant) columns. This check is local to pushdown rather than a change to the filters' own
+     * {@code hasVirtualRowVariables()}, which has other consumers. DH-23750, wrong-answer finding PD-033.
+     */
+    private static boolean usesVirtualRowVariables(final WhereFilter filter) {
+        return filter.walk(new WhereFilter.Visitor<Boolean>() {
+            @Override
+            public Boolean visit(final WhereFilterInvertedImpl filter) {
+                return usesVirtualRowVariables(filter.getWrappedFilter());
+            }
+
+            @Override
+            public Boolean visit(final WhereFilterSerialImpl filter) {
+                return usesVirtualRowVariables(filter.getWrappedFilter());
+            }
+
+            @Override
+            public Boolean visit(final WhereFilterWithDeclaredBarriersImpl filter) {
+                return usesVirtualRowVariables(filter.getWrappedFilter());
+            }
+
+            @Override
+            public Boolean visit(final WhereFilterWithRespectedBarriersImpl filter) {
+                return usesVirtualRowVariables(filter.getWrappedFilter());
+            }
+
+            @Override
+            public Boolean visit(final DisjunctiveFilter filter) {
+                return filter.getFilters().stream().anyMatch(PushdownFilterMatcher::usesVirtualRowVariables);
+            }
+
+            @Override
+            public Boolean visit(final ConjunctiveFilter filter) {
+                return filter.getFilters().stream().anyMatch(PushdownFilterMatcher::usesVirtualRowVariables);
+            }
+
+            @Override
+            public Boolean visitOther(final WhereFilter filter) {
+                return filter.hasVirtualRowVariables();
+            }
+        });
     }
 }
