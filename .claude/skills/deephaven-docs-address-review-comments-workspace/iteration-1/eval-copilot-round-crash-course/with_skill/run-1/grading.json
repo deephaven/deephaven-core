@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "Gives an explicit decision (apply, redirect, decline, ask, or equivalent) for every one of the 10 comments",
+      "passed": true,
+      "evidence": "Triage table gives a Decision for every comment, C1-C10: Apply, Apply, Redirect, Ask, Decline, Decline, Redirect, Decline, Apply at lower resolution, Apply."
+    },
+    {
+      "text": "Accepts C1 (missing empty_table import), C2 (prose says 'both return 6' but the table has no 6), and C3 (with_serial alone is insufficient when several columns share state); the C3 fix points readers to barriers or the concept guide",
+      "passed": false,
+      "evidence": "C1 and C2 are applied, but C3 is marked 'Redirect'. No proposed page text says with_serial alone is insufficient. The rewritten note still says 'Mark a formula with with_serial whenever it depends on shared state', and it relies on the existing L210 link: 'Multi-column coordination stays behind the existing link at L210.'"
+    },
+    {
+      "text": "Does not accept C4 as written: declines it or asks, citing that Crash Course page titles are title case by established convention (or an earlier reviewer decision)",
+      "passed": true,
+      "evidence": "C4 is 'Ask', with the reason 'every Crash Course title in both languages is Title Case (\"Create Your First Tables\", ...)', plus AQ1."
+    },
+    {
+      "text": "For C5, C6 and C7, does not propose adding the property names, defaults or exact threshold values to the tutorial narrative (redirects to a Configuration section/reference link or declines, with reasons)",
+      "passed": true,
+      "evidence": "C5 is declined ('Adding them here is configuration injection'). C6 is declined ('adding the property name makes an already overloaded note worse'). The C7 rewrite says 'a few million or more' and states 'No property name. The exact value stays in the concept guide'."
+    },
+    {
+      "text": "Declines C8: does not propose enlarging the executed corrected example above the ~4.2M-row threshold (cites docs-build cost and/or that the page already explains the small size)",
+      "passed": true,
+      "evidence": "C8 is declined: 'The L198 note already says this was a deliberate choice... A 4M+-row Python callback slows the docs build.'"
+    },
+    {
+      "text": "For C9, proposes a corrected takeaway at tutorial resolution (e.g. 'treats formulas as safe to run in parallel') rather than enumerating the conditions or naming properties",
+      "passed": true,
+      "evidence": "Proposed takeaway: 'By default, Deephaven assumes your formulas are stateless, so it's free to run them in parallel.' Reply: 'Rather than listing every scheduling condition'."
+    },
+    {
+      "text": "For C10, verifies the claim against source (e.g. the SelectColumn.isParallelizable javadoc: the engine may evaluate a non-parallelizable column out of order) and keeps the clause or asks, rather than deleting it or adding a hedge",
+      "passed": false,
+      "evidence": "C10 is 'Apply (remove the clause)'. The report does not verify the claim against source, and the reply says 'I removed it'."
+    },
+    {
+      "text": "Drafts a reply for every comment, and every reply for a comment that isn't applied gives a reason",
+      "passed": true,
+      "evidence": "The Draft replies section covers C1-C10. The non-applied replies (C3, C4, C5, C6, C7, C8) each give a reason, such as tutorial level, concept guide coverage, series inconsistency, or docs-build cost."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 2,
+    "total": 8,
+    "pass_rate": 0.75
+  },
+  "execution_metrics": {
+    "total_tool_calls": 25,
+    "output_chars": 13751
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label A in packet review-comments-i1); grader did not know which skill version wrote the report."
+}

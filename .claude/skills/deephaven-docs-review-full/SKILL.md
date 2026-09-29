@@ -1,7 +1,7 @@
 ---
 name: deephaven-docs-review-full
 description: >
-  Run a complete deephaven-core (Community) documentation review the way a technical-book editor would — a developmental pass (purpose, audience, scope), then technical accuracy, structural organization, example quality, and prose style — in the order that keeps one dimension from silently undoing another, ending in a prioritized editorial report with author queries. **Use this skill when:** someone asks for a "full review," "comprehensive review," or "editorial review" of a doc, asks to "edit this like an O'Reilly editor," asks if a doc "is ready for production," or wants accuracy, structure, and style checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **Do NOT use for:** single small edits to a doc — a one-line fix, one code snippet, one changed sentence — (use deephaven-core-accuracy-spot-check instead), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
+  Run a complete deephaven-core (Community) documentation review the way a technical-book editor would — a developmental pass (purpose, audience, scope), then technical accuracy, structural organization, example quality, and prose style — in the order that keeps one dimension from silently undoing another, ending in a prioritized editorial report with author queries. **Use this skill when:** someone asks for a "full review," "comprehensive review," or "editorial review" of a doc, asks to "edit this like an O'Reilly editor," asks if a doc "is ready for production," or wants accuracy, structure, and style checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **Do NOT use for:** single small edits to a doc — a one-line fix, one code snippet, one changed sentence — (use deephaven-core-accuracy-spot-check instead), working through existing PR or Copilot review comments (use deephaven-docs-address-review-comments), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
 allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(awk *)
 ---
 
@@ -190,7 +190,9 @@ working through an external reviewer's comments over several rounds: each indivi
 caveat passes validation while the page as a whole gets harder to read. After each round, re-read
 every section that changed from top to bottom and consolidate what has accumulated. If a
 requested fix is correct but belongs elsewhere, say so in the reply rather than applying it
-inline.
+inline. When the edits come from a set of review comments rather than from this review, triage
+them with `deephaven-docs-address-review-comments` first — it sorts each one into apply,
+redirect, decline, or ask before anything changes.
 
 ## 7. Report
 

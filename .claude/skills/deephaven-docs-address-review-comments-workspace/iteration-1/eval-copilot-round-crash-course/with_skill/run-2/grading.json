@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "Gives an explicit decision (apply, redirect, decline, ask, or equivalent) for every one of the 10 comments",
+      "passed": true,
+      "evidence": "Triage table: C1 Apply, C2 Apply, C3 Redirect, C4 Decline, C5 Decline, C6 Decline, C7 Redirect, C8 Decline, C9 Apply, C10 Decline."
+    },
+    {
+      "text": "Accepts C1 (missing empty_table import), C2 (prose says 'both return 6' but the table has no 6), and C3 (with_serial alone is insufficient when several columns share state); the C3 fix points readers to barriers or the concept guide",
+      "passed": true,
+      "evidence": "C1 and C2 are applied. C3 is labeled Redirect but accepts the premise ('You're right...') and proposes page text: 'If more than one formula in the same `update` shares state, `with_serial` on each one isn't enough by itself \u2014 they also need [barriers](../../conceptual/query-engine/parallelization.md#barriers)'."
+    },
+    {
+      "text": "Does not accept C4 as written: declines it or asks, citing that Crash Course page titles are title case by established convention (or an earlier reviewer decision)",
+      "passed": true,
+      "evidence": "C4 is 'Decline': 'The `title:` front matter of every Crash Course chapter at this commit uses title case... Changing only this page would make it the odd one out.'"
+    },
+    {
+      "text": "For C5, C6 and C7, does not propose adding the property names, defaults or exact threshold values to the tutorial narrative (redirects to a Configuration section/reference link or declines, with reasons)",
+      "passed": true,
+      "evidence": "C5 is declined as configuration injection. C6 is declined. C7 is redirected: 'Link \"large enough\" to `conceptual/query-table-configuration.md#parallel-processing-with-select`', keeping 'at least a few million rows'."
+    },
+    {
+      "text": "Declines C8: does not propose enlarging the executed corrected example above the ~4.2M-row threshold (cites docs-build cost and/or that the page already explains the small size)",
+      "passed": true,
+      "evidence": "C8 is 'Decline': 'the docs build would make 4.2M Python calls. It also contradicts the earlier-round decision to keep examples small'."
+    },
+    {
+      "text": "For C9, proposes a corrected takeaway at tutorial resolution (e.g. 'treats formulas as safe to run in parallel') rather than enumerating the conditions or naming properties",
+      "passed": true,
+      "evidence": "Proposed takeaway: 'Deephaven assumes formulas are safe to run in parallel by default \u2014 this lets large queries run fast, but it requires stateless code.' The report notes 'The right fix is to say *less*, not to list the four conditions.'"
+    },
+    {
+      "text": "For C10, verifies the claim against source (e.g. the SelectColumn.isParallelizable javadoc: the engine may evaluate a non-parallelizable column out of order) and keeps the clause or asks, rather than deleting it or adding a hedge",
+      "passed": true,
+      "evidence": "C10: Premise False, Decision Decline. 'Source backs the clause. From the `SelectColumn.isParallelizable` javadoc: \"Even if a column is not parallelizable, the engine may choose to evaluate it out-of-order...\"' Reply: 'Leaving it in.'"
+    },
+    {
+      "text": "Drafts a reply for every comment, and every reply for a comment that isn't applied gives a reason",
+      "passed": true,
+      "evidence": "Replies are drafted for C1-C10. The non-applied replies (C3, C4, C5, C6, C7, C8, C10) each give a reason, such as a single-formula sentence, title consistency, tutorial level, build cost, or source support."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "total_tool_calls": 23,
+    "output_chars": 13237
+  },
+  "grader_note": "Blind grading by an independent grader agent (report label E in packet review-comments-i1); grader did not know which skill version wrote the report."
+}
