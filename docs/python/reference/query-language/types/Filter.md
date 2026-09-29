@@ -86,7 +86,7 @@ These two methods work together to enforce execution order between filters. One 
 A [`Barrier`](./Barrier.md) is a synchronization object you create and share between filters:
 
 - `with_declared_barriers(barriers)` — This filter **goes first**. This filter evaluates all of its rows before any respecting filter evaluates its own.
-- `with_respected_barriers(barriers)` — This filter **waits**. This filter does not evaluate its rows until all declaring filters finish.
+- `with_respected_barriers(barriers)` — This filter **waits**. This filter does not evaluate its rows until the filter that declares the barrier finishes.
 
 For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 

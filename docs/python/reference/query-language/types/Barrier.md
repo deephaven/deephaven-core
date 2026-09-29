@@ -22,10 +22,10 @@ Create one `Barrier` instance per ordering constraint you need. Reusing the same
 
 ## Using a barrier
 
-One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](./Selectable.md) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](./Filter.md) (used by [`where`](../../table-operations/filter/where.md)) both implement:
+One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until the operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](./Selectable.md) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](./Filter.md) (used by [`where`](../../table-operations/filter/where.md)) both implement:
 
 - [`with_declared_barriers(barriers)`](./ConcurrencyControl.md#with_declared_barriers) — this operation declares the given barrier(s); it runs to completion before any operation that respects the same barrier.
-- [`with_respected_barriers(barriers)`](./ConcurrencyControl.md#with_respected_barriers) — this operation respects the given barrier(s); it does not start until every operation that declares the barrier has finished.
+- [`with_respected_barriers(barriers)`](./ConcurrencyControl.md#with_respected_barriers) — this operation respects the given barrier(s); it does not start until the operation that declares each barrier has finished.
 
 > [!IMPORTANT]
 > A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.

@@ -49,6 +49,8 @@ The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.
 | [`Filter.isNotNaN(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNotNaN(io.deephaven.api.expression.Expression))   | True if the expression is not NaN       |
 | [`Filter.isTrue(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isTrue(io.deephaven.api.expression.Expression))       | True if the boolean expression is true  |
 | [`Filter.isFalse(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isFalse(io.deephaven.api.expression.Expression))     | True if the boolean expression is false |
+| [`Filter.ofTrue()`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#ofTrue())                                                       | Always true (matches every row)         |
+| [`Filter.ofFalse()`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#ofFalse())                                                     | Always false (matches no rows)          |
 
 ## Methods
 
@@ -85,7 +87,7 @@ These two methods work together to enforce execution order between filters. One 
 A [barrier](./Barrier.md) is a synchronization object you create and share between filters. In Groovy, any Java object can serve as a barrier:
 
 - `withDeclaredBarriers(barrier)` — This filter **goes first**. All rows are evaluated by this filter before any respecting filter's rows are evaluated.
-- `withRespectedBarriers(barrier)` — This filter **waits**. Its rows are not evaluated until all declaring filters have finished.
+- `withRespectedBarriers(barrier)` — This filter **waits**. Its rows are not evaluated until the filter that declares the barrier has finished.
 
 For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 

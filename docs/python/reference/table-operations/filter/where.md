@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine does not guarantee it evaluates filters in argument order: stateless filters (the default) are scheduled by estimated pushdown cost, so a cheaper-to-evaluate filter can run before one that appears earlier in the argument list. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized and typically evaluated before conditional filters. If your query depends on filters running in a specific order, use [`with_serial`](../../query-language/types/Filter.md#with_serial) or barriers to guarantee it.
+> The engine does not guarantee it evaluates filters in argument order: stateless filters (the default) are scheduled by estimated pushdown cost, so a cheaper-to-evaluate filter can run before one that appears earlier in the argument list. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`with_serial`](../../query-language/types/Filter.md#with_serial) or barriers to guarantee it.
 
 ## Syntax
 
@@ -137,7 +137,7 @@ result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn)
 
 By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
 
-This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and, for a Python-backed filter, a free-threaded Python build; a standard GIL-enabled build never invokes it concurrently. This is a narrower guarantee than `with_serial` provides, though: without `with_serial`, the engine can still evaluate this filter out of row-set order on any Python build — so use `with_serial` to protect a filter like this regardless of build. The example below uses 100 rows for clarity.
+This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and, for a Python-backed filter, a free-threaded Python build; a standard GIL-enabled build never invokes it concurrently. That is current behavior, not a guarantee. Only `with_serial` promises that the filter's rows are evaluated in row-set order, so use it to protect a filter like this regardless of build. The example below uses 100 rows for clarity.
 
 ```python order=source,result
 from deephaven.filters import Filter

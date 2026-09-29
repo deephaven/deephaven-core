@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine does not guarantee it evaluates filters in argument order: stateless filters (the default) are scheduled by estimated pushdown cost, so a cheaper-to-evaluate filter can run before one that appears earlier in the argument list. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized and typically evaluated before conditional filters. If your query depends on filters running in a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or barriers to guarantee it.
+> The engine does not guarantee it evaluates filters in argument order: stateless filters (the default) are scheduled by estimated pushdown cost, so a cheaper-to-evaluate filter can run before one that appears earlier in the argument list. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or barriers to guarantee it.
 
 ## Syntax
 
@@ -24,6 +24,11 @@ Formulas for filtering as a list of [Strings](../../query-language/types/strings
 <Param name="filters" type="Collection">
 
 Collection of formulas for filtering.
+
+</Param>
+<Param name="filter" type="Filter">
+
+A [`Filter`](../../query-language/types/Filter.md) object, such as a serial filter or one that declares or respects barriers.
 
 </Param>
 </ParamTable>
@@ -89,7 +94,7 @@ source = newTable(
 result = source.where(FilterOr.of(Filter.from("Color = `blue`", "Number > 3")))
 ```
 
-The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required because `my_filter` is a closure, whose return type Groovy cannot statically determine at compile time. A native method with a declared `boolean` return type does not need the cast.
+The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required because the query-language compiler can't determine a closure's return type, so it types the call as `Object`. A native method with a declared `boolean` return type does not need the cast.
 
 ```groovy order=source,result_filtered,result_not_filtered
 my_filter = { int a -> a <= 4 }

@@ -23,7 +23,7 @@ col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(10).update([col])
 ```
 
-When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), only one thread processes the expression at a time, and shared state updates happen sequentially without race conditions.
+When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), and the expression never runs concurrently with itself. That protects state that only this expression uses. State shared with other expressions also needs barriers.
 
 > [!NOTE]
 > Not running concurrently is not the same guarantee `withSerial` provides — the engine may still evaluate a non-serial expression out of row-set order. Use `withSerial` any time your formula or filter depends on shared state or row order, not just when you expect concurrent execution.
@@ -43,7 +43,7 @@ Each barrier can only be declared by one expression, and only within the same `s
 
 ### `withRespectedBarriers`
 
-Marks the expression as respecting the given [barrier](./Barrier.md) object(s). The respecting expression does not start until every expression that declares that barrier has finished.
+Marks the expression as respecting the given [barrier](./Barrier.md) object(s). The respecting expression does not start until the expression that declares that barrier has finished.
 
 ```groovy syntax
 import io.deephaven.api.Selectable
