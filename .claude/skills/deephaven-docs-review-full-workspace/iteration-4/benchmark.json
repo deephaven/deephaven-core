@@ -1,0 +1,538 @@
+{
+  "metadata": {
+    "skill_name": "deephaven-docs-review-full",
+    "skill_path": ".claude/skills/deephaven-docs-review-full",
+    "executor_model": "claude-opus-5-5",
+    "analyzer_model": "claude-opus-5-5 (independent blind grader agents; reports shuffled and labeled A-F)",
+    "timestamp": "2026-09-29T21:15:32Z",
+    "evals_run": [
+      2
+    ],
+    "runs_per_configuration": 3,
+    "baseline": "old_skill = pre-PR skills from upstream main (runs copied from iteration 3, regraded blind against 12 expectations); with_skill = PR skills plus the edit-mode fixes ('Apply the fixes' means fix, not rewrite; placement gate on self-written prose)."
+  },
+  "runs": [
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.83,
+        "passed": 10,
+        "failed": 2,
+        "total": 12,
+        "time_seconds": 297.4,
+        "tokens": 137786,
+        "tool_calls": 26,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Corrects the demo description in both languages: the tree table is not 'grouped by Sym', and the tables left open are not 'crypto and data'",
+          "passed": true,
+          "evidence": "Python: '+This query creates a simple tree table grouped by Instrument. Two tables open: `crypto` and `combo_tree`.' Groovy: '+... grouped by Instrument. Two tables open: `crypto` and `comboTree`.'"
+        },
+        {
+          "text": "Removes or corrects `scope_from_method = liveness_scope()` (calling the context-manager function outside a `with` block or decorator, which the page itself says not to do)",
+          "passed": true,
+          "evidence": "'-scope_from_method = liveness_scope()' replaced by '+with liveness_scope() as scope_from_function:\\n+    pass'"
+        },
+        {
+          "text": "Fixes the invalid example code: `return table` at module level (outside any function) and the undefined `some_ticking_table` in the class example",
+          "passed": false,
+          "evidence": "Only half fixed. '+        return ticking_table, scope' fixes the class example, but the module-level `return table` is unchanged in the diff. The report lists it as unresolved: 'The `liveness_scope` snippet under \"The function\" has `return table` at module level.'"
+        },
+        {
+          "text": "Does not change the decorator `@liveness_scope()` to `@liveness_scope` (the doc's form is the correct one for a contextlib.contextmanager factory, even though the module docstring shows it without parentheses)",
+          "passed": true,
+          "evidence": "Automated check: \"'@liveness_scope()' present: True; bare '@liveness_scope' (no parens) present: False\". The report also calls the bare form a bug on other pages."
+        },
+        {
+          "text": "Addresses that the LivenessScope demo never releases the scope (adds release()/preserve, or corrects the text claiming the scope releases the objects), in Python and in the Groovy sibling where the same demo appears",
+          "passed": false,
+          "evidence": "Neither demo was changed, and the text 'can manage these objects and release them when they are no longer needed' is kept. The report defers it: 'The \"with scope\" version also never calls `release()` ... That's a new example, so I've left it for you.'"
+        },
+        {
+          "text": "Does not leave the claim that reference counting 'will only clean up objects created purely for the GUI' silently unchanged: corrects it against source, removes it, or records an author query (verifying it with a quoted source and keeping it also passes)",
+          "passed": true,
+          "evidence": "Both files: '-Deephaven's reference counting instrumentation will only clean up objects created purely for the GUI' replaced by '+Objects that a console script creates are managed by the script session...'. The report cites AbstractScriptSession.evaluateScript and adds AQ1."
+        },
+        {
+          "text": "Makes the terminology consistent: `liveness_scope` is a function, so headings and prose don't call it 'the method' while the intro calls it a function",
+          "passed": true,
+          "evidence": "'-### The method' \u2192 '+### The function'; '-## To use the method or the class?' \u2192 '+## To use the function or the class?'; 'Using the method creates' \u2192 'Using the function creates'; 'find the method' \u2192 'find the function'"
+        },
+        {
+          "text": "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
+          "passed": true,
+          "evidence": "Both files kept their paths and every automated link check is 'ok'. The report says of the renamed headings: 'I searched every doc page and none links to these anchors.'"
+        },
+        {
+          "text": "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
+          "passed": true,
+          "evidence": "No property names or hedges were added. The only new usage rule is the short non-parenthetical 'Call it while this scope is open.' in the methods list, and the new parenthetical '(whether anything still references them)' replaces the existing '(whether or not they are active)'."
+        },
+        {
+          "text": "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
+          "passed": true,
+          "evidence": "Weak pass. The 'What I changed' section is detailed and cites source for each change (e.g. 'finally: _pop(...); scope._release()', 'popInternal \u2192 stack.pop()'). The report says the review 'ran ... deephaven-core-accuracy-spot-check and deephaven-writing-style', but it never explicitly says the reworded passages were re-verified."
+        },
+        {
+          "text": "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+          "passed": true,
+          "evidence": "Automated checks: 'code fence lines: 10 (balanced)' and '12 (balanced)'. No duplicated text. One small grammar slip from a partial reword: '+This example runs the same query, but enclose it in a ...'"
+        },
+        {
+          "text": "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)",
+          "passed": true,
+          "evidence": "Title and demos unchanged and section order kept. Restructuring is put in the report as 'Structure (report only)' (merge sections, consider retitle 'Liveness scopes'). The only structural edit is splitting one Groovy paragraph in two."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 12,
+        "failed": 0,
+        "total": 12,
+        "time_seconds": 533.8,
+        "tokens": 170993,
+        "tool_calls": 54,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Corrects the demo description in both languages: the tree table is not 'grouped by Sym', and the tables left open are not 'crypto and data'",
+          "passed": true,
+          "evidence": "'+This query creates a simple tree table grouped by `Instrument`. Two tables open: `crypto` and `combo_tree`.' The Groovy version uses `comboTree`."
+        },
+        {
+          "text": "Removes or corrects `scope_from_method = liveness_scope()` (calling the context-manager function outside a `with` block or decorator, which the page itself says not to do)",
+          "passed": true,
+          "evidence": "'-scope_from_method = liveness_scope()' \u2192 '+with liveness_scope() as scope_from_function:\\n+    pass  # Create tables here'"
+        },
+        {
+          "text": "Fixes the invalid example code: `return table` at module level (outside any function) and the undefined `some_ticking_table` in the class example",
+          "passed": true,
+          "evidence": "'+def get_joined_table():\\n+    with liveness_scope() as scope: ... +    return table' and '-        return some_ticking_table, scope' \u2192 '+        return ticking_table, scope'"
+        },
+        {
+          "text": "Does not change the decorator `@liveness_scope()` to `@liveness_scope` (the doc's form is the correct one for a contextlib.contextmanager factory, even though the module docstring shows it without parentheses)",
+          "passed": true,
+          "evidence": "Automated check: \"'@liveness_scope()' present: True; bare '@liveness_scope' (no parens) present: False\""
+        },
+        {
+          "text": "Addresses that the LivenessScope demo never releases the scope (adds release()/preserve, or corrects the text claiming the scope releases the objects), in Python and in the Groovy sibling where the same demo appears",
+          "passed": true,
+          "evidence": "Python adds '+The scope now manages every table the query created, and holds them until the scope is released.' Groovy adds the same plus '+Because the example passes `false` to `LivenessScopeStack.open`, the scope isn't released when the block exits.'"
+        },
+        {
+          "text": "Does not leave the claim that reference counting 'will only clean up objects created purely for the GUI' silently unchanged: corrects it against source, removes it, or records an author query (verifying it with a quoted source and keeping it also passes)",
+          "passed": true,
+          "evidence": "The claim stays, with only a tense change ('+...only cleans up objects created purely for the GUI'). It is not silent: the report has 'AQ1 [How to use a liveness scope, para 1, both pages]: \"...only cleans up objects created purely for the GUI\". Is this accurate? ... I couldn't confirm the \"only \u2026 GUI\" framing'"
+        },
+        {
+          "text": "Makes the terminology consistent: `liveness_scope` is a function, so headings and prose don't call it 'the method' while the intro calls it a function",
+          "passed": true,
+          "evidence": "'+### The `liveness_scope` function', '+## To use the function or the class?', 'Calling the function creates', 'find the function sufficient'"
+        },
+        {
+          "text": "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
+          "passed": true,
+          "evidence": "Both files kept their paths and every automated link check is 'ok', including the new '../reference/engine/LivenessScope.md' links. The report says 'The corpus-wide inbound scan found no links to anchors on this page.'"
+        },
+        {
+          "text": "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
+          "passed": true,
+          "evidence": "No property names, hedges or parentheticals were added. The new sentences are corrections: 'Call it while the scope is open.' and, in the pop entry, 'The scope must be at the top of the stack. Popping does not release the scope.'"
+        },
+        {
+          "text": "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
+          "passed": true,
+          "evidence": "Weak pass. The detailed change list includes 'Checked against `ReferenceCountedLivenessReferent.onReferenceCountAtZero` \u2192 `destroy()` ...' for the rewritten section. The report says the skill 'runs ... deephaven-core-accuracy-spot-check and deephaven-writing-style in turn', but there is no explicit statement that reworded passages were re-verified."
+        },
+        {
+          "text": "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+          "passed": true,
+          "evidence": "Automated checks: fences '10 (balanced)' and '12 (balanced)'. The Groovy developer paragraph was split out with no duplicated text."
+        },
+        {
+          "text": "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)",
+          "passed": true,
+          "evidence": "Title, demo code and section order are unchanged. The report puts restructuring under 'Structure: recommendations only' (retitle, suggested order, merge Groovy Methods). The only structural edit is splitting one Groovy paragraph in two."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 12,
+        "failed": 0,
+        "total": 12,
+        "time_seconds": 436.7,
+        "tokens": 158243,
+        "tool_calls": 33,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Corrects the demo description in both languages: the tree table is not 'grouped by Sym', and the tables left open are not 'crypto and data'",
+          "passed": true,
+          "evidence": "'+This query creates a simple tree table grouped by `Instrument`. Two tables open: `crypto` and `combo_tree`.' The Groovy version uses `comboTree`."
+        },
+        {
+          "text": "Removes or corrects `scope_from_method = liveness_scope()` (calling the context-manager function outside a `with` block or decorator, which the page itself says not to do)",
+          "passed": true,
+          "evidence": "'-scope_from_method = liveness_scope()' \u2192 '+with liveness_scope() as scope_from_function:\\n+    pass'"
+        },
+        {
+          "text": "Fixes the invalid example code: `return table` at module level (outside any function) and the undefined `some_ticking_table` in the class example",
+          "passed": true,
+          "evidence": "'+def get_table():\\n+    with liveness_scope() as scope: ... +    return table' and '+        return ticking_table, scope'"
+        },
+        {
+          "text": "Does not change the decorator `@liveness_scope()` to `@liveness_scope` (the doc's form is the correct one for a contextlib.contextmanager factory, even though the module docstring shows it without parentheses)",
+          "passed": true,
+          "evidence": "Automated check: \"'@liveness_scope()' present: True; bare '@liveness_scope' (no parens) present: False\""
+        },
+        {
+          "text": "Addresses that the LivenessScope demo never releases the scope (adds release()/preserve, or corrects the text claiming the scope releases the objects), in Python and in the Groovy sibling where the same demo appears",
+          "passed": true,
+          "evidence": "Python: '+    scope.preserve(crypto)\\n+    scope.preserve(combo_tree)\\n+...\\n+scope.release()'. Groovy: '+LivenessScopeStack.peek().manage(crypto)\\n+LivenessScopeStack.peek().manage(comboTree)\\n+...\\n+scope.release()'"
+        },
+        {
+          "text": "Does not leave the claim that reference counting 'will only clean up objects created purely for the GUI' silently unchanged: corrects it against source, removes it, or records an author query (verifying it with a quoted source and keeping it also passes)",
+          "passed": true,
+          "evidence": "Replaced with '+Deephaven automatically releases the objects the web UI requests from the server once the UI stops using them. The objects your query creates, however, are managed by the console session.' The report cites AbstractScriptSession.evaluateScript and adds AQ1 (SessionState export dropReference)."
+        },
+        {
+          "text": "Makes the terminology consistent: `liveness_scope` is a function, so headings and prose don't call it 'the method' while the intro calls it a function",
+          "passed": true,
+          "evidence": "'+### The function', '+## To use the function or the class?', 'Calling `liveness_scope` creates', 'find the `liveness_scope` function sufficient'"
+        },
+        {
+          "text": "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
+          "passed": true,
+          "evidence": "Both files kept their paths and every automated link check is 'ok'. The report says: 'Every internal link target exists. No other page links to an anchor on either page.'"
+        },
+        {
+          "text": "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
+          "passed": true,
+          "evidence": "No property names, hedges or caveats were added. The only new parenthetical, '(whether anything still needs them)', replaces the existing '(whether or not they are active)'."
+        },
+        {
+          "text": "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
+          "passed": true,
+          "evidence": "Weak pass. The report lists changes and cites source for the new code: 'Source checked: `LivenessScope.release()`, `_BaseLivenessScope.preserve`, `LivenessScopeStack.open`/`peek`', plus 'Links: Every internal link target exists' and 'None of the edited examples have been run.' It names spot-check and writing-style as run, but there is no explicit re-verify statement for the reworded passages."
+        },
+        {
+          "text": "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+          "passed": true,
+          "evidence": "Automated checks: fences '10 (balanced)' and '12 (balanced)'. No moved sections and no duplicated text."
+        },
+        {
+          "text": "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)",
+          "passed": true,
+          "evidence": "The report says 'I didn't restructure or retitle anything.' Retitling, replacing the demo data and merging explanations are listed under 'Recommendations I didn't apply'. The demos are only extended with preserve/release lines, not replaced."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.83,
+        "passed": 10,
+        "failed": 2,
+        "total": 12,
+        "time_seconds": 579.5,
+        "tokens": 163479,
+        "tool_calls": 57,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Corrects the demo description in both languages: the tree table is not 'grouped by Sym', and the tables left open are not 'crypto and data'",
+          "passed": true,
+          "evidence": "'+This query creates a simple tree table grouped by `Instrument`. Two tables open: `crypto` and `combo_tree`.' The Groovy version uses `comboTree`."
+        },
+        {
+          "text": "Removes or corrects `scope_from_method = liveness_scope()` (calling the context-manager function outside a `with` block or decorator, which the page itself says not to do)",
+          "passed": true,
+          "evidence": "'-scope_from_method = liveness_scope()' \u2192 '+with liveness_scope() as scope_from_function:\\n+    pass'"
+        },
+        {
+          "text": "Fixes the invalid example code: `return table` at module level (outside any function) and the undefined `some_ticking_table` in the class example",
+          "passed": true,
+          "evidence": "'+def make_joined_table():\\n+    with liveness_scope() as scope: ... +    return table' and '+        return ticking_table, scope'"
+        },
+        {
+          "text": "Does not change the decorator `@liveness_scope()` to `@liveness_scope` (the doc's form is the correct one for a contextlib.contextmanager factory, even though the module docstring shows it without parentheses)",
+          "passed": true,
+          "evidence": "Automated check: \"'@liveness_scope()' present: True; bare '@liveness_scope' (no parens) present: False\""
+        },
+        {
+          "text": "Addresses that the LivenessScope demo never releases the scope (adds release()/preserve, or corrects the text claiming the scope releases the objects), in Python and in the Groovy sibling where the same demo appears",
+          "passed": true,
+          "evidence": "Python: '+    scope.preserve(crypto)\\n+    scope.preserve(combo_tree)\\n...+scope.release()'. Groovy: '+LivenessScopeStack.peek().manage(crypto)\\n+LivenessScopeStack.peek().manage(comboTree)\\n...+scope.release()'"
+        },
+        {
+          "text": "Does not leave the claim that reference counting 'will only clean up objects created purely for the GUI' silently unchanged: corrects it against source, removes it, or records an author query (verifying it with a quoted source and keeping it also passes)",
+          "passed": true,
+          "evidence": "The GUI paragraph is removed in both files, and the rewrite says the script session's scope 'retains everything your code creates until the session closes'. The report says: 'The same false claims in \"How to use a liveness scope\" were removed.'"
+        },
+        {
+          "text": "Makes the terminology consistent: `liveness_scope` is a function, so headings and prose don't call it 'the method' while the intro calls it a function",
+          "passed": true,
+          "evidence": "'+### Use the `liveness_scope` function'. The 'To use the method or the class?' section is deleted and 'The method' prose is gone."
+        },
+        {
+          "text": "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
+          "passed": true,
+          "evidence": "Both files kept their paths and every automated internal link check is 'ok'. The report says no inbound links use an anchor. It adds external javadoc anchors it couldn't confirm ('#push(...)', '#computeEnclosed(...)'); these aren't internal links."
+        },
+        {
+          "text": "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
+          "passed": false,
+          "evidence": "Adds caveats and hedges: '+A destroyed object may be unusable for later operations.', the dash aside '\u2014 another scope, a dependent table, or a client that has the table open \u2014', '+Releasing a scope stops its table from updating, unless something else, such as a client that has the table open, still references it.', and '+Most queries don't need a liveness scope.'"
+        },
+        {
+          "text": "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
+          "passed": true,
+          "evidence": "'Re-verification (step 3)' says: 'I re-checked every moved, merged or reworded paragraph against source.' There is also a 'Style (step 4)' section."
+        },
+        {
+          "text": "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+          "passed": true,
+          "evidence": "Automated checks: fences '10 (balanced)' and '12 (balanced)'. The moved 'Why' and 'How it works' sections and the deleted closing section left no duplicated text."
+        },
+        {
+          "text": "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)",
+          "passed": false,
+          "evidence": "Reorders sections. The report says: 'Reordered sections: \"How liveness scopes work\" now comes before \"Why use a liveness scope?\"'. The diff shows '-## Why use a liveness scope?' / '+## How liveness scopes work' swapped. It also deletes '## To use the method or the class?' and merges it into 'How to create'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "old_skill",
+      "run_number": 2,
+      "result": {
+        "pass_rate": 0.83,
+        "passed": 10,
+        "failed": 2,
+        "total": 12,
+        "time_seconds": 419.7,
+        "tokens": 145200,
+        "tool_calls": 40,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Corrects the demo description in both languages: the tree table is not 'grouped by Sym', and the tables left open are not 'crypto and data'",
+          "passed": true,
+          "evidence": "'+This query creates a simple tree table grouped by `Instrument`. Two tables open: `crypto` and `combo_tree`.' The Groovy version uses `comboTree`."
+        },
+        {
+          "text": "Removes or corrects `scope_from_method = liveness_scope()` (calling the context-manager function outside a `with` block or decorator, which the page itself says not to do)",
+          "passed": true,
+          "evidence": "'-scope_from_method = liveness_scope()' \u2192 '+with liveness_scope() as scope_from_function:\\n+    ...'"
+        },
+        {
+          "text": "Fixes the invalid example code: `return table` at module level (outside any function) and the undefined `some_ticking_table` in the class example",
+          "passed": true,
+          "evidence": "'+def get_joined_table():\\n+    with liveness_scope() as scope: ... +    return table' and '+        return ticking_table, scope'"
+        },
+        {
+          "text": "Does not change the decorator `@liveness_scope()` to `@liveness_scope` (the doc's form is the correct one for a contextlib.contextmanager factory, even though the module docstring shows it without parentheses)",
+          "passed": true,
+          "evidence": "Automated check: \"'@liveness_scope()' present: True; bare '@liveness_scope' (no parens) present: False\""
+        },
+        {
+          "text": "Addresses that the LivenessScope demo never releases the scope (adds release()/preserve, or corrects the text claiming the scope releases the objects), in Python and in the Groovy sibling where the same demo appears",
+          "passed": true,
+          "evidence": "Python: '+    scope.preserve(crypto)\\n+    scope.preserve(combo_tree)\\n...+scope.release()'. Groovy: '+outerScope = LivenessScopeStack.peek()', 'open(scope, true)', '+    outerScope.manage(crypto)\\n+    outerScope.manage(comboTree)'"
+        },
+        {
+          "text": "Does not leave the claim that reference counting 'will only clean up objects created purely for the GUI' silently unchanged: corrects it against source, removes it, or records an author query (verifying it with a quoted source and keeping it also passes)",
+          "passed": true,
+          "evidence": "Python: the GUI paragraph is deleted. Groovy: it is replaced with '+Creating a `LivenessScope` for your query lets you decide when the objects it creates are released.' The report says: 'Nothing in source supports either. I replaced them with what `AbstractScriptSession.evaluateScript` actually does'."
+        },
+        {
+          "text": "Makes the terminology consistent: `liveness_scope` is a function, so headings and prose don't call it 'the method' while the intro calls it a function",
+          "passed": true,
+          "evidence": "'+### The `liveness_scope` function', '+## Choose between the function and the class', 'Using the function creates'"
+        },
+        {
+          "text": "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
+          "passed": true,
+          "evidence": "Both files kept their paths and every automated link check is 'ok'. The report says of inbound links: 'Five pages link to these two, and none uses an anchor'."
+        },
+        {
+          "text": "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
+          "passed": false,
+          "evidence": "Adds a parenthetical caveat: '+The scope must be the current (innermost open) scope when you call `preserve`.' Also adds a heavy parameter-level entry: '+- [`LivenessScopeStack.computeEnclosed(computation, shouldEnclose, shouldManageResult)`] ... when `shouldEnclose` is `true`, and manage the result ... when `shouldManageResult` accepts it', and '+setting it to `false` only pops the scope from the stack.'"
+        },
+        {
+          "text": "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
+          "passed": true,
+          "evidence": "Has a 'Re-verification (step 3)' section: 'I checked every reworded or moved claim against the source listed above.' It also has a 'Style (step 4)' section."
+        },
+        {
+          "text": "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+          "passed": true,
+          "evidence": "Automated checks: fences '10 (balanced)' and '12 (balanced)'. The intro paragraph moved into 'Why' and 'How it works' without being duplicated."
+        },
+        {
+          "text": "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)",
+          "passed": false,
+          "evidence": "Applies restructuring in the files instead of the report. 'Structure (step 2)' says: 'I merged it into \"Why use a liveness scope?\"'. The intro paragraph is removed from the top, the function-vs-class comparison is rewritten into bullets in 'How to create', the 'The class' prose is cut, and headings are renamed ('Choose between the function and the class', '`LivenessScopeStack` methods')."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "old_skill",
+      "run_number": 3,
+      "result": {
+        "pass_rate": 0.83,
+        "passed": 10,
+        "failed": 2,
+        "total": 12,
+        "time_seconds": 430.8,
+        "tokens": 147040,
+        "tool_calls": 35,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Corrects the demo description in both languages: the tree table is not 'grouped by Sym', and the tables left open are not 'crypto and data'",
+          "passed": true,
+          "evidence": "'+This query creates a simple tree table grouped by `Instrument`. Two tables open in the UI: `crypto` and the tree table `combo_tree`.' The Groovy version uses `comboTree`."
+        },
+        {
+          "text": "Removes or corrects `scope_from_method = liveness_scope()` (calling the context-manager function outside a `with` block or decorator, which the page itself says not to do)",
+          "passed": true,
+          "evidence": "'-scope_from_method = liveness_scope()' \u2192 '+with liveness_scope() as scope_from_function:\\n+    pass'"
+        },
+        {
+          "text": "Fixes the invalid example code: `return table` at module level (outside any function) and the undefined `some_ticking_table` in the class example",
+          "passed": true,
+          "evidence": "'+def get_joined_table():\\n+    with liveness_scope() as scope: ... +    return table' and '+        return ticking_table, scope'"
+        },
+        {
+          "text": "Does not change the decorator `@liveness_scope()` to `@liveness_scope` (the doc's form is the correct one for a contextlib.contextmanager factory, even though the module docstring shows it without parentheses)",
+          "passed": true,
+          "evidence": "Automated check: \"'@liveness_scope()' present: True; bare '@liveness_scope' (no parens) present: False\""
+        },
+        {
+          "text": "Addresses that the LivenessScope demo never releases the scope (adds release()/preserve, or corrects the text claiming the scope releases the objects), in Python and in the Groovy sibling where the same demo appears",
+          "passed": true,
+          "evidence": "Python: '+    scope.preserve(crypto)\\n+    scope.preserve(combo_tree)\\n...+scope.release()'. Groovy: '+LivenessScopeStack.peek().manage(crypto)\\n+LivenessScopeStack.peek().manage(comboTree)\\n...+scope.release()'"
+        },
+        {
+          "text": "Does not leave the claim that reference counting 'will only clean up objects created purely for the GUI' silently unchanged: corrects it against source, removes it, or records an author query (verifying it with a quoted source and keeping it also passes)",
+          "passed": true,
+          "evidence": "The GUI paragraph is removed in both files. The rewritten 'How it works' says the console session's scope manages script objects. The report quotes the source comment: 'retain any objects which are created in the executed code, we'll release them when the script session closes.'"
+        },
+        {
+          "text": "Makes the terminology consistent: `liveness_scope` is a function, so headings and prose don't call it 'the method' while the intro calls it a function",
+          "passed": true,
+          "evidence": "'+### The function', '+## To use the function or the class?', 'The `liveness_scope` function creates', 'The function is typically sufficient'"
+        },
+        {
+          "text": "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
+          "passed": true,
+          "evidence": "Both files kept their paths and every automated link check is 'ok'. The report says: 'There are no anchor links into either page anywhere in `docs/`.'"
+        },
+        {
+          "text": "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
+          "passed": false,
+          "evidence": "Adds a caveat paragraph: '+Destroying a referent has the most effect on refreshing tables, since it detaches them from the update graph. Static tables have no update listeners to remove.' Also adds '+... Call it while this scope is open \u2014 that is, while it is at the top of the scope stack.', the parenthetical '(a _liveness referent_)', and '(no arguments)'."
+        },
+        {
+          "text": "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
+          "passed": true,
+          "evidence": "'Re-verification (step 3)' says: 'I spot-checked every reworded paragraph against the sources above.' There is also a 'Style (step 4)' section."
+        },
+        {
+          "text": "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+          "passed": true,
+          "evidence": "Automated checks: fences '10 (balanced)' and '12 (balanced)'. The GUI paragraph was removed and its content folded into 'How it works' with no duplicate left behind."
+        },
+        {
+          "text": "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)",
+          "passed": false,
+          "evidence": "Retitles both pages: '-title: How to use liveness scopes\\n+title: Liveness scopes'. It also rewrites the intro and 'How liveness scopes work' wholesale, and the report says so: 'Title didn't match the category ... so both pages are now titled \"Liveness scopes\"'."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9433,
+        "stddev": 0.0981,
+        "min": 0.83,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 422.6333,
+        "stddev": 118.8261,
+        "min": 297.4,
+        "max": 533.8
+      },
+      "tokens": {
+        "mean": 155674.0,
+        "stddev": 16751.8964,
+        "min": 137786,
+        "max": 170993
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.83,
+        "stddev": 0.0,
+        "min": 0.83,
+        "max": 0.83
+      },
+      "time_seconds": {
+        "mean": 476.6667,
+        "stddev": 89.229,
+        "min": 419.7,
+        "max": 579.5
+      },
+      "tokens": {
+        "mean": 151906.3333,
+        "stddev": 10064.3609,
+        "min": 145200,
+        "max": 163479
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.11",
+      "time_seconds": "-54.0",
+      "tokens": "+3768"
+    }
+  },
+  "notes": [
+    "Result: fixed skill 34/36 vs pre-PR 30/36. 'Edits stay targeted' 3/3 vs 0/3; 'no hedges or caveats added' 3/3 vs 0/3.",
+    "The fix worked. No new-skill run retitled the page, replaced the demo, or reordered sections, and each reported its restructuring ideas instead. The new-skill diffs shrank to 39-59 lines added (iteration 3: 136-156; baseline about 95).",
+    "Overcorrection in 1 of 3 runs: it deferred two small real fixes (the module-level `return table` and adding release() to the demo) as 'beyond fix, not rewrite'. The other two runs made both fixes, so the rule allows small example fixes, but that one run read it too broadly. Worth tightening: fixing broken code in an existing example is a targeted fix.",
+    "Grader variance: the iteration-3 grader passed 2 of 3 of these same baseline runs on 'no hedges or caveats added'; this grader failed all 3. The strict call applies to both arms equally here, but the baseline's 0/3 on that expectation partly reflects the stricter grader.",
+    "The 'edits stay targeted' expectation was added after iteration 3 exposed the rewrites. The baseline fails it (retitles, reorders, merges sections)."
+  ]
+}

@@ -24,17 +24,6 @@ license to rewrite the document on its own. If the user does ask for fixes, appl
 order below (accuracy, then structure, then examples, then style), since that's the order that
 keeps one dimension from undoing another. The developmental pass never edits.
 
-**"Apply the fixes" means fix, not rewrite.** When edits are requested, correct each finding in
-place with the smallest change that makes the page right, and keep the page's existing outline,
-examples, and title. Findings that call for more than that are recommendations, not edits: report
-them and let the author decide. That includes a "needs restructuring" verdict, reordering or
-merging sections, replacing an example with a new one, and retitling the page. Two reasons: an
-author reviewing a PR can check a targeted fix but not a rewrite, and new or replaced examples
-can't be verified without running them. Structural fixes that are local — renaming a heading
-whose term is wrong, deleting a duplicated sentence, moving one misplaced paragraph — are fine
-to apply. Do the full restructure only if the user explicitly asks for one ("restructure,"
-"rewrite," "reorganize this page").
-
 ## 0. Identify the doc's category
 
 Read `ref-deephaven-doc-categories` and determine which of the four categories this doc is. Carry
@@ -73,9 +62,7 @@ End with a verdict: **ready for technical review**, **needs revision**, or **nee
 restructuring**. If it's "needs restructuring," still run the accuracy step in full (wrong claims
 matter regardless of structure), but report structure and style findings as patterns with one
 or two examples each rather than line by line — line-level edits on text that's about to be
-reorganized are wasted effort for the author. In edit mode, the verdict doesn't license a
-rewrite: apply the targeted fixes and put the restructuring plan in the report (see **"Apply the
-fixes" means fix, not rewrite** above).
+reorganized are wasted effort for the author.
 
 This pass is report-only. It doesn't replace `deephaven-doc-structure-review`: that skill checks
 specific organizational patterns; this pass asks whether the page is doing the right job at all.
@@ -203,17 +190,7 @@ working through an external reviewer's comments over several rounds: each indivi
 caveat passes validation while the page as a whole gets harder to read. After each round, re-read
 every section that changed from top to bottom and consolidate what has accumulated. If a
 requested fix is correct but belongs elsewhere, say so in the reply rather than applying it
-inline.
-
-The gate applies to prose you write yourself, not only to fixes a finding suggested. Before
-finishing, read every sentence you added or rewrote and look for asides and caveats of your own:
-em-dash or parenthetical qualifications ("— here, the console session's scope"), "which can
-take…", "usually," "in most cases," "unless something else…". Keep one only if a reader of that
-section would get something wrong without it; otherwise cut it, or move it to where the detail
-belongs. A replacement sentence should be no longer or more qualified than it needs to be to be
-correct.
-
-When the edits come from a set of review comments rather than from this review, triage
+inline. When the edits come from a set of review comments rather than from this review, triage
 them with `deephaven-docs-address-review-comments` first — it sorts each one into apply,
 redirect, decline, or ask before anything changes.
 

@@ -38,7 +38,8 @@
         "Doesn't rename or move either file, and every link in the edited files resolves (no new link to a nonexistent file or anchor)",
         "Doesn't add configuration property names, hedges, or parenthetical caveats to the concept-guide narrative",
         "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
-        "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections"
+        "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
+        "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)"
       ]
     }
   ]
