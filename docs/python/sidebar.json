@@ -1126,7 +1126,7 @@
                     "path": "how-to-guides/install-and-use-python-packages.md"
                   },
                   {
-                    "label": "Python packaging",
+                    "label": "Python project packaging",
                     "path": "how-to-guides/sysadmin/setuptools-deployment.md"
                   },
                   {
