@@ -241,14 +241,23 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
 
     @Override
     final int[] allocateNullFilledBlock(int size) {
-        final int[] newBlock = new int[size];
+        final int[] newBlock = takeBlock(size);
         Arrays.fill(newBlock, NULL_INT);
         return newBlock;
     }
 
     @Override
     final int[] allocateBlock(int size) {
-        return new int[size];
+        final int[] newBlock = takeBlock(size);
+        Arrays.fill(newBlock, (int) 0);
+        return newBlock;
+    }
+
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static int[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new int[size];
     }
 
     @Override
@@ -274,7 +283,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
 
     @Override
     void releaseBlock(int blockIndex) {
+        final int[] block = blocks[blockIndex];
         blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
     }
 
     @Override

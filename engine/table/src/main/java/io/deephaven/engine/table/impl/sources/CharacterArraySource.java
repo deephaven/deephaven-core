@@ -238,14 +238,23 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
 
     @Override
     final char[] allocateNullFilledBlock(int size) {
-        final char[] newBlock = new char[size];
+        final char[] newBlock = takeBlock(size);
         Arrays.fill(newBlock, NULL_CHAR);
         return newBlock;
     }
 
     @Override
     final char[] allocateBlock(int size) {
-        return new char[size];
+        final char[] newBlock = takeBlock(size);
+        Arrays.fill(newBlock, (char) 0);
+        return newBlock;
+    }
+
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static char[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new char[size];
     }
 
     @Override
@@ -271,7 +280,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
 
     @Override
     void releaseBlock(int blockIndex) {
+        final char[] block = blocks[blockIndex];
         blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
     }
 
     @Override

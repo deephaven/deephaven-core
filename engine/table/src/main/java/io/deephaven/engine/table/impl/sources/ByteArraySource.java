@@ -241,14 +241,23 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
 
     @Override
     final byte[] allocateNullFilledBlock(int size) {
-        final byte[] newBlock = new byte[size];
+        final byte[] newBlock = takeBlock(size);
         Arrays.fill(newBlock, NULL_BYTE);
         return newBlock;
     }
 
     @Override
     final byte[] allocateBlock(int size) {
-        return new byte[size];
+        final byte[] newBlock = takeBlock(size);
+        Arrays.fill(newBlock, (byte) 0);
+        return newBlock;
+    }
+
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static byte[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new byte[size];
     }
 
     @Override
@@ -274,7 +283,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
 
     @Override
     void releaseBlock(int blockIndex) {
+        final byte[] block = blocks[blockIndex];
         blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
     }
 
     @Override

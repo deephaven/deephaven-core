@@ -241,14 +241,23 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
 
     @Override
     final float[] allocateNullFilledBlock(int size) {
-        final float[] newBlock = new float[size];
+        final float[] newBlock = takeBlock(size);
         Arrays.fill(newBlock, NULL_FLOAT);
         return newBlock;
     }
 
     @Override
     final float[] allocateBlock(int size) {
-        return new float[size];
+        final float[] newBlock = takeBlock(size);
+        Arrays.fill(newBlock, (float) 0);
+        return newBlock;
+    }
+
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static float[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new float[size];
     }
 
     @Override
@@ -274,7 +283,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
 
     @Override
     void releaseBlock(int blockIndex) {
+        final float[] block = blocks[blockIndex];
         blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
     }
 
     @Override

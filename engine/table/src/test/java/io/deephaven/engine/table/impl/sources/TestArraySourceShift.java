@@ -322,6 +322,39 @@ public class TestArraySourceShift {
     }
 
     @Test
+    public void testReleasedBlocksAreRecycledClean() {
+        // a released block goes back to the recycler, and a later allocation that reuses it starts clean
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        for (int round = 0; round < 3; ++round) {
+            final LongArraySource written = new LongArraySource();
+            final ObjectArraySource<String> writtenObjects = new ObjectArraySource<>(String.class);
+            written.ensureCapacity(blockSize);
+            writtenObjects.ensureCapacity(blockSize);
+            for (int ii = 0; ii < blockSize; ++ii) {
+                written.set(ii, 7L);
+                writtenObjects.set(ii, "stale");
+            }
+            written.releaseBlocks(0, blockSize - 1);
+            writtenObjects.releaseBlocks(0, blockSize - 1);
+
+            final LongArraySource nullFilled = new LongArraySource();
+            nullFilled.ensureCapacity(blockSize, true);
+            final LongArraySource zeroFilled = new LongArraySource();
+            zeroFilled.ensureCapacity(blockSize, false);
+            final ObjectArraySource<String> objects = new ObjectArraySource<>(String.class);
+            objects.ensureCapacity(blockSize);
+            for (int ii = 0; ii < blockSize; ++ii) {
+                assertEquals(QueryConstants.NULL_LONG, nullFilled.getLong(ii));
+                assertEquals(0, zeroFilled.getLong(ii));
+                assertEquals(null, objects.get(ii));
+            }
+            nullFilled.releaseBlocks(0, blockSize - 1);
+            zeroFilled.releaseBlocks(0, blockSize - 1);
+            objects.releaseBlocks(0, blockSize - 1);
+        }
+    }
+
+    @Test
     public void testEnsureCapacityLike() {
         final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
         final DoubleArraySource template = new DoubleArraySource();

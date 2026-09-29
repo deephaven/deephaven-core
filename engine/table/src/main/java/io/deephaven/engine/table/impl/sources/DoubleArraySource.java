@@ -241,14 +241,23 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
 
     @Override
     final double[] allocateNullFilledBlock(int size) {
-        final double[] newBlock = new double[size];
+        final double[] newBlock = takeBlock(size);
         Arrays.fill(newBlock, NULL_DOUBLE);
         return newBlock;
     }
 
     @Override
     final double[] allocateBlock(int size) {
-        return new double[size];
+        final double[] newBlock = takeBlock(size);
+        Arrays.fill(newBlock, (double) 0);
+        return newBlock;
+    }
+
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static double[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new double[size];
     }
 
     @Override
@@ -274,7 +283,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
 
     @Override
     void releaseBlock(int blockIndex) {
+        final double[] block = blocks[blockIndex];
         blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
     }
 
     @Override

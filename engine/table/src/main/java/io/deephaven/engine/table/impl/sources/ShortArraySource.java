@@ -241,14 +241,23 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
 
     @Override
     final short[] allocateNullFilledBlock(int size) {
-        final short[] newBlock = new short[size];
+        final short[] newBlock = takeBlock(size);
         Arrays.fill(newBlock, NULL_SHORT);
         return newBlock;
     }
 
     @Override
     final short[] allocateBlock(int size) {
-        return new short[size];
+        final short[] newBlock = takeBlock(size);
+        Arrays.fill(newBlock, (short) 0);
+        return newBlock;
+    }
+
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static short[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new short[size];
     }
 
     @Override
@@ -274,7 +283,11 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
 
     @Override
     void releaseBlock(int blockIndex) {
+        final short[] block = blocks[blockIndex];
         blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
     }
 
     @Override

@@ -302,7 +302,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     abstract UArray[] getBlocks();
 
     /**
-     * Drop the current-value storage for a block. Previous-value storage is left for {@link #commitBlocks()}.
+     * Drop the current-value storage for a block, returning it to the recycler for a later block. Previous-value
+     * storage is left for {@link #commitBlocks()}.
      *
      * @param blockIndex the block to release
      */

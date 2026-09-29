@@ -199,14 +199,23 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
 
     @Override
     byte[] allocateNullFilledBlock(int size) {
-        final byte[] result = new byte[size];
+        final byte[] result = takeBlock(size);
         Arrays.fill(result, NULL_BOOLEAN_AS_BYTE);
         return result;
     }
 
     @Override
     final byte[] allocateBlock(int size) {
-        return new byte[size];
+        final byte[] result = takeBlock(size);
+        Arrays.fill(result, (byte) 0);
+        return result;
+    }
+
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static byte[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new byte[size];
     }
 
     @Override
@@ -232,7 +241,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
 
     @Override
     void releaseBlock(int blockIndex) {
+        final byte[] block = blocks[blockIndex];
         blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
     }
 
     @Override

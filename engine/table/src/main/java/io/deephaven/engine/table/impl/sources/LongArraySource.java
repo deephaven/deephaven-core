@@ -264,14 +264,23 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
 
     @Override
     final long[] allocateNullFilledBlock(int size) {
-        final long[] newBlock = new long[size];
+        final long[] newBlock = takeBlock(size);
         Arrays.fill(newBlock, NULL_LONG);
         return newBlock;
     }
 
     @Override
     final long[] allocateBlock(int size) {
-        return new long[size];
+        final long[] newBlock = takeBlock(size);
+        Arrays.fill(newBlock, (long) 0);
+        return newBlock;
+    }
+
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static long[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new long[size];
     }
 
     @Override
@@ -297,7 +306,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
 
     @Override
     void releaseBlock(int blockIndex) {
+        final long[] block = blocks[blockIndex];
         blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
     }
 
     @Override
