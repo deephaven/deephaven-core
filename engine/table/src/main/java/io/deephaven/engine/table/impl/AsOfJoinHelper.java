@@ -61,6 +61,15 @@ public class AsOfJoinHelper {
         final QueryTable result = asOfJoinInternal(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                 disallowExactMatch);
         leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
+        // with a static right table, a result row changes only when its left row does
+        if (!rightTable.isRefreshing()) {
+            if (leftTable.isAddOnly()) {
+                result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            }
+            if (leftTable.isAppendOnly()) {
+                result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            }
+        }
         return result;
     }
 

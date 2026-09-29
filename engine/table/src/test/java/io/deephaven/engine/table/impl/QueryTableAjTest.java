@@ -2544,6 +2544,63 @@ public class QueryTableAjTest {
     }
 
     /**
+     * Against a static right table, the result of an as-of join with an add-only or append-only left table carries the
+     * same attribute, because a result row changes only when its left row does; against a refreshing right table the
+     * result carries neither.
+     */
+    @Test
+    public void testAddOnlyAndAppendOnlyLeftAgainstStaticRight() {
+        final QueryTable source = testRefreshingTable(i(0).toTracking(), col("Key", "A"), intCol("LeftStamp", 5));
+        final Table addOnlyLeft = source.assertAddOnly();
+        final Table appendOnlyLeft = source.assertAppendOnly();
+        final QueryTable staticRight = testTable(i(0).toTracking(), col("Key", "A"), intCol("RightStamp", 1),
+                intCol("Sentinel", 7));
+        final QueryTable refreshingRight = testRefreshingTable(i(0).toTracking(), col("Key", "A"),
+                intCol("RightStamp", 1), intCol("Sentinel", 7));
+
+        final List<SimpleListener> listeners = new ArrayList<>();
+        final List<QueryTable> results = new ArrayList<>();
+        for (final String match : new String[] {"LeftStamp>=RightStamp", "Key,LeftStamp>=RightStamp"}) {
+            for (final boolean reverse : new boolean[] {false, true}) {
+                final String description = match + (reverse ? " raj" : " aj");
+                final String rule = reverse ? match.replace(">=", "<=") : match;
+                final QueryTable addOnly = (QueryTable) (reverse ? addOnlyLeft.raj(staticRight, rule, "Sentinel")
+                        : addOnlyLeft.aj(staticRight, rule, "Sentinel"));
+                assertTrue(description + " add only", addOnly.isAddOnly());
+                final QueryTable appendOnly =
+                        (QueryTable) (reverse ? appendOnlyLeft.raj(staticRight, rule, "Sentinel")
+                                : appendOnlyLeft.aj(staticRight, rule, "Sentinel"));
+                assertTrue(description + " append only", appendOnly.isAppendOnly());
+                final QueryTable ticking = (QueryTable) (reverse ? appendOnlyLeft.raj(refreshingRight, rule, "Sentinel")
+                        : appendOnlyLeft.aj(refreshingRight, rule, "Sentinel"));
+                assertFalse(description + " refreshing right add only", ticking.isAddOnly());
+                assertFalse(description + " refreshing right append only", ticking.isAppendOnly());
+                for (final QueryTable result : new QueryTable[] {addOnly, appendOnly}) {
+                    final SimpleListener listener = new SimpleListener(result);
+                    result.addUpdateListener(listener);
+                    listeners.add(listener);
+                    results.add(result);
+                }
+            }
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), col("Key", "A"), intCol("LeftStamp", 6));
+            source.notifyListeners(i(1), i(), i());
+        });
+
+        for (int ii = 0; ii < listeners.size(); ++ii) {
+            final SimpleListener listener = listeners.get(ii);
+            assertEquals(1, listener.getCount());
+            assertEquals(i(1), listener.getUpdate().added());
+            assertTrue(listener.getUpdate().removed().isEmpty());
+            assertTrue(listener.getUpdate().modified().isEmpty());
+            results.get(ii).removeUpdateListener(listener);
+        }
+    }
+
+    /**
      * Shifts a range of rows of a refreshing test table by a positive delta, which may move rows onto keys that other
      * rows of the same range vacate, and notifies listeners.
      */
