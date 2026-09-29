@@ -260,8 +260,9 @@ Longest cycle, in milliseconds:
   retains about a quarter of its heap; at ten million rows, 26% faster with a sixth of the heap. For random churn,
   releasing blocks alone is 13% faster and retains a third less heap; collapsing is 23% to 24% faster and retains a
   third of the heap. At ten million rows, collapsing is 20% to 24% faster.
-- When groups return, every reclaiming mode is slower than main, since returning groups are new states rather than
-  reused ones: 10% to 17% for the sliding window, and for random churn 39% releasing blocks alone and 17% collapsing.
+- When groups return, reclaiming is slower than main, since returning groups are new states rather than reused ones:
+  17% collapsing for the sliding window, where releasing blocks alone is within the error, and for random churn 39%
+  releasing blocks alone and 17% collapsing.
   For random churn, releasing blocks alone retains twice the heap of main, and collapsing 5% to 17% less. At ten million
   rows, random churn with returning groups costs 30% releasing blocks alone and 6% to 11% collapsing.
 - Collapsing is faster than releasing blocks alone for random churn: by 12% to 13% when groups do not return and 16%
@@ -272,7 +273,8 @@ Longest cycle, in milliseconds:
 - With 100 rows per group, the modes are within the error of each other for time.
 - Reclaiming shortens the longest cycles when groups do not return: 12 to 18 ms against main's 67 to 73 ms for the
   sliding window and random churn, and at ten million rows 138 to 155 ms against 309 to 534 ms for main and main
-  again. When groups return, the longest cycles are 10 to 16 ms for main and every mode.
+  again. When groups return, the longest cycles are 10 to 16 ms for every mode and for main, whose rerun reached 20 ms
+  once.
 
 ## Long output positions
 
