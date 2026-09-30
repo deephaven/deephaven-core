@@ -86,7 +86,7 @@ public class BinarySearchKernelHelper {
     /**
      * Whether {@code dataType} compares consistently with equality, meaning
      * {@code ObjectComparisons.compare(a, b) == 0} exactly when {@code ObjectComparisons.eq(a, b)}, for every pair of
-     * values.
+     * values. {@link BigDecimal} is the one deliberate exception, explained below.
      *
      * <p>
      * This decides how a sorted binary search may answer a match. The search navigates by

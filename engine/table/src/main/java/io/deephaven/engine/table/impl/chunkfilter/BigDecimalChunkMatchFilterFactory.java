@@ -16,6 +16,17 @@ import java.util.Arrays;
 class BigDecimalChunkMatchFilterFactory {
     private BigDecimalChunkMatchFilterFactory() {} // static use only
 
+    /**
+     * Returns {@code values} without any value that is neither null nor a {@link BigDecimal}, or {@code values} itself
+     * when there is nothing to remove. Such a value can never match a {@link BigDecimal} column, so removing it selects
+     * what matching it by equality would.
+     */
+    static Object[] dropUnmatchable(final Object[] values) {
+        final Object[] retained =
+                Arrays.stream(values).filter(value -> value == null || value instanceof BigDecimal).toArray();
+        return retained.length == values.length ? values : retained;
+    }
+
     private static boolean eq(final BigDecimal a, final BigDecimal b) {
         return a == null ? b == null : b != null && a.compareTo(b) == 0;
     }

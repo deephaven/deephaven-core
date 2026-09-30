@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
@@ -17,6 +19,8 @@ import java.math.BigDecimal;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.newTable;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -78,6 +82,22 @@ public class BigDecimalMatchFilterTest {
                     table.where(new MatchFilter(MatchOptions.REGULAR, "X", values)));
             assertTableEquals(table.where("!(X == 7 || isNull(X) || X == 5.0)"),
                     table.where(new MatchFilter(MatchOptions.INVERTED, "X", values)));
+        }
+    }
+
+    @Test
+    public void columnSourceMatchSkipsValueOfAnotherType() {
+        // ColumnSource.match reaches the chunk filter without going through MatchFilter
+        final ColumnSource<?> source = unsorted.getColumnSource("X");
+        final Object[] keys = {5.0, new BigDecimal("7"), "5"};
+        try (final WritableRowSet matched = source.match(false, MatchOptions.REGULAR, unsorted.getRowSet(), keys);
+                final WritableRowSet unmatched =
+                        source.match(false, MatchOptions.INVERTED, unsorted.getRowSet(), keys)) {
+            // only the 7, the last row, matches
+            assertEquals(1, matched.size());
+            assertEquals(6, matched.firstRowKey());
+            assertEquals(6, unmatched.size());
+            assertFalse(unmatched.containsRange(6, 6));
         }
     }
 

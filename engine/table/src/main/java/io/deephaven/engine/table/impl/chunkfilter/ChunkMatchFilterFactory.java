@@ -14,7 +14,11 @@ public class ChunkMatchFilterFactory {
     public static ChunkFilter getChunkFilter(
             final Class type,
             final MatchOptions matchOptions,
-            final Object... keys) {
+            Object... keys) {
+        if (type == BigDecimal.class) {
+            // MatchFilter drops these too, but ColumnSource.match reaches this factory directly
+            keys = BigDecimalChunkMatchFilterFactory.dropUnmatchable(keys);
+        }
         if (keys.length == 0) {
             if (matchOptions.inverted()) {
                 return ChunkFilter.TRUE_FILTER_INSTANCE;
