@@ -98,6 +98,7 @@ public abstract class HashMapK2V2 extends HashMapBase {
         // passed in this bucket if there is one, else the empty slot itself — the same rule the loop below applies to
         // every later bucket. The earlier keys are already in registers, so this costs a lookup that misses here
         // nothing but a predictable compare or two; the hit path is untouched.
+        int priorDeletedSlot;
         long cKey0 = kvs[probe];
         if (cKey0 == target) {
             return probe;
@@ -105,23 +106,24 @@ public abstract class HashMapK2V2 extends HashMapBase {
         if (cKey0 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
             return -probe - 1;
         }
+        if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT) {
+            priorDeletedSlot = probe;
+        } else {
+            priorDeletedSlot = -1;
+        }
+
         long cKey1 = kvs[probe + 2];
         if (cKey1 == target) {
             return probe + 2;
         }
         if (cKey1 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
-            return -(cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe : probe + 2) - 1;
+            if (priorDeletedSlot != -1) {
+                return -priorDeletedSlot - 1;
+            }
+            return -(probe + 2) - 1;
         }
-
-        // These slots might also have been deleted slots. If so, we need to keep searching (until key found or the
-        // first empty slot), but we remember the first deleted slot.
-        int priorDeletedSlot;
-        if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT) {
+        if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
             priorDeletedSlot = probe;
-        } else if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-            priorDeletedSlot = probe + 2;
-        } else {
-            priorDeletedSlot = -1;
         }
 
         // Offset is also in units of longs
@@ -146,6 +148,10 @@ public abstract class HashMapK2V2 extends HashMapBase {
                 }
                 return -probe - 1;
             }
+            if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+                priorDeletedSlot = probe;
+            }
+
             cKey1 = kvs[probe + 2];
             if (cKey1 == target) {
                 return probe + 2;
@@ -154,15 +160,10 @@ public abstract class HashMapK2V2 extends HashMapBase {
                 if (priorDeletedSlot != -1) {
                     return -priorDeletedSlot - 1;
                 }
-                return -(cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe : probe + 2) - 1;
+                return -(probe + 2) - 1;
             }
-
-            if (priorDeletedSlot == -1) {
-                if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    priorDeletedSlot = probe;
-                } else if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    priorDeletedSlot = probe + 2;
-                }
+            if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+                priorDeletedSlot = probe;
             }
         }
     }
