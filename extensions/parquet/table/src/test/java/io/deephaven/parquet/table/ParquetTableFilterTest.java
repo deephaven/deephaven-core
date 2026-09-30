@@ -2007,9 +2007,10 @@ public final class ParquetTableFilterTest {
 
     /**
      * A {@link BigDecimal} column orders inconsistently with equals -- {@code 500} and {@code 500.00} compare equal
-     * while {@code equals} separates them -- so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} routes its
-     * match filters to {@code ComparableRegionBinarySearchKernel} rather than answering them by ordering alone. This
-     * exercises that dispatch through the Parquet region, which is its only production caller.
+     * while {@code equals} separates them -- but its match filter matches by ordering, as the query language's
+     * {@code ==} does, so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} answers its match filters by
+     * ordering alone rather than routing them to {@code ComparableRegionBinarySearchKernel}. This exercises that
+     * dispatch through the Parquet region, which is its only production caller.
      *
      * <p>
      * What this cannot pin down is the choice the dispatch makes: Parquet's DECIMAL logical type stores a single scale
