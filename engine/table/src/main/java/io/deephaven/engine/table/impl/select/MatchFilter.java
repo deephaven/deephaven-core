@@ -73,18 +73,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
      *
      * @param matchOptions options controlling how the match is performed
      * @param columnName the column name to match against
-     * @param values the values to match
+     * @param values the values to match, any of which may be null
      */
     public MatchFilter(
             @NotNull final MatchOptions matchOptions,
             @NotNull final String columnName,
-            @Nullable final Object... values) {
+            @NotNull final Object... values) {
         this(null, matchOptions, columnName, null, values);
     }
 
     /**
      * Create a new MatchFilter with either string values (which may be converted to actual values) or a list of values
-     * to match.
+     * to match. Exactly one of {@code strValues} and {@code values} must be non-null.
      *
      * @param failoverFilter a fail-over WhereFilter supplier should the match filter initialization fail
      * @param matchOptions options controlling how the match is performed
