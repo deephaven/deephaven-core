@@ -122,7 +122,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
             return -(probe + 2) - 1;
         }
         if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
-            priorDeletedSlot = probe;
+            priorDeletedSlot = probe + 2;
         }
 
         long cKey2 = kvs[probe + 4];
@@ -136,7 +136,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
             return -(probe + 4) - 1;
         }
         if (cKey2 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
-            priorDeletedSlot = probe;
+            priorDeletedSlot = probe + 4;
         }
 
         long cKey3 = kvs[probe + 6];
@@ -150,7 +150,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
             return -(probe + 6) - 1;
         }
         if (cKey3 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
-            priorDeletedSlot = probe;
+            priorDeletedSlot = probe + 6;
         }
 
         // Offset is also in units of longs
@@ -175,7 +175,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 }
                 return -probe - 1;
             }
-            if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+            if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
                 priorDeletedSlot = probe;
             }
 
@@ -189,6 +189,9 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 }
                 return -(probe + 2) - 1;
             }
+            if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+                priorDeletedSlot = probe + 2;
+            }
 
             cKey2 = kvs[probe + 4];
             if (cKey2 == target) {
@@ -201,7 +204,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 return -(probe + 4) - 1;
             }
             if (cKey2 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
-                priorDeletedSlot = probe;
+                priorDeletedSlot = probe + 4;
             }
 
             cKey3 = kvs[probe + 6];
@@ -215,7 +218,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 return -(probe + 6) - 1;
             }
             if (cKey3 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
-                priorDeletedSlot = probe;
+                priorDeletedSlot = probe + 6;
             }
         }
     }

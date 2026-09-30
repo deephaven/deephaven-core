@@ -123,7 +123,7 @@ public abstract class HashMapK2V2 extends HashMapBase {
             return -(probe + 2) - 1;
         }
         if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
-            priorDeletedSlot = probe;
+            priorDeletedSlot = probe + 2;
         }
 
         // Offset is also in units of longs
@@ -163,7 +163,7 @@ public abstract class HashMapK2V2 extends HashMapBase {
                 return -(probe + 2) - 1;
             }
             if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
-                priorDeletedSlot = probe;
+                priorDeletedSlot = probe + 2;
             }
         }
     }
