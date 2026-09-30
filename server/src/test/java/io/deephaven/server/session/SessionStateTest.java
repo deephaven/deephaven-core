@@ -48,6 +48,7 @@ import static io.deephaven.proto.backplane.grpc.ExportNotification.State.RELEASE
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.RUNNING;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.UNKNOWN;
 import static io.deephaven.proto.util.ExportTicketHelper.ticketToExportId;
+import static org.junit.Assert.assertThrows;
 
 public class SessionStateTest {
 
@@ -743,7 +744,14 @@ public class SessionStateTest {
         }
         Assert.eq(session.numExports(), "session.numExports()", 0);
 
-        // a server-side id that was never created is a user error; one that was released is answered as released
+        // a server-side id that was never created is a user error, released neighbor or not
+        final int bogusId = serverId - 1;
+        final StatusRuntimeException bogus =
+                assertThrows(StatusRuntimeException.class, () -> session.getExport(bogusId));
+        Assert.eq(bogus.getStatus().getCode(), "bogus.getStatus().getCode()", Status.Code.FAILED_PRECONDITION);
+        Assert.eqNull(session.getExportIfExists(bogusId), "session.getExportIfExists(bogusId)");
+
+        // one that was released is answered as released
         final SessionState.ExportObject<Object> lookedUp = session.getExport(serverId);
         Assert.eq(lookedUp.getState(), "lookedUp.getState()", ExportNotification.State.RELEASED);
         Assert.eq(ticketToExportId(lookedUp.getExportId(), "test"), "lookedUp id", serverId);
