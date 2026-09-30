@@ -43,10 +43,11 @@ public class ObjectReverseStampKernel implements StampKernel {
 
         for (int li = 0; li < leftSize;) {
             final Object leftValue = leftStamps.get(li);
-            if (lt(leftValue, rightLowValue)) {
+            final int lowComparison = doComparison(leftValue, rightLowValue);
+            if (lowComparison < 0) {
                 leftRedirections.set(li++, RowSequence.NULL_ROW_KEY);
                 continue;
-            } else if (eq(leftValue, rightLowValue)) {
+            } else if (lowComparison == 0) {
                 leftRedirections.set(li++, rightKeyIndices.get(rightLowIdx));
                 continue;
             }
@@ -56,10 +57,11 @@ public class ObjectReverseStampKernel implements StampKernel {
             while (rightLowIdx < rightHighIdx) {
                 final int rightMidIdx = ((rightHighIdx - rightLowIdx) / 2) + rightLowIdx;
                 final Object rightMidValue = rightStamps.get(rightMidIdx);
-                if (leq(rightMidValue, leftValue)) {
+                final int midComparison = doComparison(rightMidValue, leftValue);
+                if (midComparison <= 0) {
                     rightLowIdx = rightMidIdx;
                     rightLowValue = rightMidValue;
-                    if (rightLowIdx == rightHighIdx - 1 || eq(rightLowValue, leftValue)) {
+                    if (rightLowIdx == rightHighIdx - 1 || midComparison == 0) {
                         break;
                     }
                 } else {
@@ -90,15 +92,5 @@ public class ObjectReverseStampKernel implements StampKernel {
 
     private static boolean lt(Object lhs, Object rhs) {
         return doComparison(lhs, rhs) < 0;
-    }
-
-    private static boolean leq(Object lhs, Object rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
-
-    private static boolean eq(Object lhs, Object rhs) {
-        // region equality function
-        return ObjectComparisons.compareEquals(lhs, rhs);
-        // endregion equality function
     }
 }
