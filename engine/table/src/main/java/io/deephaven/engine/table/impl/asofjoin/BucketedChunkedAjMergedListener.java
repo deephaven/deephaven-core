@@ -379,6 +379,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     throw new IllegalStateException();
                                 }
                                 final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
+                                // with no left rows in the bucket, only the right SSA is maintained
+                                final boolean leftEmpty = leftSsa.size() == 0;
 
                                 try (final RowSequence.Iterator removeIt = rightRemoved.getRowSequenceIterator()) {
                                     while (removeIt.hasMore()) {
@@ -388,6 +390,11 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                         rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
                                         chunkOk.fillRowKeyChunk(rightStampKeys);
                                         sortKernel.sort(rightStampKeys, rightStampValues);
+
+                                        if (leftEmpty) {
+                                            rightSsa.remove(rightStampValues, rightStampKeys);
+                                            continue;
+                                        }
 
                                         priorRedirections.setSize(cycleRightChunkSize);
                                         rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
@@ -448,6 +455,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                             }
                                             final SegmentedSortedArray rightSsa =
                                                     asOfJoinStateManager.getRightSsa(slot);
+                                            // with no left rows in the bucket, only the right SSA is maintained
+                                            final boolean leftEmpty = leftSsa.size() == 0;
 
                                             final RowSetShiftData.Iterator slotSit = shiftDataForSlot.applyIterator();
 
@@ -476,9 +485,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                                 sortKernel.sort(rightStampKeys.get(),
                                                                         rightStampValues.get());
 
-                                                                ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
-                                                                        rightStampKeys.get(), slotSit.shiftDelta(),
-                                                                        rowRedirection, disallowExactMatch);
+                                                                if (!leftEmpty) {
+                                                                    ssaSsaStamp.applyShift(leftSsa,
+                                                                            rightStampValues.get(),
+                                                                            rightStampKeys.get(), slotSit.shiftDelta(),
+                                                                            rowRedirection, disallowExactMatch);
+                                                                }
                                                                 rightSsa.applyShiftReverse(rightStampValues.get(),
                                                                         rightStampKeys.get(), slotSit.shiftDelta());
                                                             }
@@ -504,9 +516,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                                 rightSsa.applyShift(rightStampValues.get(),
                                                                         rightStampKeys.get(),
                                                                         slotSit.shiftDelta());
-                                                                ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
-                                                                        rightStampKeys.get(), slotSit.shiftDelta(),
-                                                                        rowRedirection, disallowExactMatch);
+                                                                if (!leftEmpty) {
+                                                                    ssaSsaStamp.applyShift(leftSsa,
+                                                                            rightStampValues.get(),
+                                                                            rightStampKeys.get(), slotSit.shiftDelta(),
+                                                                            rowRedirection, disallowExactMatch);
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -590,6 +605,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                         asOfJoinStateManager.getRightSsa(slot, rightSsaFactory);
                                 final SegmentedSortedArray leftSsa =
                                         asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
+                                // with no left rows in the bucket, only the right SSA is maintained
+                                final boolean leftEmpty = leftSsa.size() == 0;
 
                                 final long addedSize = ownedRightAdded.size();
                                 final long chunks = addedSize / cycleRightChunkSize
@@ -603,6 +620,11 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                         chunkOk.fillRowKeyChunk(insertedIndices);
 
                                         sortKernel.sort(insertedIndices, stampChunk);
+
+                                        if (leftEmpty) {
+                                            rightSsa.insert(stampChunk, insertedIndices);
+                                            continue;
+                                        }
 
                                         final int valuesWithNext = rightSsa.insertAndGetNextValue(stampChunk,
                                                 insertedIndices, nextRightValue);
@@ -661,6 +683,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                                     // if we are not empty on the left, then we must already have created the SSA
                                     final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot);
+                                    if (leftSsa.size() == 0) {
+                                        // no left row of the bucket can respond to the modification
+                                        continue;
+                                    }
 
                                     try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
                                         while (modit.hasMore()) {

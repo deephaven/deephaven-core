@@ -2714,6 +2714,61 @@ public class QueryTableAjTest {
     }
 
     /**
+     * With both sides refreshing and exact match columns, a bucket whose left rows have all been removed keeps its
+     * right rows through right removals, additions, modifications, and shifts without reporting any modified rows, and
+     * left rows that later return to the bucket stamp as a static join would, for aj and raj with and without exact
+     * matches.
+     */
+    @Test
+    public void testRightChangesInBucketWithoutLeftRows() {
+        for (final String stamp : new String[] {"LeftStamp>=RightStamp", "LeftStamp>RightStamp",
+                "LeftStamp<=RightStamp", "LeftStamp<RightStamp"}) {
+            final boolean reverse = stamp.contains("<");
+            final String match = "Key," + stamp;
+            final QueryTable left = testRefreshingTable(i(0, 1, 2, 10).toTracking(), col("Key", "A", "A", "A", "B"),
+                    intCol("LeftStamp", 15, 25, 35, 20));
+            final QueryTable right = testRefreshingTable(i(0, 1, 2, 3, 100).toTracking(),
+                    col("Key", "A", "A", "A", "A", "B"), intCol("RightStamp", 10, 20, 30, 40, 20),
+                    intCol("Sentinel", 0, 1, 2, 3, 100));
+            final QueryTable result = (QueryTable) (reverse ? left.raj(right, match, "Sentinel")
+                    : left.aj(right, match, "Sentinel"));
+            final SimpleListener listener = new SimpleListener(result);
+            result.addUpdateListener(listener);
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+            // remove every left row of bucket A
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(left, i(0, 1, 2));
+                left.notifyListeners(i(), i(0, 1, 2), i());
+            });
+
+            // remove, add, and modify right rows of bucket A
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(right, i(1));
+                addToTable(right, i(4, 5), col("Key", "A", "A"), intCol("RightStamp", 25, 35),
+                        intCol("Sentinel", 4, 5));
+                addToTable(right, i(2), col("Key", "A"), intCol("RightStamp", 30), intCol("Sentinel", 22));
+                right.notifyListeners(new TableUpdateImpl(i(4, 5), i(1), i(2), RowSetShiftData.EMPTY,
+                        right.newModifiedColumnSet("Sentinel")));
+            });
+            assertTrue(stamp, listener.getUpdate().modified().isEmpty());
+
+            // shift the right rows of bucket A
+            updateGraph.runWithinUnitTestCycle(() -> shiftTestTable(right, 0, 5, 50));
+            assertTrue(stamp, listener.getUpdate().modified().isEmpty());
+
+            // left rows return to bucket A
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(0, 1, 2, 3), col("Key", "A", "A", "A", "A"), intCol("LeftStamp", 5, 25, 32, 45));
+                left.notifyListeners(i(0, 1, 2, 3), i(), i());
+            });
+            assertTableEquals(reverse ? left.snapshot().raj(right.snapshot(), match, "Sentinel")
+                    : left.snapshot().aj(right.snapshot(), match, "Sentinel"), result);
+            result.removeUpdateListener(listener);
+        }
+    }
+
+    /**
      * Shifts a range of rows of a refreshing test table by a positive delta, which may move rows onto keys that other
      * rows of the same range vacate, and notifies listeners.
      */
