@@ -4306,12 +4306,16 @@ public class QueryTableAggregationTest {
             removeRows(table, i(1, 2));
             table.notifyListeners(i(), i(1, 2), i());
         });
+        assertTableEquals(newTable(stringCol("Key", "Apple"), longCol("x", 0)), summed);
+        assertEquals(i(0), summed.getRowSet());
 
-        // we should be able to fill in where the old value was
+        // a new group goes after every row key assigned so far, rather than into the emptied ones
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(4), intCol("x", 4), stringCol("Key", "Dragonfruit"));
             table.notifyListeners(i(4), i(), i());
         });
+        assertTableEquals(newTable(stringCol("Key", "Apple", "Dragonfruit"), longCol("x", 0, 4)), summed);
+        assertEquals(i(0, 3), summed.getRowSet());
     }
 
     @Test
@@ -4330,6 +4334,9 @@ public class QueryTableAggregationTest {
             removeRows(table, i(0, 2, 3));
             table.notifyListeners(i(), i(0, 2, 3), i());
         });
+        // the emptied groups leave, and the others keep their row keys
+        assertTableEquals(newTable(stringCol("Key", "Banana", "Eggplant"), longCol("x", 1, 4)), summed);
+        assertEquals(i(1, 4), summed.getRowSet());
     }
 
     @Test
@@ -4339,9 +4346,7 @@ public class QueryTableAggregationTest {
                         stringCol("Key", "Apple", "Banana", "Cherry", "Banana", "Cherry"));
         final Table min = table.minBy("Key");
 
-        final PrintListener printListener = new PrintListener("min", (QueryTable) min, 10);
-
-        final TableUpdateValidator validated = TableUpdateValidator.make("testEmptyState", (QueryTable) min);
+        final TableUpdateValidator validated = TableUpdateValidator.make("testShiftedMin", (QueryTable) min);
         final FailureListener failureListener = new FailureListener();
         validated.getResultTable().addUpdateListener(failureListener);
 
@@ -4350,14 +4355,18 @@ public class QueryTableAggregationTest {
             removeRows(table, i(0, 2, 4));
             table.notifyListeners(i(), i(0, 2, 4), i());
         });
+        // Apple and Cherry empty and leave; Banana keeps its row key and its minimum, 1
+        assertTableEquals(newTable(stringCol("Key", "Banana"), intCol("x", 1)), min);
+        assertEquals(i(1), min.getRowSet());
 
+        // Banana's minimum row leaves as a larger row arrives
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(5), intCol("x", 5), stringCol("Key", "Banana"));
             removeRows(table, i(1));
             table.notifyListeners(i(5), i(1), i());
         });
-
-        TableTools.showWithRowSet(min);
+        assertTableEquals(newTable(stringCol("Key", "Banana"), intCol("x", 3)), min);
+        assertEquals(i(1), min.getRowSet());
     }
 
     @Test
@@ -4492,6 +4501,9 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testReclaimWithInitialGroups() {
+        // Initial groups reserve row keys for groups that may not be in the result, which reclaiming does not model, so
+        // the configured mode does not reclaim: a group that empties and returns comes back at its original row key
+        // rather than at a new one after every other.
         final Table initialGroups = TableTools.newTable(stringCol("Key", "A", "B", "C"));
         final QueryTable table = testRefreshingTable(i(0).toTracking(), stringCol("Key", "A"), intCol("x", 1));
         final Table summed = table.aggBy(List.of(AggSum("x")), false, initialGroups, ColumnName.from("Key"));
@@ -4513,6 +4525,7 @@ public class QueryTableAggregationTest {
             table.notifyListeners(i(1), i(), i());
         });
         assertTableEquals(TableTools.newTable(stringCol("Key", "A"), longCol("x", 3)), summed);
+        assertEquals(i(0), summed.getRowSet());
     }
 
     @Test
