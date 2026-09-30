@@ -1,9 +1,9 @@
 ---
 title: Parse functions
-sidebar_label: Parse
+sidebar_label: Parse functions
 ---
 
-String-to-primitive parsing functions from [`io.deephaven.function.Parse`](/core/javadoc/io/deephaven/function/Parse.html).
+String-to-primitive parsing functions.
 
 | Type     | Name              | Signature                                                                                                                         | Description                                     |
 | -------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
@@ -26,3 +26,4 @@ String-to-primitive parsing functions from [`io.deephaven.function.Parse`](/core
 ## Related documentation
 
 - [Auto-imported functions](./index.md)
+- [Query language functions](../../../../how-to-guides/built-in-functions.md)

@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.exceptions.MismatchedJoinKeyException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
@@ -141,12 +142,12 @@ class BucketingContext implements SafeCloseable {
                     // If the names are the same, the error message will be more helpful if we mention classloader
                     // issues rather
                     // than just showing the same string twice
-                    throw new IllegalArgumentException("Mismatched join types in " + columnsToMatch[ii]
+                    throw new MismatchedJoinKeyException("Mismatched join types in " + columnsToMatch[ii]
                             + ", but both sides have the same name '" + leftType.getName()
                             + "'. Was the class redefined or one side loaded from a different classloader? Left type classloader: "
                             + leftType.getClassLoader() + ", right type classloader: " + rightType.getClassLoader());
                 }
-                throw new IllegalArgumentException(
+                throw new MismatchedJoinKeyException(
                         "Mismatched join types, " + columnsToMatch[ii] + ": " + leftType + " != " + rightType);
             }
 

@@ -23,8 +23,8 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
     static Supplier<SegmentedSortedArray> makeFactory(ChunkType chunkType, boolean reverse, int nodeSize) {
         switch (chunkType) {
             case Char:
-                return reverse ? () -> new NullAwareCharReverseSegmentedSortedArray(nodeSize)
-                        : () -> new NullAwareCharSegmentedSortedArray(nodeSize);
+                return reverse ? () -> new CharReverseSegmentedSortedArray(nodeSize)
+                        : () -> new CharSegmentedSortedArray(nodeSize);
             case Byte:
                 return reverse ? () -> new ByteReverseSegmentedSortedArray(nodeSize)
                         : () -> new ByteSegmentedSortedArray(nodeSize);

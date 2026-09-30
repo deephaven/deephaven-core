@@ -2147,6 +2147,22 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testWeightedAvgRepeatedModify() {
+        // the first modification leaves the new sum of weights equal to the old weighted sum
+        final QueryTable table = testRefreshingTable(i(0).toTracking(),
+                stringCol("Key", "A"), longCol("x", 3), intCol("w", 1));
+        final Table aggregated = table.aggBy(List.of(AggWAvg("w", "WAvg=x")), "Key");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int round = 0; round < 2; ++round) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(table, i(0), stringCol("Key", "A"), longCol("x", 1011), intCol("w", 3));
+                table.notifyListeners(i(), i(), i(0));
+            });
+            assertTableEquals(newTable(stringCol("Key", "A"), doubleCol("WAvg", 1011.0)), aggregated);
+        }
+    }
+
+    @Test
     public void testWeightedAvgByIncremental() {
         final int[] sizes = {10, 50, 200};
         for (int size : sizes) {

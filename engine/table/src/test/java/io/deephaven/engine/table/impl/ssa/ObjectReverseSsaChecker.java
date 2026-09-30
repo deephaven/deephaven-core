@@ -9,12 +9,6 @@
 
 package io.deephaven.engine.table.impl.ssa;
 
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
@@ -26,6 +20,7 @@ import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.util.compare.ObjectComparisons;
 
 public class ObjectReverseSsaChecker implements SsaChecker {
     static ObjectReverseSsaChecker INSTANCE = new ObjectReverseSsaChecker();
@@ -85,7 +80,7 @@ public class ObjectReverseSsaChecker implements SsaChecker {
 
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return Objects.equals(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

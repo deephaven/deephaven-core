@@ -9,8 +9,6 @@
 
 package io.deephaven.engine.table.impl.ssa;
 
-import io.deephaven.util.compare.FloatComparisons;
-
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
@@ -18,6 +16,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.compare.FloatComparisons;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jetbrains.annotations.Nullable;
@@ -1579,6 +1578,7 @@ public final class FloatReverseSegmentedSortedArray implements SegmentedSortedAr
     }
 
     // region comparison functions
+    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(float lhs, float rhs) {
         return -1 * FloatComparisons.compare(lhs, rhs);
     }

@@ -1188,6 +1188,10 @@
                   {
                     "label": "Application Mode scripts",
                     "path": "how-to-guides/application-mode-script.md"
+                  },
+                  {
+                    "label": "Application Mode configuration",
+                    "path": "reference/app-mode/application-mode-config.md"
                   }
                 ]
               }
@@ -1211,6 +1215,18 @@
                 "href": "https://deephaven.io/core/pydoc"
               },
               {
+                "label": "C++ (client)",
+                "href": "https://deephaven.io/core/client-api/cpp"
+              },
+              {
+                "label": "C++ (examples)",
+                "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "Go (client)",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+              },
+              {
                 "label": "Java (client/server)",
                 "href": "https://deephaven.io/core/javadoc"
               },
@@ -1226,18 +1242,6 @@
                     "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
                   }
                 ]
-              },
-              {
-                "label": "Go (client)",
-                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
-              },
-              {
-                "label": "C++ (client)",
-                "href": "https://deephaven.io/core/client-api/cpp"
-              },
-              {
-                "label": "C++ (examples)",
-                "href": "https://deephaven.io/core/client-api/cpp-examples"
               },
               {
                 "label": "R (client)",
@@ -1269,16 +1273,20 @@
                 "path": "reference/engine/data-index.md"
               },
               {
+                "label": "garbage_collect",
+                "path": "reference/garbage-collect.md"
+              },
+              {
                 "label": "has_data_index",
                 "path": "reference/engine/has-data-index.md"
               },
               {
-                "label": "LivenessScope",
-                "path": "reference/engine/LivenessScope.md"
-              },
-              {
                 "label": "liveness_scope",
                 "path": "reference/engine/liveness-scope.md"
+              },
+              {
+                "label": "LivenessScope",
+                "path": "reference/engine/LivenessScope.md"
               }
             ]
           },
@@ -1310,30 +1318,6 @@
                       {
                         "label": "ring_table",
                         "path": "reference/table-operations/create/ringTable.md"
-                      },
-                      {
-                        "label": "tree",
-                        "path": "reference/table-operations/create/tree.md"
-                      },
-                      {
-                        "label": "rollup",
-                        "path": "reference/table-operations/create/rollup.md"
-                      },
-                      {
-                        "label": "with_attributes",
-                        "path": "reference/table-operations/create/withAttributes.md"
-                      },
-                      {
-                        "label": "without_attributes",
-                        "path": "reference/table-operations/create/withoutAttributes.md"
-                      },
-                      {
-                        "label": "with_keys",
-                        "path": "reference/table-operations/create/withKeys.md"
-                      },
-                      {
-                        "label": "with_unique_keys",
-                        "path": "reference/table-operations/create/withUniqueKeys.md"
                       }
                     ]
                   },
@@ -1451,48 +1435,6 @@
                 ]
               },
               {
-                "label": "Barrage",
-                "items": [
-                  {
-                    "label": "barrage_session",
-                    "path": "reference/data-import-export/barrage/barrage-session.md"
-                  },
-                  {
-                    "label": "close",
-                    "path": "reference/data-import-export/barrage/close.md"
-                  },
-                  {
-                    "label": "subscribe",
-                    "path": "reference/data-import-export/barrage/subscribe.md"
-                  },
-                  {
-                    "label": "snapshot",
-                    "path": "reference/data-import-export/barrage/snapshot-barrage.md"
-                  }
-                ]
-              },
-              {
-                "label": "Session",
-                "items": [
-                  {
-                    "label": "publish",
-                    "path": "reference/client-api/session/publish.md"
-                  },
-                  {
-                    "label": "publish_table",
-                    "path": "reference/client-api/session/publish-table.md"
-                  },
-                  {
-                    "label": "fetch",
-                    "path": "reference/client-api/session/fetch.md"
-                  },
-                  {
-                    "label": "fetch_table",
-                    "path": "reference/client-api/session/fetch-table.md"
-                  }
-                ]
-              },
-              {
                 "label": "CSV",
                 "items": [
                   {
@@ -1506,68 +1448,8 @@
                 ]
               },
               {
-                "label": "HTML",
-                "items": [
-                  {
-                    "label": "to_html",
-                    "path": "reference/data-import-export/HTML/to-html.md"
-                  }
-                ]
-              },
-              {
-                "label": "Kafka",
-                "items": [
-                  {
-                    "label": "consume_to_partitioned_table",
-                    "path": "reference/data-import-export/Kafka/consume-to-partitioned-table.md"
-                  },
-                  {
-                    "label": "consume",
-                    "path": "reference/data-import-export/Kafka/consume.md"
-                  },
-                  {
-                    "label": "produce",
-                    "path": "reference/data-import-export/Kafka/produce.md"
-                  }
-                ]
-              },
-              {
-                "label": "Parquet",
-                "items": [
-                  {
-                    "label": "ColumnInstruction",
-                    "path": "reference/data-import-export/Parquet/ColumnInstruction.md"
-                  },
-                  {
-                    "label": "read",
-                    "path": "reference/data-import-export/Parquet/readTable.md"
-                  },
-                  {
-                    "label": "write",
-                    "path": "reference/data-import-export/Parquet/writeTable.md"
-                  },
-                  {
-                    "label": "write_partitioned",
-                    "path": "reference/data-import-export/Parquet/writePartitioned.md"
-                  }
-                ]
-              },
-              {
-                "label": "SQL",
-                "items": [
-                  {
-                    "label": "read_sql",
-                    "path": "reference/data-import-export/SQL/read_sql.md"
-                  },
-                  {
-                    "label": "adbc.read_cursor",
-                    "path": "reference/data-import-export/SQL/adbc.md"
-                  },
-                  {
-                    "label": "odbc.read_cursor",
-                    "path": "reference/data-import-export/SQL/odbc.md"
-                  }
-                ]
+                "label": "to_html",
+                "path": "reference/data-import-export/HTML/to-html.md"
               },
               {
                 "label": "Iceberg",
@@ -1635,29 +1517,110 @@
                 ]
               },
               {
-                "label": "Iterate",
+                "label": "Kafka",
                 "items": [
                   {
-                    "label": "iter_dict",
-                    "path": "reference/data-import-export/iterate/iter-dict.md"
+                    "label": "consume_to_partitioned_table",
+                    "path": "reference/data-import-export/Kafka/consume-to-partitioned-table.md"
                   },
                   {
-                    "label": "iter_tuple",
-                    "path": "reference/data-import-export/iterate/iter-tuple.md"
+                    "label": "consume",
+                    "path": "reference/data-import-export/Kafka/consume.md"
                   },
                   {
-                    "label": "iter_chunk_dict",
-                    "path": "reference/data-import-export/iterate/iter-chunk-dict.md"
+                    "label": "produce",
+                    "path": "reference/data-import-export/Kafka/produce.md"
+                  }
+                ]
+              },
+              {
+                "label": "Parquet",
+                "items": [
+                  {
+                    "label": "ColumnInstruction",
+                    "path": "reference/data-import-export/Parquet/ColumnInstruction.md"
                   },
                   {
-                    "label": "iter_chunk_tuple",
-                    "path": "reference/data-import-export/iterate/iter-chunk-tuple.md"
+                    "label": "read",
+                    "path": "reference/data-import-export/Parquet/readTable.md"
+                  },
+                  {
+                    "label": "write",
+                    "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "write_partitioned",
+                    "path": "reference/data-import-export/Parquet/writePartitioned.md"
+                  }
+                ]
+              },
+              {
+                "label": "SQL",
+                "items": [
+                  {
+                    "label": "read_sql",
+                    "path": "reference/data-import-export/SQL/read_sql.md"
+                  },
+                  {
+                    "label": "adbc.read_cursor",
+                    "path": "reference/data-import-export/SQL/adbc.md"
+                  },
+                  {
+                    "label": "odbc.read_cursor",
+                    "path": "reference/data-import-export/SQL/odbc.md"
                   }
                 ]
               },
               {
                 "label": "URI",
                 "path": "reference/data-import-export/uri.md"
+              }
+            ]
+          },
+          {
+            "label": "Client APIs",
+            "items": [
+              {
+                "label": "Barrage",
+                "items": [
+                  {
+                    "label": "barrage_session",
+                    "path": "reference/data-import-export/barrage/barrage-session.md"
+                  },
+                  {
+                    "label": "close",
+                    "path": "reference/data-import-export/barrage/close.md"
+                  },
+                  {
+                    "label": "subscribe",
+                    "path": "reference/data-import-export/barrage/subscribe.md"
+                  },
+                  {
+                    "label": "snapshot",
+                    "path": "reference/data-import-export/barrage/snapshot-barrage.md"
+                  }
+                ]
+              },
+              {
+                "label": "Session",
+                "items": [
+                  {
+                    "label": "publish",
+                    "path": "reference/client-api/session/publish.md"
+                  },
+                  {
+                    "label": "publish_table",
+                    "path": "reference/client-api/session/publish-table.md"
+                  },
+                  {
+                    "label": "fetch",
+                    "path": "reference/client-api/session/fetch.md"
+                  },
+                  {
+                    "label": "fetch_table",
+                    "path": "reference/client-api/session/fetch-table.md"
+                  }
+                ]
               }
             ]
           },
@@ -1710,6 +1673,22 @@
                   {
                     "label": "update_graph",
                     "path": "reference/table-operations/metadata/update_graph.md"
+                  },
+                  {
+                    "label": "with_attributes",
+                    "path": "reference/table-operations/create/withAttributes.md"
+                  },
+                  {
+                    "label": "with_keys",
+                    "path": "reference/table-operations/create/withKeys.md"
+                  },
+                  {
+                    "label": "with_unique_keys",
+                    "path": "reference/table-operations/create/withUniqueKeys.md"
+                  },
+                  {
+                    "label": "without_attributes",
+                    "path": "reference/table-operations/create/withoutAttributes.md"
                   }
                 ]
               },
@@ -1858,13 +1837,8 @@
                 ]
               },
               {
-                "label": "Transpose",
-                "items": [
-                  {
-                    "label": "keyed_transpose",
-                    "path": "reference/table-operations/format/keyed-transpose.md"
-                  }
-                ]
+                "label": "keyed_transpose",
+                "path": "reference/table-operations/format/keyed-transpose.md"
               },
               {
                 "label": "Merge",
@@ -2072,31 +2046,24 @@
                 ]
               },
               {
+                "label": "Hierarchical tables",
+                "items": [
+                  {
+                    "label": "rollup",
+                    "path": "reference/table-operations/create/rollup.md"
+                  },
+                  {
+                    "label": "tree",
+                    "path": "reference/table-operations/create/tree.md"
+                  }
+                ]
+              },
+              {
                 "label": "Update By",
                 "items": [
                   {
                     "label": "update_by",
                     "path": "reference/table-operations/update-by-operations/updateBy.md"
-                  },
-                  {
-                    "label": "cum_max",
-                    "path": "reference/table-operations/update-by-operations/cum-max.md"
-                  },
-                  {
-                    "label": "cum_min",
-                    "path": "reference/table-operations/update-by-operations/cum-min.md"
-                  },
-                  {
-                    "label": "cum_prod",
-                    "path": "reference/table-operations/update-by-operations/cum-prod.md"
-                  },
-                  {
-                    "label": "cum_sum",
-                    "path": "reference/table-operations/update-by-operations/cum-sum.md"
-                  },
-                  {
-                    "label": "cum_count_where",
-                    "path": "reference/table-operations/update-by-operations/cum-count-where.md"
                   },
                   {
                     "label": "delta",
@@ -2107,46 +2074,6 @@
                     "path": "reference/table-operations/update-by-operations/DeltaControl.md"
                   },
                   {
-                    "label": "ema_tick",
-                    "path": "reference/table-operations/update-by-operations/ema-tick.md"
-                  },
-                  {
-                    "label": "ema_time",
-                    "path": "reference/table-operations/update-by-operations/ema-time.md"
-                  },
-                  {
-                    "label": "emmax_tick",
-                    "path": "reference/table-operations/update-by-operations/emmax-tick.md"
-                  },
-                  {
-                    "label": "emmax_time",
-                    "path": "reference/table-operations/update-by-operations/emmax-time.md"
-                  },
-                  {
-                    "label": "emmin_tick",
-                    "path": "reference/table-operations/update-by-operations/emmin-tick.md"
-                  },
-                  {
-                    "label": "emmin_time",
-                    "path": "reference/table-operations/update-by-operations/emmin-time.md"
-                  },
-                  {
-                    "label": "ems_tick",
-                    "path": "reference/table-operations/update-by-operations/ems-tick.md"
-                  },
-                  {
-                    "label": "ems_time",
-                    "path": "reference/table-operations/update-by-operations/ems-time.md"
-                  },
-                  {
-                    "label": "emstd_tick",
-                    "path": "reference/table-operations/update-by-operations/emstd-tick.md"
-                  },
-                  {
-                    "label": "emstd_time",
-                    "path": "reference/table-operations/update-by-operations/emstd-time.md"
-                  },
-                  {
                     "label": "forward_fill",
                     "path": "reference/table-operations/update-by-operations/forward-fill.md"
                   },
@@ -2155,92 +2082,167 @@
                     "path": "reference/table-operations/update-by-operations/OperationControl.md"
                   },
                   {
-                    "label": "rolling_avg_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-avg-tick.md"
+                    "label": "Cumulative",
+                    "items": [
+                      {
+                        "label": "cum_count_where",
+                        "path": "reference/table-operations/update-by-operations/cum-count-where.md"
+                      },
+                      {
+                        "label": "cum_max",
+                        "path": "reference/table-operations/update-by-operations/cum-max.md"
+                      },
+                      {
+                        "label": "cum_min",
+                        "path": "reference/table-operations/update-by-operations/cum-min.md"
+                      },
+                      {
+                        "label": "cum_prod",
+                        "path": "reference/table-operations/update-by-operations/cum-prod.md"
+                      },
+                      {
+                        "label": "cum_sum",
+                        "path": "reference/table-operations/update-by-operations/cum-sum.md"
+                      }
+                    ]
                   },
                   {
-                    "label": "rolling_avg_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-avg-time.md"
+                    "label": "Exponential moving",
+                    "items": [
+                      {
+                        "label": "ema_tick",
+                        "path": "reference/table-operations/update-by-operations/ema-tick.md"
+                      },
+                      {
+                        "label": "ema_time",
+                        "path": "reference/table-operations/update-by-operations/ema-time.md"
+                      },
+                      {
+                        "label": "emmax_tick",
+                        "path": "reference/table-operations/update-by-operations/emmax-tick.md"
+                      },
+                      {
+                        "label": "emmax_time",
+                        "path": "reference/table-operations/update-by-operations/emmax-time.md"
+                      },
+                      {
+                        "label": "emmin_tick",
+                        "path": "reference/table-operations/update-by-operations/emmin-tick.md"
+                      },
+                      {
+                        "label": "emmin_time",
+                        "path": "reference/table-operations/update-by-operations/emmin-time.md"
+                      },
+                      {
+                        "label": "ems_tick",
+                        "path": "reference/table-operations/update-by-operations/ems-tick.md"
+                      },
+                      {
+                        "label": "ems_time",
+                        "path": "reference/table-operations/update-by-operations/ems-time.md"
+                      },
+                      {
+                        "label": "emstd_tick",
+                        "path": "reference/table-operations/update-by-operations/emstd-tick.md"
+                      },
+                      {
+                        "label": "emstd_time",
+                        "path": "reference/table-operations/update-by-operations/emstd-time.md"
+                      }
+                    ]
                   },
                   {
-                    "label": "rolling_count_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-count-tick.md"
-                  },
-                  {
-                    "label": "rolling_count_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-count-time.md"
-                  },
-                  {
-                    "label": "rolling_count_where_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-count-where-tick.md"
-                  },
-                  {
-                    "label": "rolling_count_where_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-count-where-time.md"
-                  },
-                  {
-                    "label": "rolling_formula_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-formula-tick.md"
-                  },
-                  {
-                    "label": "rolling_formula_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-formula-time.md"
-                  },
-                  {
-                    "label": "rolling_group_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-group-tick.md"
-                  },
-                  {
-                    "label": "rolling_group_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-group-time.md"
-                  },
-                  {
-                    "label": "rolling_max_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-max-tick.md"
-                  },
-                  {
-                    "label": "rolling_max_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-max-time.md"
-                  },
-                  {
-                    "label": "rolling_min_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-min-tick.md"
-                  },
-                  {
-                    "label": "rolling_min_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-min-time.md"
-                  },
-                  {
-                    "label": "rolling_prod_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-prod-tick.md"
-                  },
-                  {
-                    "label": "rolling_prod_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-prod-time.md"
-                  },
-                  {
-                    "label": "rolling_std_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-std-tick.md"
-                  },
-                  {
-                    "label": "rolling_std_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-std-time.md"
-                  },
-                  {
-                    "label": "rolling_sum_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-sum-tick.md"
-                  },
-                  {
-                    "label": "rolling_sum_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-sum-time.md"
-                  },
-                  {
-                    "label": "rolling_wavg_tick",
-                    "path": "reference/table-operations/update-by-operations/rolling-wavg-tick.md"
-                  },
-                  {
-                    "label": "rolling_wavg_time",
-                    "path": "reference/table-operations/update-by-operations/rolling-wavg-time.md"
+                    "label": "Rolling",
+                    "items": [
+                      {
+                        "label": "rolling_avg_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-avg-tick.md"
+                      },
+                      {
+                        "label": "rolling_avg_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-avg-time.md"
+                      },
+                      {
+                        "label": "rolling_count_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-count-tick.md"
+                      },
+                      {
+                        "label": "rolling_count_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-count-time.md"
+                      },
+                      {
+                        "label": "rolling_count_where_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-count-where-tick.md"
+                      },
+                      {
+                        "label": "rolling_count_where_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-count-where-time.md"
+                      },
+                      {
+                        "label": "rolling_formula_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-formula-tick.md"
+                      },
+                      {
+                        "label": "rolling_formula_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-formula-time.md"
+                      },
+                      {
+                        "label": "rolling_group_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-group-tick.md"
+                      },
+                      {
+                        "label": "rolling_group_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-group-time.md"
+                      },
+                      {
+                        "label": "rolling_max_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-max-tick.md"
+                      },
+                      {
+                        "label": "rolling_max_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-max-time.md"
+                      },
+                      {
+                        "label": "rolling_min_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-min-tick.md"
+                      },
+                      {
+                        "label": "rolling_min_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-min-time.md"
+                      },
+                      {
+                        "label": "rolling_prod_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-prod-tick.md"
+                      },
+                      {
+                        "label": "rolling_prod_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-prod-time.md"
+                      },
+                      {
+                        "label": "rolling_std_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-std-tick.md"
+                      },
+                      {
+                        "label": "rolling_std_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-std-time.md"
+                      },
+                      {
+                        "label": "rolling_sum_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-sum-tick.md"
+                      },
+                      {
+                        "label": "rolling_sum_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-sum-time.md"
+                      },
+                      {
+                        "label": "rolling_wavg_tick",
+                        "path": "reference/table-operations/update-by-operations/rolling-wavg-tick.md"
+                      },
+                      {
+                        "label": "rolling_wavg_time",
+                        "path": "reference/table-operations/update-by-operations/rolling-wavg-time.md"
+                      }
+                    ]
                   }
                 ]
               },
@@ -2477,6 +2479,27 @@
                     ]
                   }
                 ]
+              },
+              {
+                "label": "Iterate",
+                "items": [
+                  {
+                    "label": "iter_dict",
+                    "path": "reference/data-import-export/iterate/iter-dict.md"
+                  },
+                  {
+                    "label": "iter_tuple",
+                    "path": "reference/data-import-export/iterate/iter-tuple.md"
+                  },
+                  {
+                    "label": "iter_chunk_dict",
+                    "path": "reference/data-import-export/iterate/iter-chunk-dict.md"
+                  },
+                  {
+                    "label": "iter_chunk_tuple",
+                    "path": "reference/data-import-export/iterate/iter-chunk-tuple.md"
+                  }
+                ]
               }
             ]
           },
@@ -2484,42 +2507,37 @@
             "label": "Query strings",
             "items": [
               {
-                "label": "Filters",
-                "items": [
-                  {
-                    "label": "Match filters",
-                    "items": [
-                      {
-                        "label": "equals",
-                        "path": "reference/query-language/match-filters/equals.md"
-                      },
-                      {
-                        "label": "not equals",
-                        "path": "reference/query-language/match-filters/not-equals.md"
-                      },
-                      {
-                        "label": "icase in",
-                        "path": "reference/query-language/match-filters/icase-in.md"
-                      },
-                      {
-                        "label": "icase not in",
-                        "path": "reference/query-language/match-filters/icase-not-in.md"
-                      },
-                      {
-                        "label": "in",
-                        "path": "reference/query-language/match-filters/in.md"
-                      },
-                      {
-                        "label": "not in",
-                        "path": "reference/query-language/match-filters/not-in.md"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
                 "label": "Special variables and constants",
                 "path": "reference/query-language/variables/special-variables.md"
+              },
+              {
+                "label": "Match filters",
+                "items": [
+                  {
+                    "label": "equals",
+                    "path": "reference/query-language/match-filters/equals.md"
+                  },
+                  {
+                    "label": "not equals",
+                    "path": "reference/query-language/match-filters/not-equals.md"
+                  },
+                  {
+                    "label": "icase in",
+                    "path": "reference/query-language/match-filters/icase-in.md"
+                  },
+                  {
+                    "label": "icase not in",
+                    "path": "reference/query-language/match-filters/icase-not-in.md"
+                  },
+                  {
+                    "label": "in",
+                    "path": "reference/query-language/match-filters/in.md"
+                  },
+                  {
+                    "label": "not in",
+                    "path": "reference/query-language/match-filters/not-in.md"
+                  }
+                ]
               },
               {
                 "label": "Types",
@@ -2660,26 +2678,12 @@
             ]
           },
           {
-            "label": "Performance",
-            "items": [
-              {
-                "label": "garbage_collect",
-                "path": "reference/garbage-collect.md"
-              }
-            ]
-          },
-          {
-            "label": "Configuration",
-            "items": [
-              {
-                "label": "Application Mode configuration",
-                "path": "reference/app-mode/application-mode-config.md"
-              }
-            ]
-          },
-          {
             "label": "Imports",
             "items": [
+              {
+                "label": "Backend Imports",
+                "path": "reference/python/backend-imports.md"
+              },
               {
                 "label": "Auto-imported functions",
                 "items": [
@@ -2732,10 +2736,6 @@
                     "path": "reference/query-language/query-library/auto-imported/data-types.md"
                   }
                 ]
-              },
-              {
-                "label": "Backend Imports",
-                "path": "reference/python/backend-imports.md"
               }
             ]
           }
@@ -2879,10 +2879,6 @@
                   {
                     "label": "How do I dynamically update a DataFrame from a table?",
                     "path": "reference/community-questions/dynamically-update-dataframe.md"
-                  },
-                  {
-                    "label": "How do I get data out of a table?",
-                    "path": "reference/community-questions/how-do-i-get-data-out-of-a-deephaven-table.md"
                   },
                   {
                     "label": "Is it possible to convert one or more columns of a Deephaven table to JSON?",

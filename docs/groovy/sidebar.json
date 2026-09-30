@@ -1070,6 +1070,10 @@
                   {
                     "label": "Application Mode scripts",
                     "path": "how-to-guides/application-mode-script.md"
+                  },
+                  {
+                    "label": "Application Mode configuration",
+                    "path": "reference/app-mode/application-mode-config.md"
                   }
                 ]
               }
@@ -1085,29 +1089,8 @@
             "label": "API documentation",
             "items": [
               {
-                "label": "Pydoc (client)",
-                "href": "https://deephaven.io/core/client-api/python"
-              },
-              {
-                "label": "Pydoc (server)",
-                "href": "https://deephaven.io/core/pydoc"
-              },
-              {
-                "label": "JavaScript API (client/server)",
-                "items": [
-                  {
-                    "label": "JavaScript",
-                    "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
-                  }
-                ]
-              },
-              {
                 "label": "Javadoc (client/server)",
                 "href": "https://deephaven.io/core/javadoc"
-              },
-              {
-                "label": "Godoc",
-                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
               },
               {
                 "label": "C++ (client)",
@@ -1116,6 +1099,22 @@
               {
                 "label": "C++ (examples)",
                 "href": "https://deephaven.io/core/client-api/cpp-examples"
+              },
+              {
+                "label": "Godoc",
+                "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+              },
+              {
+                "label": "JavaScript API (client/server)",
+                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+              },
+              {
+                "label": "Pydoc (client)",
+                "href": "https://deephaven.io/core/client-api/python"
+              },
+              {
+                "label": "Pydoc (server)",
+                "href": "https://deephaven.io/core/pydoc"
               },
               {
                 "label": "R (client)",
@@ -1188,30 +1187,6 @@
                       {
                         "label": "RingTableTools.of",
                         "path": "reference/table-operations/create/ringTable.md"
-                      },
-                      {
-                        "label": "tree",
-                        "path": "reference/table-operations/create/tree.md"
-                      },
-                      {
-                        "label": "rollup",
-                        "path": "reference/table-operations/create/rollup.md"
-                      },
-                      {
-                        "label": "withAttributes",
-                        "path": "reference/table-operations/select/withAttributes.md"
-                      },
-                      {
-                        "label": "withoutAttributes",
-                        "path": "reference/table-operations/create/withoutAttributes.md"
-                      },
-                      {
-                        "label": "withKeys",
-                        "path": "reference/table-operations/select/withKeys.md"
-                      },
-                      {
-                        "label": "withUniqueKeys",
-                        "path": "reference/table-operations/select/withUniqueKeys.md"
                       }
                     ]
                   },
@@ -1313,6 +1288,55 @@
                 ]
               },
               {
+                "label": "Iceberg",
+                "items": [
+                  {
+                    "label": "IcebergCatalogAdapter",
+                    "path": "reference/data-import-export/Iceberg/iceberg-catalog-adapter.md"
+                  },
+                  {
+                    "label": "IcebergTableAdapter",
+                    "path": "reference/data-import-export/Iceberg/iceberg-table-adapter.md"
+                  },
+                  {
+                    "label": "IcebergTable",
+                    "path": "reference/data-import-export/Iceberg/iceberg-table.md"
+                  },
+                  {
+                    "label": "IcebergReadInstructions",
+                    "path": "reference/data-import-export/Iceberg/iceberg-read-instructions.md"
+                  },
+                  {
+                    "label": "IcebergUpdateMode",
+                    "path": "reference/data-import-export/Iceberg/iceberg-update-mode.md"
+                  },
+                  {
+                    "label": "IcebergTableWriter",
+                    "path": "reference/data-import-export/Iceberg/iceberg-table-writer.md"
+                  },
+                  {
+                    "label": "IcebergWriteInstructions",
+                    "path": "reference/data-import-export/Iceberg/iceberg-write-instructions.md"
+                  },
+                  {
+                    "label": "InferenceResolver",
+                    "path": "reference/data-import-export/Iceberg/inference-resolver.md"
+                  },
+                  {
+                    "label": "UnboundResolver",
+                    "path": "reference/data-import-export/Iceberg/unbound-resolver.md"
+                  },
+                  {
+                    "label": "BuildCatalogOptions",
+                    "path": "reference/data-import-export/Iceberg/build-catalog-options.md"
+                  },
+                  {
+                    "label": "LoadTableOptions",
+                    "path": "reference/data-import-export/Iceberg/load-table-options.md"
+                  }
+                ]
+              },
+              {
                 "label": "Kafka",
                 "items": [
                   {
@@ -1360,55 +1384,6 @@
                   {
                     "label": "parseSql",
                     "path": "reference/data-import-export/SQL/parseSql.md"
-                  }
-                ]
-              },
-              {
-                "label": "Iceberg",
-                "items": [
-                  {
-                    "label": "IcebergCatalogAdapter",
-                    "path": "reference/data-import-export/Iceberg/iceberg-catalog-adapter.md"
-                  },
-                  {
-                    "label": "IcebergTableAdapter",
-                    "path": "reference/data-import-export/Iceberg/iceberg-table-adapter.md"
-                  },
-                  {
-                    "label": "IcebergTable",
-                    "path": "reference/data-import-export/Iceberg/iceberg-table.md"
-                  },
-                  {
-                    "label": "IcebergReadInstructions",
-                    "path": "reference/data-import-export/Iceberg/iceberg-read-instructions.md"
-                  },
-                  {
-                    "label": "IcebergUpdateMode",
-                    "path": "reference/data-import-export/Iceberg/iceberg-update-mode.md"
-                  },
-                  {
-                    "label": "IcebergTableWriter",
-                    "path": "reference/data-import-export/Iceberg/iceberg-table-writer.md"
-                  },
-                  {
-                    "label": "IcebergWriteInstructions",
-                    "path": "reference/data-import-export/Iceberg/iceberg-write-instructions.md"
-                  },
-                  {
-                    "label": "InferenceResolver",
-                    "path": "reference/data-import-export/Iceberg/inference-resolver.md"
-                  },
-                  {
-                    "label": "UnboundResolver",
-                    "path": "reference/data-import-export/Iceberg/unbound-resolver.md"
-                  },
-                  {
-                    "label": "BuildCatalogOptions",
-                    "path": "reference/data-import-export/Iceberg/build-catalog-options.md"
-                  },
-                  {
-                    "label": "LoadTableOptions",
-                    "path": "reference/data-import-export/Iceberg/load-table-options.md"
                   }
                 ]
               },
@@ -1483,6 +1458,22 @@
                   {
                     "label": "numColumns",
                     "path": "reference/table-operations/metadata/numColumns.md"
+                  },
+                  {
+                    "label": "withAttributes",
+                    "path": "reference/table-operations/select/withAttributes.md"
+                  },
+                  {
+                    "label": "withKeys",
+                    "path": "reference/table-operations/select/withKeys.md"
+                  },
+                  {
+                    "label": "withoutAttributes",
+                    "path": "reference/table-operations/create/withoutAttributes.md"
+                  },
+                  {
+                    "label": "withUniqueKeys",
+                    "path": "reference/table-operations/select/withUniqueKeys.md"
                   }
                 ]
               },
@@ -1571,12 +1562,16 @@
                     "path": "reference/table-operations/filter/tail.md"
                   },
                   {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
+                  },
+                  {
                     "label": "tailPct",
                     "path": "reference/table-operations/filter/tail-pct.md"
                   },
                   {
-                    "label": "TailInitializationFilter",
-                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
+                    "label": "TimeSeriesFilter",
+                    "path": "reference/time/time-series-filter.md"
                   },
                   {
                     "label": "where",
@@ -1885,31 +1880,24 @@
                 ]
               },
               {
+                "label": "Hierarchical tables",
+                "items": [
+                  {
+                    "label": "rollup",
+                    "path": "reference/table-operations/create/rollup.md"
+                  },
+                  {
+                    "label": "tree",
+                    "path": "reference/table-operations/create/tree.md"
+                  }
+                ]
+              },
+              {
                 "label": "Update By",
                 "items": [
                   {
                     "label": "updateBy",
                     "path": "reference/table-operations/update-by-operations/updateBy.md"
-                  },
-                  {
-                    "label": "CumMax",
-                    "path": "reference/table-operations/update-by-operations/cum-max.md"
-                  },
-                  {
-                    "label": "CumMin",
-                    "path": "reference/table-operations/update-by-operations/cum-min.md"
-                  },
-                  {
-                    "label": "CumProd",
-                    "path": "reference/table-operations/update-by-operations/cum-prod.md"
-                  },
-                  {
-                    "label": "CumSum",
-                    "path": "reference/table-operations/update-by-operations/cum-sum.md"
-                  },
-                  {
-                    "label": "CumCountWhere",
-                    "path": "reference/table-operations/update-by-operations/cum-count-where.md"
                   },
                   {
                     "label": "Delta",
@@ -1920,26 +1908,6 @@
                     "path": "reference/table-operations/update-by-operations/DeltaControl.md"
                   },
                   {
-                    "label": "Ema",
-                    "path": "reference/table-operations/update-by-operations/ema.md"
-                  },
-                  {
-                    "label": "EmMax",
-                    "path": "reference/table-operations/update-by-operations/em-max.md"
-                  },
-                  {
-                    "label": "EmMin",
-                    "path": "reference/table-operations/update-by-operations/em-min.md"
-                  },
-                  {
-                    "label": "Ems",
-                    "path": "reference/table-operations/update-by-operations/ems.md"
-                  },
-                  {
-                    "label": "EmStd",
-                    "path": "reference/table-operations/update-by-operations/em-std.md"
-                  },
-                  {
                     "label": "Fill",
                     "path": "reference/table-operations/update-by-operations/fill.md"
                   },
@@ -1948,48 +1916,103 @@
                     "path": "reference/table-operations/update-by-operations/OperationControl.md"
                   },
                   {
-                    "label": "RollingAvg",
-                    "path": "reference/table-operations/update-by-operations/rolling-avg.md"
+                    "label": "Cumulative",
+                    "items": [
+                      {
+                        "label": "CumCountWhere",
+                        "path": "reference/table-operations/update-by-operations/cum-count-where.md"
+                      },
+                      {
+                        "label": "CumMax",
+                        "path": "reference/table-operations/update-by-operations/cum-max.md"
+                      },
+                      {
+                        "label": "CumMin",
+                        "path": "reference/table-operations/update-by-operations/cum-min.md"
+                      },
+                      {
+                        "label": "CumProd",
+                        "path": "reference/table-operations/update-by-operations/cum-prod.md"
+                      },
+                      {
+                        "label": "CumSum",
+                        "path": "reference/table-operations/update-by-operations/cum-sum.md"
+                      }
+                    ]
                   },
                   {
-                    "label": "RollingCount",
-                    "path": "reference/table-operations/update-by-operations/rolling-count.md"
+                    "label": "Exponential moving",
+                    "items": [
+                      {
+                        "label": "Ema",
+                        "path": "reference/table-operations/update-by-operations/ema.md"
+                      },
+                      {
+                        "label": "EmMax",
+                        "path": "reference/table-operations/update-by-operations/em-max.md"
+                      },
+                      {
+                        "label": "EmMin",
+                        "path": "reference/table-operations/update-by-operations/em-min.md"
+                      },
+                      {
+                        "label": "Ems",
+                        "path": "reference/table-operations/update-by-operations/ems.md"
+                      },
+                      {
+                        "label": "EmStd",
+                        "path": "reference/table-operations/update-by-operations/em-std.md"
+                      }
+                    ]
                   },
                   {
-                    "label": "RollingCountWhere",
-                    "path": "reference/table-operations/update-by-operations/rolling-count-where.md"
-                  },
-                  {
-                    "label": "RollingFormula",
-                    "path": "reference/table-operations/update-by-operations/rolling-formula.md"
-                  },
-                  {
-                    "label": "RollingGroup",
-                    "path": "reference/table-operations/update-by-operations/rolling-group.md"
-                  },
-                  {
-                    "label": "RollingMax",
-                    "path": "reference/table-operations/update-by-operations/rolling-max.md"
-                  },
-                  {
-                    "label": "RollingMin",
-                    "path": "reference/table-operations/update-by-operations/rolling-min.md"
-                  },
-                  {
-                    "label": "RollingProduct",
-                    "path": "reference/table-operations/update-by-operations/rolling-product.md"
-                  },
-                  {
-                    "label": "RollingStd",
-                    "path": "reference/table-operations/update-by-operations/rolling-std.md"
-                  },
-                  {
-                    "label": "RollingSum",
-                    "path": "reference/table-operations/update-by-operations/rolling-sum.md"
-                  },
-                  {
-                    "label": "RollingWAvg",
-                    "path": "reference/table-operations/update-by-operations/rolling-wavg.md"
+                    "label": "Rolling",
+                    "items": [
+                      {
+                        "label": "RollingAvg",
+                        "path": "reference/table-operations/update-by-operations/rolling-avg.md"
+                      },
+                      {
+                        "label": "RollingCount",
+                        "path": "reference/table-operations/update-by-operations/rolling-count.md"
+                      },
+                      {
+                        "label": "RollingCountWhere",
+                        "path": "reference/table-operations/update-by-operations/rolling-count-where.md"
+                      },
+                      {
+                        "label": "RollingFormula",
+                        "path": "reference/table-operations/update-by-operations/rolling-formula.md"
+                      },
+                      {
+                        "label": "RollingGroup",
+                        "path": "reference/table-operations/update-by-operations/rolling-group.md"
+                      },
+                      {
+                        "label": "RollingMax",
+                        "path": "reference/table-operations/update-by-operations/rolling-max.md"
+                      },
+                      {
+                        "label": "RollingMin",
+                        "path": "reference/table-operations/update-by-operations/rolling-min.md"
+                      },
+                      {
+                        "label": "RollingProduct",
+                        "path": "reference/table-operations/update-by-operations/rolling-product.md"
+                      },
+                      {
+                        "label": "RollingStd",
+                        "path": "reference/table-operations/update-by-operations/rolling-std.md"
+                      },
+                      {
+                        "label": "RollingSum",
+                        "path": "reference/table-operations/update-by-operations/rolling-sum.md"
+                      },
+                      {
+                        "label": "RollingWAvg",
+                        "path": "reference/table-operations/update-by-operations/rolling-wavg.md"
+                      }
+                    ]
                   }
                 ]
               },
@@ -2104,10 +2127,6 @@
                   {
                     "label": "transform",
                     "path": "reference/table-operations/partitioned-tables/transform.md"
-                  },
-                  {
-                    "label": "Partitioned table transform",
-                    "path": "reference/table-operations/group-and-aggregate/transform.md"
                   }
                 ]
               },
@@ -2132,244 +2151,8 @@
                     "path": "reference/time/add-time-window.md"
                   },
                   {
-                    "label": "Date-time",
+                    "label": "Current time and clock",
                     "items": [
-                      {
-                        "label": "atMidnight",
-                        "path": "reference/time/datetime/atMidnight.md"
-                      },
-                      {
-                        "label": "currentClock",
-                        "path": "reference/time/datetime/currentClock.md"
-                      },
-                      {
-                        "label": "dayOfMonth",
-                        "path": "reference/time/datetime/dayOfMonth.md"
-                      },
-                      {
-                        "label": "dayOfWeek",
-                        "path": "reference/time/datetime/dayOfWeek.md"
-                      },
-                      {
-                        "label": "dayOfYear",
-                        "path": "reference/time/datetime/dayOfYear.md"
-                      },
-                      {
-                        "label": "diffDays",
-                        "path": "reference/time/datetime/diffDays.md"
-                      },
-                      {
-                        "label": "diffMicros",
-                        "path": "reference/time/datetime/diffMicros.md"
-                      },
-                      {
-                        "label": "diffMillis",
-                        "path": "reference/time/datetime/diffMillis.md"
-                      },
-                      {
-                        "label": "diffMinutes",
-                        "path": "reference/time/datetime/diffMinutes.md"
-                      },
-                      {
-                        "label": "diffNanos",
-                        "path": "reference/time/datetime/diffNanos.md"
-                      },
-                      {
-                        "label": "diffSeconds",
-                        "path": "reference/time/datetime/diffSeconds.md"
-                      },
-                      {
-                        "label": "diffYears365",
-                        "path": "reference/time/datetime/diffYears365.md"
-                      },
-                      {
-                        "label": "diffYearsAvg",
-                        "path": "reference/time/datetime/diffYearsAvg.md"
-                      },
-                      {
-                        "label": "epochAutoToEpochNanos",
-                        "path": "reference/time/datetime/epochAutoToEpochNanos.md"
-                      },
-                      {
-                        "label": "epochAutoToInstant",
-                        "path": "reference/time/datetime/epochAutoToInstant.md"
-                      },
-                      {
-                        "label": "epochAutoToZonedDateTime",
-                        "path": "reference/time/datetime/epochAutoToZonedDateTime.md"
-                      },
-                      {
-                        "label": "epochMicros",
-                        "path": "reference/time/datetime/epochMicros.md"
-                      },
-                      {
-                        "label": "epochMicrosToInstant",
-                        "path": "reference/time/datetime/epochMicrosToInstant.md"
-                      },
-                      {
-                        "label": "epochMicrosToZonedDateTime",
-                        "path": "reference/time/datetime/epochMicrosToZonedDateTime.md"
-                      },
-                      {
-                        "label": "epochMillis",
-                        "path": "reference/time/datetime/epochMillis.md"
-                      },
-                      {
-                        "label": "epochMillisToInstant",
-                        "path": "reference/time/datetime/epochMillisToInstant.md"
-                      },
-                      {
-                        "label": "epochMillisToZonedDateTime",
-                        "path": "reference/time/datetime/epochMillisToZonedDateTime.md"
-                      },
-                      {
-                        "label": "epochNanos",
-                        "path": "reference/time/datetime/epochNanos.md"
-                      },
-                      {
-                        "label": "epochNanosToInstant",
-                        "path": "reference/time/datetime/epochNanosToInstant.md"
-                      },
-                      {
-                        "label": "epochNanosToZonedDateTime",
-                        "path": "reference/time/datetime/epochNanosToZonedDateTime.md"
-                      },
-                      {
-                        "label": "epochSeconds",
-                        "path": "reference/time/datetime/epochSeconds.md"
-                      },
-                      {
-                        "label": "epochSecondsToInstant",
-                        "path": "reference/time/datetime/epochSecondsToInstant.md"
-                      },
-                      {
-                        "label": "epochSecondsToZonedDateTime",
-                        "path": "reference/time/datetime/epochSecondsToZonedDateTime.md"
-                      },
-                      {
-                        "label": "excelToInstant",
-                        "path": "reference/time/datetime/excelToInstant.md"
-                      },
-                      {
-                        "label": "excelToZonedDateTime",
-                        "path": "reference/time/datetime/excelToZonedDateTime.md"
-                      },
-                      {
-                        "label": "formatDate",
-                        "path": "reference/time/datetime/formatDate.md"
-                      },
-                      {
-                        "label": "formatDateTime",
-                        "path": "reference/time/datetime/formatDateTime.md"
-                      },
-                      {
-                        "label": "formatDurationNanos",
-                        "path": "reference/time/datetime/formatDurationNanos.md"
-                      },
-                      {
-                        "label": "hourOfDay",
-                        "path": "reference/time/datetime/hourOfDay.md"
-                      },
-                      {
-                        "label": "isAfter",
-                        "path": "reference/time/datetime/isAfter.md"
-                      },
-                      {
-                        "label": "isAfterOrEqual",
-                        "path": "reference/time/datetime/isAfterOrEqual.md"
-                      },
-                      {
-                        "label": "isBefore",
-                        "path": "reference/time/datetime/isBefore.md"
-                      },
-                      {
-                        "label": "isBeforeOrEqual",
-                        "path": "reference/time/datetime/isBeforeOrEqual.md"
-                      },
-                      {
-                        "label": "lowerBin",
-                        "path": "reference/time/datetime/lowerBin.md"
-                      },
-                      {
-                        "label": "microsOfMilli",
-                        "path": "reference/time/datetime/microsOfMilli.md"
-                      },
-                      {
-                        "label": "microsOfSecond",
-                        "path": "reference/time/datetime/microsOfSecond.md"
-                      },
-                      {
-                        "label": "microsToMillis",
-                        "path": "reference/time/datetime/microsToMillis.md"
-                      },
-                      {
-                        "label": "microsToNanos",
-                        "path": "reference/time/datetime/microsToNanos.md"
-                      },
-                      {
-                        "label": "microsToSeconds",
-                        "path": "reference/time/datetime/microsToSeconds.md"
-                      },
-                      {
-                        "label": "millisOfDay",
-                        "path": "reference/time/datetime/millisOfDay.md"
-                      },
-                      {
-                        "label": "millisOfSecond",
-                        "path": "reference/time/datetime/millisOfSecond.md"
-                      },
-                      {
-                        "label": "millisToMicros",
-                        "path": "reference/time/datetime/millisToMicros.md"
-                      },
-                      {
-                        "label": "millisToNanos",
-                        "path": "reference/time/datetime/millisToNanos.md"
-                      },
-                      {
-                        "label": "millisToSeconds",
-                        "path": "reference/time/datetime/millisToSeconds.md"
-                      },
-                      {
-                        "label": "minus",
-                        "path": "reference/time/datetime/minus.md"
-                      },
-                      {
-                        "label": "minuteOfDay",
-                        "path": "reference/time/datetime/minuteOfDay.md"
-                      },
-                      {
-                        "label": "minuteOfHour",
-                        "path": "reference/time/datetime/minuteOfHour.md"
-                      },
-                      {
-                        "label": "monthOfYear",
-                        "path": "reference/time/datetime/monthOfYear.md"
-                      },
-                      {
-                        "label": "nanosOfDay",
-                        "path": "reference/time/datetime/nanosOfDay.md"
-                      },
-                      {
-                        "label": "nanosOfMilli",
-                        "path": "reference/time/datetime/nanosOfMilli.md"
-                      },
-                      {
-                        "label": "nanosOfSecond",
-                        "path": "reference/time/datetime/nanosOfSecond.md"
-                      },
-                      {
-                        "label": "nanosToMicros",
-                        "path": "reference/time/datetime/nanosToMicros.md"
-                      },
-                      {
-                        "label": "nanosToMillis",
-                        "path": "reference/time/datetime/nanosToMillis.md"
-                      },
-                      {
-                        "label": "nanosToSeconds",
-                        "path": "reference/time/datetime/nanosToSeconds.md"
-                      },
                       {
                         "label": "now",
                         "path": "reference/time/datetime/now.md"
@@ -2386,6 +2169,43 @@
                         "label": "nowSystemMillisResolution",
                         "path": "reference/time/datetime/nowSystemMillisResolution.md"
                       },
+                      {
+                        "label": "today",
+                        "path": "reference/time/datetime/today.md"
+                      },
+                      {
+                        "label": "currentClock",
+                        "path": "reference/time/datetime/currentClock.md"
+                      },
+                      {
+                        "label": "setClock",
+                        "path": "reference/time/datetime/setClock.md"
+                      },
+                      {
+                        "label": "currentTimeMicros",
+                        "path": "reference/time/clock/currentTimeMicros.md"
+                      },
+                      {
+                        "label": "currentTimeMillis",
+                        "path": "reference/time/clock/currentTimeMillis.md"
+                      },
+                      {
+                        "label": "currentTimeNanos",
+                        "path": "reference/time/clock/currentTimeNanos.md"
+                      },
+                      {
+                        "label": "instantMillis",
+                        "path": "reference/time/clock/instantMillis.md"
+                      },
+                      {
+                        "label": "instantNanos",
+                        "path": "reference/time/clock/instantNanos.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Parse",
+                    "items": [
                       {
                         "label": "parseDuration",
                         "path": "reference/time/datetime/parseDuration.md"
@@ -2465,54 +2285,79 @@
                       {
                         "label": "parseZonedDateTimeQuiet",
                         "path": "reference/time/datetime/parseZonedDateTimeQuiet.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Convert date-time types",
+                    "items": [
+                      {
+                        "label": "epochAutoToEpochNanos",
+                        "path": "reference/time/datetime/epochAutoToEpochNanos.md"
                       },
                       {
-                        "label": "plus",
-                        "path": "reference/time/datetime/plus.md"
+                        "label": "epochAutoToInstant",
+                        "path": "reference/time/datetime/epochAutoToInstant.md"
                       },
                       {
-                        "label": "secondOfDay",
-                        "path": "reference/time/datetime/secondOfDay.md"
+                        "label": "epochAutoToZonedDateTime",
+                        "path": "reference/time/datetime/epochAutoToZonedDateTime.md"
                       },
                       {
-                        "label": "secondOfMinute",
-                        "path": "reference/time/datetime/secondOfMinute.md"
+                        "label": "epochMicros",
+                        "path": "reference/time/datetime/epochMicros.md"
                       },
                       {
-                        "label": "secondsToMicros",
-                        "path": "reference/time/datetime/secondsToMicros.md"
+                        "label": "epochMicrosToInstant",
+                        "path": "reference/time/datetime/epochMicrosToInstant.md"
                       },
                       {
-                        "label": "secondsToMillis",
-                        "path": "reference/time/datetime/secondsToMillis.md"
+                        "label": "epochMicrosToZonedDateTime",
+                        "path": "reference/time/datetime/epochMicrosToZonedDateTime.md"
                       },
                       {
-                        "label": "secondsToNanos",
-                        "path": "reference/time/datetime/secondsToNanos.md"
+                        "label": "epochMillis",
+                        "path": "reference/time/datetime/epochMillis.md"
                       },
                       {
-                        "label": "setClock",
-                        "path": "reference/time/datetime/setClock.md"
+                        "label": "epochMillisToInstant",
+                        "path": "reference/time/datetime/epochMillisToInstant.md"
                       },
                       {
-                        "label": "TimeSeriesFilter",
-                        "path": "reference/time/time-series-filter.md"
+                        "label": "epochMillisToZonedDateTime",
+                        "path": "reference/time/datetime/epochMillisToZonedDateTime.md"
                       },
                       {
-                        "label": "timeZone",
-                        "path": "reference/time/datetime/timeZone.md"
+                        "label": "epochNanos",
+                        "path": "reference/time/datetime/epochNanos.md"
                       },
                       {
-                        "label": "timeZoneAliasAdd",
-                        "path": "reference/time/datetime/timeZoneAliasAdd.md"
+                        "label": "epochNanosToInstant",
+                        "path": "reference/time/datetime/epochNanosToInstant.md"
                       },
                       {
-                        "label": "timeZoneAliasRm",
-                        "path": "reference/time/datetime/timeZoneAliasRm.md"
+                        "label": "epochNanosToZonedDateTime",
+                        "path": "reference/time/datetime/epochNanosToZonedDateTime.md"
                       },
                       {
-                        "label": "today",
-                        "path": "reference/time/datetime/today.md"
+                        "label": "epochSeconds",
+                        "path": "reference/time/datetime/epochSeconds.md"
+                      },
+                      {
+                        "label": "epochSecondsToInstant",
+                        "path": "reference/time/datetime/epochSecondsToInstant.md"
+                      },
+                      {
+                        "label": "epochSecondsToZonedDateTime",
+                        "path": "reference/time/datetime/epochSecondsToZonedDateTime.md"
+                      },
+                      {
+                        "label": "excelToInstant",
+                        "path": "reference/time/datetime/excelToInstant.md"
+                      },
+                      {
+                        "label": "excelToZonedDateTime",
+                        "path": "reference/time/datetime/excelToZonedDateTime.md"
                       },
                       {
                         "label": "toExcelTime",
@@ -2533,10 +2378,201 @@
                       {
                         "label": "toZonedDateTime",
                         "path": "reference/time/datetime/toZonedDateTime.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Convert time units",
+                    "items": [
+                      {
+                        "label": "microsToMillis",
+                        "path": "reference/time/datetime/microsToMillis.md"
+                      },
+                      {
+                        "label": "microsToNanos",
+                        "path": "reference/time/datetime/microsToNanos.md"
+                      },
+                      {
+                        "label": "microsToSeconds",
+                        "path": "reference/time/datetime/microsToSeconds.md"
+                      },
+                      {
+                        "label": "millisToMicros",
+                        "path": "reference/time/datetime/millisToMicros.md"
+                      },
+                      {
+                        "label": "millisToNanos",
+                        "path": "reference/time/datetime/millisToNanos.md"
+                      },
+                      {
+                        "label": "millisToSeconds",
+                        "path": "reference/time/datetime/millisToSeconds.md"
+                      },
+                      {
+                        "label": "nanosToMicros",
+                        "path": "reference/time/datetime/nanosToMicros.md"
+                      },
+                      {
+                        "label": "nanosToMillis",
+                        "path": "reference/time/datetime/nanosToMillis.md"
+                      },
+                      {
+                        "label": "nanosToSeconds",
+                        "path": "reference/time/datetime/nanosToSeconds.md"
+                      },
+                      {
+                        "label": "secondsToMicros",
+                        "path": "reference/time/datetime/secondsToMicros.md"
+                      },
+                      {
+                        "label": "secondsToMillis",
+                        "path": "reference/time/datetime/secondsToMillis.md"
+                      },
+                      {
+                        "label": "secondsToNanos",
+                        "path": "reference/time/datetime/secondsToNanos.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Arithmetic and comparison",
+                    "items": [
+                      {
+                        "label": "atMidnight",
+                        "path": "reference/time/datetime/atMidnight.md"
+                      },
+                      {
+                        "label": "diffDays",
+                        "path": "reference/time/datetime/diffDays.md"
+                      },
+                      {
+                        "label": "diffMicros",
+                        "path": "reference/time/datetime/diffMicros.md"
+                      },
+                      {
+                        "label": "diffMillis",
+                        "path": "reference/time/datetime/diffMillis.md"
+                      },
+                      {
+                        "label": "diffMinutes",
+                        "path": "reference/time/datetime/diffMinutes.md"
+                      },
+                      {
+                        "label": "diffNanos",
+                        "path": "reference/time/datetime/diffNanos.md"
+                      },
+                      {
+                        "label": "diffSeconds",
+                        "path": "reference/time/datetime/diffSeconds.md"
+                      },
+                      {
+                        "label": "diffYears365",
+                        "path": "reference/time/datetime/diffYears365.md"
+                      },
+                      {
+                        "label": "diffYearsAvg",
+                        "path": "reference/time/datetime/diffYearsAvg.md"
+                      },
+                      {
+                        "label": "isAfter",
+                        "path": "reference/time/datetime/isAfter.md"
+                      },
+                      {
+                        "label": "isAfterOrEqual",
+                        "path": "reference/time/datetime/isAfterOrEqual.md"
+                      },
+                      {
+                        "label": "isBefore",
+                        "path": "reference/time/datetime/isBefore.md"
+                      },
+                      {
+                        "label": "isBeforeOrEqual",
+                        "path": "reference/time/datetime/isBeforeOrEqual.md"
+                      },
+                      {
+                        "label": "lowerBin",
+                        "path": "reference/time/datetime/lowerBin.md"
+                      },
+                      {
+                        "label": "minus",
+                        "path": "reference/time/datetime/minus.md"
+                      },
+                      {
+                        "label": "plus",
+                        "path": "reference/time/datetime/plus.md"
                       },
                       {
                         "label": "upperBin",
                         "path": "reference/time/datetime/upperBin.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Extract parts",
+                    "items": [
+                      {
+                        "label": "dayOfMonth",
+                        "path": "reference/time/datetime/dayOfMonth.md"
+                      },
+                      {
+                        "label": "dayOfWeek",
+                        "path": "reference/time/datetime/dayOfWeek.md"
+                      },
+                      {
+                        "label": "dayOfYear",
+                        "path": "reference/time/datetime/dayOfYear.md"
+                      },
+                      {
+                        "label": "hourOfDay",
+                        "path": "reference/time/datetime/hourOfDay.md"
+                      },
+                      {
+                        "label": "microsOfMilli",
+                        "path": "reference/time/datetime/microsOfMilli.md"
+                      },
+                      {
+                        "label": "microsOfSecond",
+                        "path": "reference/time/datetime/microsOfSecond.md"
+                      },
+                      {
+                        "label": "millisOfDay",
+                        "path": "reference/time/datetime/millisOfDay.md"
+                      },
+                      {
+                        "label": "millisOfSecond",
+                        "path": "reference/time/datetime/millisOfSecond.md"
+                      },
+                      {
+                        "label": "minuteOfDay",
+                        "path": "reference/time/datetime/minuteOfDay.md"
+                      },
+                      {
+                        "label": "minuteOfHour",
+                        "path": "reference/time/datetime/minuteOfHour.md"
+                      },
+                      {
+                        "label": "monthOfYear",
+                        "path": "reference/time/datetime/monthOfYear.md"
+                      },
+                      {
+                        "label": "nanosOfDay",
+                        "path": "reference/time/datetime/nanosOfDay.md"
+                      },
+                      {
+                        "label": "nanosOfMilli",
+                        "path": "reference/time/datetime/nanosOfMilli.md"
+                      },
+                      {
+                        "label": "nanosOfSecond",
+                        "path": "reference/time/datetime/nanosOfSecond.md"
+                      },
+                      {
+                        "label": "secondOfDay",
+                        "path": "reference/time/datetime/secondOfDay.md"
+                      },
+                      {
+                        "label": "secondOfMinute",
+                        "path": "reference/time/datetime/secondOfMinute.md"
                       },
                       {
                         "label": "year",
@@ -2545,26 +2581,40 @@
                       {
                         "label": "yearOfCentury",
                         "path": "reference/time/datetime/yearOfCentury.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Format",
+                    "items": [
+                      {
+                        "label": "formatDate",
+                        "path": "reference/time/datetime/formatDate.md"
                       },
                       {
-                        "label": "currentTimeMicros",
-                        "path": "reference/time/clock/currentTimeMicros.md"
+                        "label": "formatDateTime",
+                        "path": "reference/time/datetime/formatDateTime.md"
                       },
                       {
-                        "label": "currentTimeMillis",
-                        "path": "reference/time/clock/currentTimeMillis.md"
+                        "label": "formatDurationNanos",
+                        "path": "reference/time/datetime/formatDurationNanos.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Time zones",
+                    "items": [
+                      {
+                        "label": "timeZone",
+                        "path": "reference/time/datetime/timeZone.md"
                       },
                       {
-                        "label": "currentTimeNanos",
-                        "path": "reference/time/clock/currentTimeNanos.md"
+                        "label": "timeZoneAliasAdd",
+                        "path": "reference/time/datetime/timeZoneAliasAdd.md"
                       },
                       {
-                        "label": "instantMillis",
-                        "path": "reference/time/clock/instantMillis.md"
-                      },
-                      {
-                        "label": "instantNanos",
-                        "path": "reference/time/clock/instantNanos.md"
+                        "label": "timeZoneAliasRm",
+                        "path": "reference/time/datetime/timeZoneAliasRm.md"
                       }
                     ]
                   }
@@ -2576,36 +2626,35 @@
             "label": "Query strings",
             "items": [
               {
-                "label": "Filters",
+                "label": "Query language functions",
+                "path": "reference/query-language/query-library/query-language-function-reference.md"
+              },
+              {
+                "label": "Match filters",
                 "items": [
                   {
-                    "label": "Match filters",
-                    "items": [
-                      {
-                        "label": "equals",
-                        "path": "reference/query-language/match-filters/equals.md"
-                      },
-                      {
-                        "label": "not equals",
-                        "path": "reference/query-language/match-filters/not-equals.md"
-                      },
-                      {
-                        "label": "icase in",
-                        "path": "reference/query-language/match-filters/icase-in.md"
-                      },
-                      {
-                        "label": "icase not in",
-                        "path": "reference/query-language/match-filters/icase-not-in.md"
-                      },
-                      {
-                        "label": "in",
-                        "path": "reference/query-language/match-filters/in.md"
-                      },
-                      {
-                        "label": "not in",
-                        "path": "reference/query-language/match-filters/not-in.md"
-                      }
-                    ]
+                    "label": "equals",
+                    "path": "reference/query-language/match-filters/equals.md"
+                  },
+                  {
+                    "label": "not equals",
+                    "path": "reference/query-language/match-filters/not-equals.md"
+                  },
+                  {
+                    "label": "icase in",
+                    "path": "reference/query-language/match-filters/icase-in.md"
+                  },
+                  {
+                    "label": "icase not in",
+                    "path": "reference/query-language/match-filters/icase-not-in.md"
+                  },
+                  {
+                    "label": "in",
+                    "path": "reference/query-language/match-filters/in.md"
+                  },
+                  {
+                    "label": "not in",
+                    "path": "reference/query-language/match-filters/not-in.md"
                   }
                 ]
               },
@@ -2670,10 +2719,6 @@
                     "path": "reference/query-language/types/strings.md"
                   }
                 ]
-              },
-              {
-                "label": "Query language functions",
-                "path": "reference/query-language/query-library/query-language-function-reference.md"
               }
             ]
           },
@@ -2727,17 +2772,16 @@
             ]
           },
           {
-            "label": "Configuration",
-            "items": [
-              {
-                "label": "Application Mode configuration",
-                "path": "reference/app-mode/application-mode-config.md"
-              }
-            ]
-          },
-          {
             "label": "Imports",
             "items": [
+              {
+                "label": "Automatic Groovy Imports",
+                "path": "reference/groovy/groovy-auto-imports.md"
+              },
+              {
+                "label": "Backend Imports",
+                "path": "reference/groovy/backend-imports.md"
+              },
               {
                 "label": "Auto-imported functions",
                 "items": [
@@ -2790,14 +2834,6 @@
                     "path": "reference/query-language/query-library/auto-imported/data-types.md"
                   }
                 ]
-              },
-              {
-                "label": "Automatic Groovy Imports",
-                "path": "reference/groovy/groovy-auto-imports.md"
-              },
-              {
-                "label": "Backend Imports",
-                "path": "reference/groovy/backend-imports.md"
               }
             ]
           }

@@ -20,6 +20,7 @@ import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.util.compare.ByteComparisons;
 
 public class ByteReverseSsaChecker implements SsaChecker {
     static ByteReverseSsaChecker INSTANCE = new ByteReverseSsaChecker();
@@ -79,7 +80,7 @@ public class ByteReverseSsaChecker implements SsaChecker {
 
     private static boolean eq(byte lhs, byte rhs) {
         // region equality function
-        return lhs == rhs;
+        return ByteComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }
