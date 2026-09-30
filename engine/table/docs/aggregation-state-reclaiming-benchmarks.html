@@ -141,26 +141,26 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule);
   <header class="top">
     <div class="eyebrow">deephaven-core #8631 · DH-23798</div>
     <h1>Aggregation state reclaiming: JMH results</h1>
-    <p class="lede">Incremental keyed aggregations now remove groups that empty from their hash table and release the storage of fully empty 2048-position blocks; an optional collapse also packs sparse blocks together. These results compare upstream main with the PR in each mode, so you can see where reclaiming saves time, memory and cycle latency, and what it costs when groups return.</p>
+    <p class="lede">Incremental keyed aggregations now remove groups that empty from their hash table and release the storage of fully empty 2048-position blocks; an optional collapse also packs sparse blocks together. These results compare a baseline with the PR in each mode, so you can see where reclaiming saves time, memory and cycle latency, and what it costs when groups return.</p>
   </header>
 
   <dl class="spec">
     <div><dt>Measured</dt><dd><code>AggregationIncrementalBenchmark</code>: batches of 900 update cycles of a keyed <code>sumBy</code>. 1M rows with 10k added and removed per cycle, and 10M rows with 100k per cycle (48 GB heap).</dd></div>
     <div><dt>Method</dt><dd>Two JVM forks, each with three warmup and five measured batches. Time is JMH's score; error bars are JMH's 99.9% intervals over the ten measured batches.</dd></div>
     <div><dt>Machine</dt><dd>Intel i9-14900KS (hybrid P/E cores) in an LXC container, 24 logical CPUs online, 128 GB, performance governor, turbo boost enabled, otherwise idle.</dd></div>
-    <div><dt>Commits</dt><dd>Main at <code id="mainCommit"></code>; the PR at <code id="prCommit"></code>.</dd></div>
+    <div><dt>Commits</dt><dd>The baseline at main <code id="mainCommit"></code> with #8713 and #8698; the PR at <code id="prCommit"></code> with #8698.</dd></div>
   </dl>
 
   <div class="intro">
     <div class="stack">
       <h3>Configurations</h3>
       <ul class="cfgs">
-        <li><i class="sw s0"></i><span><b>Main</b>: upstream main, which predates reclaiming. The baseline; every percentage is relative to it.</span></li>
-        <li><i class="sw s1"></i><span><b><code>none</code></b>: the PR without reclaiming, which isolates its other improvements to the update cycle and the adaptive recyclers of #8698.</span></li>
+        <li><i class="sw s0"></i><span><b>Baseline</b>: upstream main, which predates reclaiming, with #8698 and #8713 added. Every percentage is relative to it.</span></li>
+        <li><i class="sw s1"></i><span><b><code>none</code></b>: the PR without reclaiming, which isolates its other improvements to the update cycle.</span></li>
         <li><i class="sw s2"></i><span><b>Blocks</b>: <code>releaseBlocks(1)</code>, the default. Releases empty blocks and never moves a state.</span></li>
         <li><i class="sw s3"></i><span><b>Collapse 0.75</b>: <code>releaseBlocks(0.75)</code>, which also collapses runs of sparse blocks.</span></li>
         <li><i class="sw s4"></i><span><b>Collapse 0.5</b>: <code>releaseBlocks(0.5)</code>.</span></li>
-        <li><i class="sw s5"></i><span><b>Main again</b>: main rerun after every other configuration, to show drift over the run.</span></li>
+        <li><i class="sw s5"></i><span><b>Baseline again</b>: the baseline rerun after every other configuration, to show drift over the run.</span></li>
       </ul>
     </div>
     <div class="stack">
@@ -177,20 +177,20 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule);
 
   <div class="stack" style="padding-block: 20px;">
     <p class="note drift" id="driftNote"></p>
-    <p class="note">The PR was measured with the adaptive <code>SoftRecycler</code> of <a href="https://github.com/deephaven/deephaven-core/pull/8698">#8698</a> cherry-picked onto it. Main does not include #8698, so the PR's columns combine both changes; its <code>none</code> column shows what #8698 alone does for random churn.</p>
+    <p class="note">Two changes outside reclaiming speed up every aggregation: the adaptive <code>SoftRecycler</code> of <a href="https://github.com/deephaven/deephaven-core/pull/8698">#8698</a>, and not recording previous values for blocks allocated during an update cycle, from <a href="https://github.com/deephaven/deephaven-core/pull/8713">#8713</a>. Both builds have both: the baseline is main with the two cherry-picked, and the PR, which contains the change of #8713 and merges the same main, has #8698 cherry-picked. The columns therefore differ only by the PR's own work.</p>
   </div>
 
   <section class="findings stack" id="findings">
     <h2>Findings</h2>
     <ul>
-      <li>This branch without reclaiming (<code>none</code>) is 20% faster than main for random churn with one row per group when groups do not return, and 11% faster when they do; at ten million rows, 32% and 31%. Most of that comes from the adaptive recyclers of #8698, which main lacks: main's fixed recycler capacity turns away previous-value blocks that random churn needs again every cycle. Elsewhere it is within the error.</li>
-      <li>When groups do not return, every reclaiming mode is faster than main for the sliding window, by 32% to 34%, and retains about a quarter of its heap; at ten million rows, 26% to 27% faster with a sixth of the heap. For random churn, releasing blocks alone is 26% faster and retains a third less heap; collapsing is 21% to 23% faster and retains a third of the heap. At ten million rows, releasing blocks alone is 38% faster and collapsing 34% to 36%, and add only is 9% to 10% faster with reclaiming.</li>
-      <li>When groups return, the sliding window is slower with reclaiming, since returning groups are new states rather than reused ones: 12% releasing blocks alone, just inside the error, and 18% to 20% collapsing, and at ten million rows 10% to 12%. Random churn with returning groups is 13% slower releasing blocks alone and 17% to 20% slower collapsing at one million rows, but at ten million rows every reclaiming mode is 8% to 10% faster than main. Releasing blocks alone retains twice the heap of main there, and collapsing 3% to 15% less (at ten million rows, 2% more to 15% less).</li>
-      <li>For random churn at ten million rows, releasing blocks alone is 4% to 6% faster than collapsing when groups do not return, and within 2% of it when they do; at one million rows the modes are within 7% of each other. Collapsing retains far less heap.</li>
-      <li>Without the recycler changes (the branch at fb15638b78, with main's fixed recycler capacity), random churn with returning groups was 42% slower than main releasing blocks alone at one million rows and 23% slower at ten million.</li>
-      <li>No mode gives output positions back, so every reclaiming mode assigns the same positions: with one row per group, 10 million when groups do not return, and 8.71 to 10 million when they do, where main reuses 2 million; with 100 rows per group, 100,000, or 20,000 for random churn with returning groups.</li>
+      <li>This branch without reclaiming (<code>none</code>) is 8% faster than the baseline for random churn with one row per group when groups do not return, and 12% faster when they do; at ten million rows, 7% and 13%. The baseline already has #8698 and #8713, so this comes from the branch's other changes to the update cycle; which one has not been isolated. Elsewhere it is within the error.</li>
+      <li>When groups do not return, every reclaiming mode is faster than the baseline for the sliding window, by 32% to 34%, and retains about a quarter of its heap; at ten million rows, 27% to 28% faster with a sixth of the heap. For random churn, releasing blocks alone is 16% faster and retains a third less heap; collapsing is 9% to 11% faster and retains a third of the heap. At ten million rows, releasing blocks alone is 17% faster and collapsing 12% to 14%, and add only is 11% to 12% faster with reclaiming.</li>
+      <li>When groups return, every reclaiming mode is slower, since returning groups are new states rather than reused ones. The sliding window is 12% slower releasing blocks alone and 15% to 16% slower collapsing, and 11% to 13% slower at ten million rows. Random churn with returning groups is 12% slower releasing blocks alone and 15% to 17% slower collapsing, and 13% to 14% slower at ten million rows. Against this branch's own <code>none</code>, which also reuses states, the reclaiming modes cost 27% to 32% there. Releasing blocks alone retains twice the heap of the baseline for random churn with returning groups, and collapsing 4% to 16% less (at ten million rows, 6% to 22% less).</li>
+      <li>An earlier run measured against main without #8698 and #8713, and there random churn with returning groups at ten million rows was 8% to 10% faster with reclaiming. That gain was the two changes', not reclaiming's.</li>
+      <li>For random churn, releasing blocks alone is 5% to 8% faster than collapsing when groups do not return, and 2% to 4% faster when they do; at ten million rows, 3% to 5% and within 2%. Collapsing retains far less heap.</li>
+      <li>No mode gives output positions back, so every reclaiming mode assigns the same positions: with one row per group, 10 million when groups do not return, and 8.71 to 10 million when they do, where the baseline reuses 2 million; with 100 rows per group, 100,000, or 20,000 for random churn with returning groups.</li>
       <li>With 100 rows per group, the modes are within the error of each other for time.</li>
-      <li>Reclaiming shortens the longest cycles when groups do not return: 18 to 26 ms for the sliding window and 11 to 23 ms for random churn, against main's 64 to 66 ms; at ten million rows, 93 to 102 ms and 86 to 134 ms, against 422 to 548 ms for main and main again. When groups return, the longest cycles are 11 to 18 ms for main and every mode, and 73 to 138 ms at ten million rows.</li>
+      <li>Reclaiming shortens the longest cycles when groups do not return: 15 to 17 ms for the sliding window and 11 to 24 ms for random churn, against 50 to 67 ms for the baseline and baseline again; at ten million rows, 93 to 114 ms and 95 to 135 ms, against 214 to 514 ms. When groups return, the longest cycles are 11 to 19 ms for the baseline and every mode, and 74 to 145 ms at ten million rows.</li>
     </ul>
     <p id="warnings" class="warn" hidden></p>
   </section>
@@ -204,7 +204,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule);
       <a href="#large-tbl">10M tables</a>
     </div>
     <div class="seg" role="group" aria-label="Chart scale">
-      <button type="button" id="modePct" aria-pressed="true">% vs Main</button>
+      <button type="button" id="modePct" aria-pressed="true">% vs Baseline</button>
       <button type="button" id="modeAbs" aria-pressed="false">Absolute</button>
     </div>
   </nav>
@@ -217,7 +217,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule);
 </div>
 
 <script>
-const DATA = {"mainCommit":"691450c217","prCommit":"f67af3c039","configs":["Main","none","Blocks","Collapse 0.75","Collapse 0.5","Main again"],"phases":[{"id":"tables","workloads":[{"b":"addOnly","rpk":1,"kr":false,"time":[[1378.966,123.081],[1356.221,120.82],[1279.384,84.472],[1306.939,114.402],[1273.094,129.172],[1395.484,89.575]],"heap":[675.7,674.6,572.4,577.9,577.9,675.0],"cycle":[62.658,60.871,62.137,69.166,65.291,64.509],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":false,"time":[[1992.249,62.254],[2018.903,138.238],[1317.669,94.281],[1347.422,80.212],[1319.215,74.62],[2025.731,129.421]],"heap":[678.8,682.1,186.0,186.1,186.3,679.3],"cycle":[63.834,83.048,21.221,26.033,18.202,64.246],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":true,"time":[[1055.688,71.551],[1072.987,38.57],[1183.65,57.929],[1241.167,45.248],[1270.075,44.082],[1055.266,30.94]],"heap":[181.9,181.5,130.0,130.2,130.6,181.0],"cycle":[12.517,17.876,14.696,15.597,14.888,14.728],"pos":[2000000,2000000,10000000,10000000,10000000,2000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":false,"time":[[4471.585,114.507],[3560.495,76.549],[3313.032,65.596],[3428.615,78.145],[3549.451,137.609],[4514.582,89.618]],"heap":[715.6,731.1,484.2,267.0,240.0,715.8],"cycle":[65.516,65.548,22.466,16.686,11.403,52.406],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":true,"time":[[2927.28,86.564],[2616.178,89.4],[3321.7,68.663],[3437.982,92.992],[3527.294,76.511],[2836.779,56.603]],"heap":[219.0,220.6,452.0,212.0,186.0,219.0],"cycle":[11.046,11.372,13.008,14.685,13.597,12.475],"pos":[2000000,2000000,8705854,8705854,8705854,2000000],"n":[10,10,10,10,10,10]},{"b":"addOnly","rpk":100,"kr":false,"time":[[198.979,25.743],[172.169,11.146],[182.643,22.596],[171.019,11.925],[181.877,25.914],[192.647,38.321]],"heap":[29.9,29.0,28.0,32.0,31.6,29.0],"cycle":[2.24,1.269,0.954,1.022,1.655,1.291],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":100,"kr":false,"time":[[299.726,36.735],[315.635,58.289],[295.188,28.092],[313.682,42.338],[307.168,30.54],[318.183,63.248]],"heap":[29.5,30.0,26.0,26.0,26.0,29.9],"cycle":[0.857,1.127,0.948,1.558,2.892,2.383],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":100,"kr":true,"time":[[317.26,29.631],[315.297,29.077],[318.935,30.718],[351.802,27.021],[327.439,26.847],[307.683,32.919]],"heap":[21.0,21.4,25.0,25.0,25.0,21.0],"cycle":[1.036,0.936,1.008,1.192,1.084,1.355],"pos":[20000,20000,100000,100000,100000,20000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":100,"kr":false,"time":[[846.598,93.122],[859.682,116.534],[808.381,83.577],[833.714,86.83],[836.605,80.927],[834.82,73.702]],"heap":[52.5,52.9,48.5,53.6,53.6,52.0],"cycle":[3.459,2.967,3.148,2.639,3.031,3.201],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":100,"kr":true,"time":[[779.168,51.059],[799.55,66.4],[789.14,74.294],[759.24,40.448],[764.034,54.407],[798.351,45.052]],"heap":[43.0,42.1,42.0,47.0,47.0,42.2],"cycle":[2.51,2.708,2.916,3.927,3.488,3.861],"pos":[20000,20000,20000,20000,20000,20000],"n":[10,10,10,10,10,10]}]},{"id":"large","workloads":[{"b":"addOnly","rpk":1,"kr":false,"time":[[15688.329,403.753],[15596.082,366.151],[14047.65,269.557],[14323.042,227.862],[14315.57,179.493],[15436.982,649.464]],"heap":[5623.4,5623.7,5082.5,5092.6,5091.2,5622.0],"cycle":[492.78,494.27,516.937,506.436,511.517,495.546],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":false,"time":[[21972.189,551.212],[22137.318,301.588],[15943.792,71.838],[16196.679,182.722],[16109.018,244.81],[22142.577,649.543]],"heap":[5658.9,5691.9,897.9,899.7,899.9,5656.3],"cycle":[507.693,503.254,101.566,92.796,100.062,493.401],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":true,"time":[[12112.792,100.094],[12308.405,113.863],[13282.616,93.875],[13595.723,85.59],[13591.501,189.039],[12213.717,98.461]],"heap":[1427.0,1434.2,898.4,899.9,899.8,1425.7],"cycle":[124.742,124.748,123.752,105.697,128.748,110.834],"pos":[20000000,20000000,100000000,100000000,100000000,20000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":false,"time":[[56762.001,499.367],[38704.892,288.442],[35123.791,368.95],[36495.12,180.816],[37247.387,426.665],[56907.713,375.48]],"heap":[5894.5,6194.3,4327.4,2138.3,1863.0,5894.2],"cycle":[422.373,289.767,133.477,86.361,87.769,548.072],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":true,"time":[[38664.267,300.205],[26725.55,194.37],[34923.148,97.132],[34972.878,172.297],[35415.411,527.358],[38806.754,282.707]],"heap":[1661.6,1809.5,4118.7,1692.7,1407.2,1663.2],"cycle":[138.196,80.605,80.213,77.482,72.876,95.596],"pos":[20000000,20000000,87047354,87047354,87047354,20000000],"n":[10,10,10,10,10,10]}]}],"warnings":[]};
+const DATA = {"mainCommit":"f93afcf3d4","prCommit":"82d1ff9aa1","configs":["Baseline","none","Blocks","Collapse 0.75","Collapse 0.5","Baseline again"],"phases":[{"id":"tables","workloads":[{"b":"addOnly","rpk":1,"kr":false,"time":[[1376.503,69.801],[1397.544,115.252],[1342.569,115.175],[1288.772,84.988],[1301.345,60.122],[1425.061,81.875]],"heap":[674.3,674.7,573.1,578.0,578.0,675.1],"cycle":[60.568,61.517,61.971,61.82,63.229,62.02],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":false,"time":[[1994.764,111.199],[2062.36,77.702],[1308.167,36.526],[1351.587,31.567],[1344.965,64.029],[2078.098,120.39]],"heap":[680.0,682.8,185.9,186.0,186.0,678.7],"cycle":[53.258,66.399,17.275,14.551,15.783,67.213],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":true,"time":[[1085.087,59.44],[1123.449,65.224],[1215.875,55.475],[1262.552,56.89],[1247.119,59.446],[1065.177,32.701]],"heap":[181.2,181.6,130.0,130.4,130.7,181.0],"cycle":[14.51,11.794,15.33,15.135,18.811,16.68],"pos":[2000000,2000000,10000000,10000000,10000000,2000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":false,"time":[[3919.99,81.509],[3606.547,67.641],[3299.823,52.281],[3477.335,85.51],[3561.548,100.591],[3917.463,113.856]],"heap":[728.7,732.1,484.0,267.4,240.0,729.1],"cycle":[50.048,64.54,23.598,23.9,11.186,64.697],"pos":[10000000,10000000,10000000,10000000,10000000,10000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":true,"time":[[2929.611,98.648],[2584.137,106.655],[3292.305,54.275],[3363.805,75.652],[3413.705,50.001],[2872.295,96.495]],"heap":[220.4,220.6,451.8,212.2,186.0,219.0],"cycle":[11.234,12.39,12.949,14.926,13.208,11.432],"pos":[2000000,2000000,8705854,8705854,8705854,2000000],"n":[10,10,10,10,10,10]},{"b":"addOnly","rpk":100,"kr":false,"time":[[185.081,24.068],[185.729,33.047],[174.018,16.791],[181.444,26.089],[197.66,20.241],[200.796,35.515]],"heap":[30.0,29.0,28.0,31.9,31.9,29.0],"cycle":[1.343,1.422,1.213,1.239,0.95,1.023],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":100,"kr":false,"time":[[292.89,32.877],[307.261,33.966],[272.979,30.142],[281.277,29.559],[297.886,30.248],[277.749,22.926]],"heap":[29.4,30.0,26.0,25.5,26.0,30.0],"cycle":[3.316,1.228,0.934,1.226,1.238,1.196],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":100,"kr":true,"time":[[317.355,32.163],[326.084,23.311],[312.065,27.586],[328.882,32.202],[330.882,23.416],[316.636,34.862]],"heap":[21.0,21.5,25.0,25.0,25.0,21.0],"cycle":[1.038,1.297,1.302,1.124,1.032,0.884],"pos":[20000,20000,100000,100000,100000,20000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":100,"kr":false,"time":[[838.548,69.983],[801.164,73.711],[833.671,71.69],[835.183,83.292],[834.637,51.088],[809.864,71.701]],"heap":[52.0,52.5,48.6,53.7,53.8,52.1],"cycle":[3.039,3.265,2.833,2.816,2.379,3.46],"pos":[100000,100000,100000,100000,100000,100000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":100,"kr":true,"time":[[784.198,35.542],[768.916,71.243],[758.289,39.129],[771.385,52.942],[767.021,46.181],[770.054,40.089]],"heap":[42.9,43.0,42.5,47.0,47.0,42.3],"cycle":[2.571,2.421,3.174,3.151,2.93,2.605],"pos":[20000,20000,20000,20000,20000,20000],"n":[10,10,10,10,10,10]}]},{"id":"large","workloads":[{"b":"addOnly","rpk":1,"kr":false,"time":[[16201.367,245.296],[16020.099,302.753],[14215.87,302.014],[14327.532,231.563],[14412.894,202.547],[16073.3,305.735]],"heap":[5622.7,5621.7,5077.1,5090.9,5086.1,5623.3],"cycle":[507.174,493.48,520.49,506.752,499.021,514.842],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":false,"time":[[22773.101,243.252],[22812.474,883.993],[16407.278,118.65],[16660.918,122.693],[16543.163,100.591],[22444.275,279.259]],"heap":[5657.9,5693.8,898.0,898.3,899.1,5657.9],"cycle":[508.081,510.943,92.761,99.402,113.591,513.188],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"slidingWindow","rpk":1,"kr":true,"time":[[12619.355,296.556],[13006.789,229.729],[13992.28,368.231],[14213.369,102.805],[14213.29,138.115],[12782.244,109.231]],"heap":[1426.3,1433.8,898.0,898.8,898.6,1427.9],"cycle":[110.343,143.382,126.359,114.89,133.815,145.435],"pos":[20000000,20000000,100000000,100000000,100000000,20000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":false,"time":[[43273.701,293.904],[40135.582,328.59],[35950.546,359.231],[37002.931,399.582],[37868.223,655.325],[43097.78,365.831]],"heap":[6164.5,6192.4,4327.1,2138.9,1864.3,6163.7],"cycle":[213.844,296.977,135.376,133.496,94.499,514.287],"pos":[100000000,100000000,100000000,100000000,100000000,100000000],"n":[10,10,10,10,10,10]},{"b":"randomChurn","rpk":1,"kr":true,"time":[[30878.818,131.295],[26749.796,148.524],[34812.843,283.139],[34851.992,338.519],[35232.253,218.281],[30675.81,181.025]],"heap":[1803.0,1809.4,4114.1,1691.9,1407.3,1801.8],"cycle":[99.113,79.684,81.657,77.11,74.095,86.658],"pos":[20000000,20000000,87047354,87047354,87047354,20000000],"n":[10,10,10,10,10,10]}]}],"warnings":[]};
 const CFG = DATA.configs;
 const WL = { addOnly: 'Add only', slidingWindow: 'Sliding window', randomChurn: 'Random churn' };
 const PHASES = {
@@ -225,12 +225,12 @@ const PHASES = {
   large: { title: '10 million rows', sub: '100,000 rows added and removed per cycle, one row per group, 48 GB heap' },
 };
 const METRICS = {
-  time: { title: 'Time per batch', unit: 'ms', axis: 'time, ms per batch', desc: 'Milliseconds per batch of 900 cycles; lower is better. Whiskers are 99.9% intervals; the grey band is Main’s interval. Faded bars are within the combined error of Main.' },
+  time: { title: 'Time per batch', unit: 'ms', axis: 'time, ms per batch', desc: 'Milliseconds per batch of 900 cycles; lower is better. Whiskers are 99.9% intervals; the grey band is Baseline’s interval. Faded bars are within the combined error of Baseline.' },
   heap: { title: 'Retained heap', unit: 'MB', axis: 'retained heap, MB', desc: 'Heap retained at the end of a batch after a garbage collection, averaged over the measured batches. It includes the source table and the benchmark’s own data, so compare modes with each other rather than reading a value as the aggregation’s size.' },
-  cycle: { title: 'Longest cycle', unit: 'ms', axis: 'longest cycle, ms', desc: 'The worst single cycle over the ten measured batches. One sample is noisy, as the gap between Main and Main again shows, so read the modes whose longest cycles are consistently high rather than small differences. With 100 rows per group every longest cycle is a few milliseconds, and one slow sample swings the percentage widely.' },
+  cycle: { title: 'Longest cycle', unit: 'ms', axis: 'longest cycle, ms', desc: 'The worst single cycle over the ten measured batches. One sample is noisy, as the gap between Baseline and Baseline again shows, so read the modes whose longest cycles are consistently high rather than small differences. With 100 rows per group every longest cycle is a few milliseconds, and one slow sample swings the percentage widely.' },
   pos: { title: 'Positions assigned', unit: '', desc: '' },
 };
-const SHORT = ['Main', 'none', 'Blocks', 'Collapse 0.75', 'Collapse 0.5', 'Main again'];
+const SHORT = ['Baseline', 'none', 'Blocks', 'Collapse 0.75', 'Collapse 0.5', 'Baseline again'];
 let mode = 'pct';
 try { const m = localStorage.getItem('aggbench-mode'); if (m === 'abs' || m === 'pct') mode = m; } catch (e) {}
 
@@ -257,8 +257,8 @@ function fmt(metric, v) {
   const drift = [];
   for (const ph of DATA.phases) for (const w of ph.workloads) if (!within(w, 5)) drift.push(WL[w.b] + (ph.id === 'large' ? ' (10M)' : ' (' + w.rpk + ' row/group)'));
   document.getElementById('driftNote').textContent = drift.length === 0
-    ? 'Main and Main again agree within error for time in every workload, so the run did not drift.'
-    : 'Main and Main again differ beyond error for time in: ' + drift.join(', ') + '. Treat small differences with care.';
+    ? 'Baseline and Baseline again agree within error for time in every workload, so the run did not drift.'
+    : 'Baseline and Baseline again differ beyond error for time in: ' + drift.join(', ') + '. Treat small differences with care.';
   if (DATA.warnings.length) { const el = document.getElementById('warnings'); el.hidden = false; el.textContent = 'Data warnings: ' + DATA.warnings.join('; '); }
 })();
 
@@ -311,9 +311,9 @@ function drawCard(card, series, dom, metric) {
   if (band) el('rect', { x: sx(band[0]), y: top, width: Math.max(1, sx(band[1]) - sx(band[0])), height: plotB - top, class: 'bandr' }, svg);
   el('line', { x1: x0, x2: x1, y1: plotB, y2: plotB, class: 'axis' }, svg);
   const m = METRICS[metric];
-  const axisTitle = mode === 'pct' ? m.title.toLowerCase() + ', % change vs Main' : m.axis;
+  const axisTitle = mode === 'pct' ? m.title.toLowerCase() + ', % change vs Baseline' : m.axis;
   el('text', { x: (x0 + x1) / 2, y: plotB + 28, 'text-anchor': 'middle', class: 'axt' }, svg, axisTitle);
-  el('text', { x: W, y: plotB + 13, 'text-anchor': 'end' }, svg, mode === 'pct' ? '% vs Main' : m.unit);
+  el('text', { x: W, y: plotB + 13, 'text-anchor': 'end' }, svg, mode === 'pct' ? '% vs Baseline' : m.unit);
   const origin = mode === 'pct' ? 0 : Math.max(0, dom[0]);
   series.forEach((s, i) => {
     const cy = top + rowH * i + rowH / 2;
@@ -340,13 +340,13 @@ function legendCard(metric) {
   d.className = 'card legend';
   const row = (svgInner, text) => `<div class="row"><svg viewBox="0 0 34 14" aria-hidden="true">${svgInner}</svg><span>${text}</span></div>`;
   let h = '';
-  h += row('<rect x="2" y="3" width="28" height="8" rx="1.5" class="bar f2"></rect>', mode === 'pct' ? 'Change against Main; left of zero is lower' : 'Absolute value, ' + (METRICS[metric].unit || 'count'));
+  h += row('<rect x="2" y="3" width="28" height="8" rx="1.5" class="bar f2"></rect>', mode === 'pct' ? 'Change against Baseline; left of zero is lower' : 'Absolute value, ' + (METRICS[metric].unit || 'count'));
   if (metric === 'time') {
     h += row('<path d="M4,3V11M4,7H30M30,3V11" class="wh"></path>', '99.9% interval');
-    h += row('<rect x="8" y="0" width="18" height="14" class="bandr"></rect>', 'Main’s 99.9% interval');
-    h += row('<rect x="2" y="3" width="28" height="8" rx="1.5" class="bar f2 dim"></rect>', '≈ within the combined error of Main');
+    h += row('<rect x="8" y="0" width="18" height="14" class="bandr"></rect>', 'Baseline’s 99.9% interval');
+    h += row('<rect x="2" y="3" width="28" height="8" rx="1.5" class="bar f2 dim"></rect>', '≈ within the combined error of Baseline');
   } else {
-    h += row('', 'No error bound: ' + (metric === 'cycle' ? 'use Main again as a sense of the noise' : 'compare modes with each other'));
+    h += row('', 'No error bound: ' + (metric === 'cycle' ? 'use Baseline again as a sense of the noise' : 'compare modes with each other'));
   }
   d.innerHTML = h;
   return d;
@@ -440,7 +440,7 @@ function render() {
     const tb = document.createElement('div');
     tb.className = 'tables';
     tb.id = ph.id + '-tbl';
-    tb.innerHTML = `<div class="stack"><h3>${P.title}: tables</h3><div class="key"><span><span class="chip good">−12%</span> lower than Main</span><span><span class="chip bad">+12%</span> higher</span><span><span class="chip">≈ +3%</span> time within the combined 99.9% error</span><span>Heap, cycle and positions have no error bound; they are coloured at a change of 5% or more.</span></div></div>`;
+    tb.innerHTML = `<div class="stack"><h3>${P.title}: tables</h3><div class="key"><span><span class="chip good">−12%</span> lower than Baseline</span><span><span class="chip bad">+12%</span> higher</span><span><span class="chip">≈ +3%</span> time within the combined 99.9% error</span><span>Heap, cycle and positions have no error bound; they are coloured at a change of 5% or more.</span></div></div>`;
     for (const metric of ['time', 'heap', 'cycle', 'pos']) table(tb, ph, metric);
     sec.appendChild(tb);
     root.appendChild(sec);
