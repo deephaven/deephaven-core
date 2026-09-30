@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.function.Predicate;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
@@ -188,7 +189,7 @@ public class UncoalescedTableTest {
         }
 
         @Override
-        protected NonMemoizingUncoalescedTable copy() {
+        protected NonMemoizingUncoalescedTable copy(final Predicate<String> shouldCopy) {
             return new NonMemoizingUncoalescedTable();
         }
     }
@@ -216,7 +217,7 @@ public class UncoalescedTableTest {
         }
 
         @Override
-        protected TestUncoalescedTable copy() {
+        protected TestUncoalescedTable copy(final Predicate<String> shouldCopy) {
             return new TestUncoalescedTable(refreshing, resultSupplier);
         }
 

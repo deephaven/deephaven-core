@@ -10,7 +10,9 @@ import io.deephaven.engine.table.impl.DeferredViewTable.TableReference;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -56,10 +58,10 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
     }
 
     @Override
-    protected SimpleSourceTable copy() {
+    protected SimpleSourceTable copy(@NotNull final Predicate<String> shouldCopy) {
         final SimpleSourceTable result = newInstance(definition, getDescription(), componentFactory, locationProvider,
                 updateSourceRegistrar);
-        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        LiveAttributeMap.copyAttributes(this, result, shouldCopy);
         return result;
     }
 

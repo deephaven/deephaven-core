@@ -1005,7 +1005,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // A plain copy, a redefinition that keeps the partitioning column, and one that drops it. Each owns its
         // filters, so each can be coalesced without disturbing the others.
-        final Table copied = filteredSource.copy();
+        final Table copied = filteredSource.copy(ak -> true);
         final Table withoutData = filteredSource.dropColumns("II");
         final Table withoutPartition = filteredSource.dropColumns("partition");
 

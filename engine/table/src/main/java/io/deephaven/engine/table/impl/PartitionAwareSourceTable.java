@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import java.util.function.Predicate;
 
 /**
  * A source table that can filter partitions before coalescing. Refer to {@link TableLocationKey} for an explanation of
@@ -201,12 +202,12 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    protected PartitionAwareSourceTable copy() {
+    protected PartitionAwareSourceTable copy(@NotNull final Predicate<String> shouldCopy) {
         final PartitionAwareSourceTable result =
                 newInstance(definition, getDescription(), componentFactory, locationProvider,
                         updateSourceRegistrar, partitioningColumnDefinitions,
                         copyFilters(partitioningColumnFilters));
-        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        LiveAttributeMap.copyAttributes(this, result, shouldCopy);
         return result;
     }
 

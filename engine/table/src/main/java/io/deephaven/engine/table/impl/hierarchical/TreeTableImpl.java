@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.function.Predicate;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
@@ -217,8 +218,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    protected TreeTableImpl copy() {
-        return new TreeTableImpl(getAttributes(), source, tree, sourceRowLookup, identifierColumn,
+    protected TreeTableImpl copy(@NotNull final Predicate<String> shouldCopy) {
+        return new TreeTableImpl(getAttributes(shouldCopy), source, tree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, nodeOperations, availableColumnDefinitions);
     }
 

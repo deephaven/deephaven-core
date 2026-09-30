@@ -38,6 +38,7 @@ import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.function.Predicate;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.*;
@@ -524,8 +525,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    protected RollupTableImpl copy() {
-        return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
+    protected RollupTableImpl copy(@NotNull final Predicate<String> shouldCopy) {
+        return new RollupTableImpl(getAttributes(shouldCopy), source, aggregations, includesConstituents,
+                groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations,

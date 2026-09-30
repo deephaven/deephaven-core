@@ -3202,11 +3202,11 @@ public class QueryTable extends BaseTable<QueryTable> {
      *
      * @return an identical table; but with a new set of attributes
      */
-    @Override
     public QueryTable copy() {
         return copy(StandardOptions.COPY_ALL);
     }
 
+    @Override
     public QueryTable copy(Predicate<String> shouldCopy) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {

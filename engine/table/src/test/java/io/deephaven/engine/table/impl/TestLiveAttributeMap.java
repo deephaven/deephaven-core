@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.liveness.DelegatingLivenessReferent;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -38,8 +40,9 @@ public class TestLiveAttributeMap {
     private static final class AttrMap extends LiveAttributeMap<AttrMap, AttrMap> {
 
         /**
-         * Whether {@link #copy()} fills the result with {@link #copyAttributes}, as the table implementations do,
-         * rather than passing our attributes as the initial attributes, as the hierarchical table implementations do.
+         * Whether {@link #copy(Predicate)} fills the result with {@link #copyAttributes}, as the table implementations
+         * do, rather than passing our attributes as the initial attributes, as the hierarchical table implementations
+         * do.
          */
         private final boolean copyViaSetAttribute;
 
@@ -49,12 +52,12 @@ public class TestLiveAttributeMap {
         }
 
         @Override
-        protected AttrMap copy() {
+        protected AttrMap copy(@NotNull final Predicate<String> shouldCopy) {
             if (!copyViaSetAttribute) {
-                return new AttrMap(getAttributes(), false);
+                return new AttrMap(getAttributes(shouldCopy), false);
             }
             final AttrMap result = new AttrMap(null, true);
-            copyAttributes(this, result, ak -> true);
+            copyAttributes(this, result, shouldCopy);
             return result;
         }
     }
@@ -101,6 +104,33 @@ public class TestLiveAttributeMap {
             final LivenessArtifact value = new LivenessArtifact() {};
             map.setAttribute(key, value);
             return value;
+        }
+    }
+
+    /**
+     * A referent that counts the references retained and dropped on it.
+     */
+    private static final class CountingReferent implements DelegatingLivenessReferent {
+
+        private final LivenessArtifact delegate = new LivenessArtifact() {};
+        private int retained;
+        private int dropped;
+
+        @Override
+        public LivenessReferent asLivenessReferent() {
+            return delegate;
+        }
+
+        @Override
+        public boolean tryRetainReference() {
+            ++retained;
+            return delegate.tryRetainReference();
+        }
+
+        @Override
+        public void dropReference() {
+            ++dropped;
+            delegate.dropReference();
         }
     }
 
@@ -216,5 +246,31 @@ public class TestLiveAttributeMap {
         assertTrue(isLive(value));
         release(originalScope);
         assertFalse(isLive(value));
+    }
+
+    @Test
+    public void testCopyDoesNotManageDroppedValues() {
+        checkCopyDoesNotManage(original -> original.withAttributes(Map.of("k", "replacement")));
+        checkCopyDoesNotManage(original -> original.withAttributes(Map.of("other", "o2"), List.of("k")));
+        checkCopyDoesNotManage(original -> original.withoutAttributes(List.of("k")));
+        checkCopyDoesNotManage(original -> original.retainingAttributes(List.of("other")));
+    }
+
+    /**
+     * Verify that a copy made by {@code operation} that drops or replaces the referent at {@code "k"} never retains or
+     * drops a reference to it.
+     */
+    private void checkCopyDoesNotManage(@NotNull final UnaryOperator<AttrMap> operation) {
+        final AttrMap original = newMap(newScope(), null);
+        final CountingReferent value = new CountingReferent();
+        original.setAttribute("k", value);
+        original.setAttribute("other", "o");
+        assertEquals(1, value.retained);
+
+        final AttrMap copy = inScope(newScope(), () -> operation.apply(original));
+        assertNotSame(original, copy);
+        assertFalse(copy.getAttributes().containsValue(value));
+        assertEquals(1, value.retained);
+        assertEquals(0, value.dropped);
     }
 }

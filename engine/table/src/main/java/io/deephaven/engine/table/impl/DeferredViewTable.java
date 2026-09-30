@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.function.Predicate;
 
 /**
  * An uncoalesced table with view and where operations to be applied after {@link #coalesce()} is forced.
@@ -397,11 +398,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     }
 
     @Override
-    protected DeferredViewTable copy() {
+    protected DeferredViewTable copy(@NotNull final Predicate<String> shouldCopy) {
         final DeferredViewTable result =
                 new DeferredViewTable(definition, getDescription(), new CopiedTableReference(this, tableReference),
                         null, null, null);
-        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        LiveAttributeMap.copyAttributes(this, result, shouldCopy);
         return result;
     }
 
