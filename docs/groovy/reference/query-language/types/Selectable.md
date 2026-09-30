@@ -89,10 +89,10 @@ If you are unsure whether your formula is safe for parallel execution, ask: "Wou
 
 ## Related documentation
 
-- [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
-- [Filter](./Filter.md) — Similar concurrency controls for filter operations
-- [Barrier](./Barrier.md) — The synchronization primitive used by `withDeclaredBarriers`/`withRespectedBarriers`
-- [ConcurrencyControl](./ConcurrencyControl.md) — The shared interface behind `withSerial`, `withDeclaredBarriers`, and `withRespectedBarriers`
-- [`select`](../../table-operations/select/select.md) — Uses Selectable objects
-- [`update`](../../table-operations/select/update.md) — Uses Selectable objects
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Filter](./Filter.md)
+- [Barrier](./Barrier.md)
+- [ConcurrencyControl](./ConcurrencyControl.md)
+- [`select`](../../table-operations/select/select.md)
+- [`update`](../../table-operations/select/update.md)
 - [Selectable Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html)

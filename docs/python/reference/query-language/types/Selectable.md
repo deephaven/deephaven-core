@@ -82,10 +82,10 @@ If you are unsure whether your formula is safe for parallel execution, ask: "Wou
 
 ## Related documentation
 
-- [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
-- [Filter](./Filter.md) — Similar concurrency controls for filter operations
-- [Barrier](./Barrier.md) — The synchronization primitive used by `with_declared_barriers`/`with_respected_barriers`
-- [ConcurrencyControl](./ConcurrencyControl.md) — The shared interface behind `with_serial`, `with_declared_barriers`, and `with_respected_barriers`
-- [`select`](../../table-operations/select/select.md) — Uses Selectable objects
-- [`update`](../../table-operations/select/update.md) — Uses Selectable objects
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Filter](./Filter.md)
+- [Barrier](./Barrier.md)
+- [ConcurrencyControl](./ConcurrencyControl.md)
+- [`select`](../../table-operations/select/select.md)
+- [`update`](../../table-operations/select/update.md)
 - [Selectable Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)

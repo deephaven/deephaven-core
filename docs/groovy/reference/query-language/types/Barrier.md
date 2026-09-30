@@ -121,7 +121,7 @@ Execution order:
 
 ## Related documentation
 
-- [ConcurrencyControl](./ConcurrencyControl.md) — The interface that provides `withDeclaredBarriers` and `withRespectedBarriers`
-- [Selectable](./Selectable.md) — Uses barriers to coordinate column calculations
-- [Filter](./Filter.md) — Uses barriers to coordinate filters
+- [ConcurrencyControl](./ConcurrencyControl.md)
+- [Selectable](./Selectable.md)
+- [Filter](./Filter.md)
 - [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)

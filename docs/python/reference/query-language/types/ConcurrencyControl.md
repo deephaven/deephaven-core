@@ -75,8 +75,8 @@ When shared state is involved, you often need both: `with_serial` to protect row
 
 ## Related documentation
 
-- [Barrier](./Barrier.md) — The marker object used with `with_declared_barriers` and `with_respected_barriers`
-- [Query table configuration](../../../conceptual/query-table-configuration.md) — Configuration properties that control default parallelization behavior
+- [Barrier](./Barrier.md)
+- [Query table configuration](../../../conceptual/query-table-configuration.md)
 - [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)
 - [Selectable](./Selectable.md)
 - [Filter](./Filter.md)

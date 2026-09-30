@@ -114,9 +114,9 @@ You need a `Filter` object in three situations:
 
 ## Related documentation
 
-- [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
-- [Selectable](./Selectable.md) — Similar concurrency controls for column calculations
-- [Barrier](./Barrier.md) — The synchronization primitive used by `withDeclaredBarriers`/`withRespectedBarriers`
-- [ConcurrencyControl](./ConcurrencyControl.md) — The shared interface behind `withSerial`, `withDeclaredBarriers`, and `withRespectedBarriers`
-- [`where`](../../table-operations/filter/where.md) — Uses Filter objects
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Selectable](./Selectable.md)
+- [Barrier](./Barrier.md)
+- [ConcurrencyControl](./ConcurrencyControl.md)
+- [`where`](../../table-operations/filter/where.md)
 - [Filter Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)

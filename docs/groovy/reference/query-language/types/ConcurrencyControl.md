@@ -65,8 +65,8 @@ When shared state is involved, you often need both: `withSerial` to protect row-
 
 ## Related documentation
 
-- [Barrier](./Barrier.md) — The marker object used with `withDeclaredBarriers` and `withRespectedBarriers`
-- [Query table configuration](../../../conceptual/query-table-configuration.md) — Configuration properties that control default parallelization behavior
+- [Barrier](./Barrier.md)
+- [Query table configuration](../../../conceptual/query-table-configuration.md)
 - [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)
 - [Selectable](./Selectable.md)
 - [Filter](./Filter.md)
