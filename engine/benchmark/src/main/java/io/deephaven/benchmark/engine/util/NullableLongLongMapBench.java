@@ -10,7 +10,9 @@ import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
 import io.deephaven.util.datastructures.hash.NullableLongLongMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -48,14 +50,23 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * <ul>
  * <li>{@code keyDist} controls the shape of the keys resident in the table. {@code pulsed} — runs of N consecutive keys
  * separated by gaps, N ~ U[100, 10000], G ~ U[100, 100000] — models real row keys, and is the shape the maps'
- * deliberately weak first probe hash exploits (adjacent keys land in adjacent buckets).</li>
+ * deliberately weak first probe hash exploits (adjacent keys land in adjacent buckets). {@code regioned} models the row
+ * keys of a partitioned table: 64 regions, each a run of size/64 consecutive rows, region r starting at {@code r << 43}
+ * (RegionedColumnSource's layout, 20 region bits above 43 row bits), so consecutive runs are a power of two apart.
+ * {@code sequential} is one dense block of keys, as a sort's output positions; {@code random} is uniform 64-bit
+ * keys.</li>
+ * <li>Misses are absent keys from the table's own neighbourhood: for {@code pulsed}, keys drawn uniformly from the gaps
+ * between the runs; for {@code regioned}, the rows just past each region's last row; for {@code sequential}, the keys
+ * just past the table's end; for {@code random}, fresh random keys. They are ordered like the hits ({@code sorted},
+ * {@code shuffled}); with {@code window} they are the contiguous run of keys just past the table's last key.</li>
  * <li>{@code lookups} decouples the probed-key count from the table size, modeling a large resident table read in
  * comparatively small batches (a redirection index typically dwarfs any single read). 0 means "probe every table key in
  * insertion order".</li>
- * <li>{@code lookupPattern} controls how probed keys are chosen when {@code lookups != 0}: a uniform random subset in
- * ascending ({@code sorted}) or random ({@code shuffled}) order, or a contiguous ascending run ({@code window}).
- * {@code window} turns pulsed-table lookups into a dense streaming read and flatters the weak-hash implementations
- * enormously; it is retained as a labeled control, not a realistic workload.</li>
+ * <li>{@code lookupPattern} controls how probed keys are chosen when {@code lookups != 0}: a uniform random sample of
+ * the table's keys — without replacement when {@code lookups <= size}, with replacement otherwise — in ascending
+ * ({@code sorted}) or random ({@code shuffled}) order, or a contiguous ascending run ({@code window}, which needs
+ * {@code lookups <= size}). {@code window} turns pulsed-table lookups into a dense streaming read and flatters the
+ * weak-hash implementations enormously; it is retained as a labeled control, not a realistic workload.</li>
  * <li>With {@code presize=true} the map is constructed at full capacity, so the filled table sits at ~{@code
  * loadFactor} occupancy and {@code fill} measures pure insertion rather than growth. When comparing against FASTUTIL at
  * a specific occupancy, pick {@code size = loadFactor * 2^k}: fastutil rounds its table to a power of two, and other
@@ -121,7 +132,8 @@ public class NullableLongLongMapBench {
 
     /**
      * "random": uniform random longs. "sequential": one contiguous block of small keys. "pulsed": pulses of N
-     * consecutive keys separated by gaps (see class javadoc).
+     * consecutive keys separated by gaps. "regioned": a partitioned table's row keys, 64 runs a power of two apart (see
+     * class javadoc).
      */
     @Param({"random"})
     public String keyDist;
@@ -158,6 +170,13 @@ public class NullableLongLongMapBench {
     private WritableLongChunk<Any> scratch;
     private NullableLongLongMap filledMap;
 
+    /**
+     * The regioned key distribution: RegionedColumnSource addresses a row as 20 region bits above 43 row bits, so
+     * region r's rows start at {@code r << REGION_ROW_BITS}; the table's keys are spread over REGIONS such regions.
+     */
+    private static final int REGION_ROW_BITS = 43;
+    private static final int REGIONS = 64;
+
     @Setup(Level.Trial)
     public void setupTrial() {
         final SplittableRandom rng = new SplittableRandom(20260831);
@@ -167,17 +186,17 @@ public class NullableLongLongMapBench {
         final long[] misses;
         if ("sequential".equals(keyDist)) {
             keys = new long[size];
-            misses = new long[nLookups];
             final long start = 1_000_000;
             for (int ii = 0; ii < size; ++ii) {
                 keys[ii] = start + ii;
             }
-            for (int ii = 0; ii < nLookups; ++ii) {
-                misses[ii] = start + size + ii;
-            }
             hits = sampleHits(keys, nLookups, rng);
+            // The absent keys nearest the table: the ones just past its end.
+            misses = arrangeMisses(runOf(start + size, nLookups), keys, rng);
         } else if ("pulsed".equals(keyDist)) {
             keys = new long[size];
+            final LongArrayList gapStarts = new LongArrayList();
+            final LongArrayList gapLengths = new LongArrayList();
             long key = 1_000_000;
             int ii = 0;
             while (ii < size) {
@@ -185,22 +204,39 @@ public class NullableLongLongMapBench {
                 for (int jj = 0; jj < pulseLen; ++jj) {
                     keys[ii++] = key++;
                 }
-                key += rng.nextInt(100, 100_001);
+                final int gap = rng.nextInt(100, 100_001);
+                gapStarts.add(key);
+                gapLengths.add(gap);
+                key += gap;
             }
             hits = sampleHits(keys, nLookups, rng);
-            // The mirror image of the hits has the same pulse structure but is disjoint from the (all-positive)
-            // table keys.
-            misses = new long[nLookups];
-            for (int mi = 0; mi < nLookups; ++mi) {
-                misses[mi] = -hits[mi];
+            // Misses live in the gaps between the runs (the gap after the last run included): absent keys from the
+            // table's own neighbourhood, in the table's own key order, rather than the hits mirrored to negative keys.
+            misses = arrangeMisses(sampleGaps(gapStarts, gapLengths, nLookups, rng), keys, rng);
+        } else if ("regioned".equals(keyDist)) {
+            // A partitioned table's row keys: region r's rows sit at r << REGION_ROW_BITS. REGIONS regions of
+            // size/REGIONS
+            // consecutive rows each (the last takes the remainder), so consecutive runs are a power of two apart.
+            final int rowsPerRegion = Math.max(1, (size + REGIONS - 1) / REGIONS);
+            final int regions = (size + rowsPerRegion - 1) / rowsPerRegion;
+            keys = new long[size];
+            for (int ii = 0; ii < size; ++ii) {
+                keys[ii] = ((long) (ii / rowsPerRegion) << REGION_ROW_BITS) + ii % rowsPerRegion;
             }
+            hits = sampleHits(keys, nLookups, rng);
+            // Misses are rows just past each region's last row: absent keys of the same partitions.
+            final long[] candidates = new long[nLookups];
+            for (int mi = 0; mi < nLookups; ++mi) {
+                final int region = rng.nextInt(regions);
+                final int rows = Math.min(rowsPerRegion, size - region * rowsPerRegion);
+                candidates[mi] = ((long) region << REGION_ROW_BITS) + rows + rng.nextInt(rows);
+            }
+            misses = arrangeMisses(candidates, keys, rng);
         } else if ("random".equals(keyDist)) {
             keys = distinctKeys(rng, size);
-            misses = distinctKeys(rng, nLookups); // overlap with 'keys' is negligible in a 64-bit key space
             hits = sampleHits(keys, nLookups, rng);
-            if ("sorted".equals(lookupPattern) && lookups != 0) {
-                Arrays.sort(misses); // keep miss ordering consistent with hit ordering
-            }
+            // Fresh random keys: overlap with 'keys' is negligible in a 64-bit key space.
+            misses = arrangeMisses(distinctKeys(rng, nLookups), keys, rng);
         } else {
             throw new IllegalArgumentException("unknown keyDist: " + keyDist);
         }
@@ -225,19 +261,106 @@ public class NullableLongLongMapBench {
             return tableKeys;
         }
         if ("window".equals(lookupPattern)) {
-            final int start = nLookups >= tableKeys.length ? 0 : rng.nextInt(tableKeys.length - nLookups);
-            return Arrays.copyOfRange(tableKeys, start, start + Math.min(nLookups, tableKeys.length));
+            if (nLookups > tableKeys.length) {
+                throw new IllegalArgumentException(
+                        "lookupPattern=window needs lookups <= size: lookups=" + nLookups + ", size="
+                                + tableKeys.length);
+            }
+            final int start = rng.nextInt(tableKeys.length - nLookups + 1);
+            return Arrays.copyOfRange(tableKeys, start, start + nLookups);
+        }
+        if (!"sorted".equals(lookupPattern) && !"shuffled".equals(lookupPattern)) {
+            throw new IllegalArgumentException("unknown lookupPattern: " + lookupPattern);
         }
         final long[] result = new long[nLookups];
-        for (int ii = 0; ii < nLookups; ++ii) {
-            result[ii] = tableKeys[rng.nextInt(tableKeys.length)];
+        if (nLookups <= tableKeys.length) {
+            // Without replacement: Floyd's algorithm draws nLookups distinct indices in O(nLookups) space, which
+            // matters when the table holds hundreds of millions of keys.
+            final IntOpenHashSet chosen = new IntOpenHashSet(nLookups);
+            int oi = 0;
+            for (int ii = tableKeys.length - nLookups; ii < tableKeys.length; ++ii) {
+                final int candidate = rng.nextInt(ii + 1);
+                final int pick = chosen.add(candidate) ? candidate : ii;
+                if (pick == ii) {
+                    chosen.add(ii);
+                }
+                result[oi++] = tableKeys[pick];
+            }
+        } else {
+            // More lookups than keys: with replacement, necessarily.
+            for (int ii = 0; ii < nLookups; ++ii) {
+                result[ii] = tableKeys[rng.nextInt(tableKeys.length)];
+            }
         }
         if ("sorted".equals(lookupPattern)) {
             Arrays.sort(result);
-        } else if (!"shuffled".equals(lookupPattern)) {
-            throw new IllegalArgumentException("unknown lookupPattern: " + lookupPattern);
+        } else {
+            shuffle(result, rng);
         }
         return result;
+    }
+
+    /**
+     * Order the miss candidates like the hits: ascending for {@code sorted} (and for lookups=0, where the hits are the
+     * table's keys in insertion order), random for {@code shuffled}; for {@code window} the misses are instead the
+     * contiguous run of keys just past the table's last key, the miss counterpart of a dense streaming read.
+     */
+    private long[] arrangeMisses(final long[] candidates, final long[] tableKeys, final SplittableRandom rng) {
+        if (lookups == 0) {
+            if (!"random".equals(keyDist)) {
+                Arrays.sort(candidates);
+            }
+            return candidates;
+        }
+        if ("window".equals(lookupPattern) && !"random".equals(keyDist)) {
+            return runOf(tableKeys[tableKeys.length - 1] + 1, candidates.length);
+        }
+        if ("shuffled".equals(lookupPattern)) {
+            shuffle(candidates, rng);
+            return candidates;
+        }
+        Arrays.sort(candidates);
+        return candidates;
+    }
+
+    /**
+     * nLookups keys drawn uniformly from the gaps between the table's runs; gap g covers {@code [gapStarts[g],
+     * gapStarts[g] + gapLengths[g])}. Returned in random order.
+     */
+    private static long[] sampleGaps(final LongArrayList gapStarts, final LongArrayList gapLengths, final int nLookups,
+            final SplittableRandom rng) {
+        final int nGaps = gapStarts.size();
+        final long[] cumulative = new long[nGaps + 1];
+        for (int gi = 0; gi < nGaps; ++gi) {
+            cumulative[gi + 1] = cumulative[gi] + gapLengths.getLong(gi);
+        }
+        final long[] result = new long[nLookups];
+        for (int mi = 0; mi < nLookups; ++mi) {
+            final long t = rng.nextLong(cumulative[nGaps]);
+            int gi = Arrays.binarySearch(cumulative, t);
+            if (gi < 0) {
+                gi = -gi - 2; // the gap whose cumulative start is the largest at or below t
+            }
+            result[mi] = gapStarts.getLong(gi) + (t - cumulative[gi]);
+        }
+        return result;
+    }
+
+    private static long[] runOf(final long first, final int n) {
+        final long[] result = new long[n];
+        for (int ii = 0; ii < n; ++ii) {
+            result[ii] = first + ii;
+        }
+        return result;
+    }
+
+    private static void shuffle(final long[] a, final SplittableRandom rng) {
+        for (int ii = a.length - 1; ii > 0; --ii) {
+            final int jj = rng.nextInt(ii + 1);
+            final long t = a[ii];
+            a[ii] = a[jj];
+            a[jj] = t;
+        }
     }
 
     private static long[] distinctKeys(final SplittableRandom rng, final int count) {
