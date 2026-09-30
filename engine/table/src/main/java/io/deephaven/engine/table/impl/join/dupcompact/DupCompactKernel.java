@@ -15,7 +15,7 @@ public interface DupCompactKernel {
         if (reverse) {
             switch (chunkType) {
                 case Char:
-                    return NullAwareCharReverseDupCompactKernel.INSTANCE;
+                    return CharReverseDupCompactKernel.INSTANCE;
                 case Byte:
                     return ByteReverseDupCompactKernel.INSTANCE;
                 case Short:
@@ -37,7 +37,7 @@ public interface DupCompactKernel {
         } else {
             switch (chunkType) {
                 case Char:
-                    return NullAwareCharDupCompactKernel.INSTANCE;
+                    return CharDupCompactKernel.INSTANCE;
                 case Byte:
                     return ByteDupCompactKernel.INSTANCE;
                 case Short:

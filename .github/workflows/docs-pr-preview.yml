@@ -59,6 +59,7 @@ jobs:
         with:
           message: |
             ## Deploying docs previews for ${{ github.event.pull_request.head.sha }} (available for 14 days)
+            The preview sites are password protected. Find the credentials in LastPass under "Docs Preview".
 
       ##########
       # Do NOT run any scripts sourced from the repo after this point. We have checked out the repo from a fork.

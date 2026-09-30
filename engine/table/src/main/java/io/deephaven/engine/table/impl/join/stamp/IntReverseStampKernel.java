@@ -12,6 +12,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.IntComparisons;
 
 
 public class IntReverseStampKernel implements StampKernel {
@@ -83,7 +84,7 @@ public class IntReverseStampKernel implements StampKernel {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(int lhs, int rhs) {
-        return -1 * Integer.compare(lhs, rhs);
+        return -1 * IntComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -97,7 +98,7 @@ public class IntReverseStampKernel implements StampKernel {
 
     private static boolean eq(int lhs, int rhs) {
         // region equality function
-        return lhs == rhs;
+        return IntComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

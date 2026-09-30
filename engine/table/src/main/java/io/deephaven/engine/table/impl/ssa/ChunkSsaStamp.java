@@ -15,7 +15,7 @@ public interface ChunkSsaStamp {
         if (reverse) {
             switch (type) {
                 case Char:
-                    return NullAwareCharReverseChunkSsaStamp.INSTANCE;
+                    return CharReverseChunkSsaStamp.INSTANCE;
                 case Byte:
                     return ByteReverseChunkSsaStamp.INSTANCE;
                 case Short:
@@ -37,7 +37,7 @@ public interface ChunkSsaStamp {
         } else {
             switch (type) {
                 case Char:
-                    return NullAwareCharChunkSsaStamp.INSTANCE;
+                    return CharChunkSsaStamp.INSTANCE;
                 case Byte:
                     return ByteChunkSsaStamp.INSTANCE;
                 case Short:
