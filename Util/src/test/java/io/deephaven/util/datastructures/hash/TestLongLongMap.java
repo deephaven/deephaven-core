@@ -272,6 +272,73 @@ public class TestLongLongMap {
     }
 
     /**
+     * The same rule in the buckets after the first: a probe that leaves a full first bucket and meets a tombstone ahead
+     * of an empty slot in a later bucket must take the tombstone. (The loop remembered a bucket's tombstones only after
+     * scanning the whole bucket, so a tombstone followed by an empty slot in the same later bucket lost to the empty
+     * slot.)
+     */
+    @Test
+    public void laterBucketReusesTombstones() {
+        if (factory == referenceFactory) {
+            return;
+        }
+        final int entriesPerBucket = factory.getEntriesPerBucket();
+        for (int filled = 1; filled < entriesPerBucket; ++filled) {
+            for (int deleted = 0; deleted < filled; ++deleted) {
+                checkLaterBucketTombstoneReuse(filled, deleted);
+            }
+        }
+    }
+
+    /**
+     * Fill a key's first bucket with other keys so its probe moves on, put {@code filled} keys whose first bucket is
+     * that key's second bucket, delete the one at {@code deleted}, then insert the key: it must take the tombstone.
+     */
+    private void checkLaterBucketTombstoneReuse(final int filled, final int deleted) {
+        final String where = "filled=" + filled + " deleted=" + deleted;
+        final int entriesPerBucket = factory.getEntriesPerBucket();
+        // Room for every key of the test without a rehash, whatever the parameterized capacity.
+        final NullableLongLongMap map = factory.create(1000, loadFactor);
+        final HashMapBase base = (HashMapBase) map;
+        final long first = 1;
+        map.put(first, 10);
+        final int numBuckets = map.capacity() / entriesPerBucket;
+        final int bucket = HashMapBase.probe1(first, numBuckets);
+        // Fill the first bucket: entriesPerBucket keys whose probes start there, then one more, the key under test.
+        long candidate = first;
+        for (int ki = 1; ki < entriesPerBucket; ++ki) {
+            do {
+                ++candidate;
+            } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+            map.put(candidate, 10 + ki);
+        }
+        do {
+            ++candidate;
+        } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+        final long key = candidate;
+        // Its second bucket, as the probe loop computes it: one plus the second hash, in buckets, past the first.
+        final int secondBucket = (bucket + 1 + HashMapBase.probe2(key, numBuckets - 2)) % numBuckets;
+        // filled keys whose first bucket is that second bucket; they take its slots 0..filled-1 in order.
+        final long[] others = new long[filled];
+        candidate = 1_000_000;
+        for (int ki = 0; ki < filled; ++ki) {
+            do {
+                ++candidate;
+            } while (HashMapBase.probe1(candidate, numBuckets) != secondBucket);
+            others[ki] = candidate;
+            map.put(candidate, 100 + ki);
+        }
+        assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
+        map.remove(others[deleted]);
+        assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
+        map.put(key, 99);
+        // The tombstone was reused: the count of non-empty slots did not grow, and the map holds what it should.
+        assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
+        assertEquals(where, entriesPerBucket + filled, map.size());
+        assertEquals(where, 99, map.get(key));
+    }
+
+    /**
      * A map that has never been populated — or has been reset to null — is empty, not broken: clearing it is a no-op
      * and its key and value accessors answer with nothing, where they used to dereference the array it does not have.
      */

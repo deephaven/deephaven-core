@@ -133,9 +133,9 @@ public abstract class HashMapK2V2 extends HashMapBase {
                 throw new IllegalStateException("Wrapped around? Impossible.");
             }
 
-            // Same logic as the above. Looking for the specific key and aborting if the empty slot is found.
-            // (But, if the empty slot is found, and if there was an earlier deleted slot, we need to return the
-            // earlier deleted slot)
+            // Same logic as the above. Looking for the specific key and aborting if the empty slot is found. (But if
+            // the empty slot is found, the insert takes the earliest deleted slot passed instead: one from an earlier
+            // bucket, remembered in priorDeletedSlot, or else one earlier in this bucket, still in registers.)
             cKey0 = kvs[probe];
             if (cKey0 == target) {
                 return probe;
@@ -154,7 +154,7 @@ public abstract class HashMapK2V2 extends HashMapBase {
                 if (priorDeletedSlot != -1) {
                     return -priorDeletedSlot - 1;
                 }
-                return -(probe + 2) - 1;
+                return -(cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT ? probe : probe + 2) - 1;
             }
 
             if (priorDeletedSlot == -1) {
