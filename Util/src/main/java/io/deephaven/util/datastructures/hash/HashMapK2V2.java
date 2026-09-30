@@ -95,9 +95,10 @@ public abstract class HashMapK2V2 extends HashMapBase {
         // Unroll this loop for probe + 0, 2
         // If the key matches, return the probe (indicating an exact match).
         // If we hit an empty slot, return (-slot - 1) for the slot an insert should take: the earliest deleted slot
-        // passed in this bucket if there is one, else the empty slot itself — the same rule the loop below applies to
-        // every later bucket. The earlier keys are already in registers, so this costs a lookup that misses here
-        // nothing but a predictable compare or two; the hit path is untouched.
+        // passed so far if there is one, else the empty slot itself — the same rule the loop below applies to every
+        // later bucket. Remembering that slot costs one predictable compare per slot passed, on a hit in a later slot
+        // as on a miss; measured against a form that compared only on reaching the empty slot, lookups came out
+        // neutral to a few percent faster.
         int priorDeletedSlot;
         long cKey0 = kvs[probe];
         if (cKey0 == target) {
