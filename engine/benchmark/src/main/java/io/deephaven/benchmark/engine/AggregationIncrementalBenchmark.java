@@ -39,9 +39,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Measures update cycles of a keyed {@code sumBy} over a refreshing table under each way of reclaiming the states of
- * removed keys ({@code reclaim}): keeping every state, or releasing whole blocks of empty states and optionally
- * collapsing runs of sparse blocks ({@code collapse}). Each iteration reports the positions assigned, the retained
- * heap, and its longest cycle.
+ * removed keys ({@code reclaim}): keeping every state ({@code none}), releasing whole blocks of empty states
+ * ({@code blocks}), or also collapsing runs of blocks that are at least a given fraction free ({@code collapse0.75} and
+ * {@code collapse0.5}). Each iteration reports the positions assigned, the retained heap, and its longest cycle.
  *
  * <p>
  * Each measured iteration is a batch of {@link #CYCLES} update cycles against a freshly built aggregation, so the
@@ -78,12 +78,15 @@ public class AggregationIncrementalBenchmark {
     /** The number of update cycles in each measured batch. */
     static final int CYCLES = 900;
 
-    @Param({"none", "blocks"})
-    private String reclaim;
+    /** The prefix of a {@link #reclaim} mode that releases blocks and collapses at the fraction that follows it. */
+    private static final String COLLAPSE_PREFIX = "collapse";
 
-    /** The fraction free at which blocks are collapsed when releasing blocks; 1 disables collapsing. */
-    @Param({"1"})
-    private double collapse;
+    /**
+     * How states of removed keys are reclaimed: {@code none}, {@code blocks}, or {@code collapse} followed by the
+     * fraction free at which blocks are collapsed when releasing blocks.
+     */
+    @Param({"none", "blocks", "collapse0.75", "collapse0.5"})
+    private String reclaim;
 
     /** The initial size for {@link #addOnly()}, and the constant size for the other benchmarks. */
     @Param({"1000000"})
@@ -124,8 +127,14 @@ public class AggregationIncrementalBenchmark {
         updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
-        AggregationStateBenchSupport.setReclaimMode(reclaim);
-        AggregationStateBenchSupport.setCollapseFreeFraction(collapse);
+        if (reclaim.startsWith(COLLAPSE_PREFIX)) {
+            AggregationStateBenchSupport.setReclaimMode("blocks");
+            AggregationStateBenchSupport.setCollapseFreeFraction(
+                    Double.parseDouble(reclaim.substring(COLLAPSE_PREFIX.length())));
+        } else {
+            AggregationStateBenchSupport.setReclaimMode(reclaim);
+            AggregationStateBenchSupport.setCollapseFreeFraction(1);
+        }
         if (params.getBenchmark().endsWith(".randomChurn")) {
             randomRemovals = chooseRandomRemovals();
         }
