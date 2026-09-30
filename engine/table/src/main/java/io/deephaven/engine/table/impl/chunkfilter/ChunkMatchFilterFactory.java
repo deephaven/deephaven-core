@@ -6,13 +6,19 @@ package io.deephaven.engine.table.impl.chunkfilter;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import java.math.BigDecimal;
+
 public class ChunkMatchFilterFactory {
     private ChunkMatchFilterFactory() {} // static only
 
     public static ChunkFilter getChunkFilter(
             final Class type,
             final MatchOptions matchOptions,
-            final Object... keys) {
+            Object... keys) {
+        if (type == BigDecimal.class) {
+            // MatchFilter drops these too, but ColumnSource.match reaches this factory directly
+            keys = BigDecimalChunkMatchFilterFactory.dropUnmatchable(keys);
+        }
         if (keys.length == 0) {
             if (matchOptions.inverted()) {
                 return ChunkFilter.TRUE_FILTER_INSTANCE;
@@ -50,6 +56,12 @@ public class ChunkMatchFilterFactory {
         }
         if (type == String.class && matchOptions.caseInsensitive()) {
             return StringChunkMatchFilterFactory.makeCaseInsensitiveFilter(matchOptions, keys);
+        }
+        if (type == BigDecimal.class) {
+            // A BigDecimal match is decided by compareTo, not equals, as the query language's == decides it; this is
+            // why BinarySearchKernelHelper treats BigDecimal as ordering consistently with equality, so that a sorted
+            // search matches it the same way.
+            return BigDecimalChunkMatchFilterFactory.makeFilter(matchOptions, keys);
         }
         // TODO: we should do something nicer with booleans
         // TODO: we need to consider symbol tables

@@ -368,7 +368,7 @@ public class DoubleColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastPos) {
             final double lowValue = usePrev ? source.getPrevDouble(selection.get(low)) : source.getDouble(selection.get(low));
-            if (DoubleComparisons.eq(lowValue, min)) {
+            if (DoubleComparisons.compare(lowValue, min) == 0) {
                 return low;
             }
         }
@@ -429,7 +429,7 @@ public class DoubleColumnBinarySearchKernel {
         if (maxInc && high >= firstPos) {
             final double highValue =
                     usePrev ? source.getPrevDouble(selection.get(high)) : source.getDouble(selection.get(high));
-            if (DoubleComparisons.eq(highValue, max)) {
+            if (DoubleComparisons.compare(highValue, max) == 0) {
                 return high;
             }
         }
@@ -488,7 +488,7 @@ public class DoubleColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastPos) {
             final double lowValue = usePrev ? source.getPrevDouble(selection.get(low)) : source.getDouble(selection.get(low));
-            if (DoubleComparisons.eq(lowValue, max)) {
+            if (DoubleComparisons.compare(lowValue, max) == 0) {
                 return low;
             }
         }
@@ -549,7 +549,7 @@ public class DoubleColumnBinarySearchKernel {
         if (minInc && high >= firstPos) {
             final double highValue =
                     usePrev ? source.getPrevDouble(selection.get(high)) : source.getDouble(selection.get(high));
-            if (DoubleComparisons.eq(highValue, min)) {
+            if (DoubleComparisons.compare(highValue, min) == 0) {
                 return high;
             }
         }
