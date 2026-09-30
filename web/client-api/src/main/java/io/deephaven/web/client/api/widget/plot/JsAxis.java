@@ -17,8 +17,8 @@ import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
 /**
- * Defines one axis used by series. These instances will be found both on the Chart and the Series instances, and may be
- * shared between Series instances.
+ * Defines one axis used by series. These instances will be found both on the {@link JsChart Chart} and the
+ * {@link JsSeries Series} instances, and may be shared between {@link JsSeries Series} instances.
  */
 @TsInterface
 @TsName(namespace = "dh.plot", name = "Axis")
@@ -46,8 +46,7 @@ public class JsAxis {
      * The calendar with the business hours and holidays to transform plot data against. Defaults to null, or no
      * transform.
      * 
-     * @return dh.calendar.BusinessCalendar
-     *
+     * @return {@link JsBusinessCalendar dh.calendar.BusinessCalendar}
      */
     @JsProperty
     public JsBusinessCalendar getBusinessCalendar() {
@@ -65,7 +64,7 @@ public class JsAxis {
     }
 
     /**
-     * The type for this axis. See {@code AxisFormatType} enum for more details.
+     * The type for this axis. See the {@link JsAxisFormatType AxisFormatType} enum for more details.
      * 
      * @return int
      */
@@ -76,7 +75,8 @@ public class JsAxis {
     }
 
     /**
-     * The type for this axis, indicating how it will be drawn. See {@code AxisType} enum for more details.
+     * The type for this axis, indicating how it will be drawn. See the {@link JsAxisType AxisType} enum for more
+     * details.
      * 
      * @return int
      */
@@ -87,7 +87,7 @@ public class JsAxis {
     }
 
     /**
-     * The position for this axis. See {@code AxisPosition} enum for more details.
+     * The position for this axis. See the {@link JsAxisPosition AxisPosition} enum for more details.
      * 
      * @return int
      */
@@ -129,7 +129,8 @@ public class JsAxis {
     // }
 
     /**
-     * The format pattern to use with this axis. Use the type to determine which type of formatter to use.
+     * The format pattern to use with this axis. Use the {@link #getFormatType() formatType} to determine which type of
+     * formatter to use.
      * 
      * @return String
      */
@@ -212,7 +213,7 @@ public class JsAxis {
      * can be done losslessly. The second two arguments represent the current zoom range of this axis, and if provided,
      * most of the data outside of this range will be filtered out automatically and the visible width mapped to that
      * range. When the UI zooms, pans, or resizes, this method should be called again to update these three values to
-     * ensure that data is correct and current.
+     * ensure that data is correct and current. See {@link JsFigure} for details on how downsampling works.
      *
      * @param pixelCount
      * @param min

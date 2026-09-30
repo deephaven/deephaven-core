@@ -29,8 +29,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Describes a grouping and aggregations for a roll-up table. Pass to the {@code Table.rollup} function to create a
- * roll-up table.
+ * Describes a grouping and aggregations for a roll-up table. Pass to the
+ * {@link io.deephaven.web.client.api.JsTable#rollup(Object) Table.rollup} function to create a roll-up
+ * {@link JsTreeTable TreeTable}.
  */
 @JsType(name = "RollupConfig", namespace = "dh")
 public class JsRollupConfig {
@@ -40,17 +41,18 @@ public class JsRollupConfig {
      */
     public JsArray<String> groupingColumns = null;
     /**
-     * Mapping from each aggregation name to the ordered list of columns it should be applied to in the resulting
-     * roll-up table.
+     * Mapping from each {@link JsAggregationOperation AggregationOperation} name to the ordered list of columns it
+     * should be applied to in the resulting roll-up table.
      */
     public JsPropertyMap<JsArray<String>> aggregations =
             Js.cast(JsObject.create(null));
     /**
      * Optional parameter indicating if an extra leaf node should be added at the bottom of the hierarchy, showing the
      * rows in the underlying table which make up that grouping. Since these values might be a different type from the
-     * rest of the column, any client code must check if {@code TreeRow.hasChildren} = {@code false}, and if so,
-     * interpret those values as if they were {@code Column.constituentType} instead of {@code Column.type}. Defaults to
-     * {@code false}.
+     * rest of the column, any client code must check if {@link TreeViewportData.TreeRow#hasChildren()
+     * TreeRow.hasChildren} = {@code false}, and if so, interpret those values as if they were
+     * {@link Column#getConstituentType() Column.constituentType} instead of {@link Column#getType() Column.type}.
+     * Defaults to {@code false}.
      */
     public boolean includeConstituents = false;
     @JsNullable
