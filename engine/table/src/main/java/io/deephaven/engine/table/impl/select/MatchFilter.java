@@ -482,8 +482,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (number instanceof BigInteger) {
                 return new BigDecimal((BigInteger) number);
             }
-            return isFloatingPoint(number) ? new BigDecimal(number.doubleValue())
-                    : BigDecimal.valueOf(number.longValue());
+            if (isFloatingPoint(number)) {
+                return new BigDecimal(number.doubleValue());
+            }
+            if (number instanceof Long || number instanceof Integer || number instanceof Short
+                    || number instanceof Byte) {
+                return BigDecimal.valueOf(number.longValue());
+            }
+            // Any other Number (DoubleAdder, AtomicLong, ...) may hold a fraction that longValue() would drop, so
+            // it has no exact value to compare, and cannot be converted.
+            throw new IllegalArgumentException(String.format(
+                    "Cannot convert value <%s> of type %s: it is not a standard numeric type",
+                    number, number.getClass().getName()));
         }
 
         private static boolean isFloatingPoint(final Number number) {
