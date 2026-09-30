@@ -5,7 +5,6 @@
 // ****** Edit TestCharSegmentedSortedArray and run "./gradlew replicateSegmentedSortedArrayTests" to regenerate
 //
 // @formatter:off
-
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.AssertionFailure;

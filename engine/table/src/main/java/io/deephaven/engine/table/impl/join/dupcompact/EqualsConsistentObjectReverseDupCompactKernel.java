@@ -5,7 +5,6 @@
 // ****** Edit CharDupCompactKernel and run "./gradlew replicateDupCompactKernel" to regenerate
 //
 // @formatter:off
-
 package io.deephaven.engine.table.impl.join.dupcompact;
 
 import io.deephaven.chunk.*;

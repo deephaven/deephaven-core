@@ -5,7 +5,6 @@
 // ****** Edit CharChunkSsaStamp and run "./gradlew replicateSegmentedSortedArray" to regenerate
 //
 // @formatter:off
-
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.chunk.*;

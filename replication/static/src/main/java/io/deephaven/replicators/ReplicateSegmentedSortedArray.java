@@ -119,7 +119,8 @@ public class ReplicateSegmentedSortedArray {
 
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = Stream.concat(
-                ReplicationUtils.fileHeaderStream(task, sourceClassName),
+                // the generated classes put the package line directly after the header, with no blank line
+                ReplicationUtils.fileHeaderStream(task, sourceClassName).filter(line -> !line.isEmpty()),
                 lines.stream().dropWhile(line -> line.startsWith("//") || line.isEmpty()))
                 .collect(Collectors.toList());
         lines = globalReplacements(lines, OBJECT_CLASS_PATTERN, OBJECT_CLASS_REPLACEMENT);
