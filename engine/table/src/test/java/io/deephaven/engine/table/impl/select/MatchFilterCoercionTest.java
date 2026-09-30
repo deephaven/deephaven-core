@@ -304,16 +304,19 @@ public class MatchFilterCoercionTest {
         QueryScope.addParam("v01", 0.1);
         QueryScope.addParam("f01", 0.1f);
         QueryScope.addParam("l5", 5L);
+        // and a char by its code point
+        QueryScope.addParam("cA", 'A');
         final BigInteger p60 = BigInteger.ONE.shiftLeft(60);
 
         assertSameRowsAsFailover(
                 newTable(col("X", BigInteger.TEN.pow(30), new BigDecimal(1e30).toBigIntegerExact(), p60,
-                        BigDecimal.valueOf(0x1p60).toBigIntegerExact(), BigInteger.valueOf(5), null)),
-                "X == dv", "X >= dv", "X == d60", "X < d60", "X == l5", "X == v01");
+                        BigDecimal.valueOf(0x1p60).toBigIntegerExact(), BigInteger.valueOf(5), BigInteger.valueOf(65),
+                        null)),
+                "X == dv", "X >= dv", "X == d60", "X < d60", "X == l5", "X == v01", "X == cA", "X != cA");
         assertSameRowsAsFailover(
                 newTable(col("X", new BigDecimal("0.1"), new BigDecimal(0.1), BigDecimal.valueOf(0.1f),
-                        new BigDecimal(0.1f), new BigDecimal("5"), null)),
-                "X == v01", "X <= v01", "X == f01", "X == l5");
+                        new BigDecimal(0.1f), new BigDecimal("5"), new BigDecimal("65.0"), null)),
+                "X == v01", "X <= v01", "X == f01", "X == l5", "X == cA", "X != cA");
     }
 
     @Test

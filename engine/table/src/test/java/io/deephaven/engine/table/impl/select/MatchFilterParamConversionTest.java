@@ -122,8 +122,10 @@ public class MatchFilterParamConversionTest {
     }
 
     /**
-     * A value that is not a number cannot convert to a primitive column's type, so the filter fails over, as on main,
-     * where the query language promotes a char to int. A BigInteger column can never equal it, so it is left as it is.
+     * A value that is not a number cannot convert to a primitive column's type, so the filter fails over, as on main. A
+     * char does not convert to a BigDecimal or BigInteger column either, so the filter fails over to the query
+     * language, which compares the two by code point. Any other value can never equal a BigInteger, so it is left as it
+     * is.
      */
     @Test
     public void nonNumbersAreNotConverted() {
@@ -131,7 +133,9 @@ public class MatchFilterParamConversionTest {
         assertRejected(Boolean.TRUE, double.class);
         assertRejected('A', int.class);
         assertRejected("A", char.class);
-        assertNotConverted('A', BigInteger.class);
+        assertRejected('A', BigInteger.class);
+        assertRejected('A', BigDecimal.class);
+        assertNotConverted("A", BigInteger.class);
     }
 
     @Test
