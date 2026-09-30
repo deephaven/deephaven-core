@@ -98,6 +98,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
 
                 final long[] inUse;
                 if (prevBlocks[block] == null) {
@@ -243,6 +248,22 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
         final float[] newBlock = new float[size];
         Arrays.fill(newBlock, NULL_FLOAT);
         return newBlock;
+    }
+
+    /** The previous values of blocks allocated null-filled during the current update cycle; never written. */
+    private static final float[] FRESH_NULL_PREV_BLOCK = makeFreshNullPrevBlock();
+    /** The previous values of blocks allocated during the current update cycle without null-filling; never written. */
+    private static final float[] FRESH_DEFAULT_PREV_BLOCK = new float[BLOCK_SIZE];
+
+    private static float[] makeFreshNullPrevBlock() {
+        final float[] block = new float[BLOCK_SIZE];
+        Arrays.fill(block, NULL_FLOAT);
+        return block;
+    }
+
+    @Override
+    final float[] freshPrevBlock(final boolean nullFilled) {
+        return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
     @Override

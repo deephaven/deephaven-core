@@ -19,6 +19,8 @@ import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
+import io.deephaven.engine.updategraph.LogicalClock;
+
 import java.util.Arrays;
 
 abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
@@ -30,6 +32,21 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      */
     protected transient UpdateCommitter<ArraySourceHelper<T, UArray>> prevFlusher = null;
     protected transient IntArrayList prevAllocated = null;
+
+    /**
+     * The in-use bitset of every block allocated during the current update cycle, with every bit set, so that writes to
+     * the block record no previous values and reads of its previous values see the {@link #freshPrevBlock read-only
+     * block} of the values it was allocated with. It is never written.
+     */
+    static final long[] FRESH_IN_USE = makeFreshInUse();
+    /** The blocks allocated during the current update cycle, whose previous-value entries commit clears. */
+    protected transient IntArrayList freshBlocks = null;
+
+    private static long[] makeFreshInUse() {
+        final long[] inUse = new long[BLOCK_SIZE >> LOG_INUSE_BITSET_SIZE];
+        Arrays.fill(inUse, -1L);
+        return inUse;
+    }
 
     /**
      * If ensure previous has been called, we need not check previous values when filling.
@@ -119,12 +136,27 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         // Allocate storage up to 'requestedNumBlocks' (not roundedNumBlocks). The difference is that the array size may
         // double, but we only allocate the minimum number of blocks needed. Put another way, we only allocate blocks up
         // to the requested capacity, not all the way up to (the capacity rounded to the next power of two).
+        // No row key in a block allocated during an update cycle existed before it, so its previous values are the
+        // values it is allocated with, which a shared read-only block holds; between cycles they are its values.
+        final boolean markFresh = prevFlusher != null && allocatedNumBlocks < requestedNumBlocks
+                && updateGraph.clock().currentState() == LogicalClock.State.Updating;
         for (int ii = allocatedNumBlocks; ii < requestedNumBlocks; ++ii) {
             if (nullFilled) {
                 blocks[ii] = allocateNullFilledBlock(BLOCK_SIZE);
             } else {
                 blocks[ii] = allocateBlock(BLOCK_SIZE);
             }
+            if (markFresh) {
+                prevBlocks[ii] = freshPrevBlock(nullFilled);
+                prevInUse[ii] = FRESH_IN_USE;
+                if (freshBlocks == null) {
+                    freshBlocks = new IntArrayList();
+                }
+                freshBlocks.add(ii);
+            }
+        }
+        if (markFresh) {
+            prevFlusher.maybeActivate();
         }
         // Note: if we get this far, requestedMaxIndex > maxIndex, so this will always increase maxIndex.
         maxIndex = requestedMaxIndex;
@@ -209,6 +241,14 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     private void commitBlocks() {
+        if (freshBlocks != null && !freshBlocks.isEmpty()) {
+            final UArray[] prevBlocks = getPrevBlocks();
+            freshBlocks.forEach(block -> {
+                prevBlocks[block] = null;
+                prevInUse[block] = null;
+            });
+            freshBlocks.clear();
+        }
         if (prevAllocated == null) {
             return;
         }
@@ -251,6 +291,21 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
     abstract UArray allocateNullFilledBlock(int size);
+
+    /**
+     * @param nullFilled whether the block's values were allocated null-filled, rather than the element type's default
+     * @return a block, shared and never written, of the values a block is allocated with, as the previous values of a
+     *         block allocated during the current update cycle
+     */
+    abstract UArray freshPrevBlock(boolean nullFilled);
+
+    /**
+     * @return whether the block was allocated during the current update cycle, so that its previous values are the ones
+     *         it was allocated with and must not be written
+     */
+    final boolean isFreshBlock(final int block) {
+        return prevInUse[block] == FRESH_IN_USE;
+    }
 
     abstract UArray allocateBlock(int size);
 

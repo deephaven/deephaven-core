@@ -109,6 +109,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
 
                 final long[] inUse;
                 if (prevBlocks[block] == null) {
@@ -266,6 +271,22 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         final long[] newBlock = new long[size];
         Arrays.fill(newBlock, NULL_LONG);
         return newBlock;
+    }
+
+    /** The previous values of blocks allocated null-filled during the current update cycle; never written. */
+    private static final long[] FRESH_NULL_PREV_BLOCK = makeFreshNullPrevBlock();
+    /** The previous values of blocks allocated during the current update cycle without null-filling; never written. */
+    private static final long[] FRESH_DEFAULT_PREV_BLOCK = new long[BLOCK_SIZE];
+
+    private static long[] makeFreshNullPrevBlock() {
+        final long[] block = new long[BLOCK_SIZE];
+        Arrays.fill(block, NULL_LONG);
+        return block;
+    }
+
+    @Override
+    final long[] freshPrevBlock(final boolean nullFilled) {
+        return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
     @Override
