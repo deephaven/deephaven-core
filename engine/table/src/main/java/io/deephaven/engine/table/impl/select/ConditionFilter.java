@@ -38,6 +38,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -87,6 +88,27 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     public static WhereFilter createConditionFilter(@NotNull String formula) {
         return createConditionFilter(formula, FormulaParserConfiguration.parser);
+    }
+
+    /**
+     * Return an {@link Optional} containing the {@link ConditionFilter} that implements the provided filter: the filter
+     * itself when it is a {@link ConditionFilter}, or the {@link ConditionFilter} that a {@link MatchFilter} or
+     * {@link RangeFilter} is implemented by. Otherwise returns {@code Optional.empty()}.
+     *
+     * @param filter an initialized filter
+     * @return the {@link ConditionFilter} that implements {@code filter}, if any
+     */
+    public static Optional<ConditionFilter> extractConditionFilter(@NotNull final WhereFilter filter) {
+        if (filter instanceof ConditionFilter) {
+            return Optional.of((ConditionFilter) filter);
+        }
+        if (filter instanceof MatchFilter) {
+            return Optional.ofNullable(((MatchFilter) filter).getFailoverFilter());
+        }
+        if (filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof ConditionFilter) {
+            return Optional.of((ConditionFilter) ((RangeFilter) filter).getRealFilter());
+        }
+        return Optional.empty();
     }
 
     public static WhereFilter createStateless(@NotNull String formula) {

@@ -117,10 +117,11 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
             final List<CountFilter> filterList = new ArrayList<>();
             boolean forcedWhereFilter = false;
             for (int fi = 0; fi < filters.length; fi++) {
-                final WhereFilter filter = filters[fi];
+                final ConditionFilter conditionFilter =
+                        ConditionFilter.extractConditionFilter(filters[fi]).orElse(null);
+                final WhereFilter filter = conditionFilter != null ? conditionFilter : filters[fi];
                 final CountFilter countFilter;
-                if (!forcedWhereFilter && filter instanceof ConditionFilter) {
-                    final ConditionFilter conditionFilter = (ConditionFilter) filter;
+                if (!forcedWhereFilter && conditionFilter != null) {
                     if (conditionFilter.hasVirtualRowVariables()) {
                         throw new UnsupportedOperationException(
                                 "UpdateBy CountWhere operator does not support refreshing filters");

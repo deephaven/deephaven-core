@@ -55,7 +55,7 @@ public class BasePushdownFilterContextImplTest {
             filter.init(table.getDefinition());
             assertTrue("sanity: " + expression + " parses to a MatchFilter", filter instanceof MatchFilter);
             assertNotNull("sanity: " + expression + " fails over",
-                    ((MatchFilter) filter).getFailoverFilterIfCached());
+                    ((MatchFilter) filter).getFailoverFilter());
 
             assertEquals(expression, entry.getValue(), nullBehaviorOf(filter, source));
         }
