@@ -282,20 +282,32 @@ public class TestLongLongMap {
             return;
         }
         final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        // Never populated: there is no array yet.
+        assertEmptyNotBroken(map);
+        // Populate it, so that the reset below releases a real array, then check the same things once more.
+        map.put(1, 10);
+        map.put(2, 20);
+        map.put(3, 30);
+        assertEquals(3, map.size());
+        assertTrue(map.capacity() > 0);
+        map.resetToNull();
+        assertEmptyNotBroken(map);
+    }
+
+    /**
+     * Clearing a map without an array is a no-op, and its size, capacity and accessors all answer with nothing.
+     */
+    private static void assertEmptyNotBroken(final NullableLongLongMap map) {
         final NullableLongLongMapTestAccessors accessors = (NullableLongLongMapTestAccessors) map;
-        for (int round = 0; round < 2; ++round) {
-            map.clear();
-            assertEquals(0, map.size());
-            assertTrue(map.isEmpty());
-            assertEquals(0, map.capacity());
-            assertEquals(0, accessors.keyArray().length);
-            assertEquals(0, accessors.valueArray().length);
-            final long[] space = new long[4];
-            assertSame(space, accessors.keyArray(space));
-            assertSame(space, accessors.valueArray(space));
-            // Round two: the same, after a reset has released a real array.
-            map.resetToNull();
-        }
+        map.clear();
+        assertEquals(0, map.size());
+        assertTrue(map.isEmpty());
+        assertEquals(0, map.capacity());
+        assertEquals(0, accessors.keyArray().length);
+        assertEquals(0, accessors.valueArray().length);
+        final long[] space = new long[4];
+        assertSame(space, accessors.keyArray(space));
+        assertSame(space, accessors.valueArray(space));
     }
 
     @Test
