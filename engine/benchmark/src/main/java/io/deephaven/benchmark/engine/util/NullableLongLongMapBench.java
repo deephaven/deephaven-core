@@ -65,7 +65,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * <li>{@code lookupPattern} controls how probed keys are chosen when {@code lookups != 0}: a uniform random sample of
  * the table's keys — without replacement when {@code lookups <= size}, with replacement otherwise — in ascending
  * ({@code sorted}) or random ({@code shuffled}) order, or a contiguous ascending run ({@code window}, which needs
- * {@code lookups <= size}). {@code window} turns pulsed-table lookups into a dense streaming read and flatters the
+ * {@code lookups <= size} and one of the ordered key distributions; with {@code random} keys no run is ascending, so
+ * the combination is rejected). {@code window} turns pulsed-table lookups into a dense streaming read and flatters the
  * weak-hash implementations enormously; it is retained as a labeled control, not a realistic workload.</li>
  * <li>With {@code presize=true} the map is constructed at full capacity, so the filled table sits at ~{@code
  * loadFactor} occupancy and {@code fill} measures pure insertion rather than growth. When comparing against FASTUTIL at
@@ -261,6 +262,10 @@ public class NullableLongLongMapBench {
             return tableKeys;
         }
         if ("window".equals(lookupPattern)) {
+            if ("random".equals(keyDist)) {
+                throw new IllegalArgumentException(
+                        "lookupPattern=window needs an ordered key distribution (sequential, pulsed or regioned), not random");
+            }
             if (nLookups > tableKeys.length) {
                 throw new IllegalArgumentException(
                         "lookupPattern=window needs lookups <= size: lookups=" + nLookups + ", size="
@@ -312,7 +317,7 @@ public class NullableLongLongMapBench {
             }
             return candidates;
         }
-        if ("window".equals(lookupPattern) && !"random".equals(keyDist)) {
+        if ("window".equals(lookupPattern)) {
             return runOf(tableKeys[tableKeys.length - 1] + 1, candidates.length);
         }
         if ("shuffled".equals(lookupPattern)) {
