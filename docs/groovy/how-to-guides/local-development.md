@@ -144,39 +144,6 @@ Browse all available modules on [Maven Central](https://central.sonatype.com/nam
 
 To use Deephaven table operations in unit tests, you need to open an [`ExecutionContext`](../conceptual/execution-context.md).
 
-### JVM configuration
-
-Deephaven logs JVM internal stats that require the following JVM argument:
-
-```
---add-exports=java.management/sun.management=ALL-UNNAMED
-```
-
-Add this to your Gradle test task:
-
-```groovy skip-test
-test {
-    jvmArgs '--add-exports=java.management/sun.management=ALL-UNNAMED'
-}
-```
-
-Or in Maven:
-
-```xml
-<build>
-    <plugins>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.2.5</version>
-            <configuration>
-                <argLine>--add-exports=java.management/sun.management=ALL-UNNAMED</argLine>
-            </configuration>
-        </plugin>
-    </plugins>
-</build>
-```
-
 > **Note:** Advanced use cases like the Barrage Java client may require an additional JVM argument: `--add-opens=java.base/java.nio=ALL-UNNAMED`.
 
 ### Example test setup

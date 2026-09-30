@@ -90,7 +90,7 @@ pytest tests/ -v
 
 When testing with [`time_table`](../reference/table-operations/create/timeTable.md) or other ticking tables, use [`await_update`](../reference/table-operations/table-listeners/await-update.md) to wait for updates:
 
-```python skip-test
+```python skip-test ticking-table order=null
 from deephaven import time_table
 
 
@@ -180,7 +180,8 @@ my_project/
 │   ├── conftest.py      # Server setup
 │   ├── test_my_utils.py
 │   └── data/
-│       └── test_data.csv
+│       ├── test_data.csv
+│       └── test_data.parquet
 ├── pyproject.toml
 └── README.md
 ```
@@ -210,3 +211,4 @@ testpaths = ["tests"]
 - [Install with pip](../getting-started/pip-install.md)
 - [Python client quickstart](../getting-started/pyclient-quickstart.md)
 - [Create tables](./new-and-empty-table.md)
+- [Local development with Deephaven libraries (Groovy/Java)](/core/groovy/docs/how-to-guides/local-development)
