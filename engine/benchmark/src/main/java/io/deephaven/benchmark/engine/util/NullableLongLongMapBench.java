@@ -134,9 +134,9 @@ public class NullableLongLongMapBench {
     /**
      * "random": uniform random longs. "sequential": one contiguous block of small keys. "pulsed": pulses of N
      * consecutive keys separated by gaps. "regioned": a partitioned table's row keys, 64 runs a power of two apart (see
-     * class javadoc).
+     * class javadoc). pulsed is the default: it is the workload the series is measured against.
      */
-    @Param({"random"})
+    @Param({"pulsed"})
     public String keyDist;
 
     /**
@@ -495,8 +495,10 @@ public class NullableLongLongMapBench {
         private final Long2LongOpenHashMap map;
 
         FastutilAdapter(final int desiredEntries, final double loadFactor) {
-            // fastutil's first argument is expected element count, not slot capacity; convert from ours.
-            map = new Long2LongOpenHashMap(Math.max(16, (int) (desiredEntries * loadFactor)), (float) loadFactor);
+            // fastutil's first argument is the expected element count, not slot capacity; convert from ours exactly, so
+            // that a non-presized fill starts both maps at the same handful of slots and grows them the same number
+            // of times.
+            map = new Long2LongOpenHashMap((int) (desiredEntries * loadFactor), (float) loadFactor);
             map.defaultReturnValue(NULL_LONG);
         }
 
