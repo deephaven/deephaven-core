@@ -15,12 +15,11 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.util.copy.CopyKernel;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import io.deephaven.engine.updategraph.LogicalClock;
 
 import java.util.Arrays;
 
