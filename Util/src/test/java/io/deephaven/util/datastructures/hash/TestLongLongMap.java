@@ -206,27 +206,69 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
+        // Every arrangement of the first bucket an insert can meet: keys in slots 0..occupied-1, one or two of them
+        // deleted, and either an empty slot after them or, when the bucket is full, the probe moving on to the next
+        // bucket. The insert must take the earliest deleted slot, never the empty one.
         final int entriesPerBucket = factory.getEntriesPerBucket();
+        for (int occupied = 1; occupied <= entriesPerBucket; ++occupied) {
+            for (int deleted = 0; deleted < occupied; ++deleted) {
+                checkTombstoneReuse(occupied, deleted, -1);
+                for (int alsoDeleted = deleted + 2; alsoDeleted < occupied; ++alsoDeleted) {
+                    checkTombstoneReuse(occupied, deleted, alsoDeleted);
+                }
+            }
+        }
+    }
+
+    /**
+     * Fill the first bucket of a fresh map with {@code occupied} colliding keys, delete the one at {@code deleted} (and
+     * the one at {@code alsoDeleted}, when it is not -1), insert one more colliding key, and check that it took the
+     * earliest tombstone: the count of non-empty slots is unchanged and the new key stands where the deleted key stood.
+     * (The two tombstones are never adjacent, so the key array tells the right slot from the wrong one.)
+     */
+    private void checkTombstoneReuse(final int occupied, final int deleted, final int alsoDeleted) {
+        final String where = "occupied=" + occupied + " deleted=" + deleted + " alsoDeleted=" + alsoDeleted;
         final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         final HashMapBase base = (HashMapBase) map;
+        // The first key goes in before anything is measured: a never-populated map has no array, hence no capacity.
         final long first = 1;
         map.put(first, 10);
-        final int numBuckets = map.capacity() / entriesPerBucket;
+        final int numBuckets = map.capacity() / factory.getEntriesPerBucket();
         final int bucket = HashMapBase.probe1(first, numBuckets);
-        // Another key whose probe starts in the same bucket.
-        long second = 2;
-        while (HashMapBase.probe1(second, numBuckets) != bucket) {
-            ++second;
+        // occupied + 1 keys whose probes all start in that bucket, in the order they will be inserted
+        final long[] colliding = new long[occupied + 1];
+        colliding[0] = first;
+        long candidate = first;
+        for (int ci = 1; ci < colliding.length; ++ci) {
+            do {
+                ++candidate;
+            } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+            colliding[ci] = candidate;
         }
-        map.remove(first);
-        assertEquals(1, base.nonEmptySlots);
-        map.put(second, 20);
-        // Reused the deleted slot: the count of non-empty slots did not grow, and the map holds exactly the new key.
-        assertEquals(1, base.nonEmptySlots);
-        assertEquals(1, map.size());
-        final long[] keys = ((NullableLongLongMapTestAccessors) map).keyArray();
-        assertEquals(1, keys.length);
-        assertEquals(second, keys[0]);
+        for (int ki = 1; ki < occupied; ++ki) {
+            map.put(colliding[ki], 10 + ki);
+        }
+        assertEquals(where, occupied, base.nonEmptySlots);
+        map.remove(colliding[deleted]);
+        if (alsoDeleted != -1) {
+            map.remove(colliding[alsoDeleted]);
+        }
+        // Tombstones still count as non-empty.
+        assertEquals(where, occupied, base.nonEmptySlots);
+        final long fresh = colliding[occupied];
+        map.put(fresh, 99);
+        assertEquals(where, occupied, base.nonEmptySlots);
+        // The keys in slot order: the fresh key stands where the earliest deleted key stood.
+        final long[] expected = new long[occupied - (alsoDeleted == -1 ? 0 : 1)];
+        int ei = 0;
+        for (int ki = 0; ki < occupied; ++ki) {
+            if (ki == deleted) {
+                expected[ei++] = fresh;
+            } else if (ki != alsoDeleted) {
+                expected[ei++] = colliding[ki];
+            }
+        }
+        assertArrayEquals(where, expected, ((NullableLongLongMapTestAccessors) map).keyArray());
     }
 
     @Test
