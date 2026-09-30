@@ -170,7 +170,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         outerInstance = null;
         QueryPerformanceRecorderState.resetInstance();
         if (outer != null) {
-            QueryPerformanceRecorderState.THE_LOCAL.set(outer);
+            QueryPerformanceRecorderState.setInstance(outer);
         }
     }
 
@@ -207,7 +207,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         }
         outerInstance = current == QueryPerformanceRecorderState.DUMMY_RECORDER ? null : current;
         final int thisInstallation = ++installation;
-        QueryPerformanceRecorderState.THE_LOCAL.set(this);
+        QueryPerformanceRecorderState.setInstance(this);
 
         queryNugget.onBaseEntryStart();
         state = QueryState.RUNNING;
