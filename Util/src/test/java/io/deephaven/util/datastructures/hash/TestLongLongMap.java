@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class TestLongLongMap {
-    private static final Factory referenceFactory = new Factory("fastutil", TestLongLongMap::newReferenceMap);
+    private static final Factory referenceFactory = new Factory("fastutil", 1, TestLongLongMap::newReferenceMap);
 
     private static NullableLongLongMap newReferenceMap(final int initialCapacity, final float loadFactor) {
         return new TestNullableLongLongMap(initialCapacity, loadFactor);
@@ -33,9 +33,9 @@ public class TestLongLongMap {
         List<Object[]> result = new ArrayList<>();
         final Factory[] factories = {
                 referenceFactory,
-                new Factory("K1V1", HashMapLockFreeK1V1::new),
-                new Factory("K2V2", HashMapLockFreeK2V2::new),
-                new Factory("K4V4", HashMapLockFreeK4V4::new)
+                new Factory("K1V1", 1, HashMapLockFreeK1V1::new),
+                new Factory("K2V2", 2, HashMapLockFreeK2V2::new),
+                new Factory("K4V4", 4, HashMapLockFreeK4V4::new)
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};
@@ -206,8 +206,7 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        // K1V1 -> 1, K2V2 -> 2, K4V4 -> 4: the factory's name says how many slots a bucket has.
-        final int entriesPerBucket = factory.toString().charAt(1) - '0';
+        final int entriesPerBucket = factory.getEntriesPerBucket();
         final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         final HashMapBase base = (HashMapBase) map;
         final long first = 1;
@@ -459,16 +458,22 @@ public class TestLongLongMap {
 
     static class Factory {
         private final String name;
+        private final int entriesPerBucket;
         private BiFunction<Integer, Float, NullableLongLongMap> constructor;
 
-        Factory(String name, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
+        Factory(String name, int entriesPerBucket, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
             this.name = name;
+            this.entriesPerBucket = entriesPerBucket;
             this.constructor = constructor;
         }
 
         @Override
         public String toString() {
             return name;
+        }
+
+        public int getEntriesPerBucket() {
+            return entriesPerBucket;
         }
 
         public NullableLongLongMap create(int initialCapacity, float loadFactor) {
