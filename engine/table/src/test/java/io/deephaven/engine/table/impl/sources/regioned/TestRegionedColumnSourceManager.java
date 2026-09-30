@@ -972,12 +972,14 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertNotEquals(RowSequence.NULL_ROW_KEY, positionB);
         final AtomicLong currentDuringUpdate = new AtomicLong(-2);
         final AtomicLong previousDuringUpdate = new AtomicLong(-2);
+        final AtomicReference<RowSet> addedDuringUpdate = new AtomicReference<>();
         final TableUpdateListener lookupRecorder =
                 new InstrumentedTableUpdateListenerAdapter(partitioningIndex.table(), false) {
                     @Override
                     public void onUpdate(final TableUpdate upstream) {
                         currentDuringUpdate.set(partitioningIndex.rowKeyLookup().apply("B", false));
                         previousDuringUpdate.set(partitioningIndex.rowKeyLookup().apply("B", true));
+                        addedDuringUpdate.set(upstream.added().copy());
                     }
                 };
         partitioningIndex.table().addUpdateListener(lookupRecorder);
@@ -1012,12 +1014,42 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         updateGraph.runWithinUnitTestCycle(() -> {
         });
         assertEquals(RowSequence.NULL_ROW_KEY, partitioningIndex.rowKeyLookup().apply("B", true));
-        partitioningIndex.table().removeUpdateListener(lookupRecorder);
         final WritableRowSet expectedA = RowSetFactory.fromRange(
                 RegionedColumnSource.getFirstRowKey(0), RegionedColumnSource.getFirstRowKey(0) + 4);
         expectedA.insertRange(
                 RegionedColumnSource.getFirstRowKey(1), RegionedColumnSource.getFirstRowKey(1) + 999);
         checkIndex(Map.of("A", expectedA), partitioningIndex);
+
+        // Adding a location for B again brings its bucket back at the position it had before, as an add.
+        addedDuringUpdate.get().close();
+        final int readdedRegion = 4;
+        jmock.checking(new Expectations() {
+            {
+                oneOf(tableLocation0B).refresh();
+                IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
+                    oneOf(columnSources[ci]).addRegion(with(columnDefinitions.get(ci)),
+                            with(columnLocations[2][ci]));
+                    will(returnValue(readdedRegion));
+                });
+            }
+        });
+        SUT.addLocation(tableLocation0B);
+        updateGraph.runWithinUnitTestCycle(SUT::refresh);
+        jmock.assertIsSatisfied();
+
+        validator.validate();
+        assertFalse(validator.hasFailed());
+        try (final RowSet added = addedDuringUpdate.get()) {
+            assertRowSetEquals(RowSetFactory.fromKeys(positionB), added);
+        }
+        assertEquals(positionB, currentDuringUpdate.get());
+        assertEquals(RowSequence.NULL_ROW_KEY, previousDuringUpdate.get());
+        checkIndex(Map.of(
+                "A", expectedA,
+                "B", RowSetFactory.fromRange(RegionedColumnSource.getFirstRowKey(readdedRegion),
+                        RegionedColumnSource.getFirstRowKey(readdedRegion) + lastSizes[2] - 1)),
+                partitioningIndex);
+        partitioningIndex.table().removeUpdateListener(lookupRecorder);
 
         IntStream.range(0, 2).forEachOrdered(li -> {
             final TableLocation tl = tableLocations[li];
