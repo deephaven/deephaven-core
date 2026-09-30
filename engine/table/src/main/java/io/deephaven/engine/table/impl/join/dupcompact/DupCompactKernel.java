@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.join.dupcompact;
 
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -11,7 +13,18 @@ import org.jetbrains.annotations.NotNull;
 
 public interface DupCompactKernel {
 
-    static DupCompactKernel makeDupCompactDeephavenOrdering(@NotNull final ChunkType chunkType, final boolean reverse) {
+    /**
+     * Make a DupCompactKernel that orders values as Deephaven sorts them.
+     *
+     * @param chunkType the chunk type of the values
+     * @param dataType the data type of the values; for Object values whose natural ordering is consistent with equals
+     *        (see {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}) the kernel tests equality with
+     *        {@code equals}, otherwise with {@link ObjectComparisons#compareEquals(Object, Object)}
+     * @param reverse true for descending values
+     * @return the DupCompactKernel
+     */
+    static DupCompactKernel makeDupCompactDeephavenOrdering(@NotNull final ChunkType chunkType,
+            @NotNull final Class<?> dataType, final boolean reverse) {
         if (reverse) {
             switch (chunkType) {
                 case Char:
@@ -29,7 +42,9 @@ public interface DupCompactKernel {
                 case Double:
                     return DoubleReverseDupCompactKernel.INSTANCE;
                 case Object:
-                    return ObjectReverseDupCompactKernel.INSTANCE;
+                    return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+                            ? EqualsConsistentObjectReverseDupCompactKernel.INSTANCE
+                            : ObjectReverseDupCompactKernel.INSTANCE;
                 case Boolean:
                 default:
                     throw new UnsupportedOperationException();
@@ -51,7 +66,9 @@ public interface DupCompactKernel {
                 case Double:
                     return DoubleDupCompactKernel.INSTANCE;
                 case Object:
-                    return ObjectDupCompactKernel.INSTANCE;
+                    return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+                            ? EqualsConsistentObjectDupCompactKernel.INSTANCE
+                            : ObjectDupCompactKernel.INSTANCE;
                 case Boolean:
                 default:
                     throw new UnsupportedOperationException();
@@ -59,7 +76,18 @@ public interface DupCompactKernel {
         }
     }
 
-    static DupCompactKernel makeDupCompactNaturalOrdering(@NotNull final ChunkType chunkType, final boolean reverse) {
+    /**
+     * Make a DupCompactKernel that orders values by their natural ordering.
+     *
+     * @param chunkType the chunk type of the values
+     * @param dataType the data type of the values; for Object values whose natural ordering is consistent with equals
+     *        (see {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}) the kernel tests equality with
+     *        {@code equals}, otherwise with {@link ObjectComparisons#compareEquals(Object, Object)}
+     * @param reverse true for descending values
+     * @return the DupCompactKernel
+     */
+    static DupCompactKernel makeDupCompactNaturalOrdering(@NotNull final ChunkType chunkType,
+            @NotNull final Class<?> dataType, final boolean reverse) {
         if (reverse) {
             switch (chunkType) {
                 case Char:
@@ -77,7 +105,9 @@ public interface DupCompactKernel {
                 case Double:
                     return DoubleReverseDupCompactKernel.INSTANCE;
                 case Object:
-                    return ObjectReverseDupCompactKernel.INSTANCE;
+                    return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+                            ? EqualsConsistentObjectReverseDupCompactKernel.INSTANCE
+                            : ObjectReverseDupCompactKernel.INSTANCE;
                 case Boolean:
                 default:
                     throw new UnsupportedOperationException();
@@ -99,7 +129,9 @@ public interface DupCompactKernel {
                 case Double:
                     return DoubleDupCompactKernel.INSTANCE;
                 case Object:
-                    return ObjectDupCompactKernel.INSTANCE;
+                    return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+                            ? EqualsConsistentObjectDupCompactKernel.INSTANCE
+                            : ObjectDupCompactKernel.INSTANCE;
                 case Boolean:
                 default:
                     throw new UnsupportedOperationException();

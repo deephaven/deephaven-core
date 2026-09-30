@@ -119,7 +119,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         final boolean reverse = order == SortingOrder.Descending;
 
         stampChunkType = leftStampSource.getChunkType();
-        chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
+        chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, rightStampSource.getType(), reverse);
         stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
         stampCompact = CompactKernel.makeCompact(stampChunkType);
 

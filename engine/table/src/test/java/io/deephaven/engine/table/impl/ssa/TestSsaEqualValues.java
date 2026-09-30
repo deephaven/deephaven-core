@@ -16,6 +16,10 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
+import io.deephaven.engine.table.impl.join.dupcompact.EqualsConsistentObjectDupCompactKernel;
+import io.deephaven.engine.table.impl.join.dupcompact.EqualsConsistentObjectReverseDupCompactKernel;
+import io.deephaven.engine.table.impl.join.dupcompact.ObjectDupCompactKernel;
+import io.deephaven.engine.table.impl.join.dupcompact.ObjectReverseDupCompactKernel;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
 import org.junit.Test;
 
@@ -25,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for the as-of join segmented sorted array iterator when equal stamp values are not identical: distinct
@@ -34,6 +39,12 @@ import static org.junit.Assert.assertEquals;
 public class TestSsaEqualValues {
     private static final int NODE_SIZE = 4;
     private static final int RUN_LENGTH = 2 * NODE_SIZE;
+
+    /**
+     * String values run through the equals consistent Object classes, and through the general Object classes when the
+     * data type is not known to have a natural ordering consistent with equals.
+     */
+    private static final Class<?>[] STRING_DATA_TYPES = {String.class, CharSequence.class};
 
     /**
      * Distinct String instances that compare equal to each other.
@@ -86,14 +97,14 @@ public class TestSsaEqualValues {
      * Builds an SSA holding RUN_LENGTH equal values (row keys 0 .. RUN_LENGTH - 1), which spans two leaves, then stamps
      * a single left value equal to that run. An exact match takes the last row of the run.
      */
-    private static long stampAgainstEqualRun(final ChunkType chunkType, final boolean reverse,
-            final WritableChunk<Values> rightValues, final WritableChunk<Values> leftValue) {
-        final SegmentedSortedArray ssa = SegmentedSortedArray.make(chunkType, reverse, NODE_SIZE);
+    private static long stampAgainstEqualRun(final ChunkType chunkType, final Class<?> dataType,
+            final boolean reverse, final WritableChunk<Values> rightValues, final WritableChunk<Values> leftValue) {
+        final SegmentedSortedArray ssa = SegmentedSortedArray.make(chunkType, dataType, reverse, NODE_SIZE);
         try (final WritableLongChunk<RowKeys> rightKeys = keys(sequentialKeys(RUN_LENGTH));
                 final WritableLongChunk<RowKeys> leftKeys = keys(100);
                 final WritableLongChunk<RowKeys> result = WritableLongChunk.makeWritableChunk(1)) {
             ssa.insert(rightValues, rightKeys);
-            ChunkSsaStamp.make(chunkType, reverse).processEntry(leftValue, leftKeys, ssa, result, false);
+            ChunkSsaStamp.make(chunkType, dataType, reverse).processEntry(leftValue, leftKeys, ssa, result, false);
             return result.get(0);
         } finally {
             rightValues.close();
@@ -123,25 +134,29 @@ public class TestSsaEqualValues {
 
     @Test
     public void testObjectChunkStampEqualRunAcrossLeaves() {
-        assertEquals(RUN_LENGTH - 1, stampAgainstEqualRun(ChunkType.Object, false,
-                objects(freshRun("b")), objects(fresh("b"))));
+        for (final Class<?> dataType : STRING_DATA_TYPES) {
+            assertEquals(dataType.getName(), RUN_LENGTH - 1, stampAgainstEqualRun(ChunkType.Object, dataType, false,
+                    objects(freshRun("b")), objects(fresh("b"))));
+        }
     }
 
     @Test
     public void testObjectReverseChunkStampEqualRunAcrossLeaves() {
-        assertEquals(RUN_LENGTH - 1, stampAgainstEqualRun(ChunkType.Object, true,
-                objects(freshRun("b")), objects(fresh("b"))));
+        for (final Class<?> dataType : STRING_DATA_TYPES) {
+            assertEquals(dataType.getName(), RUN_LENGTH - 1, stampAgainstEqualRun(ChunkType.Object, dataType, true,
+                    objects(freshRun("b")), objects(fresh("b"))));
+        }
     }
 
     @Test
     public void testDoubleReverseChunkStampNaNRunAcrossLeaves() {
-        assertEquals(RUN_LENGTH - 1, stampAgainstEqualRun(ChunkType.Double, true,
+        assertEquals(RUN_LENGTH - 1, stampAgainstEqualRun(ChunkType.Double, double.class, true,
                 doubles(doubleRun(Double.NaN)), doubles(Double.NaN)));
     }
 
     @Test
     public void testFloatReverseChunkStampNaNRunAcrossLeaves() {
-        assertEquals(RUN_LENGTH - 1, stampAgainstEqualRun(ChunkType.Float, true,
+        assertEquals(RUN_LENGTH - 1, stampAgainstEqualRun(ChunkType.Float, float.class, true,
                 floats(floatRun(Float.NaN)), floats(Float.NaN)));
     }
 
@@ -152,30 +167,34 @@ public class TestSsaEqualValues {
      */
     @Test
     public void testObjectSsaSsaInsertionDisallowExact() {
-        final SegmentedSortedArray leftSsa = SegmentedSortedArray.make(ChunkType.Object, false, NODE_SIZE);
-        final SegmentedSortedArray rightSsa = SegmentedSortedArray.make(ChunkType.Object, false, NODE_SIZE);
-        final ContiguousWritableRowRedirection redirection = new ContiguousWritableRowRedirection(8);
-        try (final WritableObjectChunk<Object, Values> leftValues = objects(fresh("a"), fresh("b"));
-                final WritableLongChunk<RowKeys> leftKeys = keys(0, 1);
-                final WritableObjectChunk<Object, Values> rightValues = objects(fresh("a"));
-                final WritableLongChunk<RowKeys> rightKeys = keys(0);
-                final WritableObjectChunk<Object, Values> insertValues = objects(fresh("b"));
-                final WritableLongChunk<RowKeys> insertKeys = keys(1);
-                final WritableObjectChunk<Object, Values> nextValues = WritableObjectChunk.makeWritableChunk(1)) {
-            leftSsa.insert(leftValues, leftKeys);
-            rightSsa.insert(rightValues, rightKeys);
-            final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Object, false);
-            stamp.processEntry(leftSsa, rightSsa, redirection, true);
-            assertEquals(RowSequence.NULL_ROW_KEY, redirection.get(0));
-            assertEquals(0, redirection.get(1));
+        for (final Class<?> dataType : STRING_DATA_TYPES) {
+            final SegmentedSortedArray leftSsa =
+                    SegmentedSortedArray.make(ChunkType.Object, dataType, false, NODE_SIZE);
+            final SegmentedSortedArray rightSsa =
+                    SegmentedSortedArray.make(ChunkType.Object, dataType, false, NODE_SIZE);
+            final ContiguousWritableRowRedirection redirection = new ContiguousWritableRowRedirection(8);
+            try (final WritableObjectChunk<Object, Values> leftValues = objects(fresh("a"), fresh("b"));
+                    final WritableLongChunk<RowKeys> leftKeys = keys(0, 1);
+                    final WritableObjectChunk<Object, Values> rightValues = objects(fresh("a"));
+                    final WritableLongChunk<RowKeys> rightKeys = keys(0);
+                    final WritableObjectChunk<Object, Values> insertValues = objects(fresh("b"));
+                    final WritableLongChunk<RowKeys> insertKeys = keys(1);
+                    final WritableObjectChunk<Object, Values> nextValues = WritableObjectChunk.makeWritableChunk(1)) {
+                leftSsa.insert(leftValues, leftKeys);
+                rightSsa.insert(rightValues, rightKeys);
+                final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Object, dataType, false);
+                stamp.processEntry(leftSsa, rightSsa, redirection, true);
+                assertEquals(RowSequence.NULL_ROW_KEY, redirection.get(0));
+                assertEquals(0, redirection.get(1));
 
-            final int valuesWithNext = rightSsa.insertAndGetNextValue(insertValues, insertKeys, nextValues);
-            // the inserted value is the last one in the right SSA
-            assertEquals(0, valuesWithNext);
-            stamp.processInsertion(leftSsa, insertValues, insertKeys, nextValues, redirection,
-                    RowSetFactory.builderRandom(), true, true);
-            assertEquals(RowSequence.NULL_ROW_KEY, redirection.get(0));
-            assertEquals(0, redirection.get(1));
+                final int valuesWithNext = rightSsa.insertAndGetNextValue(insertValues, insertKeys, nextValues);
+                // the inserted value is the last one in the right SSA
+                assertEquals(0, valuesWithNext);
+                stamp.processInsertion(leftSsa, insertValues, insertKeys, nextValues, redirection,
+                        RowSetFactory.builderRandom(), true, true);
+                assertEquals(RowSequence.NULL_ROW_KEY, redirection.get(0));
+                assertEquals(0, redirection.get(1));
+            }
         }
     }
 
@@ -186,29 +205,33 @@ public class TestSsaEqualValues {
      */
     @Test
     public void testObjectSsaSsaRemovalDisallowExact() {
-        final SegmentedSortedArray leftSsa = SegmentedSortedArray.make(ChunkType.Object, false, NODE_SIZE);
-        final SegmentedSortedArray rightSsa = SegmentedSortedArray.make(ChunkType.Object, false, NODE_SIZE);
-        final ContiguousWritableRowRedirection redirection = new ContiguousWritableRowRedirection(8);
-        try (final WritableObjectChunk<Object, Values> leftValues = objects(fresh("a"), fresh("b"), fresh("c"));
-                final WritableLongChunk<RowKeys> leftKeys = keys(0, 1, 2);
-                final WritableObjectChunk<Object, Values> rightValues = objects(fresh("a"), fresh("b"));
-                final WritableLongChunk<RowKeys> rightKeys = keys(0, 1);
-                final WritableObjectChunk<Object, Values> removeValues = objects(fresh("b"));
-                final WritableLongChunk<RowKeys> removeKeys = keys(1);
-                final WritableLongChunk<RowKeys> priorKeys = WritableLongChunk.makeWritableChunk(1)) {
-            leftSsa.insert(leftValues, leftKeys);
-            rightSsa.insert(rightValues, rightKeys);
-            final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Object, false);
-            stamp.processEntry(leftSsa, rightSsa, redirection, true);
-            assertEquals(0, redirection.get(1));
-            assertEquals(1, redirection.get(2));
+        for (final Class<?> dataType : STRING_DATA_TYPES) {
+            final SegmentedSortedArray leftSsa =
+                    SegmentedSortedArray.make(ChunkType.Object, dataType, false, NODE_SIZE);
+            final SegmentedSortedArray rightSsa =
+                    SegmentedSortedArray.make(ChunkType.Object, dataType, false, NODE_SIZE);
+            final ContiguousWritableRowRedirection redirection = new ContiguousWritableRowRedirection(8);
+            try (final WritableObjectChunk<Object, Values> leftValues = objects(fresh("a"), fresh("b"), fresh("c"));
+                    final WritableLongChunk<RowKeys> leftKeys = keys(0, 1, 2);
+                    final WritableObjectChunk<Object, Values> rightValues = objects(fresh("a"), fresh("b"));
+                    final WritableLongChunk<RowKeys> rightKeys = keys(0, 1);
+                    final WritableObjectChunk<Object, Values> removeValues = objects(fresh("b"));
+                    final WritableLongChunk<RowKeys> removeKeys = keys(1);
+                    final WritableLongChunk<RowKeys> priorKeys = WritableLongChunk.makeWritableChunk(1)) {
+                leftSsa.insert(leftValues, leftKeys);
+                rightSsa.insert(rightValues, rightKeys);
+                final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Object, dataType, false);
+                stamp.processEntry(leftSsa, rightSsa, redirection, true);
+                assertEquals(0, redirection.get(1));
+                assertEquals(1, redirection.get(2));
 
-            rightSsa.removeAndGetPrior(removeValues, removeKeys, priorKeys);
-            assertEquals(0, priorKeys.get(0));
-            stamp.processRemovals(leftSsa, removeValues, removeKeys, priorKeys, redirection,
-                    RowSetFactory.builderRandom(), true);
-            assertEquals(0, redirection.get(1));
-            assertEquals(0, redirection.get(2));
+                rightSsa.removeAndGetPrior(removeValues, removeKeys, priorKeys);
+                assertEquals(0, priorKeys.get(0));
+                stamp.processRemovals(leftSsa, removeValues, removeKeys, priorKeys, redirection,
+                        RowSetFactory.builderRandom(), true);
+                assertEquals(0, redirection.get(1));
+                assertEquals(0, redirection.get(2));
+            }
         }
     }
 
@@ -219,8 +242,10 @@ public class TestSsaEqualValues {
      */
     @Test
     public void testDoubleSsaSsaInsertionDisallowExactNaN() {
-        final SegmentedSortedArray leftSsa = SegmentedSortedArray.make(ChunkType.Double, false, NODE_SIZE);
-        final SegmentedSortedArray rightSsa = SegmentedSortedArray.make(ChunkType.Double, false, NODE_SIZE);
+        final SegmentedSortedArray leftSsa =
+                SegmentedSortedArray.make(ChunkType.Double, double.class, false, NODE_SIZE);
+        final SegmentedSortedArray rightSsa =
+                SegmentedSortedArray.make(ChunkType.Double, double.class, false, NODE_SIZE);
         final ContiguousWritableRowRedirection redirection = new ContiguousWritableRowRedirection(8);
         try (final WritableDoubleChunk<Values> leftValues = doubles(1.0, Double.NaN);
                 final WritableLongChunk<RowKeys> leftKeys = keys(0, 1);
@@ -231,7 +256,7 @@ public class TestSsaEqualValues {
                 final WritableDoubleChunk<Values> nextValues = WritableDoubleChunk.makeWritableChunk(1)) {
             leftSsa.insert(leftValues, leftKeys);
             rightSsa.insert(rightValues, rightKeys);
-            final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Double, false);
+            final SsaSsaStamp stamp = SsaSsaStamp.make(ChunkType.Double, double.class, false);
             stamp.processEntry(leftSsa, rightSsa, redirection, true);
             assertEquals(0, redirection.get(1));
 
@@ -269,7 +294,8 @@ public class TestSsaEqualValues {
     @Test
     public void testObjectSsaOrdersCompareEqualValuesByRowKey() {
         for (final boolean reverse : new boolean[] {false, true}) {
-            final SegmentedSortedArray ssa = SegmentedSortedArray.make(ChunkType.Object, reverse, NODE_SIZE);
+            final SegmentedSortedArray ssa =
+                    SegmentedSortedArray.make(ChunkType.Object, BigDecimal.class, reverse, NODE_SIZE);
             insertOne(ssa, new BigDecimal("1.0"), 5);
             insertOne(ssa, new BigDecimal("1.00"), 3);
             insertOne(ssa, new BigDecimal("1.000"), 4);
@@ -284,7 +310,8 @@ public class TestSsaEqualValues {
     public void testObjectSsaRemovesCompareEqualValue() {
         for (final boolean reverse : new boolean[] {false, true}) {
             for (final int nodeSize : new int[] {2, 4}) {
-                final SegmentedSortedArray ssa = SegmentedSortedArray.make(ChunkType.Object, reverse, nodeSize);
+                final SegmentedSortedArray ssa =
+                        SegmentedSortedArray.make(ChunkType.Object, BigDecimal.class, reverse, nodeSize);
                 insertOne(ssa, new BigDecimal("0"), 0);
                 insertOne(ssa, new BigDecimal("1.0"), 5);
                 insertOne(ssa, new BigDecimal("1.0"), 8);
@@ -307,7 +334,9 @@ public class TestSsaEqualValues {
     @Test
     public void testObjectDupCompactCompareEqualValues() {
         for (final boolean reverse : new boolean[] {false, true}) {
-            final DupCompactKernel kernel = DupCompactKernel.makeDupCompactNaturalOrdering(ChunkType.Object, reverse);
+            final DupCompactKernel kernel =
+                    DupCompactKernel.makeDupCompactNaturalOrdering(ChunkType.Object, BigDecimal.class,
+                            reverse);
             final Object low = reverse ? new BigDecimal("2") : new BigDecimal("0");
             final Object high = reverse ? new BigDecimal("0") : new BigDecimal("2");
             try (final WritableObjectChunk<Object, Values> values =
@@ -330,6 +359,68 @@ public class TestSsaEqualValues {
                 assertEquals(0, positions.get(0));
                 assertEquals(1, positions.get(1));
                 assertEquals(4, positions.get(2));
+            }
+        }
+    }
+
+    /**
+     * A Comparable whose natural ordering is not known to be consistent with equals.
+     */
+    private static final class OtherComparable implements Comparable<OtherComparable> {
+        @Override
+        public int compareTo(final OtherComparable other) {
+            return 0;
+        }
+    }
+
+    /**
+     * The factories choose the equals consistent Object classes for String, and the general Object classes for
+     * BigDecimal and for other Comparables.
+     */
+    @Test
+    public void testObjectFactoriesChooseByDataType() {
+        for (final boolean reverse : new boolean[] {false, true}) {
+            final String context = "reverse=" + reverse;
+            assertTrue(context, SegmentedSortedArray.make(ChunkType.Object, String.class, reverse,
+                    NODE_SIZE) instanceof EqualsConsistentObjectSegmentedSortedArray != reverse);
+            assertTrue(context, SegmentedSortedArray.make(ChunkType.Object, String.class, reverse,
+                    NODE_SIZE) instanceof EqualsConsistentObjectReverseSegmentedSortedArray == reverse);
+            assertTrue(context, ChunkSsaStamp.make(ChunkType.Object, String.class,
+                    reverse) instanceof EqualsConsistentObjectChunkSsaStamp != reverse);
+            assertTrue(context, ChunkSsaStamp.make(ChunkType.Object, String.class,
+                    reverse) instanceof EqualsConsistentObjectReverseChunkSsaStamp == reverse);
+            assertTrue(context, SsaSsaStamp.make(ChunkType.Object, String.class,
+                    reverse) instanceof EqualsConsistentObjectSsaSsaStamp != reverse);
+            assertTrue(context, SsaSsaStamp.make(ChunkType.Object, String.class,
+                    reverse) instanceof EqualsConsistentObjectReverseSsaSsaStamp == reverse);
+            for (final DupCompactKernel kernel : new DupCompactKernel[] {
+                    DupCompactKernel.makeDupCompactNaturalOrdering(ChunkType.Object, String.class, reverse),
+                    DupCompactKernel.makeDupCompactDeephavenOrdering(ChunkType.Object, String.class, reverse)}) {
+                assertTrue(context, kernel instanceof EqualsConsistentObjectDupCompactKernel != reverse);
+                assertTrue(context, kernel instanceof EqualsConsistentObjectReverseDupCompactKernel == reverse);
+            }
+
+            for (final Class<?> dataType : new Class<?>[] {BigDecimal.class, OtherComparable.class, Object.class,
+                    CharSequence.class}) {
+                final String typeContext = context + ", dataType=" + dataType.getName();
+                assertTrue(typeContext, SegmentedSortedArray.make(ChunkType.Object, dataType, reverse,
+                        NODE_SIZE) instanceof ObjectSegmentedSortedArray != reverse);
+                assertTrue(typeContext, SegmentedSortedArray.make(ChunkType.Object, dataType, reverse,
+                        NODE_SIZE) instanceof ObjectReverseSegmentedSortedArray == reverse);
+                assertTrue(typeContext, ChunkSsaStamp.make(ChunkType.Object, dataType,
+                        reverse) instanceof ObjectChunkSsaStamp != reverse);
+                assertTrue(typeContext, ChunkSsaStamp.make(ChunkType.Object, dataType,
+                        reverse) instanceof ObjectReverseChunkSsaStamp == reverse);
+                assertTrue(typeContext, SsaSsaStamp.make(ChunkType.Object, dataType,
+                        reverse) instanceof ObjectSsaSsaStamp != reverse);
+                assertTrue(typeContext, SsaSsaStamp.make(ChunkType.Object, dataType,
+                        reverse) instanceof ObjectReverseSsaSsaStamp == reverse);
+                for (final DupCompactKernel kernel : new DupCompactKernel[] {
+                        DupCompactKernel.makeDupCompactNaturalOrdering(ChunkType.Object, dataType, reverse),
+                        DupCompactKernel.makeDupCompactDeephavenOrdering(ChunkType.Object, dataType, reverse)}) {
+                    assertTrue(typeContext, kernel instanceof ObjectDupCompactKernel != reverse);
+                    assertTrue(typeContext, kernel instanceof ObjectReverseDupCompactKernel == reverse);
+                }
             }
         }
     }

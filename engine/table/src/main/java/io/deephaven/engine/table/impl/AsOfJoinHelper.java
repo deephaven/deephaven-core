@@ -529,9 +529,10 @@ public class AsOfJoinHelper {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
+        final Class<?> stampDataType = rightStampSource.getType();
         final Supplier<SegmentedSortedArray> ssaFactory =
-                SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
-        final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
+                SegmentedSortedArray.makeFactory(stampChunkType, stampDataType, reverse, control.rightSsaNodeSize());
+        final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, stampDataType, reverse);
 
         // region This block is mostly copied from rightStaticAj
         final DataIndex leftCandidateIndex = control.dataIndexToUse(leftTable, originalLeftSources);
@@ -990,11 +991,12 @@ public class AsOfJoinHelper {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
+        final Class<?> stampDataType = rightStampSource.getType();
         final Supplier<SegmentedSortedArray> leftSsaSupplier =
-                SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.leftSsaNodeSize());
+                SegmentedSortedArray.makeFactory(stampChunkType, stampDataType, reverse, control.leftSsaNodeSize());
         final Supplier<SegmentedSortedArray> rightSsaSupplier =
-                SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
-        final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
+                SegmentedSortedArray.makeFactory(stampChunkType, stampDataType, reverse, control.rightSsaNodeSize());
+        final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, stampDataType, reverse);
 
         // region This block is mostly copied from rightStaticAj
         final DataIndex leftCandidateIndex = control.dataIndexToUse(leftTable, originalLeftSources);
@@ -1171,15 +1173,18 @@ public class AsOfJoinHelper {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
+        final Class<?> stampDataType = rightStampSource.getType();
         final int leftNodeSize = control.leftSsaNodeSize();
         final int rightNodeSize = control.rightSsaNodeSize();
-        final SegmentedSortedArray leftSsa = SegmentedSortedArray.make(stampChunkType, reverse, leftNodeSize);
-        final SegmentedSortedArray rightSsa = SegmentedSortedArray.make(stampChunkType, reverse, rightNodeSize);
+        final SegmentedSortedArray leftSsa =
+                SegmentedSortedArray.make(stampChunkType, stampDataType, reverse, leftNodeSize);
+        final SegmentedSortedArray rightSsa =
+                SegmentedSortedArray.make(stampChunkType, stampDataType, reverse, rightNodeSize);
 
         fillSsaWithSort(rightTable, rightStampSource, rightSsa, order);
         fillSsaWithSort(leftTable, leftStampSource, leftSsa, order);
 
-        final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
+        final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, stampDataType, reverse);
         ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
 
         final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
@@ -1290,16 +1295,18 @@ public class AsOfJoinHelper {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
+        final Class<?> stampDataType = rightStampSource.getType();
         final int rightNodeSize = control.rightSsaNodeSize();
         final int rightChunkSize = control.rightChunkSize();
-        final SegmentedSortedArray ssa = SegmentedSortedArray.make(stampChunkType, reverse, rightNodeSize);
+        final SegmentedSortedArray ssa =
+                SegmentedSortedArray.make(stampChunkType, stampDataType, reverse, rightNodeSize);
 
         fillSsaWithSort(rightTable, rightStampSource, ssa, order);
 
         final int leftSize = leftTable.intSize();
         final WritableChunk<Values> leftStampValues = stampChunkType.makeWritableChunk(leftSize);
         final WritableLongChunk<RowKeys> leftStampKeys = WritableLongChunk.makeWritableChunk(leftSize);
-        final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
+        final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, stampDataType, reverse);
         final QueryTable result;
         // if we fail to create the table, then we should make sure to close the left stamp chunks; if we are
         // successful, then the listener owns them and is responsible for closing them

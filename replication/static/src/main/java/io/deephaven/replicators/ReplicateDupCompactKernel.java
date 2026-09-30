@@ -32,6 +32,11 @@ public class ReplicateDupCompactKernel {
             final String dupCompactReversePath = kernel.replaceAll("DupCompactKernel", "ReverseDupCompactKernel");
             invertSense(kernel, dupCompactReversePath);
         }
+
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy("replicateDupCompactKernel", "CharDupCompactKernel",
+                objectDupCompact);
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy("replicateDupCompactKernel", "CharDupCompactKernel",
+                objectDupCompact.replaceAll("DupCompactKernel", "ReverseDupCompactKernel"));
     }
 
     private static void invertSense(String path, String descendingPath) throws IOException {

@@ -94,7 +94,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         rightChunkSize = joinControl.rightChunkSize();
 
         stampChunkType = leftStampSource.getChunkType();
-        chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, order == SortingOrder.Descending);
+        chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, rightStampSource.getType(),
+                order == SortingOrder.Descending);
         stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
         stampCompact = CompactKernel.makeCompact(stampChunkType);
 

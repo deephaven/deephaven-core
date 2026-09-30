@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.ssa;
 
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -11,7 +12,16 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
 public interface ChunkSsaStamp {
-    static ChunkSsaStamp make(ChunkType type, boolean reverse) {
+    /**
+     * Make a ChunkSsaStamp for values of the given type, which must match the type of the SSAs it is given.
+     *
+     * @param type the chunk type of the values
+     * @param dataType the data type of the values, as passed to
+     *        {@link SegmentedSortedArray#make(ChunkType, Class, boolean, int)}
+     * @param reverse true for descending SSAs
+     * @return the ChunkSsaStamp
+     */
+    static ChunkSsaStamp make(ChunkType type, Class<?> dataType, boolean reverse) {
         if (reverse) {
             switch (type) {
                 case Char:
@@ -29,7 +39,9 @@ public interface ChunkSsaStamp {
                 case Double:
                     return DoubleReverseChunkSsaStamp.INSTANCE;
                 case Object:
-                    return ObjectReverseChunkSsaStamp.INSTANCE;
+                    return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+                            ? EqualsConsistentObjectReverseChunkSsaStamp.INSTANCE
+                            : ObjectReverseChunkSsaStamp.INSTANCE;
                 default:
                 case Boolean:
                     throw new UnsupportedOperationException();
@@ -51,7 +63,9 @@ public interface ChunkSsaStamp {
                 case Double:
                     return DoubleChunkSsaStamp.INSTANCE;
                 case Object:
-                    return ObjectChunkSsaStamp.INSTANCE;
+                    return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+                            ? EqualsConsistentObjectChunkSsaStamp.INSTANCE
+                            : ObjectChunkSsaStamp.INSTANCE;
                 default:
                 case Boolean:
                     throw new UnsupportedOperationException();

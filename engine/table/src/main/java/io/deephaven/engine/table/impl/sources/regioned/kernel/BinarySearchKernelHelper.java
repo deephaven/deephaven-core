@@ -55,7 +55,8 @@ public class BinarySearchKernelHelper {
      * decides.
      *
      * <p>
-     * The property is not verified; registering a type that lacks it will produce incorrect filter results.
+     * The property is not verified; registering a type that lacks it will produce incorrect filter, as-of join, range
+     * join, and sorted first or last results.
      *
      * <p>
      * Registration is additive and idempotent, and a type cannot be withdrawn. Register types during startup: a search
@@ -100,6 +101,11 @@ public class BinarySearchKernelHelper {
      * {@code eq(a, b) implies compare(a, b) == 0}, which {@link Comparable} recommends and without which a type is
      * unusable in any sorted context. An enum qualifies because its ordering is by ordinal and its equality is
      * identity.
+     *
+     * <p>
+     * The same answer selects the Object segmented sorted array, SSA stamp, and duplicate compaction kernels: for a
+     * type that compares consistently with equality they test equality with {@code equals}, and otherwise with
+     * {@link io.deephaven.util.compare.ObjectComparisons#compareEquals(Object, Object)}.
      *
      * <p>
      * The engine's own types are answered here; a type it does not know is answered {@code false} until

@@ -39,11 +39,11 @@ public class SortedFirstOrLastChunkedOperator
     private final ObjectArraySource<SegmentedSortedArray> ssas;
     private final boolean exposeRedirections;
 
-    SortedFirstOrLastChunkedOperator(ChunkType chunkType, boolean isFirst, MatchPair[] resultNames,
-            Table originalTable, String exposeRedirectionAs) {
+    SortedFirstOrLastChunkedOperator(ChunkType chunkType, Class<?> dataType, boolean isFirst,
+            MatchPair[] resultNames, Table originalTable, String exposeRedirectionAs) {
         this.chunkType = chunkType;
         this.isFirst = isFirst;
-        this.ssaFactory = SegmentedSortedArray.makeFactory(chunkType, false, 1024);
+        this.ssaFactory = SegmentedSortedArray.makeFactory(chunkType, dataType, false, 1024);
         this.redirections = new LongArraySource();
         this.rowRedirection = new LongColumnSourceWritableRowRedirection(redirections);
         this.ssas = new ObjectArraySource<>(SegmentedSortedArray.class);

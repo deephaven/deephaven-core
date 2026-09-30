@@ -417,7 +417,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     rightRangeValues.getChunkType(), "rightRangeValues.getChunkType()");
             Assert.eq(valueChunkType, "valueChunkType",
                     leftEndValues.getChunkType(), "leftEndValues.getChunkType()");
-            valueChunkDupCompactKernel = DupCompactKernel.makeDupCompactNaturalOrdering(valueChunkType, false);
+            valueChunkDupCompactKernel =
+                    DupCompactKernel.makeDupCompactNaturalOrdering(valueChunkType, rightRangeValues.getType(), false);
             valueChunkCompactKernel = CompactKernel.makeCompact(valueChunkType);
             rangeSearchKernel = RangeSearchKernel.makeRangeSearchKernel(
                     valueChunkType, rangeMatch.rangeStartRule(), rangeMatch.rangeEndRule());
