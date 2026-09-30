@@ -28,6 +28,10 @@ import java.util.stream.Collectors;
  *           convention must only be done before the result is published. No mutation is permitted after first access
  *           using any of {@link #getAttribute(String)}, {@link #getAttributeKeys()}, {@link #hasAttribute(String)},
  *           {@link #getAttributes()}, or {@link AttributeMap#getAttributes(Predicate)}.
+ *           <p>
+ *           Each attribute value that is a {@link LivenessReferent} and is either static or refreshing is managed by
+ *           this map exactly once for as long as it remains in the map, including values supplied as initial
+ *           attributes.
  */
 public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYPE>, IMPL_TYPE extends LiveAttributeMap<IFACE_TYPE, IMPL_TYPE>>
         extends LivenessArtifact
@@ -67,6 +71,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         super(enforceStrongReachability);
         this.mutableAttributes = this.initialAttributes =
                 Objects.requireNonNullElse(initialAttributes, EMPTY_ATTRIBUTES);
+        this.initialAttributes.values().forEach(this::manageIfNeeded);
     }
 
     /**
@@ -80,10 +85,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     public void setAttribute(@NotNull final String key, @NotNull final Object object) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(object);
-        if (needsManagement(object)) {
-            manage((LivenessReferent) object);
-        }
-        ensureAttributes().put(key, object);
+        setAttributeInternal(ensureAttributes(), key, object);
     }
 
     /**
@@ -100,16 +102,50 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         final Map<String, Object> localAttributes = ensureAttributes();
         final Object currentValue = localAttributes.get(key);
         final Object updatedValue = Objects.requireNonNull(updater.apply(currentValue));
-        if (currentValue == updatedValue) {
+        setAttributeInternal(localAttributes, key, updatedValue);
+    }
+
+    /**
+     * Assign {@code value} to {@code key} in {@code localAttributes}, managing {@code value} and unmanaging the value
+     * it replaces.
+     */
+    private void setAttributeInternal(
+            @NotNull final Map<String, Object> localAttributes,
+            @NotNull final String key,
+            @NotNull final Object value) {
+        final Object previousValue = localAttributes.get(key);
+        if (previousValue == value) {
             return;
         }
-        if (needsManagement(updatedValue)) {
-            manage((LivenessReferent) updatedValue);
+        manageIfNeeded(value);
+        localAttributes.put(key, value);
+        if (previousValue != null && needsManagement(previousValue)) {
+            unmanage((LivenessReferent) previousValue);
         }
-        if (needsManagement(currentValue)) {
-            unmanage((LivenessReferent) currentValue);
+    }
+
+    /**
+     * Remove every attribute whose key does not satisfy {@code shouldRetain} from {@code localAttributes}, unmanaging
+     * the removed values.
+     */
+    private void removeAttributesInternal(
+            @NotNull final Map<String, Object> localAttributes,
+            @NotNull final Predicate<String> shouldRetain) {
+        final List<LivenessReferent> removedReferents = new ArrayList<>();
+        for (final Iterator<Map.Entry<String, Object>> it = localAttributes.entrySet().iterator(); it.hasNext();) {
+            final Map.Entry<String, Object> attrEntry = it.next();
+            if (shouldRetain.test(attrEntry.getKey())) {
+                continue;
+            }
+            final Object removedValue = attrEntry.getValue();
+            it.remove();
+            if (needsManagement(removedValue)) {
+                removedReferents.add((LivenessReferent) removedValue);
+            }
         }
-        localAttributes.put(key, updatedValue);
+        if (!removedReferents.isEmpty()) {
+            unmanage(removedReferents.stream());
+        }
     }
 
     /**
@@ -153,17 +189,6 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         } finally {
             initialAttributes = null; // Avoid referencing initially-shared attributes for longer than necessary.
         }
-    }
-
-    /**
-     * Access our own {@link #mutableAttributes} storage, requiring that {@link #ensureAttributes()} has been previously
-     * invoked.
-     *
-     * @return The {@link #mutableAttributes} specific to {@code this}
-     */
-    private Map<String, Object> expectAttributes() {
-        checkMutable();
-        return Objects.requireNonNull(mutableAttributes);
     }
 
     /**
@@ -246,16 +271,6 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         return (IFACE_TYPE) this;
     }
 
-    protected IFACE_TYPE prepareReturnCopy() {
-        expectAttributes().values().forEach(av -> {
-            if (needsManagement(av)) {
-                manage((LivenessReferent) av);
-            }
-        });
-        // noinspection unchecked
-        return (IFACE_TYPE) this;
-    }
-
     @Override
     public IFACE_TYPE withAttributes(
             @NotNull final Map<String, Object> toAdd,
@@ -270,14 +285,16 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         }
 
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy();
+        final Map<String, Object> resultAttributes = result.ensureAttributes();
         if (!removesSuperfluous) {
-            result.ensureAttributes().keySet().removeAll(effectiveRemoves);
+            result.removeAttributesInternal(resultAttributes, ak -> !effectiveRemoves.contains(ak));
         }
         if (!addsSuperfluous) {
-            result.expectAttributes().putAll(toAdd);
+            toAdd.forEach((ak, av) -> result.setAttributeInternal(resultAttributes, ak, av));
         }
 
-        return result.prepareReturnCopy();
+        // noinspection unchecked
+        return (IFACE_TYPE) result;
     }
 
     @Override
@@ -287,9 +304,11 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         }
 
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy();
-        result.ensureAttributes().putAll(toAdd);
+        final Map<String, Object> resultAttributes = result.ensureAttributes();
+        toAdd.forEach((ak, av) -> result.setAttributeInternal(resultAttributes, ak, av));
 
-        return result.prepareReturnCopy();
+        // noinspection unchecked
+        return (IFACE_TYPE) result;
     }
 
     @Override
@@ -299,9 +318,11 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         }
 
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy();
-        result.ensureAttributes().keySet().removeAll(toRemove);
+        final Set<String> toRemoveSet = new HashSet<>(toRemove);
+        result.removeAttributesInternal(result.ensureAttributes(), ak -> !toRemoveSet.contains(ak));
 
-        return result.prepareReturnCopy();
+        // noinspection unchecked
+        return (IFACE_TYPE) result;
     }
 
     @Override
@@ -311,9 +332,11 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         }
 
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy();
-        result.ensureAttributes().keySet().retainAll(toRetain);
+        final Set<String> toRetainSet = new HashSet<>(toRetain);
+        result.removeAttributesInternal(result.ensureAttributes(), toRetainSet::contains);
 
-        return result.prepareReturnCopy();
+        // noinspection unchecked
+        return (IFACE_TYPE) result;
     }
 
     /**
@@ -356,6 +379,12 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
                 .collect(Collectors.collectingAndThen(
                         Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue),
                         Collections::unmodifiableMap));
+    }
+
+    private void manageIfNeeded(@NotNull final Object object) {
+        if (needsManagement(object)) {
+            manage((LivenessReferent) object);
+        }
     }
 
     private static boolean needsManagement(@NotNull final Object object) {
