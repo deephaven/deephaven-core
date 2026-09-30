@@ -193,14 +193,16 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
         final List<CountFilter> filterList = new ArrayList<>();
         boolean forcedWhereFilter = false;
         for (int fi = 0; fi < filters.length; fi++) {
+            // Asked of the filter as given, which wrappers and composed filters answer for their components: any path
+            // below would evaluate i, ii and k against the chunk table rather than the source.
+            if (filters[fi].hasVirtualRowVariables()) {
+                throw new UnsupportedOperationException(
+                        "Count-where does not support filters that reference virtual row variables (i, ii, k)");
+            }
             final ConditionFilter conditionFilter = ConditionFilter.extractConditionFilter(filters[fi]).orElse(null);
             final WhereFilter filter = conditionFilter != null ? conditionFilter : filters[fi];
             final CountWhereOperator.CountFilter countFilter;
             if (!forcedWhereFilter && conditionFilter != null) {
-                if (conditionFilter.hasVirtualRowVariables()) {
-                    throw new UnsupportedOperationException(
-                            "Count-where does not support filters that reference virtual row variables (i, ii, k)");
-                }
                 try {
                     countFilter = new CountWhereOperator.CountFilter(
                             conditionFilter.getFilter(chunkSourceTable, RowSetFactory.empty()),

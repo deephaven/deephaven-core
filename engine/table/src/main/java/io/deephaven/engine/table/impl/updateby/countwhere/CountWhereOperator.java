@@ -117,15 +117,17 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
             final List<CountFilter> filterList = new ArrayList<>();
             boolean forcedWhereFilter = false;
             for (int fi = 0; fi < filters.length; fi++) {
+                // Asked of the filter as given, which wrappers and composed filters answer for their components: any
+                // path below would evaluate i, ii and k against the chunk table rather than the source.
+                if (filters[fi].hasVirtualRowVariables()) {
+                    throw new UnsupportedOperationException(
+                            "UpdateBy CountWhere operator does not support refreshing filters");
+                }
                 final ConditionFilter conditionFilter =
                         ConditionFilter.extractConditionFilter(filters[fi]).orElse(null);
                 final WhereFilter filter = conditionFilter != null ? conditionFilter : filters[fi];
                 final CountFilter countFilter;
                 if (!forcedWhereFilter && conditionFilter != null) {
-                    if (conditionFilter.hasVirtualRowVariables()) {
-                        throw new UnsupportedOperationException(
-                                "UpdateBy CountWhere operator does not support refreshing filters");
-                    }
                     try {
                         countFilter = new CountFilter(conditionFilter.getFilter(inputTable, RowSetFactory.empty()),
                                 filterInputIndices.get(fi));
