@@ -8,6 +8,8 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.DoubleAdder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -136,6 +138,18 @@ public class MatchFilterParamConversionTest {
         assertRejected('A', BigInteger.class);
         assertRejected('A', BigDecimal.class);
         assertNotConverted("A", BigInteger.class);
+    }
+
+    /** A Number of another type has no exact value to compare: longValue() would drop the fraction of 5.7. */
+    @Test
+    public void otherNumberTypesAreRejected() {
+        final DoubleAdder fraction = new DoubleAdder();
+        fraction.add(5.7);
+        for (final Class<?> columnType : new Class<?>[] {int.class, long.class, double.class, BigInteger.class,
+                BigDecimal.class}) {
+            assertRejected(fraction, columnType);
+            assertRejected(new AtomicLong(5), columnType);
+        }
     }
 
     @Test
