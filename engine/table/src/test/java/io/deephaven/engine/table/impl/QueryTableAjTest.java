@@ -2623,9 +2623,9 @@ public class QueryTableAjTest {
     }
 
     /**
-     * With both sides refreshing, a single right cycle that inserts, modifies, and removes right rows in many buckets,
-     * each changing the match of more left rows than the bucket has right rows, restamps every bucket correctly and
-     * reports exactly the affected left rows, for aj and raj with and without exact match columns.
+     * With both sides refreshing, successive right cycles that insert, then modify, then remove right rows in many
+     * buckets, each cycle changing the match of more left rows than a bucket has right rows, restamp every bucket
+     * correctly and report exactly the affected left rows, for aj and raj with and without exact match columns.
      */
     @Test
     public void testRightChangesRestampManyLeftRowsPerBucket() {
