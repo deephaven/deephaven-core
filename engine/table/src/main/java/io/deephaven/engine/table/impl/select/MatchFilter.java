@@ -156,6 +156,22 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return retained;
     }
 
+    /**
+     * A {@link BigDecimal} column is matched by its own chunk filter ({@code BigDecimalChunkMatchFilterFactory}), which
+     * compares by {@link BigDecimal#compareTo(BigDecimal)} and so accepts only {@link BigDecimal} values, as the sorted
+     * binary search does. This returns {@code searchValues} without any value that is neither null nor a
+     * {@link BigDecimal}, for such a column, or {@code searchValues} itself when there is nothing to remove. Such a
+     * value can never match the column, so removing it selects what matching it by equality would.
+     */
+    private Object[] dropUnmatchable(final Object[] searchValues) {
+        if (searchValues == null || columnType != BigDecimal.class) {
+            return searchValues;
+        }
+        final Object[] retained =
+                Arrays.stream(searchValues).filter(value -> value == null || value instanceof BigDecimal).toArray();
+        return retained.length == searchValues.length ? searchValues : retained;
+    }
+
     private static boolean isNaN(final Object value) {
         return value instanceof Double && ((Double) value).isNaN()
                 || value instanceof Float && ((Float) value).isNaN();
@@ -163,7 +179,9 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /**
      * The values this filter matches against, normalized so that they may be matched by value equality that holds NaN
-     * equal to itself -- the type's {@code *Comparisons.eq}, or {@link java.util.Objects#equals}, for instance.
+     * equal to itself -- the type's {@code *Comparisons.eq}, or {@link java.util.Objects#equals}, for instance. A
+     * {@link BigDecimal} matches by {@link BigDecimal#compareTo(BigDecimal)} instead, as the query language's
+     * {@code ==} does, so {@code 5.0} matches {@code 5.00}.
      *
      * <p>
      * The filter's own NaN semantics are already applied here, so a consumer does not need to consult
@@ -251,7 +269,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             }
             columnType = column.getDataType();
             if (strValues == null) {
-                values = maybeDropNaN(values);
+                values = dropUnmatchable(maybeDropNaN(values));
                 initialized = true;
                 return;
             }
@@ -262,7 +280,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
-            values = maybeDropNaN(valueList.toArray());
+            values = dropUnmatchable(maybeDropNaN(valueList.toArray()));
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;

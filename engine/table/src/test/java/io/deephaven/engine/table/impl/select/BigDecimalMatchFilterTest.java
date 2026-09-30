@@ -70,6 +70,18 @@ public class BigDecimalMatchFilterTest {
     }
 
     @Test
+    public void valueOfAnotherTypeMatchesNothing() {
+        // a value that is not a BigDecimal can never equal one, so it matches nothing, sorted column or not
+        final Object[] values = {5.0, new BigDecimal("7"), "5", null, new BigDecimal("5.0")};
+        for (final Table table : new Table[] {unsorted, unsorted.sort("X")}) {
+            assertTableEquals(table.where("X == 7 || isNull(X) || X == 5.0"),
+                    table.where(new MatchFilter(MatchOptions.REGULAR, "X", values)));
+            assertTableEquals(table.where("!(X == 7 || isNull(X) || X == 5.0)"),
+                    table.where(new MatchFilter(MatchOptions.INVERTED, "X", values)));
+        }
+    }
+
+    @Test
     public void sortedMatchIgnoresScale() {
         final Table ascending = unsorted.sort("X");
         assertTrue(SortedColumnsAttribute.getOrderForColumn(ascending, "X").isPresent());

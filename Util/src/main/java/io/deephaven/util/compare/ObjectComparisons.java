@@ -35,12 +35,13 @@ public class ObjectComparisons {
     }
 
     /**
-     * Compare two Objects for equality consistent with {@link #compare(Object, Object)}; that is
-     * {@code compare(lhs, rhs) == 0 ⇒ eq(lhs, rhs)} and {@code compare(lhs, rhs) != 0 ⇒ !eq(lhs, rhs)}.
+     * Compare two Objects for equality, by {@link Objects#equals(Object, Object)}.
      *
      * <p>
-     * Logically equivalent to {@code compare(lhs, rhs) == 0} for a type whose ordering is consistent with equals.
-     * {@link java.math.BigDecimal}'s is not: {@code 5.0} and {@code 5.00} compare equal but are not equal.
+     * For a type whose ordering is consistent with equals this is consistent with {@link #compare(Object, Object)} --
+     * {@code compare(lhs, rhs) == 0 ⇒ eq(lhs, rhs)} and {@code compare(lhs, rhs) != 0 ⇒ !eq(lhs, rhs)} -- and logically
+     * equivalent to {@code compare(lhs, rhs) == 0}. For other types only {@code eq(lhs, rhs) ⇒ compare(lhs, rhs) == 0}
+     * holds: {@link java.math.BigDecimal}'s {@code 5.0} and {@code 5.00} compare equal but are not equal.
      * 
      * @param lhs the first value
      * @param rhs the second value
