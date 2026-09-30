@@ -36,7 +36,7 @@ dependencies {
     runtimeOnly 'org.slf4j:slf4j-simple:2.0.9'
     // Align with the Groovy version Deephaven itself uses to avoid a
     // conflicting Groovy runtime on the classpath.
-    implementation "org.codehaus.groovy:groovy:3.0.25"
+    implementation "org.codehaus.groovy:groovy:3.0.22"
 }
 ```
 
@@ -95,7 +95,7 @@ Add dependencies to your `pom.xml`:
     <dependency>
         <groupId>org.codehaus.groovy</groupId>
         <artifactId>groovy</artifactId>
-        <version>3.0.25</version>
+        <version>3.0.22</version>
     </dependency>
 </dependencies>
 ```
@@ -128,15 +128,15 @@ To compile Groovy sources, add the `gmavenplus-plugin` to your build:
 
 The dependencies you need depend on what your project does. Here are common patterns:
 
-| Use case                                     | Dependencies                                      |
-| -------------------------------------------- | ------------------------------------------------- |
-| Table operations (`select`, `where`, `join`) | `deephaven-engine-api`, `deephaven-engine-table`  |
-| Read/write CSV files                         | `deephaven-extensions-csv`                        |
-| Read/write Parquet files                     | `deephaven-extensions-parquet-table`              |
-| Configuration utilities                      | `deephaven-Configuration`                         |
-| Default configuration properties             | `deephaven-configs`                               |
-| Date/time utilities                          | `deephaven-engine-time`                           |
-| Logging                                      | `deephaven-log-factory`, `deephaven-log-to-slf4j` |
+| Use case                                                                                                                                                                                      | Dependencies                                      |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Table operations ([`select`](../reference/table-operations/select/select.md), [`where`](../reference/table-operations/filter/where.md), [`join`](../reference/table-operations/join/join.md)) | `deephaven-engine-api`, `deephaven-engine-table`  |
+| Read/write CSV files                                                                                                                                                                          | `deephaven-extensions-csv`                        |
+| Read/write Parquet files                                                                                                                                                                      | `deephaven-extensions-parquet-table`              |
+| Configuration utilities                                                                                                                                                                       | `deephaven-Configuration`                         |
+| Default configuration properties                                                                                                                                                              | `deephaven-configs`                               |
+| Date/time utilities                                                                                                                                                                           | `deephaven-engine-time`                           |
+| Logging                                                                                                                                                                                       | `deephaven-log-factory`, `deephaven-log-to-slf4j` |
 
 Browse all available modules on [Maven Central](https://central.sonatype.com/namespace/io.deephaven).
 
