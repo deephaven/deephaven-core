@@ -54,7 +54,8 @@ public class RegionedColumnSourceManager
 
     /**
      * How many locations to test for data index or other location-level metadata before we give up and assume the
-     * location has no useful information for push-down purposes.
+     * location has no useful information for push-down purposes. The sampled locations are spread evenly across the
+     * selection.
      */
     private static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
             .getIntegerForClassWithDefault(RegionedColumnSourceManager.class, "pushdownLocationSamples", 5);
@@ -835,14 +836,34 @@ public class RegionedColumnSourceManager
         return attributes;
     }
 
-    private static int[] regionIndices(final RowSet selection, final int maxCount) {
+    private static int[] regionIndices(final RowSet selection) {
         try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
             final IntStream.Builder builder = IntStream.builder();
-            for (int i = 0; i < maxCount && rit.hasNext(); ++i) {
+            while (rit.hasNext()) {
                 builder.add(rit.nextInt());
             }
             return builder.build().toArray();
         }
+    }
+
+    /**
+     * Choose up to {@code maxCount} of the region indices spanned by {@code selection}, spread evenly across them so
+     * that the sample is not biased towards the leading regions.
+     */
+    private static int[] sampleRegionIndices(final RowSet selection, final int maxCount) {
+        final int[] all = regionIndices(selection);
+        if (all.length <= maxCount) {
+            return all;
+        }
+        if (maxCount <= 0) {
+            return new int[0];
+        }
+        // Take the middle region of each of maxCount equal-width buckets.
+        final int[] sample = new int[maxCount];
+        for (int ii = 0; ii < maxCount; ++ii) {
+            sample[ii] = all[(int) ((2L * ii + 1) * all.length / (2L * maxCount))];
+        }
+        return sample;
     }
 
     @FunctionalInterface
@@ -858,6 +879,9 @@ public class RegionedColumnSourceManager
     /**
      * Common helper for estimating pushdown filter cost by sampling regions in parallel and returning the minimum cost.
      * Also used by {@link RegionedColumnSourceBase}.
+     * <p>
+     * The result is a per-region action cost and is deliberately not scaled by the region count: it is later passed
+     * back as the cost ceiling that each location compares against its own action costs.
      */
     void estimatePushdownFilterCostHelper(
             final RowSet selection,
@@ -867,7 +891,7 @@ public class RegionedColumnSourceManager
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
         // Sample a few regions and return the lowest cost
-        final int[] regionIndices = regionIndices(selection, PUSHDOWN_LOCATION_SAMPLES);
+        final int[] regionIndices = sampleRegionIndices(selection, PUSHDOWN_LOCATION_SAMPLES);
 
         final AtomicLong minCost = new AtomicLong(Long.MAX_VALUE);
 
@@ -945,7 +969,7 @@ public class RegionedColumnSourceManager
             final PerRegionPushdownAction action,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        final int[] regionIndices = regionIndices(selection, Integer.MAX_VALUE);
+        final int[] regionIndices = regionIndices(selection);
 
         final WritableRowSet[] matches = new WritableRowSet[regionIndices.length];
         final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];

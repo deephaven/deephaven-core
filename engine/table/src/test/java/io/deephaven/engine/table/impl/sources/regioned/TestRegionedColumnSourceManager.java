@@ -939,6 +939,43 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         });
     }
 
+    /**
+     * Cost estimation samples a bounded number of regions. The sample must be spread across the selection rather than
+     * taken from its leading regions; otherwise a selection whose leading locations lack a pushdown capability that
+     * later ones have (e.g. only newer partitions carry an index) never attempts pushdown at all.
+     */
+    @Test
+    public void testEstimateSamplesAcrossSelection() {
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        final int numRegions = 10;
+        final WritableRowSet selection = RowSetFactory.empty();
+        for (int ri = 0; ri < numRegions; ++ri) {
+            selection.insert(RegionedColumnSource.getFirstRowKey(ri));
+        }
+
+        final Set<Integer> sampled = new HashSet<>();
+        final AtomicLong cost = new AtomicLong(-1);
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        try (selection) {
+            SUT.estimatePushdownFilterCostHelper(selection, "testEstimateSamplesAcrossSelection",
+                    new ImmediateJobScheduler(),
+                    (regionIndex, location, shiftedRowSet, onCost, nec) -> {
+                        sampled.add(regionIndex);
+                        // Only the later half of the regions support a pushdown action.
+                        onCost.accept(regionIndex >= numRegions / 2
+                                ? PushdownResult.REGION_SORTED_DATA_COST
+                                : PushdownResult.UNSUPPORTED_ACTION_COST);
+                    },
+                    cost::set, error::set);
+        }
+
+        assertNull(error.get());
+        assertTrue("estimation should sample, not visit every region: " + sampled, sampled.size() < numRegions);
+        assertEquals("sampled regions " + sampled, PushdownResult.REGION_SORTED_DATA_COST, cost.get());
+    }
+
     private static void maybePrintStackTrace(@NotNull final Exception e) {
         if (PRINT_STACK_TRACES) {
             e.printStackTrace();
