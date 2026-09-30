@@ -81,10 +81,10 @@ public class RegionedColumnSourceManager
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
 
     /**
-     * The column sources of this table as a map from column source to column name. This map should not be accessed
-     * directly, but rather through {@link #columnSourceToName()}.
+     * The column sources of this table as a map from column source to column name. Built once at construction, since
+     * {@link #columnSources} never changes afterward; it is read concurrently by {@link #makePushdownFilterContext}.
      */
-    private Map<ColumnSource<?>, String> columnSourceToName;
+    private final Map<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -190,6 +190,8 @@ public class RegionedColumnSourceManager
                     columnName,
                     componentFactory.createRegionedColumnSource(this, columnDefinition, codecMappings));
         }
+        columnSourceToName = columnSources.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getValue, Map.Entry::getKey, Assert::neverInvoked, IdentityHashMap::new));
 
         // Create the table that will hold the location data
         partitioningColumnValueSources = tableDefinition.getColumns().stream()
@@ -1033,17 +1035,6 @@ public class RegionedColumnSourceManager
                 onError);
     }
 
-    /**
-     * Get (or create) a map from column source to column name.
-     */
-    private Map<ColumnSource<?>, String> columnSourceToName() {
-        if (columnSourceToName != null) {
-            return columnSourceToName;
-        }
-        return columnSourceToName = columnSources.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getValue, Map.Entry::getKey, Assert::neverInvoked, IdentityHashMap::new));
-    }
-
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
@@ -1055,7 +1046,6 @@ public class RegionedColumnSourceManager
         final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(filterSources.size());
         final Map<String, String> renameMap = new HashMap<>();
 
-        final Map<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
         final Map<String, ColumnDefinition<?>> columnNameToDefinition = tableDefinition.getColumnNameMap();
 
         for (int ii = 0; ii < filterColumns.size(); ii++) {
