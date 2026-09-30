@@ -284,7 +284,7 @@ Parallelization needs no configuration. These properties tune it; defaults and f
 | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `OperationInitializationThreadPool.threads`                                   | Thread count for the initialization phase (default: all cores)           |
 | `PeriodicUpdateGraph.updateThreads`                                           | Thread count for the update phase (default: all cores)                   |
-| `QueryTable.minimumParallelSelectRows`                                        | Minimum table size before `select`/`update` split rows across cores      |
+| `QueryTable.minimumParallelSelectRows`                                        | Minimum rows to process before `select`/`update` split them across cores |
 | `QueryTable.parallelWhereRowsPerSegment`                                      | Segment size for `where`; splitting starts above twice this many rows    |
 | `QueryTable.parallelSort`, `QueryTable.minimumParallelSortRows`               | Whether, and from what size, `sort` runs in parallel                     |
 | `QueryTable.statelessSelectByDefault`, `QueryTable.statelessFiltersByDefault` | Whether formulas and filters are assumed stateless (parallel) by default |
