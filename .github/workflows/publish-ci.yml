@@ -141,7 +141,7 @@ jobs:
         continue-on-error: true
 
       - uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
-        if: ${{ steps.publish-deephaven-core.outcome == 'failure' }}
+        if: ${{ !cancelled() && steps.publish-deephaven-core.outcome == 'failure' }}
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
           webhook-type: webhook-trigger
@@ -152,7 +152,7 @@ jobs:
             action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
-        if: ${{ steps.publish-deephaven-server.outcome == 'failure' }}
+        if: ${{ !cancelled() && steps.publish-deephaven-server.outcome == 'failure' }}
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
           webhook-type: webhook-trigger
@@ -162,7 +162,7 @@ jobs:
             action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
-        if: ${{ steps.publish-pydeephaven.outcome == 'failure' }}
+        if: ${{ !cancelled() && steps.publish-pydeephaven.outcome == 'failure' }}
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
           webhook-type: webhook-trigger
@@ -172,7 +172,7 @@ jobs:
             action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
-        if: ${{ steps.publish-pydeephaven-ticking.outcome == 'failure' }}
+        if: ${{ !cancelled() && steps.publish-pydeephaven-ticking.outcome == 'failure' }}
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
           webhook-type: webhook-trigger
@@ -182,7 +182,7 @@ jobs:
             action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
-        if: ${{ steps.publish-deephaven-jsapi-types.outcome == 'failure' }}
+        if: ${{ !cancelled() && steps.publish-deephaven-jsapi-types.outcome == 'failure' }}
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
           webhook-type: webhook-trigger
