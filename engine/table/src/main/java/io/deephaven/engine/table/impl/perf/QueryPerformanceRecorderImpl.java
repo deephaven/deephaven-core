@@ -145,7 +145,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      */
     private void checkOwnedByThisThread() {
         if (QueryPerformanceRecorderState.getInstance() != this) {
-            throw new IllegalStateException("Query does not belong to this thread");
+            throw new IllegalStateException("Query doesn't belong to this thread");
         }
     }
 
