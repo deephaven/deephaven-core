@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,6 +89,23 @@ public class FailedOverFilterConsumersTest {
     }
 
     /**
+     * A refreshing table that is not append-only may not use {@code i}. The failover of {@code X == i} and of
+     * {@code X < i} must be refused as the ConditionFilter it is. This asks the filter directly: the table operations
+     * that ask it refuse {@code i}, {@code ii} and {@code k} outright first.
+     */
+    @Test
+    public void refreshSafetySeesAFailover() {
+        final BaseTable<?> t = (BaseTable<?>) TstUtils.testRefreshingTable(intCol("X", 0, 1, 5))
+                .withoutAttributes(List.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE));
+        for (final String expression : new String[] {"X == i + 0", "X == i", "X < i + 0", "X < i"}) {
+            final WhereFilter filter = initialized(t, expression);
+            final IllegalArgumentException err = assertThrows(expression, IllegalArgumentException.class,
+                    () -> filter.validateSafeForRefresh(t));
+            assertTrue(expression, err.getMessage().contains("is not safe to refresh"));
+        }
+    }
+
+    /**
      * {@code X == i} fails over to a ConditionFilter that uses {@code i}. Count-where refuses such a ConditionFilter,
      * rather than evaluating {@code i} against its own chunks, and so must refuse the MatchFilter.
      */
@@ -116,7 +134,8 @@ public class FailedOverFilterConsumersTest {
             assertEquals(rootCause(plain).getMessage(), rootCause(agg).getMessage());
             final Exception updateBy = assertThrows(filter.toString(), Exception.class,
                     () -> t.updateBy(UpdateByOperation.CumCountWhere("C", filter)));
-            assertEquals("UpdateBy CountWhere operator does not support refreshing filters",
+            assertEquals(
+                    "UpdateBy CountWhere operator does not support filters that reference virtual row variables (i, ii, k)",
                     rootCause(updateBy).getMessage());
         }
     }

@@ -120,8 +120,8 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 // Asked of the filter as given, which wrappers and composed filters answer for their components: any
                 // path below would evaluate i, ii and k against the chunk table rather than the source.
                 if (filters[fi].hasVirtualRowVariables()) {
-                    throw new UnsupportedOperationException(
-                            "UpdateBy CountWhere operator does not support refreshing filters");
+                    throw new UnsupportedOperationException("UpdateBy CountWhere operator does not support filters "
+                            + "that reference virtual row variables (i, ii, k)");
                 }
                 final ConditionFilter conditionFilter =
                         ConditionFilter.extractConditionFilter(filters[fi]).orElse(null);
