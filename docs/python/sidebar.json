@@ -1837,8 +1837,13 @@
                 ]
               },
               {
-                "label": "keyed_transpose",
-                "path": "reference/table-operations/format/keyed-transpose.md"
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "keyed_transpose",
+                    "path": "reference/table-operations/format/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
