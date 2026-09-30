@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
-import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -34,6 +33,8 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 
 public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
@@ -140,53 +141,29 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     }
 
     /**
-     * Returns {@code searchValues} with any NaN removed, or {@code searchValues} itself when there is nothing to
-     * remove. This is what upholds the {@link #getValues()} contract for primitive floating-point columns.
+     * Returns {@code convertedValues} without the values that can never match the column, or {@code convertedValues}
+     * itself when there is nothing to remove: NaN if {@code dropNaN}, and, on a {@link BigDecimal} column, any value
+     * that is neither null nor a {@link BigDecimal}. The values are always post-conversion.
      *
      * <p>
-     * Without {@link MatchOptions#nanMatch()} a match follows IEEE 754, where NaN is equal to nothing at all -- itself
-     * included -- so a NaN among the values can never match a row. Removing it therefore does not change what this
-     * filter selects, and it leaves a value set that means the same thing to a consumer matching with NaN equal to
-     * itself, which is what consumers are permitted to do.
-     */
-    private Object[] maybeDropNaN(final Object[] searchValues) {
-        if (searchValues == null || matchOptions.nanMatch()
-                || (columnType != double.class && columnType != float.class)) {
-            return searchValues;
-        }
-        int nanCount = 0;
-        for (final Object value : searchValues) {
-            if (isNaN(value)) {
-                ++nanCount;
-            }
-        }
-        if (nanCount == 0) {
-            return searchValues;
-        }
-        final Object[] retained = new Object[searchValues.length - nanCount];
-        int nextIndex = 0;
-        for (final Object value : searchValues) {
-            if (!isNaN(value)) {
-                retained[nextIndex++] = value;
-            }
-        }
-        return retained;
-    }
-
-    /**
+     * Without {@link MatchOptions#nanMatch()} a match on a primitive column follows IEEE 754, where NaN is equal to
+     * nothing at all -- itself included -- so a NaN among the values can never match a row. Removing it therefore does
+     * not change what this filter selects, and it leaves a value set that means the same thing to a consumer matching
+     * with NaN equal to itself, which is what consumers are permitted to do. This is what upholds the
+     * {@link #getValues()} contract for primitive floating-point columns.
+     *
+     * <p>
      * A {@link BigDecimal} column is matched by its own chunk filter ({@code BigDecimalChunkMatchFilterFactory}), which
      * compares by {@link BigDecimal#compareTo(BigDecimal)} and so accepts only {@link BigDecimal} values, as the sorted
-     * binary search does. This returns {@code searchValues} without any value that is neither null nor a
-     * {@link BigDecimal}, for such a column, or {@code searchValues} itself when there is nothing to remove. Such a
-     * value can never match the column, so removing it selects what matching it by equality would.
+     * binary search does. A value of another type can never match the column, so removing it selects what matching it
+     * by equality would.
      */
-    private Object[] dropUnmatchable(final Object[] searchValues) {
-        if (searchValues == null || columnType != BigDecimal.class) {
-            return searchValues;
-        }
-        final Object[] retained =
-                Arrays.stream(searchValues).filter(value -> value == null || value instanceof BigDecimal).toArray();
-        return retained.length == searchValues.length ? searchValues : retained;
+    private Object[] dropUnmatchable(final Object[] convertedValues, final boolean dropNaN) {
+        final Object[] retained = Arrays.stream(convertedValues)
+                .filter(value -> !(dropNaN && isNaN(value))
+                        && !(columnType == BigDecimal.class && value != null && !(value instanceof BigDecimal)))
+                .toArray();
+        return retained.length == convertedValues.length ? convertedValues : retained;
     }
 
     private static boolean isNaN(final Object value) {
@@ -289,8 +266,9 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (column == null) {
                 if (strValues != null && strValues.length == 1
                         && (column = tableDefinition.getColumn(strValues[0])) != null) {
-                    // fix up for the case where column name and variable name were swapped
-                    String tmp = columnName;
+                    // Fix up for the case where column name and variable name were swapped. Replace strValues rather
+                    // than swapping in place: copies and renamed filters share the array.
+                    final String tmp = columnName;
                     columnName = strValues[0];
                     strValues = new String[] {tmp};
                 } else {
@@ -299,19 +277,43 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                 }
             }
             columnType = column.getDataType();
-            if (strValues == null) {
-                values = dropUnmatchable(maybeDropNaN(values));
-                initialized = true;
-                return;
-            }
-            final List<Object> valueList = new ArrayList<>();
-            final Map<String, Object> queryScopeVariables =
-                    compilationProcessor.getFormulaImports().getQueryScopeVariables();
             final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
-            for (String strValue : strValues) {
-                convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
+            // nanMatch only applies to a primitive floating-point column
+            final boolean nanMatch =
+                    matchOptions.nanMatch() && (columnType == double.class || columnType == float.class);
+            // Converts query-scope variables and direct values; a literal is parsed by convertStringLiteral instead.
+            final UnaryOperator<Object> convertParam = value -> {
+                final Object unwrapped = ColumnTypeConvertor.maybeUnwrapPyObject(value);
+                if (!nanMatch && isNaN(unwrapped)) {
+                    // passed through unconverted, to be dropped later; converting it to an integral type would throw,
+                    // although NaN simply matches nothing
+                    return unwrapped;
+                }
+                return convertor.convertParamValue(value);
+            };
+            final Object[] converted;
+            if (strValues == null) {
+                // Run the user-supplied values through the convertor.
+                converted = new Object[values.length];
+                for (int ii = 0; ii < values.length; ++ii) {
+                    final Object value = values[ii];
+                    converted[ii] = value == null ? null : convertParam.apply(value);
+                }
+            } else {
+                final List<Object> valueList = new ArrayList<>();
+                final Map<String, Object> queryScopeVariables =
+                        compilationProcessor.getFormulaImports().getQueryScopeVariables();
+                for (String strValue : strValues) {
+                    convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, convertParam,
+                            valueList::add);
+                }
+                converted = valueList.toArray();
             }
-            values = dropUnmatchable(maybeDropNaN(valueList.toArray()));
+            // Without nanMatch, no value of a primitive column matches NaN, so NaN is dropped from the search values
+            // (see the getValues() contract for why). It is kept for a non-primitive column, though: a column of type
+            // Object may hold NaN, which is matched by equals rather than by IEEE 754 rules.
+            final boolean dropNaN = !nanMatch && columnType.isPrimitive();
+            values = dropUnmatchable(converted, dropNaN);
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;
@@ -407,13 +409,113 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
         abstract Object convertStringLiteral(String str);
 
+        /**
+         * Converts a query-scope or direct value to the column's type. This default only unwraps a {@link PyObject};
+         * the convertors of types that need more override it, most calling it first to unwrap. The unwrapping itself is
+         * {@link #maybeUnwrapPyObject(Object)}, for callers that need the value unwrapped but not converted.
+         */
         Object convertParamValue(Object paramValue) {
-            if (paramValue instanceof PyObject) {
-                if (((PyObject) paramValue).isConvertible()) {
-                    return ((PyObject) paramValue).getObjectValue();
-                }
+            return maybeUnwrapPyObject(paramValue);
+        }
+
+        /**
+         * @return the Java value of a convertible {@link PyObject}, or {@code paramValue} itself
+         */
+        static Object maybeUnwrapPyObject(final Object paramValue) {
+            if (paramValue instanceof PyObject && ((PyObject) paramValue).isConvertible()) {
+                return ((PyObject) paramValue).getObjectValue();
             }
             return paramValue;
+        }
+
+        /**
+         * Throws, so that a filter fails over to its {@link ConditionFilter}, unless {@code converted} -- {@code value}
+         * cast to the column type -- selects the rows {@code value} would select in the query language: it must equal
+         * {@code value} exactly. The convertors also reject a value that converts exactly to the column type's null
+         * value: only a value of the column's own type is null there, in the query language as here.
+         *
+         * <p>
+         * A large floating-point value against an int or long column is an accepted difference: the query language
+         * compares the two in floating point, where more than one integer can round to the value ({@code 2^53 + 1 ==
+         * (double) 2^53}), but the exact equivalent matches only itself.
+         *
+         * @param columnType the (boxed) column type, which the error names; {@code converted} may be of another type,
+         *        an {@link Integer} for a {@link Character} column
+         */
+        static void checkRoundTrip(final Number value, final Number converted, final Class<?> columnType) {
+            final String problem;
+            if (!exactlyEqual(value, converted)) {
+                problem = "the column type cannot represent it exactly";
+            } else if (isFloatingPoint(converted) && (value instanceof BigInteger || value instanceof BigDecimal)) {
+                // The value converted exactly, but is rejected anyway: the query language compares a float or double
+                // column with a BigDecimal or BigInteger through BigDecimal.valueOf(double), the column value's
+                // shortest decimal rather than its exact value, so it can select rows other than those equal to the
+                // converted value.
+                problem = "the query language compares it with the column as a decimal";
+            } else {
+                return;
+            }
+            throw cannotConvert(value, columnType, problem, null);
+        }
+
+        static IllegalArgumentException cannotConvert(
+                final Object value,
+                final Class<?> columnType,
+                final String problem,
+                @Nullable final Throwable cause) {
+            return new IllegalArgumentException(String.format("Cannot convert value <%s> of type %s to %s: %s",
+                    value, value.getClass().getName(), columnType.getSimpleName(), problem), cause);
+        }
+
+        private static boolean exactlyEqual(final Number a, final Number b) {
+            if (!Double.isFinite(a.doubleValue()) || !Double.isFinite(b.doubleValue())) {
+                // NaN and the infinities
+                return Double.compare(a.doubleValue(), b.doubleValue()) == 0;
+            }
+            return exactValue(a).compareTo(exactValue(b)) == 0;
+        }
+
+        private static BigDecimal exactValue(final Number number) {
+            if (number instanceof BigDecimal) {
+                return (BigDecimal) number;
+            }
+            if (number instanceof BigInteger) {
+                return new BigDecimal((BigInteger) number);
+            }
+            return isFloatingPoint(number) ? new BigDecimal(number.doubleValue())
+                    : BigDecimal.valueOf(number.longValue());
+        }
+
+        private static boolean isFloatingPoint(final Number number) {
+            return number instanceof Float || number instanceof Double;
+        }
+
+        /**
+         * Whether {@code value} is its own type's null value, {@code NULL_INT} for an {@link Integer} for instance.
+         */
+        static boolean isNullValue(final Object value) {
+            // noinspection unchecked
+            return ((TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(value.getClass())).get(value) == null;
+        }
+
+        /**
+         * Converts {@code number} to a {@link BigDecimal} as the query language does when it compares the two: a
+         * floating-point value through {@link BigDecimal#valueOf(double)}, and any other value exactly.
+         */
+        static BigDecimal toBigDecimal(final Number number) {
+            return isFloatingPoint(number) ? BigDecimal.valueOf(number.doubleValue()) : exactValue(number);
+        }
+
+        /**
+         * Whether {@code strValue} names a column, or a column array ({@code X_} for column {@code X}), of
+         * {@code tableDefinition}; a column takes precedence over a query-scope variable of the same name.
+         */
+        static boolean isColumnReference(
+                @NotNull final TableDefinition tableDefinition,
+                @NotNull final String strValue) {
+            return tableDefinition.getColumn(strValue) != null
+                    || (strValue.endsWith("_")
+                            && tableDefinition.getColumn(strValue.substring(0, strValue.length() - 1)) != null);
         }
 
         /**
@@ -430,6 +532,21 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                 @NotNull final TableDefinition tableDefinition,
                 @NotNull final String strValue,
                 @NotNull final Map<String, Object> queryScopeVariables,
+                @NotNull final Consumer<Object> valueConsumer) {
+            return convertValue(column, tableDefinition, strValue, queryScopeVariables, this::convertParamValue,
+                    valueConsumer);
+        }
+
+        /**
+         * As {@link #convertValue(ColumnDefinition, TableDefinition, String, Map, Consumer)}, converting each
+         * query-scope value with {@code paramConverter} rather than {@link #convertParamValue(Object)}.
+         */
+        final boolean convertValue(
+                @NotNull final ColumnDefinition<?> column,
+                @NotNull final TableDefinition tableDefinition,
+                @NotNull final String strValue,
+                @NotNull final Map<String, Object> queryScopeVariables,
+                @NotNull final UnaryOperator<Object> paramConverter,
                 @NotNull final Consumer<Object> valueConsumer) {
             if (tableDefinition.getColumn(strValue) != null) {
                 // this is also a column name which needs to take precedence, and we can't convert it
@@ -450,17 +567,17 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                 if (paramValue != null && paramValue.getClass().isArray()) {
                     ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
                     for (int ai = 0; ai < accessor.length(); ++ai) {
-                        valueConsumer.accept(convertParamValue(accessor.get(ai)));
+                        valueConsumer.accept(paramConverter.apply(accessor.get(ai)));
                     }
                     return true;
                 }
                 if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
                     for (final Object paramValueMember : (Collection<?>) paramValue) {
-                        valueConsumer.accept(convertParamValue(paramValueMember));
+                        valueConsumer.accept(paramConverter.apply(paramValueMember));
                     }
                     return true;
                 }
-                valueConsumer.accept(convertParamValue(paramValue));
+                valueConsumer.accept(paramConverter.apply(paramValue));
                 return false;
             }
 
@@ -476,10 +593,53 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
     }
 
+    /**
+     * Converts a numeric query-scope value to a primitive numeric column type: exactly, to the type's null value if it
+     * is its own type's null value, or not at all (see {@link #checkRoundTrip(Number, Number, Class)}).
+     */
+    private abstract static class NumericColumnTypeConvertor extends ColumnTypeConvertor {
+        private final Class<?> boxedType;
+        private final Object nullValue;
+
+        private NumericColumnTypeConvertor(final Class<?> boxedType, final Object nullValue) {
+            this.boxedType = boxedType;
+            this.nullValue = nullValue;
+        }
+
+        /** Casts {@code value} to the column type, boxed. */
+        abstract Number narrow(Number value);
+
+        @Override
+        Object convertParamValue(Object paramValue) {
+            paramValue = super.convertParamValue(paramValue);
+            if (paramValue == null || boxedType.isInstance(paramValue)) {
+                return paramValue;
+            }
+            if (isNullValue(paramValue)) {
+                return nullValue;
+            }
+            if (!(paramValue instanceof Number)) {
+                throw cannotConvert(paramValue, boxedType, "it is not a number", null);
+            }
+            final Number number = (Number) paramValue;
+            final Number converted = narrow(number);
+            checkRoundTrip(number, converted, boxedType);
+            if (converted.equals(nullValue)) {
+                // The query language compares an int -128 with a byte column as a number below every byte, not as
+                // null; only a value of the column's own type is null at the null value.
+                throw cannotConvert(number, boxedType, "it converts to the column type's null value", null);
+            }
+            return converted;
+        }
+    }
+
     public static class ColumnTypeConvertorFactory {
+        /** An unquoted decimal integer literal, which a char column reads as a code point. */
+        private static final Pattern INTEGER_LITERAL = Pattern.compile("-?[0-9]+");
+
         public static ColumnTypeConvertor getConvertor(final Class<?> cls) {
             if (cls == byte.class) {
-                return new ColumnTypeConvertor() {
+                return new NumericColumnTypeConvertor(Byte.class, QueryConstants.NULL_BYTE_BOXED) {
                     @Override
                     Object convertStringLiteral(String str) {
                         if ("null".equals(str) || "NULL_BYTE".equals(str)) {
@@ -489,20 +649,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     }
 
                     @Override
-                    Object convertParamValue(Object paramValue) {
-                        paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Byte || paramValue == null) {
-                            return paramValue;
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.byteCast(boxer.get(paramValue));
+                    Number narrow(final Number value) {
+                        return value.byteValue();
                     }
                 };
             }
             if (cls == short.class) {
-                return new ColumnTypeConvertor() {
+                return new NumericColumnTypeConvertor(Short.class, QueryConstants.NULL_SHORT_BOXED) {
                     @Override
                     Object convertStringLiteral(String str) {
                         if ("null".equals(str) || "NULL_SHORT".equals(str)) {
@@ -512,20 +665,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     }
 
                     @Override
-                    Object convertParamValue(Object paramValue) {
-                        paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Short || paramValue == null) {
-                            return paramValue;
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.shortCast(boxer.get(paramValue));
+                    Number narrow(final Number value) {
+                        return value.shortValue();
                     }
                 };
             }
             if (cls == int.class) {
-                return new ColumnTypeConvertor() {
+                return new NumericColumnTypeConvertor(Integer.class, QueryConstants.NULL_INT_BOXED) {
                     @Override
                     Object convertStringLiteral(String str) {
                         if ("null".equals(str) || "NULL_INT".equals(str)) {
@@ -535,20 +681,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     }
 
                     @Override
-                    Object convertParamValue(Object paramValue) {
-                        paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Integer || paramValue == null) {
-                            return paramValue;
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.intCast(boxer.get(paramValue));
+                    Number narrow(final Number value) {
+                        return value.intValue();
                     }
                 };
             }
             if (cls == long.class) {
-                return new ColumnTypeConvertor() {
+                return new NumericColumnTypeConvertor(Long.class, QueryConstants.NULL_LONG_BOXED) {
                     @Override
                     Object convertStringLiteral(String str) {
                         if ("null".equals(str) || "NULL_LONG".equals(str)) {
@@ -558,20 +697,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     }
 
                     @Override
-                    Object convertParamValue(Object paramValue) {
-                        paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Long || paramValue == null) {
-                            return paramValue;
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.longCast(boxer.get(paramValue));
+                    Number narrow(final Number value) {
+                        return value.longValue();
                     }
                 };
             }
             if (cls == float.class) {
-                return new ColumnTypeConvertor() {
+                return new NumericColumnTypeConvertor(Float.class, QueryConstants.NULL_FLOAT_BOXED) {
                     @Override
                     Object convertStringLiteral(String str) {
                         if ("null".equals(str) || "NULL_FLOAT".equals(str)) {
@@ -581,20 +713,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     }
 
                     @Override
-                    Object convertParamValue(Object paramValue) {
-                        paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Float || paramValue == null) {
-                            return paramValue;
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.floatCast(boxer.get(paramValue));
+                    Number narrow(final Number value) {
+                        return value.floatValue();
                     }
                 };
             }
             if (cls == double.class) {
-                return new ColumnTypeConvertor() {
+                return new NumericColumnTypeConvertor(Double.class, QueryConstants.NULL_DOUBLE_BOXED) {
                     @Override
                     Object convertStringLiteral(String str) {
                         if ("null".equals(str) || "NULL_DOUBLE".equals(str)) {
@@ -604,15 +729,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     }
 
                     @Override
-                    Object convertParamValue(Object paramValue) {
-                        paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Double || paramValue == null) {
-                            return paramValue;
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.doubleCast(boxer.get(paramValue));
+                    Number narrow(final Number value) {
+                        return value.doubleValue();
                     }
                 };
             }
@@ -642,15 +760,25 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if ("null".equals(str) || "NULL_CHAR".equals(str)) {
                             return QueryConstants.NULL_CHAR_BOXED;
                         }
-                        if (str.length() > 1) {
-                            // TODO: #1517 Allow escaping of chars
-                            if (str.length() == 3 && ((str.charAt(0) == '\'' && str.charAt(2) == '\'')
-                                    || (str.charAt(0) == '"' && str.charAt(2) == '"'))) {
-                                return str.charAt(1);
-                            } else {
+                        // TODO: #1517 Allow escaping of chars
+                        if (str.length() == 3 && ((str.charAt(0) == '\'' && str.charAt(2) == '\'')
+                                || (str.charAt(0) == '"' && str.charAt(2) == '"'))) {
+                            return str.charAt(1);
+                        }
+                        if (INTEGER_LITERAL.matcher(str).matches()) {
+                            // an unquoted integer is a code point, as in the query language: 5 is (char) 5, not '5'
+                            final long codePoint = Long.parseLong(str);
+                            if (codePoint < Character.MIN_VALUE || codePoint >= QueryConstants.NULL_CHAR) {
+                                // 65535 is NULL_CHAR, which orders below every char, where the query language
+                                // compares it as a number above them all
                                 throw new IllegalArgumentException(
-                                        "String " + str + " has length greater than one for column ");
+                                        "Integer " + str + " is not the code point of a char");
                             }
+                            return (char) codePoint;
+                        }
+                        if (str.length() > 1) {
+                            throw new IllegalArgumentException(
+                                    "String " + str + " has length greater than one for column ");
                         }
                         return str.charAt(0);
                     }
@@ -661,10 +789,24 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof Character || paramValue == null) {
                             return paramValue;
                         }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.charCast(boxer.get(paramValue));
+                        if (isNullValue(paramValue)) {
+                            return QueryConstants.NULL_CHAR_BOXED;
+                        }
+                        if (!(paramValue instanceof Number)) {
+                            throw cannotConvert(paramValue, Character.class, "it is not a number", null);
+                        }
+                        final Number number = (Number) paramValue;
+                        final char converted = (char) number.intValue();
+                        checkRoundTrip(number, (int) converted, Character.class);
+                        if (converted == QueryConstants.NULL_CHAR) {
+                            // As for the numeric types, a value that converts to the null value is a number in the
+                            // query language, not null (NULL_INT, which is null there too, was converted above). For
+                            // char this matters more: NULL_CHAR is the highest char (65535), yet it orders below
+                            // every char, while the query language compares 65535 as a number above them all.
+                            throw cannotConvert(number, Character.class,
+                                    "it converts to NULL_CHAR, which orders below every char", null);
+                        }
+                        return converted;
                     }
                 };
             }
@@ -684,20 +826,20 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof BigDecimal || paramValue == null) {
                             return paramValue;
                         }
-                        if (paramValue instanceof BigInteger) {
-                            return new BigDecimal((BigInteger) paramValue);
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        final Object boxedValue = boxer.get(paramValue);
-                        if (boxedValue == null) {
+                        if (isNullValue(paramValue)) {
                             return null;
                         }
-                        if (boxedValue instanceof Number) {
-                            return BigDecimal.valueOf(((Number) boxedValue).doubleValue());
+                        if (!(paramValue instanceof Number)) {
+                            // it can never match, and dropUnmatchable removes it
+                            return paramValue;
                         }
-                        return paramValue;
+                        try {
+                            return toBigDecimal((Number) paramValue);
+                        } catch (final NumberFormatException err) {
+                            // NaN and the infinities
+                            throw cannotConvert(paramValue, BigDecimal.class,
+                                    "the column type cannot represent it exactly", err);
+                        }
                     }
                 };
             }
@@ -717,20 +859,20 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof BigInteger || paramValue == null) {
                             return paramValue;
                         }
-                        if (paramValue instanceof BigDecimal) {
-                            return ((BigDecimal) paramValue).toBigInteger();
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        final Object boxedValue = boxer.get(paramValue);
-                        if (boxedValue == null) {
+                        if (isNullValue(paramValue)) {
                             return null;
                         }
-                        if (boxedValue instanceof Number) {
-                            return BigInteger.valueOf(((Number) boxedValue).longValue());
+                        if (!(paramValue instanceof Number)) {
+                            // it can never equal a BigInteger, so it matches nothing
+                            return paramValue;
                         }
-                        return paramValue;
+                        try {
+                            // toBigIntegerExact throws for a fraction
+                            return toBigDecimal((Number) paramValue).toBigIntegerExact();
+                        } catch (final ArithmeticException | NumberFormatException err) {
+                            throw cannotConvert(paramValue, BigInteger.class,
+                                    "the column type cannot represent it exactly", err);
+                        }
                     }
                 };
             }

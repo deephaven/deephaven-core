@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -37,6 +38,29 @@ import java.util.Optional;
  * <li>GREATER_THAN</li>
  * <li>GREATER_THAN_OR_EQUAL</li>
  * </ul>
+ *
+ * <p>
+ * A query-scope parameter is converted to the column's type as {@link MatchFilter} converts it, so that the filter
+ * selects the rows a {@link ConditionFilter} would. Where the converted value would select other rows -- a value the
+ * conversion rejects, {@code -0.0} against a byte, short, int or char column (the query language orders it below
+ * {@code 0}, which the converted value {@code 0} is not), or a {@link Float} against an int column (the query language
+ * compares the two in float, so {@code X > 16777216f} excludes {@code 16777217}) -- the filter fails over to a
+ * {@link ConditionFilter}.
+ *
+ * <p>
+ * One difference remains, for float and double columns: their range filters treat {@code -0.0} and {@code 0.0} as
+ * equal, where the query language orders {@code -0.0} below {@code 0.0}, so on rows holding {@code -0.0},
+ * {@code X < 0.0} and {@code X >= 0.0} select otherwise than the query language does.
+ *
+ * <p>
+ * For primitive columns the endpoint is compared in Deephaven's type system, where each type's null value sorts below
+ * every other value. An endpoint of the column's own type equal to its null value -- {@code -Double.MAX_VALUE} is
+ * {@code NULL_DOUBLE}, and {@code Long.MIN_VALUE} is {@code NULL_LONG} -- is therefore null, as it is in the query
+ * language, so {@code X < -Double.MAX_VALUE} matches no rows at all, {@code -Infinity} included. An endpoint of another
+ * type that converts to the null value, a query-scope int {@code v = -128} against a byte column for instance, is a
+ * number in the query language, which the conversion rejects: {@code X < v} selects the null rows only. A literal,
+ * though, is read in the column's type, so the literal {@code -128} against a byte column is {@code NULL_BYTE}, and
+ * null.
  */
 public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
@@ -128,6 +152,22 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
     }
 
+    /**
+     * Whether the query language compares a column of this integral type with a floating-point value through
+     * {@link Double#compare} or {@link Float#compare}, which order {@code -0.0} below {@code 0}. It compares a
+     * {@code long} column exactly, where {@code -0.0} is {@code 0}. (A float or double column keeps the sign of
+     * {@code -0.0}, but its range filters do not tell it from {@code 0.0}; see the class documentation.)
+     */
+    private static boolean ordersNegativeZeroBelowZero(final Class<?> colClass) {
+        final Class<?> type = TypeUtils.getUnboxedTypeIfBoxed(colClass);
+        return type == byte.class || type == short.class || type == int.class || type == char.class;
+    }
+
+    private static boolean isNegativeZero(final Object value) {
+        return (value instanceof Double && Double.doubleToRawLongBits((Double) value) == Long.MIN_VALUE)
+                || (value instanceof Float && Float.floatToRawIntBits((Float) value) == Integer.MIN_VALUE);
+    }
+
     @Override
     public List<String> getColumns() {
         if (filter == null) {
@@ -191,7 +231,10 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
             return;
         }
 
-        RuntimeException conversionError = null;
+        // Why the converted value cannot be used, if it cannot: it does not convert exactly, or would not select the
+        // rows the query language selects, or there is no such column. The filter then fails over to a
+        // ConditionFilter; this is thrown only if it cannot.
+        RuntimeException potentialConversionError = null;
         ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
             if ((def = tableDefinition.getColumn(value)) != null) {
@@ -201,41 +244,58 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
                 value = tmp;
                 condition = condition.mirror();
             } else {
-                conversionError = new RuntimeException("Column \"" + columnName
+                potentialConversionError = new RuntimeException("Column \"" + columnName
                         + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
             }
         }
 
         final Class<?> colClass = def == null ? null : def.getDataType();
         final MutableObject<Object> realValue = new MutableObject<>();
+        Object queryScopeValue = null;
 
         if (def != null) {
             final MatchFilter.ColumnTypeConvertor convertor =
                     MatchFilter.ColumnTypeConvertorFactory.getConvertor(def.getDataType());
 
             try {
+                final Map<String, Object> queryScopeVariables =
+                        compilationProcessor.getFormulaImports().getQueryScopeVariables();
+                if (!MatchFilter.ColumnTypeConvertor.isColumnReference(tableDefinition, value)) {
+                    // a column of the same name takes precedence over the variable
+                    queryScopeValue =
+                            MatchFilter.ColumnTypeConvertor.maybeUnwrapPyObject(queryScopeVariables.get(value));
+                }
                 boolean wasAnArrayType = convertor.convertValue(
-                        def, tableDefinition, value, compilationProcessor.getFormulaImports().getQueryScopeVariables(),
-                        realValue::setValue);
+                        def, tableDefinition, value, queryScopeVariables, realValue::setValue);
                 if (wasAnArrayType) {
-                    conversionError =
+                    potentialConversionError =
                             new IllegalArgumentException("RangeFilter does not support array types for column "
                                     + columnName + " with value <" + value + ">");
+                } else if (ordersNegativeZeroBelowZero(colClass) && isNegativeZero(queryScopeValue)) {
+                    // Only to match the query language, which widens the column value to double and compares with
+                    // Double.compare, ordering -0.0 below 0: X <= -0.0 excludes 0 there, though -0.0 converts to 0.
+                    potentialConversionError = new IllegalArgumentException("RangeFilter cannot compare column "
+                            + columnName + " with -0.0 as the query language does");
+                } else if (colClass == int.class && queryScopeValue instanceof Float) {
+                    // Only to match the query language, which compares an int column with a Float in float: X >
+                    // 16777216f excludes 16777217 there, though the converted bound 16777216 includes it.
+                    potentialConversionError = new IllegalArgumentException("RangeFilter cannot compare int column "
+                            + columnName + " with a Float as the query language does, in float");
                 }
             } catch (final RuntimeException err) {
-                conversionError = err;
+                potentialConversionError = err;
             }
         }
 
-        if (conversionError != null) {
+        if (potentialConversionError != null) {
             if (expression != null) {
                 try {
                     filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 } catch (final RuntimeException ignored) {
-                    throw conversionError;
+                    throw potentialConversionError;
                 }
             } else {
-                throw conversionError;
+                throw potentialConversionError;
             }
         } else if (colClass == double.class || colClass == Double.class) {
             filter = DoubleRangeFilter.makeDoubleRangeFilter(columnName, condition,
