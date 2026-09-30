@@ -161,6 +161,20 @@ result = source.where(f)
 
 See [Parallelization](../../../conceptual/query-engine/parallelization.md) for more details.
 
+## Filters on partitioning columns
+
+When a table comes from a partitioned source, such as a directory of Parquet files or an Iceberg table, a filter that uses only partitioning columns can be applied to the partitions before any data is read. Deephaven evaluates it once per partition instead of once per row, and runs it ahead of the other filters, so whole partitions are skipped.
+
+Deephaven applies a filter this way even when filters are configured to be stateful by default, because that is nearly always what users want. For example, `Date = today()` is stateful when filters are stateful by default, but Deephaven still evaluates it early, partition by partition.
+
+A filter on partitioning columns is not applied this way if:
+
+- It is marked serial with [`with_serial`](../../query-language/types/Filter.md#with_serial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows, in argument order.
+- It respects a barrier declared by a filter that isn't applied this way.
+- It uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
+
+Mark a filter on partitioning columns serial only when the order in which it's evaluated matters.
+
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md)

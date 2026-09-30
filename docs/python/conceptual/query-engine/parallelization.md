@@ -227,7 +227,7 @@ result = (
 )
 ```
 
-When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, every input row is evaluated in order, the filter cannot be reordered with respect to other filters, and stateful side effects happen sequentially.
+When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, every input row is evaluated in order, the filter cannot be reordered with respect to other filters, and stateful side effects happen sequentially. On tables from partitioned sources, marking a filter on partitioning columns serial also stops Deephaven from applying it to whole partitions before reading data — see [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
 
 ### Barriers
 
@@ -319,12 +319,6 @@ When implicit barriers are enabled, serial operations automatically create barri
 - **Stateful mode**: Serial operations automatically wait for each other. This is useful when operations share global state.
 
 Most users don't need to change this setting — see [Configuration](#configuration).
-
-### Stateful partition filters
-
-The serial/barrier rules above apply to ordinary filters. _Partition filters_ — filters that only access partitioning columns — are a special case: Deephaven evaluates them per location rather than per row, so marking one serial changes its evaluation strategy rather than just its ordering.
-
-When you mark a partition filter as serial, Deephaven must evaluate it on all rows of the table and cannot reorder it. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default. This lets Deephaven relax ordering constraints for filters on partitioning columns, evaluate them per location rather than on every row, reorder common partition filters ahead of others, and avoid repeated evaluation. For example, the formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
 
 ## Configuration
 
