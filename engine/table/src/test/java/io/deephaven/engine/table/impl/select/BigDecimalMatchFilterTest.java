@@ -40,6 +40,7 @@ public class BigDecimalMatchFilterTest {
         QueryScope.addParam("d", 5.0);
         QueryScope.addParam("l", 5L);
         QueryScope.addParam("bd", new BigDecimal("5.00"));
+        QueryScope.addParam("s", "5");
         unsorted = newTable(col("X", new BigDecimal("5"), new BigDecimal("5.5"), new BigDecimal("5.0"), null,
                 new BigDecimal("6.000"), new BigDecimal("5.00"), new BigDecimal("7")));
     }
@@ -82,6 +83,10 @@ public class BigDecimalMatchFilterTest {
                     table.where(new MatchFilter(MatchOptions.REGULAR, "X", values)));
             assertTableEquals(table.where("!(X == 7 || isNull(X) || X == 5.0)"),
                     table.where(new MatchFilter(MatchOptions.INVERTED, "X", values)));
+            // and likewise from the query scope, where a String is passed through unconverted
+            assertTableEquals(table.where("X == 7 || isNull(X) || X == 5.0"), table.where("X in s, 7, null, 5.0"));
+            assertTableEquals(table.where("!(X == 7 || isNull(X) || X == 5.0)"),
+                    table.where("X not in s, 7, null, 5.0"));
         }
     }
 
