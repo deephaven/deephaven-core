@@ -100,7 +100,7 @@ Add dependencies to your `pom.xml`:
 </dependencies>
 ```
 
-To compile Groovy sources, add the `gmavenplus-plugin` to your build:
+To compile Groovy sources, add the `gmavenplus-plugin` to your build. Also pin a modern `maven-surefire-plugin` version so Maven executes JUnit Jupiter tests, since Surefire versions older than 2.22.0 silently run zero Jupiter tests:
 
 ```xml
 <build>
@@ -119,6 +119,11 @@ To compile Groovy sources, add the `gmavenplus-plugin` to your build:
                     </goals>
                 </execution>
             </executions>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.2.5</version>
         </plugin>
     </plugins>
 </build>
@@ -151,8 +156,10 @@ To use Deephaven table operations in unit tests, you need to open an [`Execution
 Add `deephaven-engine-test-utils` and JUnit Jupiter as test dependencies to use `TestExecutionContext` (the logging sink from the base setup above is already available on the test classpath):
 
 ```groovy skip-test
-testImplementation "io.deephaven:deephaven-engine-test-utils:$dhcVersion"
-testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+dependencies {
+    testImplementation "io.deephaven:deephaven-engine-test-utils:$dhcVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+}
 
 test {
     useJUnitPlatform()
@@ -217,8 +224,10 @@ public class MyTableUtilsTest {
 Add the appropriate extensions as dependencies:
 
 ```groovy skip-test
-implementation "io.deephaven:deephaven-extensions-csv:$dhcVersion"
-implementation "io.deephaven:deephaven-extensions-parquet-table:$dhcVersion"
+dependencies {
+    implementation "io.deephaven:deephaven-extensions-csv:$dhcVersion"
+    implementation "io.deephaven:deephaven-extensions-parquet-table:$dhcVersion"
+}
 ```
 
 Load test data from CSV or Parquet files in your test resources:

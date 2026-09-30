@@ -15,7 +15,7 @@ pip install deephaven-server
 
 > **Note:** `deephaven-server` requires Java 17+ and sets up an embedded Deephaven server. Set your `JAVA_HOME` environment variable before running.
 
-### Optional dependencies
+### Related packages
 
 | Use case                             | Package                                      |
 | ------------------------------------ | -------------------------------------------- |
