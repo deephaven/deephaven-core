@@ -39,8 +39,12 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      * block} of the values it was allocated with. It is never written.
      */
     static final long[] FRESH_IN_USE = makeFreshInUse();
-    /** The blocks allocated during the current update cycle, whose previous-value entries commit clears. */
-    protected transient IntArrayList freshBlocks = null;
+    /**
+     * The first block allocated during the current update cycle, or {@link Integer#MAX_VALUE} if none was. Blocks are
+     * only ever allocated after every other, so every block allocated during the cycle is at or after it, and commit
+     * scans upward from it to clear their previous-value entries.
+     */
+    private transient int firstFreshBlock = Integer.MAX_VALUE;
 
     private static long[] makeFreshInUse() {
         final long[] inUse = new long[BLOCK_SIZE >> LOG_INUSE_BITSET_SIZE];
@@ -160,13 +164,10 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
             if (markFresh) {
                 prevBlocks[ii] = freshPrevBlock(nullFilled);
                 prevInUse[ii] = FRESH_IN_USE;
-                if (freshBlocks == null) {
-                    freshBlocks = new IntArrayList();
-                }
-                freshBlocks.add(ii);
             }
         }
         if (markFresh) {
+            firstFreshBlock = Math.min(firstFreshBlock, allocatedNumBlocks);
             prevFlusher.maybeActivate();
         }
         // Note: if we get this far, requestedMaxIndex > maxIndex, so this will always increase maxIndex.
@@ -278,13 +279,17 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     private void commitBlocks() {
-        if (freshBlocks != null && !freshBlocks.isEmpty()) {
+        if (firstFreshBlock != Integer.MAX_VALUE) {
             final UArray[] prevBlocks = getPrevBlocks();
-            freshBlocks.forEach(block -> {
-                prevBlocks[block] = null;
-                prevInUse[block] = null;
-            });
-            freshBlocks.clear();
+            final int allocatedBlocks = (int) Math.min(prevInUse.length, (maxIndex + 1) >> LOG_BLOCK_SIZE);
+            // a block the range skipped, as ensureCapacityLike does, was never pointed at the shared entries
+            for (int block = firstFreshBlock; block < allocatedBlocks; ++block) {
+                if (prevInUse[block] == FRESH_IN_USE) {
+                    prevBlocks[block] = null;
+                    prevInUse[block] = null;
+                }
+            }
+            firstFreshBlock = Integer.MAX_VALUE;
         }
         if (prevAllocated == null) {
             return;

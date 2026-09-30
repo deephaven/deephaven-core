@@ -92,6 +92,26 @@ public class TestArraySourceFreshBlocks {
     }
 
     @Test
+    public void testEveryBlockAllocatedDuringACycleIsCleared() {
+        final LongArraySource longs = new LongArraySource();
+        longs.startTrackingPrevValues();
+        // two allocations in one cycle, each of a new block
+        updateGraph().runWithinUnitTestCycle(() -> {
+            longs.ensureCapacity(BLOCK_SIZE);
+            longs.set(0, 1L);
+            longs.ensureCapacity(2L * BLOCK_SIZE);
+            longs.set(BLOCK_SIZE, 2L);
+        });
+        // both blocks record previous values in the next cycle
+        updateGraph().runWithinUnitTestCycle(() -> {
+            longs.set(0, -1L);
+            longs.set(BLOCK_SIZE, -2L);
+            assertEquals(1L, longs.getPrevLong(0));
+            assertEquals(2L, longs.getPrevLong(BLOCK_SIZE));
+        });
+    }
+
+    @Test
     public void testParallelPopulationLeavesTheSharedBlockUnwritten() {
         final LongArraySource populated = new LongArraySource();
         final LongArraySource other = new LongArraySource();
