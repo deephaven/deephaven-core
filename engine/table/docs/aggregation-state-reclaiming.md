@@ -462,8 +462,8 @@ cost nothing, and a hash table that converts to `long` positions at a threshold 
 needed.
 
 Measured with the benchmark described in [Benchmark results](#benchmark-results), one row per group, on an Apple
-silicon Mac, with percentages against main with #8676, which was not yet merged. Blocks releases blocks with no moves.
-The shifting modes were `releaseBlocks(0.75, 0, false)`, which collapsed and swept (Collapse, sweep);
+silicon Mac, with percentages against main with #8676, which was not yet merged. The Blocks column releases blocks
+without moving any state. The shifting modes were `releaseBlocks(0.75, 0, false)`, which collapsed and swept (Collapse, sweep);
 `releaseBlocks(1, 0, true)`, which shifted in bulk without collapsing (Bulk); and `releaseBlocks(0.75, 0, true)` and
 `releaseBlocks(0.5, 0, true)`, which collapsed and shifted in bulk. The last two columns collapse without shifting, from
 a later run on the same Mac.
