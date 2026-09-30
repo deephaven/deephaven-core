@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import org.junit.Test;
 
@@ -18,6 +19,45 @@ public class TestHashMapLockFreeKnVn {
      * {@link HashMapLockFreeKnVn#capacityForExpectedEntries(int, double)} always produces a capacity whose threshold
      * strictly clears the expected count, and that it is the smallest such capacity (so we are not over-allocating).
      */
+    @Test
+    public void isMonotoneAcceptsEitherDirectionAndSamplesWideChunks() {
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[0])));
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[] {7})));
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[] {1, 2, 3, 10, 11, 12})));
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[] {12, 11, 10, 3, 2, 1})));
+        // Repeats walk memory in the same direction: a sorted sample of keys is monotone for this purpose.
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[] {1, 1, 2, 2, 2, 3})));
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[] {-1, -1, -2, -2, -3})));
+        // Up to 64 keys the check is exact: one turn anywhere is enough to say no.
+        assertFalse(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[] {1, 2, 3, 2})));
+        assertFalse(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[] {2, 1, 3, 4})));
+        assertFalse(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(new long[] {5, 3, 4})));
+        // Wide chunks are sampled every n/64th key: monotone chunks pass, a shuffled one fails, and a chunk that is
+        // monotone at the sampled keys passes even if it wobbles between them (locality is what is being judged).
+        final long[] wide = new long[4096];
+        for (int ii = 0; ii < wide.length; ++ii) {
+            wide[ii] = 1_000_000 + ii;
+        }
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(wide)));
+        final long[] down = new long[4096];
+        for (int ii = 0; ii < down.length; ++ii) {
+            down[ii] = -wide[ii];
+        }
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(down)));
+        final long[] shuffled = wide.clone();
+        final java.util.Random rng = new java.util.Random(20260929);
+        for (int ii = shuffled.length - 1; ii > 0; --ii) {
+            final int jj = rng.nextInt(ii + 1);
+            final long t = shuffled[ii];
+            shuffled[ii] = shuffled[jj];
+            shuffled[jj] = t;
+        }
+        assertFalse(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(shuffled)));
+        final long[] wobbly = wide.clone();
+        wobbly[1] = wobbly[2] + 1; // a turn between two sampled keys
+        assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(wobbly)));
+    }
+
     @Test
     public void capacityForExpectedEntriesClearsThreshold() {
         final int[] expectedCounts = {

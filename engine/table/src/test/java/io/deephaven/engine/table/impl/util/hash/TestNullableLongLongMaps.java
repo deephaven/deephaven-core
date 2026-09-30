@@ -207,6 +207,35 @@ public class TestNullableLongLongMaps {
     }
 
     @Test
+    public void wantSerialForMonotoneKeysIsAnOccupancyThreshold() {
+        final int capacity = 1_000_000;
+        final int threshold = (int) (capacity * NullableLongLongMaps.MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY);
+        // Sparse: a monotone local chunk takes the serial loop, right up to the threshold.
+        assertTrue(NullableLongLongMaps.wantSerialForMonotoneKeys(0, capacity));
+        assertTrue(NullableLongLongMaps.wantSerialForMonotoneKeys(threshold - 1, capacity));
+        // At and above it: the window, whatever the key order.
+        assertFalse(NullableLongLongMaps.wantSerialForMonotoneKeys(threshold, capacity));
+        assertFalse(NullableLongLongMaps.wantSerialForMonotoneKeys(capacity, capacity));
+        // The threshold is where the data put it: a load-factor-0.5 map never reaches it, a dense map lives above it.
+        assertEquals(0.5, NullableLongLongMaps.MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY, 0.0);
+    }
+
+    @Test
+    public void isLocalWalkIsAnAverageStepThreshold() {
+        final int step = NullableLongLongMaps.MONOTONE_KEYS_MAX_LOCAL_STEP;
+        // Consecutive keys, and a step exactly at the threshold, are local; one beyond is not; direction is irrelevant.
+        assertTrue(NullableLongLongMaps.isLocalWalk(1000, 1000 + 4095, 4096));
+        assertTrue(NullableLongLongMaps.isLocalWalk(0, (long) step * 4095, 4096));
+        assertFalse(NullableLongLongMaps.isLocalWalk(0, (long) (step + 1) * 4095, 4096));
+        assertTrue(NullableLongLongMaps.isLocalWalk(-1000, -1000 - 4095, 4096));
+        assertFalse(NullableLongLongMaps.isLocalWalk(0, -((long) (step + 1) * 4095), 4096));
+        // Degenerate chunks are local; a span that overflows a long is not.
+        assertTrue(NullableLongLongMaps.isLocalWalk(7, 7, 1));
+        assertTrue(NullableLongLongMaps.isLocalWalk(7, 9, 2));
+        assertFalse(NullableLongLongMaps.isLocalWalk(Long.MIN_VALUE + 1, Long.MAX_VALUE - 1, 4096));
+    }
+
+    @Test
     public void wantWindowedReadsGatesOnFootprintAndChunkSize() {
         final int threshold = NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES;
         final int minChunk = NullableLongLongMaps.MIN_WINDOWED_CHUNK;

@@ -718,18 +718,33 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         final int n = keys.size();
         final long numBucketsReciprocal = reciprocalOf(localKvs);
         final long noEntry = noEntryValue;
-        // Adaptive read strategy: when the map's footprint is beyond the last-level cache — its whole job is
-        // overlapping the misses that a cache-resident table simply does not have — service the chunk through the
-        // AMAC window; otherwise use the serial loop, which ties or wins when the table is cache-resident. Footprint
-        // is a function of the snapshot's own length, so the choice is stable between rehashes and flips exactly when
-        // the array grows past the cache. (Occupancy is deliberately not consulted; see wantWindowedReads.) The
-        // chunk must also be wide enough to fill the window: its fixed cost is paid per call, and a single-key chunk —
-        // the scalar cursor's case — has nothing to overlap, measured at 1.6-2.3x slower under the window. A pinned
-        // ReadMode overrides the gate, for pricing and tests only. Reads are pure, so the windowed path may resolve
-        // lookups out of index order, invisibly to the caller.
-        final boolean windowed = readMode == ReadMode.ADAPTIVE
-                ? NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2, n)
-                : readMode == ReadMode.WINDOW;
+        // Adaptive read strategy, two stages. First, footprint: when the map's array is beyond the last-level cache —
+        // the window's whole job is overlapping the misses that a cache-resident table simply does not have — the
+        // chunk goes through the AMAC window; otherwise the serial loop, which ties or wins when the table is
+        // cache-resident. Footprint is a function of the snapshot's own length, so that answer is stable between
+        // rehashes and flips exactly when the array grows past the cache. The chunk must also be wide enough to fill
+        // the window: its fixed cost is paid per call, and a single-key chunk — the scalar cursor's case — has nothing
+        // to overlap, measured at 1.6-2.3x slower under the window. Second, and only when the first stage opened the
+        // window: a chunk of monotone keys, ascending or descending, whose consecutive keys are close together is a
+        // straight walk through memory that the hardware prefetcher already hides, and into a sparse table it almost
+        // always ends at the first bucket; the window is measured as a 16-38% tax there. So if the map is under the
+        // occupancy threshold (MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY), the chunk's span says the walk is local
+        // (isLocalWalk: a sorted sample of far-apart keys is a random walk in disguise, where the window wins 19%
+        // at 500M entries), and a sampled scan finds the keys monotone (isMonotone: about 64 compares whatever the
+        // chunk width, so a shuffled chunk pays almost nothing), the chunk takes the serial loop. The occupancy read
+        // uses the map's entry count, which a concurrent writer may be changing: a stale value can only choose a
+        // strategy, never an answer, because reads are pure either way. A pinned ReadMode overrides both stages, for
+        // pricing and tests only. The windowed path may resolve lookups out of index order, invisibly to the caller.
+        final boolean windowed;
+        if (readMode == ReadMode.ADAPTIVE) {
+            final int entryCapacity = (localKvs.length - HEADER_LONGS) / 2;
+            windowed = NullableLongLongMaps.wantWindowedReads(entryCapacity, n)
+                    && !(NullableLongLongMaps.wantSerialForMonotoneKeys(size, entryCapacity)
+                            && NullableLongLongMaps.isLocalWalk(keys.get(0), keys.get(n - 1), n)
+                            && isMonotone(keys));
+        } else {
+            windowed = readMode == ReadMode.WINDOW;
+        }
         if (windowed) {
             K4V4Kernel.getBatch(localKvs, numBucketsReciprocal, keys, result, noEntry);
         } else {
@@ -738,6 +753,33 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
             }
         }
         result.setSize(n);
+    }
+
+    /**
+     * Do the chunk's keys run monotonically, ascending or descending, judged from a sample? The direction comes from
+     * the first and last key; then every {@code step}th key must agree with it, where {@code step} is one for chunks of
+     * up to 64 keys (an exact check) and {@code n / 64} above that (about 64 compares whatever the width). Equal
+     * neighbours count as monotone: a caller's row keys never repeat, but a sorted sample of keys may, and a repeated
+     * key still walks memory in the same direction. This decides a read strategy, never an answer, so a sample is
+     * enough: a shuffled chunk passes it with a probability of about one in 64 factorial, and a chunk that is monotone
+     * at every 64th key but not between them still has most of the locality the serial loop is chosen for.
+     */
+    static boolean isMonotone(LongChunk<? extends Any> keys) {
+        final int n = keys.size();
+        if (n < 3) {
+            return true;
+        }
+        final boolean ascending = keys.get(n - 1) >= keys.get(0);
+        final int step = n <= 64 ? 1 : n / 64;
+        long previous = keys.get(0);
+        for (int ii = step; ii < n; ii += step) {
+            final long key = keys.get(ii);
+            if (ascending ? key < previous : key > previous) {
+                return false;
+            }
+            previous = key;
+        }
+        return ascending ? keys.get(n - 1) >= previous : keys.get(n - 1) <= previous;
     }
 
     // No buckets: every key is a miss.

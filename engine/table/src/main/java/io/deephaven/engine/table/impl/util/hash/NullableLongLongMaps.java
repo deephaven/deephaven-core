@@ -97,6 +97,30 @@ public final class NullableLongLongMaps {
     public static final int MIN_WINDOWED_CHUNK = K4V4Kernel.GET_WINDOW;
 
     /**
+     * Second stage of the read-strategy gate, for a chunk whose keys walk memory in order: below this occupancy
+     * (entries over entry capacity) such a chunk takes the serial loop even though the footprint gate would open the
+     * window. The maps' first probe is deliberately weak — consecutive keys land in consecutive buckets — so monotone
+     * keys into a sparse table are a straight walk through memory that almost always ends at the first bucket; the
+     * hardware prefetcher already hides that walk, and the window's bookkeeping then costs 16 to 38% on an i9-13900K
+     * and 4 to 8% on a Ryzen 9 9950X3D2 at 30 to 38% occupancy (measured at 1M to 10M entries). At 61% occupancy and
+     * above the probe chains wander and the window wins by 8 to 19% even on monotone keys, so the threshold sits
+     * between the two, at one half. A map's occupancy sawtooths within [loadFactor/2, loadFactor] as rehash doubles
+     * overshoot: a load-factor-0.5 map never rises above it, so its monotone reads are always serial, and a
+     * load-factor-0.9 map dips below it only in the first ninth of each doubling cycle, where the window's gain is
+     * smallest. Shuffled keys never consult this: their misses are what the window exists to overlap.
+     */
+    public static final double MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY = 0.5;
+
+    /**
+     * The walk must also be local: a monotone chunk whose consecutive keys are, on average, more than this many keys
+     * apart lands each lookup in its own far-off bucket, and the prefetcher has nothing to stream. In K4V4 buckets of
+     * 64 bytes, 2048 keys is 128KB between consecutive first probes. Measured on the i9: 100,000 sorted lookups into
+     * 10M entries (about 100 keys apart) are 14% faster serial; into 100M (about 1,000 apart) 6% faster serial; into
+     * 500M (about 5,000 apart) 19% faster through the window. The threshold sits between the last two.
+     */
+    public static final int MONOTONE_KEYS_MAX_LOCAL_STEP = 2048;
+
+    /**
      * The load factor at and above which a map that is big enough is rebuilt in the wide-bucket (K4V4) shape; below it
      * the shape does not pay, regardless of size. This gates the LAYOUT only: whether the wide map's reads then go
      * through the AMAC window is decided separately, by footprint ({@link #wantWindowedReads}). Measured at 10M
@@ -149,14 +173,41 @@ public final class NullableLongLongMaps {
      * misses, and a table that fits the near caches has none worth overlapping (there the window is pure bookkeeping,
      * measured as a tax); and when the chunk is at least {@link #MIN_WINDOWED_CHUNK} keys wide, because a chunk that
      * cannot fill the window pays its fixed cost for nothing (a single-key chunk — the scalar cursor's case — has
-     * nothing to overlap at all). Footprint is the first-order predictor. Occupancy turned out to be second-order and
-     * is deliberately NOT an input: at a fixed large footprint the window ties or wins at every occupancy measured, and
-     * open-addressing occupancy sawtooths in [loadFactor/2, loadFactor] as rehash doubles overshoot, so it never sits
-     * where a threshold calibrated on load factor expects it (a lesson learned the hard way). Capacity changes only at
-     * rehash, so this answer is stable between rehashes and flips exactly when the array grows past the cache.
+     * nothing to overlap at all). Footprint is the first-order predictor, and this gate is the first stage: it looks
+     * only at the array and the chunk width, so its answer is stable between rehashes and flips exactly when the array
+     * grows past the crossover. Occupancy on its own is second-order — at a fixed large footprint the window ties or
+     * wins at every occupancy measured when keys arrive in any order but ascending — and is not an input here. It
+     * matters in one combination, monotone local keys into a sparse table, which the second stage handles: see
+     * {@link #wantSerialForMonotoneKeys}, {@link #MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY} and {@link #isLocalWalk}.
      */
     public static boolean wantWindowedReads(final int entryCapacity, final int chunkSize) {
         return chunkSize >= MIN_WINDOWED_CHUNK && entryCapacity >= DEFAULT_AMAC_THRESHOLD_ENTRIES;
+    }
+
+    /**
+     * Second stage of the read-strategy gate, consulted only after {@link #wantWindowedReads} has said yes: is this map
+     * sparse enough that a chunk of monotone, local keys is better served by the serial loop? The map answers with its
+     * entry count and entry capacity; whether the chunk's keys are in fact a local monotone walk is the map's own
+     * check, made only when this says yes. See {@link #MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY} for the evidence.
+     */
+    public static boolean wantSerialForMonotoneKeys(final int size, final int entryCapacity) {
+        return size < entryCapacity * MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY;
+    }
+
+    /**
+     * Is a monotone chunk running from {@code first} to {@code last} over {@code n} keys a local walk, at most
+     * {@link #MONOTONE_KEYS_MAX_LOCAL_STEP} keys per step on average? A span that overflows a long is not local.
+     */
+    public static boolean isLocalWalk(final long first, final long last, final int n) {
+        if (n < 2) {
+            return true;
+        }
+        final long span = last - first;
+        // Overflow: first and last have opposite signs and the difference has the wrong sign — a huge span.
+        if (((first ^ last) & (last ^ span)) < 0) {
+            return false;
+        }
+        return Math.abs(span) / (n - 1) <= MONOTONE_KEYS_MAX_LOCAL_STEP;
     }
 
     /**
