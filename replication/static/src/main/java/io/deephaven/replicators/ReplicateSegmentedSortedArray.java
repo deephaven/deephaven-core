@@ -98,9 +98,9 @@ public class ReplicateSegmentedSortedArray {
     /**
      * Write the EqualsConsistentObject counterpart of a generated Object class, next to it. The Object class tests
      * equality with {@code ObjectComparisons.compareEquals}, which is correct for any Comparable; the counterpart tests
-     * equality with {@code Objects.equals}, which is correct only for data types whose natural ordering is consistent
-     * with equals. References to the other Object SSA, stamp, checker and dup compact classes become references to
-     * their EqualsConsistentObject counterparts.
+     * equality with {@code ObjectComparisons.eq}, which is correct only for data types whose natural ordering is
+     * consistent with equals. References to the other Object SSA, stamp, checker and dup compact classes become
+     * references to their EqualsConsistentObject counterparts.
      *
      * @param task the gradle task that regenerates the copy
      * @param sourceClassName the name of the class to edit to change the copy
@@ -126,12 +126,11 @@ public class ReplicateSegmentedSortedArray {
 
         if (lines.stream().anyMatch(line -> line.contains("region equality function"))) {
             lines = simpleFixup(lines, "equality function", "ObjectComparisons\\.compareEquals\\(lhs, rhs\\)",
-                    "Objects.equals(lhs, rhs)");
-            if (lines.stream().noneMatch(line -> line.contains("Objects.equals(lhs, rhs)"))) {
+                    "ObjectComparisons.eq(lhs, rhs)");
+            if (lines.stream().noneMatch(line -> line.contains("ObjectComparisons.eq(lhs, rhs)"))) {
                 throw new IllegalStateException(
                         objectPath + ": equality function region does not use ObjectComparisons.compareEquals");
             }
-            lines = ReplicationUtils.addImport(lines, "import java.util.Objects;");
         }
 
         System.out.println("Generating equals consistent file " + copyPath);
