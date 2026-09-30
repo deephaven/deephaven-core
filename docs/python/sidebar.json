@@ -2800,29 +2800,12 @@
                 "path": "reference/community-questions/cq-index.md"
               },
               {
-                "label": "General",
+                "label": "Install and upgrade",
                 "items": [
-                  {
-                    "label": "Can I integrate custom data sources with Deephaven?",
-                    "path": "reference/community-questions/custom-data-sources.md"
-                  },
                   {
                     "label": "How can I find which Core version to which a feature or fix was added?",
                     "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
                   },
-                  {
-                    "label": "Is it possible to read a Parquet file from a remote location?",
-                    "path": "reference/community-questions/is-it-possible-read-parquet-from-remote.md"
-                  },
-                  {
-                    "label": "When does Deephaven load data into memory for Parquet reads?",
-                    "path": "reference/community-questions/when-does-dh-load-data-into-memory-parquet-reads.md"
-                  }
-                ]
-              },
-              {
-                "label": "Installation",
-                "items": [
                   {
                     "label": "Is docker compose required?",
                     "path": "reference/community-questions/is-docker-compose-required.md"
@@ -2834,7 +2817,7 @@
                 ]
               },
               {
-                "label": "Configuration",
+                "label": "Configure the server",
                 "items": [
                   {
                     "label": "How do I configure Deephaven to use another port?",
@@ -2855,6 +2838,51 @@
                   {
                     "label": "How can I manage the number of cores Deephaven can use?",
                     "path": "reference/community-questions/manage-thread-pool-size.md"
+                  },
+                  {
+                    "label": "Where can I find the password for the Deephaven IDE?",
+                    "path": "reference/community-questions/find-password-for-ide.md"
+                  },
+                  {
+                    "label": "How do I increase the maximum message size?",
+                    "path": "reference/community-questions/message-larger-than-max.md"
+                  }
+                ]
+              },
+              {
+                "label": "Import and export data",
+                "items": [
+                  {
+                    "label": "Can I integrate custom data sources with Deephaven?",
+                    "path": "reference/community-questions/custom-data-sources.md"
+                  },
+                  {
+                    "label": "Is it possible to read a Parquet file from a remote location?",
+                    "path": "reference/community-questions/is-it-possible-read-parquet-from-remote.md"
+                  },
+                  {
+                    "label": "When does Deephaven load data into memory for Parquet reads?",
+                    "path": "reference/community-questions/when-does-dh-load-data-into-memory-parquet-reads.md"
+                  },
+                  {
+                    "label": "How do I extract data from a table?",
+                    "path": "reference/community-questions/extract-values-from-tables.md"
+                  },
+                  {
+                    "label": "How can I periodically write a ticking table to disk?",
+                    "path": "reference/community-questions/write-ticking-table-periodically.md"
+                  },
+                  {
+                    "label": "Does `deephaven.stream.kafka` use the Confluent consumer under the hood?",
+                    "path": "reference/community-questions/does-deephaven-stream-kafka-use-confluent.md"
+                  },
+                  {
+                    "label": "How do I dynamically update a DataFrame from a table?",
+                    "path": "reference/community-questions/dynamically-update-dataframe.md"
+                  },
+                  {
+                    "label": "Is it possible to convert one or more columns of a Deephaven table to JSON?",
+                    "path": "reference/community-questions/possible-to-convert-columns-to-json.md"
                   }
                 ]
               },
@@ -2870,10 +2898,6 @@
                     "path": "reference/community-questions/can-i-perform-rolling-ops-without-fixed-window-size.md"
                   },
                   {
-                    "label": "How do I extract data from a table?",
-                    "path": "reference/community-questions/extract-values-from-tables.md"
-                  },
-                  {
                     "label": "How do I delete historical data?",
                     "path": "reference/community-questions/how-to-delete-historical-data.md"
                   },
@@ -2882,16 +2906,8 @@
                     "path": "reference/community-questions/extract-distinct-dates-list.md"
                   },
                   {
-                    "label": "How do I get the ISO week number from a datetime?",
-                    "path": "reference/community-questions/iso-week-number.md"
-                  },
-                  {
                     "label": "How do row keys and positional indices behave during table operations?",
                     "path": "reference/community-questions/shifts.md"
-                  },
-                  {
-                    "label": "Why do queries run faster the second time they are run?",
-                    "path": "reference/community-questions/query-memoization.md"
                   },
                   {
                     "label": "How do I create a partitioned blink table?",
@@ -2910,52 +2926,6 @@
                     "path": "reference/community-questions/blink-ring.md"
                   },
                   {
-                    "label": "How do I filter by time of day across all dates?",
-                    "path": "reference/community-questions/filter-time-window-all-dates.md"
-                  }
-                ]
-              },
-              {
-                "label": "Troubleshooting",
-                "items": [
-                  {
-                    "label": "Can I reset the Python kernel without restarting the Deephaven Docker container?",
-                    "path": "reference/community-questions/can-i-reset-py-kernel-without-restarting-dh.md"
-                  },
-                  {
-                    "label": "How do I solve a `hash table exceeds maximum size` error?",
-                    "path": "reference/community-questions/hash-table-exceeds-maximum-size.md"
-                  },
-                  {
-                    "label": "How does memory work in the JVM?",
-                    "path": "reference/community-questions/memory-jvm.md"
-                  },
-                  {
-                    "label": "What's the best approach to monitor Deephaven server health?",
-                    "path": "reference/community-questions/monitor-dh-server-health.md"
-                  },
-                  {
-                    "label": "How do I import one Python script into another in the Deephaven IDE?",
-                    "path": "reference/community-questions/import-python-script.md"
-                  },
-                  {
-                    "label": "Why am I getting a \"Java class not found\" error when starting deephaven-server?",
-                    "path": "reference/community-questions/java-class-not-found-error.md"
-                  },
-                  {
-                    "label": "Why am I getting an UpdateGraphConflictException?",
-                    "path": "reference/community-questions/update-graph-conflict-exception.md"
-                  }
-                ]
-              },
-              {
-                "label": "Server-side APIs",
-                "items": [
-                  {
-                    "label": "Is there a way to find out how much memory a table is using?",
-                    "path": "reference/community-questions/find-how-much-memory-a-table-is-using.md"
-                  },
-                  {
                     "label": "Does it make any difference if I separate table operations or chain them together?",
                     "path": "reference/community-questions/chained-operations.md"
                   },
@@ -2964,32 +2934,25 @@
                     "path": "reference/community-questions/last-by-not-ticking.md"
                   },
                   {
-                    "label": "How can I periodically write a ticking table to disk?",
-                    "path": "reference/community-questions/write-ticking-table-periodically.md"
-                  },
-                  {
-                    "label": "Does `deephaven.stream.kafka` use the Confluent consumer under the hood?",
-                    "path": "reference/community-questions/does-deephaven-stream-kafka-use-confluent.md"
-                  },
-                  {
-                    "label": "How do I dynamically update a DataFrame from a table?",
-                    "path": "reference/community-questions/dynamically-update-dataframe.md"
-                  },
-                  {
-                    "label": "How do I create unrollable columns in the Python IDE?",
-                    "path": "reference/community-questions/python-unrollable-column.md"
-                  },
-                  {
-                    "label": "Is it possible to convert one or more columns of a Deephaven table to JSON?",
-                    "path": "reference/community-questions/possible-to-convert-columns-to-json.md"
-                  },
-                  {
                     "label": "How do I convert vector columns to primitive array columns?",
                     "path": "reference/community-questions/convert-array-types.md"
                   },
                   {
-                    "label": "How do I troubleshoot type hints?",
-                    "path": "reference/community-questions/how-do-i-troubleshoot-type-hints.md"
+                    "label": "How do I shift values in columns?",
+                    "path": "reference/community-questions/how-do-i-shift-values-in-columns.md"
+                  }
+                ]
+              },
+              {
+                "label": "Dates and times",
+                "items": [
+                  {
+                    "label": "How do I get the ISO week number from a datetime?",
+                    "path": "reference/community-questions/iso-week-number.md"
+                  },
+                  {
+                    "label": "How do I filter by time of day across all dates?",
+                    "path": "reference/community-questions/filter-time-window-all-dates.md"
                   },
                   {
                     "label": "How can I bin times to a specific time?",
@@ -3000,12 +2963,29 @@
                     "path": "reference/community-questions/convert-year-day-minute-instant.md"
                   },
                   {
-                    "label": "Why does my function with type hints throw an error on null values?",
-                    "path": "reference/community-questions/why-do-my-python-type-hints-error.md"
-                  },
-                  {
                     "label": "Why aren't my date-time table operations working as expected?",
                     "path": "reference/community-questions/python-vs-query-language-time-ops.md"
+                  },
+                  {
+                    "label": "How can I convert an integer date to a formatted string?",
+                    "path": "reference/community-questions/convert-integer-date-to-formatted-string.md"
+                  }
+                ]
+              },
+              {
+                "label": "Console and IDE",
+                "items": [
+                  {
+                    "label": "Can I reset the Python kernel without restarting the Deephaven Docker container?",
+                    "path": "reference/community-questions/can-i-reset-py-kernel-without-restarting-dh.md"
+                  },
+                  {
+                    "label": "How do I import one Python script into another in the Deephaven IDE?",
+                    "path": "reference/community-questions/import-python-script.md"
+                  },
+                  {
+                    "label": "How do I create unrollable columns in the Python IDE?",
+                    "path": "reference/community-questions/python-unrollable-column.md"
                   },
                   {
                     "label": "How do I control what objects are displayed in the console?",
@@ -3014,37 +2994,57 @@
                 ]
               },
               {
-                "label": "Server-side APIs: Query language",
+                "label": "Performance and memory",
                 "items": [
+                  {
+                    "label": "Why do queries run faster the second time they are run?",
+                    "path": "reference/community-questions/query-memoization.md"
+                  },
+                  {
+                    "label": "How does memory work in the JVM?",
+                    "path": "reference/community-questions/memory-jvm.md"
+                  },
+                  {
+                    "label": "What's the best approach to monitor Deephaven server health?",
+                    "path": "reference/community-questions/monitor-dh-server-health.md"
+                  },
+                  {
+                    "label": "Is there a way to find out how much memory a table is using?",
+                    "path": "reference/community-questions/find-how-much-memory-a-table-is-using.md"
+                  }
+                ]
+              },
+              {
+                "label": "Troubleshoot errors",
+                "items": [
+                  {
+                    "label": "How do I solve a `hash table exceeds maximum size` error?",
+                    "path": "reference/community-questions/hash-table-exceeds-maximum-size.md"
+                  },
+                  {
+                    "label": "Why am I getting a \"Java class not found\" error when starting deephaven-server?",
+                    "path": "reference/community-questions/java-class-not-found-error.md"
+                  },
+                  {
+                    "label": "Why am I getting an UpdateGraphConflictException?",
+                    "path": "reference/community-questions/update-graph-conflict-exception.md"
+                  },
+                  {
+                    "label": "How do I troubleshoot type hints?",
+                    "path": "reference/community-questions/how-do-i-troubleshoot-type-hints.md"
+                  },
+                  {
+                    "label": "Why does my function with type hints throw an error on null values?",
+                    "path": "reference/community-questions/why-do-my-python-type-hints-error.md"
+                  },
                   {
                     "label": "Why are my table operations producing incorrect results?",
                     "path": "reference/community-questions/why-table-ops-producing-incorrect-results.md"
-                  },
-                  {
-                    "label": "How can I convert an integer date to a formatted string?",
-                    "path": "reference/community-questions/convert-integer-date-to-formatted-string.md"
-                  },
-                  {
-                    "label": "How do I shift values in columns?",
-                    "path": "reference/community-questions/how-do-i-shift-values-in-columns.md"
                   }
                 ]
               },
               {
-                "label": "Client APIs",
-                "items": [
-                  {
-                    "label": "Where can I find the password for the Deephaven IDE?",
-                    "path": "reference/community-questions/find-password-for-ide.md"
-                  },
-                  {
-                    "label": "How do I increase the maximum message size?",
-                    "path": "reference/community-questions/message-larger-than-max.md"
-                  }
-                ]
-              },
-              {
-                "label": "Integrations: AWS",
+                "label": "Run on AWS",
                 "items": [
                   {
                     "label": "How do I run Deephaven behind AWS ALB?",
