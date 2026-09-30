@@ -103,7 +103,7 @@ public class ReplicateSegmentedSortedArray {
         lines = simpleFixup(lines, "isReversed", "false", "true");
 
         if (path.contains("Object")) {
-            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false);
+            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false, true);
         } else {
             lines = ReplicateSortKernel.invertComparisons(lines);
         }
@@ -138,7 +138,8 @@ public class ReplicateSegmentedSortedArray {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         FileUtils.writeLines(objectFile, ReplicationUtils.replaceRegion(ReplicationUtils.simpleFixup(
-                ReplicateSortKernel.fixupObjectComparisons(ReplicationUtils.fixupChunkAttributes(lines), ascending),
+                ReplicateSortKernel.fixupObjectComparisons(ReplicationUtils.fixupChunkAttributes(lines), ascending,
+                        true),
                 "fillValue", "Object.MIN_VALUE", "null"),
                 "clearValues", List.of("        Arrays.fill(values, from, to, null);")));
     }

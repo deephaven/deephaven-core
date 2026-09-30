@@ -42,7 +42,7 @@ public class ReplicateDupCompactKernel {
                         "initialize last", "MIN_VALUE", "MAX_VALUE");
 
         if (path.contains("Object")) {
-            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false);
+            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false, true);
         } else {
             lines = ReplicateSortKernel.invertComparisons(lines);
         }
@@ -66,6 +66,7 @@ public class ReplicateDupCompactKernel {
     private static void fixupObjectDupCompact(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, ReplicateSortKernel.fixupObjectComparisons(fixupChunkAttributes(lines)));
+        FileUtils.writeLines(objectFile,
+                ReplicateSortKernel.fixupObjectComparisons(fixupChunkAttributes(lines), true, true));
     }
 }

@@ -12,17 +12,24 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for the as-of join segmented sorted array iterator when equal stamp values are not identical: distinct
- * instances of equal objects, and NaN floating point values, which the SSA orders as equal to each other.
+ * instances of equal objects, objects that compare equal without being equals (BigDecimal 1.0 and 1.00), and NaN
+ * floating point values, which the SSA orders as equal to each other.
  */
 public class TestSsaEqualValues {
     private static final int NODE_SIZE = 4;
@@ -233,6 +240,97 @@ public class TestSsaEqualValues {
             stamp.processInsertion(leftSsa, insertValues, insertKeys, nextValues, redirection,
                     RowSetFactory.builderRandom(), true, true);
             assertEquals(0, redirection.get(1));
+        }
+    }
+
+    private static void insertOne(final SegmentedSortedArray ssa, final Object value, final long rowKey) {
+        try (final WritableObjectChunk<Object, Values> values = objects(value);
+                final WritableLongChunk<RowKeys> rowKeys = keys(rowKey)) {
+            ssa.insert(values, rowKeys);
+        }
+    }
+
+    private static void removeOne(final SegmentedSortedArray ssa, final Object value, final long rowKey) {
+        try (final WritableObjectChunk<Object, Values> values = objects(value);
+                final WritableLongChunk<RowKeys> rowKeys = keys(rowKey)) {
+            ssa.remove(values, rowKeys);
+        }
+    }
+
+    private static List<Long> keysOf(final SegmentedSortedArray ssa) {
+        final List<Long> result = new ArrayList<>();
+        ssa.forAllKeys(result::add);
+        return result;
+    }
+
+    /**
+     * BigDecimal 1.0 and 1.00 compare equal, so the SSA orders them by row key like any other run of equal values.
+     */
+    @Test
+    public void testObjectSsaOrdersCompareEqualValuesByRowKey() {
+        for (final boolean reverse : new boolean[] {false, true}) {
+            final SegmentedSortedArray ssa = SegmentedSortedArray.make(ChunkType.Object, reverse, NODE_SIZE);
+            insertOne(ssa, new BigDecimal("1.0"), 5);
+            insertOne(ssa, new BigDecimal("1.00"), 3);
+            insertOne(ssa, new BigDecimal("1.000"), 4);
+            assertEquals("reverse=" + reverse, List.of(3L, 4L, 5L), keysOf(ssa));
+        }
+    }
+
+    /**
+     * Removing a value that compares equal to, but is not equals to, its neighbours removes exactly the requested row.
+     */
+    @Test
+    public void testObjectSsaRemovesCompareEqualValue() {
+        for (final boolean reverse : new boolean[] {false, true}) {
+            for (final int nodeSize : new int[] {2, 4}) {
+                final SegmentedSortedArray ssa = SegmentedSortedArray.make(ChunkType.Object, reverse, nodeSize);
+                insertOne(ssa, new BigDecimal("0"), 0);
+                insertOne(ssa, new BigDecimal("1.0"), 5);
+                insertOne(ssa, new BigDecimal("1.0"), 8);
+                insertOne(ssa, new BigDecimal("2"), 9);
+                insertOne(ssa, new BigDecimal("1.00"), 3);
+                insertOne(ssa, new BigDecimal("1.00"), 6);
+                removeOne(ssa, new BigDecimal("1.00"), 6);
+                removeOne(ssa, new BigDecimal("1.0"), 5);
+                final List<Long> expected = reverse ? List.of(9L, 3L, 8L, 0L) : List.of(0L, 3L, 8L, 9L);
+                assertEquals("reverse=" + reverse + ", nodeSize=" + nodeSize, expected, keysOf(ssa));
+                assertEquals(4, ssa.size());
+            }
+        }
+    }
+
+    /**
+     * Duplicate compaction treats BigDecimal 1.0 and 1.00 as one run: compactDuplicates keeps the last row of the run
+     * and compactDuplicatesPreferFirst keeps the first.
+     */
+    @Test
+    public void testObjectDupCompactCompareEqualValues() {
+        for (final boolean reverse : new boolean[] {false, true}) {
+            final DupCompactKernel kernel = DupCompactKernel.makeDupCompactNaturalOrdering(ChunkType.Object, reverse);
+            final Object low = reverse ? new BigDecimal("2") : new BigDecimal("0");
+            final Object high = reverse ? new BigDecimal("0") : new BigDecimal("2");
+            try (final WritableObjectChunk<Object, Values> values =
+                    objects(low, new BigDecimal("1.0"), new BigDecimal("1.00"), new BigDecimal("1"), high);
+                    final WritableLongChunk<RowKeys> rowKeys = keys(10, 11, 12, 13, 14)) {
+                assertEquals("reverse=" + reverse, -1, kernel.compactDuplicates(values, rowKeys));
+                assertEquals("reverse=" + reverse, 3, rowKeys.size());
+                assertEquals(10, rowKeys.get(0));
+                assertEquals(13, rowKeys.get(1));
+                assertEquals(14, rowKeys.get(2));
+            }
+            try (final WritableObjectChunk<Object, Values> values =
+                    objects(low, new BigDecimal("1.0"), new BigDecimal("1.00"), new BigDecimal("1"), high);
+                    final WritableIntChunk<ChunkPositions> positions = WritableIntChunk.makeWritableChunk(5)) {
+                for (int ii = 0; ii < 5; ++ii) {
+                    positions.set(ii, ii);
+                }
+                assertEquals("reverse=" + reverse, -1, kernel.compactDuplicatesPreferFirst(values, positions));
+                assertEquals("reverse=" + reverse, 3, positions.size());
+                assertEquals(0, positions.get(0));
+                assertEquals(1, positions.get(1));
+                assertEquals(4, positions.get(2));
+            }
         }
     }
 }
