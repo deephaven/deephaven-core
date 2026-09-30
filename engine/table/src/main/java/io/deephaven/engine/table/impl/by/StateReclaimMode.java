@@ -52,10 +52,12 @@ public final class StateReclaimMode {
     }
 
     /**
-     * @param collapseFreeFraction when at least this fraction of a run of row keys belongs to removed groups, the rows
-     *        that remain may move to lower row keys, keeping their order, so that the storage for the row keys this
-     *        empties can be freed. It is clamped to the range 0 to 1: at 0 any block with a removed group's row key may
-     *        move, but a block with none never does, and 1 never moves rows.
+     * @param collapseFreeFraction a block of row keys is sparse when at least this fraction of its row keys belongs to
+     *        removed groups. The rows of a run of sparse blocks, separated only by blocks whose groups have all been
+     *        removed, may move to lower row keys, keeping their order, so that the storage for the blocks this empties
+     *        can be freed. The fraction applies to each block, not to the run as a whole: a block below it ends the
+     *        run. It is clamped to the range 0 to 1: at 0 any block with a removed group's row key may move, but a
+     *        block with none never does, and 1 never moves rows.
      * @return the mode that frees the storage for runs of adjacent row keys whose groups have all been removed
      * @throws IllegalArgumentException if {@code collapseFreeFraction} is NaN
      */
@@ -102,7 +104,8 @@ public final class StateReclaimMode {
     }
 
     /**
-     * @return the fraction of a run of row keys that must belong to removed groups before the remaining rows may move
+     * @return the fraction of each block of row keys that must belong to removed groups before its remaining rows may
+     *         move
      */
     public double collapseFreeFraction() {
         return collapseFreeFraction;
