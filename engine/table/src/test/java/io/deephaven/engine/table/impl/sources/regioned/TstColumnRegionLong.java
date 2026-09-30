@@ -82,6 +82,21 @@ public class TstColumnRegionLong {
         }
     }
 
+    public static class TestConstant extends TstColumnRegionPrimative.Constant<ColumnRegionLong<Values>> {
+
+        @Before
+        public void setUp() throws Exception {
+            SUT = new ColumnRegionLong.Constant<>(Long.MAX_VALUE, (long) 42);
+        }
+
+        @Override
+        @Test
+        public void testGet() {
+            assertEquals((long) 42, SUT.getLong(0));
+            assertEquals((long) 42, SUT.getLong(Long.MAX_VALUE));
+        }
+    }
+
     public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionLong<Values>> {
 
         @Before

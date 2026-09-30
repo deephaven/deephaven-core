@@ -291,7 +291,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                             (Class<Object>) value.getClass(),
                             value.getClass().getComponentType(),
                             value);
-                    matches = SingleValuePushdownHelper.tableFilter(filter, selection, false, columnSource);
+                    matches = SingleValuePushdownHelper.tableFilter(filter, selection, usePrev, columnSource);
                 }
             }
             if (matches) {

@@ -97,6 +97,21 @@ public abstract class TstColumnRegionByte {
         }
     }
 
+    public static class TestConstant extends TstColumnRegionPrimative.Constant<ColumnRegionByte<Values>> {
+
+        @Before
+        public void setUp() throws Exception {
+            SUT = new ColumnRegionByte.Constant<>(Long.MAX_VALUE, (byte) 42);
+        }
+
+        @Override
+        @Test
+        public void testGet() {
+            assertEquals((byte) 42, SUT.getByte(0));
+            assertEquals((byte) 42, SUT.getByte(Long.MAX_VALUE));
+        }
+    }
+
     public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionByte<Values>> {
 
         @Before
