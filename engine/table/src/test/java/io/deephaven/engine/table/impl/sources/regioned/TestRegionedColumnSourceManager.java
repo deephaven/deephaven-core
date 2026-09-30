@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -965,6 +966,22 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         final TableUpdateValidator validator = TableUpdateValidator.make(
                 (QueryTable) partitioningIndex.table().view(partitioningColumnDefinition.getName()));
 
+        // While the index table's update is being delivered, B is gone from the current table but still in the
+        // previous one.
+        final long positionB = partitioningIndex.rowKeyLookup().apply("B", false);
+        assertNotEquals(RowSequence.NULL_ROW_KEY, positionB);
+        final AtomicLong currentDuringUpdate = new AtomicLong(-2);
+        final AtomicLong previousDuringUpdate = new AtomicLong(-2);
+        final TableUpdateListener lookupRecorder =
+                new InstrumentedTableUpdateListenerAdapter(partitioningIndex.table(), false) {
+                    @Override
+                    public void onUpdate(final TableUpdate upstream) {
+                        currentDuringUpdate.set(partitioningIndex.rowKeyLookup().apply("B", false));
+                        previousDuringUpdate.set(partitioningIndex.rowKeyLookup().apply("B", true));
+                    }
+                };
+        partitioningIndex.table().addUpdateListener(lookupRecorder);
+
         // Remove both of partition B's locations, emptying its bucket.
         expectPoison(2);
         expectPoison(3);
@@ -987,7 +1004,15 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         validator.validate();
         assertFalse(validator.hasFailed());
+        assertEquals(RowSequence.NULL_ROW_KEY, currentDuringUpdate.get());
+        assertEquals(positionB, previousDuringUpdate.get());
         assertEquals(RowSequence.NULL_ROW_KEY, partitioningIndex.rowKeyLookup().apply("B", false));
+
+        // Once another cycle has passed, B is gone from the previous table too.
+        updateGraph.runWithinUnitTestCycle(() -> {
+        });
+        assertEquals(RowSequence.NULL_ROW_KEY, partitioningIndex.rowKeyLookup().apply("B", true));
+        partitioningIndex.table().removeUpdateListener(lookupRecorder);
         final WritableRowSet expectedA = RowSetFactory.fromRange(
                 RegionedColumnSource.getFirstRowKey(0), RegionedColumnSource.getFirstRowKey(0) + 4);
         expectedA.insertRange(

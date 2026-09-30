@@ -59,8 +59,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.InterruptedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.FileLockInterruptionException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -295,9 +298,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * <p>
      * An index is trusted when this location's own file declares it and the index file exists; nothing else about the
      * index is checked against the file it indexes, and {@link #pushdownDataIndex} treats every row the index does not
-     * place under a matching key as not matching. An index file must therefore be written together with, and never
-     * outlive, the file that declares it: a writer that replaces one without the other makes filters silently drop
-     * rows. Deephaven's own writers commit a file and its indexes together.
+     * place under a matching key as not matching. Every index a file declares must therefore have been written for that
+     * file: a writer that replaces the file, or an index it declares, without the other makes filters silently drop
+     * rows. An index file that no current file declares, such as one left behind when a file is rewritten without
+     * indexes, is ignored. Deephaven's own writers commit a file and the indexes it declares together.
      */
     @Override
     public boolean hasDataIndex(@NotNull final String... columns) {
@@ -1070,7 +1074,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
             if (cause instanceof CancellationException
                     || cause instanceof java.util.concurrent.CancellationException
-                    || cause instanceof InterruptedException) {
+                    || cause instanceof InterruptedException
+                    || cause instanceof InterruptedIOException
+                    || cause instanceof ClosedByInterruptException
+                    || cause instanceof FileLockInterruptionException
+                    || (cause instanceof TableDataException && ((TableDataException) cause).wasInterrupted())) {
                 return true;
             }
         }
@@ -1078,9 +1086,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Apply the filter to the data index table and return the result. The result has no maybe matches: rows the index
-     * does not place under a matching key are treated as not matching, so the index must be complete and current for
-     * the rows it covers (see {@link #hasDataIndex}).
+     * Apply the filter to the data index table and return the result. When the index is applied, the result has no
+     * maybe matches: rows the index does not place under a matching key are treated as not matching, so the index must
+     * be complete and current for the rows it covers (see {@link #hasDataIndex}). When the selection is too small for
+     * the index, or filtering the index fails for a reason other than cancellation, the result is a copy of
+     * {@code result}.
      */
     @NotNull
     public static PushdownResult pushdownDataIndex(

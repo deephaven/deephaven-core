@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -48,6 +49,7 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
@@ -2866,14 +2868,26 @@ public final class ParquetTableFilterTest {
      */
     @Test
     public void testLocationDataIndexPropagatesCancellation() {
-        final CancellationException cancellation = new CancellationException("cancelled while filtering the index");
+        assertPushdownDataIndexPropagates(new CancellationException("cancelled while filtering the index"));
+    }
+
+    /**
+     * As {@link #testLocationDataIndexPropagatesCancellation()}, for an interrupted read of the index's row sets.
+     */
+    @Test
+    public void testLocationDataIndexPropagatesInterruptedRead() {
+        assertPushdownDataIndexPropagates(
+                new TableDataException("reading the index", new ClosedByInterruptException()));
+    }
+
+    private static void assertPushdownDataIndexPropagates(final RuntimeException failure) {
         final Exception thrown = Assert.assertThrows(Exception.class,
-                () -> pushdownDataIndexFailingWith(cancellation).close());
+                () -> pushdownDataIndexFailingWith(failure).close());
         Throwable cause = thrown;
-        while (cause != null && cause != cancellation) {
+        while (cause != null && cause != failure) {
             cause = cause.getCause();
         }
-        assertSame(cancellation, cause);
+        assertSame(failure, cause);
     }
 
     /**
