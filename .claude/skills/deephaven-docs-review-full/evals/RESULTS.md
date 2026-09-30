@@ -35,5 +35,6 @@ Fixture: the liveness-scope concept guide in both languages, with real defects a
 
 ## Caveats
 
-- Runs are small (1 run per configuration in iteration 1, 3 after that), so treat pass counts as evidence that a behavior appears, not as stable rates.
-- From iteration 2 on, independent grader agents scored the reports blind (shuffled and unlabeled). Judgment-call expectations still vary between graders; the notes say where.
+- Runs are small, so treat pass counts as evidence that a behavior appears, not as stable rates.
+- Iteration 1 was 1 run per configuration, graded inline. Iterations 2 to 5 were 3 runs per configuration, scored blind by independent grader agents.
+- Judgment-call expectations can vary between graders; the notes say where.

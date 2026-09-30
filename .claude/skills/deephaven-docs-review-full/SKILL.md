@@ -115,8 +115,11 @@ half-finished pass this skill exists to prevent.
 Invoke `deephaven-doc-structure-review` as the middle step of this orchestrator — its own
 instructions know to skip its standalone full accuracy/style re-run in that case and defer to
 this workflow's re-verify and style steps instead, so don't expect or trigger that separately
-here. This step may move, merge, cut, reorder, or rename sections that were just verified in the
-accuracy step — that's expected and fine, but it's exactly why the re-verify step exists.
+here. In a report, this step may recommend moving, merging, cutting, reordering, or renaming sections.
+When applying fixes, make only the targeted structural fixes allowed under **"Apply the fixes" means
+fix, not rewrite** above (for example, delete a duplicate or move one paragraph), and report larger
+restructuring instead, unless the user asked for a rewrite. Either way, content verified in the accuracy
+step can change here, which is why the re-verify step exists.
 Note everywhere content was moved, merged, cut, reordered, renamed, **or reworded in place**
 (rewritten without changing location) — the re-verify step needs the complete list, since a rewrite that
 changes a claim without moving its section would otherwise never reach the spot-check, and a

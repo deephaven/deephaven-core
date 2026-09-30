@@ -23,8 +23,11 @@ explicitly asks — replying is outward-facing.
 
 ## 1. Gather and orient
 
-- Get every comment with its location: from the PR (`gh api repos/<owner>/<repo>/pulls/<n>/comments`,
-  plus review bodies from `.../reviews`), or from what the user pasted. Note which comments are
+- Get every comment with its location: from the PR (`gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`,
+  plus review bodies from `gh api --paginate .../reviews`), or from what the user pasted. Always paginate:
+  both endpoints return 30 items per page, and a long review history spans several pages. For open vs.
+  resolved threads, page through GraphQL `reviewThreads` (`pageInfo`/`endCursor`). Bot reviews can also
+  list findings only in the review body ("previously missed"), with no inline thread. Note which comments are
   from bots and which review round each belongs to — how many rounds this page has already had
   matters for triage.
 - Read `ref-deephaven-doc-categories` and identify the page's category. Placement rules differ:
@@ -114,8 +117,8 @@ If the user asked for edits:
 4. **Coherence gate:** re-read every section you changed from top to bottom, not just the
    flagged lines. Ask whether it still reads as though it was written once. If hedges,
    parentheticals, property names, or repeated pointers to the same setting have accumulated —
-   from this round or earlier ones — consolidate before finishing. If a Python page changed,
-   check whether the Groovy sibling needs the same Apply fixes (and only those).
+   from this round or earlier ones — consolidate before finishing. If a Python or Groovy page
+   changed, check whether its sibling in the other language needs the same Apply fixes (and only those).
 
 ## 4a. Check your own proposed text
 

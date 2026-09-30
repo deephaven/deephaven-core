@@ -15,5 +15,6 @@ Raw run outputs, grading files, and skill snapshots are kept out of the repo. Th
 
 ## Caveats
 
-- Runs are small (1 run per configuration in iteration 1, 3 after that), so treat pass counts as evidence that a behavior appears, not as stable rates.
-- From iteration 2 on, independent grader agents scored the reports blind (shuffled and unlabeled). Judgment-call expectations still vary between graders; the notes say where.
+- Runs are small, so treat pass counts as evidence that a behavior appears, not as stable rates.
+- There is only iteration 1: 1 run per configuration, graded inline, not blind.
+- Judgment-call expectations can vary between graders; the notes say where.

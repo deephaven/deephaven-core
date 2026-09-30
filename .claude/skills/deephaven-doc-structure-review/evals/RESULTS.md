@@ -25,5 +25,6 @@ The split confirmed the lenient call: the pre-PR run passes the GIL half and fai
 
 ## Caveats
 
-- Runs are small (1 run per configuration in iteration 1, 3 after that), so treat pass counts as evidence that a behavior appears, not as stable rates.
-- From iteration 2 on, independent grader agents scored the reports blind (shuffled and unlabeled). Judgment-call expectations still vary between graders; the notes say where.
+- Runs are small, so treat pass counts as evidence that a behavior appears, not as stable rates.
+- Both iterations use the same single run per configuration. Iteration 1 graded it inline; iteration 2 regraded it blind with an independent grader agent.
+- Judgment-call expectations can vary between graders; the notes say where.
