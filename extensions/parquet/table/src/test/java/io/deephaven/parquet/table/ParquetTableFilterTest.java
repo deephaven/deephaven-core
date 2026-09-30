@@ -31,6 +31,7 @@ import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -1408,6 +1409,41 @@ public final class ParquetTableFilterTest {
         assertPrunes("lval < 10000", diskTable, tableSize);
         assertPrunes("dval < 10000.0", diskTable, tableSize);
         assertPrunes("dval > 90000.0", diskTable, tableSize);
+    }
+
+    /**
+     * An {@link Instant} column is served by a region that wraps the native long region, and that wrapper must still
+     * expose its column location; otherwise a single-column filter on it never reaches the location's statistics and
+     * scans every row group.
+     */
+    @Test
+    public void instantFiltersPrune() {
+        final String destPath = Path.of(rootFile.getPath(), "instantPruning").toString();
+        final int tableSize = 100_000;
+        final long baseNanos = 1_700_000_000_000_000_000L;
+        final Table source = TableTools.emptyTable(tableSize).update(
+                "tval = epochNanosToInstant(" + baseNanos + "L + ii * 1_000_000L)");
+        writeTables(destPath, splitTable(source, 10, false), EMPTY);
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        final Function<Integer, String> instantAtRow =
+                row -> "'" + DateTimeUtils.epochNanosToInstant(baseNanos + row * 1_000_000L) + "'";
+        final String[] exprs = {
+                "tval < " + instantAtRow.apply(10_000),
+                "tval >= " + instantAtRow.apply(90_000),
+                "tval == " + instantAtRow.apply(55_555),
+                "tval in " + instantAtRow.apply(5) + ", " + instantAtRow.apply(99_990)};
+
+        // Correctness first: every one of these must agree with the in-memory oracle.
+        for (final String expr : exprs) {
+            filterAndVerifyResults(diskTable, memTable, expr);
+        }
+
+        // Then pruning: each filter can only match rows in one or two of the ten files.
+        for (final String expr : exprs) {
+            assertPrunes(expr, diskTable, tableSize);
+        }
     }
 
     private static void assertPrunes(final String expr, final Table diskTable, final int tableSize) {
