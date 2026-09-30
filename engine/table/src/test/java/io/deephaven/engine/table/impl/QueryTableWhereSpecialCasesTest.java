@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * This is a catch-all test collection for special cases of QueryTable.where(...), such as NULL / NaN handling and
@@ -411,11 +412,14 @@ public class QueryTableWhereSpecialCasesTest {
 
     /**
      * A BigDecimal column carries values that are ordering-equal but not equal -- 1.0 and 1.00 differ in scale -- so a
-     * sort leaves them in one contiguous run, in row order. Matching is decided by equality, so a filter must select
-     * only the rows equal to its own value, and must do so whether or not the column is sorted.
+     * sort leaves them in one contiguous run, in row order. Matching is decided by ordering, as the query language's
+     * {@code ==} decides it, so a filter selects the whole run whatever its own value's scale, and must do so whether
+     * or not the column is sorted.
      */
     @Test
     public void testMatchOnSortedBigDecimalColumn() {
+        assertEquals(4, bigDecimals().where("X = 1.00").size());
+        assertEquals(4, bigDecimals().sort("X").where("X = 1.00").size());
         for (final String filter : new String[] {"X = 1.0", "X = 1.00", "X = 1", "X = 2.0", "X != 1.0",
                 // Several values from the one ordering-equal run, so the run has to answer for all of them.
                 "X in 1.0, 1.00", "X not in 1.0, 1.00", "X in 1.000, 1.0", "X in 1.0, 1.000",

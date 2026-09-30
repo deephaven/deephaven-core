@@ -2007,9 +2007,10 @@ public final class ParquetTableFilterTest {
 
     /**
      * A {@link BigDecimal} column orders inconsistently with equals -- {@code 500} and {@code 500.00} compare equal
-     * while {@code equals} separates them -- so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} routes its
-     * match filters to {@code ComparableRegionBinarySearchKernel} rather than answering them by ordering alone. This
-     * exercises that dispatch through the Parquet region, which is its only production caller.
+     * while {@code equals} separates them -- but its match filter matches by ordering, as the query language's
+     * {@code ==} does, so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} answers its match filters by
+     * ordering alone rather than routing them to {@code ComparableRegionBinarySearchKernel}. This exercises that
+     * dispatch through the Parquet region, which is its only production caller.
      *
      * <p>
      * What this cannot pin down is the choice the dispatch makes: Parquet's DECIMAL logical type stores a single scale
@@ -2033,15 +2034,16 @@ public final class ParquetTableFilterTest {
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         // Written at scale 0, so this value is equal to the rows of its run.
         queryScope.putParam("sortedBd500", new BigDecimal("500"));
-        // Ordering-equal to that same run, but equal to no member of it.
+        // Ordering-equal to that same run, at another scale; a BigDecimal match is decided by ordering, as the query
+        // language's == decides it, so this value matches the run too.
         queryScope.putParam("sortedBd500Scaled", new BigDecimal("500.00"));
         // Ordering-equal to no run at all.
         queryScope.putParam("sortedBdAbsent", new BigDecimal("500.5"));
 
         // Stated outright, so the oracle comparisons below cannot pass by both sides being wrong alike: the run is
-        // ten rows, and the ordering-equal value at another scale is equal to none of them.
+        // ten rows, and the ordering-equal value at another scale matches all of them.
         assertEquals(10, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500").size());
-        assertEquals(0, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500Scaled").size());
+        assertEquals(10, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500Scaled").size());
 
         verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == sortedBd500");
         verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd != sortedBd500");

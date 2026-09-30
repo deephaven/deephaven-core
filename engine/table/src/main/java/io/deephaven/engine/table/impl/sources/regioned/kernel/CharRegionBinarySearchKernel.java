@@ -338,7 +338,7 @@ public class CharRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastKey) {
-            if (CharComparisons.eq(region.getChar(low), min)) {
+            if (CharComparisons.compare(region.getChar(low), min) == 0) {
                 return low;
             }
         }
@@ -388,7 +388,7 @@ public class CharRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (maxInc && high >= firstKey) {
-            if (CharComparisons.eq(region.getChar(high), max)) {
+            if (CharComparisons.compare(region.getChar(high), max) == 0) {
                 return high;
             }
         }
@@ -438,7 +438,7 @@ public class CharRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastKey) {
-            if (CharComparisons.eq(region.getChar(low), max)) {
+            if (CharComparisons.compare(region.getChar(low), max) == 0) {
                 return low;
             }
         }
@@ -488,7 +488,7 @@ public class CharRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (minInc && high >= firstKey) {
-            if (CharComparisons.eq(region.getChar(high), min)) {
+            if (CharComparisons.compare(region.getChar(high), min) == 0) {
                 return high;
             }
         }

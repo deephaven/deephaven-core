@@ -389,11 +389,12 @@ public class ReplicateRegionsAndRegionedSources {
                     "     * is not applied here; the caller must invert the result itself.",
                     "     *",
                     "     * <p>",
-                    "     * Ordering alone decides a match only for a type whose comparison is consistent with"
-                            + " equality. For any other type",
-                    "     * the ordered search returns a superset, and"
-                            + " {@link ComparableRegionBinarySearchKernel} picks the matches out of",
-                    "     * it by equality.",
+                    "     * Ordering alone decides a match for a type whose comparison is consistent with equality,"
+                            + " and for",
+                    "     * {@link java.math.BigDecimal}, whose match filter matches by ordering. For any other type"
+                            + " the ordered search",
+                    "     * returns a superset, and {@link ComparableRegionBinarySearchKernel} picks the matches out"
+                            + " of it by equality.",
                     "     *",
                     "     * @param region The column region to search.",
                     "     * @param firstKey The first key in the column region to consider for the search.",
