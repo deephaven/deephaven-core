@@ -12,6 +12,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.compare.LongComparisons;
 import org.jetbrains.annotations.NotNull;
 
 public class LongReverseDupCompactKernel implements DupCompactKernel {
@@ -108,7 +109,7 @@ public class LongReverseDupCompactKernel implements DupCompactKernel {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(long lhs, long rhs) {
-        return -1 * Long.compare(lhs, rhs);
+        return -1 * LongComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -118,7 +119,7 @@ public class LongReverseDupCompactKernel implements DupCompactKernel {
 
     private static boolean eq(long lhs, long rhs) {
         // region equality function
-        return lhs == rhs;
+        return LongComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

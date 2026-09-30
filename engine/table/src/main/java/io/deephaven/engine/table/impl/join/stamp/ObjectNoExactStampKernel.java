@@ -7,13 +7,11 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.join.stamp;
 
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.ObjectComparisons;
 
 
 public class ObjectNoExactStampKernel implements StampKernel {
@@ -96,7 +94,7 @@ public class ObjectNoExactStampKernel implements StampKernel {
 
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return Objects.equals(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

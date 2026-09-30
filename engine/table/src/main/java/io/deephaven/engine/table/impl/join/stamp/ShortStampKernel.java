@@ -11,6 +11,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.ShortComparisons;
 
 
 public class ShortStampKernel implements StampKernel {
@@ -81,7 +82,7 @@ public class ShortStampKernel implements StampKernel {
 
     // region comparison functions
     private static int doComparison(short lhs, short rhs) {
-        return Short.compare(lhs, rhs);
+        return ShortComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -95,7 +96,7 @@ public class ShortStampKernel implements StampKernel {
 
     private static boolean eq(short lhs, short rhs) {
         // region equality function
-        return lhs == rhs;
+        return ShortComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

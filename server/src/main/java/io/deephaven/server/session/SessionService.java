@@ -200,7 +200,7 @@ public class SessionService {
         this.sessionListener = new DelegatingSessionListener(sessionListeners);
     }
 
-    private synchronized void onFatalError(
+    private void onFatalError(
             @NotNull String message,
             @NotNull Throwable throwable,
             boolean isFromUncaught) {
@@ -216,9 +216,24 @@ public class SessionService {
             throwable = throwable.getCause();
         }
 
-        final TerminationNotificationResponse notification = builder.build();
-        terminationListeners.forEach(listener -> listener.sendMessage(notification));
-        terminationListeners.clear();
+        notifyTerminationListeners(builder.build());
+    }
+
+    /**
+     * Sends {@code notification} to every registered termination listener exactly once.
+     * <p>
+     * The listeners are detached under the list's own monitor, which registration shares, and then notified without
+     * holding any lock of this service: sending locks the listener's stream observer, and a gRPC thread that is closing
+     * that same call already holds the observer while it refreshes the session token, which locks this service when the
+     * token rotates.
+     */
+    private void notifyTerminationListeners(final TerminationNotificationResponse notification) {
+        final List<TerminationNotificationListener> toNotify;
+        synchronized (terminationListeners) {
+            toNotify = new ArrayList<>(terminationListeners);
+            terminationListeners.clear();
+        }
+        toNotify.forEach(listener -> listener.sendMessage(notification));
     }
 
     private static TerminationNotificationResponse.StackTrace transformToProtoBuf(@NotNull final Throwable throwable) {
@@ -232,12 +247,10 @@ public class SessionService {
                 .build();
     }
 
-    public synchronized void onShutdown() {
-        final TerminationNotificationResponse notification = TerminationNotificationResponse.newBuilder()
+    public void onShutdown() {
+        notifyTerminationListeners(TerminationNotificationResponse.newBuilder()
                 .setAbnormalTermination(false)
-                .build();
-        terminationListeners.forEach(listener -> listener.sendMessage(notification));
-        terminationListeners.clear();
+                .build());
 
         closeAllSessions();
     }
@@ -252,7 +265,9 @@ public class SessionService {
     public void addTerminationListener(
             final SessionState session,
             final StreamObserver<TerminationNotificationResponse> responseObserver) {
-        terminationListeners.add(new TerminationNotificationListener(session, responseObserver));
+        synchronized (terminationListeners) {
+            terminationListeners.add(new TerminationNotificationListener(session, responseObserver));
+        }
     }
 
     /**
