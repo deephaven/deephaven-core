@@ -93,7 +93,12 @@ public abstract class HashMapK4V4 extends HashMapBase {
 
         // Unroll this loop for probe + 0, 2, 4, 6.
         // If the key matches, return the probe (indicating an exact match).
-        // If we hit an empty slot, return (-probe - 1), indicating empty slot reached at probe.
+        // If we hit an empty slot, return (-slot - 1) for the slot an insert should take: the earliest deleted slot
+        // passed so far if there is one, else the empty slot itself — the same rule the loop below applies to every
+        // later bucket. Remembering that slot costs one predictable compare per slot passed, on a hit in a later slot
+        // as on a miss; measured against a form that compared only on reaching the empty slot, lookups came out
+        // neutral to a few percent faster.
+        int priorDeletedSlot;
         long cKey0 = kvs[probe];
         if (cKey0 == target) {
             return probe;
@@ -101,41 +106,52 @@ public abstract class HashMapK4V4 extends HashMapBase {
         if (cKey0 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
             return -probe - 1;
         }
+        if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT) {
+            priorDeletedSlot = probe;
+        } else {
+            priorDeletedSlot = -1;
+        }
+
         long cKey1 = kvs[probe + 2];
         if (cKey1 == target) {
             return probe + 2;
         }
         if (cKey1 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
+            if (priorDeletedSlot != -1) {
+                return -priorDeletedSlot - 1;
+            }
             return -(probe + 2) - 1;
         }
+        if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+            priorDeletedSlot = probe + 2;
+        }
+
         long cKey2 = kvs[probe + 4];
         if (cKey2 == target) {
             return probe + 4;
         }
         if (cKey2 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
+            if (priorDeletedSlot != -1) {
+                return -priorDeletedSlot - 1;
+            }
             return -(probe + 4) - 1;
         }
+        if (cKey2 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+            priorDeletedSlot = probe + 4;
+        }
+
         long cKey3 = kvs[probe + 6];
         if (cKey3 == target) {
             return probe + 6;
         }
         if (cKey3 == SPECIAL_KEY_FOR_EMPTY_SLOT) {
+            if (priorDeletedSlot != -1) {
+                return -priorDeletedSlot - 1;
+            }
             return -(probe + 6) - 1;
         }
-
-        // These slots might also have been deleted slots. If so, we need to keep searching (until key found or the
-        // first empty slot), but we remember the first deleted slot.
-        int priorDeletedSlot;
-        if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-            priorDeletedSlot = probe;
-        } else if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-            priorDeletedSlot = probe + 2;
-        } else if (cKey2 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-            priorDeletedSlot = probe + 4;
-        } else if (cKey3 == SPECIAL_KEY_FOR_DELETED_SLOT) {
+        if (cKey3 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
             priorDeletedSlot = probe + 6;
-        } else {
-            priorDeletedSlot = -1;
         }
 
         // Offset is also in units of longs
@@ -147,9 +163,9 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 throw new IllegalStateException("Wrapped around? Impossible.");
             }
 
-            // Same logic as the above. Looking for the specific key and aborting if the empty slot is found.
-            // (But, if the empty slot is found, and if there was an earlier deleted slot, we need to return the
-            // earlier deleted slot)
+            // Same logic as the above. Looking for the specific key and aborting if the empty slot is found. (But if
+            // the empty slot is found, the insert takes the earliest deleted slot passed instead: one from an earlier
+            // bucket, remembered in priorDeletedSlot, or else one earlier in this bucket, still in registers.)
             cKey0 = kvs[probe];
             if (cKey0 == target) {
                 return probe;
@@ -160,6 +176,10 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 }
                 return -probe - 1;
             }
+            if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+                priorDeletedSlot = probe;
+            }
+
             cKey1 = kvs[probe + 2];
             if (cKey1 == target) {
                 return probe + 2;
@@ -170,6 +190,10 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 }
                 return -(probe + 2) - 1;
             }
+            if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+                priorDeletedSlot = probe + 2;
+            }
+
             cKey2 = kvs[probe + 4];
             if (cKey2 == target) {
                 return probe + 4;
@@ -180,6 +204,10 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 }
                 return -(probe + 4) - 1;
             }
+            if (cKey2 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+                priorDeletedSlot = probe + 4;
+            }
+
             cKey3 = kvs[probe + 6];
             if (cKey3 == target) {
                 return probe + 6;
@@ -190,17 +218,8 @@ public abstract class HashMapK4V4 extends HashMapBase {
                 }
                 return -(probe + 6) - 1;
             }
-
-            if (priorDeletedSlot == -1) {
-                if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    priorDeletedSlot = probe;
-                } else if (cKey1 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    priorDeletedSlot = probe + 2;
-                } else if (cKey2 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    priorDeletedSlot = probe + 4;
-                } else if (cKey3 == SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    priorDeletedSlot = probe + 6;
-                }
+            if (cKey3 == SPECIAL_KEY_FOR_DELETED_SLOT && priorDeletedSlot == -1) {
+                priorDeletedSlot = probe + 6;
             }
         }
     }

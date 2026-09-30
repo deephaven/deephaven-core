@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class TestLongLongMap {
-    private static final Factory referenceFactory = new Factory("fastutil", TestLongLongMap::newReferenceMap);
+    private static final Factory referenceFactory = new Factory("fastutil", 1, TestLongLongMap::newReferenceMap);
 
     private static NullableLongLongMap newReferenceMap(final int initialCapacity, final float loadFactor) {
         return new TestNullableLongLongMap(initialCapacity, loadFactor);
@@ -33,9 +33,9 @@ public class TestLongLongMap {
         List<Object[]> result = new ArrayList<>();
         final Factory[] factories = {
                 referenceFactory,
-                new Factory("K1V1", HashMapLockFreeK1V1::new),
-                new Factory("K2V2", HashMapLockFreeK2V2::new),
-                new Factory("K4V4", HashMapLockFreeK4V4::new)
+                new Factory("K1V1", 1, HashMapLockFreeK1V1::new),
+                new Factory("K2V2", 2, HashMapLockFreeK2V2::new),
+                new Factory("K4V4", 4, HashMapLockFreeK4V4::new)
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};
@@ -192,6 +192,189 @@ public class TestLongLongMap {
             assertEquals(map.size(), sizeAtWhichToClear);
             map.resetToNull();
         }
+    }
+
+    /**
+     * An insert whose probe starts in a bucket holding a deleted slot ahead of an empty one takes the deleted slot — in
+     * the first bucket of the probe as in every later one — so putting removed keys back does not consume empty slots
+     * and walk the map toward a needless rehash. (K1V1 has one slot per bucket and was always right; the unrolled first
+     * bucket of K2V2 and K4V4 used to take the empty slot instead.)
+     */
+    @Test
+    public void firstBucketReusesTombstones() {
+        // The reference fastutil implementation is a different map altogether.
+        if (factory == referenceFactory) {
+            return;
+        }
+        // Every arrangement of the first bucket an insert can meet: keys in slots 0..occupied-1, one or two of them
+        // deleted, and either an empty slot after them or, when the bucket is full, the probe moving on to the next
+        // bucket. The insert must take the earliest deleted slot, never the empty one.
+        final int entriesPerBucket = factory.getEntriesPerBucket();
+        for (int occupied = 1; occupied <= entriesPerBucket; ++occupied) {
+            for (int deleted = 0; deleted < occupied; ++deleted) {
+                checkTombstoneReuse(occupied, deleted, -1);
+                for (int alsoDeleted = deleted + 2; alsoDeleted < occupied; ++alsoDeleted) {
+                    checkTombstoneReuse(occupied, deleted, alsoDeleted);
+                }
+            }
+        }
+    }
+
+    /**
+     * Fill the first bucket of a fresh map with {@code occupied} colliding keys, delete the one at {@code deleted} (and
+     * the one at {@code alsoDeleted}, when it is not -1), insert one more colliding key, and check that it took the
+     * earliest tombstone: the count of non-empty slots is unchanged and the new key stands where the deleted key stood.
+     * (The two tombstones are never adjacent, so the key array tells the right slot from the wrong one.)
+     */
+    private void checkTombstoneReuse(final int occupied, final int deleted, final int alsoDeleted) {
+        final String where = "occupied=" + occupied + " deleted=" + deleted + " alsoDeleted=" + alsoDeleted;
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final HashMapBase base = (HashMapBase) map;
+        // The first key goes in before anything is measured: a never-populated map has no array, hence no capacity.
+        final long first = 1;
+        map.put(first, 10);
+        final int numBuckets = map.capacity() / factory.getEntriesPerBucket();
+        final int bucket = HashMapBase.probe1(first, numBuckets);
+        // occupied + 1 keys whose probes all start in that bucket, in the order they will be inserted
+        final long[] colliding = new long[occupied + 1];
+        colliding[0] = first;
+        long candidate = first;
+        for (int ci = 1; ci < colliding.length; ++ci) {
+            do {
+                ++candidate;
+            } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+            colliding[ci] = candidate;
+        }
+        for (int ki = 1; ki < occupied; ++ki) {
+            map.put(colliding[ki], 10 + ki);
+        }
+        assertEquals(where, occupied, base.nonEmptySlots);
+        map.remove(colliding[deleted]);
+        if (alsoDeleted != -1) {
+            map.remove(colliding[alsoDeleted]);
+        }
+        // Tombstones still count as non-empty.
+        assertEquals(where, occupied, base.nonEmptySlots);
+        final long fresh = colliding[occupied];
+        map.put(fresh, 99);
+        assertEquals(where, occupied, base.nonEmptySlots);
+        // The keys in slot order: the fresh key stands where the earliest deleted key stood.
+        final long[] expected = new long[occupied - (alsoDeleted == -1 ? 0 : 1)];
+        int ei = 0;
+        for (int ki = 0; ki < occupied; ++ki) {
+            if (ki == deleted) {
+                expected[ei++] = fresh;
+            } else if (ki != alsoDeleted) {
+                expected[ei++] = colliding[ki];
+            }
+        }
+        assertArrayEquals(where, expected, ((NullableLongLongMapTestAccessors) map).keyArray());
+    }
+
+    /**
+     * The same rule in the buckets after the first: a probe that leaves a full first bucket and meets a tombstone ahead
+     * of an empty slot in a later bucket must take the tombstone. (The loop remembered a bucket's tombstones only after
+     * scanning the whole bucket, so a tombstone followed by an empty slot in the same later bucket lost to the empty
+     * slot.)
+     */
+    @Test
+    public void laterBucketReusesTombstones() {
+        if (factory == referenceFactory) {
+            return;
+        }
+        final int entriesPerBucket = factory.getEntriesPerBucket();
+        for (int filled = 1; filled < entriesPerBucket; ++filled) {
+            for (int deleted = 0; deleted < filled; ++deleted) {
+                checkLaterBucketTombstoneReuse(filled, deleted);
+            }
+        }
+    }
+
+    /**
+     * Fill a key's first bucket with other keys so its probe moves on, put {@code filled} keys whose first bucket is
+     * that key's second bucket, delete the one at {@code deleted}, then insert the key: it must take the tombstone.
+     */
+    private void checkLaterBucketTombstoneReuse(final int filled, final int deleted) {
+        final String where = "filled=" + filled + " deleted=" + deleted;
+        final int entriesPerBucket = factory.getEntriesPerBucket();
+        // Room for every key of the test without a rehash, whatever the parameterized capacity.
+        final NullableLongLongMap map = factory.create(1000, loadFactor);
+        final HashMapBase base = (HashMapBase) map;
+        final long first = 1;
+        map.put(first, 10);
+        final int numBuckets = map.capacity() / entriesPerBucket;
+        final int bucket = HashMapBase.probe1(first, numBuckets);
+        // Fill the first bucket: entriesPerBucket keys whose probes start there, then one more, the key under test.
+        long candidate = first;
+        for (int ki = 1; ki < entriesPerBucket; ++ki) {
+            do {
+                ++candidate;
+            } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+            map.put(candidate, 10 + ki);
+        }
+        do {
+            ++candidate;
+        } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+        final long key = candidate;
+        // Its second bucket, as the probe loop computes it: one plus the second hash, in buckets, past the first.
+        final int secondBucket = (bucket + 1 + HashMapBase.probe2(key, numBuckets - 2)) % numBuckets;
+        // filled keys whose first bucket is that second bucket; they take its slots 0..filled-1 in order.
+        final long[] others = new long[filled];
+        candidate = 1_000_000;
+        for (int ki = 0; ki < filled; ++ki) {
+            do {
+                ++candidate;
+            } while (HashMapBase.probe1(candidate, numBuckets) != secondBucket);
+            others[ki] = candidate;
+            map.put(candidate, 100 + ki);
+        }
+        assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
+        map.remove(others[deleted]);
+        assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
+        map.put(key, 99);
+        // The tombstone was reused: the count of non-empty slots did not grow, and the map holds what it should.
+        assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
+        assertEquals(where, entriesPerBucket + filled, map.size());
+        assertEquals(where, 99, map.get(key));
+    }
+
+    /**
+     * A map that has never been populated — or has been reset to null — is empty, not broken: clearing it is a no-op
+     * and its key and value accessors answer with nothing, where they used to dereference the array it does not have.
+     */
+    @Test
+    public void neverPopulatedMapIsEmptyNotBroken() {
+        // The reference fastutil implementation always has storage.
+        if (factory == referenceFactory) {
+            return;
+        }
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        // Never populated: there is no array yet.
+        assertEmptyNotBroken(map);
+        // Populate it, so that the reset below releases a real array, then check the same things once more.
+        map.put(1, 10);
+        map.put(2, 20);
+        map.put(3, 30);
+        assertEquals(3, map.size());
+        assertTrue(map.capacity() > 0);
+        map.resetToNull();
+        assertEmptyNotBroken(map);
+    }
+
+    /**
+     * Clearing a map without an array is a no-op, and its size, capacity and accessors all answer with nothing.
+     */
+    private static void assertEmptyNotBroken(final NullableLongLongMap map) {
+        final NullableLongLongMapTestAccessors accessors = (NullableLongLongMapTestAccessors) map;
+        map.clear();
+        assertEquals(0, map.size());
+        assertTrue(map.isEmpty());
+        assertEquals(0, map.capacity());
+        assertEquals(0, accessors.keyArray().length);
+        assertEquals(0, accessors.valueArray().length);
+        final long[] space = new long[4];
+        assertSame(space, accessors.keyArray(space));
+        assertSame(space, accessors.valueArray(space));
     }
 
     @Test
@@ -423,16 +606,22 @@ public class TestLongLongMap {
 
     static class Factory {
         private final String name;
+        private final int entriesPerBucket;
         private BiFunction<Integer, Float, NullableLongLongMap> constructor;
 
-        Factory(String name, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
+        Factory(String name, int entriesPerBucket, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
             this.name = name;
+            this.entriesPerBucket = entriesPerBucket;
             this.constructor = constructor;
         }
 
         @Override
         public String toString() {
             return name;
+        }
+
+        public int getEntriesPerBucket() {
+            return entriesPerBucket;
         }
 
         public NullableLongLongMap create(int initialCapacity, float loadFactor) {

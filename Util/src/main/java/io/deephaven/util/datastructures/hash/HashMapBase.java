@@ -126,7 +126,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
         final int newNumLongs;
         if (wantResize) {
             final int oldBucketCapacity = oldNumLongs / (entriesPerBucket * 2);
-            final int desiredNumBuckets = oldBucketCapacity * 2;
+            final int desiredNumBuckets = grownBucketCount(oldBucketCapacity, entriesPerBucket);
             newNumLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         } else {
             newNumLongs = oldNumLongs;
@@ -145,6 +145,17 @@ public abstract class HashMapBase implements NullableLongLongMap {
             putImplNoTranslate(newKvs, oldKey, oldValue, true);
         }
         setKeysAndValues(newKvs);
+    }
+
+    /**
+     * The bucket count a growing rehash asks for: double the current one, saturating at the width's maximum bucket
+     * capacity. Doubling in int arithmetic overflowed once the map sat at that maximum — and a growing rehash can be
+     * asked for there, because deleted slots count toward the rehash threshold while only live entries count toward the
+     * size limit — so the prime finder was handed a negative count and answered with a handful of buckets for a billion
+     * entries.
+     */
+    static int grownBucketCount(int oldBucketCapacity, int entriesPerBucket) {
+        return (int) Math.min(getMaxBucketCapacity(entriesPerBucket), 2L * oldBucketCapacity);
     }
 
     private int setRehashThresholdAndCalcLongCapacity(int desiredNumBuckets, int entriesPerBucket) {
@@ -192,6 +203,10 @@ public abstract class HashMapBase implements NullableLongLongMap {
     final void clearImpl(long[] keysAndValues) {
         size = 0;
         nonEmptySlots = 0;
+        if (keysAndValues == null) {
+            // Never populated, or reset: there is no array to clear, and clearing an empty map is a no-op.
+            return;
+        }
         // We leave rehashThreshold alone because the array size (and therefore the hashtable capacity) isn't changing.
         Arrays.fill(keysAndValues, SPECIAL_KEY_FOR_EMPTY_SLOT);
     }
@@ -258,7 +273,9 @@ public abstract class HashMapBase implements NullableLongLongMap {
         // In a single-threaded case, we would not need the 'nextIndex < sz' part of the conjunction. But in the
         // unsynchronized concurrent case, we might encounter more keys than would fit in the array. To avoid an index
         // range exception, we do the 'nextIndex < sz' test here.
-        for (int ii = 0; ii < kv.length && nextIndex < sz; ii += 2) {
+        // A never-populated (or reset) map has no array; its keys and values are simply none.
+        final int length = kv == null ? 0 : kv.length;
+        for (int ii = 0; ii < length && nextIndex < sz; ii += 2) {
             final long key = kv[ii];
             if (key == SPECIAL_KEY_FOR_EMPTY_SLOT || key == SPECIAL_KEY_FOR_DELETED_SLOT) {
                 continue;
@@ -320,7 +337,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
      * @param entriesPerBucket Number of entries per bucket
      * @return The largest prime p such that p * entriesPerBucket * 2 <= Integer.MAX_VALUE
      */
-    private static int getMaxBucketCapacity(int entriesPerBucket) {
+    static int getMaxBucketCapacity(int entriesPerBucket) {
         switch (entriesPerBucket) {
             case 1:
                 return 1073741789;
