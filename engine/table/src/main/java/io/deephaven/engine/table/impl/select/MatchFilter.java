@@ -833,6 +833,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (isNullValue(paramValue)) {
                             return null;
                         }
+                        if (paramValue instanceof Character) {
+                            // the query language compares a char with it by code point
+                            throw cannotConvert(paramValue, BigDecimal.class, "it is not a number", null);
+                        }
                         if (!(paramValue instanceof Number)) {
                             // it can never match, and dropUnmatchable removes it
                             return paramValue;
@@ -865,6 +869,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         }
                         if (isNullValue(paramValue)) {
                             return null;
+                        }
+                        if (paramValue instanceof Character) {
+                            // the query language compares a char with it by code point
+                            throw cannotConvert(paramValue, BigInteger.class, "it is not a number", null);
                         }
                         if (!(paramValue instanceof Number)) {
                             // it can never equal a BigInteger, so it matches nothing
