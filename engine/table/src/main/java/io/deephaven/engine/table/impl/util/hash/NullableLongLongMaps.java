@@ -19,8 +19,6 @@ public final class NullableLongLongMaps {
     public enum Shape {
         /** One key/value pair per bucket. */
         K1V1(1),
-        /** Two key/value pairs per bucket, interleaved. */
-        K2V2(2),
         /** Four key/value pairs per bucket, interleaved: one cache line. */
         K4V4(4);
 
@@ -38,7 +36,8 @@ public final class NullableLongLongMaps {
         }
 
         /**
-         * The shape with the given bucket width, for configuration that speaks in widths (1, 2 or 4).
+         * The shape with the given bucket width, for configuration that speaks in widths (1 or 4). Width 2 was retired:
+         * two campaigns on two machines found no scenario in which the two-key bucket was the fastest shape.
          *
          * @throws IllegalArgumentException for any other width
          */
@@ -48,7 +47,8 @@ public final class NullableLongLongMaps {
                     return shape;
                 }
             }
-            throw new IllegalArgumentException("Unsupported bucket width " + bucketWidth + " (supported: 1, 2, 4)");
+            throw new IllegalArgumentException("Unsupported bucket width " + bucketWidth
+                    + " (supported: 1 and 4; width 2, K2V2, was retired: it was the fastest shape in no measured scenario)");
         }
     }
 

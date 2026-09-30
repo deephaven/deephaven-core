@@ -24,7 +24,7 @@ public class TestNullableLongLongMaps {
     @Test
     public void shapeForRebuildNeverNarrowsAndWidensWhenDenseOrAtTheCeiling() {
         final int big = NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES;
-        for (final Shape narrow : new Shape[] {Shape.K1V1, Shape.K2V2}) {
+        for (final Shape narrow : new Shape[] {Shape.K1V1}) {
             // Dense and big: widen.
             assertEquals(Shape.K4V4, NullableLongLongMaps.shapeForRebuild(narrow, DENSE, big, false));
             // Dense but not yet big, or big but sparse: stay.
@@ -50,7 +50,7 @@ public class TestNullableLongLongMaps {
     @Test
     public void denseMapsWidenAsTheyGrowAndKeepEverything() {
         final int n = 1_200_000;
-        for (final Shape born : new Shape[] {Shape.K1V1, Shape.K2V2}) {
+        for (final Shape born : new Shape[] {Shape.K1V1}) {
             final NullableLongLongMap map = NullableLongLongMaps.of(born, 16, DENSE, NO_ENTRY_VALUE);
             final HashMapLockFreeKnVn knVn = (HashMapLockFreeKnVn) map;
             assertEquals(born, knVn.shape());
@@ -98,7 +98,7 @@ public class TestNullableLongLongMaps {
     @Test
     public void presizedDenseMapsAreBuiltWide() {
         final int big = NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES;
-        for (final Shape born : new Shape[] {Shape.K1V1, Shape.K2V2}) {
+        for (final Shape born : new Shape[] {Shape.K1V1}) {
             final HashMapLockFreeKnVn wide =
                     (HashMapLockFreeKnVn) NullableLongLongMaps.of(born, 2 * big, DENSE, NO_ENTRY_VALUE);
             assertEquals(Shape.K4V4, wide.shape());
@@ -330,8 +330,8 @@ public class TestNullableLongLongMaps {
 
     @Test
     public void windowModeRequiresK4V4() {
-        for (final Shape shape : new Shape[] {Shape.K1V1, Shape.K2V2}) {
-            // The narrow shapes have no window kernel.
+        for (final Shape shape : new Shape[] {Shape.K1V1}) {
+            // The narrow shape has no window kernel.
             final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
                     () -> NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE, ReadMode.WINDOW));
             assertTrue(iae.getMessage(), iae.getMessage().contains(shape.name()));
@@ -343,8 +343,9 @@ public class TestNullableLongLongMaps {
 
     @Test
     public void forBucketWidthRejectsUnsupportedWidths() {
-        for (final int width : new int[] {0, 3, 8, -1}) {
-            // Only 1, 2 and 4 are shapes.
+        // Width 2 is the retired K2V2: a configuration that still asks for it must fail fast, not fall back silently.
+        for (final int width : new int[] {0, 2, 3, 8, -1}) {
+            // Only 1 and 4 are shapes.
             final IllegalArgumentException iae =
                     assertThrows(IllegalArgumentException.class, () -> Shape.forBucketWidth(width));
             assertTrue(iae.getMessage(), iae.getMessage().contains(Integer.toString(width)));

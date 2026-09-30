@@ -456,7 +456,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     private static final int REMOVAL_CHUNK_SIZE = 4096;
 
     /**
-     * The shape the maps this redirection builds are BORN with, configured as a bucket width (1, 2 or 4; see
+     * The shape the maps this redirection builds are BORN with, configured as a bucket width (1 or 4; see
      * {@link Shape#forBucketWidth}). A map widens itself to the K4V4 shape as it grows dense (load factor at or above
      * the policy's floor — never at the default 0.5) or near the capacity ceiling; see
      * {@link NullableLongLongMaps#shapeForRebuild}.
