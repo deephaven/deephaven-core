@@ -45,7 +45,7 @@ _server.start()
 
 > **Note:** The server must start before any `deephaven` imports. Since pytest loads `conftest.py` before collecting test modules, starting the server at module level ensures the JVM is ready when test files import `deephaven`.
 
-## Example tests
+### Example tests
 
 ```python skip-test
 # test_my_utils.py
@@ -86,7 +86,7 @@ Run tests with:
 pytest tests/ -v
 ```
 
-## Testing ticking tables
+### Testing ticking tables
 
 When testing with [`time_table`](../reference/table-operations/create/timeTable.md) or other ticking tables, use [`await_update`](../reference/table-operations/table-listeners/await-update.md) to wait for updates:
 
@@ -107,7 +107,7 @@ def test_ticking_table():
     assert t.size >= 3
 ```
 
-## Testing with a remote server
+### Testing with a remote server
 
 If your code connects to a remote Deephaven server, use `pydeephaven`:
 
@@ -145,6 +145,29 @@ def test_fetch_table(session):
     assert table.size > 0
 ```
 
+### Reading test data
+
+Load test data from CSV or Parquet files:
+
+```python skip-test
+from deephaven import read_csv
+from deephaven.parquet import read
+
+
+def test_csv_data():
+    """Test with CSV data."""
+    t = read_csv("tests/data/test_data.csv")
+    assert t.size > 0
+
+
+def test_parquet_data():
+    """Test with Parquet data."""
+    t = read("tests/data/test_data.parquet")
+    assert t.size > 0
+```
+
+See [`read_csv`](../reference/data-import-export/CSV/readCsv.md) and [`read`](../reference/data-import-export/Parquet/readTable.md) for more options.
+
 ## Project structure
 
 A typical project structure:
@@ -181,29 +204,6 @@ test = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 ```
-
-## Reading test data
-
-Load test data from CSV or Parquet files:
-
-```python skip-test
-from deephaven import read_csv
-from deephaven.parquet import read
-
-
-def test_csv_data():
-    """Test with CSV data."""
-    t = read_csv("tests/data/test_data.csv")
-    assert t.size > 0
-
-
-def test_parquet_data():
-    """Test with Parquet data."""
-    t = read("tests/data/test_data.parquet")
-    assert t.size > 0
-```
-
-See [`read_csv`](../reference/data-import-export/CSV/readCsv.md) and [`read`](../reference/data-import-export/Parquet/readTable.md) for more options.
 
 ## Related documentation
 

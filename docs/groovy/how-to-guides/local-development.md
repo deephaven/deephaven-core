@@ -128,14 +128,15 @@ To compile Groovy sources, add the `gmavenplus-plugin` to your build:
 
 The dependencies you need depend on what your project does. Here are common patterns:
 
-| Use case                                     | Dependencies                                     |
-| -------------------------------------------- | ------------------------------------------------ |
-| Table operations (`select`, `where`, `join`) | `deephaven-engine-api`, `deephaven-engine-table` |
-| Read/write CSV files                         | `deephaven-extensions-csv`                       |
-| Read/write Parquet files                     | `deephaven-extensions-parquet-table`             |
-| Configuration utilities                      | `deephaven-Configuration`                        |
-| Date/time utilities                          | `deephaven-engine-time`                          |
-| Logging                                      | `deephaven-log-factory`                          |
+| Use case                                     | Dependencies                                      |
+| -------------------------------------------- | ------------------------------------------------- |
+| Table operations (`select`, `where`, `join`) | `deephaven-engine-api`, `deephaven-engine-table`  |
+| Read/write CSV files                         | `deephaven-extensions-csv`                        |
+| Read/write Parquet files                     | `deephaven-extensions-parquet-table`              |
+| Configuration utilities                      | `deephaven-Configuration`                         |
+| Default configuration properties             | `deephaven-configs`                               |
+| Date/time utilities                          | `deephaven-engine-time`                           |
+| Logging                                      | `deephaven-log-factory`, `deephaven-log-to-slf4j` |
 
 Browse all available modules on [Maven Central](https://central.sonatype.com/namespace/io.deephaven).
 
