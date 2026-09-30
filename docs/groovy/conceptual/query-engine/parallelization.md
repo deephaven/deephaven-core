@@ -6,7 +6,7 @@ sidebar_label: Parallelization
 Parallelization is running multiple calculations at the same time on different CPU cores instead of one after another. Deephaven automatically parallelizes table operations like [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) to make queries faster, with no configuration required. This guide explains how that parallelization works and when you need to control it.
 
 > [!IMPORTANT]
-> **Breaking change in Deephaven 41.0**: In version 0.40 and earlier, Deephaven ran a formula in parallel only when it could tell the formula was safe, and ran the rest — such as formulas that call closures or read arrays — one row at a time. Deephaven 41.0 and later assumes all formulas can run in parallel by default. Code that modifies shared variables or depends on rows being processed in a specific order will now produce incorrect results unless you mark it with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial).
+> **Breaking change in Deephaven 41.0**: In version 0.40.0 and earlier, Deephaven ran a formula in parallel only when it could tell the formula was safe, and ran the rest — such as formulas that call closures or read arrays — one row at a time. Deephaven 41.0 and later assumes all formulas can run in parallel by default. Code that modifies shared variables or depends on rows being processed in a specific order will now produce incorrect results unless you mark it with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial).
 >
 > **Quick check**: Does your code use global variables, depend on rows being processed in a specific order, or modify external state? If yes, see [Controlling execution order](#controlling-execution-order) below, or the [Crash Course guide](../../getting-started/crash-course/parallelization.md) for a faster introduction.
 
@@ -303,6 +303,12 @@ For a quick introduction, see the [Crash Course](../../getting-started/crash-cou
 
 ## Related documentation
 
+- [Query Parallelization (Crash Course)](../../getting-started/crash-course/parallelization.md)
 - [Update graph (table dependencies)](../dag.md)
 - [Multithreading: Synchronization, locks, and snapshots](./engine-locking.md)
+- [Query table configuration](../query-table-configuration.md)
+- [Selectable](../../reference/query-language/types/Selectable.md)
+- [Filter](../../reference/query-language/types/Filter.md)
+- [Barrier](../../reference/query-language/types/Barrier.md)
+- [ConcurrencyControl](../../reference/query-language/types/ConcurrencyControl.md)
 - [ConcurrencyControl API (Javadoc)](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)

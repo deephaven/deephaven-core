@@ -2,7 +2,7 @@
 title: Query Parallelization
 ---
 
-Modern computers have multiple processors (called "cores") that can work simultaneously. Deephaven distributes work across these cores automatically, making queries faster by having several cores work on different parts of a calculation at the same time. The actual speedup depends on the workload and scheduling overhead, not just the number of cores.
+Modern computers have multiple processors (called "cores") that can work simultaneously. **Parallelization** splits a calculation into parts and runs those parts on different cores at the same time. Deephaven parallelizes queries automatically, which makes them faster, although the actual speedup depends on the workload and scheduling overhead, not just the number of cores.
 
 > [!TIP]
 > **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to disable it.
@@ -65,7 +65,7 @@ Since `A` and `B` don't depend on each other, Deephaven can compute them on diff
 
 ## When it works
 
-Parallelization produces correct results when each row can be computed independently. This means the formula for row 50 doesn't need to know anything about row 49 or row 51 — it only uses values from its own row.
+Parallelization produces correct results when each row can be computed independently. This means the formula for row 50 doesn't need to know anything about row 49 or row 51. It only uses values from its own row.
 
 Formulas like these are **stateless**, so they're safe to parallelize. For example:
 
@@ -112,7 +112,7 @@ result = source.update(
 )
 ```
 
-All of these examples share the same property: each row's result depends only on values in that same row. It doesn't matter whether row 50 is computed before or after row 49, or whether they're computed on the same core or different cores — the results are identical either way.
+All of these examples share the same property: each row's result depends only on values in that same row. It doesn't matter whether row 50 is computed before or after row 49, or whether they're computed on the same core or different cores. The results are identical either way.
 
 ## When it breaks
 
@@ -139,7 +139,7 @@ result = emptyTable(5_000_000).update("ID = getNextId()")
 
 The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `getNextId` at the same time. Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
-## The fix: force sequential processing with `withSerial`
+### The fix: force sequential processing with `withSerial`
 
 The [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) method tells Deephaven to process this formula serially: never running concurrently with itself, with rows evaluated one at a time in row-set order:
 
@@ -167,10 +167,10 @@ result = emptyTable(100).update([col])
 
 ## Key takeaways
 
-- Deephaven assumes formulas are safe to run in parallel by default — this is fast but requires stateless code.
+- Deephaven assumes formulas are safe to run in parallel by default. This is fast but requires stateless code.
 - Shared state or row-order dependencies cause silent errors with parallelization.
 - Use `withSerial` when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need barriers; when several tables do, the shared code must be thread-safe.
 
-Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.
+Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically, with no extra code required.
 
-For more depth — including barriers and other concurrency-control tools — see [query parallelization](../../conceptual/query-engine/parallelization.md).
+For more detail, including barriers and other concurrency-control tools, see [query parallelization](../../conceptual/query-engine/parallelization.md).
