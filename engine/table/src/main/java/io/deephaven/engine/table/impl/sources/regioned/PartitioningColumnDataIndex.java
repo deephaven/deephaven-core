@@ -326,15 +326,16 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
     @Override
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions unusedOptions) {
+        final TrackingRowSet indexRowSet = indexTable.getRowSet();
         return (final Object key, final boolean usePrev) -> {
             final int position = keyPositionMap.getInt(key);
             if (position == KEY_NOT_FOUND) {
                 return RowSequence.NULL_ROW_KEY;
             }
             // A key whose bucket was emptied keeps its position but is not in the index table.
-            final TrackingRowSet indexRowSet = indexTable.getRowSet();
-            final long found = usePrev ? indexRowSet.findPrev(position) : indexRowSet.find(position);
-            return found < 0 ? RowSequence.NULL_ROW_KEY : position;
+            return (usePrev ? indexRowSet.prev() : indexRowSet).containsRange(position, position)
+                    ? position
+                    : RowSequence.NULL_ROW_KEY;
         };
     }
 
