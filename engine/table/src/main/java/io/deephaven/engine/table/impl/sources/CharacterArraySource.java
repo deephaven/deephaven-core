@@ -96,6 +96,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
 
                 final long[] inUse;
                 if (prevBlocks[block] == null) {
@@ -241,6 +246,22 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
         final char[] newBlock = takeBlock(size);
         Arrays.fill(newBlock, NULL_CHAR);
         return newBlock;
+    }
+
+    /** The previous values of blocks allocated null-filled during the current update cycle; never written. */
+    private static final char[] FRESH_NULL_PREV_BLOCK = makeFreshNullPrevBlock();
+    /** The previous values of blocks allocated during the current update cycle without null-filling; never written. */
+    private static final char[] FRESH_DEFAULT_PREV_BLOCK = new char[BLOCK_SIZE];
+
+    private static char[] makeFreshNullPrevBlock() {
+        final char[] block = new char[BLOCK_SIZE];
+        Arrays.fill(block, NULL_CHAR);
+        return block;
+    }
+
+    @Override
+    final char[] freshPrevBlock(final boolean nullFilled) {
+        return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
     @Override
