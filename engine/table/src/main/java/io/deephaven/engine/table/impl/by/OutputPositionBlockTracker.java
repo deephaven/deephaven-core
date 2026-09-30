@@ -55,6 +55,12 @@ final class OutputPositionBlockTracker {
     private final BitSet sparseBlocks = new BitSet();
     /** The number of blocks in {@link #sparseBlocks}. */
     private int sparseBlockCount;
+    /**
+     * The states that may still be moved: the allowances of the cycles since a run was last left waiting for more, less
+     * the states moved since. It is kept only while a run waits, so that a run too large for one cycle's allowance is
+     * collapsed once enough cycles have passed, rather than blocking every run after it.
+     */
+    private long shiftCredit;
 
     /**
      * @param nextOutputPosition the next output position that will be assigned. Every position before it holds a live
@@ -143,21 +149,33 @@ final class OutputPositionBlockTracker {
      * sparse blocks at the end of the run are left empty and can be released. Nothing moves onto a released block,
      * whose storage may already be gone or be released after this cycle. States outside the runs do not move.
      *
+     * <p>
+     * The states moved are limited by a credit, to which each cycle adds its allowance. The runs are collapsed in order
+     * while the credit covers them, and the first run it does not cover is collapsed only as far as it does, then
+     * waits, with every run after it, for later cycles. The credit left over carries into the next cycle while a run
+     * waits, and is dropped once none does. Over any number of cycles, the states moved are therefore no more than
+     * their allowances, and a single cycle moves no more than its own allowance plus those of the cycles a run waited
+     * through.
+     * </p>
+     *
      * @param liveStates the output positions of the live states, after this cycle's additions and removals
-     * @param maxShiftedStates the most states to move in this cycle
+     * @param shiftAllowance the number of state moves this cycle adds to the credit
      * @param released the output positions of blocks to release, to which the emptied blocks are added
      * @return the collapsed runs and the shifts that move their live states, which only move states toward lower
      *         positions
      */
-    Collapse collapseSparseBlocks(final RowSet liveStates, final long maxShiftedStates,
+    Collapse collapseSparseBlocks(final RowSet liveStates, final long shiftAllowance,
             final WritableRowSet released) {
         if (sparseBlockCount < 2) {
+            // no run can wait
+            shiftCredit = 0;
             return Collapse.NONE;
         }
         final List<Run> collapsedRuns = new ArrayList<>();
         final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
         final RowSetBuilderSequential releasedBuilder = RowSetFactory.builderSequential();
-        long remainingShifts = maxShiftedStates;
+        long remainingShifts = shiftAllowance >= Long.MAX_VALUE - shiftCredit ? Long.MAX_VALUE
+                : shiftCredit + shiftAllowance;
 
         // Each run is walked in increasing block order and collapsed before the walk moves on; collapsing a run changes
         // the sparse set only within the run, behind the walk.
@@ -219,6 +237,9 @@ final class OutputPositionBlockTracker {
                 }
             }
         }
+
+        // a run waits for more credit only if the walk stopped short of it
+        shiftCredit = withinBudget ? 0 : remainingShifts;
 
         try (final WritableRowSet newlyReleased = releasedBuilder.build()) {
             released.subsume(newlyReleased);

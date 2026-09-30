@@ -100,6 +100,49 @@ public class TestOutputPositionBlockTracker {
         }
     }
 
+    /**
+     * A run whose states are more than one cycle's allowance is collapsed once the allowances of enough cycles have
+     * carried over, rather than waiting forever.
+     */
+    @Test
+    public void testAllowanceCarriesOverToALargeRun() {
+        final int size = 4 * BLOCK_SIZE;
+        final OutputPositionBlockTracker tracker = new OutputPositionBlockTracker(size, 0.5);
+        final int keep = 600;
+        final long allowance = 100;
+        try (final WritableRowSet removed = RowSetFactory.fromRange(keep, BLOCK_SIZE - 1);
+                final WritableRowSet noneAdded = RowSetFactory.empty();
+                final WritableRowSet liveStates = RowSetFactory.flat(size)) {
+            removed.insertRange(BLOCK_SIZE + keep, 2L * BLOCK_SIZE - 1);
+            liveStates.remove(removed);
+            try (final WritableRowSet released = tracker.update(noneAdded, removed, size)) {
+                assertTrue(released.isEmpty());
+            }
+
+            // the run of the first two blocks holds 1200 states, so it waits for twelve cycles' allowances
+            final long cyclesNeeded = 2 * keep / allowance;
+            for (int cycle = 1; cycle < cyclesNeeded; ++cycle) {
+                try (final WritableRowSet released = RowSetFactory.empty()) {
+                    final OutputPositionBlockTracker.Collapse collapse =
+                            tracker.collapseSparseBlocks(liveStates, allowance, released);
+                    assertTrue("cycle " + cycle, collapse.shift.empty());
+                    assertTrue("cycle " + cycle, released.isEmpty());
+                }
+            }
+            try (final WritableRowSet released = RowSetFactory.empty();
+                    final WritableRowSet secondBlock = RowSetFactory.fromRange(BLOCK_SIZE, 2L * BLOCK_SIZE - 1);
+                    final WritableRowSet expectedLive = RowSetFactory.fromRange(0, 2L * keep - 1)) {
+                // the states of the first two blocks are packed into the first, and the full blocks after them stay
+                expectedLive.insertRange(2L * BLOCK_SIZE, size - 1);
+                final OutputPositionBlockTracker.Collapse collapse =
+                        tracker.collapseSparseBlocks(liveStates, allowance, released);
+                assertEquals(secondBlock, released);
+                collapse.apply(liveStates);
+                assertEquals(expectedLive, liveStates);
+            }
+        }
+    }
+
     private static WritableRowSet randomSubset(final Random random, final RowSet rowSet, final double fraction) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         rowSet.forAllRowKeys(key -> {

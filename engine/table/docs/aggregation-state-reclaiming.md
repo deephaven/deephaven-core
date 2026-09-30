@@ -65,9 +65,14 @@ The **collapse** (`collapseFreeFraction` below 1) releases blocks that random ch
 A closed block at least this fraction free, and with at least one position free, is sparse; a full block never is. A run
 is two or more sparse blocks with nothing but released blocks between them. A run is collapsed by packing its live
 states into its sparse blocks, first to last, keeping their order, and releasing the sparse blocks this empties. Nothing
-moves onto a released block. A run collapses only if that frees at least one block. Each cycle moves no more live states
-than its input rows added, modified, and removed; a run that does not fit waits for a later cycle. The collapse frees
-memory but does not give output positions back.
+moves onto a released block. A run collapses only if that frees at least one block. The live states moved are limited by
+a credit, to which each cycle adds its input rows added, modified, and removed. The runs are collapsed in order while the
+credit covers them; the first run it does not cover is collapsed as far as the credit reaches, and then it and the runs
+after it wait. While a run waits, the unused credit carries over to the next cycle, so a run larger than one cycle's
+input rows is collapsed after enough cycles instead of blocking every run behind it forever; once no run waits, the
+credit is dropped, so quiet cycles do not save up for a burst. Over any span of cycles the states moved are no more than
+their input rows, although the cycle that collapses a waiting run may move the input rows of the cycles it waited
+through. The collapse frees memory but does not give output positions back.
 
 ## Parameters
 

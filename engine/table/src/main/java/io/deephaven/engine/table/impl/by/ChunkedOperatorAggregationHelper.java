@@ -788,7 +788,7 @@ public class ChunkedOperatorAggregationHelper {
             resultRowset.insert(downstream.added());
             final WritableRowSet releasable =
                     blockTracker.update(downstream.added(), downstream.removed(), outputPosition.get());
-            // the collapse moves no more states than this cycle's input rows
+            // over time, the collapse moves no more states than the input rows of the cycles it spans
             final long inputRows =
                     upstream.added().size() + upstream.modified().size() + upstream.removed().size();
             final OutputPositionBlockTracker.Collapse collapse =
