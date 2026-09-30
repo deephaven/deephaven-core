@@ -141,6 +141,8 @@ Parallelization produces incorrect results when a row's calculation depends on s
 Consider a function that counts how many times it has been called:
 
 ```python syntax
+from deephaven import empty_table
+
 counter = 0
 
 
