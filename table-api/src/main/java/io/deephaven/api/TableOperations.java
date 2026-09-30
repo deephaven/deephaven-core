@@ -439,6 +439,24 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Delegates to {@link #join(Object, Collection, Collection, int)}.
      *
      * @param rightTable The right side table on the join.
+     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
+     *        "columnFoundInBoth")
+     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
+     *        side as a result of the match.
+     * @param reserveBits The number of bits to reserve for rightTable groups.
+     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
+     * @see #join(Object, Collection, Collection, int)
+     */
+    TOPS join(TABLE rightTable, String columnsToMatch, String columnsToAdd, int reserveBits);
+
+
+    /**
+     * Perform a cross join with the {@code rightTable}.
+     *
+     * <p>
+     * Delegates to {@link #join(Object, Collection, Collection, int)}.
+     *
+     * @param rightTable The right side table on the join.
      * @param columnsToMatch The match pair conditions.
      * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
      *        match.
@@ -459,9 +477,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *
      * <p>
      * To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless
-     * specified, join reserves 16 bits to represent a right row. When there are too few bits to represent all of the
+     * specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all of the
      * right rows for a given aggregation group the table will shift a bit from the left side to the right side. The
-     * default of 16 bits was carefully chosen because it results in an efficient implementation to process live
+     * default of 10 bits was carefully chosen because it results in an efficient implementation to process live
      * updates.
      *
      * <p>
@@ -496,6 +514,10 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform an as-of join with the {@code rightTable}.
      *
      * <p>
+     * When more than one right row has the same exact match keys and the same closest value in the as-of column, the
+     * last of those rows in {@code rightTable} is matched.
+     *
+     * <p>
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
@@ -509,12 +531,16 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform an as-of join with the {@code rightTable}.
      *
      * <p>
+     * When more than one right row has the same exact match keys and the same closest value in the as-of column, the
+     * last of those rows in {@code rightTable} is matched.
+     *
+     * <p>
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn>=rightColumn"},
      *        {@code "leftColumn>rightColumn"}, {@code "columnFoundInBoth"}).
-     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
+     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
@@ -524,6 +550,10 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     /**
      * Perform an reverse-as-of join with the {@code rightTable}.
+     *
+     * <p>
+     * When more than one right row has the same exact match keys and the same closest value in the as-of column, the
+     * first of those rows in {@code rightTable} is matched.
      *
      * <p>
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
@@ -539,12 +569,16 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform a reverse-as-of join with the {@code rightTable}.
      *
      * <p>
+     * When more than one right row has the same exact match keys and the same closest value in the as-of column, the
+     * first of those rows in {@code rightTable} is matched.
+     *
+     * <p>
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}
      *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn<=rightColumn"},
      *        {@code "leftColumn<rightColumn"}, {@code "columnFoundInBoth"}).
-     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
+     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */

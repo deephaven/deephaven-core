@@ -145,5 +145,6 @@ Setting either of these properties to `-1` instructs Deephaven to use all availa
 
 ### Related documentation
 
+- [Track processing time](../../how-to-guides/performance/track-processing-time.md)
 - [Deephaven’s Directed-Acyclic-Graph (DAG)](../dag.md)
 - [Multithreading: Synchronization, locks, and snapshots](./engine-locking.md)

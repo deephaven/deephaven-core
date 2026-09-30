@@ -57,3 +57,11 @@ node_modules
 .classpath
 .settings
 .Rproj.user
+
+# Personal workflows (fork-specific)
+.devin/workflows/sync-fork.md
+
+# Devin/Claude plugin artifacts
+skills-lock.json
+.agents/
+.claude/skills/skill-creator

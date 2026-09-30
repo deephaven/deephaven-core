@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -361,6 +362,7 @@ public final class DynamicTableWriter implements TableWriter {
 
         final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
+            NameValidator.validateColumnName(columnNames[i]);
             if (constantValues.containsKey(columnNames[i])) {
                 final SingleValueColumnSource singleValueColumnSource =
                         SingleValueColumnSource.getSingleValueColumnSource(columnTypes.apply(i));

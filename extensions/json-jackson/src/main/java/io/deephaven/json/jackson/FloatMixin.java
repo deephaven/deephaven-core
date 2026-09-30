@@ -5,10 +5,9 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.MathUtil;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableFloatChunk;
-import io.deephaven.chunk.sized.SizedFloatChunk;
 import io.deephaven.json.FloatValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -68,7 +67,7 @@ final class FloatMixin extends Mixin<FloatValue> {
     }
 
     final class FloatRepeaterImpl extends RepeaterProcessorBase<float[]> {
-        private final SizedFloatChunk<?> chunk = new SizedFloatChunk<>(0);
+        private float[] buffer = new float[0];
 
         public FloatRepeaterImpl() {
             super(null, null, Type.floatType().arrayType());
@@ -76,24 +75,17 @@ final class FloatMixin extends Mixin<FloatValue> {
 
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableFloatChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, FloatMixin.this.parseValue(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseValue(parser));
         }
 
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableFloatChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, FloatMixin.this.parseMissing(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseMissing(parser));
         }
 
         @Override
         public float[] doneImpl(JsonParser parser, int length) {
-            final WritableFloatChunk<?> chunk = this.chunk.get();
-            return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
+            return Arrays.copyOfRange(buffer, 0, length);
         }
     }
 

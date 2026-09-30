@@ -261,7 +261,7 @@ public class RangeSet {
         }
     }
 
-    private static class RangeIterator {
+    public static class RangeIterator implements Iterator<Range> {
         private int index = -1;
         private final List<Range> ranges;
         private long key = 0;
@@ -275,10 +275,12 @@ public class RangeSet {
             this.key = key;
         }
 
+        @Override
         public boolean hasNext() {
             return key == -1 || index < ranges.size() - 1;
         }
 
+        @Override
         public Range next() {
             if (key != 0) {
                 Range r = ranges.get(index);
@@ -396,8 +398,8 @@ public class RangeSet {
      * 
      * @return Iterator of {@link Range}
      */
-    public Iterator<Range> rangeIterator() {
-        return sortedRanges.iterator();
+    public RangeIterator rangeIterator() {
+        return new RangeIterator(sortedRanges);
     }
 
     public Iterator<Range> reverseRangeIterator() {
@@ -769,13 +771,12 @@ public class RangeSet {
         return result;
     }
 
-
     public long get(long key) {
+        if (key >= size() || key < 0) {
+            return -1;
+        }
         if (key == 0) {
             return getFirstRow();
-        }
-        if (key >= size()) {
-            return -1;
         }
         ensureCardinalityCache();
 
@@ -789,6 +790,64 @@ public class RangeSet {
         long offset = c - key;// positive value to offset backwards from the end of target
         assert offset >= 0;
         return target.getLast() - offset + 1;
+    }
+
+    /**
+     * Returns a new {@code RangeSet} representing the intersection of this set with the provided set. The result
+     * contains only keys that are present in both {@code this} and {@code other}. Neither this set nor the argument is
+     * modified.
+     *
+     * @param other the set to intersect with
+     * @return a new {@code RangeSet} containing only keys present in both sets; empty if there is no overlap
+     */
+    public RangeSet intersect(RangeSet other) {
+        if (isEmpty() || other.isEmpty()) {
+            return empty();
+        }
+
+        if (this == other) {
+            return this;
+        }
+
+        List<Range> result = new ArrayList<>();
+        Iterator<Range> thisIter = sortedRanges.iterator();
+        Iterator<Range> otherIter = other.sortedRanges.iterator();
+
+        Range a = thisIter.next();
+        Range b = otherIter.next();
+        while (true) {
+            // Compute the intersection of the two current ranges
+            long start = Math.max(a.getFirst(), b.getFirst());
+            long end = Math.min(a.getLast(), b.getLast());
+            if (start <= end) {
+                result.add(new Range(start, end));
+            }
+
+            // Advance the iterator whose current range ends first
+            if (a.getLast() < b.getLast()) {
+                if (!thisIter.hasNext()) {
+                    break;
+                }
+                a = thisIter.next();
+            } else if (b.getLast() < a.getLast()) {
+                if (!otherIter.hasNext()) {
+                    break;
+                }
+                b = otherIter.next();
+            } else {
+                // Both end at the same point, advance both
+                if (!thisIter.hasNext() || !otherIter.hasNext()) {
+                    break;
+                }
+                a = thisIter.next();
+                b = otherIter.next();
+            }
+        }
+
+        if (result.isEmpty()) {
+            return empty();
+        }
+        return fromSortedRanges(result);
     }
 
     /**

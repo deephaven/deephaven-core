@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table;
 
+import com.google.auto.service.AutoService;
 import com.google.common.io.BaseEncoding;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
@@ -15,6 +16,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -30,6 +33,7 @@ import io.deephaven.parquet.table.location.ParquetColumnResolver;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
 import io.deephaven.parquet.table.location.ParquetFieldIdColumnResolverFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
@@ -37,13 +41,15 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.codec.ObjectDecoder;
 import io.deephaven.vector.*;
-import junit.framework.TestCase;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.*;
 
 import java.io.File;
@@ -51,6 +57,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
@@ -62,6 +69,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -71,8 +79,7 @@ import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
@@ -126,7 +133,7 @@ public class TestParquetTools {
                     tries++;
                 }
             } while (!success && tries < 10);
-            TestCase.assertTrue(success);
+            assertTrue(success);
         }
     }
 
@@ -213,6 +220,25 @@ public class TestParquetTools {
     }
 
     @Test
+    public void testWriteTableEmptyStrings() {
+        final Table emptyStringsTable = TableTools.emptyTable(1_000_000)
+                .updateView("StrValue=i % 10000 == 0 ? Integer.toString(i) : \"\"");
+
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setCompressionCodecName("UNCOMPRESSED")
+                .useDictionary("StrValue", false)
+                .setMaximumDictionaryKeys(0)
+                .build();
+
+        String path = testRoot + File.separator + "emptyStringsTable.parquet";
+        ParquetTools.writeTable(emptyStringsTable, path, instructions);
+        Table result = ParquetTools.readTable(path);
+        assertTableEquals(emptyStringsTable, result);
+        result.close();
+        emptyStringsTable.close();
+    }
+
+    @Test
     public void testWriteTableRenames() {
         final String path = testRoot + File.separator + "Table_W_Renames.parquet";
         final ParquetInstructions instructions = ParquetInstructions.builder()
@@ -249,13 +275,13 @@ public class TestParquetTools {
         final String path = testRoot + File.separator + "NoColumns.parquet";
         try {
             ParquetTools.writeTable(source, path);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDataException expected) {
         }
         try {
             ParquetTools.writeTables(new Table[] {source}, new String[] {path},
                     ParquetInstructions.EMPTY.withTableDefinition(source.getDefinition()));
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDataException expected) {
         }
     }
@@ -306,7 +332,7 @@ public class TestParquetTools {
         new File(testRoot + File.separator + "unexpectedFile").createNewFile();
         try {
             ParquetTools.writeTable(table1, testRoot + File.separator + "unexpectedFile" + File.separator + "Table1");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             // Expected
         }
@@ -315,24 +341,24 @@ public class TestParquetTools {
         new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").createNewFile();
         try {
             ParquetTools.writeTable(table1, testRoot + File.separator + "Table1");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             // Expected
         }
         new File(testRoot + File.separator + "Nested").mkdirs();
         try {
             ParquetTools.writeTable(brokenTable, testRoot + File.separator + "Nested" + File.separator + "Broken");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (UnsupportedOperationException e) {
             // Expected exception
         }
-        TestCase.assertFalse(new File(testRoot + File.separator + "Nested" + File.separator + "Broken").exists());
-        TestCase.assertTrue(new File(testRoot + File.separator + "Nested").isDirectory());
+        assertFalse(new File(testRoot + File.separator + "Nested" + File.separator + "Broken").exists());
+        assertTrue(new File(testRoot + File.separator + "Nested").isDirectory());
 
         new File(testRoot + File.separator + "Nested").setReadOnly();
         try {
             ParquetTools.writeTable(brokenTable, testRoot + File.separator + "Nested" + File.separator + "Broken");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (RuntimeException e) {
             // Expected exception
         }
@@ -351,7 +377,7 @@ public class TestParquetTools {
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
         ParquetTools.deleteTable(path);
-        TestCase.assertFalse(new File(path).exists());
+        assertFalse(new File(path).exists());
     }
 
     private Table getAggregatedResultTable() {
@@ -401,7 +427,7 @@ public class TestParquetTools {
         final Table result = ParquetTools.readTable(
                 ParquetKeyValuePartitionedLayout.create(testRootFile.toURI(), 2, ParquetInstructions.EMPTY, null),
                 ParquetInstructions.EMPTY);
-        TestCase.assertEquals(partitionedDefinition, result.getDefinition());
+        assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
                 table1.updateView("Date=`2021-07-20`", "Num=100"),
                 table1.updateView("Date=`2021-07-20`", "Num=200"),
@@ -674,7 +700,7 @@ public class TestParquetTools {
         // to know whenever serialization changes in any way.
         // For example, this test can fail when we upgrade the parquet version simply because the "createdBy" field
         // captures this version.
-        assertEquals("d565b42dbab89a689c14134cf54c693b6f49b5dd27a7565bb79549558034db93", sha256sum(file.toPath()));
+        assertEquals("fd728e4033d09884569d5cea2f49b619b99e4e3904327c43640aeccfd669d51d", sha256sum(file.toPath()));
 
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
         // we are writing it down correctly if we can read it correctly.
@@ -1357,6 +1383,202 @@ public class TestParquetTools {
             final Table actual = ParquetTools.readTable(f.getPath(), instructions);
             assertEquals(td, actual.getDefinition());
             assertTableEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Verify functionality of {@link ParquetSchemaReader.CodecAdapter}. In this test, we are serializing a column as an
+     * array of integers, and "mapping" the codec and column-type so that they are read back as negated longs
+     */
+    @Test
+    public void testClassNameMap() {
+        final String writeCodecName = WriteCodec.class.getName();
+
+        final Path parquetFile = Path.of(testRoot, "testClassNameMap.parquet");
+
+        final WriteType row0 = new WriteType(1, 2, 3);
+        final WriteType row1 = new WriteType(4, 5);
+
+        final TableDefinition writeDef = TableDefinition.of(
+                ColumnDefinition.fromGenericType("Values", WriteType.class));
+        final Table writeTable = TableTools.newTable(writeDef,
+                new ColumnHolder<>("Values", WriteType.class, null, false, row0, row1));
+
+        // @formatter:off
+        // parquet metadata should contain the following:
+        // "columnTypes": [{
+        //   "columnName": "Values",
+        //   "codec": {
+        //     "codecName" :"io.deephaven.parquet.table.TestParquetTools$WriteCodec",
+        //     "dataType" :"io.deephaven.parquet.table.TestParquetTools$WriteType"
+        //   }
+        // }]
+        // @formatter:on
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .addColumnCodec("Values", writeCodecName)
+                .build();
+
+        ParquetTools.writeTable(writeTable, parquetFile.toString(), writeInstructions);
+
+        final Table readTable = ParquetTools.readTable(parquetFile.toString());
+
+        assertEquals(long[].class, readTable.getDefinition().getColumn("Values").getDataType());
+
+        final ObjectVector<long[]> values = ColumnVectors.ofObject(readTable, "Values", long[].class);
+        assertThat(values.get(0)).containsExactly(-1L, -2L, -3L);
+        assertThat(values.get(1)).containsExactly(-4L, -5L);
+    }
+
+    private static final CodecInfo TEST_CODEC_ADAPTER_INSTANCE = CodecInfo.builder()
+            .codecName(ReadCodec.class.getName())
+            .dataType("long[]")
+            .build();
+
+    @AutoService(ParquetSchemaReader.CodecAdapter.class)
+    public static class TestCodecAdapter implements ParquetSchemaReader.CodecAdapter {
+        public TestCodecAdapter() {}
+
+        @Override
+        public Optional<CodecInfo> adapt(@NotNull final CodecInfo original) {
+            if (WriteCodec.class.getName().equals(original.codecName())
+                    && WriteType.class.getName().equals(original.dataType())) {
+                return Optional.of(TEST_CODEC_ADAPTER_INSTANCE);
+            }
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Regression test for publishing a source table's attributes before its first coalesce. Reading a parquet file with
+     * sorting metadata, publishing the uncoalesced table's attributes (as the server's export path does when sending
+     * table metadata to clients), and then coalescing must not throw, and the coalesced result must still carry the
+     * sorted-columns attribute.
+     */
+    @Test
+    public void testPublishAttributesBeforeCoalesce() {
+        final Path parquetFile = Path.of(testRoot, "testPublishAttributesBeforeCoalesce.parquet");
+        final Table sorted = emptyTable(100).update("A = ii % 10").sort("A");
+        ParquetTools.writeTable(sorted, parquetFile.toString());
+
+        final Table fromDisk = ParquetTools.readTable(parquetFile.toString());
+        // Publish the (uncoalesced) table's attributes before the first coalesce
+        fromDisk.getAttributes();
+        final Table coalesced = fromDisk.coalesce();
+        assertEquals(Optional.of(SortingOrder.Ascending), SortedColumnsAttribute.getOrderForColumn(coalesced, "A"));
+        assertTableEquals(sorted, coalesced);
+    }
+
+    /**
+     * An example non-standard column-type which simply wraps an array of int
+     */
+    public static class WriteType {
+        public final int[] values;
+
+        public WriteType(int... values) {
+            this.values = values;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("WT: %s", Arrays.toString(values));
+        }
+    }
+
+    /**
+     * An example codec used to persist an array of int to a parquet file
+     */
+    public static class WriteCodec implements ObjectCodec<WriteType> {
+
+        @SuppressWarnings("unused")
+        public WriteCodec(final String args) {}
+
+        @Override
+        public byte[] encode(final WriteType input) {
+            if (input == null || input.values.length == 0) {
+                return new byte[0];
+            }
+            final ByteBuffer buf = ByteBuffer.allocate(input.values.length * Integer.BYTES);
+            for (final int v : input.values) {
+                buf.putInt(v);
+            }
+            return buf.array();
+        }
+
+        @Override
+        public boolean isNullable() {
+            return true;
+        }
+
+        @Override
+        public int getPrecision() {
+            return 0;
+        }
+
+        @Override
+        public int getScale() {
+            return 0;
+        }
+
+        @Override
+        public WriteType decode(final byte[] input, final int offset, final int length) {
+            if (length == 0) {
+                return null;
+            }
+            final ByteBuffer buf = ByteBuffer.wrap(input, offset, length);
+            final int[] values = new int[length / Integer.BYTES];
+            for (int i = 0; i < values.length; i++) {
+                values[i] = buf.getInt();
+            }
+            return new WriteType(values);
+        }
+
+        @Override
+        public int expectedObjectWidth() {
+            return ObjectDecoder.VARIABLE_WIDTH_SENTINEL;
+        }
+    }
+
+    public static class ReadCodec implements ObjectCodec<long[]> {
+
+        @SuppressWarnings("unused")
+        public ReadCodec(final String args) {}
+
+        @Override
+        public byte[] encode(final long[] input) {
+            throw new IllegalStateException("Not intended for writing");
+        }
+
+        @Override
+        public boolean isNullable() {
+            return true;
+        }
+
+        @Override
+        public int getPrecision() {
+            return 0;
+        }
+
+        @Override
+        public int getScale() {
+            return 0;
+        }
+
+        @Override
+        public long[] decode(final byte[] input, final int offset, final int length) {
+            if (length == 0) {
+                return null;
+            }
+            final ByteBuffer buf = ByteBuffer.wrap(input, offset, length);
+            final long[] values = new long[length / Integer.BYTES];
+            for (int i = 0; i < values.length; i++) {
+                values[i] = -(long) buf.getInt();
+            }
+            return values;
+        }
+
+        @Override
+        public int expectedObjectWidth() {
+            return ObjectDecoder.VARIABLE_WIDTH_SENTINEL;
         }
     }
 

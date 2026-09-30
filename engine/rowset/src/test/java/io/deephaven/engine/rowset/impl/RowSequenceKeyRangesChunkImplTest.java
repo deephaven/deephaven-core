@@ -41,4 +41,47 @@ public class RowSequenceKeyRangesChunkImplTest extends RowSequenceTestBase {
             }
         }
     }
+
+    @Test
+    public void testGetNextThroughConsumedRegionIsEmpty() {
+        try (final RowSequence rs = RowSequenceFactory
+                .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, 5}))) {
+            try (final RowSequence.Iterator it = rs.getRowSequenceIterator()) {
+                final RowSequence first = it.getNextRowSequenceWithLength(3); // consumes 0..2
+                assertEquals(3, first.size());
+                // A max key inside the already-consumed part of the current range must yield EMPTY,
+                // not a corrupt (min > max) slice.
+                final RowSequence empty = it.getNextRowSequenceThrough(1);
+                assertTrue(empty.isEmpty());
+                assertEquals(0, empty.size());
+                assertEquals(3, it.peekNextKey());
+            }
+        }
+    }
+
+    @Test
+    public void testAdvanceHonorsMaxKey() {
+        try (final RowSequence rs = RowSequenceFactory
+                .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {10, 15}))) {
+            try (final RowSequence sub = rs.getRowSequenceByKeyRange(10, 12)) {
+                try (final RowSequence.Iterator it = sub.getRowSequenceIterator()) {
+                    // Advancing past the sub-sequence's max key exhausts it, even though the backing
+                    // chunk has more keys.
+                    assertFalse(it.advance(14));
+                    assertFalse(it.hasMore());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testFillRowKeyRangesChunkOnEmptySequence() {
+        try (final RowSequence rs = RowSequenceFactory
+                .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[0]))) {
+            try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(4)) {
+                rs.fillRowKeyRangesChunk(chunk);
+                assertEquals(0, chunk.size());
+            }
+        }
+    }
 }

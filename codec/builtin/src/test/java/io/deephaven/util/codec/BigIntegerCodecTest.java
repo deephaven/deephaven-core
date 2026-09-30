@@ -3,12 +3,14 @@
 //
 package io.deephaven.util.codec;
 
-import junit.framework.TestCase;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.math.BigInteger;
 
-public class BigIntegerCodecTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class BigIntegerCodecTest {
 
     private void roundTrip(final String args, final long value) {
         final BigInteger v = BigInteger.valueOf(value);
@@ -79,6 +81,7 @@ public class BigIntegerCodecTest extends TestCase {
         assertEquals(v1, null);
     }
 
+    @Test
     public void testVariableEncoding() {
         roundTrip("", 9);
         roundTrip("", 1);
@@ -87,6 +90,7 @@ public class BigIntegerCodecTest extends TestCase {
         roundTrip("", 1000000000);
     }
 
+    @Test
     public void testVariableEncodingNeg() {
         roundTrip("", -9);
         roundTrip("", -1);
@@ -94,10 +98,12 @@ public class BigIntegerCodecTest extends TestCase {
         roundTrip("", -1000000000);
     }
 
+    @Test
     public void testVariableNull() {
         expectNull("");
     }
 
+    @Test
     public void testFixedEncodeExact() {
         roundTrip("10", 0);
         roundTrip("10", 1);
@@ -107,10 +113,12 @@ public class BigIntegerCodecTest extends TestCase {
         roundTrip("10", 9999999999L);
     }
 
+    @Test
     public void testFixedEncodeWhiteSpaceArg() {
         roundTrip(" 10 ", 0);
     }
 
+    @Test
     public void testFixedEncodeExactNeg() {
         roundTrip("10", -1);
         roundTrip("10", -9);
@@ -119,22 +127,25 @@ public class BigIntegerCodecTest extends TestCase {
         roundTrip("10", -9999999999L);
     }
 
-
+    @Test
     public void testFixedNull() {
         expectNull("10");
         expectNull("1");
     }
 
+    @Test
     public void testFixedOverflow() {
         // we should get overflow exceptions if the value is too large
         expectIllegalArgumentException("5", 1111111);
     }
 
+    @Test
     public void testBadArg() {
         // scale not permissable for BigInteger codec
         expectIllegalArgumentException("5,5", 1);
     }
 
+    @Test
     public void testPrecisionLimits() {
         final int maxPrec = BigIntegerCodec.MAX_FIXED_PRECISION;
 
@@ -149,6 +160,7 @@ public class BigIntegerCodecTest extends TestCase {
         expectIllegalArgumentException("-1", 1111111);
     }
 
+    @Test
     public void testLargeValues() {
 
         final int maxPrec = BigIntegerCodec.MAX_FIXED_PRECISION;
@@ -163,6 +175,7 @@ public class BigIntegerCodecTest extends TestCase {
         roundTrip(Integer.toString(maxPrec), hugeNegativeInt.negate());
     }
 
+    @Test
     public void testVariableEncodingWithOffset() {
         expectNullWithOffset("", 3);
         roundTripWithOffset("", 9, 3);
@@ -172,6 +185,7 @@ public class BigIntegerCodecTest extends TestCase {
         roundTripWithOffset("", 1000000000, 3);
     }
 
+    @Test
     public void testFixedEncodeWithOffset() {
         expectNullWithOffset("10", 3);
         roundTripWithOffset("10", 0, 3);

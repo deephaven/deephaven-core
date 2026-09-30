@@ -1,6 +1,6 @@
 ---
 title: Configure the Deephaven production application
-sidebar_label: Production application
+sidebar_label: Configure the production application
 ---
 
 This guide provides detailed information about the Deephaven production application bootstrap configuration and startup process. The Deephaven production application is the recommended way to run Deephaven for any production application, hence its name. It runs Deephaven directly from artifacts produced during each new release. These artifacts can be found in the GitHub [releases page](https://github.com/deephaven/deephaven-core/releases), listed under assets.
@@ -13,10 +13,13 @@ This guide assumes familiarity with installing and running the Deephaven product
 
 | Package | Recommended version | Required version |
 | ------- | ------------------- | ---------------- |
-| java    | latest LTS          | >= 11            |
+| java    | latest LTS          | >= 17            |
 | python  | >=3.10              | >= 3.8           |
 
 The production application also requires Linux or Mac OS. Running on Windows requires Windows Subsystem for Linux v2 (WSL 2)[<sup>[1]</sup>](#footnotes).
+
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../../reference/community-questions/wsl2-clock-drift.md).
 
 ## Production application configuration
 

@@ -1,0 +1,1 @@
+{"file":"getting-started/crash-course/vectorization-vs-loops.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"},{"name":"XSquared","type":"int"},{"name":"XCubed","type":"int"}],"rows":[]}}}}

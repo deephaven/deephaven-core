@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.verify.TableAssertions;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -86,6 +87,14 @@ public class SortedColumnsAttribute {
     /**
      * Ensure that the result table is marked as sorted by the given column.
      *
+     * <p>
+     * <strong>Warning: this method performs no validation.</strong> If the column is not actually sorted in the
+     * declared order, range and match filters will silently return incorrect (missing or wrong) results with no error
+     * or warning. Prefer {@link TableAssertions#assertSorted} instead whenever possible — it validates the sort order
+     * at call time for static tables and re-validates on every update for refreshing tables. Only use this method when
+     * you have an external guarantee that the data is sorted and the validation cost of {@code assertSorted} is
+     * unacceptable.
+     *
      * @param table the table to update
      * @param columnName the column to update
      * @param order the order that the column is sorted in
@@ -99,6 +108,14 @@ public class SortedColumnsAttribute {
 
     /**
      * Ensure that the result table is marked as sorted by the given column.
+     *
+     * <p>
+     * <strong>Warning: this method performs no validation.</strong> If the column is not actually sorted in the
+     * declared order, range and match filters will silently return incorrect (missing or wrong) results with no error
+     * or warning. Prefer {@link TableAssertions#assertSorted} instead whenever possible — it validates the sort order
+     * at call time for static tables and re-validates on every update for refreshing tables. Only use this method when
+     * you have an external guarantee that the data is sorted and the validation cost of {@code assertSorted} is
+     * unacceptable.
      *
      * @param table the table to update
      * @param columnName the column to update

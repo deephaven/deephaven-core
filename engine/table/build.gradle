@@ -18,6 +18,7 @@ dependencies {
     api project(':engine-stringset')
     api project(':engine-base')
     api project(':engine-context')
+    api project(':engine-read-tracker')
     api project(':deephaven-jpy-ext')
     api project(':hotspot')
     api project(':IO')
@@ -40,9 +41,9 @@ dependencies {
     implementation libs.f4b6a3.uuid.creator
     // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
     implementation libs.tdunning.t.digest
-    implementation libs.squareup.javapoet
+    implementation libs.javapoet
     implementation libs.classgraph
-    implementation libs.dsi.fastutil
+    api libs.dsi.fastutil
 
     implementation project(':plugin')
     implementation libs.commons.lang3
@@ -82,8 +83,6 @@ dependencies {
     testImplementation project(':extensions-suanshu')
 
     testImplementation libs.junit4
-
-    testImplementation platform(libs.junit.bom)
     testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
@@ -102,7 +101,6 @@ spotless {
 test {
     //  For now, if you apply @Category(ParallelTest.class) to tests which are not huge CPU/RAM hogs, you can get parallelism
     //  If you have CPU/RAM-heavy tasks that you don't want gumming up :engine-table:test runs, apply @Category(SerialTest.class) instead
-    //  (note that the above only works for junit 4 tests; see the documentation on SerialTest class and others for porting instructions)
 
     def props = project.properties.subMap(["jpy.pythonLib", "jpy.jpyLib", "jpy.jdlLib"])
     systemProperties props
@@ -117,8 +115,8 @@ TestTools.addEngineParallelTest(project)
 TestTools.addEngineSerialTest(project)
 TestTools.addEngineOutOfBandTest(project)
 
-// If changing, be sure to update .github/scripts/print-gradle-workers-max.sh
-def maxHeapSize = findProperty('maxHeapSize') as String ?: '6g'
+// If changing, be sure to update PER_WORKER_BYTES in .github/scripts/gradle-properties.sh
+def maxHeapSize = findProperty('maxHeapSize') as String ?: '3500m'
 
 tasks.testParallel.maxHeapSize = maxHeapSize
 tasks.testSerial.maxHeapSize = maxHeapSize
@@ -136,3 +134,12 @@ jmhJar {
 // No need to assemble the jar by default on build
 // assemble.dependsOn(jmhJar)
 check.dependsOn(jmhClasses)
+
+tasks.register('checkAutoImportSync', JavaExec) {
+    group = 'verification'
+    description = 'Checks that auto-import documentation is in sync with QueryLibraryImportsDefaults'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.deephaven.engine.table.lang.impl.CheckAutoImportDocSync'
+    args = [rootProject.projectDir.path + '/docs']
+    dependsOn testClasses
+}

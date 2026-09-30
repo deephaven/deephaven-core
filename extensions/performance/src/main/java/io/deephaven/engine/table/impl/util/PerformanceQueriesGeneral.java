@@ -120,12 +120,14 @@ public class PerformanceQueriesGeneral {
                         // Average rate data is ticking at
                         "RowsPerSec = round(NRows / IntervalDurationNanos * 1.0e9)",
                         // Approximation of how fast CPU handles row changes
-                        "RowsPerCPUSec = round(NRows / UsageNanos * 1.0e9)");
+                        "RowsPerCPUSec = round(NRows / CpuNanos * 1.0e9)",
+                        // Approximation of how fast the operation handles row changes
+                        "RowsPerOpSec = round(NRows / UsageNanos * 1.0e9)");
 
         queryUpdatePerformance = maybeMoveColumnsUp(queryUpdatePerformance,
                 "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
                 "Ratio", "QueryMemUsed", "QueryMemUsedPct", "IntervalEndTime",
-                "RowsPerSec", "RowsPerCPUSec", "EntryDescription");
+                "RowsPerSec", "RowsPerCPUSec", "RowsPerOpSec", "EntryDescription");
 
         if (formatPctColumnsLocal && FORMAT_PCT_COLUMNS) {
             queryUpdatePerformance = formatColumnsAsPctUpdatePerformance(queryUpdatePerformance);

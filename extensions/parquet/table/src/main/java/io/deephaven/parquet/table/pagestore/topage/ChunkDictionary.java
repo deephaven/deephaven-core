@@ -3,13 +3,13 @@
 //
 package io.deephaven.parquet.table.pagestore.topage;
 
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.util.datastructures.SoftCachingSupplier;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.apache.parquet.column.Dictionary;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,7 +36,7 @@ public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet
     }
 
     private final Supplier<ObjectChunk<T, ATTR>> valuesSupplier;
-    private final Supplier<TObjectIntMap<T>> reverseMapSupplier;
+    private final Supplier<Object2IntMap<T>> reverseMapSupplier;
 
     /**
      * Construct a ChunkDictionary with the supplied {@link Lookup} function and {@link Dictionary} supplier
@@ -58,7 +58,7 @@ public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet
         });
         this.reverseMapSupplier = new SoftCachingSupplier<>(() -> {
             final ObjectChunk<T, ATTR> values = getChunk();
-            final TObjectIntMap<T> reverseMap = new TObjectIntHashMap<>(values.size());
+            final Object2IntMap<T> reverseMap = new Object2IntOpenHashMap<>(values.size());
             for (int vi = 0; vi < values.size(); ++vi) {
                 reverseMap.put(values.get(vi), vi);
             }
@@ -78,7 +78,7 @@ public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet
 
     @Override
     public final int rget(final int highestIndex, final T value) {
-        return reverseMapSupplier.get().get(value);
+        return reverseMapSupplier.get().getInt(value);
     }
 
     public final int length() {

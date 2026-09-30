@@ -7,10 +7,13 @@ services:
       dockerfile: ./pyclient.Dockerfile
       no_cache: true
       target: pypi-version
+      args:
+        - DEEPHAVEN_SERVER_IMAGE=${DEEPHAVEN_SERVER_IMAGE}
   # This is the server the snapshot tool uses
   # It is really used to run the pydeephaven client from the server Python environment
   server:
-    build: 
+    image: deephaven-server-pyclient
+    build:
       context: .
       dockerfile: ./pyclient.Dockerfile # Installs pydeephaven to the server
       target: server

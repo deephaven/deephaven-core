@@ -13,9 +13,10 @@ import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.MultiJoinFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -26,13 +27,13 @@ import org.junit.experimental.categories.Category;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.deephaven.engine.testutil.TstUtils.assertEquals;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.floatCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.newTable;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableFloatingPointZeroTest {
@@ -606,6 +607,46 @@ public class QueryTableFloatingPointZeroTest {
     }
 
     @Test
+    public void testDoubleFilters() {
+        final Table doubles =
+                newTable(doubleCol("X", 0.0, 1.0, 2.0, 3.0, 4.0, Double.NaN, -0.0), intCol("S", 0, 1, 2, 3, 4, 5, 6));
+        assertTableEquals(newTable(doubleCol("X", 0.0, -0.0), intCol("S", 0, 6)), doubles.where("X in 0.0"));
+        assertTableEquals(newTable(doubleCol("X", 0.0, -0.0), intCol("S", 0, 6)), doubles.where("X in -0.0"));
+        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, -0.0), intCol("S", 0, 1, 6)),
+                doubles.where("X in 0.0, 1.0"));
+        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, 2.0, -0.0), intCol("S", 0, 1, 2, 6)),
+                doubles.where("X in 0.0, 1.0, 2.0"));
+        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, 2.0, 3, -0.0), intCol("S", 0, 1, 2, 3, 6)),
+                doubles.where("X in 0.0, 1.0, 2.0, 3.0"));
+        final Table noZeros = newTable(doubleCol("X", 1.0, 2.0, 3.0, 4.0, Double.NaN), intCol("S", 1, 2, 3, 4, 5));
+        assertTableEquals(noZeros, doubles.where("X not in 0.0"));
+        assertTableEquals(noZeros, doubles.where("X not in -0.0"));
+        assertTableEquals(noZeros.where("S not in 1"), doubles.where("X not in 0.0, 1.0"));
+        assertTableEquals(noZeros.where("S not in 1, 2"), doubles.where("X not in 0.0, 1.0, 2.0"));
+        assertTableEquals(noZeros.where("S not in 1, 2, 3"), doubles.where("X not in 0.0, 1.0, 2.0, 3.0"));
+    }
+
+    @Test
+    public void testFloatFilters() {
+        final Table floats = newTable(floatCol("X", 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, Float.NaN, -0.0f),
+                intCol("S", 0, 1, 2, 3, 4, 5, 6));
+        assertTableEquals(newTable(floatCol("X", 0.0f, -0.0f), intCol("S", 0, 6)), floats.where("X in 0.0"));
+        assertTableEquals(newTable(floatCol("X", 0.0f, -0.0f), intCol("S", 0, 6)), floats.where("X in -0.0"));
+        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, -0.0f), intCol("S", 0, 1, 6)),
+                floats.where("X in 0.0, 1.0"));
+        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, 2.0f, -0.0f), intCol("S", 0, 1, 2, 6)),
+                floats.where("X in 0.0, 1.0, 2.0"));
+        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, 2.0f, 3f, -0.0f), intCol("S", 0, 1, 2, 3, 6)),
+                floats.where("X in 0.0, 1.0, 2.0, 3.0"));
+        final Table noZeros = newTable(floatCol("X", 1.0f, 2.0f, 3.0f, 4.0f, Float.NaN), intCol("S", 1, 2, 3, 4, 5));
+        assertTableEquals(noZeros, floats.where("X not in 0.0"));
+        assertTableEquals(noZeros, floats.where("X not in -0.0"));
+        assertTableEquals(noZeros.where("S not in 1"), floats.where("X not in 0.0, 1.0"));
+        assertTableEquals(noZeros.where("S not in 1, 2"), floats.where("X not in 0.0, 1.0, 2.0"));
+        assertTableEquals(noZeros.where("S not in 1, 2, 3"), floats.where("X not in 0.0, 1.0, 2.0, 3.0"));
+    }
+
+    @Test
     public void testWhereNotInFloatFilter() {
         final Table posZero = newTable(floatCol("X", 0.0f));
         final Table negZero = newTable(floatCol("X", -0.0f));
@@ -644,17 +685,17 @@ public class QueryTableFloatingPointZeroTest {
     }
 
     private static long oneKey(Table table) {
-        TestCase.assertEquals(1, table.size());
+        assertEquals(1, table.size());
         return table.getRowSet().firstRowKey();
     }
 
     private static void floatToBitsEquals(Table table, String column, long key, float expectedExact) {
         final float result = table.getColumnSource(column, float.class).getFloat(key);
-        TestCase.assertEquals(Float.floatToIntBits(expectedExact), Float.floatToIntBits(result));
+        assertEquals(Float.floatToIntBits(expectedExact), Float.floatToIntBits(result));
     }
 
     private static void doubleToBitsEquals(Table table, String column, long key, double expectedExact) {
         final double result = table.getColumnSource(column, double.class).getDouble(key);
-        TestCase.assertEquals(Double.doubleToLongBits(expectedExact), Double.doubleToLongBits(result));
+        assertEquals(Double.doubleToLongBits(expectedExact), Double.doubleToLongBits(result));
     }
 }

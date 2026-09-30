@@ -12,6 +12,9 @@ import io.deephaven.api.literal.Literal;
 import io.deephaven.base.Factory;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
@@ -30,6 +33,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.UnaryOperator;
 import java.util.stream.LongStream;
 
 /**
@@ -42,6 +48,9 @@ public class TestClockFilters {
     private Table testInput3;
 
     private StepClock clock;
+
+    /** Set by {@link #runIndexedSteps} -- whether {@code ClockFilter.filter()} actually ran. */
+    private boolean filterInitialized;
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
@@ -782,6 +791,35 @@ public class TestClockFilters {
         }
     }
 
+    @Test
+    public void testMissingColumn() {
+        final Table input = testInput1.dropColumns("Timestamp");
+        for (final ClockFilter filter : new ClockFilter[] {
+                new UnsortedClockFilter("Timestamp", clock, true),
+                new SortedClockFilter("Timestamp", clock, true)}) {
+            try {
+                input.where(filter);
+                fail("Expected NoSuchColumnException for clock filter on missing column");
+            } catch (NoSuchColumnException expected) {
+                assertTrue(expected.getMessage().contains("Timestamp"));
+            }
+        }
+    }
+
+    @Test
+    public void testWrongColumnType() {
+        for (final ClockFilter filter : new ClockFilter[] {
+                new UnsortedClockFilter("Int", clock, true),
+                new SortedClockFilter("Int", clock, true)}) {
+            try {
+                testInput1.where(filter);
+                fail("Expected ClassCastException for clock filter on non-Instant column");
+            } catch (ClassCastException expected) {
+                assertTrue(expected.getMessage().contains("Int"));
+            }
+        }
+    }
+
     /**
      * Reindexing filters will throw {@link UnsupportedOperationException} when added to composed filters or when
      * inverted. This test codifies that behavior to signal additional changes will bve required if this changes.
@@ -881,5 +919,110 @@ public class TestClockFilters {
             expected = expected.sort("Timestamp");
         }
         assertTableEquals(expected, result);
+    }
+
+    @Test
+    public void testUnsortedNarrowedTable() {
+        // Regression test for DH-23106: ClockFilter.init does not validate column presence, so an UnsortedClockFilter
+        // on a column that was narrowed away used to crash pushdown matcher selection with IndexOutOfBoundsException.
+        // The correct failure is a clear NoSuchColumnException from the filter's execution.
+        clock.reset();
+        final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
+        final Table narrowed = testInput1.view("Int");
+        try {
+            narrowed.where(filter);
+            fail("expected NoSuchColumnException");
+        } catch (Exception expected) {
+            final StringBuilder chain = new StringBuilder();
+            Throwable cause = expected;
+            while (cause != null && !(cause instanceof NoSuchColumnException)) {
+                chain.append(cause).append("; caused by ");
+                cause = cause.getCause();
+            }
+            assertNotNull("expected NoSuchColumnException in failure chain, but was: " + chain + "null", cause);
+        }
+    }
+
+    /**
+     * A clock filter must release rows as the clock advances whether or not a data index exists on the clock column.
+     * {@code ClockFilter.filter()} is load-bearing initialization, not a pure predicate: it assigns
+     * {@code nanosColumnSource} and builds the range state the per-cycle {@code run()} consumes. With a cached data
+     * index, pushdown could otherwise fully resolve the filter and never call {@code filter()} at all, leaving the
+     * refresh with nothing to work with; {@link ReindexingFilter#canPushdown()} keeps it out of pushdown.
+     */
+    @Test
+    public void testUnsortedIndexedReleasesRowsLikeUnindexed() {
+        final int[][] oracle = runIndexedSteps(false, UnaryOperator.identity());
+        assertTrue("sanity: without an index the clock filter's filter() runs", filterInitialized);
+
+        final int[][] actual = runIndexedSteps(true, UnaryOperator.identity());
+        assertTrue("ClockFilter.filter() is load-bearing initialization and must not be skipped by pushdown",
+                filterInitialized);
+
+        assertArrayEquals("initial result", oracle[0], actual[0]);
+        assertArrayEquals("after clock step 1", oracle[1], actual[1]);
+        assertArrayEquals("after clock step 2", oracle[2], actual[2]);
+    }
+
+    /**
+     * As {@link #testUnsortedIndexedReleasesRowsLikeUnindexed}, through a barrier wrapper that hides the
+     * {@link ReindexingFilter} type from the outer filter.
+     */
+    @Test
+    public void testUnsortedIndexedWithBarrierReleasesRowsLikeUnindexed() {
+        final UnaryOperator<WhereFilter> barrier = f -> f.withDeclaredBarriers("BARRIER");
+
+        final int[][] oracle = runIndexedSteps(false, barrier);
+        assertTrue("sanity: without an index the clock filter's filter() runs", filterInitialized);
+
+        final int[][] actual = runIndexedSteps(true, barrier);
+        assertTrue("a barrier wrapper must not make the load-bearing filter() skippable", filterInitialized);
+
+        assertArrayEquals("initial result", oracle[0], actual[0]);
+        assertArrayEquals("after clock step 1", oracle[1], actual[1]);
+        assertArrayEquals("after clock step 2", oracle[2], actual[2]);
+    }
+
+    /**
+     * Optionally indexes the clock column of {@code testInput1}, applies {@code wrapper} to a refreshing
+     * {@link UnsortedClockFilter}, and captures the {@code Int} column after the initial filter and after each of two
+     * clock steps. Mirrors {@link #testUnsorted1}, which without an index releases 6, then 12, then 18 rows.
+     */
+    private int[][] runIndexedSteps(final boolean withDataIndex, final UnaryOperator<WhereFilter> wrapper) {
+        clock.reset();
+        final boolean savedUseDataIndex = QueryTable.USE_DATA_INDEX_FOR_WHERE;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = withDataIndex;
+        try {
+            // UnsortedClockFilter does not require sorting, so where() applies it directly to this table -- the one
+            // we indexed. SortedClockFilter would instead sort+flatten internally, producing a fresh table that
+            // carries no data index, which quietly prevents the pushdown path from ever being reached.
+            if (withDataIndex) {
+                // where() only uses fully-populated indexes (WhereListener.extractFilterDataIndexMap checks
+                // tableIsCached()), so materialize it.
+                DataIndexer.getOrCreateDataIndex(testInput1, "Timestamp").table();
+            }
+
+            final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
+            final Table result = testInput1.where(wrapper.apply(filter));
+
+            final List<int[]> captured = new ArrayList<>();
+            // ClockFilter.filter() is its initialization: it assigns nanosColumnSource. If pushdown fully
+            // resolved the filter, the driver never called it and the per-cycle run() has nothing to work with.
+            filterInitialized = filter.nanosColumnSource != null;
+
+            captured.add(ColumnVectors.ofInt(result, "Int").toArray());
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            for (int step = 0; step < 2; step++) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    clock.run();
+                    filter.run();
+                });
+                captured.add(ColumnVectors.ofInt(result, "Int").toArray());
+            }
+            return captured.toArray(new int[0][]);
+        } finally {
+            QueryTable.USE_DATA_INDEX_FOR_WHERE = savedUseDataIndex;
+        }
     }
 }

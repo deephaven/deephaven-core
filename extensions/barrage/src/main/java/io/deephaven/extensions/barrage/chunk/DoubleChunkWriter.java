@@ -29,6 +29,9 @@ import java.util.function.Supplier;
 
 public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "DoubleChunkWriter";
+
+    // Number of elements encoded per bounded bulk-write window (see BaseChunkWriter#BULK_WRITE_BUFFER_BYTES).
+    private static final int BULK_WRITE_ELEMENTS = Math.max(1, BULK_WRITE_BUFFER_BYTES / Double.BYTES);
     private static final DoubleChunkWriter<DoubleChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new DoubleChunkWriter<>(
             null, DoubleChunk::getEmptyChunk, true);
     private static final DoubleChunkWriter<DoubleChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new DoubleChunkWriter<>(
@@ -89,26 +92,12 @@ public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends 
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
-        subset.forAllRowKeys(row -> {
-            if (doubleChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(doubleChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(doubleChunk.isNull((int) row)));
     }
 
     private class DoubleChunkInputStream extends BaseChunkInputStream<Context> {
@@ -145,16 +134,28 @@ public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends 
             // write the validity buffer
             bytesWritten += writeValidityBuffer(dos);
 
-            // write the payload buffer
+            // write the payload buffer in bounded windows, encoding each value into little-endian bytes (via
+            // LittleEndianCodec) and flushing a full window with a single bulk write rather than one DataOutput value,
+            // i.e. one individual byte write per byte of the value, at a time.
             final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
+            final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Double.BYTES];
+            final MutableInt bufferPos = new MutableInt(0);
             subset.forAllRowKeys(row -> {
-                try {
-                    dos.writeDouble(doubleChunk.get((int) row));
-                } catch (final IOException e) {
-                    throw new UncheckedDeephavenException(
-                            "Unexpected exception while draining data to OutputStream: ", e);
+                LittleEndianCodec.putDouble(buffer, bufferPos.get(), doubleChunk.get((int) row));
+                bufferPos.add(Double.BYTES);
+                if (bufferPos.get() == buffer.length) {
+                    try {
+                        outputStream.write(buffer, 0, buffer.length);
+                    } catch (final IOException e) {
+                        throw new UncheckedDeephavenException(
+                                "Unexpected exception while draining data to OutputStream: ", e);
+                    }
+                    bufferPos.set(0);
                 }
             });
+            if (bufferPos.get() > 0) {
+                outputStream.write(buffer, 0, bufferPos.get());
+            }
 
             bytesWritten += elementSize * subset.size();
             bytesWritten += writePadBuffer(dos, bytesWritten);

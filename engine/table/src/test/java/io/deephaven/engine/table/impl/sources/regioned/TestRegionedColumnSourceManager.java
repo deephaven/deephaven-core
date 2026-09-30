@@ -3,8 +3,10 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
+import io.deephaven.base.testing.JMockRule.Expectations;
+import io.deephaven.base.testing.JMockRule;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
@@ -13,6 +15,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
@@ -20,6 +24,10 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.qst.column.Column;
@@ -28,23 +36,31 @@ import org.jetbrains.annotations.Nullable;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.table.impl.locations.TableLocationState.NULL_SIZE;
 import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.REGION_CAPACITY_IN_ELEMENTS;
 import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link RegionedColumnSourceManager}.
  */
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase", "AutoBoxing", "unchecked",
-        "AnonymousInnerClassMayBeStatic"})
+@SuppressWarnings({"AutoBoxing", "unchecked", "AnonymousInnerClassMayBeStatic"})
 public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
 
     private static final int NUM_COLUMNS = 3;
     private static final int NUM_LOCATIONS = 4;
@@ -87,8 +103,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
+    private List<String[]>[] dataIndexColumnsByLocation;
     private int regionCount;
-    private TIntIntMap locationIndexToRegionIndex;
+    private Int2IntMap locationIndexToRegionIndex;
     private WritableRowSet expectedRowSet;
     private RowSet expectedAddedRowSet;
     private Map<String, WritableRowSet> expectedPartitioningColumnIndex;
@@ -102,7 +119,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        componentFactory = mock(RegionedTableComponentFactory.class);
+        componentFactory = jmock.mock(RegionedTableComponentFactory.class);
 
         partitioningColumnDefinition = ColumnDefinition.ofString("RCS_0").withPartitioning();
         groupingColumnDefinition = ColumnDefinition.ofString("RCS_1");
@@ -112,13 +129,13 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         tableDefinition = TableDefinition.of(columnDefinitions);
 
         columnSources = columnDefinitions.stream()
-                .map(cd -> mock(RegionedColumnSource.class, cd.getName()))
+                .map(cd -> jmock.mock(RegionedColumnSource.class, cd.getName()))
                 .toArray(RegionedColumnSource[]::new);
         partitioningColumnSource = columnSources[PARTITIONING_INDEX];
         groupingColumnSource = columnSources[GROUPING_INDEX];
         normalColumnSource = columnSources[NORMAL_INDEX];
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createRegionedColumnSource(with(any(RegionedColumnSourceManager.class)),
                         with(same(partitioningColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
@@ -138,8 +155,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         columnLocations = new ColumnLocation[NUM_LOCATIONS][NUM_COLUMNS];
         IntStream.range(0, NUM_LOCATIONS).forEach(li -> IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
-            final ColumnLocation cl = columnLocations[li][ci] = mock(ColumnLocation.class, "CL_" + li + '_' + ci);
-            checking(new Expectations() {
+            final ColumnLocation cl = columnLocations[li][ci] = jmock.mock(ColumnLocation.class, "CL_" + li + '_' + ci);
+            jmock.checking(new Expectations() {
                 {
                     allowing((cl)).getName();
                     will(returnValue(columnDefinitions.get(ci).getName()));
@@ -147,13 +164,20 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             });
         }));
 
+        // Initialize per-location data index columns to a single-entry list naming the grouping column,
+        // matching the original mock behavior. Individual tests can replace entries to exercise alternate
+        // returns (e.g., duplicates) before invoking initialize().
+        // noinspection unchecked
+        dataIndexColumnsByLocation = (List<String[]>[]) new List<?>[NUM_LOCATIONS];
+        Arrays.fill(dataIndexColumnsByLocation,
+                Collections.singletonList(new String[] {groupingColumnDefinition.getName()}));
         tableLocations = IntStream.range(0, NUM_LOCATIONS).mapToObj(li -> setUpTableLocation(li, ""))
                 .toArray(TableLocation[]::new);
         tableLocation0A = tableLocations[0];
         tableLocation1A = tableLocations[1];
         tableLocation0B = tableLocations[2];
         tableLocation1B = tableLocations[3];
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 for (final TableLocation tl : tableLocations) {
                     allowing(tl).tryRetainReference();
@@ -171,7 +195,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         lastSizes = new long[NUM_LOCATIONS];
         Arrays.fill(lastSizes, -1); // Not null size
         regionCount = 0;
-        locationIndexToRegionIndex = new TIntIntHashMap(4, 0.5f, -1, -1);
+        final Int2IntOpenHashMap tmpMap = new Int2IntOpenHashMap(4, 0.5f);
+        tmpMap.defaultReturnValue(-1);
+        locationIndexToRegionIndex = tmpMap;
         expectedRowSet = RowSetFactory.empty().toTracking();
         expectedAddedRowSet = RowSetFactory.empty();
         expectedPartitioningColumnIndex = new LinkedHashMap<>();
@@ -191,9 +217,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private TableLocation setUpTableLocation(final int li, @NotNull final String mockSuffix) {
         final String ip = Integer.toString(li % 2);
         final String cp = Character.toString((li / 2) == 0 ? 'A' : 'B');
-        final TableLocation tl = mock(TableLocation.class, "TL_" + ip + '_' + cp + mockSuffix);
+        final TableLocation tl = jmock.mock(TableLocation.class, "TL_" + ip + '_' + cp + mockSuffix);
         final ImmutableTableLocationKey tlk = makeTableKey(ip, cp);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 allowing(tl).getKey();
                 will(returnValue(tlk));
@@ -214,14 +240,23 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                     }
                 });
                 allowing(tl).getDataIndexColumns();
-                will(returnValue(Collections.singletonList((new String[] {groupingColumnDefinition.getName()}))));
+                will(new CustomAction("Return current data index columns for this location") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        return dataIndexColumnsByLocation[li];
+                    }
+                });
                 allowing(tl).hasDataIndex(groupingColumnDefinition.getName());
+                will(returnValue(true));
+                // Validating a registered multi-column MergedDataIndex (via DataIndexer.hasDataIndex during
+                // de-duplication) queries each location for the full key column set.
+                allowing(tl).hasDataIndex(groupingColumnDefinition.getName(), normalColumnDefinition.getName());
                 will(returnValue(true));
             }
         });
         IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
             final ColumnLocation cl = columnLocations[li][ci];
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     allowing((tl)).getColumnLocation(with(columnDefinitions.get(ci).getName()));
                     will(returnValue(cl));
@@ -252,11 +287,15 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     private void expectPoison() {
-        checking(new Expectations() {
+        expectPoison(3);
+    }
+
+    private void expectPoison(final int regionIndex) {
+        jmock.checking(new Expectations() {
             {
-                exactly(1).of(partitioningColumnSource).invalidateRegion(3);
-                exactly(1).of(groupingColumnSource).invalidateRegion(3);
-                exactly(1).of(normalColumnSource).invalidateRegion(3);
+                exactly(1).of(partitioningColumnSource).invalidateRegion(regionIndex);
+                exactly(1).of(groupingColumnSource).invalidateRegion(regionIndex);
+                exactly(1).of(normalColumnSource).invalidateRegion(regionIndex);
             }
         });
     }
@@ -277,7 +316,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 if (li % 2 == 0) {
                     // Even locations don't support subscriptions
                     if (newLocation) {
-                        checking(new Expectations() {
+                        jmock.checking(new Expectations() {
                             {
                                 oneOf(tl).supportsSubscriptions();
                                 will(returnValue(false));
@@ -289,7 +328,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                     // Odd locations do
                     if (subscriptionBuffers[li] == null) {
                         assertTrue(newLocation);
-                        checking(new Expectations() {
+                        jmock.checking(new Expectations() {
                             {
                                 oneOf(tl).supportsSubscriptions();
                                 will(returnValue(true));
@@ -311,7 +350,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 }
             } else {
                 if (newLocation) {
-                    checking(new Expectations() {
+                    jmock.checking(new Expectations() {
                         {
                             oneOf(tl).refresh();
                         }
@@ -327,7 +366,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 } else {
                     regionIndex = regionCount++;
                     locationIndexToRegionIndex.put(li, regionIndex);
-                    IntStream.range(0, NUM_COLUMNS).forEach(ci -> checking(new Expectations() {
+                    IntStream.range(0, NUM_COLUMNS).forEach(ci -> jmock.checking(new Expectations() {
                         {
                             oneOf(columnSources[ci]).addRegion(with(columnDefinitions.get(ci)),
                                     with(columnLocations[li][ci]));
@@ -358,7 +397,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     private void checkIndexes() {
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         if (capturedRowSet == null) {
             assertNull(expectedAddedRowSet);
         } else {
@@ -443,7 +482,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         try (final RowSet first = RowSetFactory.fromRange(0, 49);
                 final RowSet second = RowSetFactory.fromRange(50, 99);
                 final RowSet third = RowSetFactory.fromRange(50, REGION_CAPACITY_IN_ELEMENTS)) {
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
                 {
                     oneOf(tableLocation1A).getDataIndex(groupingColumnDefinition.getName());
                     will(returnValue(new DataIndexImpl(TableFactory.newTable(
@@ -513,6 +552,39 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         }
     }
 
+    /**
+     * Verify that {@link RegionedColumnSourceManager#initialize()} de-duplicates the data index columns returned by the
+     * first included {@link TableLocation}. A misbehaving location that lists the same key column set twice (for
+     * example, a Core+ Deephaven format location whose schema declares a column as both a grouping column and a
+     * single-column data index) must not cause {@code DataIndexer.addDataIndex} to throw on a redundant registration.
+     */
+    @Test
+    public void testStaticDeduplicatesDuplicateDataIndexColumns() {
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        Arrays.stream(tableLocations).forEach(SUT::addLocation);
+
+        // Only tableLocation1A is included (the others are NULL_SIZE), so it is unambiguously the only
+        // location consulted for data index columns. Have it report the same single-column data index twice,
+        // plus a multi-column index in two different orderings that share the same key column set.
+        dataIndexColumnsByLocation[1] = Arrays.asList(
+                new String[] {groupingColumnDefinition.getName()},
+                new String[] {groupingColumnDefinition.getName()},
+                new String[] {groupingColumnDefinition.getName(), normalColumnDefinition.getName()},
+                new String[] {normalColumnDefinition.getName(), groupingColumnDefinition.getName()});
+
+        setSizeExpectations(false, true, NULL_SIZE, 100, NULL_SIZE, NULL_SIZE);
+
+        // Initialize must not throw despite duplicate / set-equivalent entries.
+        captureIndexes(SUT.initialize());
+
+        // Exactly one MergedDataIndex should have been registered for the grouping column, despite the
+        // double entry in the returned list.
+        assertNotNull(capturedGroupingColumnIndex);
+        assertEquals(Collections.singletonList(tableLocation1A), SUT.includedLocations());
+    }
+
     @Test
     public void testStaticOverflow() {
         SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
@@ -525,7 +597,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with an overflow
         lastSizes[0] = REGION_CAPACITY_IN_ELEMENTS + 1;
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(tableLocation0A).refresh();
             }
@@ -689,7 +761,170 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         // expect table locations to be cleaned up via LivenessScope release as the test exits
         IntStream.range(0, tableLocations.length).forEachOrdered(li -> {
             final TableLocation tl = tableLocations[li];
-            checking(new Expectations() {
+            jmock.checking(new Expectations() {
+                {
+                    oneOf(tl).supportsSubscriptions();
+                    if (li % 2 == 0) {
+                        // Even locations don't support subscriptions
+                        will(returnValue(false));
+                    } else {
+                        will(returnValue(true));
+                        oneOf(tl).unsubscribe(with(subscriptionBuffers[li]));
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Regression test for a bug where the pushdown-filter helpers resolved a region's {@link TableLocation} by indexing
+     * {@code orderedIncludedTableLocations} with the region's stable, monotonically-increasing region index rather than
+     * a list position. Since that list is compacted whenever a location is removed, but region indices are never
+     * reused, an included location's region index can outgrow the list's size (yielding an
+     * {@link IndexOutOfBoundsException}) or land on the wrong entry (yielding a silently incorrect result).
+     */
+    @Test
+    public void testPushdownAfterLocationRemoval() {
+        SUT = new RegionedColumnSourceManager(true, true, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        // Check run with no locations. This establishes capturedPartitioningColumnIndex/capturedGroupingColumnIndex
+        // against the manager's persistent, tracking master RowSet, which checkIndexes() relies on for every
+        // subsequent refresh() (whose TableUpdate#added() is a plain, non-tracking per-cycle delta).
+        captureIndexes(SUT.initialize());
+        checkIndexes();
+
+        // Add and include all 4 locations: region indices 0, 1, 2, 3 in insertion order.
+        Arrays.stream(tableLocations).forEach(SUT::addLocation);
+        setSizeExpectations(true, true, 5, 1000, 5003, 2);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
+        checkIndexes();
+        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
+                SUT.includedLocations());
+
+        // Remove tableLocation0A (region index 0). orderedIncludedTableLocations compacts to size 3 (holding, in
+        // order, the entries for region indices 1, 2, and 3), but region index 0 is never reused. (Not using
+        // setSizeExpectations/checkIndexes here, since that harness has no notion of removal: re-supplying the
+        // unchanged sizes would incorrectly re-include region 0's rows in the expected row set/data index.)
+        expectPoison(0);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            SUT.removeLocationKey(tableLocation0A.getKey());
+            SUT.refresh();
+        });
+        jmock.assertIsSatisfied();
+        assertEquals(Arrays.asList(tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
+
+        final WhereFilter filter = WhereFilterFactory.getExpression("RCS_2 = `x`");
+        final PushdownFilterContext context = PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
+        final JobScheduler jobScheduler = new ImmediateJobScheduler();
+
+        // Region 3 (tableLocation1B, size 2) has the highest region index. Before the fix, resolving it via
+        // orderedIncludedTableLocations.get(3) throws IndexOutOfBoundsException, because that list was compacted to
+        // size 3 by the removal above.
+        try (final RowSet region3Selection = RowSetFactory.fromRange(
+                RegionedColumnSource.getFirstRowKey(3), RegionedColumnSource.getFirstRowKey(3) + 1)) {
+            jmock.checking(new Expectations() {
+                {
+                    oneOf(tableLocation1B).estimatePushdownFilterCost(
+                            with(same(filter)), with(any(RowSet.class)), with(false), with(same(context)),
+                            with(same(jobScheduler)), with(any(LongConsumer.class)), with(any(Consumer.class)));
+                    will(new CustomAction("complete cost") {
+                        @Override
+                        public Object invoke(final Invocation invocation) {
+                            ((LongConsumer) invocation.getParameter(5))
+                                    .accept(PushdownResult.REGION_METADATA_STATS_COST);
+                            return null;
+                        }
+                    });
+                }
+            });
+
+            final AtomicLong cost = new AtomicLong(-1);
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            SUT.estimatePushdownFilterCost(filter, region3Selection, false, context, jobScheduler, cost::set,
+                    error::set);
+
+            assertNull("estimatePushdownFilterCost for the highest-indexed region must not throw", error.get());
+            assertEquals(PushdownResult.REGION_METADATA_STATS_COST, cost.get());
+            jmock.assertIsSatisfied();
+        }
+
+        try (final RowSet region3Selection = RowSetFactory.fromRange(
+                RegionedColumnSource.getFirstRowKey(3), RegionedColumnSource.getFirstRowKey(3) + 1)) {
+            jmock.checking(new Expectations() {
+                {
+                    oneOf(tableLocation1B).pushdownFilter(
+                            with(same(filter)), with(any(RowSet.class)), with(false), with(same(context)),
+                            with(any(Long.class)), with(same(jobScheduler)), with(any(Consumer.class)),
+                            with(any(Consumer.class)));
+                    will(new CustomAction("complete pushdown") {
+                        @Override
+                        public Object invoke(final Invocation invocation) {
+                            final RowSet shiftedSelection = (RowSet) invocation.getParameter(1);
+                            // noinspection unchecked
+                            ((Consumer<PushdownResult>) invocation.getParameter(6))
+                                    .accept(PushdownResult.allMaybeMatch(shiftedSelection));
+                            return null;
+                        }
+                    });
+                }
+            });
+
+            final AtomicReference<PushdownResult> result = new AtomicReference<>();
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            SUT.pushdownFilter(filter, region3Selection, false, context, Long.MAX_VALUE, jobScheduler, result::set,
+                    error::set);
+
+            assertNull("pushdownFilter for the highest-indexed region must not throw", error.get());
+            assertNotNull(result.get());
+            assertRowSetEquals(region3Selection, result.get().maybeMatch());
+            result.get().close();
+            jmock.assertIsSatisfied();
+        }
+
+        // Region 1 (tableLocation1A, size 1000) sits at list position 0 in the post-removal
+        // orderedIncludedTableLocations, but list position 1 -- what its region index would incorrectly select --
+        // now holds tableLocation0B's entry. Before the fix, this silently queries the wrong location.
+        try (final RowSet region1Selection = RowSetFactory.fromRange(
+                RegionedColumnSource.getFirstRowKey(1), RegionedColumnSource.getFirstRowKey(1) + 999)) {
+            jmock.checking(new Expectations() {
+                {
+                    oneOf(tableLocation1A).pushdownFilter(
+                            with(same(filter)), with(any(RowSet.class)), with(false), with(same(context)),
+                            with(any(Long.class)), with(same(jobScheduler)), with(any(Consumer.class)),
+                            with(any(Consumer.class)));
+                    will(new CustomAction("complete pushdown") {
+                        @Override
+                        public Object invoke(final Invocation invocation) {
+                            final RowSet shiftedSelection = (RowSet) invocation.getParameter(1);
+                            // noinspection unchecked
+                            ((Consumer<PushdownResult>) invocation.getParameter(6))
+                                    .accept(PushdownResult.allMaybeMatch(shiftedSelection));
+                            return null;
+                        }
+                    });
+                }
+            });
+
+            final AtomicReference<PushdownResult> result = new AtomicReference<>();
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            SUT.pushdownFilter(filter, region1Selection, false, context, Long.MAX_VALUE, jobScheduler, result::set,
+                    error::set);
+
+            assertNull("pushdownFilter must query the location that actually owns the requested region",
+                    error.get());
+            assertNotNull(result.get());
+            assertRowSetEquals(region1Selection, result.get().maybeMatch());
+            result.get().close();
+            jmock.assertIsSatisfied();
+        }
+
+        // expect the still-included table locations to be cleaned up via LivenessScope release as the test exits.
+        // tableLocation0A (li=0) was removed above, so it is no longer tracked by the manager and does not go
+        // through this cleanup path.
+        IntStream.range(1, tableLocations.length).forEachOrdered(li -> {
+            final TableLocation tl = tableLocations[li];
+            jmock.checking(new Expectations() {
                 {
                     oneOf(tl).supportsSubscriptions();
                     if (li % 2 == 0) {

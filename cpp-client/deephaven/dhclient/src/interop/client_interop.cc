@@ -708,7 +708,7 @@ void deephaven_client_TableHandle_ToArrowTable(
     NativePtr<ArrowTableSpWrapper> *result,
     ErrorStatus *status) {
   status->Run([=]() {
-    auto at = self->ToArrowTable();
+    auto at = self->ToArrowTable(true);
     result->Reset(new ArrowTableSpWrapper(std::move(at)));
   });
 }

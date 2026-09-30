@@ -22,7 +22,8 @@ public static class ChunkMaker {
     IColumnSourceVisitor<IStringColumnSource>,
     IColumnSourceVisitor<IDateTimeOffsetColumnSource>,
     IColumnSourceVisitor<IDateOnlyColumnSource>,
-    IColumnSourceVisitor<ITimeOnlyColumnSource> {
+    IColumnSourceVisitor<ITimeOnlyColumnSource>,
+    IColumnSourceVisitor<IListColumnSource> {
     public Chunk? Result { get; private set; }
 
     public void Visit(ICharColumnSource cs) => Make(cs);
@@ -37,6 +38,7 @@ public static class ChunkMaker {
     public void Visit(IDateTimeOffsetColumnSource cs) => Make(cs);
     public void Visit(IDateOnlyColumnSource cs) => Make(cs);
     public void Visit(ITimeOnlyColumnSource cs) => Make(cs);
+    public void Visit(IListColumnSource cs) => Make(cs);
 
     public void Visit(IColumnSource cs) {
       throw new Exception($"Assertion failed: No visitor for type {Utility.FriendlyTypeName(cs.GetType())}");

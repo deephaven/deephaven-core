@@ -27,6 +27,7 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.util.Utils;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +44,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private static final AtomicLongFieldUpdater<InstrumentedTableListenerBase> LAST_ENQUEUED_STEP_UPDATER =
             AtomicLongFieldUpdater.newUpdater(InstrumentedTableListenerBase.class, "lastEnqueuedStep");
 
-    private static final Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
+    private static Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
 
     private final UpdateGraph updateGraph;
     private final String description;
@@ -84,6 +85,19 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     public static boolean setVerboseLogging(boolean enableVerboseLogging) {
         boolean original = InstrumentedTableListenerBase.verboseLogging;
         InstrumentedTableListenerBase.verboseLogging = enableVerboseLogging;
+        return original;
+    }
+
+    /**
+     * Replace the logger that reports listener failures, so that a test can inspect what is logged.
+     *
+     * @param newLog the logger to use
+     * @return the previous logger, which the test should restore
+     */
+    @TestUseOnly
+    static synchronized Logger setLoggerForUnitTests(@NotNull final Logger newLog) {
+        final Logger original = log;
+        log = newLog;
         return original;
     }
 
@@ -174,6 +188,48 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         onFailureInternal(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
+    /**
+     * Log an exception that escaped this listener's processing of {@code update}, identifying the listener by its
+     * description (or by its full performance entry when verbose logging is enabled).
+     * <p>
+     * Listeners that complete their update asynchronously (e.g., on a
+     * {@link io.deephaven.engine.table.impl.util.JobScheduler JobScheduler}) must call this themselves before
+     * {@link #onFailure(Throwable, Entry) failing}, because the exception does not propagate out of {@code onUpdate}.
+     *
+     * @param e the exception
+     * @param update the update being processed when the exception occurred
+     */
+    protected final void logUncaughtException(@NotNull final Exception e, @NotNull final TableUpdate update) {
+        final LogEntry en = log.error().append("Uncaught exception for entry ");
+
+        final boolean useVerboseLogging = verboseLogging;
+        if (useVerboseLogging) {
+            en.append(entry);
+        } else {
+            if (entry != null) {
+                en.append("id=").append(entry.getId()).append(" ");
+            }
+            en.append(description);
+        }
+
+        en.append(", added.size()=").append(update.added().size())
+                .append(", modified.size()=").append(update.modified().size())
+                .append(", removed.size()=").append(update.removed().size())
+                .append(", shifted.size()=").append(update.shifted().size())
+                .append(", modifiedColumnSet=").append(update.modifiedColumnSet().toString())
+                .append(":\n").append(e).endl();
+
+        if (useVerboseLogging) {
+            // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
+            // clear what is actually going on in some cases of assertion failure related to the indices.
+            log.error().append("InstrumentedTableListenerBase is: ").append(this.toString()).endl();
+            log.error().append("Added: ").append(update.added().toString()).endl();
+            log.error().append("Modified: ").append(update.modified().toString()).endl();
+            log.error().append("Removed: ").append(update.removed().toString()).endl();
+            log.error().append("Shifted: ").append(update.shifted().toString()).endl();
+        }
+    }
+
     protected abstract void onFailureInternal(Throwable originalException, @Nullable Entry sourceEntry);
 
     protected final void onFailureInternalWithDependent(
@@ -188,9 +244,11 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 AsyncClientErrorNotifier.reportError(originalException);
             }
         } catch (IOException e) {
-            throw new UncheckedTableException(
+            final UncheckedTableException uncheckedTableException = new UncheckedTableException(
                     "Exception while delivering async client error notification for " + sourceEntry.toString(),
                     originalException);
+            uncheckedTableException.addSuppressed(e);
+            throw uncheckedTableException;
         }
     }
 
@@ -335,34 +393,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 beforeRunNotification(currentStep);
                 invokeOnUpdate.run();
             } catch (Exception e) {
-                final LogEntry en = log.error().append("Uncaught exception for entry ");
-
-                final boolean useVerboseLogging = verboseLogging;
-                if (useVerboseLogging) {
-                    en.append(entry);
-                } else {
-                    if (entry != null) {
-                        en.append("id=").append(entry.getId()).append(" ");
-                    }
-                    en.append(description);
-                }
-
-                en.append(", added.size()=").append(update.added().size())
-                        .append(", modified.size()=").append(update.modified().size())
-                        .append(", removed.size()=").append(update.removed().size())
-                        .append(", shifted.size()=").append(update.shifted().size())
-                        .append(", modifiedColumnSet=").append(update.modifiedColumnSet().toString())
-                        .append(":\n").append(e).endl();
-
-                if (useVerboseLogging) {
-                    // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
-                    // clear what is actually going on in some cases of assertion failure related to the indices.
-                    log.error().append("InstrumentedTableListenerBase is: ").append(this.toString()).endl();
-                    log.error().append("Added: ").append(update.added().toString()).endl();
-                    log.error().append("Modified: ").append(update.modified().toString()).endl();
-                    log.error().append("Removed: ").append(update.removed().toString()).endl();
-                    log.error().append("Shifted: ").append(update.shifted().toString()).endl();
-                }
+                logUncaughtException(e, update);
 
                 // If the table has an error, we should cease processing further updates.
                 failed = true;

@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.Table;
@@ -43,12 +44,76 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
     void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
+    /**
+     * Add left rows to their key's slots, storing each row's right redirection (by position) in
+     * {@code leftRedirections}.
+     *
+     * @param bc the build context
+     * @param leftIndex the left rows to add
+     * @param leftSources the left key sources
+     * @param leftRedirections receives the right row key (or {@link RowSequence#NULL_ROW_KEY}) of each row, by position
+     * @param modifiedSlotTracker the tracker, whose per-slot builders accumulate the added keys of each slot
+     * @param addedToTable whether the rows were added to the left table this cycle, as opposed to rows that were
+     *        present before this cycle and whose key value changed; only rows added to the table are counted by the
+     *        tracker as rows whose right values need no reporting
+     */
     void addLeftSide(final Context bc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
-            LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            boolean addedToTable);
 
-    void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources);
+    void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
-    void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta);
+    /**
+     * Move the left rows of one shift range within their slots' left row sets.
+     *
+     * @param pc the probe context
+     * @param leftSources the left key sources
+     * @param shiftedRowSet the post-shift row keys of the shifted left rows
+     * @param shiftDelta the shift range's delta
+     * @param modifiedSlotTracker the tracker, whose per-slot builders accumulate the shifted keys of each slot
+     */
+    void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta,
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+
+    /**
+     * In a single pass over the modified left rows, determine which rows' key value actually changed (by comparing the
+     * current key values at the post-shift row keys with the previous key values at the pre-shift row keys), remove
+     * those changed rows from their previous-key hash slots, and report the changed keys. Rows whose key value is
+     * unchanged are collapsed away entirely, so the caller avoids the hash lookups and per-key row set churn of
+     * removing and re-adding them. The previous key values are read only once: the same values used for the equality
+     * test are reused to drive the removal.
+     *
+     * @param leftSources the left key sources
+     * @param modifiedPreShift the modified rows, in pre-shift key space, aligned positionally with
+     *        {@code modifiedPostShift}
+     * @param modifiedPostShift the modified rows, in post-shift key space
+     * @param changedPreShift output, ascending, receives the pre-shift keys whose key value changed, aligned with
+     *        {@code changedPostShift} (for the caller's redirection removal)
+     * @param changedPostShift output, ascending, receives the post-shift keys whose key value changed (to be re-added
+     *        by the caller)
+     */
+    void removeLeftModifications(ColumnSource<?>[] leftSources, RowSet modifiedPreShift, RowSet modifiedPostShift,
+            RowSetBuilderSequential changedPreShift, RowSetBuilderSequential changedPostShift,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+
+    /**
+     * The right-side counterpart of {@link #removeLeftModifications}: in a single pass over the modified right rows,
+     * determine which rows' key value actually changed, remove those rows from their previous-key hash slots, and
+     * report the changed keys. Rows whose key value is unchanged keep their slot.
+     *
+     * @param rightSources the right key sources
+     * @param modifiedPreShift the modified rows, in pre-shift key space, aligned positionally with
+     *        {@code modifiedPostShift}
+     * @param modifiedPostShift the modified rows, in post-shift key space
+     * @param changedPreShift output, ascending, receives the pre-shift keys whose key value changed (to be excluded
+     *        from the caller's shift processing)
+     * @param changedPostShift output, ascending, receives the post-shift keys whose key value changed (to be re-added
+     *        by the caller)
+     */
+    void removeRightModifications(ColumnSource<?>[] rightSources, RowSet modifiedPreShift, RowSet modifiedPostShift,
+            RowSetBuilderSequential changedPreShift, RowSetBuilderSequential changedPostShift,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     interface InitialBuildContext extends Context {
     }

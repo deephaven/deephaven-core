@@ -7,12 +7,15 @@
 // @formatter:off
 package io.deephaven.base.ringbuffer;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class TestAggregatingByteRingBuffer extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestAggregatingByteRingBuffer {
 
     private void assertEmpty(AggregatingByteRingBuffer rb) {
         assertTrue(rb.isEmpty());
@@ -33,6 +36,7 @@ public class TestAggregatingByteRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testLargeAmounts() {
         final AggregatingByteRingBuffer rb = new AggregatingByteRingBuffer(3, (byte) 0, (a, b) -> (byte) (a + b));
 
@@ -55,6 +59,7 @@ public class TestAggregatingByteRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMinLargeAmounts() {
         final AggregatingByteRingBuffer rb =
                 new AggregatingByteRingBuffer(3, Byte.MAX_VALUE, (a, b) -> (byte) Math.min(a, b));
@@ -71,6 +76,7 @@ public class TestAggregatingByteRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMaxLargeAmounts() {
         final AggregatingByteRingBuffer rb =
                 new AggregatingByteRingBuffer(3, Byte.MIN_VALUE, (a, b) -> (byte) Math.max(a, b));
@@ -91,6 +97,7 @@ public class TestAggregatingByteRingBuffer extends TestCase {
     // Tests removed due to limitations of byte storage
     // endregion non-byte-tests
 
+    @Test
     public void testPushPopUnsafe() {
         final AggregatingByteRingBuffer rb =
                 new AggregatingByteRingBuffer(3, (byte) -Byte.MAX_VALUE, (a, b) -> (byte) Math.max(a, b));
@@ -123,6 +130,7 @@ public class TestAggregatingByteRingBuffer extends TestCase {
         assertEquals((byte) 99, rb.evaluate()); // last value added is max
     }
 
+    @Test
     public void testPopMultiple() {
         final AggregatingByteRingBuffer rb = new AggregatingByteRingBuffer(3, (byte) 0, (a, b) -> (byte) (a + b));
 
@@ -151,6 +159,7 @@ public class TestAggregatingByteRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingByteRingBuffer rb = new AggregatingByteRingBuffer(4, (byte) 0, (a, b) -> (byte) (a + b));
@@ -161,6 +170,7 @@ public class TestAggregatingByteRingBuffer extends TestCase {
         assertEquals((byte) 5, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseB() {
         // push the full capacity while wrapped
         final AggregatingByteRingBuffer rb = new AggregatingByteRingBuffer(64, (byte) 0, (a, b) -> (byte) (a + b));
@@ -173,6 +183,7 @@ public class TestAggregatingByteRingBuffer extends TestCase {
         assertEquals((byte) 64, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseC() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingByteRingBuffer rb = new AggregatingByteRingBuffer(16, (byte) 0, (a, b) -> (byte) (a + b));

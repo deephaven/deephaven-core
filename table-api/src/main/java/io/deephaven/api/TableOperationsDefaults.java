@@ -179,11 +179,17 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
                 JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)));
     }
 
+    @Override
+    default TOPS join(TABLE rightTable, String columnsToMatch, String columnsToAdd, int reserveBits) {
+        return join(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
+                JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)), reserveBits);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch) {
-        final List<String> matches = splitToList(columnsToMatch);
+        final List<String> matches = splitAsOfJoinMatches("aj", columnsToMatch);
         return asOfJoin(
                 rightTable,
                 JoinMatch.from(matches.subList(0, matches.size() - 1)),
@@ -193,7 +199,7 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        final List<String> matches = splitToList(columnsToMatch);
+        final List<String> matches = splitAsOfJoinMatches("aj", columnsToMatch);
         return asOfJoin(
                 rightTable,
                 JoinMatch.from(matches.subList(0, matches.size() - 1)),
@@ -205,7 +211,7 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch) {
-        final List<String> matches = splitToList(columnsToMatch);
+        final List<String> matches = splitAsOfJoinMatches("raj", columnsToMatch);
         return asOfJoin(
                 rightTable,
                 JoinMatch.from(matches.subList(0, matches.size() - 1)),
@@ -215,7 +221,7 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        final List<String> matches = splitToList(columnsToMatch);
+        final List<String> matches = splitAsOfJoinMatches("raj", columnsToMatch);
         return asOfJoin(
                 rightTable,
                 JoinMatch.from(matches.subList(0, matches.size() - 1)),
@@ -775,5 +781,13 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
                         .collect(Collectors.toList());
+    }
+
+    private static List<String> splitAsOfJoinMatches(String operation, String columnsToMatch) {
+        final List<String> matches = splitToList(columnsToMatch);
+        if (matches.isEmpty()) {
+            throw new IllegalArgumentException(operation + "() requires at least one column to match!");
+        }
+        return matches;
     }
 }

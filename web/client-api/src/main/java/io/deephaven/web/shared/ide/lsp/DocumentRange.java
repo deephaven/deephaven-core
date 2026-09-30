@@ -9,9 +9,21 @@ import jsinterop.base.JsPropertyMap;
 
 import java.io.Serializable;
 
+/**
+ * A range within a text document.
+ * <p>
+ * This is a JS-exposed model type ({@code dh.lsp.Range}) that closely follows the Language Server Protocol range shape.
+ */
 @JsType(namespace = "dh.lsp", name = "Range")
 public class DocumentRange implements Serializable {
+    /**
+     * The start position of the range.
+     */
     public Position start;
+
+    /**
+     * The end position of the range.
+     */
     public Position end;
 
     public DocumentRange() {}
@@ -131,6 +143,13 @@ public class DocumentRange implements Serializable {
         end.character--;
     }
 
+    /**
+     * Checks whether the provided range is contained within this range.
+     *
+     * @param innerStart the start position to check
+     * @param innerEnd the end position to check
+     * @return {@code true} if the provided range is inside this range
+     */
     public boolean isInside(Position innerStart, Position innerEnd) {
         return innerStart.line >= start.line && innerStart.character >= start.character
                 && innerEnd.line <= end.line && innerEnd.character <= end.character;

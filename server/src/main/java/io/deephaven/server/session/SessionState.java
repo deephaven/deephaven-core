@@ -8,7 +8,9 @@ import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;
+import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -47,6 +49,7 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +60,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
-import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
 
@@ -89,6 +91,13 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
  * </ul>
  */
 public class SessionState {
+    private static final TimestampBuffer millisFormatter = new TimestampBuffer(ZoneId.systemDefault());
+    /**
+     * Formats long millis from epoch based on the default timezone
+     */
+    LogOutput.LongFormatter MILLIS_FROM_EPOCH_FORMATTER =
+            (logOutput, millis) -> logOutput.append(millisFormatter.getTimestamp(millis));
+
     // Some work items will be dependent on other exports, but do not export anything themselves.
     public static final int NON_EXPORT_ID = 0;
 
@@ -175,13 +184,9 @@ public class SessionState {
      */
     @VisibleForTesting
     protected void initializeExpiration(@NotNull final SessionService.TokenExpiration expiration) {
-        if (expiration.session != this) {
-            throw new IllegalArgumentException("mismatched session for expiration token");
-        }
-
-        if (!EXPIRATION_UPDATER.compareAndSet(this, null, expiration)) {
-            throw new IllegalStateException("session already initialized");
-        }
+        Assert.eq(expiration.session, "expiration.session", this, "this");
+        Assert.assertion(EXPIRATION_UPDATER.compareAndSet(this, null, expiration),
+                "EXPIRATION_UPDATER.compareAndSet(this, null, expiration)", "session already initialized");
 
         log.debug().append(logPrefix)
                 .append("token initialized to '").append(expiration.token.toString())
@@ -196,9 +201,7 @@ public class SessionState {
      */
     @VisibleForTesting
     protected void updateExpiration(@NotNull final SessionService.TokenExpiration expiration) {
-        if (expiration.session != this) {
-            throw new IllegalArgumentException("mismatched session for expiration token");
-        }
+        Assert.eq(expiration.session, "expiration.session", this, "this");
 
         SessionService.TokenExpiration prevToken = this.expiration;
         while (prevToken != null) {
@@ -355,6 +358,26 @@ public class SessionState {
         // noinspection unchecked
         final ExportObject<T> result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
         result.setResult(export);
+        return result;
+    }
+
+    /**
+     * Create and export a pre-computed failure element.
+     *
+     * @param failure the result of the export
+     * @return the ExportObject for this item for ease of access to the export
+     */
+    public ExportObject<Void> newFailedServerSideExport(final Exception failure) {
+        if (isExpired()) {
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        }
+
+        final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
+
+        // noinspection unchecked
+        final ExportObject<Void> result =
+                (ExportObject<Void>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+        result.setCaughtException(failure);
         return result;
     }
 
@@ -1117,6 +1140,36 @@ public class SessionState {
                             manage((LivenessReferent) result);
                         }
                         setState(ExportNotification.State.EXPORTED);
+                    }
+                }
+            } finally {
+                dropReference();
+            }
+        }
+
+        /**
+         * Sets the final result for this export.
+         *
+         * @param exception the exception this export failed with
+         */
+        private void setCaughtException(final Exception exception) {
+            if (this.result != null || this.caughtException != null) {
+                throw new IllegalStateException("cannot set result/exception twice!");
+            }
+
+            // result is cleared on destroy; so don't set if it won't be called
+            if (!tryRetainReference()) {
+                return;
+            }
+
+            try {
+                synchronized (this) {
+                    // client may race a cancel with setCaughtException
+                    if (!isExportStateTerminal(state)) {
+                        // assign an error id (and log the failure) so that consumers of this export report a coherent
+                        // error rather than treating the FAILED state as unexpected; mirrors doExport's failure path
+                        maybeAssignErrorId(exception, null, ExportNotification.State.FAILED);
+                        setState(ExportNotification.State.FAILED);
                     }
                 }
             } finally {

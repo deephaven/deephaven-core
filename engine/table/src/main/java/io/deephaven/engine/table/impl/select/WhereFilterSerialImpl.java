@@ -21,6 +21,11 @@ public class WhereFilterSerialImpl extends WhereFilterDelegatingBase {
         super(filter);
     }
 
+    @Override
+    public WhereFilter maybeUnwrapFilter() {
+        return WhereFilterDelegating.maybeUnwrapFilter(filter);
+    }
+
     /**
      * Always returns {@code false} to indicate that parallelization is not permitted.
      *

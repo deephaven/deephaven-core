@@ -1,0 +1,181 @@
+/* Deephaven color palette
+   Scales run 100 (darkest / most saturated) -> 1100 (lightest).
+   Values taken from the official brand reference at
+   https://deephaven.io/company/brand/ */
+:root {
+  /* Primary — deep indigo/blue (brand core) */
+  --dh-primary-100: #031155;
+  --dh-primary-200: #011569;
+  --dh-primary-300: #001a7e;
+  --dh-primary-400: #001e94;
+  --dh-primary-500: #0121aa;
+  --dh-primary-600: #0625c0;
+  --dh-primary-700: #2439cb;
+  --dh-primary-800: #384cd6;
+  --dh-primary-900: #495ee0;
+  --dh-primary-1000: #596fe9;
+  --dh-primary-1100: #6a81f2;
+
+  /* Secondary — cyan / teal */
+  --dh-secondary-100: #1f454f;
+  --dh-secondary-200: #35636f;
+  --dh-secondary-300: #4d8391;
+  --dh-secondary-400: #65a4b4;
+  --dh-secondary-500: #7fc6d9;
+  --dh-secondary-600: #99eaff;
+  --dh-secondary-700: #a9edff;
+  --dh-secondary-800: #b9f1ff;
+  --dh-secondary-900: #c8f4ff;
+  --dh-secondary-1000: #d7f7ff;
+  --dh-secondary-1100: #e5faff;
+
+  /* Negative — red / magenta (errors, sell, down) */
+  --dh-negative-100: #7a0d28;
+  --dh-negative-200: #911534;
+  --dh-negative-300: #a91d40;
+  --dh-negative-400: #c1254c;
+  --dh-negative-500: #da2e59;
+  --dh-negative-600: #f33666;
+  --dh-negative-700: #f54a72;
+  --dh-negative-800: #f65a7d;
+  --dh-negative-900: #f76989;
+  --dh-negative-1000: #f87694;
+  --dh-negative-1100: #f883a0;
+
+  /* Positive — green (success, buy, up) */
+  --dh-positive-100: #28780d;
+  --dh-positive-200: #348f15;
+  --dh-positive-300: #3fa71d;
+  --dh-positive-400: #4cc025;
+  --dh-positive-500: #58d92e;
+  --dh-positive-600: #65f336;
+  --dh-positive-700: #72f549;
+  --dh-positive-800: #7ef758;
+  --dh-positive-900: #89f966;
+  --dh-positive-1000: #93fa72;
+  --dh-positive-1100: #9dfc7e;
+
+  /* Warn — amber / gold */
+  --dh-warn-100: #997915;
+  --dh-warn-200: #ac8a1e;
+  --dh-warn-300: #c09b27;
+  --dh-warn-400: #d4ac2f;
+  --dh-warn-500: #e8be38;
+  --dh-warn-600: #fdd041;
+  --dh-warn-700: #fdd455;
+  --dh-warn-800: #fed966;
+  --dh-warn-900: #fedd75;
+  --dh-warn-1000: #ffe183;
+  --dh-warn-1100: #ffe590;
+
+  /* Info — purple / magenta */
+  --dh-info-100: #792989;
+  --dh-info-200: #8d2c9d;
+  --dh-info-300: #a22fb2;
+  --dh-info-400: #b732c7;
+  --dh-info-500: #cd34dd;
+  --dh-info-600: #e336f3;
+  --dh-info-700: #e64df4;
+  --dh-info-800: #e960f6;
+  --dh-info-900: #eb70f7;
+  --dh-info-1000: #ee7ff8;
+  --dh-info-1100: #f08df9;
+
+  /* Foreground — dark navy neutrals (text, chrome) */
+  --dh-fg-100: #010930;
+  --dh-fg-200: #131b3d;
+  --dh-fg-300: #252a4b;
+  --dh-fg-400: #373a59;
+  --dh-fg-500: #484a68;
+  --dh-fg-600: #5a5c76;
+  --dh-fg-700: #6c6d85;
+  --dh-fg-800: #7e8095;
+  --dh-fg-900: #9193a4;
+  --dh-fg-1000: #a4a6b4;
+  --dh-fg-1100: #b8bac4;
+
+  /* Background — cool grays */
+  --dh-bg-100: #9ba0a4;
+  --dh-bg-200: #a7acb0;
+  --dh-bg-300: #b4b9bc;
+  --dh-bg-400: #c0c5c9;
+  --dh-bg-500: #cdd2d5;
+  --dh-bg-600: #dadfe2;
+  --dh-bg-700: #dfe4e7;
+  --dh-bg-800: #e4e9ec;
+  --dh-bg-900: #e9edf0;
+  --dh-bg-1000: #eef2f5;
+  --dh-bg-1100: #f3f7fa;
+
+  /* Logo accents — expressed in the brand scales.
+     *-text variants are the darkest step that clears WCAG AA (4.5:1)
+     on the light surfaces these diagrams use; the base steps are the
+     nearest brand match and are for lines, borders and fills only. */
+  --dh-logo-indigo: var(--dh-primary-800);
+  --dh-logo-cyan: var(--dh-secondary-500);
+  --dh-logo-cyan-text: var(--dh-secondary-200);
+  --dh-logo-red: var(--dh-negative-600);
+  --dh-logo-red-text: var(--dh-negative-400);
+  --dh-logo-yellow: var(--dh-warn-600);
+  --dh-white: #ffffff;
+  --dh-black: #000000;
+
+  /* ===== Semantic aliases — LIGHT surface (default) ===== */
+  --dh-accent: var(--dh-primary-600);
+  --dh-accent-hover: var(--dh-primary-500);
+  --dh-accent-active: var(--dh-primary-400);
+  --dh-accent-contrast: var(--dh-white);
+
+  --dh-surface-page: var(--dh-bg-1100);
+  --dh-surface-card: var(--dh-white);
+  --dh-surface-sunken: var(--dh-bg-1000);
+  --dh-surface-raised: var(--dh-white);
+  --dh-surface-hover: var(--dh-bg-1000);
+
+  --dh-border: var(--dh-bg-500);
+  --dh-border-strong: var(--dh-bg-300);
+  --dh-border-focus: var(--dh-primary-700);
+
+  --dh-text-primary: var(--dh-fg-100);
+  --dh-text-secondary: var(--dh-fg-500);
+  --dh-text-muted: var(--dh-fg-800);
+  --dh-text-inverse: var(--dh-white);
+  --dh-text-link: var(--dh-primary-600);
+  --dh-text-link-hover: var(--dh-primary-400);
+
+  --dh-status-positive: var(--dh-positive-200);
+  --dh-status-negative: var(--dh-negative-400);
+  --dh-status-warn: var(--dh-warn-200);
+  --dh-status-info: var(--dh-info-300);
+}
+
+/* ===== Dark surface — Deephaven's default IDE/console theme =====
+   Apply on any subtree with data-theme="dark". */
+[data-theme="dark"] {
+  --dh-accent: var(--dh-primary-900);
+  --dh-accent-hover: var(--dh-primary-1000);
+  --dh-accent-active: var(--dh-primary-800);
+  --dh-accent-contrast: var(--dh-white);
+
+  --dh-surface-page: var(--dh-fg-100);
+  --dh-surface-card: var(--dh-fg-200);
+  --dh-surface-sunken: #05081f;
+  --dh-surface-raised: var(--dh-fg-300);
+  --dh-surface-hover: var(--dh-fg-300);
+
+  --dh-border: var(--dh-fg-400);
+  --dh-border-strong: var(--dh-fg-500);
+  --dh-border-focus: var(--dh-primary-1000);
+
+  --dh-text-primary: var(--dh-bg-1100);
+  --dh-text-secondary: var(--dh-fg-1000);
+  --dh-text-muted: var(--dh-fg-800);
+  --dh-text-inverse: var(--dh-fg-100);
+  --dh-text-link: var(--dh-secondary-600);
+  --dh-text-link-hover: var(--dh-secondary-700);
+
+  --dh-status-positive: var(--dh-positive-600);
+  --dh-status-negative: var(--dh-negative-700);
+  --dh-status-warn: var(--dh-warn-600);
+  --dh-status-info: var(--dh-info-700);
+}

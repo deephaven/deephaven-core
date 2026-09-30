@@ -39,6 +39,14 @@ public final class PushdownResult implements SafeCloseable {
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableSingleValueColumnCost", 5_000L);
 
     /**
+     * Binary searches sorted data at the Table-level.
+     * <p>
+     * Complexity/access: O(log(rows)) / In-Memory or Storage Data, resolves "yes", "no"
+     */
+    public static final long TABLE_SORTED_DATA_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableSortedDataCost", 7_500L);
+
+    /**
      * Filters an already-materialized Table-level index.
      * <p>
      * Complexity/access: O(rows / 4) / In-Memory Data, resolves "yes", "no"
@@ -168,6 +176,25 @@ public final class PushdownResult implements SafeCloseable {
     public static PushdownResult noneMatch(@SuppressWarnings("unused") @NotNull final RowSet selection) {
         try (final WritableRowSet empty = RowSetFactory.empty()) {
             return copy(empty, empty);
+        }
+    }
+
+    /**
+     * Constructs a new result with {@code match} as {@link #match() match} and no {@link #maybeMatch() maybeMatch}, so
+     * that no residual filter runs over the selection. Semantically equivalent to
+     * {@code of(selection, match, RowSetFactory.empty())}, but this method is preferred over that case as the caller
+     * need not create and close the empty row set. {@code match} must be a subset of {@code selection}, and
+     * {@code selection} must be the {@code selection} from
+     * {@link PushdownFilterMatcher#pushdownFilter(WhereFilter, RowSet, boolean, PushdownFilterContext, long, JobScheduler, Consumer, Consumer)}.
+     *
+     * @param selection the selection
+     * @param match rows that match, a subset of {@code selection}
+     * @return the result
+     * @see #of(RowSet, RowSet, RowSet)
+     */
+    public static PushdownResult exactMatch(@NotNull final RowSet selection, @NotNull final RowSet match) {
+        try (final WritableRowSet empty = RowSetFactory.empty()) {
+            return of(selection, match, empty);
         }
     }
 

@@ -3,8 +3,8 @@
 //
 package io.deephaven.engine.table.impl.hierarchical;
 
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
@@ -172,8 +172,9 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
         private final KeyedLongObjectHashMap<NodeTableState> nodeTableStates =
                 new KeyedLongObjectHashMap<>(new NodeTableStateIdKey());
 
-        private final TIntObjectMap<ChunkSource.FillContext[]> perLevelFillContextArrays = new TIntObjectHashMap<>();
-        private final TIntObjectMap<SharedContext> perLevelSharedContexts = new TIntObjectHashMap<>();
+        private final Int2ObjectMap<ChunkSource.FillContext[]> perLevelFillContextArrays =
+                new Int2ObjectOpenHashMap<>();
+        private final Int2ObjectMap<SharedContext> perLevelSharedContexts = new Int2ObjectOpenHashMap<>();
 
         // region Per-snapshot parameters and state
         private BitSet columns;

@@ -143,6 +143,20 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return filter.getColumnArrays();
     }
 
+    @Override
+    public boolean hasVirtualRowVariables() {
+        if (filter == null) {
+            throw new IllegalStateException("Filter must be initialized to invoke hasVirtualRowVariables");
+        }
+        return filter.hasVirtualRowVariables();
+    }
+
+    @Override
+    public boolean canPushdown() {
+        // The real filter is not visible to a walk of the filter tree, so answer for it here.
+        return filter == null || filter.canPushdown();
+    }
+
     @VisibleForTesting
     public WhereFilter getRealFilter() {
         return filter;
@@ -271,6 +285,22 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         // The underlying filter may be a ConditionFilter
         if (filter instanceof ExposesChunkFilter) {
             return ((ExposesChunkFilter) filter).chunkFilter();
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Return an {@link Optional} containing the underlying {@link AbstractRangeFilter} if the provided filter is a
+     * range filter that can be pushed down (i.e. is not implemented by a ConditionFilter). Otherwise returns
+     * {@code Optional.empty()}.
+     */
+    public static Optional<AbstractRangeFilter> extractRangeFilter(WhereFilter filter) {
+        if (filter instanceof RangeFilter
+                && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
+            return Optional.of((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter());
+        }
+        if (filter instanceof AbstractRangeFilter) {
+            return Optional.of((AbstractRangeFilter) filter);
         }
         return Optional.empty();
     }

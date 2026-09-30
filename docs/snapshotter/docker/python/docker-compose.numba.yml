@@ -1,0 +1,10 @@
+services:
+  # Build the server image with NumPy pinned below 2.5 so the Numba examples
+  # can import and run (Numba does not support NumPy 2.5).
+  server:
+    image: deephaven-server-numba
+    build:
+      context: .
+      dockerfile: ./numba.Dockerfile
+      args:
+        - DEEPHAVEN_SERVER_IMAGE=${DEEPHAVEN_SERVER_IMAGE}

@@ -4,7 +4,7 @@
 package io.deephaven.util.datastructures.hash;
 
 public abstract class HashMapK4V4 extends HashMapBase {
-    HashMapK4V4(int desiredInitialCapacity, float loadFactor, long noEntryValue) {
+    HashMapK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
     }
 
@@ -16,7 +16,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
         return putImplNoTranslate(kvs, fixedKey, value, insertOnly);
     }
 
-    protected final long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly) {
+    final long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly) {
         // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         int location = getLocationFor(kvs, key);
         if (location >= 0) {
@@ -50,31 +50,31 @@ public abstract class HashMapK4V4 extends HashMapBase {
             rehash(kvs, wantResize, 4);
         }
 
-        return noEntryValue;
+        return defaultReturnValue();
     }
 
     final long getImpl(long[] kvs, long key) {
         if (kvs == null) {
-            return noEntryValue;
+            return defaultReturnValue();
         }
         key = fixKey(key);
         // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         final int location = getLocationFor(kvs, key);
         if (location < 0) {
-            return noEntryValue;
+            return defaultReturnValue();
         }
         return kvs[location + 1];
     }
 
     final long removeImpl(long[] kvs, long key) {
         if (kvs == null) {
-            return noEntryValue;
+            return defaultReturnValue();
         }
         key = fixKey(key);
         // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         final int location = getLocationFor(kvs, key);
         if (location < 0) {
-            return noEntryValue;
+            return defaultReturnValue();
         }
         --size;
         kvs[location] = SPECIAL_KEY_FOR_DELETED_SLOT;

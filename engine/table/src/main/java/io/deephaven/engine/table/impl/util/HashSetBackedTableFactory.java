@@ -12,14 +12,14 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import gnu.trove.iterator.TObjectLongIterator;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.map.TLongLongMap;
-import gnu.trove.map.TLongObjectMap;
-import gnu.trove.map.TObjectLongMap;
-import gnu.trove.map.hash.TLongLongHashMap;
-import gnu.trove.map.hash.TLongObjectHashMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.tuple.ArrayTuple;
 
@@ -45,13 +45,14 @@ public class HashSetBackedTableFactory {
 
     private final UpdateGraph updateGraph;
 
-    private final TObjectLongMap<ArrayTuple> valueToIndexMap = new TObjectLongHashMap<>();
-    private final TLongObjectMap<ArrayTuple> indexToValueMap = new TLongObjectHashMap<>();
+    // valueToIndexMap is declared as the concrete impl because we use object2LongEntrySet().fastIterator()
+    private final Object2LongOpenHashMap<ArrayTuple> valueToIndexMap = new Object2LongOpenHashMap<>();
+    private final Long2ObjectMap<ArrayTuple> indexToValueMap = new Long2ObjectOpenHashMap<>();
 
-    private final TLongObjectMap<ArrayTuple> indexToPreviousMap = new TLongObjectHashMap<>();
-    private final TLongLongMap indexToPreviousClock = new TLongLongHashMap();
+    private final Long2ObjectMap<ArrayTuple> indexToPreviousMap = new Long2ObjectOpenHashMap<>();
+    private final Long2LongMap indexToPreviousClock = new Long2LongOpenHashMap();
     private long lastIndex = 0;
-    private final TLongArrayList freeSet = new TLongArrayList();
+    private final LongArrayList freeSet = new LongArrayList();
     private TrackingWritableRowSet rowSet;
 
     private HashSetBackedTableFactory(Supplier<HashSet<ArrayTuple>> setGenerator, int refreshIntervalMs,
@@ -103,11 +104,13 @@ public class HashSetBackedTableFactory {
         HashSet<ArrayTuple> valueSet = setGenerator.get();
 
         synchronized (this) {
-            for (TObjectLongIterator<ArrayTuple> it = valueToIndexMap.iterator(); it.hasNext();) {
-                it.advance();
-                ArrayTuple key = it.key();
+            final ObjectIterator<Object2LongMap.Entry<ArrayTuple>> it =
+                    valueToIndexMap.object2LongEntrySet().fastIterator();
+            while (it.hasNext()) {
+                final Object2LongMap.Entry<ArrayTuple> entry = it.next();
+                final ArrayTuple key = entry.getKey();
                 if (!valueSet.contains(key)) {
-                    removeValue(it, removedBuilder);
+                    removeValue(it, entry, removedBuilder);
                 }
             }
 
@@ -119,11 +122,14 @@ public class HashSetBackedTableFactory {
         }
     }
 
-    private void removeValue(TObjectLongIterator<ArrayTuple> vtiIt, RowSetBuilderRandom removedBuilder) {
-        long index = vtiIt.value();
+    private void removeValue(
+            ObjectIterator<Object2LongMap.Entry<ArrayTuple>> vtiIt,
+            Object2LongMap.Entry<ArrayTuple> entry,
+            RowSetBuilderRandom removedBuilder) {
+        long index = entry.getLongValue();
 
         // record the old value for get prev
-        indexToPreviousMap.put(index, vtiIt.key());
+        indexToPreviousMap.put(index, entry.getKey());
         vtiIt.remove();
 
         indexToPreviousClock.put(index, updateGraph.clock().currentStep());
@@ -138,8 +144,7 @@ public class HashSetBackedTableFactory {
         if (freeSet.isEmpty()) {
             newIndex = lastIndex++;
         } else {
-            newIndex = freeSet.get(freeSet.size() - 1);
-            freeSet.remove(freeSet.size() - 1, 1);
+            newIndex = freeSet.removeLong(freeSet.size() - 1);
         }
         addedBuilder.addKey(newIndex);
         valueToIndexMap.put(value, newIndex);

@@ -3,9 +3,9 @@
 //
 package io.deephaven.engine.table.impl.by.typed;
 
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterSpec;
+import com.palantir.javapoet.CodeBlock;
+import com.palantir.javapoet.MethodSpec;
+import com.palantir.javapoet.ParameterSpec;
 import groovyjarjarantlr4.v4.runtime.misc.NotNull;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
@@ -33,6 +33,13 @@ public class HasherConfig<T> {
     final Consumer<CodeBlock.Builder> rehashFullSetup;
     final boolean includeOriginalSources;
     final boolean supportRehash;
+    /**
+     * If non-null, a reference to a static {@code int} constant: a partial rehash examines up to that many alternate
+     * slots for each entry it is asked to rehash, rather than continuing until that many live entries have moved. If
+     * null, it moves live entries. The generated code refers to the constant, so that the hasher and the code that
+     * sizes its tables for that rate cannot disagree.
+     */
+    final CodeBlock rehashSlotsPerEntry;
     final List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods;
     final List<ParameterSpec> extraPartialRehashParameters;
     final List<ProbeSpec> probes;
@@ -45,6 +52,7 @@ public class HasherConfig<T> {
             boolean alwaysMoveMain,
             boolean includeOriginalSources,
             boolean supportRehash,
+            CodeBlock rehashSlotsPerEntry,
             String mainStateName,
             String overflowOrAlternateStateName,
             String emptyStateName,
@@ -67,6 +75,7 @@ public class HasherConfig<T> {
         this.alwaysMoveMain = alwaysMoveMain;
         this.includeOriginalSources = includeOriginalSources;
         this.supportRehash = supportRehash;
+        this.rehashSlotsPerEntry = rehashSlotsPerEntry;
         this.mainStateName = mainStateName;
         this.overflowOrAlternateStateName = overflowOrAlternateStateName;
         this.emptyStateName = emptyStateName;
@@ -172,6 +181,7 @@ public class HasherConfig<T> {
         private boolean supportTombstones = false;
         private boolean openAddressedAlternate = true;
         private boolean alwaysMoveMain = false;
+        private CodeBlock rehashSlotsPerEntry = null;
         private boolean includeOriginalSources = false;
         private boolean supportRehash = true;
         private String mainStateName;
@@ -214,6 +224,20 @@ public class HasherConfig<T> {
 
         public Builder<T> supportTombstones(boolean supportTombstones) {
             this.supportTombstones = supportTombstones;
+            return this;
+        }
+
+        /**
+         * Bound each partial rehash by the alternate slots it examines, at the rate the named constant gives. The
+         * generated code refers to the constant, so a hasher whose constant is missing or is not an {@code int} fails
+         * to compile.
+         *
+         * @param owner the class that declares the constant
+         * @param constantName the name of a static {@code int} field of {@code owner}, which must be positive
+         * @return this builder
+         */
+        public Builder<T> rehashSlotsPerEntry(final Class<?> owner, final String constantName) {
+            this.rehashSlotsPerEntry = CodeBlock.of("$T.$L", owner, constantName);
             return this;
         }
 
@@ -310,7 +334,7 @@ public class HasherConfig<T> {
 
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle,
                     openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash,
-                    mainStateName,
+                    rehashSlotsPerEntry, mainStateName,
                     overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
                     stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
                     builds, extraMethods, extraConstructorParameters);

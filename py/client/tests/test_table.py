@@ -225,6 +225,13 @@ class TableTestCase(BaseTestCase):
         result_table = left_table.join(right_table, joins=["e"])
         self.assertTrue(result_table.size > left_table.size)
 
+        result_table = left_table.join(
+            right_table, on=["a"], joins=["e"], reserve_bits=2
+        )
+        self.assertTrue(result_table.size < left_table.size)
+        result_table = left_table.join(right_table, joins=["e"], reserve_bits=2)
+        self.assertTrue(result_table.size > left_table.size)
+
     def test_as_of_join(self):
         tt_left = self.session.time_table(period=100000).update(formulas=["Col1=i"])
         tt_right = self.session.time_table(period=200000).update(formulas=["Col1=i"])

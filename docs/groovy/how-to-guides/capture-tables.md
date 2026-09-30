@@ -119,6 +119,76 @@ local_t_static = my_barrage_session.snapshot(ticket.bytes)
 
 Voila! You now have _real_ Deephaven server tables called `local_t_streaming` and `local_t_static`. These are not just references to Deephaven tables - they are _real_ Deephaven server tables that can be used in any Deephaven query.
 
+## Subscription lifecycle management
+
+Understanding when and how to manage Barrage subscriptions helps you build efficient, reliable applications.
+
+### Choose between subscribe and snapshot
+
+Use **subscribe** when:
+
+- You need real-time updates as the source table changes.
+- You're building a live dashboard or monitoring system.
+- The source table is ticking (updating periodically).
+
+Use **snapshot** when:
+
+- You need a one-time, static copy of the data.
+- The source table is static and won't change.
+- You want to capture a point-in-time state for analysis.
+- You need to reduce ongoing resource consumption.
+
+### Subscription resource usage
+
+Each active subscription consumes resources on both the server and client:
+
+| Resource | Server Impact                                    | Client Impact                                     |
+| -------- | ------------------------------------------------ | ------------------------------------------------- |
+| Memory   | Maintains subscriber state and pending updates   | Stores table data and applies incremental updates |
+| CPU      | Aggregates and serializes updates per subscriber | Deserializes and processes incoming updates       |
+| Network  | Sends periodic update batches to each subscriber | Receives and buffers incoming data                |
+
+For tables with frequent updates or many subscribers, these costs can add up. Monitor subscription health using the [Barrage performance tables](./performance/barrage-performance.md).
+
+### Close subscriptions when finished
+
+When you no longer need real-time updates, close the Barrage session to release resources:
+
+```python skip-test
+# Close the session when done
+my_barrage_session.close()
+```
+
+If you need to keep the session open for other subscriptions but want to release a specific table, you can drop the reference to the subscribed table. However, the underlying subscription may remain active until the session is closed.
+
+### Handle connection issues
+
+Barrage subscriptions can be affected by network interruptions. Consider these patterns for production applications:
+
+- **Reconnection**: If the session disconnects, you'll need to create a new `barrage_session` and resubscribe. The remote table must still be published to the same shared ticket.
+
+- **Ticket lifetime**: Shared tickets remain valid as long as the publishing session is active. If the publishing session closes, the ticket becomes invalid and subscribers will lose their connection.
+
+- **Authentication expiry**: If using authenticated connections, ensure tokens or credentials remain valid for the duration of long-running subscriptions.
+
+### Memory considerations for large tables
+
+When subscribing to large ticking tables:
+
+- **Initial snapshot size**: The first update contains a complete snapshot of the table. For very large tables, this can consume significant memory. The server breaks large snapshots into chunks by default (see [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size)).
+
+- **Incremental updates**: After the initial snapshot, only changed rows are transmitted. This is typically much smaller than the full table.
+
+- **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage. (Note: this is distinct from viewports, which define a scrollable window over row positions.)
+
+```python skip-test
+# On the remote server: filter before publishing
+filtered_ref = client_session.open_table("large_table").where("Region = `EAST`")
+client_session.publish_table(ticket, filtered_ref)
+
+# The subscriber now receives only the filtered data
+```
+
 ## Related documentation
 
 <!--- TODO: link https://github.com/deephaven/deephaven.io/issues/3918 when complete.-->

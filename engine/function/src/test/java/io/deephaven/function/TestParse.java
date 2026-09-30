@@ -4,13 +4,15 @@
 package io.deephaven.function;
 
 import io.deephaven.base.verify.Require;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import static io.deephaven.function.Parse.*;
 import static io.deephaven.util.QueryConstants.*;
+import static org.junit.Assert.*;
 
-public class TestParse extends TestCase {
+public class TestParse {
 
+    @Test
     public void testParseByte() {
         Require.eq(parseByte(null), "parseByte(null)", NULL_BYTE);
         Require.eq(parseByte("20"), "parseByte(\"20\")", 20);
@@ -26,6 +28,7 @@ public class TestParse extends TestCase {
         Require.eq(parseByte("20", 10), "parseByte(\"20\", 10)", (short) 20);
     }
 
+    @Test
     public void testParseShort() {
         Require.eq(parseShort(null), "parseShort(null)", NULL_SHORT);
         Require.eq(parseShort("20"), "parseShort(\"20\")", 20);
@@ -41,6 +44,7 @@ public class TestParse extends TestCase {
         Require.eq(parseShort("20", 10), "parseShort(\"20\", 10)", (short) 20);
     }
 
+    @Test
     public void testParseInt() {
         Require.eq(parseInt(null), "parseInt(null)", NULL_INT);
         Require.eq(parseInt("1000000"), "parseInt(\"1000000\")", 1_000_000);
@@ -56,6 +60,7 @@ public class TestParse extends TestCase {
         Require.eq(parseInt("1000000", 10), "parseInt(\"1_000_000\", 10)", 1_000_000);
     }
 
+    @Test
     public void testParseUnsignedInt() {
         Require.eq(parseUnsignedInt(null), "parseUnsignedInt(null)", NULL_INT);
         Require.eq(parseUnsignedInt("1000000"), "parseUnsignedInt(\"1000000\")", 1_000_000);
@@ -77,6 +82,7 @@ public class TestParse extends TestCase {
         Require.eq(parseUnsignedInt("1000000", 10), "parseUnsignedInt(\"1_000_000\", 10)", 1_000_000);
     }
 
+    @Test
     public void testParseLong() {
         Require.eq(parseLong(null), "parseLong(null)", NULL_LONG);
         Require.eq(parseLong("4000000000"), "parseLong(\"4000000000\")", 4_000_000_000L);
@@ -92,6 +98,7 @@ public class TestParse extends TestCase {
         Require.eq(parseLong("20", 10), "parseLong(\"20\", 10)", 20);
     }
 
+    @Test
     public void testParseUnsignedLong() {
         Require.eq(parseUnsignedLong(null), "parseUnsignedLong(null)", NULL_LONG);
         Require.eq(parseUnsignedLong("4000000000"), "parseUnsignedLong(\"4000000000\")", 4_000_000_000L);
@@ -114,6 +121,7 @@ public class TestParse extends TestCase {
         Require.eq(parseUnsignedLong("4000000000", 10), "parseUnsignedLong(\"4_000_000_000\", 10)", 4_000_000_000L);
     }
 
+    @Test
     public void testParseDouble() {
         Require.eq(parseDouble(null), "parseDouble(null)", NULL_DOUBLE);
         Require.eq(parseDouble("0.000000001"), "parseDouble(\"0.000000001\")", 0.000000001d);
@@ -125,6 +133,7 @@ public class TestParse extends TestCase {
         }
     }
 
+    @Test
     public void testParseFloat() {
         Require.eq(parseFloat(null), "parseFloat(null)", NULL_FLOAT);
         Require.eq(parseFloat("0.000000001"), "parseFloat(\"0.000000001\")", 0.000000001f);
@@ -136,6 +145,7 @@ public class TestParse extends TestCase {
         }
     }
 
+    @Test
     public void testParseBoolean() {
         Require.eq(parseBoolean(null), "parseBoolean(null)", NULL_BOOLEAN);
         Require.eq(parseBoolean("true"), "parseBoolean(\"true\")", Boolean.TRUE);

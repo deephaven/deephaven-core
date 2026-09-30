@@ -4,10 +4,10 @@
 package io.deephaven.engine.table.impl.sort.partition;
 
 import io.deephaven.chunk.WritableLongChunk;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 import java.util.Random;
 
@@ -20,7 +20,7 @@ class PartitionUtils {
             final long seed, final RowSet rowSet, final int sampleSize,
             final WritableLongChunk<RowKeys> sampledKeys) {
         final Random random = new Random(seed);
-        final TLongHashSet sample = new TLongHashSet(sampleSize);
+        final LongOpenHashSet sample = new LongOpenHashSet(sampleSize);
         final long maxValue = rowSet.size();
         final long initialValue = (maxValue - sampleSize) + 1;
 
@@ -40,15 +40,9 @@ class PartitionUtils {
         }
 
         // using the java array sort or our own timsort would be nice, though it is only suitable for parallel arrays
-        final TLongArrayList array = new TLongArrayList(sampleSize);
-        sample.forEach(key -> {
-            array.add(rowSet.get(key - 1));
-            return true;
-        });
-        array.sort();
-        array.forEach(key -> {
-            sampledKeys.add(key);
-            return true;
-        });
+        final LongArrayList array = new LongArrayList(sampleSize);
+        sample.forEach((long key) -> array.add(rowSet.get(key - 1)));
+        array.sort(null);
+        array.forEach((long key) -> sampledKeys.add(key));
     }
 }

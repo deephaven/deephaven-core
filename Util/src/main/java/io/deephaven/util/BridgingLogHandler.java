@@ -87,7 +87,8 @@ public final class BridgingLogHandler extends Handler {
                     if (pending == null) {
                         pending = new ArrayList<>();
                         if (flushPendingOnShutdown) {
-                            Runtime.getRuntime().addShutdownHook(new Thread(BridgingLogHandler::pushPendingToStdout));
+                            Runtime.getRuntime().addShutdownHook(new Thread(BridgingLogHandler::pushPendingToStdout,
+                                    "BridgingLogHandlerShutdownHook"));
                         }
                     }
                     pending.add(new PendingLogRecord(

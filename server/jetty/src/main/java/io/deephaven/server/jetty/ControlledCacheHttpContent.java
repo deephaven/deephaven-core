@@ -57,10 +57,4 @@ public class ControlledCacheHttpContent extends HttpContent.Wrapper {
         // Always return -1, so that we don't get the build system timestamp.
         return Instant.ofEpochMilli(-1);
     }
-
-    @Override
-    public String getLastModifiedValue() {
-        Instant lm = getLastModifiedInstant();
-        return DateGenerator.formatDate(lm);
-    }
 }

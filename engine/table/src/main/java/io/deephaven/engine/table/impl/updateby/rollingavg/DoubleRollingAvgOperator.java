@@ -19,7 +19,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
     private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;

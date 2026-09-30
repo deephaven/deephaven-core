@@ -7,8 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.engine.table.MatchOptions;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 
 /**
  * Creates chunk filters for int values.
@@ -138,10 +139,10 @@ public class IntChunkMatchFilterFactory {
     }
 
     private final static class MultiValueIntChunkFilter extends IntChunkFilter {
-        private final TIntHashSet values;
+        private final IntSet values;
 
         private MultiValueIntChunkFilter(int... values) {
-            this.values = new TIntHashSet(values);
+            this.values = new IntOpenHashSet(values);
         }
 
         @Override
@@ -151,10 +152,10 @@ public class IntChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueIntChunkFilter extends IntChunkFilter {
-        private final TIntHashSet values;
+        private final IntSet values;
 
         private InverseMultiValueIntChunkFilter(int... values) {
-            this.values = new TIntHashSet(values);
+            this.values = new IntOpenHashSet(values);
         }
 
         @Override

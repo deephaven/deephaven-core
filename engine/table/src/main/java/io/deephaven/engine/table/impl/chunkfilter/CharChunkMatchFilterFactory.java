@@ -3,8 +3,9 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TCharHashSet;
 import io.deephaven.engine.table.MatchOptions;
+import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import it.unimi.dsi.fastutil.chars.CharSet;
 
 /**
  * Creates chunk filters for char values.
@@ -134,10 +135,10 @@ public class CharChunkMatchFilterFactory {
     }
 
     private final static class MultiValueCharChunkFilter extends CharChunkFilter {
-        private final TCharHashSet values;
+        private final CharSet values;
 
         private MultiValueCharChunkFilter(char... values) {
-            this.values = new TCharHashSet(values);
+            this.values = new CharOpenHashSet(values);
         }
 
         @Override
@@ -147,10 +148,10 @@ public class CharChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueCharChunkFilter extends CharChunkFilter {
-        private final TCharHashSet values;
+        private final CharSet values;
 
         private InverseMultiValueCharChunkFilter(char... values) {
-            this.values = new TCharHashSet(values);
+            this.values = new CharOpenHashSet(values);
         }
 
         @Override

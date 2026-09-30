@@ -7,6 +7,9 @@ import com.vertispan.tsdefs.annotations.TsTypeDef;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import jsinterop.annotations.JsType;
 
+/**
+ * A numeric enum specifying how a series should be rendered.
+ */
 @JsType(name = "SeriesPlotStyle", namespace = "dh.plot")
 @TsTypeDef(tsType = "number")
 public class JsSeriesPlotStyle {

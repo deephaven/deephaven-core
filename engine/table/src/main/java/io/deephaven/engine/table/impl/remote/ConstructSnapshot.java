@@ -3,9 +3,9 @@
 //
 package io.deephaven.engine.table.impl.remote;
 
-import gnu.trove.TIntCollection;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
@@ -296,7 +296,9 @@ public class ConstructSnapshot {
         }
 
         private void maybeClearUpdateGraph() {
-            if (concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
+            // Note that we must retain the update graph while we hold a lock acquired on behalf of a nested snapshot,
+            // since we need it in order to release the lock.
+            if (concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0 && !acquiredLock) {
                 this.updateGraph = null;
             }
         }
@@ -401,6 +403,7 @@ public class ConstructSnapshot {
             if (acquiredLock && concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
                 updateGraph.sharedLock().unlock();
                 acquiredLock = false;
+                updateGraph = null;
             }
         }
     }
@@ -1111,6 +1114,28 @@ public class ConstructSnapshot {
             return LogicalClock.NULL_CLOCK_VALUE;
         }
 
+        try {
+            return callDataSnapshotFunctionRefreshing(logPrefix, control, function, state, updateGraph, overallStart);
+        } finally {
+            // Release the update graph lock if a nested locked snapshot acquired it on this thread's behalf and no
+            // enclosing snapshot remains in progress. This is a no-op on all successful paths, but ensures that we do
+            // not leak the lock when an exception propagates out of a concurrent attempt.
+            state.maybeReleaseLock();
+        }
+    }
+
+    /**
+     * Implementation of {@link #callDataSnapshotFunction(LogOutputAppendable, SnapshotControl, SnapshotFunction)} for
+     * refreshing data. Must be invoked with {@code state} being the current thread's {@link StateImpl}, and the caller
+     * is responsible for invoking {@link StateImpl#maybeReleaseLock()} when this method returns or throws.
+     */
+    private static long callDataSnapshotFunctionRefreshing(
+            @NotNull final LogOutputAppendable logPrefix,
+            @NotNull final SnapshotControl control,
+            @NotNull final SnapshotFunction function,
+            @NotNull final StateImpl state,
+            @NotNull final UpdateGraph updateGraph,
+            final long overallStart) {
         final boolean onUpdateThread = updateGraph.currentThreadProcessesUpdates();
         final boolean alreadyLocked = StateImpl.locked(updateGraph);
 
@@ -1164,6 +1189,10 @@ public class ConstructSnapshot {
                     // The snapshot function below detected a failure despite a consistent state. We should not
                     // re-attempt, or re-check the consistency ourselves.
                     throw sue;
+                } catch (CancellationException ce) {
+                    // Nobody is waiting for this snapshot any more, so neither another concurrent attempt nor the
+                    // locked attempt they fall back to is worth the update graph lock it would take.
+                    throw ce;
                 } catch (Exception e) {
                     functionSuccessful = false;
                     caughtException = e;
@@ -1205,6 +1234,17 @@ public class ConstructSnapshot {
                     break;
                 }
             }
+            if (state.acquiredLock) {
+                // A nested locked snapshot acquired the update graph lock during this attempt, and it remains held
+                // until the outermost snapshot on this thread completes. We must not make another concurrent
+                // attempt (or sleep) while holding the lock, so fall back to a locked snapshot immediately.
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix)
+                            .append(" Nested snapshot acquired update graph lock, proceeding to locked snapshot")
+                            .endl();
+                }
+                break;
+            }
             if (attemptDurationMillis > MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS) {
                 if (log.isDebugEnabled()) {
                     log.debug().append(logPrefix).append(" Failed concurrent execution exceeded maximum duration (")
@@ -1217,6 +1257,7 @@ public class ConstructSnapshot {
                     Thread.sleep(delay);
                     delay *= 2;
                 } catch (InterruptedException interruptIsCancel) {
+                    Thread.currentThread().interrupt();
                     throw new CancellationException("Interrupt detected", interruptIsCancel);
                 }
             }
@@ -1327,14 +1368,14 @@ public class ConstructSnapshot {
             snapshot.rowsIncluded = snapshot.rowsAdded.copy();
         }
 
-        final String[] columnSources = table.getDefinition().getColumnNamesArray();
+        final String[] columnSourceNames = table.getDefinition().getColumnNamesArray();
 
         // Snapshot empty columns serially, and collect indices of non-empty columns
         final int numColumnsToSnapshot =
-                columnsToSnapshot != null ? columnsToSnapshot.cardinality() : columnSources.length;
-        final TIntList nonEmptyColumnIndices = new TIntArrayList(numColumnsToSnapshot);
+                columnsToSnapshot != null ? columnsToSnapshot.cardinality() : columnSourceNames.length;
+        final IntList nonEmptyColumnIndices = new IntArrayList(numColumnsToSnapshot);
         final List<ColumnSource<?>> nonEmptyColumnSources = new ArrayList<>(numColumnsToSnapshot);
-        if (!snapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
+        if (!snapshotEmptyColumns(columnSourceNames, columnsToSnapshot, table, logIdentityObject, snapshot,
                 nonEmptyColumnIndices, nonEmptyColumnSources)) {
             return false;
         }
@@ -1348,13 +1389,14 @@ public class ConstructSnapshot {
                     (snapshot.rowsIncluded.size() >= MINIMUM_PARALLEL_SNAPSHOT_ROWS ||
                             !allColumnSourcesInMemory(nonEmptyColumnSources));
             if (canParallelize) {
-                if (!snapshotColumnsParallel(nonEmptyColumnIndices, nonEmptyColumnSources, usePrev, executionContext,
-                        snapshot)) {
+                if (!snapshotColumnsParallel(columnSourceNames, nonEmptyColumnIndices, nonEmptyColumnSources, usePrev,
+                        executionContext, snapshot)) {
                     return false;
                 }
             } else {
                 // Snapshot all non-empty columns serially
-                snapshotColumnsSerial(nonEmptyColumnIndices, nonEmptyColumnSources, usePrev, snapshot);
+                snapshotColumnsSerial(columnSourceNames, nonEmptyColumnIndices, nonEmptyColumnSources, usePrev,
+                        snapshot);
             }
         }
         if (log.isDebugEnabled()) {
@@ -1405,7 +1447,8 @@ public class ConstructSnapshot {
      * Snapshot the specified columns in parallel.
      */
     private static boolean snapshotColumnsParallel(
-            @NotNull final TIntList columnIndices,
+            @NotNull final String[] columnSourceNames,
+            @NotNull final IntList columnIndices,
             @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             final ExecutionContext executionContext,
@@ -1418,7 +1461,8 @@ public class ConstructSnapshot {
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, columnIndices.size(),
                 (context, colRank, nestedErrorConsumer) -> snapshotColumnsSerial(
-                        new TIntArrayList(new int[] {columnIndices.get(colRank)}),
+                        columnSourceNames,
+                        new IntArrayList(new int[] {columnIndices.getInt(colRank)}),
                         columnSources.subList(colRank, colRank + 1),
                         usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
@@ -1428,12 +1472,48 @@ public class ConstructSnapshot {
         try {
             waitForParallelSnapshot.get();
         } catch (final InterruptedException e) {
-            throw new CancellationException("Interrupted during parallel column snapshot");
+            // The scheduled jobs are still filling chunks into snapshot, which our caller closes as this propagates.
+            // Let them finish first, rather than leaving them to write into chunks that have gone back to the pool.
+            final List<Throwable> jobFailures = awaitCompletionUninterruptibly(waitForParallelSnapshot);
+            Thread.currentThread().interrupt();
+            final CancellationException cancellation =
+                    new CancellationException("Interrupted during parallel column snapshot", e);
+            if (!jobFailures.isEmpty()) {
+                // The jobs we waited for had failed in their own right. Cancellation is what the caller asked for and
+                // stays the exception thrown, but a column that could not be read is worth reporting alongside it.
+                final ColumnSnapshotUnsuccessfulException jobFailure = new ColumnSnapshotUnsuccessfulException(
+                        "Exception occurred during parallel column snapshot", jobFailures.get(0));
+                jobFailures.stream().skip(1).forEach(jobFailure::addSuppressed);
+                cancellation.addSuppressed(jobFailure);
+            }
+            throw cancellation;
         } catch (final ExecutionException e) {
+            final Throwable cause = e.getCause();
             throw new ColumnSnapshotUnsuccessfulException(
-                    "Exception occurred during parallel column snapshot", e.getCause());
+                    "Exception occurred during parallel column snapshot", cause == null ? e : cause);
         }
         return true;
+    }
+
+    /**
+     * Wait for {@code future} to complete, ignoring interrupts.
+     *
+     * @return What the future failed with, empty if it succeeded
+     */
+    private static List<Throwable> awaitCompletionUninterruptibly(@NotNull final CompletableFuture<Void> future) {
+        final List<Throwable> failures = new ArrayList<>();
+        while (true) {
+            try {
+                future.get();
+                return failures;
+            } catch (final ExecutionException e) {
+                final Throwable cause = e.getCause();
+                failures.add(cause == null ? e : cause);
+                return failures;
+            } catch (final InterruptedException ignored) {
+                // Keep waiting; the caller restores the interrupt once the jobs are done with the snapshot.
+            }
+        }
     }
 
     /**
@@ -1443,19 +1523,19 @@ public class ConstructSnapshot {
      * This method is intended to be called from the thread that initiated the column snapshot.
      */
     private static boolean snapshotEmptyColumns(
-            final String[] columnSources,
+            final String[] columnSourceNames,
             @Nullable final BitSet columnsToSnapshot,
             @NotNull final Table table,
             @NotNull final Object logIdentityObject,
             @NotNull final BarrageMessage snapshot,
-            @NotNull final TIntCollection nonEmptyColumnsIndices,
+            @NotNull final IntCollection nonEmptyColumnsIndices,
             @NotNull final Collection<ColumnSource<?>> nonEmptyColumnSources) {
         final boolean rowsetIsEmpty = snapshot.rowsIncluded.isEmpty();
-        for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
+        for (int colIdx = 0; colIdx < columnSourceNames.length; ++colIdx) {
             if (concurrentAttemptInconsistent()) {
                 if (log.isDebugEnabled()) {
                     final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
-                            .append(" Bad snapshot before column ").append(columnSources[colIdx])
+                            .append(" Bad snapshot before column ").append(columnSourceNames[colIdx])
                             .append(" at idx ").append(colIdx);
                     appendConcurrentAttemptClockInfo(logEntry);
                     logEntry.endl();
@@ -1463,7 +1543,7 @@ public class ConstructSnapshot {
                 return false;
             }
 
-            final ColumnSource<?> columnSource = table.getColumnSource(columnSources[colIdx]);
+            final ColumnSource<?> columnSource = table.getColumnSource(columnSourceNames[colIdx]);
 
             final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
             snapshot.addColumnData[colIdx] = acd;
@@ -1493,7 +1573,8 @@ public class ConstructSnapshot {
     }
 
     private static void snapshotColumnsSerial(
-            @NotNull final TIntList columnIndices,
+            @NotNull final String[] columnSourceNames,
+            @NotNull final IntList columnIndices,
             @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             @NotNull final BarrageMessage snapshot) {
@@ -1514,15 +1595,31 @@ public class ConstructSnapshot {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(maxChunkSize);
                 // Populate the snapshot data for each column for the current chunk of rows
                 for (int colRank = 0; colRank < numCols; ++colRank) {
-                    final int colIdx = columnIndices.get(colRank);
+                    final int colIdx = columnIndices.getInt(colRank);
                     final ColumnSource<?> columnSource = columnSources.get(colRank);
                     final ColumnSource.FillContext fillContext = fillContexts[colRank];
                     final WritableChunk<Values> currentChunk =
                             columnSource.getChunkType().makeWritableChunk(reducedRowSet.intSize());
-                    if (usePrev) {
-                        columnSource.fillPrevChunk(fillContext, currentChunk, reducedRowSet);
-                    } else {
-                        columnSource.fillChunk(fillContext, currentChunk, reducedRowSet);
+                    // Nothing closes the chunk until it is handed to the snapshot below, so a failed fill --
+                    // an inconsistent concurrent attempt, most often -- has to release it here. Both branches share
+                    // this catch, so the frame it captures does not say which one ran; the message carries that, along
+                    // with the column. For a fill that threw without a usable stack of its own, such as a JIT
+                    // fast-throw NullPointerException, the message is the only record of what failed.
+                    try {
+                        if (usePrev) {
+                            columnSource.fillPrevChunk(fillContext, currentChunk, reducedRowSet);
+                        } else {
+                            columnSource.fillChunk(fillContext, currentChunk, reducedRowSet);
+                        }
+                    } catch (final Exception e) {
+                        currentChunk.close();
+                        throw new ColumnSnapshotUnsuccessfulException("Failed to snapshot "
+                                + (usePrev ? "previous" : "current") + " values for column "
+                                + columnSourceNames[colIdx], e);
+                    } catch (final Throwable t) {
+                        // An Error -- an OutOfMemoryError, in practice -- propagates unwrapped.
+                        currentChunk.close();
+                        throw t;
                     }
                     snapshot.addColumnData[colIdx].data.add(currentChunk);
                 }

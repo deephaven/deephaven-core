@@ -57,6 +57,10 @@ class ShortVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final ShortVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfShort vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final short element = vi.next();
@@ -84,6 +88,10 @@ class ShortVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final ShortVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfShort vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final short element = vi.next();

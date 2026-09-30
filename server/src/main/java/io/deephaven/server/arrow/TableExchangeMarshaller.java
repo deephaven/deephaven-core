@@ -78,9 +78,7 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
 
         // push the schema to the listener
         listener.onNext(streamGeneratorFactory.getSchemaView(
-                fbb -> BarrageUtil.makeTableSchemaPayload(fbb,
-                        options,
-                        table.getDefinition(), table.getAttributes(), table.isFlat())));
+                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, options, table)));
 
         // collect the viewport and columnsets (if provided)
         final BitSet columns = BarrageRequestHelpers.getColumns(snapshotRequest);

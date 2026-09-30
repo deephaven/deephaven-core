@@ -9,9 +9,17 @@ description = 'The Deephaven SQL parser'
 dependencies {
     api project(':qst')
     implementation libs.calcite.core
+
     constraints {
-        implementation(libs.json.smart) {
-            because 'CVE-2024-57699'
+        implementation(libs.httpcore5) {
+            // used by calcite-core, iceberg, and confluent
+            because 'CVE-2026-54399'
+        }
+        implementation(libs.httpcore5.h2) {
+            because 'Keeping consistency with libs.httpcore5'
+        }
+        implementation(libs.httpclient) {
+            because 'CVE-2026-64607'
         }
     }
 

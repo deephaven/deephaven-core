@@ -120,6 +120,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
                     "an exception occurred while initializing zero-key updateBy",
                     e.getCause());
         }
+
+        sm.recordPerformance();
     }
 
     @Override

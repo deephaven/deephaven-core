@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.Strings;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -34,8 +33,8 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
 
     private final List<ColumnSource<?>> columnSources;
 
-    private final boolean isRangeFilter;
-    private final boolean isMatchFilter;
+    private final AbstractRangeFilter rangeFilter;
+    private final MatchFilter matchFilter;
     private final boolean supportsChunkFiltering;
 
     private long executedFilterCost;
@@ -60,19 +59,21 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
                     "filter must be stateless, but does not permit parallelization: " + filter);
         }
 
-        this.filter = filter;
         this.columnSources = columnSources;
-
         executedFilterCost = 0;
 
-        isRangeFilter = filter instanceof RangeFilter
-                && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
-        isMatchFilter = filter instanceof MatchFilter &&
-                ((MatchFilter) filter).getFailoverFilterIfCached() == null;
+        // Extract the effective filter and use it for populating the context. This removes wrapper layers (such as
+        // serial and barrier wrappers) which have already been processed.
+        final WhereFilter effectiveFilter = WhereFilterDelegating.maybeUnwrapFilter(filter);
+        this.filter = effectiveFilter;
 
-        final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(filter);
+        rangeFilter = RangeFilter.extractRangeFilter(effectiveFilter).orElse(null);
+        matchFilter = MatchFilter.extractMatchFilter(effectiveFilter).orElse(null);
+
+        final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(effectiveFilter);
         supportsChunkFiltering = chunkFilter.isPresent()
-                || (filter instanceof ConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1);
+                || (effectiveFilter instanceof ConditionFilter
+                        && ((ConditionFilter) effectiveFilter).getNumInputsUsed() == 1);
 
         conditionalFilterInitTable = null; // lazily initialized
         filterNullBehavior = null; // lazily initialized
@@ -104,6 +105,16 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
         return columnSources;
     }
 
+    @Override
+    public final AbstractRangeFilter rangeFilter() {
+        return rangeFilter;
+    }
+
+    @Override
+    public final MatchFilter matchFilter() {
+        return matchFilter;
+    }
+
     /**
      * Whether this filter supports direct chunk filtering, i.e., it can be applied to a chunk of data rather than a
      * table. This includes any filter that implements {@link ExposesChunkFilter} or {@link ConditionFilter} with
@@ -115,11 +126,11 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
     }
 
     /**
-     * Whether this filter supports filtering based on parquet metadata.
+     * Whether this filter supports filtering based on region metadata.
      */
     @Override
     public final boolean supportsMetadataFiltering() {
-        return isRangeFilter || isMatchFilter;
+        return rangeFilter != null || matchFilter != null;
     }
 
     @Override
@@ -142,11 +153,11 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
      */
     @Override
     public final WhereFilter filterForMetadataFiltering() {
-        if (isRangeFilter) {
-            return ((RangeFilter) filter).getRealFilter();
+        if (rangeFilter != null) {
+            return rangeFilter;
         }
-        if (isMatchFilter) {
-            return filter;
+        if (matchFilter != null) {
+            return matchFilter;
         }
         throw new IllegalStateException("Should only use when supportsMetadataFiltering is true");
     }
@@ -161,8 +172,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
             synchronized (this) {
                 local = filterNullBehavior;
                 if (local == null) {
-                    local = computeFilterNullBehavior();
-                    filterNullBehavior = local;
+                    filterNullBehavior = local = computeFilterNullBehavior();
                 }
             }
         }
@@ -180,8 +190,17 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table nullTestDummyTable = TableTools.newTable(1, columnSourceMap);
             final TrackingRowSet rowSet = nullTestDummyTable.getRowSet();
-            try (final RowSet result = filter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
-                return result.isEmpty() ? FilterNullBehavior.EXCLUDES_NULLS : FilterNullBehavior.INCLUDES_NULLS;
+            try {
+                // Probe a copy rather than this context's own filter. filter() is not guaranteed to be free of side
+                // effects, so probing the live object would initialize any state the filter carries against the dummy
+                // table instead of the real one. The copy is init'ed against the dummy definition because copy() is
+                // not required to preserve initialization. The engine's own filters do preserve it, so for them init()
+                // is a no-op and the probe costs one shallow copy per context.
+                final WhereFilter probeFilter = filter.copy();
+                probeFilter.init(nullTestDummyTable.getDefinition());
+                try (final RowSet result = probeFilter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
+                    return result.isEmpty() ? FilterNullBehavior.EXCLUDES_NULLS : FilterNullBehavior.INCLUDES_NULLS;
+                }
             } catch (final Exception e) {
                 return FilterNullBehavior.FAILS_ON_NULLS;
             }
@@ -199,7 +218,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
     @Override
     public final UnifiedChunkFilter createChunkFilter(final int maxChunkSize) {
         if (!supportsChunkFiltering) {
-            throw new IllegalStateException("Filter does not support chunk filtering: " + Strings.of(filter));
+            throw new IllegalStateException("Filter does not support chunk filtering: " + filter);
         }
         final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(filter);
         if (chunkFilter.isPresent()) {
@@ -219,7 +238,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
             }
         } else {
             throw new UnsupportedOperationException(
-                    "Filter does not support chunk filtering: " + Strings.of(filter));
+                    "Filter does not support chunk filtering: " + filter);
         }
     }
 

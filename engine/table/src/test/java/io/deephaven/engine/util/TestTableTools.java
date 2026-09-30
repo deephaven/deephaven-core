@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -12,11 +13,13 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl;
 import io.deephaven.engine.table.impl.sources.ConstituentTableException;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -28,13 +31,13 @@ import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.updategraph.LogicalClockImpl;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
-import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,8 +58,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link TableTools}.
@@ -81,6 +83,32 @@ public class TestTableTools {
                 col("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         emptyTable = testRefreshingTable(col("StringKeys", (Object) ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 col("GroupedInts", (Object) ArrayTypeUtils.EMPTY_BYTE_ARRAY));
+    }
+
+    @Test
+    public void testMergeLock() {
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        try (final SafeCloseable ignored = new SafeCloseable() {
+            final boolean restore = updateGraph.setSerialTableOperationsSafe(false);
+
+            @Override
+            public void close() {
+                updateGraph.setSerialTableOperationsSafe(restore);
+            }
+        }) {
+            final Table t1 = TableTools.emptyTable(1).update("Col=`A`");
+            t1.setRefreshing(true);
+            final Table t2 = TableTools.emptyTable(2).update("Col=`B`");
+            t2.setRefreshing(true);
+
+            final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class, () -> merge(t1, t2));
+            assertEquals(
+                    "May not initiate serial table operations for update graph TEST: exclusiveLockHeld=false, sharedLockHeld=false, currentThreadProcessesUpdates=false",
+                    ise.getMessage());
+
+            final Table m = updateGraph.sharedLock().computeLocked(() -> merge(t1, t2));
+            assertTableEquals(TableTools.newTable(stringCol("Col", "A", "B", "B")), m);
+        }
     }
 
     @Test
@@ -111,31 +139,31 @@ public class TestTableTools {
     public void testMergeOfMismatchedTables() {
         try {
             TableTools.merge(table1, table2);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table1);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, emptyTable);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table2.updateView("S2=StringKeys1"));
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table2.dropColumns("StringKeys1"));
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
     }
@@ -231,6 +259,46 @@ public class TestTableTools {
                 "Column x different from the expected set, first difference at row 0 encountered 1.0E-12 expected 2.0E-12 (difference = 1.0E-12)\n",
                 TableTools.diff(TableTools.newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
                         TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10));
+    }
+
+    @Test
+    public void testNewTableValidatesColumnNames() {
+        final TableDefinition badDefinition = TableDefinition.of(ColumnDefinition.ofInt("Asdf:"));
+
+        // newTable(TableDefinition)
+        Assert.assertThrows(NameValidator.InvalidNameException.class, () -> TableTools.newTable(badDefinition));
+
+        // newTable(TableDefinition, ColumnHolder...)
+        Assert.assertThrows(NameValidator.InvalidNameException.class,
+                () -> TableTools.newTable(badDefinition, ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
+
+        // newTable(long, Map<String, ColumnSource>)
+        final Map<String, ColumnSource<?>> badColumns = new LinkedHashMap<>();
+        badColumns.put("Asdf:", NullValueColumnSource.getInstance(int.class, null));
+        Assert.assertThrows(NameValidator.InvalidNameException.class, () -> TableTools.newTable(0, badColumns));
+
+        // newTable(long, List<String>, List<ColumnSource>)
+        Assert.assertThrows(NameValidator.InvalidNameException.class, () -> TableTools.newTable(0,
+                List.of("Asdf:"), List.of(NullValueColumnSource.getInstance(int.class, null))));
+
+        // A legal column name still produces a table.
+        final Table good = TableTools.newTable(TableDefinition.of(ColumnDefinition.ofInt("Asdf")));
+        assertEquals(1, good.numColumns());
+    }
+
+    @Test
+    public void testInMemoryTableValidatesColumnNames() {
+        // InMemoryTable(String[], Object[])
+        Assert.assertThrows(NameValidator.InvalidNameException.class,
+                () -> new InMemoryTable(new String[] {"Asdf:"}, new Object[] {new int[] {1, 2, 3}}));
+
+        // InMemoryTable(TableDefinition, int)
+        Assert.assertThrows(NameValidator.InvalidNameException.class,
+                () -> new InMemoryTable(TableDefinition.of(ColumnDefinition.ofInt("Asdf:")), 0));
+
+        // A legal column name still produces a table.
+        final Table good = new InMemoryTable(new String[] {"Asdf"}, new Object[] {new int[] {1, 2, 3}});
+        assertEquals(3, good.size());
     }
 
     @Test
@@ -583,7 +651,7 @@ public class TestTableTools {
                 TstUtils.validate(en);
             }
         } catch (Exception e) {
-            TestCase.fail(e.getMessage());
+            fail(e.getMessage());
         }
     }
 
@@ -839,7 +907,7 @@ public class TestTableTools {
         result = TableTools.merge(TableTools.newTable(table1.getDefinition()), table1);
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result = TableTools.merge(TableTools.newTable(table1.getDefinition()), emptyLikeTable1, emptyLikeTable1);
-        TestCase.assertEquals(0, result.size());
+        assertEquals(0, result.size());
     }
 
     @Test
@@ -974,23 +1042,23 @@ public class TestTableTools {
     @Test
     public void testEmptyTable() {
         Table emptyTable = TableTools.emptyTable(2);
-        TestCase.assertEquals(2, emptyTable.size());
+        assertEquals(2, emptyTable.size());
 
         Table emptyTable2 = TableTools.emptyTable(2).update("col=1");
-        TestCase.assertEquals(2, emptyTable2.size());
+        assertEquals(2, emptyTable2.size());
         IntVector columnVector = ColumnVectors.ofInt(emptyTable2, "col");
-        TestCase.assertEquals(2, columnVector.size());
-        TestCase.assertEquals(1, columnVector.get(0));
-        TestCase.assertEquals(1, columnVector.get(1));
+        assertEquals(2, columnVector.size());
+        assertEquals(1, columnVector.get(0));
+        assertEquals(1, columnVector.get(1));
 
         TableTools.show(emptyTable2);
 
         Table emptyTable3 = TableTools.emptyTable(2).updateView("col=1");
-        TestCase.assertEquals(2, emptyTable3.size());
+        assertEquals(2, emptyTable3.size());
         columnVector = ColumnVectors.ofInt(emptyTable3, "col");
-        TestCase.assertEquals(2, columnVector.size());
-        TestCase.assertEquals(1, columnVector.get(0));
-        TestCase.assertEquals(1, columnVector.get(1));
+        assertEquals(2, columnVector.size());
+        assertEquals(1, columnVector.get(0));
+        assertEquals(1, columnVector.get(1));
 
         TableTools.show(emptyTable3);
     }
@@ -1033,7 +1101,7 @@ public class TestTableTools {
             stepStart = end;
             System.out.println("Step=" + step + ", duration=" + duration + "ms, stepDuration=" + stepDuration + "ms");
             if (duration > 30_000) {
-                TestCase.fail(
+                fail(
                         "This test is expected to take around 5 seconds on a Mac with the new shift behavior, something is not right.");
             }
         }
@@ -1199,5 +1267,40 @@ public class TestTableTools {
         Assert.assertTrue(res.isFailed());
         Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
         Assert.assertEquals(err, errRef.get().getCause());
+    }
+
+    @Test
+    public void testMergeAddOnly() {
+        testMergeAddOnly(true);
+        testMergeAddOnly(false);
+    }
+
+    private void testMergeAddOnly(boolean systemic) {
+        final io.deephaven.engine.updategraph.UpdateSourceCombiner combiner =
+                new io.deephaven.engine.updategraph.UpdateSourceCombiner(
+                        ExecutionContext.getContext().getUpdateGraph());
+        final TestClock clock = new TestClock(0);
+        final Table timeTable =
+                io.deephaven.engine.table.impl.TimeTable.newBuilder()
+                        .registrar(combiner)
+                        .clock(clock)
+                        .period(1)
+                        .build();
+
+        final QueryTable merged =
+                (QueryTable) io.deephaven.engine.util.systemicmarking.SystemicObjectTracker.executeSystemically(
+                        systemic,
+                        () -> merge(emptyTable(500_000_000), timeTable.dropColumns("Timestamp")));
+
+        assertTrue(merged.isAddOnly());
+        assertTrue(merged.isAppendOnly());
+
+        final QueryTable bigTable =
+                (QueryTable) io.deephaven.engine.util.systemicmarking.SystemicObjectTracker.executeSystemically(
+                        systemic,
+                        () -> merged.updateView("Row=ii"));
+
+        assertTrue(bigTable.isAddOnly());
+        assertTrue(bigTable.isAppendOnly());
     }
 }

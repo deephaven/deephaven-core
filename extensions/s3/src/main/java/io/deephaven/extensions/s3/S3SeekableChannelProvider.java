@@ -4,8 +4,12 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.stats.Counter;
+import io.deephaven.base.stats.Stats;
+import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -75,6 +79,9 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
             AtomicReferenceFieldUpdater.newUpdater(S3SeekableChannelProvider.class, SoftReference.class,
                     "fileSizeCacheRef");
 
+    private static final Value FETCH_FILE_SIZE_DURATION_NANOS =
+            Stats.makeItem("S3SeekableChannelProvider", "fetchFileSize", Counter.FACTORY).getValue();
+
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
     /**
@@ -132,6 +139,14 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
             return new S3SeekableByteChannel(s3Uri, cachedSize);
         }
         return new S3SeekableByteChannel(s3Uri);
+    }
+
+    @Override
+    public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
+            long fileSize) {
+        final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
+        updateFileSizeCache(uri, fileSize);
+        return new S3SeekableByteChannel(s3Uri, fileSize);
     }
 
     @Override
@@ -327,12 +342,17 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .key(s3Uri.key().orElseThrow());
         final Duration readTimeout = s3Instructions.readTimeout();
         requestBuilder.overrideConfiguration(b -> addTimeout(b, readTimeout));
+        final long start = System.nanoTime();
         final CompletableFuture<HeadObjectResponse> responseFuture = s3AsyncClient.headObject(requestBuilder.build());
         try {
             headObjectResponse = responseFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
         } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
             responseFuture.cancel(true);
             throw handleS3Exception(e, String.format("fetching HEAD for file %s", s3Uri), s3Instructions);
+        } finally {
+            final long duration = System.nanoTime() - start;
+            QueryPerformanceReadTracker.recordMetadataOperation(duration);
+            FETCH_FILE_SIZE_DURATION_NANOS.sample(duration);
         }
         final long fileSize = headObjectResponse.contentLength();
         updateFileSizeCache(s3Uri.uri(), fileSize);

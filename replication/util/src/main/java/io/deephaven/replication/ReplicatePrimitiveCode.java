@@ -12,9 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static io.deephaven.replication.ReplicationUtils.className;
-import static io.deephaven.replication.ReplicationUtils.findNoLocateRegions;
-import static io.deephaven.replication.ReplicationUtils.replaceRegion;
+import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicatePrimitiveCode {
 
@@ -567,6 +565,8 @@ public class ReplicatePrimitiveCode {
             }
             body = String.join("\n", lines);
         }
+
+        body = String.join("\n", removeDuplicateImports(List.of(body.split("\n")))) + "\n";
 
         PrintWriter out = new PrintWriter(resultClassJavaPath);
 

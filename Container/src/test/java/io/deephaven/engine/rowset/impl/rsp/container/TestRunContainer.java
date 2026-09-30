@@ -5,8 +5,6 @@ import org.junit.Test;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static io.deephaven.engine.rowset.impl.rsp.container.ArrayContainer.DEFAULT_MAX_SIZE;
 import static io.deephaven.engine.rowset.impl.rsp.container.Container.MAX_VALUE;

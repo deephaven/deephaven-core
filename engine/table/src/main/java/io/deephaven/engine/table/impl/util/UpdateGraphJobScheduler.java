@@ -50,6 +50,14 @@ public class UpdateGraphJobScheduler implements JobScheduler {
                 } catch (Exception e) {
                     onError.accept(e);
                 } catch (Error e) {
+                    // Deliver the error before reporting it. Anything waiting on this job's completion has no other
+                    // way to learn that the job failed, and would otherwise wait forever for a completion that cannot
+                    // happen.
+                    try {
+                        onError.accept(JobScheduler.asDeliverableException(e));
+                    } catch (Throwable t) {
+                        e.addSuppressed(t);
+                    }
                     final String logMessage = new LogOutputStringImpl().append(description).append(" Error").toString();
                     ProcessEnvironment.getGlobalFatalErrorReporter().report(logMessage, e);
                     throw e;

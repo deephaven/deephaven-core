@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.LongChunkColumnSource;
 import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseableList;
@@ -110,6 +109,16 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         // This sort operation might leverage a data index.
         dataIndex = optimalIndex(parent);
+
+        if (QueryTable.USE_INDIRECT_SORT_KERNELS) {
+            // Resolve (compiling on demand if necessary) the multi-column sort kernel for this sort now, while we
+            // are on a thread whose ExecutionContext has a QueryCompiler; the sort listener may otherwise be the
+            // first to need it, on an update graph thread that cannot compile. This is required even when this sort
+            // has a data index: the index accelerates the initial sort, but the listener's incremental sorts of
+            // added and modified rows do not use it. For an initially empty table (a refreshing blink table, for
+            // instance) the listener is always first.
+            SortHelpers.prepareSortKernel(sortOrder, sortColumns, comparators, comparatorsRespectEquality);
+        }
     }
 
     @Override
@@ -153,6 +162,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortedKeys.size() == 0) {
             return true;
         }
+        if (sortedKeys instanceof SortHelpers.IdentitySortMapping) {
+            return true;
+        }
         try (RowSet.Iterator it = parent.getRowSet().iterator()) {
             return sortedKeys.forEachLong(currentKey -> currentKey == it.nextLong());
         }
@@ -164,7 +176,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return withSorted(parent);
         }
 
-        final WritableRowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
+        final RowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
         final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).toTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
@@ -297,7 +309,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
+            // Size the map so the initial population completes without any rehashing.
+            final HashMapK4V4 reverseLookup = HashMapLockFreeK4V4.ofExpectedSize(sortedKeys.length, 0.75, -3);
+
             sortMapping = SortHelpers.createSortRowRedirection();
 
             // Center the keys around middleKeyToUse
@@ -335,7 +349,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMappingColumnName);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
                 final long outerRowKey = reverseLookup.get(innerRowKey);
-                return outerRowKey == reverseLookup.getNoEntryValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
+                return outerRowKey == reverseLookup.defaultReturnValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
             });
 
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup,
@@ -419,7 +433,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortRedirection == null) {
             return null;
         }
-        final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortResult.intSize(), .75f, RowSequence.NULL_ROW_KEY);
+        // Size the map so the population below completes without any rehashing.
+        final HashMapK4V4 reverseLookup =
+                HashMapLockFreeK4V4.ofExpectedSize(sortResult.intSize(), 0.75, RowSequence.NULL_ROW_KEY);
         try (final LongColumnIterator innerRowKeys =
                 new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
                 final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {

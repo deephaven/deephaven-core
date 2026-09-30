@@ -400,14 +400,14 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 }
             }, null);
         }
-        try (final RowSet added = addBuilder.build();
+        try (final WritableRowSet added = addBuilder.build();
              final RowSet removed = rmBuilder.build();
              final RowSet postShiftRemoved = rmResultBuilder.build()) {
             downstream.removed().writableCast().insert(removed);
             downstream.added().writableCast().insert(added);
             // must remove before adding as removed.intersect(added) may be non-empty
             resultRowSet.remove(postShiftRemoved);
-            resultRowSet.insert(added);
+            resultRowSet.subsume(added);
         }
         downstream.modified = modBuilder.build();
     }
@@ -1175,20 +1175,26 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private void verifyKeyHashes() {
         final int maxSize = tableHashPivot;
 
-        final ChunkSource.FillContext [] keyFillContext = makeFillContexts(keySources, SharedContext.makeSharedContext(), maxSize);
+        final ChunkSource.FillContext [] keyFillContext = new ChunkSource.FillContext[keySources.length];
         final WritableChunk [] keyChunks = getWritableKeyChunks(maxSize);
 
-        try (final WritableLongChunk<RowKeys> positions = WritableLongChunk.makeWritableChunk(maxSize);
+        try (final SharedContext sharedContext = SharedContext.makeSharedContext();
+             final SafeCloseableArray ignored = new SafeCloseableArray<>(keyFillContext);
+             final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
+             final WritableLongChunk<RowKeys> positions = WritableLongChunk.makeWritableChunk(maxSize);
              final WritableBooleanChunk exists = WritableBooleanChunk.makeWritableChunk(maxSize);
              final WritableIntChunk hashChunk = WritableIntChunk.makeWritableChunk(maxSize);
              final WritableLongChunk<RowKeys> tableLocationsChunk = WritableLongChunk.makeWritableChunk(maxSize);
-             final SafeCloseableArray ignored = new SafeCloseableArray<>(keyFillContext);
-             final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
+             final RowSet flatRowSet = RowSetFactory.flat(tableHashPivot);
              // @StateChunkName@ from \QObjectChunk\E
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = rightRowSetSource.makeFillContext(maxSize)) {
 
-            rightRowSetSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
+            for (int ii = 0; ii < keySources.length; ++ii) {
+                keyFillContext[ii] = keySources[ii].makeFillContext(maxSize, sharedContext);
+            }
+
+            rightRowSetSource.fillChunk(fillContext, stateChunk, flatRowSet);
 
             ChunkUtils.fillInOrder(positions);
 

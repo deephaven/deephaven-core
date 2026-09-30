@@ -1,0 +1,1 @@
+{"file":"conceptual/vectorization-and-recipes.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"XSquared","type":"int"}],"rows":[[{"value":"1"},{"value":"1"}],[{"value":"2"},{"value":"4"}],[{"value":"3"},{"value":"9"}],[{"value":"4"},{"value":"16"}],[{"value":"5"},{"value":"25"}]]}}}}

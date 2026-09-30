@@ -4,6 +4,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.base.log.LogOutput;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Map;
@@ -52,6 +53,13 @@ public abstract class QueryCompilerRequest {
         return root.isEmpty()
                 ? packageNameSuffix
                 : root + (root.endsWith(".") ? "" : ".") + packageNameSuffix;
+    }
+
+    public LogOutput appendSummary(LogOutput logOutput) {
+        return logOutput.append("QueryCompilerRequest{").append("description=").append(description()).append(", ")
+                .append("className=").append(className()).append(", ")
+                .append("packageNameRoot=").append(packageNameRoot())
+                .append("}");
     }
 
     public interface Builder {

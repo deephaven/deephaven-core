@@ -74,6 +74,9 @@ public class SeriesDataSource {
         return sourceDescriptor;
     }
 
+    /**
+     * Indicates that a series data source could not be resolved or initialized.
+     */
     @TsName(namespace = "dh.plot")
     public class SeriesDataSourceException extends RuntimeException {
         private SeriesDataSource source;
@@ -84,11 +87,17 @@ public class SeriesDataSource {
             this.source = source;
         }
 
+        /**
+         * Returns the series data source associated with the failure.
+         */
         @JsProperty
         public SeriesDataSource getSource() {
             return source;
         }
 
+        /**
+         * Returns the error message.
+         */
         @Override
         @JsProperty
         public String getMessage() {

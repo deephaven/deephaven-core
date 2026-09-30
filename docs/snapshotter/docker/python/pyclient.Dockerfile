@@ -1,7 +1,8 @@
+# check=skip=InvalidDefaultArgInFrom
 # Should be run with --no-cache to ensure the latest pydeephaven is installed
 # This arg must go first otherwise Docker thinks it is part of pypi-version
 # if it is above the server FROM line
-ARG DEEPHAVEN_SERVER_IMAGE=ghcr.io/deephaven/server:latest
+ARG DEEPHAVEN_SERVER_IMAGE
 FROM alpine/curl AS pypi-version
 WORKDIR /src
 RUN curl https://pypi.org/pypi/pydeephaven/json > ./plugin-version.json

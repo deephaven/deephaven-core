@@ -3,8 +3,8 @@
 //
 package io.deephaven.parquet.table.layout;
 
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
@@ -162,18 +162,18 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         final Map<String, PartitionParser> partitionKeyToParser = partitioningColumns.stream().collect(toMap(
                 ColumnDefinition::getName,
                 cd -> PartitionParser.lookupSupported(cd.getDataType(), cd.getComponentType())));
-        final Map<String, TIntList> filePathToRowGroupIndices = new LinkedHashMap<>();
+        final Map<String, IntList> filePathToRowGroupIndices = new LinkedHashMap<>();
         final List<RowGroup> rowGroups = metadataFileReader.fileMetaData.getRow_groups();
         final int numRowGroups = rowGroups.size();
         for (int rgi = 0; rgi < numRowGroups; ++rgi) {
             final String relativePath =
                     FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getColumns().get(0).getFile_path());
-            filePathToRowGroupIndices.computeIfAbsent(relativePath, fn -> new TIntArrayList()).add(rgi);
+            filePathToRowGroupIndices.computeIfAbsent(relativePath, fn -> new IntArrayList()).add(rgi);
         }
         final MutableInt partitionOrder = new MutableInt(0);
         keys = filePathToRowGroupIndices.entrySet().stream().map(entry -> {
             final String relativePathString = entry.getKey();
-            final int[] rowGroupIndices = entry.getValue().toArray();
+            final int[] rowGroupIndices = entry.getValue().toIntArray();
             if (relativePathString == null || relativePathString.isEmpty()) {
                 throw new TableDataException(String.format(
                         "Missing parquet file name for row groups %s in %s",

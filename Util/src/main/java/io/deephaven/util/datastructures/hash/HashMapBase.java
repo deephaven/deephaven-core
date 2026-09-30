@@ -4,25 +4,18 @@
 package io.deephaven.util.datastructures.hash;
 
 import io.deephaven.base.verify.Assert;
-import gnu.trove.TLongCollection;
-import gnu.trove.function.TLongFunction;
-import gnu.trove.impl.PrimeFinder;
-import gnu.trove.iterator.TLongLongIterator;
-import gnu.trove.map.TLongLongMap;
-import gnu.trove.procedure.TLongLongProcedure;
-import gnu.trove.procedure.TLongProcedure;
-import gnu.trove.set.TLongSet;
+import io.deephaven.hash.PrimeFinder;
+import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class HashMapBase implements TNullableLongLongMap {
+public abstract class HashMapBase implements NullableLongLongMap {
     static final int DEFAULT_INITIAL_CAPACITY = 10;
     static final long DEFAULT_NO_ENTRY_VALUE = -1;
-    static final float DEFAULT_LOAD_FACTOR = 0.5f;
+    static final double DEFAULT_LOAD_FACTOR = 0.5;
 
     // There are three "special keys" removed from the range of valid keys that are used to represent various slot
     // states:
@@ -45,7 +38,7 @@ public abstract class HashMapBase implements TNullableLongLongMap {
      * This is the load factor we use as the hashtable nears its maximum size, in order to try to keep functioning
      * (albeit with reduced performance) rather than failing.
      */
-    private static final float NEARLY_FULL_LOAD_FACTOR = 0.9f;
+    private static final double NEARLY_FULL_LOAD_FACTOR = 0.9;
 
     /**
      * This is the fraction of the maximum possible size at which we just give up and throw an exception. It is kept
@@ -54,9 +47,9 @@ public abstract class HashMapBase implements TNullableLongLongMap {
      * gets very slow as it approaches the max). For this reason, until we figure it out, we maintain individual size
      * factors for each KnVn.
      */
-    private static final float SIZE_LIMIT_FACTOR1 = 0.85f;
-    private static final float SIZE_LIMIT_FACTOR2 = 0.75f;
-    private static final float SIZE_LIMIT_FACTOR4 = 0.85f;
+    private static final double SIZE_LIMIT_FACTOR1 = 0.85;
+    private static final double SIZE_LIMIT_FACTOR2 = 0.75;
+    private static final double SIZE_LIMIT_FACTOR4 = 0.85;
     /**
      * This is the size at which we just give up and throw an exception rather than do a new put. It is number of
      * entries (aka number of longs / 2) * SIZE_LIMIT_FACTORn.
@@ -75,9 +68,11 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         Assert.eq(hs.size(), "hs.size()", 4, "4");
     }
 
-    private final int desiredInitialCapacity;
-    private final float loadFactor;
-    final long noEntryValue;
+    // The entry capacity for the next backing array allocation. Starts at the construction-time request, and is
+    // raised by resetToNullRetainingCapacityImpl() to the capacity the map had reached.
+    private int desiredInitialCapacity;
+    private final double loadFactor;
+    private final long noEntryValue;
     // There are three kinds of slots: empty, holding a value, and deleted (formerly holding a value).
     // 'size' is the number of slots holding a value.
     int size;
@@ -94,7 +89,7 @@ public abstract class HashMapBase implements TNullableLongLongMap {
     // - How many longs in the array (at 2 longs per entry (key and value), this is numEntries * 2)
     // The actual array of longs (with length (numBuckets * 4 * 2)) is stored in our child.
 
-    HashMapBase(int desiredInitialCapacity, float loadFactor, long noEntryValue) {
+    HashMapBase(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         this.desiredInitialCapacity = desiredInitialCapacity;
         this.loadFactor = loadFactor;
         this.noEntryValue = noEntryValue;
@@ -109,19 +104,17 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         return key == SPECIAL_KEY_FOR_EMPTY_SLOT ? REDIRECTED_KEY_FOR_EMPTY_SLOT : key;
     }
 
+    /**
+     * Round an entry capacity up to a whole number of buckets, in long arithmetic so that a saturated request (near
+     * {@link Integer#MAX_VALUE}) cannot wrap negative.
+     */
+    static int desiredBucketCount(final int desiredEntryCapacity, final int entriesPerBucket) {
+        return (int) (((long) desiredEntryCapacity + entriesPerBucket - 1) / entriesPerBucket);
+    }
+
     long[] allocateKeysAndValuesArray(int entriesPerBucket) {
-        // DesiredInitialCapacity is in units of 'entries'.
-        // Ceiling(desiredInitialCapacity / entriesPerBucket)
-        final int desiredNumBuckets = (desiredInitialCapacity + entriesPerBucket - 1) / entriesPerBucket;
-        // Because we want the number of buckets to be prime
-        final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
-        final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
-        final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
-        Assert.leq((long) newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
-                Integer.MAX_VALUE, "Integer.MAX_VALUE");
-        final int entryCapacity = newBucketCapacity * entriesPerBucket;
-        final int longCapacity = entryCapacity * 2;
-        rehashThreshold = (int) (entryCapacity * loadFactor);
+        final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
+        final int longCapacity = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         final long[] keysAndValues = new long[longCapacity];
         setKeysAndValues(keysAndValues);
         return keysAndValues;
@@ -133,18 +126,8 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         final int newNumLongs;
         if (wantResize) {
             final int oldBucketCapacity = oldNumLongs / (entriesPerBucket * 2);
-            final int proposedBucketCapacity = PrimeFinder.nextPrime(oldBucketCapacity * 2);
-            final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
-            final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
-            Assert.leq((long) newBucketCapacity * entriesPerBucket * 2,
-                    "(long)newBucketCapacity * entriesPerBucket * 2",
-                    Integer.MAX_VALUE, "Integer.MAX_VALUE");
-            final int newEntryCapacity = newBucketCapacity * entriesPerBucket;
-            newNumLongs = newEntryCapacity * 2;
-
-            // If we reach the max bucket capacity, then force the rehash threshold to a high number like 90%.
-            final float loadFactorToUse = newBucketCapacity < maxBucketCapacity ? loadFactor : NEARLY_FULL_LOAD_FACTOR;
-            rehashThreshold = (int) (newEntryCapacity * loadFactorToUse);
+            final int desiredNumBuckets = oldBucketCapacity * 2;
+            newNumLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         } else {
             newNumLongs = oldNumLongs;
         }
@@ -164,6 +147,22 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         setKeysAndValues(newKvs);
     }
 
+    private int setRehashThresholdAndCalcLongCapacity(int desiredNumBuckets, int entriesPerBucket) {
+        // Because we want the number of buckets to be prime
+        final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
+        final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
+        final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
+        Assert.leq((long) newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
+                Integer.MAX_VALUE, "Integer.MAX_VALUE");
+        final int entryCapacity = newBucketCapacity * entriesPerBucket;
+        final int longCapacity = entryCapacity * 2;
+        // Once clamped to the maximum bucket capacity there is no larger size to grow into, so run at the
+        // nearly-full load factor rather than rehashing (at the same capacity) partway through a large fill.
+        final double loadFactorToUse = newBucketCapacity < maxBucketCapacity ? loadFactor : NEARLY_FULL_LOAD_FACTOR;
+        rehashThreshold = (int) (entryCapacity * loadFactorToUse);
+        return longCapacity;
+    }
+
     void checkSize(int sizeLimit) {
         // If the size reaches the max allowed value, then throw an exception.
         if (size >= sizeLimit) {
@@ -172,9 +171,9 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         }
     }
 
-    protected abstract long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly);
+    abstract long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly);
 
-    protected abstract void setKeysAndValues(long[] keysAndValues);
+    abstract void setKeysAndValues(long[] keysAndValues);
 
     @Override
     public final int size() {
@@ -203,14 +202,45 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         rehashThreshold = 0;
     }
 
-    @Override
-    public final long getNoEntryKey() {
-        // It doesn't make sense to call this method because the caller can't observe our "noEntryKey" anyway.
-        throw new UnsupportedOperationException();
+    final void resetToNullRetainingCapacityImpl(long[] keysAndValues) {
+        if (keysAndValues != null) {
+            // Remember the capacity, in entries, so that the next allocation lands back at this size directly rather
+            // than regrowing from the construction-time capacity through successive rehashes. We remember the size
+            // rather than holding the array itself so that the storage is reclaimable while the map sits empty.
+            desiredInitialCapacity = Math.max(desiredInitialCapacity, keysAndValues.length / 2);
+        }
+        resetToNullImpl();
+    }
+
+    /**
+     * Compute an entry capacity to request at construction so that the map can absorb {@code expectedEntries} entries
+     * (including deleted slots) without rehashing.
+     *
+     * <p>
+     * A put rehashes when nonEmptySlots reaches rehashThreshold, which is {@code (int) (entryCapacity * loadFactor)}.
+     * So we need the smallest capacity whose threshold is strictly greater than {@code expectedEntries}. We compute it
+     * directly, then check it against the same expression the map uses and bump by one if rounding left us short.
+     * Bucket-count rounding and prime selection in {@link #allocateKeysAndValuesArray} only ever increase the capacity,
+     * and the threshold is non-decreasing in the capacity, so the allocated map's threshold clears the expected count
+     * too.
+     *
+     * @param expectedEntries the number of slots the map must absorb without rehashing
+     * @param loadFactor the map's load factor
+     * @return an entry capacity to request, saturating at {@link Integer#MAX_VALUE} (at which point the map clamps to
+     *         its maximum capacity and runs at the nearly-full load factor)
+     */
+    static int capacityForExpectedEntries(final int expectedEntries, final double loadFactor) {
+        final long neededThreshold = (long) expectedEntries + 1;
+        long candidate = (long) Math.ceil(neededThreshold / loadFactor);
+        if (candidate < Integer.MAX_VALUE && (long) (candidate * loadFactor) < neededThreshold) {
+            // Because the arithmetic is in double and candidate fits in an int, one bump is always enough.
+            ++candidate;
+        }
+        return (int) Math.min(candidate, Integer.MAX_VALUE);
     }
 
     @Override
-    public final long getNoEntryValue() {
+    public final long defaultReturnValue() {
         return noEntryValue;
     }
 
@@ -227,7 +257,7 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         int nextIndex = 0;
         // In a single-threaded case, we would not need the 'nextIndex < sz' part of the conjunction. But in the
         // unsynchronized concurrent case, we might encounter more keys than would fit in the array. To avoid an index
-        // range exception, we do the 'nextIndex < sz' test both here and in the loop below.
+        // range exception, we do the 'nextIndex < sz' test here.
         for (int ii = 0; ii < kv.length && nextIndex < sz; ii += 2) {
             final long key = kv[ii];
             if (key == SPECIAL_KEY_FOR_EMPTY_SLOT || key == SPECIAL_KEY_FOR_DELETED_SLOT) {
@@ -244,120 +274,34 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         return result;
     }
 
-    final TLongLongIterator iteratorImpl(final long[] kv) {
-        return kv == null ? new NullIterator() : new Iterator(kv);
-    }
-
-    private static class NullIterator implements TLongLongIterator {
-        @Override
-        public long key() {
-            throw new UnsupportedOperationException();
+    final void forEachImpl(final long[] kv, LongLongBiConsumer consumer) {
+        if (kv == null) {
+            return;
         }
-
-        @Override
-        public long value() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long setValue(long val) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void advance() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return false;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
+        for (int nextIndex = findOccupiedSlot(kv, 0); nextIndex < kv.length; nextIndex =
+                findOccupiedSlot(kv, nextIndex + 2)) {
+            final long rawKey = kv[nextIndex];
+            final long key = rawKey == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : rawKey;
+            final long value = kv[nextIndex + 1];
+            consumer.accept(key, value);
         }
     }
 
-    /*
-     * The strategy used in this class is to keep track of: - The current position (which could be any valid position as
-     * well as one before the start) - The next position (which could be any valid position as well as one after the
-     * end). Java iterator semantics makes this annoying. Because it's Java!&trade; We also have to make sure we
-     * un-redirect the REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0.
+    /**
+     * Find next occupied slot starting at {@code beginSlot}.
+     *
+     * @param beginSlot The inclusive position from where to start looking.
+     * @return The slot containing the next occupied key, or keysAndValues.length if none.
      */
-    private static class Iterator implements TLongLongIterator {
-        // We keep a local reference to this array so we can avoid crashing if there's an unprotected concurrent write
-        // (e.g. a rehash that reallocates the owning array).
-        private final long[] keysAndValues;
-        private long currentKey;
-        private long currentValue;
-        /**
-         * nextIndex points to the next occupied slot (or the first occupied slot if we have just been constructed), or
-         * keysAndValues.length if there is no next occupied slot.
-         */
-        private int nextIndex;
-
-        public Iterator(final long[] kv) {
-            keysAndValues = kv;
-            nextIndex = findOccupiedSlot(0);
-        }
-
-        @Override
-        public boolean hasNext() {
-            return nextIndex < keysAndValues.length;
-        }
-
-        @Override
-        public void advance() {
-            // nextIndex points to some valid key and value (it cannot point past the end of the array, because you're
-            // not supposed to call advance() if hasNext() is false). So set current{Key,Value} from the array at
-            // nextIndex and then advance nextIndex to the next item or to the end of the array.
-            Assert.lt(nextIndex, "nextIndex", keysAndValues.length, "keysAndValues.length");
-            final long key = keysAndValues[nextIndex];
-            currentKey = key == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : key;
-            currentValue = keysAndValues[nextIndex + 1];
-            nextIndex = findOccupiedSlot(nextIndex + 2);
-        }
-
-        /**
-         * Find next occupied slot starting at {@code beginSlot}.
-         * 
-         * @param beginSlot The inclusive position from where to start looking.
-         * @return The slot containing the next occupied key, or keysAndValues.length if none.
-         */
-        private int findOccupiedSlot(int beginSlot) {
-            while (beginSlot < keysAndValues.length) {
-                final long key = keysAndValues[beginSlot];
-                if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    break;
-                }
-                beginSlot += 2;
+    private int findOccupiedSlot(long[] keysAndValues, int beginSlot) {
+        while (beginSlot < keysAndValues.length) {
+            final long key = keysAndValues[beginSlot];
+            if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
+                break;
             }
-            return beginSlot;
+            beginSlot += 2;
         }
-
-        @Override
-        public long key() {
-            return currentKey;
-        }
-
-        @Override
-        public long value() {
-            return currentValue;
-        }
-
-        // I'm going to avoid implementing the mutating iterator operations for now.
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long setValue(long val) {
-            throw new UnsupportedOperationException();
-        }
+        return beginSlot;
     }
 
     // Run this at class load time to confirm that the values returned by getMaxBucketCapacity aren't too large.
@@ -387,79 +331,6 @@ public abstract class HashMapBase implements TNullableLongLongMap {
             default:
                 throw new UnsupportedOperationException("Unexpected entriesPerBucket " + entriesPerBucket);
         }
-    }
-
-    // We don't currently call any of these methods, so I'm not going to bother implementing them. This is not a value
-    // judgment: if we want these methods, we can implement them later.
-
-    @Override
-    public boolean increment(long key) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean adjustValue(long key, long amount) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long adjustOrPutValue(long key, long adjust_amount, long put_amount) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean containsValue(long val) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean containsKey(long key) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TLongSet keySet() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean forEachKey(TLongProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean forEachValue(TLongProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean forEachEntry(TLongLongProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void transformValues(TLongFunction function) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean retainEntries(TLongLongProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void putAll(Map<? extends Long, ? extends Long> map) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void putAll(TLongLongMap map) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TLongCollection valueCollection() {
-        return null;
     }
 
     /**

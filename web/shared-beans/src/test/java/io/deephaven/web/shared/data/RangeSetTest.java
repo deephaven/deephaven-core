@@ -566,11 +566,21 @@ public class RangeSetTest {
         for (int i = 0; i < rows.length; i++) {
             assertEquals("i=" + i, rows[i], initialRange.get(i));
         }
+        assertEquals(-1, initialRange.get(-1));
         assertEquals(-1, initialRange.get(rows.length));
         assertEquals(-1, initialRange.get(rows.length + 1));
         assertEquals(-1, initialRange.get(rows.length + 100));
 
         initialRange.removeRange(new Range(0, 1));
+
+        for (int i = 2; i < rows.length; i++) {
+            assertEquals("i=" + i, rows[i], initialRange.get(i - 2));
+        }
+        assertEquals(-1, initialRange.get(rows.length - 2));
+        assertEquals(-1, initialRange.get(rows.length - 1));
+
+        assertEquals(-1, RangeSet.empty().get(0));
+        assertEquals(-1, RangeSet.empty().get(-1));
     }
 
     @Test
@@ -672,5 +682,69 @@ public class RangeSetTest {
         }
         assert !positionsIter.hasNext();
         assertEquals(positions, keys.invert(selected));
+    }
+
+
+    @Test
+    public void testIntersect() {
+        // Empty intersect anything => empty
+        assertEquals(RangeSet.empty(), RangeSet.empty().intersect(RangeSet.empty()));
+        assertEquals(RangeSet.empty(), RangeSet.empty().intersect(RangeSet.ofRange(0, 10)));
+        assertEquals(RangeSet.empty(), RangeSet.ofRange(0, 10).intersect(RangeSet.empty()));
+
+        // Identical sets
+        assertEquals(RangeSet.ofRange(5, 10), RangeSet.ofRange(5, 10).intersect(RangeSet.ofRange(5, 10)));
+
+        // One is a subset of the other
+        assertEquals(RangeSet.ofRange(5, 10), RangeSet.ofRange(0, 20).intersect(RangeSet.ofRange(5, 10)));
+        assertEquals(RangeSet.ofRange(5, 10), RangeSet.ofRange(5, 10).intersect(RangeSet.ofRange(0, 20)));
+
+        // Partial overlap — single ranges
+        assertEquals(RangeSet.ofRange(5, 10), RangeSet.ofRange(0, 10).intersect(RangeSet.ofRange(5, 15)));
+        assertEquals(RangeSet.ofRange(5, 10), RangeSet.ofRange(5, 15).intersect(RangeSet.ofRange(0, 10)));
+
+        // No overlap
+        assertEquals(RangeSet.empty(), RangeSet.ofRange(0, 5).intersect(RangeSet.ofRange(10, 15)));
+        assertEquals(RangeSet.empty(), RangeSet.ofRange(10, 15).intersect(RangeSet.ofRange(0, 5)));
+        // Adjacent but not overlapping
+        assertEquals(RangeSet.empty(), RangeSet.ofRange(0, 5).intersect(RangeSet.ofRange(6, 10)));
+
+        // Multiple ranges in both sets
+        RangeSet a = of(new Range(0, 10), new Range(20, 30), new Range(40, 50));
+        RangeSet b = of(new Range(5, 25), new Range(45, 55));
+        RangeSet expected = of(new Range(5, 10), new Range(20, 25), new Range(45, 50));
+        assertEquals(expected, a.intersect(b));
+        assertEquals(expected, b.intersect(a));
+
+        // Multiple ranges — no overlap in some regions
+        a = of(new Range(0, 5), new Range(10, 15), new Range(20, 25));
+        b = of(new Range(3, 12), new Range(22, 30));
+        expected = of(new Range(3, 5), new Range(10, 12), new Range(22, 25));
+        assertEquals(expected, a.intersect(b));
+        assertEquals(expected, b.intersect(a));
+
+        // Single-element intersections
+        assertEquals(RangeSet.ofItems(5), RangeSet.ofRange(0, 5).intersect(RangeSet.ofRange(5, 10)));
+        assertEquals(RangeSet.ofItems(10), RangeSet.ofRange(5, 10).intersect(RangeSet.ofRange(10, 15)));
+
+        // Discrete items
+        a = RangeSet.ofItems(1, 3, 5, 7, 9);
+        b = RangeSet.ofItems(2, 3, 6, 7, 8);
+        assertEquals(RangeSet.ofItems(3, 7), a.intersect(b));
+
+        // Non-mutation: original sets unchanged
+        a = RangeSet.ofRange(0, 10);
+        b = RangeSet.ofRange(5, 15);
+        RangeSet result = a.intersect(b);
+        assertEquals(RangeSet.ofRange(5, 10), result);
+        assertEquals(RangeSet.ofRange(0, 10), a);
+        assertEquals(RangeSet.ofRange(5, 15), b);
+
+        // Large values
+        long largeA = (long) Integer.MAX_VALUE + 10L;
+        long largeB = (long) Integer.MAX_VALUE + 100L;
+        a = RangeSet.ofRange(largeA, largeB);
+        b = RangeSet.ofRange(largeA + 20, largeB + 50);
+        assertEquals(RangeSet.ofRange(largeA + 20, largeB), a.intersect(b));
     }
 }

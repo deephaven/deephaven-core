@@ -39,14 +39,16 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import junit.framework.TestCase;
 import org.apache.arrow.flatbuf.Schema;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.*;
+
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class BarrageBlinkTableTest extends RefreshingTableTestCase {
@@ -150,7 +152,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             exceptions.add(originalException);
             final StringWriter errors = new StringWriter();
             originalException.printStackTrace(new PrintWriter(errors));
-            TestCase.fail(errors.toString());
+            fail(errors.toString());
         }
     }
 
@@ -193,8 +195,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
                     options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
                     schema.computeWireComponentTypes(),
                     new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer()));
-            BarrageMessageRoundTripTest.DummyObserver dummyObserver =
-                    new BarrageMessageRoundTripTest.DummyObserver(marshaller, commandQueue);
+            BarrageMessageRoundTripTestBase.DummyObserver dummyObserver =
+                    new BarrageMessageRoundTripTestBase.DummyObserver(marshaller, commandQueue);
 
             if (viewport == null) {
                 replicatedTUV = TableUpdateValidator.make(barrageTable);
@@ -313,6 +315,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         });
     }
 
+    @Test
     public void testBasicBlinkSingleUpdates() {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
@@ -331,6 +334,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSenderAggregates() {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
@@ -349,6 +353,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testReceiverAggregates() {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
@@ -367,6 +372,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testBMPFlushesOnSub() {
         barrageMessageProducer.setOnGetSnapshot(this::releaseBlinkRows, false);
 
@@ -390,6 +396,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         client2.validateBatches(2, 3); // gets only after snap
     }
 
+    @Test
     public void testReceiverFlushesEmptyCycle() {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
@@ -411,6 +418,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         client.validateBatches(0, 0);
     }
 
+    @Test
     public void testViewport() {
         // viewports on blink tables are a little silly; but let's ensure we get the expected behavior
         final RemoteClient client = new RemoteClient(RowSetFactory.fromRange(2 * BATCH_SIZE, 3 * BATCH_SIZE - 1), null);
@@ -441,6 +449,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSimultaneousFullAndViewport() {
         final RemoteClient client1 = new RemoteClient();
         final RemoteClient client2 =

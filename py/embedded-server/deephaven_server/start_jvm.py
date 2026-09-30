@@ -117,6 +117,8 @@ def start_jvm(
         "--add-exports=java.management/sun.management=ALL-UNNAMED",
         # Allow our clock-impl project to access internals
         "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+        # Enable unsafe memory access for Netty 4.2, required as of Arrow 19 on Java 25
+        "-Dio.netty.noUnsafe=false",
     ]
     if jvm_args is None:
         jvm_args = required_jvm_args

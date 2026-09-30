@@ -6,7 +6,7 @@ plugins {
 description 'Engine Tuples: Value sequences for use in aggregations, joins, and indexing'
 
 dependencies {
-    api libs.trove
+    api libs.dsi.fastutil
     api project(':Util')
     api project(':engine-time')
     implementation project(':DataStructures')

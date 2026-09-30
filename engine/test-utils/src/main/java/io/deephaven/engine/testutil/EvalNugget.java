@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 
@@ -23,6 +22,7 @@ import java.util.EnumSet;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
+import static org.junit.Assert.*;
 
 public abstract class EvalNugget implements EvalNuggetInterface {
     public static EvalNugget from(Supplier<Table> makeTable) {
@@ -83,7 +83,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
             originalException.printStackTrace(new PrintWriter(errors));
 
             showResult("Incremental Table at Failure State:", originalValue);
-            TestCase.fail(errors.toString());
+            fail(errors.toString());
         }
     }
 

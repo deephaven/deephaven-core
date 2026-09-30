@@ -210,29 +210,36 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         }
 
         boolean anyPreviousTableIsRefreshing = false;
+        boolean multipleConstituents = false;
 
         Table constituent = constituents.next();
         boolean currentTableIsRefreshing = constituent.isRefreshing();
         final Map<String, Object> candidates = new HashMap<>(constituent.getAttributes());
 
         while (constituents.hasNext()) {
+            multipleConstituents = true;
             anyPreviousTableIsRefreshing |= currentTableIsRefreshing;
             constituent = constituents.next();
             currentTableIsRefreshing = constituent.isRefreshing();
-            final Iterator<Map.Entry<String, Object>> candidatesIter = candidates.entrySet().iterator();
-            while (candidatesIter.hasNext()) {
-                final Map.Entry<String, Object> candidate = candidatesIter.next();
-                final String attrKey = candidate.getKey();
-                final Object candidateValue = candidate.getValue();
-                final boolean matches = constituent.hasAttribute(attrKey) &&
-                        Objects.equals(constituent.getAttribute(attrKey), candidateValue);
-                if (!matches) {
-                    candidatesIter.remove();
+            if (!candidates.isEmpty()) {
+                final Iterator<Map.Entry<String, Object>> candidatesIter = candidates.entrySet().iterator();
+                while (candidatesIter.hasNext()) {
+                    final Map.Entry<String, Object> candidate = candidatesIter.next();
+                    final String attrKey = candidate.getKey();
+                    final Object candidateValue = candidate.getValue();
+                    final boolean matches = constituent.hasAttribute(attrKey) &&
+                            Objects.equals(constituent.getAttribute(attrKey), candidateValue);
+                    if (!matches) {
+                        candidatesIter.remove();
+                    }
                 }
             }
-            if (candidates.isEmpty()) {
-                return Collections.emptyMap();
-            }
+        }
+
+        if (multipleConstituents) {
+            // The concatenation of two or more sorted tables is not guaranteed to be sorted, even when the
+            // constituents agree on their sort order. Propagating the claim is incorrect.
+            candidates.remove(Table.SORTED_COLUMNS_ATTRIBUTE);
         }
 
         if (anyPreviousTableIsRefreshing) {
@@ -689,7 +696,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             }
             final QueryTable child = parent.getSubTable(
                     parent.getRowSet(), parent.getModifiedColumnSetForUpdates(), parent.getAttributes());
-            parent.propagateFlatness(child);
+            parent.propagateFlatness(child, usePrev);
             return new Result<>(child, new BaseTable.ListenerImpl(getDescription(), parent, child) {
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {

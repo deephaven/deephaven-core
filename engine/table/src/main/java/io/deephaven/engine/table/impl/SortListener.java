@@ -22,7 +22,7 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.mutable.MutableInt;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.*;
@@ -190,7 +190,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final TableUpdateImpl downstream = new TableUpdateImpl();
             final boolean modifiedNeedsSorting =
                     upstream.modifiedColumnSet().containsAny(sortColumnSet) && upstream.modified().isNonempty();
-            final long REVERSE_LOOKUP_NO_ENTRY_VALUE = reverseLookup.getNoEntryValue();
+            final long REVERSE_LOOKUP_NO_ENTRY_VALUE = reverseLookup.defaultReturnValue();
 
             // We use these in enough places that we might as well just grab them (and check their sizes) here.
             upstream.added().intSize("validating added elements");
@@ -610,18 +610,10 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
     }
 
-    private static class ExposedTLongArrayList extends TLongArrayList {
-        public ExposedTLongArrayList() {}
-
-        public long[] peekDataArray() {
-            return _data;
-        }
-    }
-
     private class SortMappingAggregator implements SafeCloseable {
         private final int chunkSize;
-        private final ExposedTLongArrayList keys;
-        private final ExposedTLongArrayList values;
+        private final LongArrayList keys;
+        private final LongArrayList values;
         @SuppressWarnings("rawtypes")
         private final WritableLongChunk valuesChunk;
         private final WritableLongChunk<OrderedRowKeys> keysChunk;
@@ -630,8 +622,8 @@ public class SortListener extends BaseTable.ListenerImpl {
         private final LongSortKernel sortKernel;
 
         SortMappingAggregator() {
-            keys = new ExposedTLongArrayList();
-            values = new ExposedTLongArrayList();
+            keys = new LongArrayList();
+            values = new LongArrayList();
             chunkSize = 4096;
             keysChunk = WritableLongChunk.makeWritableChunk(chunkSize);
             valuesChunk = WritableLongChunk.makeWritableChunk(chunkSize);
@@ -655,8 +647,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             final int size = keys.size();
             for (int ii = 0; ii < size; ii += chunkSize) {
                 final int thisSize = Math.min(chunkSize, size - ii);
-                keysChunk.copyFromArray(keys.peekDataArray(), ii, 0, thisSize);
-                valuesChunk.copyFromArray(values.peekDataArray(), ii, 0, thisSize);
+                keysChunk.copyFromArray(keys.elements(), ii, 0, thisSize);
+                valuesChunk.copyFromArray(values.elements(), ii, 0, thisSize);
                 keysChunk.setSize(thisSize);
                 valuesChunk.setSize(thisSize);
 
@@ -744,8 +736,8 @@ public class SortListener extends BaseTable.ListenerImpl {
 
     private static class DirectionalResettableBuilderSequential implements RowSetBuilderSequential {
         private final int direction;
-        private final TLongArrayList firsts;
-        private final TLongArrayList lasts;
+        private final LongArrayList firsts;
+        private final LongArrayList lasts;
 
         private DirectionalResettableBuilderSequential(int direction, long[] initialItems) {
             this(direction, initialItems, direction > 0 ? 0 : initialItems.length - 1,
@@ -763,8 +755,8 @@ public class SortListener extends BaseTable.ListenerImpl {
         private DirectionalResettableBuilderSequential(int direction) {
             Assert.assertion(direction == -1 || direction == 1, "invalid direction");
             this.direction = direction;
-            this.firsts = new TLongArrayList();
-            this.lasts = new TLongArrayList();
+            this.firsts = new LongArrayList();
+            this.lasts = new LongArrayList();
         }
 
         @Override
@@ -790,7 +782,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
             final int lSize = lasts.size();
             if (lSize > 0) {
-                final long lastLast = lasts.get(lSize - 1);
+                final long lastLast = lasts.getLong(lSize - 1);
 
                 Assert.assertion(Long.compare(rangeLastRowKey, lastLast) * direction > 0,
                         "Long.compare(lastRowKey, lastLast) * direction > 0",
@@ -815,11 +807,11 @@ public class SortListener extends BaseTable.ListenerImpl {
             int nr = firsts.size();
             if (direction == -1) {
                 for (int ii = nr - 1; ii >= 0; --ii) {
-                    builder.appendRange(lasts.get(ii), firsts.get(ii));
+                    builder.appendRange(lasts.getLong(ii), firsts.getLong(ii));
                 }
             } else {
                 for (int ii = 0; ii < nr; ++ii) {
-                    builder.appendRange(firsts.get(ii), lasts.get(ii));
+                    builder.appendRange(firsts.getLong(ii), lasts.getLong(ii));
                 }
             }
         }
@@ -829,16 +821,16 @@ public class SortListener extends BaseTable.ListenerImpl {
         private final int direction;
 
         private boolean allowedToCoalesce = false;
-        private final TLongArrayList firsts;
-        private final TLongArrayList lasts;
-        private final TLongArrayList deltas;
+        private final LongArrayList firsts;
+        private final LongArrayList lasts;
+        private final LongArrayList deltas;
 
         private DirectionalResettableIndexShiftDataBuilder(int direction) {
             Assert.assertion(direction == -1 || direction == 1, "invalid direction");
             this.direction = direction;
-            this.firsts = new TLongArrayList();
-            this.lasts = new TLongArrayList();
-            this.deltas = new TLongArrayList();
+            this.firsts = new LongArrayList();
+            this.lasts = new LongArrayList();
+            this.deltas = new LongArrayList();
         }
 
         private void noteRequiredShift(final long key, final long delta) {
@@ -849,7 +841,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
             final int lSize = lasts.size();
             if (lSize > 0 && allowedToCoalesce) {
-                final long lastDelta = deltas.get(lSize - 1);
+                final long lastDelta = deltas.getLong(lSize - 1);
                 if (lastDelta == delta) { // we can coalesce this shift
                     lasts.set(lSize - 1, key);
                     return;
@@ -872,11 +864,11 @@ public class SortListener extends BaseTable.ListenerImpl {
             int nr = firsts.size();
             if (direction < 0) {
                 for (int ii = nr - 1; ii >= 0; --ii) {
-                    builder.shiftRange(lasts.get(ii), firsts.get(ii), deltas.get(ii));
+                    builder.shiftRange(lasts.getLong(ii), firsts.getLong(ii), deltas.getLong(ii));
                 }
             } else {
                 for (int ii = 0; ii < nr; ++ii) {
-                    builder.shiftRange(firsts.get(ii), lasts.get(ii), deltas.get(ii));
+                    builder.shiftRange(firsts.getLong(ii), lasts.getLong(ii), deltas.getLong(ii));
                 }
             }
         }

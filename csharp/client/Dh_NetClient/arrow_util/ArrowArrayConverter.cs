@@ -1,6 +1,8 @@
 ﻿//
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
+
+using Apache.Arrow;
 using Apache.Arrow.Types;
 
 namespace Deephaven.Dh_NetClient;
@@ -30,20 +32,20 @@ public static class ArrowArrayConverter {
     IColumnSourceVisitor<IBooleanColumnSource>,
     IColumnSourceVisitor<IDateTimeOffsetColumnSource>,
     IColumnSourceVisitor<IDateOnlyColumnSource>,
-    IColumnSourceVisitor<ITimeOnlyColumnSource> {
+    IColumnSourceVisitor<ITimeOnlyColumnSource>,
+    IColumnSourceVisitor<IListColumnSource> {
 
     private readonly int _numRows;
     private readonly Chunk _data;
     private readonly BooleanChunk _nulls;
+
+    public Apache.Arrow.IArrowArray? Result = null;
 
     public ColumnSourceToArrowArrayVisitor(int numRows, Chunk data, BooleanChunk nulls) {
       _numRows = numRows;
       _data = data;
       _nulls = nulls;
     }
-
-
-    public Apache.Arrow.IArrowArray? Result = null;
 
     public void Visit(IByteColumnSource cs) {
       var arrowBuilder = new Apache.Arrow.Int8Array.Builder();
@@ -130,13 +132,22 @@ public static class ArrowArrayConverter {
       Result = arrowBuilder.Build();
     }
 
+    public void Visit(IListColumnSource cs) {
+      var type = cs is IHasElementType ihet ? ihet.ElementType : 
+        throw new Exception($"Expected {Utility.FriendlyTypeName(cs.GetType())} to implement both {nameof(IListColumnSource)} and {nameof(IHasElementType)}");
+
+      var cb = ColumnBuilder.ForIListWithUnderlyingType(type);
+      cb.AppendChunk(_data, _nulls);
+      Result = cb.Build();
+    }
+
     private void CopyHelper<T, TArray, TBuilder>(TBuilder arrowBuilder)
       where TArray : Apache.Arrow.IArrowArray
       where TBuilder : Apache.Arrow.IArrowArrayBuilder<T, TArray, TBuilder> {
       var typedData = ((Chunk<T>)_data).Data;
       for (var i = 0; i != _numRows; ++i) {
         if (!_nulls.Data[i]) {
-          arrowBuilder.Append(typedData[i]);
+          arrowBuilder.Append(typedData[i]!);
         } else {
           arrowBuilder.AppendNull();
         }
@@ -146,8 +157,7 @@ public static class ArrowArrayConverter {
     }
 
     public void Visit(IColumnSource cs) {
-      throw new NotImplementedException($"No ColumnSourceToArrayVisitor.Visit for {Utility.FriendlyTypeName(cs.GetType())}");
+      throw new NotImplementedException($"No {nameof(ColumnSourceToArrowArrayVisitor)}.Visit for {Utility.FriendlyTypeName(cs.GetType())}");
     }
-
   }
 }

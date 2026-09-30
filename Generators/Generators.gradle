@@ -15,7 +15,7 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':extensions-kafka')
     implementation project(':extensions-parquet-table')
-    implementation libs.trove
+    implementation libs.dsi.fastutil
 
     implementation libs.groovy
     implementation libs.groovy.json

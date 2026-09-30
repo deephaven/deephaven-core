@@ -1,6 +1,6 @@
 ---
 title: Install and run the Deephaven production application
-sidebar_label: Production application
+sidebar_label: Install the production application
 ---
 
 This guide shows you how to install and launch the Deephaven Community Core production application. The production application runs Deephaven from artifacts produced during each release cycle. It runs Deephaven without installing Docker or building from source code. It is the recommended way to run production applications that use Deephaven, hence its name. This guide only covers getting started with the production application. For more advanced configuration options, see [Configure the production application](../how-to-guides/configuration/configure-production-application.md).
@@ -12,6 +12,9 @@ Deephaven is only supported on:
 - Linux
 - MacOS
 - Windows 10 or 11 (requires [WSL 2 (Windows Subsystem for Linux v2)](https://learn.microsoft.com/en-us/windows/wsl/install))
+
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
 
 ## Prerequisites
 

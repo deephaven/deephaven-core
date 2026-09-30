@@ -3,8 +3,8 @@
 //
 package io.deephaven.engine.table.impl.locations.local;
 
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -71,7 +71,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         final LocationTableBuilder locationTableBuilder = locationTableBuilderFactory.get();
         final Queue<URI> targetURIs = new ArrayDeque<>();
         final Set<String> partitionKeys = new LinkedHashSet<>(); // Preserve order of insertion
-        final TIntObjectMap<ColumnNameInfo> partitionColInfo = new TIntObjectHashMap<>();
+        final Int2ObjectMap<ColumnNameInfo> partitionColInfo = new Int2ObjectOpenHashMap<>();
         final MutableBoolean registered = new MutableBoolean(false);
         uriStream.forEachOrdered(uri -> {
             final Collection<String> partitionValues = new ArrayList<>();
@@ -94,7 +94,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             @NotNull final URI relativePath,
             @NotNull final Set<String> partitionKeys,
             @NotNull final Collection<String> partitionValues,
-            @NotNull final TIntObjectMap<ColumnNameInfo> partitionColInfo,
+            @NotNull final Int2ObjectMap<ColumnNameInfo> partitionColInfo,
             final boolean registered) {
         final String relativePathString = relativePath.getPath();
         // The following assumes that there is exactly one separator between each subdirectory in the path

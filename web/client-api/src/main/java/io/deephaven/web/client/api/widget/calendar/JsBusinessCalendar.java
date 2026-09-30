@@ -6,10 +6,8 @@ package io.deephaven.web.client.api.widget.calendar;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
-import elemental2.core.JsObject;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
-import io.deephaven.web.client.api.widget.calendar.enums.JsDayOfWeek;
 import io.deephaven.web.client.fu.JsCollectors;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
@@ -27,7 +25,6 @@ public class JsBusinessCalendar {
 
     public JsBusinessCalendar(FigureDescriptor.BusinessCalendarDescriptor businessCalendarDescriptor) {
         this.businessCalendarDescriptor = businessCalendarDescriptor;
-        JsObject.freeze(this.businessCalendarDescriptor);
         timeZone = JsTimeZone.getTimeZone(businessCalendarDescriptor.getTimeZone());
         businessPeriods = businessCalendarDescriptor.getBusinessPeriodsList().stream()
                 .map(JsBusinessPeriod::new)
@@ -50,7 +47,7 @@ public class JsBusinessCalendar {
     /**
      * The time zone of this calendar.
      * 
-     * @return dh.i18n.TimeZone
+     * @return {@link JsTimeZone dh.i18n.TimeZone}
      */
     @JsProperty
     public JsTimeZone getTimeZone() {
@@ -58,7 +55,7 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * The days of the week that are business days.
+     * An array of all days of the week that are business days.
      * 
      * @return String array
      */
@@ -71,9 +68,9 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * The business periods that are open on a business day.
+     * An array of all business periods that are open on a business day.
      * 
-     * @return dh.calendar.BusinessPeriod
+     * @return {@link JsBusinessPeriod dh.calendar.BusinessPeriod} array
      */
     @JsProperty
     public JsArray<JsBusinessPeriod> getBusinessPeriods() {
@@ -81,9 +78,9 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * All holidays defined for this calendar.
+     * An array of all holidays defined for this calendar.
      * 
-     * @return dh.calendar.Holiday
+     * @return {@link JsHoliday dh.calendar.Holiday} array
      */
     @JsProperty
     public JsArray<JsHoliday> getHolidays() {

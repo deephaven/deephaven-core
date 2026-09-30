@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.util.compare.LongComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -292,7 +293,7 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(long lhs, long rhs) {
-        return -1 * Long.compare(lhs, rhs);
+        return -1 * LongComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -304,4 +305,3 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

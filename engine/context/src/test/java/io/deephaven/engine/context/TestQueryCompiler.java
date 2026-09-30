@@ -14,9 +14,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -60,18 +58,14 @@ public class TestQueryCompiler {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
     private SafeCloseable executionContextClosable;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() {
         executionContextClosable = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureQueryScope()
-                .setQueryCompiler(QueryCompilerImpl.create(
-                        folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
+                .setQueryCompiler(QueryCompilerImpl.create())
                 .build()
                 .open();
     }
@@ -375,12 +369,15 @@ public class TestQueryCompiler {
                         CompletionStageFuture.make(),
                 };
 
-        final QueryCompilerImpl badCompiler = QueryCompilerImpl.createForUnitTests(List.of("InvalidClassArgument"));
+        final QueryCompilerImpl badCompiler = QueryCompilerImpl.create();
+        badCompiler.setClassNamesForAnnotationProcessing(List.of("InvalidClassArgument"));
+
         UncheckedDeephavenException e = org.junit.Assert.assertThrows(UncheckedDeephavenException.class,
                 () -> badCompiler.compile(requests, resolvers));
         org.junit.Assert.assertEquals("Error Invoking Compiler, no source present in diagnostic:\n" +
                 "Class names, 'InvalidClassArgument', are only accepted if annotation processing is explicitly requested",
                 e.getMessage());
+
     }
 
     @Test

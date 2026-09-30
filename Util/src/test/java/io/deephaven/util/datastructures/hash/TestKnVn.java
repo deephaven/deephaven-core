@@ -3,13 +3,10 @@
 //
 package io.deephaven.util.datastructures.hash;
 
-import gnu.trove.map.TLongLongMap;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
-import junit.framework.TestCase;
 import org.junit.Assume;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestKnVn {
     /**
@@ -50,7 +47,7 @@ public class TestKnVn {
         fillToCapacity(new HashMapLockFreeK4V4(), HASHTABLE_SIZE_LOWER_BOUND_4);
     }
 
-    private static void fillToCapacity(TLongLongMap ht, final long lowerSizeBound) {
+    private static void fillToCapacity(NullableLongLongMap ht, final long lowerSizeBound) {
         final long maxMemory = Runtime.getRuntime().maxMemory();
         if (maxMemory < MINIMUM_HEAP_SIZE_NEEDED_FOR_TEST) {
             final String skipMessage = String.format("Skipping test, because I want %fG of heap, but have only %fG%n",
@@ -82,8 +79,22 @@ public class TestKnVn {
                 break;
             }
         }
-        TestCase.assertTrue(String.format(
+        assertTrue(String.format(
                 "Expected hashtable to reject a 'put' as it got close to being full, but it accepted %d elements", ii),
                 putFailed);
+
+        // resetToNullRetainingCapacity must remember the maximum-capacity sizing, so that the next allocation comes
+        // back at that capacity with its nearly-full rehash threshold and a refill of the entries this generation
+        // absorbed would not trigger another maximum-sized rehash.
+        final long entriesAbsorbed = ii;
+        final HashMapBase base = (HashMapBase) ht;
+        final int capacityAtMax = ht.capacity();
+        ht.resetToNullRetainingCapacity();
+        assertEquals(0, ht.capacity());
+        ht.put(0, 0);
+        assertEquals(capacityAtMax, ht.capacity());
+        assertTrue(
+                String.format("rehashThreshold (%d) > entriesAbsorbed (%d)", base.rehashThreshold, entriesAbsorbed),
+                base.rehashThreshold > entriesAbsorbed);
     }
 }

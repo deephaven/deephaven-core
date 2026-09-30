@@ -810,4 +810,314 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
             assertTrue(it.hasMore());
         }
     }
+
+    @Test
+    public void testGetRowSequenceIteratorDoesNotLeakRefCount() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.addRange(BLOCK_SIZE, BLOCK_SIZE + 20);
+        final int before = rb.refCount();
+        try (final RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
+            it.getNextRowSequenceWithLength(3);
+        }
+        assertEquals(before, rb.refCount());
+    }
+
+    @Test
+    public void testFillRowKeyChunkDoesNotLeakRefCount() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.addRange(BLOCK_SIZE, BLOCK_SIZE + 20);
+        rb = rb.add(3 * BLOCK_SIZE + 7);
+        final int before = rb.refCount();
+        try (final RowSequence rs = rb.ixGetRowSequenceByPosition(1, 5)) {
+            try (final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(64)) {
+                rs.fillRowKeyChunk(chunk);
+                assertEquals(5, chunk.size());
+                assertEquals(BLOCK_SIZE, chunk.get(0));
+            }
+        }
+        assertEquals(before, rb.refCount());
+    }
+
+    @Test
+    public void testRangeBatchIteratorCloseReleasesCursor() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        // Plenty of separate ranges, so that one small chunk cannot exhaust the iterator.
+        for (int i = 0; i < 1000; ++i) {
+            rb = rb.add(2L * i);
+        }
+        final int before = rb.refCount();
+        final RspRangeBatchIterator it = rb.getRangeBatchIterator(0, rb.getCardinality());
+        try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(16)) {
+            final int nRanges = it.fillRangeChunk(chunk, 0);
+            assertTrue(nRanges < 1000);
+            assertTrue(it.hasNext());
+        }
+        it.close();
+        assertEquals(before, rb.refCount());
+        // Closing after full consumption (internal self-release) must not double-release.
+        final RspRangeBatchIterator it2 = rb.getRangeBatchIterator(0, rb.getCardinality());
+        try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2048)) {
+            final int nRanges = it2.fillRangeChunk(chunk, 0);
+            assertEquals(1000, nRanges);
+        }
+        it2.close();
+        assertEquals(before, rb.refCount());
+    }
+
+    @Test
+    public void testGetRowSequenceByPositionUncachedCardinality() {
+        // With few enough spans (<= accNullThreshold) and cardinality > Integer.MAX_VALUE, the cardinality cache
+        // stays permanently invalid (acc == null, cardData == -1), exercising the uncached branch of
+        // getRowSequenceByPosition even on a clean bitmap.
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.addRange(0, 0x9000_0000L);
+        final long cardinality = 0x9000_0001L;
+        assertEquals(cardinality, rb.getCardinality());
+        try (final RowSequence rs = rb.getRowSequenceByPosition(10, 100)) {
+            assertEquals(100, rs.size());
+            assertEquals(10, rs.firstRowKey());
+            assertEquals(109, rs.lastRowKey());
+        }
+        // Length running past the end must clamp.
+        try (final RowSequence rs = rb.getRowSequenceByPosition(cardinality - 5, 100)) {
+            assertEquals(5, rs.size());
+            assertEquals(0x9000_0000L, rs.lastRowKey());
+        }
+        // Zero length must produce an empty sequence.
+        try (final RowSequence rs = rb.getRowSequenceByPosition(10, 0)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+        }
+        // A saturated length ("everything from start") must not overflow the end position.
+        try (final RowSequence rs = rb.getRowSequenceByPosition(10, Long.MAX_VALUE)) {
+            assertEquals(cardinality - 10, rs.size());
+            assertEquals(10, rs.firstRowKey());
+            assertEquals(0x9000_0000L, rs.lastRowKey());
+        }
+    }
+
+    @Test
+    public void testGetRowSequenceByPositionSaturatedLengthCachedCardinality() {
+        // Small bitmap, so cardinality is cached; a saturated length must not overflow the end position.
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(BLOCK_SIZE + 5);
+        rb = rb.add(2 * BLOCK_SIZE + 7);
+        try (final RowSequence rs = rb.getRowSequenceByPosition(1, Long.MAX_VALUE)) {
+            assertEquals(2, rs.size());
+            assertEquals(BLOCK_SIZE + 5, rs.firstRowKey());
+            assertEquals(2 * BLOCK_SIZE + 7, rs.lastRowKey());
+        }
+    }
+
+    @Test
+    public void testGetRowSequenceByKeyRangeEmptyIntersection() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(30);
+        rb = rb.add(2 * BLOCK_SIZE + 5);
+        // Range falls in the gap between two values within the same block.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(15, 20)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+            assertEquals(RowSequence.NULL_ROW_KEY, rs.firstRowKey());
+            assertEquals(RowSequence.NULL_ROW_KEY, rs.lastRowKey());
+        }
+        // Range falls in the gap between two blocks.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(BLOCK_SIZE, BLOCK_SIZE + 10)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+        }
+        // Range falls entirely before the first key.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(0, 5)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+        }
+        // Range falls entirely after the last key.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(2 * BLOCK_SIZE + 6, 3 * BLOCK_SIZE)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+        }
+        // Sanity: a range that does intersect still works.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(15, 30)) {
+            assertEquals(1, rs.size());
+            assertEquals(30, rs.firstRowKey());
+        }
+    }
+
+    @Test
+    public void testIteratorAdvanceIntoConsumedRegionIsNoOp() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.addRange(BLOCK_SIZE, BLOCK_SIZE + 5);
+        rb = rb.add(2 * BLOCK_SIZE + 3);
+        rb = rb.add(3 * BLOCK_SIZE + 4); // keeps the iterator unexhausted throughout
+        try (final RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
+            final RowSequence rs = it.getNextRowSequenceThrough(2 * BLOCK_SIZE + 3);
+            assertEquals(7, rs.size());
+            final long posBefore = it.getRelativePosition();
+            // Advance to the exact last-consumed key: must be a no-op.
+            assertTrue(it.advance(2 * BLOCK_SIZE + 3));
+            assertEquals(posBefore, it.getRelativePosition());
+            assertEquals(3 * BLOCK_SIZE + 4, it.peekNextKey());
+            // Advance into the middle of the consumed range, in an earlier span: must be a no-op.
+            assertTrue(it.advance(BLOCK_SIZE + 2));
+            assertEquals(posBefore, it.getRelativePosition());
+            assertEquals(3 * BLOCK_SIZE + 4, it.peekNextKey());
+            // A genuine forward advance still works.
+            assertTrue(it.advance(3 * BLOCK_SIZE));
+            assertEquals(3 * BLOCK_SIZE + 4, it.peekNextKey());
+            final RowSequence rs2 = it.getNextRowSequenceThrough(3 * BLOCK_SIZE + 4);
+            assertEquals(1, rs2.size());
+            assertEquals(3 * BLOCK_SIZE + 4, rs2.firstRowKey());
+            assertFalse(it.hasMore());
+        }
+    }
+
+    @Test
+    public void testViewGetRowSequenceByKeyRangeClampedToView() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(BLOCK_SIZE + 5);
+        rb = rb.add(2 * BLOCK_SIZE + 7);
+        // A view over the first two keys only; a query range extending past the view's end must not
+        // return keys outside the view.
+        try (final RowSequence view = rb.getRowSequenceByPosition(0, 2)) {
+            assertEquals(2, view.size());
+            assertEquals(BLOCK_SIZE + 5, view.lastRowKey());
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(0, 3 * BLOCK_SIZE)) {
+                assertEquals(2, rs.size());
+                assertEquals(10, rs.firstRowKey());
+                assertEquals(BLOCK_SIZE + 5, rs.lastRowKey());
+            }
+            // A query entirely after the view's end must be empty.
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(2 * BLOCK_SIZE, 3 * BLOCK_SIZE)) {
+                assertTrue(rs.isEmpty());
+                assertEquals(0, rs.size());
+            }
+        }
+        // A view over the middle key only; a query entirely before the view's start must be empty.
+        try (final RowSequence view = rb.getRowSequenceByPosition(1, 1)) {
+            assertEquals(BLOCK_SIZE + 5, view.firstRowKey());
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(0, 9)) {
+                assertTrue(rs.isEmpty());
+                assertEquals(0, rs.size());
+            }
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(0, 3 * BLOCK_SIZE)) {
+                assertEquals(1, rs.size());
+                assertEquals(BLOCK_SIZE + 5, rs.firstRowKey());
+                assertEquals(BLOCK_SIZE + 5, rs.lastRowKey());
+            }
+        }
+    }
+
+    @Test
+    public void testFillRangeChunkOddOffsetRoundsCapacityDown() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(20);
+        rb = rb.add(30);
+        final RspRangeBatchIterator it = rb.getRangeBatchIterator(0, rb.getCardinality());
+        try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(8)) {
+            // An odd number of available slots: ranges are written in pairs, so only two whole ranges fit.
+            final int offset = chunk.capacity() - 5;
+            final int written = it.fillRangeChunk(chunk, offset);
+            assertEquals(2, written);
+            assertTrue(it.hasNext());
+        }
+        it.close();
+    }
+
+    @Test
+    public void testFillRangeChunkHonorsChunkOffsetCapacity() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(20);
+        rb = rb.add(30);
+        final RspRangeBatchIterator it = rb.getRangeBatchIterator(0, rb.getCardinality());
+        try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(8)) {
+            // Leave room for exactly one range past the offset; the capacity math must account for the
+            // offset or it will write (and count) ranges beyond the chunk's capacity.
+            final int offset = chunk.capacity() - 2;
+            final int written = it.fillRangeChunk(chunk, offset);
+            assertEquals(1, written);
+            assertTrue(it.hasNext());
+        }
+        it.close();
+    }
+
+    @Test
+    public void testGetRowSequenceByKeyRangeStartKeyBeforeFullBlockSpan() {
+        // A start key in a gap that precedes a full block span must still find the span: findInSpan's
+        // full-block-span arm has to report an insertion point, like its singleton and container siblings.
+        RspBitmap a = RspBitmap.makeEmpty();
+        a = a.addRange(5 * BLOCK_SIZE, 6 * BLOCK_SIZE - 1);
+        a = a.add(9 * BLOCK_SIZE + 3);
+        a.finishMutationsAndOptimize();
+        assertEquals(BLOCK_SIZE + 1, a.getCardinality());
+        try (final RowSequence rs = a.ixGetRowSequenceByKeyRange(0, Long.MAX_VALUE)) {
+            assertEquals(BLOCK_SIZE + 1, rs.size());
+            assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+            assertEquals(9 * BLOCK_SIZE + 3, rs.lastRowKey());
+        }
+        try (final RowSequence rs = a.ixGetRowSequenceByKeyRange(0, 6 * BLOCK_SIZE - 1)) {
+            assertEquals(BLOCK_SIZE, rs.size());
+            assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+            assertEquals(6 * BLOCK_SIZE - 1, rs.lastRowKey());
+        }
+
+        // Same shape, but with a span present before the gap.
+        RspBitmap b = RspBitmap.makeEmpty();
+        b = b.add(BLOCK_SIZE + 1);
+        b = b.addRange(5 * BLOCK_SIZE, 6 * BLOCK_SIZE - 1);
+        b.finishMutationsAndOptimize();
+        try (final RowSequence rs = b.ixGetRowSequenceByKeyRange(3 * BLOCK_SIZE, Long.MAX_VALUE)) {
+            assertEquals(BLOCK_SIZE, rs.size());
+            assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+            assertEquals(6 * BLOCK_SIZE - 1, rs.lastRowKey());
+        }
+        // A start key inside the full block span still works.
+        try (final RowSequence rs = b.ixGetRowSequenceByKeyRange(5 * BLOCK_SIZE + 10, Long.MAX_VALUE)) {
+            assertEquals(BLOCK_SIZE - 10, rs.size());
+            assertEquals(5 * BLOCK_SIZE + 10, rs.firstRowKey());
+        }
+
+        // Control: a container-backed first span already behaved correctly.
+        RspBitmap c = RspBitmap.makeEmpty();
+        c = c.addRange(5 * BLOCK_SIZE, 5 * BLOCK_SIZE + 10);
+        c = c.add(9 * BLOCK_SIZE + 3);
+        c.finishMutationsAndOptimize();
+        try (final RowSequence rs = c.ixGetRowSequenceByKeyRange(0, Long.MAX_VALUE)) {
+            assertEquals(12, rs.size());
+            assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+        }
+
+        // Multi-block full block span, and a query landing before it.
+        RspBitmap d = RspBitmap.makeEmpty();
+        d = d.addRange(4 * BLOCK_SIZE, 7 * BLOCK_SIZE - 1);
+        d.finishMutationsAndOptimize();
+        try (final RowSequence rs = d.ixGetRowSequenceByKeyRange(BLOCK_SIZE, Long.MAX_VALUE)) {
+            assertEquals(3 * BLOCK_SIZE, rs.size());
+            assertEquals(4 * BLOCK_SIZE, rs.firstRowKey());
+            assertEquals(7 * BLOCK_SIZE - 1, rs.lastRowKey());
+        }
+    }
+
+    @Test
+    public void testViewGetRowSequenceByKeyRangeStartingInFullBlockSpan() {
+        // A view whose first span is a full block span, queried from before its start.
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.addRange(5 * BLOCK_SIZE, 6 * BLOCK_SIZE - 1);
+        rb = rb.add(9 * BLOCK_SIZE + 3);
+        rb.finishMutationsAndOptimize();
+        try (final RowSequence view = rb.ixGetRowSequenceByPosition(0, BLOCK_SIZE)) {
+            assertEquals(BLOCK_SIZE, view.size());
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(0, Long.MAX_VALUE)) {
+                assertEquals(BLOCK_SIZE, rs.size());
+                assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+                assertEquals(6 * BLOCK_SIZE - 1, rs.lastRowKey());
+            }
+        }
+    }
 }

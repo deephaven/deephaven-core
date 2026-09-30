@@ -72,9 +72,11 @@ def when_done():
 
 Subsequent calls of `add_table` will add data to `my_table`.
 
-```python test-set=1 order=my_table
+```python ticking-table test-set=1 order=null
 add_table(10)
 ```
+
+![The `my_table` blink table after data has been added](../assets/how-to/table-publisher-getting-started.png)
 
 The `TablePublisher` can be shut down by calling [`publish_failure`](../reference/table-operations/create/TablePublisher.md#methods). In this case, the `when_done` function invokes it.
 
@@ -89,7 +91,7 @@ The previous example required manual calls to `add_table` to populate `my_table`
 > [!IMPORTANT]
 > A ticking table in a thread must be updated from within an [execution context](../conceptual/execution-context.md).
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven.stream.table_publisher import table_publisher
 from deephaven.execution_context import get_exec_ctx
 from deephaven import dtypes as dht
@@ -288,7 +290,7 @@ t2, t2_cancel = subscribe_stats(["ETH-USD", "BTC-USDT", "ETH-USDT"])
 
 ## Data history
 
-Table publishers create blink tables. Blink tables do not store any data history - data is gone forever at the start of a new update cycle. In most use cases, you will want to store some or all of the rows written during previous update cycles. There are two ways to do this:
+Table publishers create blink tables. Blink tables do not store any data history — data is gone forever at the start of a new update cycle. In most use cases, you want to store some or all of the rows written during previous update cycles. There are two ways to do this:
 
 - Store some data history by creating a downstream ring table with [`ring_table`](../reference/table-operations/create/ringTable.md).
 - Store all data history by creating a downstream append-only table with [`blink_to_append_only`](../reference/table-operations/create/blink-to-append-only.md).
@@ -297,7 +299,7 @@ See the [table types user guide](../conceptual/table-types.md) for more informat
 
 To show the storage of data history, we will extend the [threading example](#example-threading) by creating a downstream ring table and append-only table.
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven.stream.table_publisher import table_publisher
 from deephaven.execution_context import get_exec_ctx
 from deephaven.stream import blink_to_append_only
@@ -400,7 +402,7 @@ thread.start()
 
 <LoopedVideo src='../assets/how-to/DynamicTableWriter_Video1.mp4' />
 
-### Example: Trig Functions
+### Example: Trig functions
 
 The following example writes rows containing `X`, `sin(X)`, `cos(X)`, and `tan(X)` and plots the functions as the table updates.
 

@@ -18,8 +18,6 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -29,12 +27,12 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -43,59 +41,48 @@ import java.util.function.Function;
  */
 public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_TYPE>> extends BaseTable<IMPL_TYPE> {
 
-    private final Object coalescingLock = new Object();
-
-    private volatile Table coalesced;
-
     public UncoalescedTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         super(definition, description, null);
     }
 
     // region coalesce support
 
-    /**
-     * Produce the actual coalesced result table, suitable for caching.
-     * <p>
-     * Note that if this table must have listeners registered, etc, setting these up is the implementation's
-     * responsibility.
-     * <p>
-     * Also note that the implementation should copy attributes, as in
-     * {@code copyAttributes(resultTable, CopyAttributeOperation.Coalesce)}.
-     *
-     * @return The coalesced result table, suitable for caching
-     */
-    protected abstract Table doCoalesce();
+    @Override
+    public abstract Table coalesce();
 
-    public final Table coalesce() {
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            Table localCoalesced;
-            if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
-                return localCoalesced;
-            }
-            synchronized (coalescingLock) {
-                if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
-                    return localCoalesced;
-                }
-                return coalesced = doCoalesce();
-            }
-        }
+    /**
+     * Get the memoized result of a previous {@link #coalesce()}, if one exists and is still usable, without forcing
+     * coalescing. This allows callers to take advantage of work that has already been done, while leaving the table
+     * uncoalesced (and thus able to benefit from deferred-operation optimizations, e.g.
+     * {@code PartitionAwareSourceTable}'s location filtering) when it has not.
+     *
+     * <p>
+     * A present result is managed by the {@link io.deephaven.engine.liveness.LivenessScopeStack#peek() enclosing
+     * liveness scope} if it requires management.
+     * </p>
+     *
+     * The default implementation never offers a result for reuse; subclasses that memoize their coalesced result should
+     * override.
+     *
+     * @return The existing coalesced result, or {@link Optional#empty()} if there is none available for reuse
+     */
+    public Optional<Table> coalescedIfAvailable() {
+        return Optional.empty();
     }
 
     /**
-     * Proactively set the coalesced result table. See {@link #doCoalesce()} for the caller's responsibilities. Note
-     * that it is an error to call this more than once with a non-null input.
+     * Helper for {@link #coalescedIfAvailable()} implementations. {@link Liveness#verifyCachedObjectForReuse(Object)
+     * Verifies} a memoized coalesced result for reuse, which manages it with the enclosing liveness scope if necessary.
+     * A {@code null} candidate, or one that is no longer live, yields {@link Optional#empty()}.
      *
-     * @param coalesced The coalesced result table, suitable for caching
+     * @param candidate The memoized {@link Table}, possibly {@code null} if nothing has been memoized
+     * @return The coalesced result available for reuse, or {@link Optional#empty()}
      */
-    protected final void setCoalesced(final Table coalesced) {
-        synchronized (coalescingLock) {
-            Assert.eqNull(this.coalesced, "this.coalesced");
-            this.coalesced = coalesced;
+    protected static Optional<Table> verifyCoalescedForReuse(@Nullable final Table candidate) {
+        if (Liveness.verifyCachedObjectForReuse(candidate)) {
+            return Optional.of(candidate);
         }
-    }
-
-    protected @Nullable final Table getCoalesced() {
-        return coalesced;
+        return Optional.empty();
     }
 
     // endregion coalesce support

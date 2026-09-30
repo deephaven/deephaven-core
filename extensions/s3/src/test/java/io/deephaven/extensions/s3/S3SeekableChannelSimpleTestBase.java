@@ -3,12 +3,12 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
 import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import junit.framework.TestCase;
 import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,6 +86,10 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         }, (long) numBytes, executor));
         final URI uri = uri("32MiB.bin");
         final ByteBuffer buffer = ByteBuffer.allocate(1);
+        final long startTime = System.nanoTime();
+        final QueryPerformanceReadTracker tracker = QueryPerformanceReadTracker.forCurrentThread();
+        final long startReadBytes = tracker.getDataReadBytes();
+        final long startReadNanos = tracker.getDataReadNanos();
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
@@ -98,6 +102,15 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             }
             assertThat(readChannel.read(buffer)).isEqualTo(-1);
         }
+        final long endTime = System.nanoTime();
+        final long endReadBytes = tracker.getDataReadBytes();
+        final long endReadNanos = tracker.getDataReadNanos();
+        assertThat(endReadBytes - startReadBytes).isEqualTo(numBytes);
+        final long duration = endReadNanos - startReadNanos;
+        // we need to record some time
+        assertThat(duration).isGreaterThan(0);
+        // but don't want to double count
+        assertThat(duration).isLessThan(endTime - startTime);
     }
 
     @Test
@@ -124,7 +137,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             outputStream.flush();
             try {
                 outputStream.write(contentBytes);
-                TestCase.fail("Failure expected on writing since the stream is marked as done.");
+                fail("Failure expected on writing since the stream is marked as done.");
             } catch (IOException expected) {
             }
 

@@ -45,6 +45,7 @@ The `ParquetInstructions` class has the following methods:
 - `getSpecialInstructions`: Returns the special instructions set for this `ParquetInstructions` instance.
 - `getTableDefinition`: Returns the table definition.
 - `getTargetPageSize`: Returns the target page size.
+- `getUnsignedLongTarget(columnName)`: Returns the `UnsignedLongTarget` requested for the specified column, or an empty `Optional` if none was requested. Can be set with `Builder.setUnsignedLongTarget`.
 - `isLegacyParquet`: Returns a boolean indicating whether the Parquet data is in legacy format.
 - `isRefreshing`: Returns a boolean indicating whether the Parquet data represents a refreshing source.
 - `sameColumnNamesAndCodecMappings(i1, i2)`: Returns a boolean indicating whether the two `ParquetInstructions` instances have the same column names and codec mappings.
@@ -74,8 +75,9 @@ The `ParquetInstructions.Builder` class has the following methods:
   - `LZ4_RAW`: A codec based on the [LZ4 block format](https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md). Should always be used instead of `LZ4`.
   - `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
   - `GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
-  - `ZSTD`: Compression codec with the highest compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-  - `LZ4`: **Deprecated** Compression codec loosely based on the [LZ4 compression algorithm](https://github.com/lz4/lz4), but with an additional undocumented framing scheme. The framing is part of the original Hadoop compression library and was historically copied first in parquet-mr, then emulated with mixed results by parquet-cpp. Note that `LZ4` is deprecated; use `LZ4_RAW` instead.
+  - `ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
+  - `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
+  - `LZ4`: **Deprecated** Use `LZ4_RAW` instead.
 - `setFileLayout(fileLayout)`: Sets the Parquet file layout. Use with `ParquetFileLayout.valueOf(<Enum>)`. If this method is not called, layout is inferred. Enums are:
   - "SINGLE_FILE": A single Parquet file.
   - "FLAT_PARTITIONED": A single directory of Parquet files with no nested subdirectories.
@@ -95,6 +97,10 @@ The `ParquetInstructions.Builder` class has the following methods:
 - `setSpecialInstructions(specialInstructions)`: Special instructions for reading Parquet files, useful when reading files from a non-local S3 server. These instructions are provided as an instance of [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions).
 - `setTableDefinition(tableDefinition)`: Sets the table definition.
 - `setTargetPageSize(targetPageSize)`: Sets the target page size.
+- `setUnsignedLongTarget(columnName, target)`: Sets the Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as. This applies only to reads, and only to columns that carry the `UINT_64` logical type; it is ignored when writing because Deephaven never writes `UINT_64`. Setting two different targets for one column name is not allowed. A table definition supplied with `setTableDefinition` governs the column type instead, and a definition that disagrees with this target is rejected by `build`. The available targets are:
+  - `UnsignedLongTarget.BIG_INTEGER`: (default) Read the column as `java.math.BigInteger`, which represents every `UINT_64` value exactly.
+  - `UnsignedLongTarget.LONG`: Read the column as `long`. Values greater than 2<sup>63</sup> - 1 have no `long` representation, so reading a page that contains one raises an error.
+  - `UnsignedLongTarget.SIGNED_LONG`: Read the column as `long`, reinterpreting the bit pattern as signed. Values greater than 2<sup>63</sup> - 1 read as negative numbers, and 2<sup>63</sup> reads as `NULL_LONG`, which is indistinguishable from a null.
 - `useDictionary(columnName, useDictionary)`: Set a hint that the writer should use dictionary-based encoding for writing this column; never evaluated for non-String columns.
 
 ### `S3Instructions` methods

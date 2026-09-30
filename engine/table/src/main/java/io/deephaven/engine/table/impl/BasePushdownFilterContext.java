@@ -67,6 +67,16 @@ public interface BasePushdownFilterContext extends PushdownFilterContext {
     List<ColumnSource<?>> columnSources();
 
     /**
+     * If this filter is a range filter compatible with pushdown, returns the range filter. Otherwise, returns null.
+     */
+    AbstractRangeFilter rangeFilter();
+
+    /**
+     * If this filter is a match filter compatible with pushdown, returns the match filter. Otherwise, returns null.
+     */
+    MatchFilter matchFilter();
+
+    /**
      * Whether this filter supports direct chunk filtering, i.e., it can be applied to a chunk of data rather than a
      * table. This includes any filter that implements {@link ExposesChunkFilter} or {@link ConditionFilter} with
      * exactly one column.

@@ -3,7 +3,7 @@
 //
 package io.deephaven.stream;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
@@ -210,13 +210,13 @@ public class StreamToBlinkTableAdapter
 
     @NotNull
     private static ChunkColumnSource<?>[] makeChunkSources(TableDefinition tableDefinition) {
-        final TLongArrayList offsets = new TLongArrayList();
+        final LongArrayList offsets = new LongArrayList();
         return tableDefinition.getColumnStream().map(cd -> makeChunkSourceForColumn(offsets, cd))
                 .toArray(ChunkColumnSource[]::new);
     }
 
     @NotNull
-    private static ChunkColumnSource<?> makeChunkSourceForColumn(TLongArrayList offsets, ColumnDefinition<?> cd) {
+    private static ChunkColumnSource<?> makeChunkSourceForColumn(LongArrayList offsets, ColumnDefinition<?> cd) {
         final Class<?> replacementType = StreamChunkUtils.replacementType(cd.getDataType());
         if (replacementType != null) {
             return ChunkColumnSource.make(ChunkType.fromElementType(replacementType), replacementType, null, offsets);

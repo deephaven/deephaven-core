@@ -17,6 +17,9 @@ This independence can cause consistency issues when you have multiple tables tha
 
 Both `SyncTableFilter` and `LeaderTableFilter` solve this problem by ensuring that only coordinated rows appear in the filtered results.
 
+> [!NOTE]
+> These filters are accessed directly through [`jpy`](./use-jpy.md) rather than through a Python API wrapper. Console and script-session code already runs under the update graph's exclusive lock, so calling a builder's `build` method directly, as shown below, is safe there even when the input tables are refreshing. If you call one of these builders from an external worker or timer thread instead, wrap the call in [`auto_locking_ctx`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking_ctx), passing it the builder's input tables as arguments; it only acquires the lock when one of those arguments is actually refreshing. Avoid [`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock) for this: unlike `auto_locking_ctx`, it always attempts to acquire the lock, and `UpdateGraphLock` rejects that attempt if the calling thread is already processing updates, such as inside a listener callback. See [Update graph locks and thread safety](./table-listeners-python.md#update-graph-locks-and-thread-safety) for more on when explicit locking is needed.
+
 ## When to use each utility
 
 Choose the synchronization utility based on your table relationships:
@@ -36,11 +39,11 @@ Both utilities require:
 
 ## `SyncTableFilter`
 
-`SyncTableFilter` synchronizes multiple peer tables by showing only rows where all tables have the same minimum ID for each key.
+`SyncTableFilter` synchronizes multiple peer tables by showing, for each key, only the rows at the highest ID that all tables currently share.
 
 ### How it works
 
-For each key, the filter identifies the minimum ID value across all input tables. Only rows with that minimum ID are passed through. When all tables advance to the next ID, the filter removes the old ID's rows and adds the new ID's rows.
+For each key, the filter finds the highest ID for which every input table has a matching row, and passes through only the rows at that ID. When the tables receive new data and reach a higher commonly available ID, the filter removes the previous ID's rows and adds the new ID's rows.
 
 ### Example
 
@@ -50,6 +53,7 @@ This example synchronizes three tables that share `Symbol` as a key and use `Seq
 import jpy
 from deephaven import new_table
 from deephaven.column import string_col, long_col, double_col
+from deephaven.table import Table
 
 SyncTableFilterBuilder = jpy.get_type(
     "io.deephaven.engine.table.impl.util.SyncTableFilter$Builder"
@@ -87,17 +91,16 @@ builder.addTable("bidAsk", bid_ask_data.j_table)
 
 result = builder.build()
 
-synced_prices = result.get("prices")
-synced_volumes = result.get("volumes")
-synced_bid_ask = result.get("bidAsk")
+synced_prices = Table(result.get("prices"))
+synced_volumes = Table(result.get("volumes"))
+synced_bid_ask = Table(result.get("bidAsk"))
 ```
 
 In this example:
 
-- For `AAPL`, all three tables have `SeqNum` 1 and 2, so those rows appear in the synchronized results.
-- For `AAPL`, only `price_data` has `SeqNum` 3, so that row is filtered out.
-- For `GOOGL`, only `bid_ask_data` is missing `SeqNum` 2, so only rows with `SeqNum` 1 appear.
-- When `bid_ask_data` receives `SeqNum` 2 for `GOOGL`, the filter will advance to show those rows.
+- For `AAPL`, `price_data` has `SeqNum` 1, 2, and 3, but `volume_data` and `bid_ask_data` only go up to `SeqNum` 2. The highest ID common to all three is 2, so only the `SeqNum` 2 rows appear in the synchronized results.
+- For `GOOGL`, `price_data` and `volume_data` have `SeqNum` 1 and 2, but `bid_ask_data` only has `SeqNum` 1. The highest common ID is 1, so only the `SeqNum` 1 rows appear.
+- When `bid_ask_data` receives `SeqNum` 2 for `GOOGL`, the filter advances to show those rows instead, replacing the `SeqNum` 1 rows.
 
 ### API
 
@@ -117,7 +120,7 @@ Build and retrieve the synchronized tables:
 
 ```python syntax
 result = builder.build()
-synced_table = result.get(table_name)
+synced_table = Table(result.get(table_name))
 ```
 
 ## `LeaderTableFilter`
@@ -126,7 +129,7 @@ synced_table = result.get(table_name)
 
 ### How it works
 
-The leader table contains one ID column for each follower table. When the leader table has a row with specific ID values, the filter shows the corresponding rows from each follower table that match those IDs.
+The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key, once every follower's ID is satisfied. An ID is satisfied either by a matching row in that follower table, or by a null, which is always treated as satisfied but yields no rows for that follower. An earlier leader row for that key is superseded once a later one is fully satisfied.
 
 ### Example
 
@@ -136,6 +139,7 @@ This example uses a synchronization log as the leader table:
 import jpy
 from deephaven import new_table
 from deephaven.column import string_col, long_col, double_col
+from deephaven.table import Table
 
 LeaderTableFilterBuilder = jpy.get_type(
     "io.deephaven.engine.util.LeaderTableFilter$TableBuilder"
@@ -186,15 +190,15 @@ builder.addTable(
 
 result = builder.build()
 
-filtered_leader = result.getLeader()
-filtered_trades = result.get("trades")
-filtered_messages = result.get("messages")
+filtered_leader = Table(result.getLeader())
+filtered_trades = Table(result.get("trades"))
+filtered_messages = Table(result.get("messages"))
 ```
 
 In this example:
 
-- The `sync_log` leader table controls which trades and messages appear.
-- For `ClientA/S1`, the leader shows `TradeId` 100 and 101, and `MessageId` 1 and 2.
+- The `sync_log` leader table controls which trades and messages appear. Only the most recent leader row per key is shown once its IDs are matched in every follower table.
+- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `trade_log` and `message_log`. However, only the most recent match — `TradeId` 101 and `MessageId` 2 — appears in the synchronized results.
 - Even though `trade_log` has `Id` 102 and `message_log` has `MsgId` 3, they don't appear because the leader hasn't referenced them yet.
 - For `ClientB/S2`, only trade 200 and message 5 appear.
 
@@ -228,8 +232,8 @@ Build and retrieve the synchronized tables:
 
 ```python syntax
 result = builder.build()
-filtered_leader = result.getLeader()
-filtered_follower = result.get(table_name)
+filtered_leader = Table(result.getLeader())
+filtered_follower = Table(result.get(table_name))
 ```
 
 ### Partitioned table variant
@@ -237,14 +241,21 @@ filtered_follower = result.get(table_name)
 `LeaderTableFilter.PartitionedTableBuilder` works with partitioned tables. Access it via jpy:
 
 ```python syntax
+from deephaven.table import PartitionedTable
+
 PartitionedTableBuilder = jpy.get_type(
     "io.deephaven.engine.util.LeaderTableFilter$PartitionedTableBuilder"
 )
-builder = PartitionedTableBuilder(leader_partitioned_table.j_partitioned_table)
-builder.addTable(
+builder = PartitionedTableBuilder(
+    leader_partitioned_table.j_partitioned_table, key_column1, key_column2, ...
+)
+builder.addPartitionedTable(
     name, follower_partitioned_table.j_partitioned_table, "leaderIdCol=followerIdCol"
 )
 result = builder.build()
+
+filtered_leader = PartitionedTable(result.getLeader())
+filtered_follower = PartitionedTable(result.get(name))
 ```
 
 Requirements:

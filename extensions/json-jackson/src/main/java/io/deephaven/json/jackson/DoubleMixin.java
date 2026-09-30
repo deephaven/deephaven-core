@@ -5,10 +5,9 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.MathUtil;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
-import io.deephaven.chunk.sized.SizedDoubleChunk;
 import io.deephaven.json.DoubleValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -68,7 +67,7 @@ final class DoubleMixin extends Mixin<DoubleValue> {
     }
 
     final class DoubleRepeaterImpl extends RepeaterProcessorBase<double[]> {
-        private final SizedDoubleChunk<?> chunk = new SizedDoubleChunk<>(0);
+        private double[] buffer = new double[0];
 
         public DoubleRepeaterImpl() {
             super(null, null, Type.doubleType().arrayType());
@@ -76,24 +75,17 @@ final class DoubleMixin extends Mixin<DoubleValue> {
 
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableDoubleChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, DoubleMixin.this.parseValue(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseValue(parser));
         }
 
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableDoubleChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, DoubleMixin.this.parseMissing(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseMissing(parser));
         }
 
         @Override
         public double[] doneImpl(JsonParser parser, int length) {
-            final WritableDoubleChunk<?> chunk = this.chunk.get();
-            return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
+            return Arrays.copyOfRange(buffer, 0, length);
         }
     }
 

@@ -19,6 +19,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -29,6 +30,8 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.proto.flight.util.SchemaHelper;
@@ -46,13 +49,16 @@ import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.UnionMode;
 import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -69,7 +75,10 @@ import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
 import java.util.stream.LongStream;
+
+import static org.junit.Assert.*;
 
 public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
@@ -78,6 +87,14 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG;
     private static final int FIXED_LIST_LEN = 4;
     private static final int MAX_LIST_LEN = 10;
+
+    /**
+     * Rows per round trip. Deliberately more than two 64-element validity words, and not a multiple of 64: the validity
+     * bitmap is packed a word at a time on the write side and walked in runs of valid/null slots on the read side, so a
+     * chunk narrower than a single word would leave every word-boundary transition and the partial trailing word
+     * untested.
+     */
+    private static final int ROUND_TRIP_NUM_ROWS = 133;
 
     private static final BarrageSubscriptionOptions OPT_DEFAULT = BarrageSubscriptionOptions.builder()
             .build();
@@ -111,6 +128,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 .readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, offset, totalRows);
     }
 
+    @Test
     public void testDenseUnionChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -146,6 +164,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSparseUnionChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -181,6 +200,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMapChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -256,6 +276,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testVarLenListChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -294,6 +315,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testFixedLenListChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -375,6 +397,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testCharChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -401,6 +424,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testBooleanChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -427,6 +451,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testBooleanChunkSerializationNonStandardNulls() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(SpecialMode.NONE, opts, boolean.class, (utO) -> {
@@ -456,6 +481,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testByteChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -482,6 +508,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testShortChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -508,6 +535,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testIntChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -534,6 +562,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testLongChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -542,27 +571,11 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
                 }
-            }, BarrageColumnRoundTripTest::longIdentityValidator);
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
         }
     }
 
-    private static void longIdentityValidator(WritableChunk<Values> utO, WritableChunk<Values> utC, RowSequence subset,
-            int offset) {
-        final WritableLongChunk<Values> original = utO.asWritableLongChunk();
-        final WritableLongChunk<Values> computed = utC.asWritableLongChunk();
-        if (subset == null) {
-            for (int i = 0; i < original.size(); ++i) {
-                Assert.equals(original.get(i), "original.get(i)",
-                        computed.get(offset + i), "computed.get(i)");
-            }
-        } else {
-            final MutableInt off = new MutableInt();
-            subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
-                    computed.get(offset + off.getAndIncrement()),
-                    "computed.get(offset + off.getAndIncrement())"));
-        }
-    }
-
+    @Test
     public void testFloatChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -589,6 +602,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testDoubleChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -615,6 +629,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testInstantChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -623,10 +638,11 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
                 }
-            }, BarrageColumnRoundTripTest::longIdentityValidator);
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
         }
     }
 
+    @Test
     public void testZDTAsLongChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -635,7 +651,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
                 }
-            }, BarrageColumnRoundTripTest::longIdentityValidator);
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
 
             testRoundTripSerialization(SpecialMode.ZDT_WITH_FACTOR, opts, ZonedDateTime.class, (utO) -> {
                 final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
@@ -645,75 +661,221 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     long val = Math.abs(random.nextLong()) % one_bil;
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : val * one_bil);
                 }
-            }, BarrageColumnRoundTripTest::longIdentityValidator);
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
         }
     }
 
+    /**
+     * Positions at which a run of nulls or of valid values starting there straddles a 64-element validity word
+     * boundary. {@link #ROUND_TRIP_NUM_ROWS} is wide enough for all of them.
+     */
+    private static final int[] BOUNDARY_PIVOTS = {0, 1, 61, 62, 63, 64, 65, 66, 127, 128, 129};
+
+    /**
+     * Round trips a column for each null pattern that turns over on a validity word boundary, plus the all-null and
+     * all-valid extremes. The writer packs the bitmap a word at a time and the reader walks it in runs of valid and
+     * null slots, so these are the transitions where either side can drop or misplace an element; the type-specific
+     * tests above use patterns like {@code i % 7} that do not land on them deliberately.
+     */
+    private static void roundTripEachBoundaryPattern(final BoundaryPatternRunner runner) throws IOException {
+        runner.run("all valid", index -> false);
+        runner.run("all null", index -> true);
+        for (final int pivot : BOUNDARY_PIVOTS) {
+            runner.run("first null at " + pivot, index -> index >= pivot);
+            runner.run("first valid at " + pivot, index -> index < pivot);
+            runner.run("lone null at " + pivot, index -> index == pivot);
+            runner.run("lone valid at " + pivot, index -> index != pivot);
+        }
+    }
+
+    private interface BoundaryPatternRunner {
+        void run(String description, IntPredicate isNull) throws IOException;
+    }
+
+    @Test
+    public void testIntValidityWordBoundaries() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            roundTripEachBoundaryPattern((description, isNull) -> testRoundTripSerialization(
+                    SpecialMode.NONE, opts, int.class,
+                    (utO) -> {
+                        final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, isNull.test(i) ? QueryConstants.NULL_INT : i * 31 + 7);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableIntChunk<Values> original = utO.asWritableIntChunk();
+                        final WritableIntChunk<Values> computed = utC.asWritableIntChunk();
+                        final RowSequence rows =
+                                subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), description,
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    }));
+        }
+    }
+
+    @Test
+    public void testObjectValidityWordBoundaries() throws IOException {
+        // the var-binary path keeps its own offsets buffer alongside the validity bitmap
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            roundTripEachBoundaryPattern((description, isNull) -> testRoundTripSerialization(
+                    SpecialMode.NONE, opts, Object.class,
+                    (utO) -> {
+                        final WritableObjectChunk<String, Values> chunk = utO.asWritableObjectChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, isNull.test(i) ? null : Integer.toString(i));
+                        }
+                    },
+                    new ObjectIdentityValidator<String>()));
+        }
+    }
+
+    /**
+     * The fixed-width payload writers gather values into a {@code BaseChunkWriter#BULK_WRITE_BUFFER_BYTES} window and
+     * flush it with a single write. At the default 4096 bytes that takes 512 doubles, 1024 ints or 4096 bytes, so
+     * {@link #ROUND_TRIP_NUM_ROWS} never fills one and the flush-a-full-window branch goes untaken; real messages fill
+     * it constantly. This covers a full window plus the partial remainder that follows, for the narrowest and widest
+     * elements and one in between.
+     */
+    @Test
+    public void testBulkWritePayloadWindowFlush() throws IOException {
+        final int wideRows = 5000;
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testRoundTripSerialization(SpecialMode.NONE, opts, int.class, wideRows,
+                    (utO) -> {
+                        final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_INT : i * 31 + 7);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableIntChunk<Values> original = utO.asWritableIntChunk();
+                        final WritableIntChunk<Values> computed = utC.asWritableIntChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
+
+            testRoundTripSerialization(SpecialMode.NONE, opts, byte.class, wideRows,
+                    (utO) -> {
+                        final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_BYTE : (byte) (i * 31 + 7));
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableByteChunk<Values> original = utO.asWritableByteChunk();
+                        final WritableByteChunk<Values> computed = utC.asWritableByteChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
+
+            testRoundTripSerialization(SpecialMode.NONE, opts, double.class, wideRows,
+                    (utO) -> {
+                        final WritableDoubleChunk<Values> chunk = utO.asWritableDoubleChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_DOUBLE : i * 2.25);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableDoubleChunk<Values> original = utO.asWritableDoubleChunk();
+                        final WritableDoubleChunk<Values> computed = utC.asWritableDoubleChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
+        }
+    }
+
+    @Test
     public void testObjectSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testStringSerializationDHNulls() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, String.class,
                 initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testStringSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testUniqueToStringSerializationDHNulls() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
+    @Test
     public void testUniqueToStringSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
+    @Test
     public void testStringArrayDHNullsSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, String[].class,
                 BarrageColumnRoundTripTest::initStringArrayChunk, new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testStringArraySerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, String[].class,
                 BarrageColumnRoundTripTest::initStringArrayChunk,
                 new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testLongArraySerializationDHNulls() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, long[].class,
                 BarrageColumnRoundTripTest::initLongArrayChunk,
                 new LongArrayIdentityValidator());
     }
 
+    @Test
     public void testLongArraySerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, long[].class,
                 BarrageColumnRoundTripTest::initLongArrayChunk,
                 new LongArrayIdentityValidator());
     }
 
+    @Test
     public void testLongVectorSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LongVector.class,
                 BarrageColumnRoundTripTest::initLongVectorChunk,
                 new LongVectorIdentityValidator());
     }
 
+    @Test
     public void testLocalDateSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalDate.class,
                 BarrageColumnRoundTripTest::initLocalDateChunk,
                 new LocalDateIdentityValidator());
     }
 
+    @Test
     public void testLocalTimeSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalTime.class,
                 BarrageColumnRoundTripTest::initLocalTimeChunk,
                 new LocalTimeIdentityValidator());
+    }
+
+    @Test
+    public void testDurationSerialization() throws IOException {
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Duration.class,
+                BarrageColumnRoundTripTest::initDurationChunk,
+                new DurationIdentityValidator());
     }
 
     private static class Unique {
@@ -752,12 +914,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<String[], Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
-                final String[] entry = new String[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final String[] entry = new String[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i + ":" + k;
                 }
                 chunk.set(i, entry);
@@ -770,12 +933,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<long[], Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
-                final long[] entry = new long[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final long[] entry = new long[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i * 10000L + k;
                 }
                 chunk.set(i, entry);
@@ -788,12 +952,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LongVector, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
-                final long[] entry = new long[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final long[] entry = new long[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i * 10000L + k;
                 }
                 chunk.set(i, new LongVectorDirect(entry));
@@ -806,8 +971,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LocalDate, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, LocalDate.ofEpochDay((i * 17L) % 365));
@@ -820,13 +985,520 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LocalTime, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, LocalTime.ofNanoOfDay(i * 1700000L));
             }
         }
+    }
+
+    private static void initDurationChunk(final WritableChunk<Values> untypedChunk) {
+        final Random random = new Random(0);
+        final WritableObjectChunk<Duration, Values> chunk = untypedChunk.asWritableObjectChunk();
+
+        for (int i = 0; i < chunk.size(); ++i) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
+                chunk.set(i, null);
+            } else {
+                chunk.set(i, Duration.ofSeconds(i * 3600L, i * 123456789L % 1_000_000_000));
+            }
+        }
+    }
+
+    // ---- Run-End Encoded (REE) helpers ----
+
+    /**
+     * Unified validator for all primitive chunk types: uses ChunkEquals for element-by-element comparison.
+     */
+    private static void primitiveIdentityValidate(final WritableChunk<Values> utO, final WritableChunk<Values> utC,
+            final RowSequence subset, final int offset) {
+        final ChunkEquals eq = ChunkEquals.makeEqual(utO.getChunkType());
+        if (subset == null) {
+            Assert.eqTrue(eq.equalReduce(utO, utC.slice(offset, utO.size())), "chunks equal");
+        } else {
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(key -> Assert.eqTrue(
+                    eq.equalReduce(utO.slice((int) key, 1), utC.slice(offset + off.getAndIncrement(), 1)),
+                    "element equal at key=" + key));
+        }
+    }
+
+    // ---- REE test methods ----
+
+    @Test
+    public void testRunEndEncodedIntSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            // General: mixed values with null sentinels
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, int.class, (utO) -> {
+                final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_INT : random.nextInt());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+
+        // All-same: one run of the same value
+        testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, OPT_DEFAULT, int.class, (utO) -> {
+            final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+            for (int i = 0; i < chunk.size(); ++i) {
+                chunk.set(i, 42);
+            }
+        }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+
+        // All-distinct: every row is a different value → N runs
+        testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, OPT_DEFAULT, int.class, (utO) -> {
+            final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+            for (int i = 0; i < chunk.size(); ++i) {
+                chunk.set(i, i);
+            }
+        }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+
+        // All-null: one null run
+        testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, OPT_DEFAULT, int.class, (utO) -> {
+            final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+            for (int i = 0; i < chunk.size(); ++i) {
+                chunk.set(i, QueryConstants.NULL_INT);
+            }
+        }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+
+        // Alternating value/null
+        testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, OPT_DEFAULT, int.class, (utO) -> {
+            final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+            for (int i = 0; i < chunk.size(); ++i) {
+                chunk.set(i, (i % 2 == 0) ? 999 : QueryConstants.NULL_INT);
+            }
+        }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+    }
+
+    @Test
+    public void testRunEndEncodedLongSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, long.class, (utO) -> {
+                final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedShortSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, short.class, (utO) -> {
+                final WritableShortChunk<Values> chunk = utO.asWritableShortChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_SHORT : (short) random.nextInt());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedByteSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, byte.class, (utO) -> {
+                final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_BYTE : (byte) random.nextInt());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedCharSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, char.class, (utO) -> {
+                final WritableCharChunk<Values> chunk = utO.asWritableCharChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_CHAR : (char) random.nextInt());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedFloatSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, float.class, (utO) -> {
+                final WritableFloatChunk<Values> chunk = utO.asWritableFloatChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_FLOAT : random.nextFloat());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedDoubleSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, double.class, (utO) -> {
+                final WritableDoubleChunk<Values> chunk = utO.asWritableDoubleChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_DOUBLE : random.nextDouble());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    /** REE float round-trip with NaN, +Inf, and -Inf values. FloatComparisons.eq treats NaN == NaN. */
+    @Test
+    public void testRunEndEncodedFloatSpecialValues() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, float.class, (utO) -> {
+                final WritableFloatChunk<Values> chunk = utO.asWritableFloatChunk();
+                // 8 rows, 6 runs: [NaN,NaN], [+Inf], [-Inf], [1.0f], [NULL_FLOAT], [0.0f,0.0f]
+                // NaN==NaN is true in FloatComparisons.eq, so the two NaN rows collapse to one run.
+                chunk.set(0, Float.NaN);
+                chunk.set(1, Float.NaN);
+                chunk.set(2, Float.POSITIVE_INFINITY);
+                chunk.set(3, Float.NEGATIVE_INFINITY);
+                chunk.set(4, 1.0f);
+                chunk.set(5, QueryConstants.NULL_FLOAT);
+                chunk.set(6, 0.0f);
+                chunk.set(7, 0.0f);
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    /** REE double round-trip with NaN, +Inf, and -Inf values. DoubleComparisons.eq treats NaN == NaN. */
+    @Test
+    public void testRunEndEncodedDoubleSpecialValues() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, double.class, (utO) -> {
+                final WritableDoubleChunk<Values> chunk = utO.asWritableDoubleChunk();
+                // 8 rows, 6 runs: [NaN,NaN], [+Inf], [-Inf], [1.0], [NULL_DOUBLE], [0.0,0.0]
+                chunk.set(0, Double.NaN);
+                chunk.set(1, Double.NaN);
+                chunk.set(2, Double.POSITIVE_INFINITY);
+                chunk.set(3, Double.NEGATIVE_INFINITY);
+                chunk.set(4, 1.0);
+                chunk.set(5, QueryConstants.NULL_DOUBLE);
+                chunk.set(6, 0.0);
+                chunk.set(7, 0.0);
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedBooleanSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, boolean.class, (utO) -> {
+                final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, BooleanUtils.booleanAsByte(i % 7 == 0 ? null : random.nextBoolean()));
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedStringSerialization() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, String.class,
+                    initObjectChunk(Integer::toString),
+                    new ObjectIdentityValidator<>());
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedInstantSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, Instant.class, (utO) -> {
+                final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedLocalDateSerialization() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, LocalDate.class,
+                    BarrageColumnRoundTripTest::initLocalDateChunk,
+                    new LocalDateIdentityValidator());
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedLocalTimeSerialization() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, LocalTime.class,
+                    BarrageColumnRoundTripTest::initLocalTimeChunk,
+                    new LocalTimeIdentityValidator());
+        }
+    }
+
+    @Test
+    public void testRunEndEncodedDurationSerialization() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, Duration.class,
+                    BarrageColumnRoundTripTest::initDurationChunk,
+                    new DurationIdentityValidator());
+        }
+    }
+
+    /** Test that REE works correctly when the run_ends child uses Int16 (16-bit) indexing. */
+    @Test
+    public void testRunEndEncodedInt16RunEndsSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED_INT16, opts, int.class, (utO) -> {
+                final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_INT : random.nextInt());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    /** Test that REE works correctly when the run_ends child uses Int64 (64-bit) indexing. */
+    @Test
+    public void testRunEndEncodedInt64RunEndsSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.RUN_END_ENCODED_INT64, opts, int.class, (utO) -> {
+                final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_INT : random.nextInt());
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    /** Int16 run_ends with N > Short.MAX_VALUE must throw INVALID_ARGUMENT. */
+    @Test
+    public void testRunEndEncodedOverflowGuardThrows() {
+        try {
+            RunEndEncodedChunkWriter.checkRunEndsOverflow(Short.MAX_VALUE + 1, ChunkType.Short);
+            fail("Expected StatusRuntimeException for Int16 run_ends overflow");
+        } catch (final StatusRuntimeException e) {
+            assertEquals(Status.Code.INVALID_ARGUMENT, e.getStatus().getCode());
+        }
+        // Boundary and wider types should not throw.
+        RunEndEncodedChunkWriter.checkRunEndsOverflow(Short.MAX_VALUE, ChunkType.Short);
+        RunEndEncodedChunkWriter.checkRunEndsOverflow(Integer.MAX_VALUE, ChunkType.Int);
+        RunEndEncodedChunkWriter.checkRunEndsOverflow(Integer.MAX_VALUE, ChunkType.Long);
+    }
+
+    /**
+     * Verifies two internal paths in RunEndEncodedChunkInputStream that are not exercised by the main round-trip
+     * harness:
+     * <ul>
+     * <li>getRawSize() cache-hit branch (second call to available() returns cached value)</li>
+     * <li>drainTo() hasBeenRead guard (second call returns 0 without re-draining)</li>
+     * </ul>
+     */
+    @Test
+    public void testRunEndEncodedDrainToIdempotentAndRawSizeCache() throws IOException {
+        // Build a minimal REE int field with Int32 run_ends.
+        final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
+                TableDefinition.of(ColumnDefinition.of("col", Type.find(int.class))),
+                Collections.emptyMap(), false);
+        final Schema stdSchema = SchemaHelper.flatbufSchema(stdSchemaBytes.asReadOnlyByteBuffer());
+        final org.apache.arrow.vector.types.pojo.Field stdPojoField =
+                org.apache.arrow.vector.types.pojo.Field.convertField(stdSchema.fields(0));
+        final org.apache.arrow.vector.types.pojo.Field runEndsField =
+                new org.apache.arrow.vector.types.pojo.Field("run_ends",
+                        new FieldType(false, new ArrowType.Int(32, true), null, null), Collections.emptyList());
+        final org.apache.arrow.vector.types.pojo.Field valuesField =
+                new org.apache.arrow.vector.types.pojo.Field("values",
+                        stdPojoField.getFieldType(), stdPojoField.getChildren());
+        final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                        new org.apache.arrow.vector.types.pojo.Field("col",
+                                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                                List.of(runEndsField, valuesField))));
+        final Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(pojoSchema.serializeAsMessage()));
+        final org.apache.arrow.flatbuf.Field writerField = schema.fields(0);
+
+        // context takes ownership of data and closes it — do not wrap data in try-with-resources.
+        final WritableIntChunk<Values> data = WritableIntChunk.makeWritableChunk(4);
+        data.set(0, 1);
+        data.set(1, 1);
+        data.set(2, 2);
+        data.set(3, 2);
+        data.setSize(4);
+        final ChunkWriter<Chunk<Values>> writer = DefaultChunkWriterFactory.INSTANCE
+                .newWriter(BarrageTypeInfo.make(int.class, null, writerField));
+        try (final ChunkWriter.Context context = writer.makeContext(data, 0);
+                final ChunkWriter.DrainableColumn column = writer.getInputStream(context, null, OPT_DEFAULT)) {
+            // Two calls to available() — the second hits the cached-size branch.
+            final int size1 = column.available();
+            final int size2 = column.available();
+            assertEquals(size1, size2);
+
+            // Two calls to drainTo() — the second hits the hasBeenRead guard and returns 0.
+            final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+            final int drained1 = column.drainTo(baos);
+            assertTrue(drained1 > 0);
+            final int drained2 = column.drainTo(baos);
+            assertEquals(0, drained2);
+        }
+    }
+
+    /**
+     * REE-encoded wire size must be smaller than plain encoding when all rows share the same long value.
+     *
+     * <p>
+     * With 1024 identical longs the standard encoding is ~8 KiB (validity + 8 bytes/row). The REE encoding collapses
+     * everything to a single run: one Int32 run_end + one Int64 value ≈ 12 bytes.
+     */
+    @Test
+    public void testRunEndEncodedSizeReductionLong() throws IOException {
+        final int numRows = 1024;
+
+        // Build the standard Int64 field.
+        final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
+                TableDefinition.of(ColumnDefinition.of("col", Type.find(long.class))),
+                Collections.emptyMap(), false);
+        final Schema stdSchema = SchemaHelper.flatbufSchema(stdSchemaBytes.asReadOnlyByteBuffer());
+        final Field stdField = stdSchema.fields(0);
+        final org.apache.arrow.vector.types.pojo.Field stdPojoField =
+                org.apache.arrow.vector.types.pojo.Field.convertField(stdField);
+
+        // Build the REE field wrapping the same Int64 values child.
+        final org.apache.arrow.vector.types.pojo.Field runEndsField =
+                new org.apache.arrow.vector.types.pojo.Field("run_ends",
+                        new FieldType(false, new ArrowType.Int(32, true), null, null),
+                        Collections.emptyList());
+        final org.apache.arrow.vector.types.pojo.Field valuesField =
+                new org.apache.arrow.vector.types.pojo.Field("values",
+                        stdPojoField.getFieldType(), stdPojoField.getChildren());
+        final org.apache.arrow.vector.types.pojo.Schema reePojoSchema =
+                new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                        new org.apache.arrow.vector.types.pojo.Field("col",
+                                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                                List.of(runEndsField, valuesField))));
+        final Schema reeSchema =
+                SchemaHelper.flatbufSchema(ByteBuffer.wrap(reePojoSchema.serializeAsMessage()));
+        final Field reeField = reeSchema.fields(0);
+
+        // Standard writer: context takes ownership of the chunk.
+        final WritableLongChunk<Values> stdData = WritableLongChunk.makeWritableChunk(numRows);
+        for (int i = 0; i < numRows; i++) {
+            stdData.set(i, 42L);
+        }
+        stdData.setSize(numRows);
+        final ChunkWriter<Chunk<Values>> stdWriter =
+                DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(long.class, null, stdField));
+        final int stdSize;
+        try (final ChunkWriter.Context ctx = stdWriter.makeContext(stdData, 0);
+                final ChunkWriter.DrainableColumn col = stdWriter.getInputStream(ctx, null, OPT_DEFAULT)) {
+            stdSize = col.available();
+        }
+
+        // REE writer: context takes ownership of the chunk.
+        final WritableLongChunk<Values> reeData = WritableLongChunk.makeWritableChunk(numRows);
+        for (int i = 0; i < numRows; i++) {
+            reeData.set(i, 42L);
+        }
+        reeData.setSize(numRows);
+        final ChunkWriter<Chunk<Values>> reeWriter =
+                DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(long.class, null, reeField));
+        final int reeSize;
+        try (final ChunkWriter.Context ctx = reeWriter.makeContext(reeData, 0);
+                final ChunkWriter.DrainableColumn col = reeWriter.getInputStream(ctx, null, OPT_DEFAULT)) {
+            reeSize = col.available();
+        }
+
+        assertTrue("REE size " + reeSize + " should be smaller than standard size " + stdSize,
+                reeSize < stdSize);
+
+        final int reduction = stdSize - reeSize;
+        final double pct = 100.0 * reduction / stdSize;
+        System.out.printf("values=%d  original=%d  encoded=%d  reduction=%d (%.1f%%)%n",
+                numRows, stdSize, reeSize, reduction, pct);
+    }
+
+    /**
+     * REE-encoded wire size must be smaller than plain encoding when all rows share the same String value.
+     *
+     * <p>
+     * With 1024 identical strings the standard encoding is dominated by offsets (1025 × 4 bytes) plus the repeated
+     * payload. The REE encoding stores a single run: one Int32 run_end + one VarBinary entry.
+     */
+    @Test
+    public void testRunEndEncodedSizeReductionString() throws IOException {
+        final int numRows = 1024;
+        final String repeatedValue = "hello-world";
+
+        // Build the standard Utf8 field.
+        final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
+                TableDefinition.of(ColumnDefinition.of("col", Type.find(String.class))),
+                Collections.emptyMap(), false);
+        final Schema stdSchema = SchemaHelper.flatbufSchema(stdSchemaBytes.asReadOnlyByteBuffer());
+        final Field stdField = stdSchema.fields(0);
+        final org.apache.arrow.vector.types.pojo.Field stdPojoField =
+                org.apache.arrow.vector.types.pojo.Field.convertField(stdField);
+
+        // Build the REE field wrapping the same Utf8 values child.
+        final org.apache.arrow.vector.types.pojo.Field runEndsField =
+                new org.apache.arrow.vector.types.pojo.Field("run_ends",
+                        new FieldType(false, new ArrowType.Int(32, true), null, null),
+                        Collections.emptyList());
+        final org.apache.arrow.vector.types.pojo.Field valuesField =
+                new org.apache.arrow.vector.types.pojo.Field("values",
+                        stdPojoField.getFieldType(), stdPojoField.getChildren());
+        final org.apache.arrow.vector.types.pojo.Schema reePojoSchema =
+                new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                        new org.apache.arrow.vector.types.pojo.Field("col",
+                                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                                List.of(runEndsField, valuesField))));
+        final Schema reeSchema =
+                SchemaHelper.flatbufSchema(ByteBuffer.wrap(reePojoSchema.serializeAsMessage()));
+        final Field reeField = reeSchema.fields(0);
+
+        // Standard writer: context takes ownership of the chunk.
+        final WritableObjectChunk<String, Values> stdData = WritableObjectChunk.makeWritableChunk(numRows);
+        for (int i = 0; i < numRows; i++) {
+            stdData.set(i, repeatedValue);
+        }
+        stdData.setSize(numRows);
+        final ChunkWriter<Chunk<Values>> stdWriter =
+                DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(String.class, null, stdField));
+        final int stdSize;
+        try (final ChunkWriter.Context ctx = stdWriter.makeContext(stdData, 0);
+                final ChunkWriter.DrainableColumn col = stdWriter.getInputStream(ctx, null, OPT_DEFAULT)) {
+            stdSize = col.available();
+        }
+
+        // REE writer: context takes ownership of the chunk.
+        final WritableObjectChunk<String, Values> reeData = WritableObjectChunk.makeWritableChunk(numRows);
+        for (int i = 0; i < numRows; i++) {
+            reeData.set(i, repeatedValue);
+        }
+        reeData.setSize(numRows);
+        final ChunkWriter<Chunk<Values>> reeWriter =
+                DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(String.class, null, reeField));
+        final int reeSize;
+        try (final ChunkWriter.Context ctx = reeWriter.makeContext(reeData, 0);
+                final ChunkWriter.DrainableColumn col = reeWriter.getInputStream(ctx, null, OPT_DEFAULT)) {
+            reeSize = col.available();
+        }
+
+        assertTrue("REE size " + reeSize + " should be smaller than standard size " + stdSize,
+                reeSize < stdSize);
+
+        final int reduction = stdSize - reeSize;
+        final double pct = 100.0 * reduction / stdSize;
+        System.out.printf("values=%d  original=%d  encoded=%d  reduction=%d (%.1f%%)%n",
+                numRows, stdSize, reeSize, reduction, pct);
     }
 
     private interface Validator {
@@ -1006,8 +1678,329 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    private static final class DurationIdentityValidator implements Validator {
+        @Override
+        public void assertExpected(
+                final WritableChunk<Values> untypedOriginal,
+                final WritableChunk<Values> unTypedComputed,
+                @Nullable RowSequence subset,
+                final int offset) {
+            final WritableObjectChunk<Duration, Values> original = untypedOriginal.asWritableObjectChunk();
+            final WritableObjectChunk<Duration, Values> computed = unTypedComputed.asWritableObjectChunk();
+            if (subset == null) {
+                subset = RowSetFactory.flat(original.size());
+            }
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(i -> {
+                final Duration d = original.get((int) i);
+                if (d == null) {
+                    Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
+                } else {
+                    Assert.equals(d, "d", computed.get(offset + off.getAndIncrement()), "computed");
+                }
+            });
+        }
+    }
+
+    // ---- Dictionary-encoded test methods ----
+
+    @Test
+    public void testDictionaryEncodedIntSerialization() throws IOException {
+        // Int32 index (default)
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testDictionaryRoundTrip(32, int.class, opts, (utO) -> {
+                final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_INT : i % 5);
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+        // Int8 index
+        testDictionaryRoundTrip(8, int.class, OPT_DEFAULT, (utO) -> {
+            final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+            for (int i = 0; i < chunk.size(); ++i) {
+                chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_INT : i % 3);
+            }
+        }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        // Int16 index
+        testDictionaryRoundTrip(16, int.class, OPT_DEFAULT, (utO) -> {
+            final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+            for (int i = 0; i < chunk.size(); ++i) {
+                chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_INT : i % 3);
+            }
+        }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        // Int64 index
+        testDictionaryRoundTrip(64, int.class, OPT_DEFAULT, (utO) -> {
+            final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+            for (int i = 0; i < chunk.size(); ++i) {
+                chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_INT : i % 4);
+            }
+        }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+    }
+
+    @Test
+    public void testDictionaryEncodedInt8OverflowThrows() throws IOException {
+        // 129 distinct int values exceed the Int8 dictionary limit of 128 (indices 0..127)
+        final int OVERFLOW_SIZE = 129;
+        final Field writerField = buildDictionaryField(int.class, 8, 0L);
+        final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
+                BarrageTypeInfo.make(int.class, null, writerField));
+        try (final WritableIntChunk<Values> srcData = WritableIntChunk.makeWritableChunk(OVERFLOW_SIZE)) {
+            srcData.setSize(OVERFLOW_SIZE);
+            for (int i = 0; i < OVERFLOW_SIZE; ++i) {
+                srcData.set(i, i); // 0..128, all distinct
+            }
+            // makeContext takes ownership of the work chunk; pass a copy so srcData remains valid
+            final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(OVERFLOW_SIZE);
+            work.copyFromChunk(srcData, 0, 0, OVERFLOW_SIZE);
+            final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Int);
+            try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0)) {
+                try {
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx, null, OPT_DEFAULT, state)) {
+                        col.drainTo(new ExposedByteArrayOutputStream());
+                    }
+                    fail("Expected IllegalStateException when dictionary exceeds Int8 limit");
+                } catch (final IllegalStateException e) {
+                    assertTrue("message should mention 'Int8': " + e.getMessage(),
+                            e.getMessage().contains("Int8"));
+                    assertTrue("message should mention '128': " + e.getMessage(),
+                            e.getMessage().contains("128"));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDictionaryEncodedInt16OverflowThrows() throws IOException {
+        // 32769 distinct int values exceed the Int16 dictionary limit of 32768 (indices 0..32767)
+        final int OVERFLOW_SIZE = 32769;
+        final Field writerField = buildDictionaryField(int.class, 16, 0L);
+        final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
+                BarrageTypeInfo.make(int.class, null, writerField));
+        try (final WritableIntChunk<Values> srcData = WritableIntChunk.makeWritableChunk(OVERFLOW_SIZE)) {
+            srcData.setSize(OVERFLOW_SIZE);
+            for (int i = 0; i < OVERFLOW_SIZE; ++i) {
+                srcData.set(i, i); // 0..32768, all distinct
+            }
+            // makeContext takes ownership of the work chunk; pass a copy so srcData remains valid
+            final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(OVERFLOW_SIZE);
+            work.copyFromChunk(srcData, 0, 0, OVERFLOW_SIZE);
+            final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Int);
+            try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0)) {
+                try {
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx, null, OPT_DEFAULT, state)) {
+                        col.drainTo(new ExposedByteArrayOutputStream());
+                    }
+                    fail("Expected IllegalStateException when dictionary exceeds Int16 limit");
+                } catch (final IllegalStateException e) {
+                    assertTrue("message should mention 'Int16': " + e.getMessage(),
+                            e.getMessage().contains("Int16"));
+                    assertTrue("message should mention '32768': " + e.getMessage(),
+                            e.getMessage().contains("32768"));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testDictionaryEncodedStringSerialization() throws IOException {
+        final String[] words = {"cat", "dog", "fish"};
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testDictionaryRoundTrip(32, String.class, opts, (utO) -> {
+                @SuppressWarnings("unchecked")
+                final WritableObjectChunk<Object, Values> chunk = utO.asWritableObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 5 == 0 ? null : words[i % words.length]);
+                }
+            }, new ObjectIdentityValidator<>());
+        }
+    }
+
+    /** Two batches: second batch introduces a new dictionary value (delta append). */
+    @Test
+    public void testDictionaryEncodedMultiBatchDelta() throws IOException {
+        final int NUM_ROWS = 5;
+        final Field writerField = buildDictionaryField(String.class, 32, 0L);
+        final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Object);
+        final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+        final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
+                BarrageTypeInfo.make(String.class, null, writerField));
+
+        // Batch 1: cat/dog/fish/null/cat
+        final WritableObjectChunk<Object, Values> b1Src = WritableObjectChunk.makeWritableChunk(NUM_ROWS);
+        try (SafeCloseable ignored1 = b1Src) {
+            b1Src.set(0, "cat");
+            b1Src.set(1, "dog");
+            b1Src.set(2, "fish");
+            b1Src.set(3, null);
+            b1Src.set(4, "cat");
+            b1Src.setSize(NUM_ROWS);
+
+            // Batch 2: cat/bird/null/dog/bird (bird is new — requires a delta)
+            final WritableObjectChunk<Object, Values> b2Src = WritableObjectChunk.makeWritableChunk(NUM_ROWS);
+            try (SafeCloseable ignored2 = b2Src) {
+                b2Src.set(0, "cat");
+                b2Src.set(1, "bird");
+                b2Src.set(2, null);
+                b2Src.set(3, "dog");
+                b2Src.set(4, "bird");
+                b2Src.setSize(NUM_ROWS);
+
+                final byte[] b1Bytes;
+                final long[] b1Buffers;
+                final List<ChunkWriter.FieldNodeInfo> b1Nodes = new ArrayList<>();
+                final byte[] b2Bytes;
+                final long[] b2Buffers;
+                final List<ChunkWriter.FieldNodeInfo> b2Nodes = new ArrayList<>();
+
+                // Write batch 1.
+                final WritableChunk<Values> b1Work = ChunkType.Object.makeWritableChunk(NUM_ROWS);
+                b1Work.copyFromChunk(b1Src, 0, 0, NUM_ROWS);
+                try (final ChunkWriter.Context ctx1 = dictWriter.makeContext(b1Work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx1, null, OPT_DEFAULT, state)) {
+                        col.visitFieldNodes((n, nc) -> b1Nodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    b1Buffers = bufBld.build().toArray();
+                    b1Bytes = Arrays.copyOf(baos.peekBuffer(), baos.size());
+                }
+                try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                    registry.update(0L, deltaChunk, false); // first batch: isDelta=false
+                }
+                state.resetDelta();
+
+                // Write batch 2.
+                final WritableChunk<Values> b2Work = ChunkType.Object.makeWritableChunk(NUM_ROWS);
+                b2Work.copyFromChunk(b2Src, 0, 0, NUM_ROWS);
+                try (final ChunkWriter.Context ctx2 = dictWriter.makeContext(b2Work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx2, null, OPT_DEFAULT, state)) {
+                        col.visitFieldNodes((n, nc) -> b2Nodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    b2Buffers = bufBld.build().toArray();
+                    b2Bytes = Arrays.copyOf(baos.peekBuffer(), baos.size());
+                }
+                try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                    registry.update(0L, deltaChunk, true); // second batch: isDelta=true (delta append)
+                }
+                state.resetDelta();
+
+                // Registry now holds id=0 → [cat, dog, fish, bird]. Decode both batches and validate.
+                @SuppressWarnings("unchecked")
+                final ChunkReader<WritableChunk<Values>> reader =
+                        (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
+                                .newReader(
+                                        BarrageTypeInfo.make(String.class, null, writerField),
+                                        OPT_DEFAULT, registry, null);
+
+                try (final WritableChunk<Values> rt1 = reader.readChunk(
+                        b1Nodes.iterator(), Arrays.stream(b1Buffers).iterator(),
+                        new LittleEndianDataInputStream(new ByteArrayInputStream(b1Bytes)),
+                        null, 0, NUM_ROWS)) {
+                    new ObjectIdentityValidator<>().assertExpected(b1Src, rt1, null, 0);
+                }
+                try (final WritableChunk<Values> rt2 = reader.readChunk(
+                        b2Nodes.iterator(), Arrays.stream(b2Buffers).iterator(),
+                        new LittleEndianDataInputStream(new ByteArrayInputStream(b2Bytes)),
+                        null, 0, NUM_ROWS)) {
+                    new ObjectIdentityValidator<>().assertExpected(b2Src, rt2, null, 0);
+                }
+
+                registry.close();
+            } // end try(b2Src)
+        } // end try(b1Src)
+    }
+
+    /**
+     * Verifies that the Arrow standard path (useDeephavenNulls = false) emits a validity bitmap on the index column
+     * when null rows are present, and omits it when there are none.
+     */
+    @Test
+    public void testDictionaryEncodedIndexValidityBitmap() throws IOException {
+        final int NUM_ROWS = 8;
+        final Field writerField = buildDictionaryField(int.class, 32, 0L);
+        final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
+                BarrageTypeInfo.make(int.class, null, writerField));
+
+        // --- case 1: column contains nulls — validity buffer must be present ---
+        {
+            // rows: 0=NULL, 1=1, 2=2, 3=NULL, 4=1, 5=3, 6=NULL, 7=2 => 3 nulls
+            final int expectedNullCount = 3;
+            try (final WritableIntChunk<Values> src = WritableIntChunk.makeWritableChunk(NUM_ROWS)) {
+                src.setSize(NUM_ROWS);
+                src.set(0, QueryConstants.NULL_INT);
+                src.set(1, 1);
+                src.set(2, 2);
+                src.set(3, QueryConstants.NULL_INT);
+                src.set(4, 1);
+                src.set(5, 3);
+                src.set(6, QueryConstants.NULL_INT);
+                src.set(7, 2);
+
+                final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(NUM_ROWS);
+                work.copyFromChunk(src, 0, 0, NUM_ROWS);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Int);
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx, null, OPT_DEFAULT, state)) {
+                        col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    final long[] buffers = bufBld.build().toArray();
+
+                    Assert.eq(expectedNullCount, "expectedNullCount",
+                            fieldNodes.get(0).nullCount, "fieldNodes.get(0).nullCount");
+                    assertTrue("validity buffer must be present when nulls exist", buffers[0] > 0);
+                }
+            }
+        }
+
+        // --- case 2: no nulls — validity buffer must be absent (Arrow spec: optional when nullCount == 0) ---
+        {
+            try (final WritableIntChunk<Values> src = WritableIntChunk.makeWritableChunk(NUM_ROWS)) {
+                src.setSize(NUM_ROWS);
+                for (int i = 0; i < NUM_ROWS; ++i) {
+                    src.set(i, i % 3);
+                }
+
+                final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(NUM_ROWS);
+                work.copyFromChunk(src, 0, 0, NUM_ROWS);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Int);
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx, null, OPT_DEFAULT, state)) {
+                        col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    final long[] buffers = bufBld.build().toArray();
+
+                    Assert.eq(0, "zero", fieldNodes.get(0).nullCount, "fieldNodes.get(0).nullCount");
+                    assertTrue("validity buffer must be absent when no nulls exist", buffers[0] == 0);
+                }
+            }
+        }
+    }
+
     private enum SpecialMode {
-        NONE, MAP, VAR_LEN_LIST, FIXED_LEN_LIST, ZDT, ZDT_WITH_FACTOR, SPARSE_UNION, DENSE_UNION
+        NONE, MAP, VAR_LEN_LIST, FIXED_LEN_LIST, ZDT, ZDT_WITH_FACTOR, SPARSE_UNION, DENSE_UNION, RUN_END_ENCODED, RUN_END_ENCODED_INT16, RUN_END_ENCODED_INT64, DICTIONARY_ENCODED, DICTIONARY_ENCODED_INT8, DICTIONARY_ENCODED_INT16, DICTIONARY_ENCODED_INT64
     }
 
     private static <T> void testRoundTripSerialization(
@@ -1016,7 +2009,17 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             Class<T> type,
             final Consumer<WritableChunk<Values>> initData,
             final Validator validator) throws IOException {
-        final int NUM_ROWS = 8;
+        testRoundTripSerialization(mode, options, type, ROUND_TRIP_NUM_ROWS, initData, validator);
+    }
+
+    private static <T> void testRoundTripSerialization(
+            final SpecialMode mode,
+            final BarrageSubscriptionOptions options,
+            Class<T> type,
+            final int chunkRows,
+            final Consumer<WritableChunk<Values>> initData,
+            final Validator validator) throws IOException {
+        final int NUM_ROWS = chunkRows;
         final ChunkType chunkType;
         final Class<T> readType;
         if (type == ZonedDateTime.class) {
@@ -1132,6 +2135,43 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             byte[] schemaBytes = pojoSchema.serializeAsMessage();
             Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
+            writerField = schema.fields(0);
+        } else if (mode == SpecialMode.RUN_END_ENCODED
+                || mode == SpecialMode.RUN_END_ENCODED_INT16
+                || mode == SpecialMode.RUN_END_ENCODED_INT64) {
+            // Build the REE parent field whose values child is the standard field for readType.
+            final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
+                    TableDefinition.of(ColumnDefinition.of("col", Type.find(readType))),
+                    Collections.emptyMap(), false);
+            final Schema stdSchema = SchemaHelper.flatbufSchema(stdSchemaBytes.asReadOnlyByteBuffer());
+            final org.apache.arrow.vector.types.pojo.Field stdPojoField =
+                    org.apache.arrow.vector.types.pojo.Field.convertField(stdSchema.fields(0));
+
+            // run_ends child: non-nullable integer index
+            final int runEndsWidth;
+            if (mode == SpecialMode.RUN_END_ENCODED_INT16) {
+                runEndsWidth = 16;
+            } else if (mode == SpecialMode.RUN_END_ENCODED_INT64) {
+                runEndsWidth = 64;
+            } else {
+                runEndsWidth = 32;
+            }
+            final org.apache.arrow.vector.types.pojo.Field runEndsField =
+                    new org.apache.arrow.vector.types.pojo.Field("run_ends",
+                            new FieldType(false, new ArrowType.Int(runEndsWidth, true), null, null),
+                            Collections.emptyList());
+            // values child: same Arrow type and metadata as the standard field
+            final org.apache.arrow.vector.types.pojo.Field valuesField =
+                    new org.apache.arrow.vector.types.pojo.Field("values",
+                            stdPojoField.getFieldType(), stdPojoField.getChildren());
+
+            final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                    new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                            new org.apache.arrow.vector.types.pojo.Field("col",
+                                    new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                                    List.of(runEndsField, valuesField))));
+            final byte[] schemaBytes = pojoSchema.serializeAsMessage();
+            final Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
             writerField = schema.fields(0);
         } else {
             ByteString schemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
@@ -1291,7 +2331,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 }
             }
 
-            // swiss cheese subset
+            // swiss-cheese subset
             final Random random = new Random(0);
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             for (int i = 0; i < srcData.size(); ++i) {
@@ -1356,5 +2396,185 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 }
             }
         }
+    }
+
+    // ---- Dictionary-encoded helpers ----
+
+    /**
+     * Builds a flatbuf Arrow {@link Field} whose value type matches {@code valueType} but carries a
+     * {@link DictionaryEncoding} with the given index bit width and dictionary id.
+     */
+    private static Field buildDictionaryField(
+            final Class<?> valueType,
+            final int indexBitWidth,
+            final long dictId) {
+        final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
+                TableDefinition.of(ColumnDefinition.of("col", Type.find(valueType))),
+                Collections.emptyMap(), false);
+        final Schema stdSchema =
+                SchemaHelper.flatbufSchema(stdSchemaBytes.asReadOnlyByteBuffer());
+        final org.apache.arrow.vector.types.pojo.Field stdPojoField =
+                org.apache.arrow.vector.types.pojo.Field.convertField(stdSchema.fields(0));
+        final DictionaryEncoding dictEncoding =
+                new DictionaryEncoding(dictId, false, new ArrowType.Int(indexBitWidth, true));
+        final org.apache.arrow.vector.types.pojo.Field dictPojoField =
+                new org.apache.arrow.vector.types.pojo.Field(
+                        stdPojoField.getName(),
+                        new FieldType(stdPojoField.isNullable(), stdPojoField.getType(),
+                                dictEncoding, stdPojoField.getMetadata()),
+                        stdPojoField.getChildren());
+        final byte[] schemaBytes = new org.apache.arrow.vector.types.pojo.Schema(
+                Collections.singletonList(dictPojoField)).serializeAsMessage();
+        return SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes)).fields(0);
+    }
+
+    /**
+     * Single-batch dictionary round-trip: writes {@code NUM_ROWS} rows using the dictionary writer, emits the delta to
+     * a fresh reader registry, then reads back and validates against the original data for the full subset, the empty
+     * subset, and a random swiss-cheese subset.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> void testDictionaryRoundTrip(
+            final int indexBitWidth,
+            final Class<T> type,
+            final BarrageSubscriptionOptions options,
+            final Consumer<WritableChunk<Values>> initData,
+            final Validator validator) throws IOException {
+        final int NUM_ROWS = 8;
+        final ChunkType chunkType = (type == Boolean.class || type == boolean.class)
+                ? ChunkType.Byte
+                : ChunkType.fromElementType(type);
+
+        final Field writerField = buildDictionaryField(type, indexBitWidth, 0L);
+        final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
+                BarrageTypeInfo.make(type, null, writerField));
+
+        try (final WritableChunk<Values> srcData = chunkType.makeWritableChunk(NUM_ROWS)) {
+            srcData.setSize(NUM_ROWS);
+            initData.accept(srcData);
+
+            // --- full batch ---
+            {
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
+                work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx, null, options, state)) {
+                        col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    final long[] buffers = bufBld.build().toArray();
+                    try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                        registry.update(0L, deltaChunk, false);
+                    }
+                    state.resetDelta();
+                    final ChunkReader<WritableChunk<Values>> reader =
+                            (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
+                                    .newReader(
+                                            BarrageTypeInfo.make(type, null, writerField), options, registry, null);
+                    try (final WritableChunk<Values> rt = reader.readChunk(
+                            fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
+                            new LittleEndianDataInputStream(
+                                    new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size())),
+                            null, 0, NUM_ROWS)) {
+                        Assert.eq(NUM_ROWS, "NUM_ROWS", rt.size(), "rt.size()");
+                        validator.assertExpected(srcData, rt, null, 0);
+                    }
+                }
+                registry.close();
+            }
+
+            // --- empty subset: reader must handle numRows=0 without consulting the registry ---
+            {
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
+                work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx, RowSetFactory.empty(), options, state)) {
+                        col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    final long[] buffers = bufBld.build().toArray();
+                    // Empty registry is valid because DictionaryChunkReader exits early for numRows=0.
+                    final ChunkReader<WritableChunk<Values>> reader =
+                            (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
+                                    .newReader(
+                                            BarrageTypeInfo.make(type, null, writerField), options,
+                                            new DictionaryReaderRegistry(), null);
+                    try (final WritableChunk<Values> rt = reader.readChunk(
+                            fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
+                            new LittleEndianDataInputStream(
+                                    new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size())),
+                            null, 0, 0)) {
+                        Assert.eq(0, "zero", rt.size(), "rt.size()");
+                    }
+                }
+            }
+
+            // --- swiss-cheese subset ---
+            {
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
+                work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0)) {
+                    final Random random = new Random(1);
+                    final RowSetBuilderSequential rowBld = RowSetFactory.builderSequential();
+                    for (int i = 0; i < NUM_ROWS; ++i) {
+                        if (random.nextBoolean()) {
+                            rowBld.appendKey(i);
+                        }
+                    }
+                    try (final RowSet subset = rowBld.build();
+                            final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                        final LongStream.Builder bufBld = LongStream.builder();
+                        final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                        try (final ChunkWriter.DrainableColumn col =
+                                dictWriter.getInputStream(ctx, subset, options, state)) {
+                            col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                            col.visitBuffers(bufBld::add);
+                            col.drainTo(baos);
+                        }
+                        final long[] buffers = bufBld.build().toArray();
+                        if (state.hasDelta()) {
+                            try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                                registry.update(0L, deltaChunk, false);
+                            }
+                            state.resetDelta();
+                        }
+                        final int subsetSize = subset.intSize();
+                        if (subsetSize == 0) {
+                            registry.close();
+                            return;
+                        }
+                        final ChunkReader<WritableChunk<Values>> reader =
+                                (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
+                                        .newReader(
+                                                BarrageTypeInfo.make(type, null, writerField), options, registry, null);
+                        try (final WritableChunk<Values> rt = reader.readChunk(
+                                fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
+                                new LittleEndianDataInputStream(
+                                        new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size())),
+                                null, 0, subsetSize)) {
+                            Assert.eq(subsetSize, "subsetSize", rt.size(), "rt.size()");
+                            validator.assertExpected(srcData, rt, subset, 0);
+                        }
+                    }
+                }
+                registry.close();
+            }
+
+        } // end try(srcData)
     }
 }

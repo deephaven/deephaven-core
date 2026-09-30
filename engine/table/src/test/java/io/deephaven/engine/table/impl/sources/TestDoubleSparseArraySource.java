@@ -19,7 +19,8 @@ import org.junit.Test;
 
 import java.util.Random;
 
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.*;
+
 
 public class TestDoubleSparseArraySource extends AbstractDoubleColumnSourceTest {
     @NotNull

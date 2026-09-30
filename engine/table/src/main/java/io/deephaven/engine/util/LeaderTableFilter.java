@@ -3,8 +3,9 @@
 //
 package io.deephaven.engine.util;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrays;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
@@ -29,6 +30,7 @@ import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -157,36 +159,36 @@ public class LeaderTableFilter {
 
     private class LeaderKeyState {
         LeaderKeyState() {
-            leaderRows = new TLongArrayList();
-            pendingIdsByFollower = new TLongArrayList[followerKeySources.length];
+            leaderRows = new LongArrayList();
+            pendingIdsByFollower = new LongArrayList[followerKeySources.length];
             for (int ii = 0; ii < pendingIdsByFollower.length; ++ii) {
-                pendingIdsByFollower[ii] = new TLongArrayList();
+                pendingIdsByFollower[ii] = new LongArrayList();
             }
-            satisfiedIdsByFollower = new TIntArrayList();
+            satisfiedIdsByFollower = new IntArrayList();
         }
 
         // our currently matched row key in the leader table
         long matchedRowKey = RowSet.NULL_ROW_KEY;
 
         // an array list of pending rows in the leader that map to this state
-        TLongArrayList leaderRows;
+        LongArrayList leaderRows;
         // the corresponding ID that must be checked for each follower
-        TLongArrayList[] pendingIdsByFollower;
+        LongArrayList[] pendingIdsByFollower;
 
         // a bitmask with one value set for each of our pending row sets; bit 0 is the first follower, bit 1 the second
         // follower, etc.
-        TIntArrayList satisfiedIdsByFollower;
+        IntArrayList satisfiedIdsByFollower;
 
         private int size() {
             return leaderRows.size();
         }
 
         public void deleteHead(int matchedRowKey) {
-            leaderRows.remove(0, matchedRowKey + 1);
+            leaderRows.removeElements(0, matchedRowKey + 1);
             for (int tt = 0; tt < pendingIdsByFollower.length; ++tt) {
-                pendingIdsByFollower[tt].remove(0, matchedRowKey + 1);
+                pendingIdsByFollower[tt].removeElements(0, matchedRowKey + 1);
             }
-            satisfiedIdsByFollower.remove(0, matchedRowKey + 1);
+            satisfiedIdsByFollower.removeElements(0, matchedRowKey + 1);
         }
     }
 
@@ -195,7 +197,7 @@ public class LeaderTableFilter {
         WritableRowSet matchedRows = RowSetFactory.empty();
         RowSetBuilderSequential unprocessedBuilder = null;
         RowSetBuilderSequential currentIdBuilder = null;
-        final TLongArrayList unprocessedIds = new TLongArrayList();
+        final LongArrayList unprocessedIds = new LongArrayList();
         boolean sorted = true;
         long activeId = Long.MIN_VALUE;
         long lastMatchedId = Long.MIN_VALUE;
@@ -208,21 +210,21 @@ public class LeaderTableFilter {
             if (sorted) {
                 return;
             }
-            unprocessedIds.sort();
+            unprocessedIds.sort(null);
             sorted = true;
             int wp = 1;
             for (int rp = 1; rp < unprocessedIds.size(); ++rp) {
-                if (unprocessedIds.get(rp - 1) != unprocessedIds.get(rp)) {
-                    unprocessedIds.set(wp++, unprocessedIds.get(rp));
+                if (unprocessedIds.getLong(rp - 1) != unprocessedIds.getLong(rp)) {
+                    unprocessedIds.set(wp++, unprocessedIds.getLong(rp));
                 }
             }
             if (wp != unprocessedIds.size()) {
-                unprocessedIds.remove(wp, unprocessedIds.size() - wp);
+                unprocessedIds.removeElements(wp, unprocessedIds.size());
             }
         }
 
         public void deleteUnprocessedIds(int matchedFollowerIndex) {
-            unprocessedIds.remove(0, matchedFollowerIndex + 1);
+            unprocessedIds.removeElements(0, matchedFollowerIndex + 1);
         }
     }
 
@@ -373,15 +375,19 @@ public class LeaderTableFilter {
         Assert.eqZero(processPendingResult.keysWithNewCurrent.size(), "hashSetPair.keysWithNewCurrent.size()");
         Assert.eqZero(processPendingResult.leaderRemoved.size(), "processPendingResult.leaderRemoved.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-            for (Object key : processPendingResult.keysToRefilter) {
-                final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                if (state != null) {
-                    doMatch(tt, state);
-                    addedBuilder.addRowSet(state.matchedRows);
+            try (final RowSetUnionBatcher addedBatch =
+                    new RowSetUnionBatcher(processPendingResult.keysToRefilter.size())) {
+                for (Object key : processPendingResult.keysToRefilter) {
+                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                    if (state != null) {
+                        doMatch(tt, state);
+                        addedBatch.add(state.matchedRows.copy());
+                    }
+                }
+                try (final WritableRowSet added = addedBatch.build()) {
+                    followerResultRowSets[tt].subsume(added);
                 }
             }
-            followerResultRowSets[tt].insert(addedBuilder.build());
         }
         leaderResultRowSet.insert(processPendingResult.leaderMatches);
         leaderResultRowSet.initializePreviousValue();
@@ -446,52 +452,62 @@ public class LeaderTableFilter {
 
             final ProcessPendingResult processPendingResult = processPendingKeys();
             for (int tt = 0; tt < followerKeyStateMap.size(); tt++) {
-                final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-                final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-                for (final Object key : processPendingResult.keysToRefilter) {
-                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                    if (state == null) {
-                        // we have never seen anything for this key on this table, which means that we must have a
-                        // NULL_LONG identifier in the leader table.
-                        continue;
-                    }
-                    final boolean removeMatches = state.lastMatchedId != state.activeId;
-                    final RowSet lastMatched;
-                    if (removeMatches) {
-                        removedBuilder.addRowSet(state.matchedRows);
-                        lastMatched = null;
-                    } else {
-                        lastMatched = state.matchedRows.copy();
-                    }
-                    doMatch(tt, state);
-                    if (removeMatches) {
-                        addedBuilder.addRowSet(state.matchedRows);
-                    } else {
-                        try (final RowSet ignored = lastMatched;
-                                final RowSet newlyMatched = state.matchedRows.minus(lastMatched)) {
-                            addedBuilder.addRowSet(newlyMatched);
+                WritableRowSet removed = null;
+                WritableRowSet added = null;
+                try (final RowSetUnionBatcher removedBatch =
+                        new RowSetUnionBatcher(processPendingResult.keysToRefilter.size());
+                        final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(
+                                (long) processPendingResult.keysToRefilter.size()
+                                        + processPendingResult.keysWithNewCurrent.size())) {
+                    for (final Object key : processPendingResult.keysToRefilter) {
+                        final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                        if (state == null) {
+                            // we have never seen anything for this key on this table, which means that we must
+                            // have a NULL_LONG identifier in the leader table.
+                            continue;
+                        }
+                        final boolean removeMatches = state.lastMatchedId != state.activeId;
+                        final RowSet lastMatched;
+                        if (removeMatches) {
+                            // The matched rows are snapshotted on the way past; doMatch replaces them below.
+                            removedBatch.add(state.matchedRows.copy());
+                            lastMatched = null;
+                        } else {
+                            lastMatched = state.matchedRows.copy();
+                        }
+                        doMatch(tt, state);
+                        if (removeMatches) {
+                            addedBatch.add(state.matchedRows.copy());
+                        } else {
+                            try (final RowSet ignored = lastMatched) {
+                                addedBatch.add(state.matchedRows.minus(lastMatched));
+                            }
                         }
                     }
-                }
 
-                for (final Object key : processPendingResult.keysWithNewCurrent) {
-                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                    if (state == null || state.currentIdBuilder == null) {
-                        continue;
+                    for (final Object key : processPendingResult.keysWithNewCurrent) {
+                        final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                        if (state == null || state.currentIdBuilder == null) {
+                            continue;
+                        }
+                        if (!processPendingResult.keysToRefilter.contains(key)) {
+                            // if we did not refilter this key; then we should add the currently matched values,
+                            // otherwise we ignore them because they have already been superseded
+                            try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
+                                state.matchedRows.insert(newlyMatchedRows);
+                                newlyMatchedRows.remove(followerResultRowSets[tt]);
+                                addedBatch.add(newlyMatchedRows.copy());
+                            }
+                        }
+                        state.currentIdBuilder = null;
                     }
-                    if (!processPendingResult.keysToRefilter.contains(key)) {
-                        // if we did not refilter this key; then we should add the currently matched values,
-                        // otherwise we ignore them because they have already been superseded
-                        final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
-                        state.matchedRows.insert(newlyMatchedRows);
-                        newlyMatchedRows.remove(followerResultRowSets[tt]);
-                        addedBuilder.addRowSet(newlyMatchedRows);
-                    }
-                    state.currentIdBuilder = null;
-                }
 
-                final RowSet removed = removedBuilder.build();
-                final RowSet added = addedBuilder.build();
+                    removed = removedBatch.build();
+                    added = addedBatch.build();
+                } catch (final Throwable e) {
+                    SafeCloseable.closeAll(removed, added);
+                    throw e;
+                }
                 followerResultRowSets[tt].remove(removed);
                 followerResultRowSets[tt].insert(added);
 
@@ -506,6 +522,9 @@ public class LeaderTableFilter {
                     update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                     update.shifted = RowSetShiftData.EMPTY;
                     followerResults[tt].notifyListeners(update);
+                } else {
+                    // There is nothing to notify, so no update takes ownership of these.
+                    SafeCloseable.closeAll(added, removed);
                 }
             }
 
@@ -611,12 +630,12 @@ public class LeaderTableFilter {
 
         state.pendingRows = pendingBuilder.build();
         if (addMatches) {
-            try (final RowSet newMatches = matchedBuilder.build()) {
-                state.matchedRows.insert(newMatches);
+            try (final WritableRowSet newMatches = matchedBuilder.build()) {
+                state.matchedRows.subsume(newMatches);
             }
             if (state.currentIdBuilder != null) {
-                try (final RowSet curentMatches = state.currentIdBuilder.build()) {
-                    state.matchedRows.insert(curentMatches);
+                try (final WritableRowSet curentMatches = state.currentIdBuilder.build()) {
+                    state.matchedRows.subsume(curentMatches);
                     state.currentIdBuilder = null;
                 }
             }
@@ -688,14 +707,14 @@ public class LeaderTableFilter {
             final int pendingLeaderRows = leaderKeyState.size();
             int matchedIndex = -1;
             for (int leaderRowToCheck = pendingLeaderRows - 1; leaderRowToCheck >= 0; leaderRowToCheck--) {
-                int satisfiedFollowers = leaderKeyState.satisfiedIdsByFollower.get(leaderRowToCheck);
+                int satisfiedFollowers = leaderKeyState.satisfiedIdsByFollower.getInt(leaderRowToCheck);
                 for (int tt = 0; tt < tableCount; ++tt) {
                     final int tableMask = 1 << tt;
                     if ((satisfiedFollowers & tableMask) != 0) {
                         continue;
                     }
                     // we need to check if this follower has the key for this row
-                    final long idForFollower = leaderKeyState.pendingIdsByFollower[tt].get(leaderRowToCheck);
+                    final long idForFollower = leaderKeyState.pendingIdsByFollower[tt].getLong(leaderRowToCheck);
                     if (idForFollower == QueryConstants.NULL_LONG) {
                         satisfiedFollowers |= tableMask;
                         continue;
@@ -713,7 +732,8 @@ public class LeaderTableFilter {
                     }
 
                     // we must check the pending ids in the follower
-                    final int foundIndex = followerKeyState.unprocessedIds.binarySearch(idForFollower);
+                    final int foundIndex = LongArrays.binarySearch(followerKeyState.unprocessedIds.elements(), 0,
+                            followerKeyState.unprocessedIds.size(), idForFollower);
                     if (foundIndex < 0) {
                         // not found
                         continue;
@@ -728,7 +748,7 @@ public class LeaderTableFilter {
                     matchedIndex = leaderRowToCheck;
                     for (int tt = 0; tt < tableCount; ++tt) {
                         // the followerKeyState may be null if the pending Id is null
-                        final long activeId = leaderKeyState.pendingIdsByFollower[tt].get(leaderRowToCheck);
+                        final long activeId = leaderKeyState.pendingIdsByFollower[tt].getLong(leaderRowToCheck);
                         if (followerKeyStates[tt] != null) {
                             followerKeyStates[tt].setActiveId(activeId);
                         } else {
@@ -744,7 +764,7 @@ public class LeaderTableFilter {
             }
 
             if (matchedIndex >= 0) {
-                final long newMatch = leaderKeyState.leaderRows.get(matchedIndex);
+                final long newMatch = leaderKeyState.leaderRows.getLong(matchedIndex);
                 leaderMatchBuilder.addKey(newMatch);
                 if (leaderKeyState.matchedRowKey != RowSet.NULL_ROW_KEY) {
                     leaderRemovedBuilder.addKey(leaderKeyState.matchedRowKey);
@@ -887,7 +907,7 @@ public class LeaderTableFilter {
                     if (unprocessedCount == 0) {
                         currentState.unprocessedIds.add(id);
                     } else {
-                        final long lastUnprocessed = currentState.unprocessedIds.get(unprocessedCount - 1);
+                        final long lastUnprocessed = currentState.unprocessedIds.getLong(unprocessedCount - 1);
                         if (lastUnprocessed != id) {
                             currentState.unprocessedIds.add(id);
                             if (lastUnprocessed >= id) {

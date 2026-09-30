@@ -4,6 +4,7 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -11,24 +12,34 @@ import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.function.Supplier;
 
-public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
+public class BooleanChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "BooleanChunkWriter";
-    private static final BooleanChunkWriter NULLABLE_IDENTITY_INSTANCE = new BooleanChunkWriter(true);
-    private static final BooleanChunkWriter NON_NULLABLE_IDENTITY_INSTANCE = new BooleanChunkWriter(false);
+    private static final BooleanChunkWriter<ByteChunk<Values>> NULLABLE_IDENTITY_INSTANCE =
+            new BooleanChunkWriter<>(true);
+    private static final BooleanChunkWriter<ByteChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE =
+            new BooleanChunkWriter<>(false);
 
-    public static BooleanChunkWriter getIdentity(boolean isNullable) {
+    public static BooleanChunkWriter<ByteChunk<Values>> getIdentity(boolean isNullable) {
         return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
     }
 
+    @SuppressWarnings("unchecked")
     private BooleanChunkWriter(final boolean isNullable) {
-        super(null, ByteChunk::getEmptyChunk, 0, false, isNullable);
+        super(null, (Supplier<SOURCE_CHUNK_TYPE>) (Supplier<?>) ByteChunk::getEmptyChunk, 0, false, isNullable);
+    }
+
+    public BooleanChunkWriter(
+            @Nullable final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer,
+            @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
+            final boolean fieldNullable) {
+        super(transformer, emptyChunkSupplier, 0, false, fieldNullable);
     }
 
     @Override
@@ -40,22 +51,10 @@ public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
     }
 
     @Override
-    protected int computeNullCount(@NotNull Context context, @NotNull RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
+    protected void computeValidity(@NotNull Context context, @NotNull RowSequence subset,
+            @NotNull ValidityBuffer validity) {
         final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
-        subset.forAllRowKeys(row -> {
-            if (BooleanUtils.isNull(byteChunk.get((int) row))) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(@NotNull Context context, @NotNull RowSequence subset,
-            @NotNull SerContext serContext) {
-        final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(BooleanUtils.isNull(byteChunk.get((int) row))));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(BooleanUtils.isNull(byteChunk.get((int) row))));
     }
 
     private class BooleanChunkInputStream extends BaseChunkInputStream<Context> {
@@ -104,12 +103,14 @@ public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
             bytesWritten += writeValidityBuffer(dos);
 
             // write the payload buffer
-            // we cheat and re-use validity buffer serialization code
-            try (final SerContext serContext = new SerContext(dos)) {
-                final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
-                subset.forAllRowKeys(row -> serContext.setNextIsNull(
-                        BooleanUtils.byteAsBoolean(byteChunk.get((int) row)) != Boolean.TRUE));
-            }
+            // we cheat and re-use validity buffer bit-packing; a set bit is TRUE rather than non-null. It is packed up
+            // front because an all-TRUE column appends no "null" and still has to emit a full buffer.
+            final ValidityBuffer payload = ValidityBuffer.packed(subset.intSize(DEBUG_NAME));
+            final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
+            subset.forAllRowKeys(row -> payload.setNextIsNull(
+                    BooleanUtils.byteAsBoolean(byteChunk.get((int) row)) != Boolean.TRUE));
+            final byte[] payloadBytes = payload.bytes();
+            dos.write(payloadBytes, 0, payloadBytes.length);
             bytesWritten += getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * (long) Long.BYTES;
 
             return LongSizedDataStructure.intSize(DEBUG_NAME, bytesWritten);

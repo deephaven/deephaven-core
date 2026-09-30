@@ -44,17 +44,16 @@ public class ReplicateChunkFilters {
         final File objectFile = new File(CHUNK_FILTER_PATH + "DoubleChunkMatchFilterFactory.java");
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.replaceRegion(lines, "getBits", List.of("" +
-                "    private static final Double NEG_ZERO = -0.0;\n" +
                 "    public static long getBits(double value) {\n" +
-                "        if (NEG_ZERO.equals(value)) {\n" +
-                "            return Double.doubleToLongBits(0.0f);\n" +
-                "        }\n" +
-                "        return Double.doubleToLongBits(value);\n" +
+                "        return Double.doubleToLongBits(value == 0.0d ? 0.0d : value);\n" +
                 "    }\n"));
         lines = ReplicationUtils.globalReplacements(lines,
                 "int valueBits", "long valueBits",
                 "doubleToIntBits", "doubleToLongBits",
-                "TIntHashSet", "TLongHashSet");
+                "IntOpenHashSet", "LongOpenHashSet",
+                "IntSet", "LongSet",
+                "it\\.unimi\\.dsi\\.fastutil\\.ints", "it.unimi.dsi.fastutil.longs",
+                "0\\.0f", "0.0d");
         FileUtils.writeLines(objectFile, lines);
 
         // *RangeFilter.java

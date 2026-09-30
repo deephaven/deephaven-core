@@ -12,6 +12,8 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.util.systemicmarking.SystemicObject;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
-import java.util.stream.LongStream;
 
 /**
  * This class is used for ShiftAwareListeners that represent "leaf" nodes in the update propagation tree.
@@ -28,12 +29,20 @@ import java.util.stream.LongStream;
  *
  * For creating internally ticking table nodes, instead use {@link BaseTable.ListenerImpl}
  */
-public abstract class InstrumentedTableUpdateListenerAdapter extends InstrumentedTableUpdateListener {
+public abstract class InstrumentedTableUpdateListenerAdapter extends InstrumentedTableUpdateListener
+        implements SystemicObject<InstrumentedTableUpdateListenerAdapter> {
 
     private static final RetentionCache<InstrumentedTableUpdateListenerAdapter> RETENTION_CACHE =
             new RetentionCache<>();
 
     private final boolean retain;
+
+    /**
+     * Whether this listener is systemically important. As a leaf of the update propagation tree there is no downstream
+     * object to consult, so we capture the systemic state of the thread that created us (see
+     * {@link SystemicObjectTracker}).
+     */
+    private volatile boolean systemic = SystemicObjectTracker.isSystemicThread();
 
     @ReferentialIntegrity
     protected final Table source;
@@ -87,11 +96,32 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         AsyncErrorLogger.log(DateTimeUtils.nowMillisResolution(), sourceEntry, sourceEntry, originalException);
-        try {
-            AsyncClientErrorNotifier.reportError(originalException);
-        } catch (IOException e) {
-            throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
+
+        // Secondary notification to client error monitoring, only for systemic listeners
+        if (SystemicObjectTracker.isSystemic(this)) {
+            try {
+                AsyncClientErrorNotifier.reportError(originalException);
+            } catch (IOException e) {
+                final UncheckedTableException uncheckedTableException =
+                        new UncheckedTableException(
+                                "Exception while delivering async client error notification for "
+                                        + sourceEntry.toString(),
+                                originalException);
+                uncheckedTableException.addSuppressed(e);
+                throw uncheckedTableException;
+            }
         }
+    }
+
+    @Override
+    public boolean isSystemicObject() {
+        return systemic;
+    }
+
+    @Override
+    public InstrumentedTableUpdateListenerAdapter markSystemic() {
+        systemic = true;
+        return this;
     }
 
     @Override

@@ -216,9 +216,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             }
         }
         if (chunkDestinationsBuilder != null) {
-            try (final RowSet chunkUpdatedDestinations =
+            try (final WritableRowSet chunkUpdatedDestinations =
                     new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
-                stepUpdatedDestinations.insert(chunkUpdatedDestinations);
+                stepUpdatedDestinations.subsume(chunkUpdatedDestinations);
             }
         }
     }
@@ -242,9 +242,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                     destination);
             chunkDestinationsBuilder.addKey(destination);
         }
-        try (final RowSet chunkUpdatedDestinations =
+        try (final WritableRowSet chunkUpdatedDestinations =
                 new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
-            stepUpdatedDestinations.insert(chunkUpdatedDestinations);
+            stepUpdatedDestinations.subsume(chunkUpdatedDestinations);
         }
     }
 
@@ -279,9 +279,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                 chunkDestinationsBuilder.addKey(destination);
             }
         }
-        try (final RowSet chunkUpdatedDestinations =
+        try (final WritableRowSet chunkUpdatedDestinations =
                 new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
-            stepUpdatedDestinations.insert(chunkUpdatedDestinations);
+            stepUpdatedDestinations.subsume(chunkUpdatedDestinations);
         }
     }
 
@@ -306,9 +306,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                     destination);
             chunkDestinationsBuilder.addKey(destination);
         }
-        try (final RowSet chunkUpdatedDestinations =
+        try (final WritableRowSet chunkUpdatedDestinations =
                 new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
-            stepUpdatedDestinations.insert(chunkUpdatedDestinations);
+            stepUpdatedDestinations.subsume(chunkUpdatedDestinations);
         }
     }
 

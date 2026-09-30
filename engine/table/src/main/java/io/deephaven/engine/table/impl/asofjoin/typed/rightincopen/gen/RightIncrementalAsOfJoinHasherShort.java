@@ -56,8 +56,12 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
+            int firstDeletedLocation = -1;
             MAIN_SEARCH: while (true) {
                 byte rowState = stateSource.getUnsafe(tableLocation);
+                if (firstDeletedLocation < 0 && isStateDeleted(rowState)) {
+                    firstDeletedLocation = tableLocation;
+                }
                 if (isStateEmpty(rowState)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
@@ -66,6 +70,9 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                         if (isStateEmpty(rowState)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                            if (isStateDeleted(rowState)) {
+                                break;
+                            }
                             final long cookie = getCookieAlternate(alternateTableLocation);
                             hashSlots.set(cookie, alternateTableLocation | alternateInsertMask);
                             if (sequentialBuilders != null) {
@@ -76,10 +83,17 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
-                    numEntries++;
+                    if (firstDeletedLocation >= 0) {
+                        tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
+                    }
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     final long cookie = makeCookieMain(tableLocation);
                     hashSlots.set(cookie, tableLocation | mainInsertMask);
@@ -91,6 +105,20 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                     }
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(rowState)) {
+                        tableLocation = firstDeletedLocation;
+                        liveEntries++;
+                        mainKeySource0.set(tableLocation, k0);
+                        final long cookie = makeCookieMain(tableLocation);
+                        hashSlots.set(cookie, tableLocation | mainInsertMask);
+                        if (sequentialBuilders != null) {
+                            addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
+                            stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
+                        } else {
+                            addLeftKey(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
+                        }
+                        break;
+                    }
                     final long cookie = getCookieMain(tableLocation);
                     assert hashSlots != null;
                     hashSlots.set(cookie, tableLocation | mainInsertMask);
@@ -102,7 +130,9 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -118,8 +148,12 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
+            int firstDeletedLocation = -1;
             MAIN_SEARCH: while (true) {
                 byte rowState = stateSource.getUnsafe(tableLocation);
+                if (firstDeletedLocation < 0 && isStateDeleted(rowState)) {
+                    firstDeletedLocation = tableLocation;
+                }
                 if (isStateEmpty(rowState)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
@@ -128,6 +162,9 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                         if (isStateEmpty(rowState)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                            if (isStateDeleted(rowState)) {
+                                break;
+                            }
                             final long cookie = getCookieAlternate(alternateTableLocation);
                             hashSlots.set(cookie, alternateTableLocation | alternateInsertMask);
                             if (sequentialBuilders != null) {
@@ -138,10 +175,17 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
-                    numEntries++;
+                    if (firstDeletedLocation >= 0) {
+                        tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
+                    }
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     final long cookie = makeCookieMain(tableLocation);
                     hashSlots.set(cookie, tableLocation | mainInsertMask);
@@ -153,6 +197,20 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                     }
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(rowState)) {
+                        tableLocation = firstDeletedLocation;
+                        liveEntries++;
+                        mainKeySource0.set(tableLocation, k0);
+                        final long cookie = makeCookieMain(tableLocation);
+                        hashSlots.set(cookie, tableLocation | mainInsertMask);
+                        if (sequentialBuilders != null) {
+                            addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
+                            stateSource.set(tableLocation, (byte)(ENTRY_RIGHT_IS_EMPTY | ENTRY_LEFT_IS_EMPTY));
+                        } else {
+                            addRightKey(tableLocation, rowKeyChunk.get(chunkPosition), (byte) 0);
+                        }
+                        break;
+                    }
                     final long cookie = getCookieMain(tableLocation);
                     hashSlots.set(cookie, tableLocation | mainInsertMask);
                     if (sequentialBuilders != null) {
@@ -163,7 +221,9 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -179,10 +239,15 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
+            boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
             byte rowState;
             while (!isStateEmpty(rowState = stateSource.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(rowState)) {
+                        searchAlternate = false;
+                        break;
+                    }
                     if (sequentialBuilders != null) {
                         final long cookie = getCookieMain(tableLocation);
                         hashSlots.set(cookie, tableLocation | mainInsertMask);
@@ -194,25 +259,34 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while (!isStateEmpty(rowState = alternateStateSource.getUnsafe(alternateTableLocation))) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            if (sequentialBuilders != null) {
-                                final long cookie = getCookieAlternate(alternateTableLocation);
-                                hashSlots.set(cookie, alternateTableLocation | alternateInsertMask);
-                                addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
-                            } else {
-                                addAlternateRightKey(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                if (searchAlternate) {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    if (firstAlternateTableLocation < rehashPointer) {
+                        int alternateTableLocation = firstAlternateTableLocation;
+                        while (!isStateEmpty(rowState = alternateStateSource.getUnsafe(alternateTableLocation))) {
+                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(rowState)) {
+                                    break;
+                                }
+                                if (sequentialBuilders != null) {
+                                    final long cookie = getCookieAlternate(alternateTableLocation);
+                                    hashSlots.set(cookie, alternateTableLocation | alternateInsertMask);
+                                    addToSequentialBuilder(cookie, sequentialBuilders, rowKeyChunk.get(chunkPosition));
+                                } else {
+                                    addAlternateRightKey(alternateTableLocation, rowKeyChunk.get(chunkPosition), rowState);
+                                }
+                                break;
                             }
-                            break;
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
                     }
                 }
             }
@@ -228,15 +302,25 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
         return state == ENTRY_EMPTY_STATE;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate) {
+    private static boolean isStateDeleted(byte state) {
+        return state == ENTRY_TOMBSTONE_STATE;
+    }
+
+    private boolean migrateOneLocation(int locationToMigrate, boolean trueOnDeletedEntry) {
         final byte currentStateValue = alternateStateSource.getUnsafe(locationToMigrate);
         if (isStateEmpty(currentStateValue)) {
             return false;
         }
+        if (isStateDeleted(currentStateValue)) {
+            alternateEntries--;
+            alternateStateSource.set(locationToMigrate, ENTRY_EMPTY_STATE);
+            return trueOnDeletedEntry;
+        }
         final short k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (!isStateEmpty(stateSource.getUnsafe(destinationTableLocation))) {
+        byte candidateState;
+        while (!isStateEmpty(candidateState = stateSource.getUnsafe(destinationTableLocation)) && !isStateDeleted(candidateState)) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
@@ -247,7 +331,12 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
         alternateRightRowSetSource.set(locationToMigrate, null);
         final long cookie  = alternateCookieSource.getUnsafe(locationToMigrate);
         migrateCookie(cookie, destinationTableLocation);
+        migrateTombstoneCandidate(currentStateValue, destinationTableLocation);
         alternateStateSource.set(locationToMigrate, ENTRY_EMPTY_STATE);
+        if (!isStateDeleted(candidateState)) {
+            numEntries++;
+        }
+        alternateEntries--;
         return true;
     }
 
@@ -255,7 +344,7 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
     protected int rehashInternalPartial(int entriesToRehash) {
         int rehashedEntries = 0;
         while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer)) {
+            if (migrateOneLocation(--rehashPointer, false)) {
                 rehashedEntries++;
             }
         }
@@ -277,7 +366,7 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
     @Override
     protected void migrateFront() {
         int location = 0;
-        while (migrateOneLocation(location++) && location < alternateTableSize);
+        while (migrateOneLocation(location++, true) && location < alternateTableSize);
     }
 
     @Override
@@ -319,7 +408,9 @@ final class RightIncrementalAsOfJoinHasherShort extends RightIncrementalAsOfJoin
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
-                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+                if (destinationTableLocation == firstDestinationTableLocation) {
+                    throw Assert.statementNeverExecuted("destinationTableLocation wraps around to firstDestinationTableLocation");
+                }
             }
         }
     }

@@ -1,0 +1,147 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.parquet.base;
+
+import io.deephaven.parquet.base.materializers.BlobMaterializer;
+import io.deephaven.parquet.base.materializers.StringMaterializer;
+import io.deephaven.parquet.base.materializers.StringPageMaterializerFactory;
+import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.values.ValuesReader;
+import org.apache.parquet.column.values.plain.BinaryPlainValuesReader;
+import org.apache.parquet.format.PageHeader;
+import org.apache.parquet.format.PageType;
+import org.apache.parquet.io.ParquetDecodingException;
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
+import org.apache.parquet.schema.Types;
+import org.junit.jupiter.api.Test;
+
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * Which pages {@code ColumnPageReaderImpl} offers to a {@link StringPageMaterializerFactory}. What that factory then
+ * builds is covered next to it, in {@code TestStringPageMaterializerFactory}.
+ */
+class TestPlainBinaryStringReaderSelection {
+
+    private static final ByteBuffer HEAP = ByteBuffer.allocate(64);
+    private static final ByteBuffer DIRECT = ByteBuffer.allocateDirect(64);
+
+    /** A stand-in for whatever the factory hands back; only its identity matters here. */
+    private static ValuesReader sentinelReader() {
+        return new ValuesReader() {
+            @Override
+            public void skip() {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    /**
+     * Opting in is a correctness requirement, not a tuning choice: the reader supplied by the hook implements only bulk
+     * String decoding, so any other BINARY consumer handed one would throw from readBytes().
+     */
+    @Test
+    void notImplementedByOtherBinaryMaterializers() {
+        assertThat(BlobMaterializer.FACTORY).isNotInstanceOf(StringPageMaterializerFactory.class);
+        assertThat(PageMaterializerFactory.NULL_FACTORY).isNotInstanceOf(StringPageMaterializerFactory.class);
+        assertThat(StringMaterializer.FACTORY).isInstanceOf(StringPageMaterializerFactory.class);
+    }
+
+    /** Records whether the hook was called, and hands back a reader that is trivially identifiable. */
+    private static final class RecordingFactory extends StringPageMaterializerFactory {
+        private final ValuesReader supplied;
+        private int calls;
+
+        private RecordingFactory(final ValuesReader supplied) {
+            this.supplied = supplied;
+        }
+
+        @Override
+        public ValuesReader makePlainBinaryValuesReader(final ByteBuffer in) {
+            ++calls;
+            return supplied;
+        }
+    }
+
+    private static ColumnPageReaderImpl readerFor(
+            final PrimitiveTypeName type, final PageMaterializerFactory factory) {
+        final ColumnDescriptor descriptor = new ColumnDescriptor(
+                new String[] {"c"}, Types.required(type).named("c"), 0, 0);
+        return new ColumnPageReaderImpl("c", null, null, ctx -> ColumnChunkReader.NULL_DICTIONARY, factory,
+                descriptor, URI.create("file:///test"), List.of(), 0L,
+                new PageHeader(PageType.DATA_PAGE, 0, 0), 0);
+    }
+
+    /**
+     * The dispatch block in {@code getDataReader} is what makes the optimization reachable; deleting it would leave
+     * every other test here passing while silently reverting to parquet's reader.
+     */
+    @Test
+    void getDataReaderConsultsTheFactory() {
+        final ValuesReader supplied = sentinelReader();
+        final RecordingFactory factory = new RecordingFactory(supplied);
+
+        assertThat(readerFor(PrimitiveTypeName.BINARY, factory).getDataReader(Encoding.PLAIN, HEAP, 0, null))
+                .isSameAs(supplied);
+        assertThat(factory.calls).isEqualTo(1);
+    }
+
+    /** A factory that does not implement the hook must leave the page to parquet, not break the read. */
+    @Test
+    void getDataReaderFallsBackForOtherFactories() {
+        assertThat(readerFor(PrimitiveTypeName.BINARY, PageMaterializerFactory.NULL_FACTORY)
+                .getDataReader(Encoding.PLAIN, HEAP, 0, null))
+                .isInstanceOf(BinaryPlainValuesReader.class);
+    }
+
+    /**
+     * A direct page buffer has no backing array, so the page must never be offered: the hook is total, and would throw
+     * rather than decline. Today's buffers are always heap-backed, which is what makes that safe.
+     */
+    @Test
+    void getDataReaderSkipsTheFactoryForDirectBuffers() {
+        final RecordingFactory factory = new RecordingFactory(sentinelReader());
+
+        assertThat(readerFor(PrimitiveTypeName.BINARY, factory).getDataReader(Encoding.PLAIN, DIRECT, 0, null))
+                .isInstanceOf(BinaryPlainValuesReader.class);
+        assertThat(factory.calls).isZero();
+    }
+
+    /**
+     * Dictionary pages must reach the dictionary path without the factory ever being offered them. Encoding is per
+     * page, so a chunk holding a dictionary page still reaches here with PLAIN pages; offering a dictionary page would
+     * hand the reader RLE bytes to parse as PLAIN.
+     */
+    @Test
+    void getDataReaderSkipsTheFactoryForDictionaryPages() {
+        // noinspection deprecation
+        for (final Encoding encoding : List.of(Encoding.RLE_DICTIONARY, Encoding.PLAIN_DICTIONARY)) {
+            final RecordingFactory factory = new RecordingFactory(sentinelReader());
+            final ColumnPageReaderImpl reader = readerFor(PrimitiveTypeName.BINARY, factory);
+
+            // NULL_DICTIONARY means "no dictionary was loaded", so reaching that branch is itself the assertion.
+            assertThatThrownBy(() -> reader.getDataReader(encoding, HEAP, 0, null))
+                    .as("encoding %s", encoding)
+                    .isInstanceOf(ParquetDecodingException.class);
+            assertThat(factory.calls).as("encoding %s", encoding).isZero();
+        }
+    }
+
+    /** Non-BINARY columns must never be offered to the factory, whatever it would return. */
+    @Test
+    void getDataReaderSkipsTheFactoryForNonBinaryColumns() {
+        for (final PrimitiveTypeName type : List.of(PrimitiveTypeName.INT32, PrimitiveTypeName.DOUBLE)) {
+            final RecordingFactory factory = new RecordingFactory(sentinelReader());
+
+            readerFor(type, factory).getDataReader(Encoding.PLAIN, HEAP, 0, null);
+            assertThat(factory.calls).as("type %s", type).isZero();
+        }
+    }
+}

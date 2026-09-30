@@ -4,14 +4,14 @@
 package io.deephaven.extensions.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.util.annotations.FinalDefault;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
-@BuildableStyle
+@CopyableStyle
 public abstract class BarrageSnapshotOptions implements BarrageOptions {
     public static Builder builder() {
         return ImmutableBarrageSnapshotOptions.builder();
@@ -44,6 +44,8 @@ public abstract class BarrageSnapshotOptions implements BarrageOptions {
     public int batchSize() {
         return 0;
     }
+
+    public abstract BarrageSnapshotOptions withBatchSize(int batchSize);
 
     @Override
     @Default

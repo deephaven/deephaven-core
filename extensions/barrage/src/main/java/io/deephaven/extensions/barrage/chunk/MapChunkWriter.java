@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,26 +56,12 @@ public class MapChunkWriter<T>
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final BaseChunkWriter.Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> {
-            if (objectChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final BaseChunkWriter.Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     public final class Context extends ChunkWriter.Context {
@@ -160,8 +145,24 @@ public class MapChunkWriter<T>
             @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        return getInputStream(context, subset, options, null);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Forwards {@code dictionaryRegistry} to the key and value writers so that a dictionary-encoded key or value (a
+     * {@code Map<Dictionary<...>, ...>} column) can resolve and register its dictionary state.
+     */
+    @Override
+    public DrainableColumn getInputStream(
+            @NotNull final ChunkWriter.Context context,
+            @Nullable final RowSet subset,
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
         // noinspection unchecked
-        return new MapChunkInputStream((Context) context, subset, options);
+        return new MapChunkInputStream((Context) context, subset, options, dictionaryRegistry);
     }
 
     private class MapChunkInputStream extends BaseChunkInputStream<Context> {
@@ -174,14 +175,15 @@ public class MapChunkWriter<T>
         private MapChunkInputStream(
                 @NotNull final Context context,
                 @Nullable final RowSet mySubset,
-                @NotNull final BarrageOptions options) throws IOException {
+                @NotNull final BarrageOptions options,
+                @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
             super(context, mySubset, options);
 
             if (subset == null || subset.size() == context.size()) {
                 // we are writing everything
                 myOffsets = null;
-                keyColumn = keyWriter.getInputStream(context.keyContext, null, options);
-                valueColumn = valueWriter.getInputStream(context.valueContext, null, options);
+                keyColumn = keyWriter.getInputStream(context.keyContext, null, options, dictionaryRegistry);
+                valueColumn = valueWriter.getInputStream(context.valueContext, null, options, dictionaryRegistry);
             } else {
                 // note that we maintain dense offsets within the writer, but write per the wire format
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize() + 1);
@@ -198,8 +200,9 @@ public class MapChunkWriter<T>
                     }
                 });
                 try (final RowSet innerSubset = innerSubsetBuilder.build()) {
-                    keyColumn = keyWriter.getInputStream(context.keyContext, innerSubset, options);
-                    valueColumn = valueWriter.getInputStream(context.valueContext, innerSubset, options);
+                    keyColumn = keyWriter.getInputStream(context.keyContext, innerSubset, options, dictionaryRegistry);
+                    valueColumn =
+                            valueWriter.getInputStream(context.valueContext, innerSubset, options, dictionaryRegistry);
                 }
             }
         }
@@ -287,10 +290,13 @@ public class MapChunkWriter<T>
             // write the validity array with LSB indexing
             bytesWritten += writeValidityBuffer(dos);
 
-            // write offsets array
+            // Write the offsets array in bounded windows, flushing a full window with a single bulk write rather than
+            // one DataOutput int — i.e. four individual byte writes — per element.
             final WritableIntChunk<ChunkPositions> offsetsToUse = myOffsets == null ? context.offsets : myOffsets;
-            for (int i = 0; i < offsetsToUse.size(); ++i) {
-                dos.writeInt(offsetsToUse.get(i));
+            try (final BulkIntWriter offsetWriter = new BulkIntWriter(outputStream)) {
+                for (int i = 0; i < offsetsToUse.size(); ++i) {
+                    offsetWriter.write(offsetsToUse.get(i));
+                }
             }
             bytesWritten += ((long) offsetsToUse.size()) * Integer.BYTES;
             bytesWritten += writePadBuffer(dos, bytesWritten);
