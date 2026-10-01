@@ -306,7 +306,10 @@ public class ReplicateRegionsAndRegionedSources {
                 "source\\.getPrevObject\\(", "source.getPrev(",
                 "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);",
                 "final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);",
-                "unboxed", "copiedValues");
+                "unboxed", "copiedValues",
+                // The bounds' exact-match checks must agree with the ordering they search by: a BigDecimal match is
+                // decided by ordering, and 1.0 and 1.00 compare equal without being equal.
+                "ObjectComparisons\\.eq\\(", "ObjectComparisons.compareEquals(");
         lines = addImport(lines, "import java.util.Arrays;");
         if (file.getName().contains("Column")) {
             lines = addGeneralMatch(lines, Arrays.asList(
@@ -460,10 +463,13 @@ public class ReplicateRegionsAndRegionedSources {
                     "     * is not applied here; the caller must invert the result itself.",
                     "     *",
                     "     * <p>",
-                    "     * The filter's column type chooses the search: {@link #" + CONSISTENT_MATCH + "} when",
-                    "     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds for it or it is",
-                    "     * {@link java.math.BigDecimal}, whose match filter matches by compareTo, and",
-                    "     * {@link #" + GENERAL_MATCH + "} otherwise.",
+                    "     * The filter's column type chooses the search: {@link #" + CONSISTENT_MATCH + "}, which lets",
+                    "     * ordering alone decide a match, for {@link java.math.BigDecimal}, whose match filter"
+                            + " matches by compareTo, and for",
+                    "     * a type for which {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}"
+                            + " holds; and",
+                    "     * {@link #" + GENERAL_MATCH + "}, which picks the matches out of each ordering-equal run by",
+                    "     * equality, for any other type.",
                     "     *",
                     "     * @param region The column region to search.",
                     "     * @param firstKey The first key in the column region to consider for the search.",
@@ -483,14 +489,12 @@ public class ReplicateRegionsAndRegionedSources {
                     "            return RowSetFactory.empty();",
                     "        }",
                     "        final Class<?> columnType = filter.getColumnType();",
-                    "        if (columnType == java.math.BigDecimal.class) {",
-                    "            // BigDecimal's equals is not consistent with its ordering, but its match filter matches by"
-                            + " compareTo,",
-                    "            // as the query language's == does, so ordering alone decides a BigDecimal match.",
-                    "            return " + CONSISTENT_MATCH + "(region, firstKey, lastKey, sortColumn,"
-                            + " filter.getValues());",
-                    "        }",
-                    "        return BinarySearchKernelHelper.compareConsistentWithEquality(columnType)",
+                    "        // BigDecimal's equals is not consistent with its ordering, but its match filter"
+                            + " matches by compareTo, as the",
+                    "        // query language's == does, so ordering alone decides a BigDecimal match.",
+                    "        final boolean matchByOrdering = columnType == java.math.BigDecimal.class",
+                    "                || BinarySearchKernelHelper.compareConsistentWithEquality(columnType);",
+                    "        return matchByOrdering",
                     "                ? " + CONSISTENT_MATCH + "(region, firstKey, lastKey, sortColumn,"
                             + " filter.getValues())",
                     "                : " + GENERAL_MATCH

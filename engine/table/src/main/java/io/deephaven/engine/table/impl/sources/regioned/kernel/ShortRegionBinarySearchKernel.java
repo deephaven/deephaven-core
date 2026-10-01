@@ -342,7 +342,7 @@ public class ShortRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastKey) {
-            if (ShortComparisons.compare(region.getShort(low), min) == 0) {
+            if (ShortComparisons.eq(region.getShort(low), min)) {
                 return low;
             }
         }
@@ -392,7 +392,7 @@ public class ShortRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (maxInc && high >= firstKey) {
-            if (ShortComparisons.compare(region.getShort(high), max) == 0) {
+            if (ShortComparisons.eq(region.getShort(high), max)) {
                 return high;
             }
         }
@@ -442,7 +442,7 @@ public class ShortRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastKey) {
-            if (ShortComparisons.compare(region.getShort(low), max) == 0) {
+            if (ShortComparisons.eq(region.getShort(low), max)) {
                 return low;
             }
         }
@@ -492,7 +492,7 @@ public class ShortRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (minInc && high >= firstKey) {
-            if (ShortComparisons.compare(region.getShort(high), min) == 0) {
+            if (ShortComparisons.eq(region.getShort(high), min)) {
                 return high;
             }
         }

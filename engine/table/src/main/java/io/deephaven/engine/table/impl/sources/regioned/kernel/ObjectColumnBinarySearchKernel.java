@@ -407,7 +407,7 @@ public class ObjectColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastPos) {
             final Object lowValue = usePrev ? source.getPrev(selection.get(low)) : source.get(selection.get(low));
-            if (ObjectComparisons.compare(lowValue, min) == 0) {
+            if (ObjectComparisons.compareEquals(lowValue, min)) {
                 return low;
             }
         }
@@ -468,7 +468,7 @@ public class ObjectColumnBinarySearchKernel {
         if (maxInc && high >= firstPos) {
             final Object highValue =
                     usePrev ? source.getPrev(selection.get(high)) : source.get(selection.get(high));
-            if (ObjectComparisons.compare(highValue, max) == 0) {
+            if (ObjectComparisons.compareEquals(highValue, max)) {
                 return high;
             }
         }
@@ -527,7 +527,7 @@ public class ObjectColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastPos) {
             final Object lowValue = usePrev ? source.getPrev(selection.get(low)) : source.get(selection.get(low));
-            if (ObjectComparisons.compare(lowValue, max) == 0) {
+            if (ObjectComparisons.compareEquals(lowValue, max)) {
                 return low;
             }
         }
@@ -588,7 +588,7 @@ public class ObjectColumnBinarySearchKernel {
         if (minInc && high >= firstPos) {
             final Object highValue =
                     usePrev ? source.getPrev(selection.get(high)) : source.get(selection.get(high));
-            if (ObjectComparisons.compare(highValue, min) == 0) {
+            if (ObjectComparisons.compareEquals(highValue, min)) {
                 return high;
             }
         }

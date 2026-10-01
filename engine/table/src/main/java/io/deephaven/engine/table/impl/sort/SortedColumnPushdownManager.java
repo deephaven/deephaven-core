@@ -136,10 +136,11 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
      *
      * <p>
      * A non-primitive type uses {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, which
-     * lets ordering alone decide a match, when {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}
-     * holds for it or it is {@link BigDecimal}, whose match filter matches by {@link BigDecimal#compareTo(BigDecimal)},
-     * and {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}, which tests the rows that
-     * compare equal to a search value for equality, otherwise.
+     * lets ordering alone decide a match, if it is {@link BigDecimal}, whose match filter matches by
+     * {@link BigDecimal#compareTo(BigDecimal)}, or a type for which
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds; any other type uses
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}, which picks the matches out of each
+     * ordering-equal run by equality.
      */
     public static RowSet binarySearchMatch(
             @NotNull final ColumnSource<?> source,
@@ -173,13 +174,11 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
             return DoubleColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues,
                     usePrev);
         }
-        if (dataType == BigDecimal.class) {
-            // BigDecimal's equals is not consistent with its ordering, but its match filter matches by compareTo, as
-            // the query language's == does, so ordering alone decides a BigDecimal match.
-            return ObjectColumnBinarySearchKernel.binarySearchMatchWithConsistentEquality(source, selection, sortColumn,
-                    searchValues, usePrev);
-        }
-        return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+        // BigDecimal's equals is not consistent with its ordering, but its match filter matches by compareTo, as the
+        // query language's == does, so ordering alone decides a BigDecimal match.
+        final boolean matchByOrdering =
+                dataType == BigDecimal.class || BinarySearchKernelHelper.compareConsistentWithEquality(dataType);
+        return matchByOrdering
                 ? ObjectColumnBinarySearchKernel.binarySearchMatchWithConsistentEquality(source, selection, sortColumn,
                         searchValues, usePrev)
                 : ObjectColumnBinarySearchKernel.binarySearchMatchWithGeneralEquality(source, selection, sortColumn,

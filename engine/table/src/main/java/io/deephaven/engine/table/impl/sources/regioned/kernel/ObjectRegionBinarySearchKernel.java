@@ -73,10 +73,11 @@ public class ObjectRegionBinarySearchKernel {
      * is not applied here; the caller must invert the result itself.
      *
      * <p>
-     * The filter's column type chooses the search: {@link #binarySearchMatchWithConsistentEquality} when
-     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds for it or it is
-     * {@link java.math.BigDecimal}, whose match filter matches by compareTo, and
-     * {@link #binarySearchMatchWithGeneralEquality} otherwise.
+     * The filter's column type chooses the search: {@link #binarySearchMatchWithConsistentEquality}, which lets
+     * ordering alone decide a match, for {@link java.math.BigDecimal}, whose match filter matches by compareTo, and for
+     * a type for which {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds; and
+     * {@link #binarySearchMatchWithGeneralEquality}, which picks the matches out of each ordering-equal run by
+     * equality, for any other type.
      *
      * @param region The column region to search.
      * @param firstKey The first key in the column region to consider for the search.
@@ -96,12 +97,11 @@ public class ObjectRegionBinarySearchKernel {
             return RowSetFactory.empty();
         }
         final Class<?> columnType = filter.getColumnType();
-        if (columnType == java.math.BigDecimal.class) {
-            // BigDecimal's equals is not consistent with its ordering, but its match filter matches by compareTo,
-            // as the query language's == does, so ordering alone decides a BigDecimal match.
-            return binarySearchMatchWithConsistentEquality(region, firstKey, lastKey, sortColumn, filter.getValues());
-        }
-        return BinarySearchKernelHelper.compareConsistentWithEquality(columnType)
+        // BigDecimal's equals is not consistent with its ordering, but its match filter matches by compareTo, as the
+        // query language's == does, so ordering alone decides a BigDecimal match.
+        final boolean matchByOrdering = columnType == java.math.BigDecimal.class
+                || BinarySearchKernelHelper.compareConsistentWithEquality(columnType);
+        return matchByOrdering
                 ? binarySearchMatchWithConsistentEquality(region, firstKey, lastKey, sortColumn, filter.getValues())
                 : binarySearchMatchWithGeneralEquality(region, firstKey, lastKey, sortColumn, filter.getValues());
     }
@@ -395,7 +395,7 @@ public class ObjectRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastKey) {
-            if (ObjectComparisons.compare(region.getObject(low), min) == 0) {
+            if (ObjectComparisons.compareEquals(region.getObject(low), min)) {
                 return low;
             }
         }
@@ -445,7 +445,7 @@ public class ObjectRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (maxInc && high >= firstKey) {
-            if (ObjectComparisons.compare(region.getObject(high), max) == 0) {
+            if (ObjectComparisons.compareEquals(region.getObject(high), max)) {
                 return high;
             }
         }
@@ -495,7 +495,7 @@ public class ObjectRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastKey) {
-            if (ObjectComparisons.compare(region.getObject(low), max) == 0) {
+            if (ObjectComparisons.compareEquals(region.getObject(low), max)) {
                 return low;
             }
         }
@@ -545,7 +545,7 @@ public class ObjectRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (minInc && high >= firstKey) {
-            if (ObjectComparisons.compare(region.getObject(high), min) == 0) {
+            if (ObjectComparisons.compareEquals(region.getObject(high), min)) {
                 return high;
             }
         }

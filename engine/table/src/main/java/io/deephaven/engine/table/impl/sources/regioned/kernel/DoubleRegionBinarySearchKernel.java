@@ -344,7 +344,7 @@ public class DoubleRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastKey) {
-            if (DoubleComparisons.compare(region.getDouble(low), min) == 0) {
+            if (DoubleComparisons.eq(region.getDouble(low), min)) {
                 return low;
             }
         }
@@ -394,7 +394,7 @@ public class DoubleRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (maxInc && high >= firstKey) {
-            if (DoubleComparisons.compare(region.getDouble(high), max) == 0) {
+            if (DoubleComparisons.eq(region.getDouble(high), max)) {
                 return high;
             }
         }
@@ -444,7 +444,7 @@ public class DoubleRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastKey) {
-            if (DoubleComparisons.compare(region.getDouble(low), max) == 0) {
+            if (DoubleComparisons.eq(region.getDouble(low), max)) {
                 return low;
             }
         }
@@ -494,7 +494,7 @@ public class DoubleRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (minInc && high >= firstKey) {
-            if (DoubleComparisons.compare(region.getDouble(high), min) == 0) {
+            if (DoubleComparisons.eq(region.getDouble(high), min)) {
                 return high;
             }
         }

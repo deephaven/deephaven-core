@@ -342,7 +342,7 @@ public class ByteRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastKey) {
-            if (ByteComparisons.compare(region.getByte(low), min) == 0) {
+            if (ByteComparisons.eq(region.getByte(low), min)) {
                 return low;
             }
         }
@@ -392,7 +392,7 @@ public class ByteRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (maxInc && high >= firstKey) {
-            if (ByteComparisons.compare(region.getByte(high), max) == 0) {
+            if (ByteComparisons.eq(region.getByte(high), max)) {
                 return high;
             }
         }
@@ -442,7 +442,7 @@ public class ByteRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastKey) {
-            if (ByteComparisons.compare(region.getByte(low), max) == 0) {
+            if (ByteComparisons.eq(region.getByte(low), max)) {
                 return low;
             }
         }
@@ -492,7 +492,7 @@ public class ByteRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (minInc && high >= firstKey) {
-            if (ByteComparisons.compare(region.getByte(high), min) == 0) {
+            if (ByteComparisons.eq(region.getByte(high), min)) {
                 return high;
             }
         }

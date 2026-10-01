@@ -58,9 +58,9 @@ public class ChunkMatchFilterFactory {
             return StringChunkMatchFilterFactory.makeCaseInsensitiveFilter(matchOptions, keys);
         }
         if (type == BigDecimal.class) {
-            // A BigDecimal match is decided by compareTo, not equals, as the query language's == decides it; this is
-            // why BinarySearchKernelHelper treats BigDecimal as ordering consistently with equality, so that a sorted
-            // search matches it the same way.
+            // A BigDecimal match is decided by compareTo, not equals, as the query language's == decides it. Sorted
+            // pushdown matches it the same way: SortedColumnPushdownManager and ObjectRegionBinarySearchKernel check
+            // for BigDecimal by type and let ordering alone decide its match.
             return BigDecimalChunkMatchFilterFactory.makeFilter(matchOptions, keys);
         }
         // TODO: we should do something nicer with booleans
