@@ -118,11 +118,14 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish Test Results
-        uses: scacap/action-surefire-report@v1
+        uses: ScalableCapital/action-surefire-report@4004a71652495d6ed111f5b717c2cf9aa0f37627 # v2.0.5
         if: ${{ github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
+          # This step only runs for the scheduled build, where the default report_mode of "auto"
+          # would resolve to a workflow summary rather than a check run.
+          report_mode: check-run
           # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
           check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }} jetty${{ matrix.jetty-version}}
           github_token: ${{ secrets.GITHUB_TOKEN }}
