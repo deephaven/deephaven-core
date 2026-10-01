@@ -37,8 +37,12 @@ docker run --pull always --tty -e EXTERNAL=${EXTERNAL} -e ABSOLUTE=true -e HEADI
 EXIT_CODE=$?
 popd > /dev/null # Reset pwd
 
-if [ $EXIT_CODE -eq 0 ]; then
-  EXIT_CODE=$SIDEBAR_EXIT_CODE
+if [ $SIDEBAR_EXIT_CODE -ne 0 ]; then
+  echo
+  echo "Sidebar check failed. See the sidebar problems listed before the salmon validator output."
+  if [ $EXIT_CODE -eq 0 ]; then
+    EXIT_CODE=$SIDEBAR_EXIT_CODE
+  fi
 fi
 
 exit $EXIT_CODE

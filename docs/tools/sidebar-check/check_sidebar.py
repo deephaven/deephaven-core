@@ -14,7 +14,9 @@ stays current.
 Usage:
     python3 docs/tools/sidebar-check/check_sidebar.py
 
-Exits with status 1 if it finds a problem.
+Exits with status 1 if it finds a problem. In GitHub Actions, each problem is
+also reported as an error annotation on the file it concerns, so it shows in
+the pull request's checks summary.
 """
 
 import json
@@ -112,6 +114,15 @@ def check_language(lang, allow, used):
     return errors
 
 
+def annotate(error):
+    """Prints a GitHub Actions error annotation for one problem."""
+    source = error.split(":", 1)[0]
+    file = ("docs/tools/sidebar-check/allowlist.json" if source == "allowlist"
+            else f"docs/{source}/sidebar.json")
+    message = error.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    print(f"::error file={file},title=Sidebar check::{message}")
+
+
 def main():
     allow = json.load(open(os.path.join(HERE, "allowlist.json")))
     used = set()
@@ -132,8 +143,11 @@ def main():
     errors += [f"allowlist: proper noun '{n}' is not in any checked label"
                for n in allow["proper_nouns"] if ("noun", n) not in used]
 
+    in_github_actions = os.environ.get("GITHUB_ACTIONS") == "true"
     for e in errors:
         print(e)
+        if in_github_actions:
+            annotate(e)
     if errors:
         print(f"\n{len(errors)} sidebar problem(s). Fix the sidebar, or add an intentional "
               "exception to docs/tools/sidebar-check/allowlist.json.")
