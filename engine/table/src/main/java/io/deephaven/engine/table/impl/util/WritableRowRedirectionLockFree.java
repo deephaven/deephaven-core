@@ -251,6 +251,12 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final NullableLongLongMap baseline,
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
             @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys) {
+        if (updates == baseline) {
+            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and it
+            // answers every key.
+            baseline.get(outerRowKeys, innerRowKeys);
+            return;
+        }
         updates.get(outerRowKeys, innerRowKeys);
         final int size = outerRowKeys.size();
         int missingCount = 0;
@@ -260,6 +266,22 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             }
         }
         if (missingCount == 0) {
+            return;
+        }
+        if (missingCount == size) {
+            // Nothing in 'updates' for any of these keys, which is every read of a ticking table between its update
+            // cycles, once the terminal commit has folded 'updates' into 'baseline': answer them all from 'baseline'
+            // in one pass, with no gathering.
+            //
+            // Why this is decided from the probe just made and not from updates.isEmpty(): the lock-free argument in
+            // the class comment has a Reader@Idle see the writer's commit through the volatile read of the 'updates'
+            // array; when that read returns null (or an array without the key), every write to 'baseline' that
+            // preceded the writer's release of the array is visible too. The map's size is a plain field with no such
+            // guarantee. A reader that skipped the probe because it saw size == 0 could go on to read a 'baseline'
+            // the commit had not finished publishing, and return a stale value for a key updated that cycle. Probing
+            // first and acting on the probe's result keeps the acquire where the protocol puts it; the fast path only
+            // spares the gather.
+            baseline.get(outerRowKeys, innerRowKeys);
             return;
         }
         // Keys not present in 'updates' get their result from 'baseline': gather them into a dense chunk, do one
