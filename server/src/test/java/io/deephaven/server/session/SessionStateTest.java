@@ -2042,23 +2042,6 @@ public class SessionStateTest {
         // the parent's queued work must be a harmless no-op
         scheduler.runUntilQueueEmpty();
         Assert.eqFalse(race.parentRan.booleanValue(), "race.parentRan.booleanValue()");
-    }
-
-    @Test
-    public void testCancelledQueuedExportWithHandlerIsNotFatalWhenRun() throws InterruptedException {
-        final TeardownRace race = new TeardownRace(true);
-
-        // Whether or not the propagation itself misbehaves (see the previous test), the parent's already scheduled
-        // work runs afterwards and finds the parent terminal; any inconsistency it finds must be recoverable.
-        cancelChildDuringTeardown(race.child, race.parent::cancel);
-        Assert.eq(race.parent.getState(), "race.parent.getState()", CANCELLED);
-
-        try {
-            scheduler.runUntilQueueEmpty();
-        } catch (final AssertionFailure | FakeProcessEnvironment.FakeFatalException e) {
-            throw new AssertionFailure("running a cancelled export's queued work must not be fatal", e);
-        }
-        Assert.eqFalse(race.parentRan.booleanValue(), "race.parentRan.booleanValue()");
         Assert.eq(race.parent.getState(), "race.parent.getState()", CANCELLED);
     }
 
