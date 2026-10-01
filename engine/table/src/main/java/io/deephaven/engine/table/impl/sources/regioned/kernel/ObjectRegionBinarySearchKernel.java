@@ -74,7 +74,8 @@ public class ObjectRegionBinarySearchKernel {
      *
      * <p>
      * The filter's column type chooses the search: {@link #binarySearchMatchWithConsistentEquality} when
-     * {@link BinarySearchKernelHelper#matchByOrdering(Class)} holds for it, and
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds for it or it is
+     * {@link java.math.BigDecimal}, whose match filter matches by compareTo, and
      * {@link #binarySearchMatchWithGeneralEquality} otherwise.
      *
      * @param region The column region to search.
@@ -94,7 +95,13 @@ public class ObjectRegionBinarySearchKernel {
             // Nothing to search for, so nothing matches, and the data need not be touched at all.
             return RowSetFactory.empty();
         }
-        return BinarySearchKernelHelper.matchByOrdering(filter.getColumnType())
+        final Class<?> columnType = filter.getColumnType();
+        if (columnType == java.math.BigDecimal.class) {
+            // BigDecimal's equals is not consistent with its ordering, but its match filter matches by compareTo,
+            // as the query language's == does, so ordering alone decides a BigDecimal match.
+            return binarySearchMatchWithConsistentEquality(region, firstKey, lastKey, sortColumn, filter.getValues());
+        }
+        return BinarySearchKernelHelper.compareConsistentWithEquality(columnType)
                 ? binarySearchMatchWithConsistentEquality(region, firstKey, lastKey, sortColumn, filter.getValues())
                 : binarySearchMatchWithGeneralEquality(region, firstKey, lastKey, sortColumn, filter.getValues());
     }
@@ -106,8 +113,9 @@ public class ObjectRegionBinarySearchKernel {
      *
      * <p>
      * Ordering alone decides a match: every row that compares equal to a search value is returned. This is valid for
-     * types whose values compare equal exactly when they are equal, and for those whose match is decided by
-     * ordering, as {@link BinarySearchKernelHelper#matchByOrdering(Class)} describes; for any other type,
+     * types whose values compare equal exactly when they are equal, as
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes, and for
+     * {@link java.math.BigDecimal}, whose match filter matches by compareTo; for any other type,
      * {@link #binarySearchMatchWithGeneralEquality} applies.
      *
      * @param region The column region in which the search will be performed.

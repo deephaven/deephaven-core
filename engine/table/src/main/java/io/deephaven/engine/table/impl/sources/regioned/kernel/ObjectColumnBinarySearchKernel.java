@@ -73,8 +73,9 @@ public class ObjectColumnBinarySearchKernel {
      *
      * <p>
      * Ordering alone decides a match: every row that compares equal to a search value is returned. This is valid for
-     * types whose values compare equal exactly when they are equal, and for those whose match is decided by
-     * ordering, as {@link BinarySearchKernelHelper#matchByOrdering(Class)} describes; for any other type,
+     * types whose values compare equal exactly when they are equal, as
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes, and for
+     * {@link java.math.BigDecimal}, whose match filter matches by compareTo; for any other type,
      * {@link #binarySearchMatchWithGeneralEquality} applies.
      *
      * <p>

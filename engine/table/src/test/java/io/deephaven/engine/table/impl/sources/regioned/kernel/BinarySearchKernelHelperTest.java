@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.time.Instant;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.compareConsistentWithEquality;
-import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.matchByOrdering;
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.registerConsistentType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -140,19 +139,6 @@ public class BinarySearchKernelHelperTest {
     }
 
     /**
-     * A match is decided by ordering for every consistent type, and for {@link BigDecimal}, whose match filter matches
-     * by compareTo, though its equals keeps it out of the consistent set.
-     */
-    @Test
-    public void matchByOrderingAddsBigDecimal() {
-        assertTrue(matchByOrdering(String.class));
-        assertTrue(matchByOrdering(AnEnum.class));
-        assertTrue(matchByOrdering(BigDecimal.class));
-        assertFalse(compareConsistentWithEquality(BigDecimal.class));
-        assertFalse(matchByOrdering(UnregisteredType.class));
-    }
-
-    /**
      * An unknown type is answered {@code false}, which costs the ordering-only shortcut but not correctness, and stays
      * that way until it is registered.
      */
@@ -171,12 +157,13 @@ public class BinarySearchKernelHelperTest {
     }
 
     /**
-     * Sorted pushdown chooses its Object match by {@link BinarySearchKernelHelper#matchByOrdering}. The middle row of
-     * {@code [1a, 1b, 1a, 2a]} compares equal to {@code 1a} without being equal to it:
-     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, which lets ordering alone decide
-     * a match, returns it, and {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}, which tests
-     * each row for equality, does not. A registered type takes the first, as String, Instant and enums do, and so does
-     * {@link BigDecimal}, whose match filter matches by compareTo; an unregistered type takes the second.
+     * Sorted pushdown chooses its Object match by {@link BinarySearchKernelHelper#compareConsistentWithEquality}, after
+     * checking for {@link BigDecimal} by type. The middle row of {@code [1a, 1b, 1a, 2a]} compares equal to {@code 1a}
+     * without being equal to it: {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, which
+     * lets ordering alone decide a match, returns it, and
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}, which tests each row for equality,
+     * does not. A registered type takes the first, as String, Instant and enums do, and so does {@link BigDecimal},
+     * whose match filter matches by compareTo; an unregistered type takes the second.
      */
     @Test
     public void sortedPushdownChoosesKernelByType() {

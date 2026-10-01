@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
@@ -95,11 +94,13 @@ public class BinarySearchKernelHelper {
      * the ordering-equal run the search locates is exactly the set of matching rows and the search can answer the match
      * outright. When they disagree -- {@link java.math.BigDecimal} at differing scales, for one -- that run is only a
      * superset, and the matches have to be picked out of it by equality. Sorted pushdown therefore matches a column of
-     * a type for which {@link #matchByOrdering(Class)} holds with
-     * {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality} or
-     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, and a column of any other type
+     * a type for which this holds with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}
+     * or {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, and a column of any other type
      * with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality} or
-     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}.
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}. {@link java.math.BigDecimal} is the
+     * exception: its match filter matches by {@link java.math.BigDecimal#compareTo(java.math.BigDecimal)}, as the query
+     * language's {@code ==} does, so sorted pushdown matches it by ordering alone too, checking for it by type before
+     * consulting this method.
      *
      * <p>
      * Only this stronger both-ways guarantee is checked, and only where documented, since {@link java.math.BigDecimal}
@@ -123,24 +124,5 @@ public class BinarySearchKernelHelper {
      */
     public static boolean compareConsistentWithEquality(@NotNull final Class<?> dataType) {
         return consistentTypes.contains(dataType) || dataType.isEnum();
-    }
-
-    /**
-     * Whether a sorted binary search may answer a match filter over a column of {@code dataType} by ordering alone,
-     * returning every row that compares equal to a search value.
-     *
-     * <p>
-     * This holds wherever {@link #compareConsistentWithEquality(Class)} does, and for {@link BigDecimal} too: its
-     * equals is not consistent with its ordering, but its match filter matches by
-     * {@link BigDecimal#compareTo(BigDecimal)}, as the query language's {@code ==} does, so the ordering decides a
-     * BigDecimal match all the same. Only match searches may use this; {@link BigDecimal} must still answer
-     * {@code false} to {@link #compareConsistentWithEquality(Class)}, which also selects the segmented sorted array,
-     * SSA stamp, and duplicate compaction kernels.
-     *
-     * @param dataType the column's data type
-     * @return {@code true} if a search by ordering alone decides a match filter for this type
-     */
-    public static boolean matchByOrdering(@NotNull final Class<?> dataType) {
-        return dataType == BigDecimal.class || compareConsistentWithEquality(dataType);
     }
 }

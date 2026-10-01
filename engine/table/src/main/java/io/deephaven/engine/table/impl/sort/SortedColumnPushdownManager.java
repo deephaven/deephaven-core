@@ -33,6 +33,7 @@ import io.deephaven.engine.table.impl.sources.regioned.kernel.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -135,7 +136,8 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
      *
      * <p>
      * A non-primitive type uses {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, which
-     * lets ordering alone decide a match, when {@link BinarySearchKernelHelper#matchByOrdering(Class)} holds for it,
+     * lets ordering alone decide a match, when {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}
+     * holds for it or it is {@link BigDecimal}, whose match filter matches by {@link BigDecimal#compareTo(BigDecimal)},
      * and {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}, which tests the rows that
      * compare equal to a search value for equality, otherwise.
      */
@@ -171,7 +173,13 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
             return DoubleColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues,
                     usePrev);
         }
-        return BinarySearchKernelHelper.matchByOrdering(dataType)
+        if (dataType == BigDecimal.class) {
+            // BigDecimal's equals is not consistent with its ordering, but its match filter matches by compareTo, as
+            // the query language's == does, so ordering alone decides a BigDecimal match.
+            return ObjectColumnBinarySearchKernel.binarySearchMatchWithConsistentEquality(source, selection, sortColumn,
+                    searchValues, usePrev);
+        }
+        return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
                 ? ObjectColumnBinarySearchKernel.binarySearchMatchWithConsistentEquality(source, selection, sortColumn,
                         searchValues, usePrev)
                 : ObjectColumnBinarySearchKernel.binarySearchMatchWithGeneralEquality(source, selection, sortColumn,
