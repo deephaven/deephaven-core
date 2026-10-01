@@ -1,6 +1,6 @@
 ---
 name: ref-deephaven-doc-categories
-description: Reference — the four deephaven-core documentation categories (Tutorial, How-to guide, Concept guide, Reference guide), which repo directory each lives in, and the tone/structure expectations tied to each. Loaded by deephaven-writing-style, deephaven-doc-structure-review, deephaven-core-accuracy-check, and deephaven-docs-review-full to calibrate their checks to the doc's actual category. Not invoked directly — there is no scenario where a human asks for this skill by itself.
+description: Reference — the four deephaven-core documentation categories (Tutorial, How-to guide, Concept guide, Reference guide), which repo directory each lives in, and the tone/structure expectations tied to each. Loaded by deephaven-writing-style, deephaven-doc-structure-review, deephaven-core-accuracy-check, deephaven-docs-review-full, and deephaven-docs-address-review-comments to calibrate their checks to the doc's actual category. Not invoked directly — there is no scenario where a human asks for this skill by itself.
 user-invocable: false
 ---
 

@@ -178,7 +178,7 @@ up front, rather than re-deriving them per check.
 - **Category consistency in tables and lists:** Every row of a table and every item in a list
   should be the same *kind* of thing — all general categories, or all concrete examples, or all
   operations, not a mix. A list of "reasons a formula needs serial execution" that mixes a general
-  category ("reads a column computed by an earlier row"), a single specific example ("a global
+  category ("depends on the order in which rows are evaluated"), a single specific example ("a global
   counter"), and an item that doesn't meet the list's criterion at all (a row-local calculation
   that reads only its own row's inputs) forces the reader to work out what the list is actually about. For each
   table or list, name the category its items share, then check each item against it. Fix: lift
