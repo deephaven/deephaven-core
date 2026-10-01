@@ -5,6 +5,7 @@ Checks docs/python/sidebar.json and docs/groovy/sidebar.json for:
     - pages whose file does not exist
     - groups that hold only one item
     - labels in Title Case instead of sentence case
+    - capitalized Deephaven terms (for example "Execution Context") written in another case
 
 Intentional exceptions live in allowlist.json next to this script. The check
 also fails on allowlist entries that no longer match anything, so the list
@@ -43,6 +44,17 @@ def title_case_words(label, allow):
     return [w for w in words[1:] if CAPITALIZED_WORD.match(w) and w not in allow["proper_nouns"]]
 
 
+def miscased_phrases(label, allow):
+    """Returns uses of a capitalized phrase (or its plural) written in a different case."""
+    found = []
+    for phrase in allow["capitalized_phrases"]:
+        pattern = r"\b" + r"\s+".join(map(re.escape, phrase.split())) + r"(?:e?s)?\b"
+        for m in re.finditer(pattern, label, re.IGNORECASE):
+            if not m.group(0).startswith(phrase):
+                found.append(f"'{m.group(0)}' should be '{phrase}{m.group(0)[len(phrase):]}'")
+    return found
+
+
 def check_language(lang, allow, used):
     errors = []
     sidebar = json.load(open(os.path.join(DOCS, lang, "sidebar.json")))
@@ -64,6 +76,7 @@ def check_language(lang, allow, used):
                 words = title_case_words(label, allow)
                 if words:
                     errors.append(f"{lang}: '{where}' is not sentence case ({', '.join(words)})")
+                errors.extend(f"{lang}: '{where}': {m}" for m in miscased_phrases(label, allow))
             for s in exempt_subtrees:
                 if where.startswith(s):
                     used.add(("subtree", s))

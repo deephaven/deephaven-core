@@ -54,7 +54,7 @@ Documents are created and stored in the folder for each language as `.md` markdo
 
 Once a file is created, it must be added to the appropriate `./sidebar.json` to have it appear in the sidebar.
 
-Sidebar labels use sentence case, and every group holds at least two items. `python3 docs/tools/sidebar-check/check_sidebar.py` checks this (and that every listed file exists) in Docs CI. Add intentional exceptions, such as a product name or a deliberate one-page group, to `docs/tools/sidebar-check/allowlist.json`.
+Sidebar labels use sentence case, and every group holds at least two items. `python3 docs/tools/sidebar-check/check_sidebar.py` checks this (and that every listed file exists) in Docs CI. Deephaven terms that are proper nouns, such as Execution Context and Input Table, keep their capitals everywhere, and the check flags them when they're lowercase. Add proper nouns and intentional exceptions, such as a deliberate one-page group, to `docs/tools/sidebar-check/allowlist.json`.
 
 Image assets are stored in `<language>/assets` and can be linked using the relative path from your document.
 

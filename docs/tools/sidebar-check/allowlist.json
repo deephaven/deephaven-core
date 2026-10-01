@@ -7,16 +7,20 @@
   "case_exempt_subtrees": [
     "Getting Started > A Crash Course in Deephaven"
   ],
-  "case_exempt_paths": {
-    "groovy": [
-      "reference/table-operations/create/InputTable.md"
-    ]
-  },
+  "case_exempt_paths": {},
   "capitalized_phrases": [
     "Application Mode",
+    "Data Index",
+    "Deephaven Vector",
+    "Execution Context",
+    "Input Table",
+    "Liveness Scope",
     "Periodic Update Graph",
-    "Update By",
-    "Table API"
+    "Predicate Pushdown",
+    "Query Scope",
+    "Systemic Object Marking",
+    "Table API",
+    "Update By"
   ],
   "proper_nouns": [
     "Barrage",

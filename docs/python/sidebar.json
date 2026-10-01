@@ -164,7 +164,7 @@
                     "path": "how-to-guides/time-table.md"
                   },
                   {
-                    "label": "Input tables",
+                    "label": "Input Tables",
                     "path": "how-to-guides/input-tables.md"
                   }
                 ]
@@ -512,7 +512,7 @@
                 "label": "Python",
                 "items": [
                   {
-                    "label": "Query scope",
+                    "label": "Query Scope",
                     "path": "how-to-guides/query-scope.md"
                   },
                   {
@@ -608,15 +608,15 @@
                 "label": "Advanced Python topics",
                 "items": [
                   {
-                    "label": "Execution context",
+                    "label": "Execution Context",
                     "path": "conceptual/execution-context.md"
                   },
                   {
-                    "label": "Liveness scope",
+                    "label": "Liveness Scope",
                     "path": "conceptual/liveness-scope-concept.md"
                   },
                   {
-                    "label": "Systemic object marking",
+                    "label": "Systemic Object Marking",
                     "path": "conceptual/systemic-object-marking.md"
                   }
                 ]
@@ -755,7 +755,7 @@
                     "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
                   },
                   {
-                    "label": "Create input tables",
+                    "label": "Create Input Tables",
                     "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
                   },
                   {
@@ -836,7 +836,7 @@
                     "path": "how-to-guides/capture-tables.md"
                   },
                   {
-                    "label": "Stream data with input tables",
+                    "label": "Stream data with Input Tables",
                     "path": "how-to-guides/client-input-tables.md"
                   }
                 ]
@@ -933,11 +933,11 @@
                     "path": "how-to-guides/performance/reduce-update-frequency.md"
                   },
                   {
-                    "label": "Data indexes",
+                    "label": "Data Indexes",
                     "path": "how-to-guides/data-indexes.md"
                   },
                   {
-                    "label": "Predicate pushdown filtering",
+                    "label": "Predicate Pushdown filtering",
                     "path": "how-to-guides/predicate-pushdown.md"
                   },
                   {
@@ -1054,7 +1054,7 @@
                 "path": "conceptual/what-is-barrage.md"
               },
               {
-                "label": "Deephaven vectors",
+                "label": "Deephaven Vectors",
                 "path": "conceptual/arrays-vs-vectors.md"
               }
             ]
