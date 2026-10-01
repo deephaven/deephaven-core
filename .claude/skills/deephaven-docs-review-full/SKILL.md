@@ -1,7 +1,7 @@
 ---
 name: deephaven-docs-review-full
 description: >
-  Run a complete deephaven-core (Community) documentation review the way a technical-book editor would — a developmental pass (purpose, audience, scope), then technical accuracy, structural organization, example quality, and prose style — in the order that keeps one dimension from silently undoing another, ending in a prioritized editorial report with author queries. **Use this skill when:** someone asks for a "full review," "comprehensive review," or "editorial review" of a doc, asks to "edit this like an O'Reilly editor," asks if a doc "is ready for production," or wants accuracy, structure, and style checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **Do NOT use for:** single small edits to a doc — a one-line fix, one code snippet, one changed sentence — (use deephaven-core-accuracy-spot-check instead), working through existing PR or Copilot review comments (use deephaven-docs-address-review-comments), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
+  Run a complete deephaven-core (Community) documentation review the way a technical-book editor would: a developmental pass (purpose, audience, scope), then accuracy, structure, examples, and style, in an order that keeps one from undoing another, ending in a prioritized editorial report with author queries. **Use this skill when:** someone asks for a "full review," "comprehensive review," or "editorial review" of a doc, asks to "edit this like an O'Reilly editor," asks if a doc "is ready for production," or wants accuracy, structure, and style checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **Do NOT use for:** a single small edit such as a one-line fix or one snippet (use deephaven-core-accuracy-spot-check), working through existing PR or Copilot review comments (use deephaven-docs-address-review-comments), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
 allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(awk *)
 ---
 
@@ -215,10 +215,12 @@ facts just because it isn't the accuracy step.
 
 When the user asked for edits, every fix — from any step — passes one question before it's
 applied: **does this fix belong here, or somewhere else?** A fix that adds a property name, a
-default, a hedge, or a parenthetical caveat to Concept-guide or Tutorial narrative is usually true and still
-wrong for the page; put the detail in a Configuration section or behind a reference link, and
-make the narrative sentence correct at its own level of abstraction (see
-`deephaven-core-accuracy-check`'s **Placement of configuration detail**). This matters most when
+default, or a threshold to Concept-guide or Tutorial narrative is usually true and still wrong for
+the page; put the detail in a Configuration section or behind a reference link, and make the
+narrative sentence correct at its own level of abstraction (see `deephaven-core-accuracy-check`'s
+**Placement of configuration detail**). A hedge or caveat that isn't configuration detail (a
+version, environment, or platform restriction) stays only if the reader needs it at that point, as
+its own sentence; otherwise cut it. This matters most when
 working through an external reviewer's comments over several rounds: each individually-correct
 caveat passes validation while the page as a whole gets harder to read. After each round, re-read
 every section that changed from top to bottom and consolidate what has accumulated. If a

@@ -20,7 +20,7 @@ Fixture: the parallelization concept guide at `f2ef483084`.
 
 ## Edit mode (eval 2)
 
-Fixture: copies of the liveness-scope concept guide in both languages (each run edited its own copies, standing in for the `docs/` paths in the prompt; see the eval's `setup`), with real defects and one trap. The doc's `@liveness_scope()` is correct, though the pydoc shows the bare form. Baseline: pre-PR skills.
+Fixture: copies of the liveness-scope concept guide in both languages (each run edited its own copies, standing in for the `docs/` pages; the prompt now names the copies directly and says to edit only those), with real defects and one trap. The doc's `@liveness_scope()` is correct, though the pydoc shows the bare form. Baseline: pre-PR skills.
 
 | | New | Pre-PR |
 | --- | --- | --- |

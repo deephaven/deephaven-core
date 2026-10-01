@@ -34,9 +34,10 @@ explicitly asks — replying is outward-facing.
   from bots and which review round each belongs to — how many rounds this page has already had
   matters for triage.
 - Read `ref-deephaven-doc-categories` and identify the page's category. Placement rules differ:
-  in a Concept guide or Tutorial, configuration names, defaults, thresholds, and edge-case
-  conditions stay out of the narrative; in a Reference guide or configuration page they *are* the
-  content.
+  in a Concept guide or Tutorial, configuration names, defaults, and thresholds stay out of the
+  narrative; in a Reference guide or configuration page they *are* the content. Other conditions
+  (a version, environment, or platform restriction) stay in the narrative only where the reader
+  needs them, as their own sentence.
 - Read the whole page once before reading any comment closely, and write down in one sentence
   what the reader should be able to do after reading it, and at what level of detail the page
   works. Every triage decision below is measured against that sentence, not against the single
