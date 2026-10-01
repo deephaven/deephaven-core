@@ -73,9 +73,6 @@ jobs:
       - name: Validate docs
         run: ./docs/validate
 
-      - name: Check sidebars
-        run: python3 docs/tools/sidebar-check/check_sidebar.py
-
   core-docs-sync:
     if: ${{ github.event_name == 'push' && github.repository_owner == 'deephaven' }}
     permissions:

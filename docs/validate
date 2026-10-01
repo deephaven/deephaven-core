@@ -3,6 +3,7 @@
 usage() {
   echo "Usage: $0 [-e]"
   echo "Validates the docs build, sidebar.json files are correct, and internal links are correct."
+  echo "Also runs tools/sidebar-check, which checks sidebar label case and group sizes."
   echo "Does not check external links. That is done nightly."
   echo
   echo "Options:"
@@ -30,8 +31,14 @@ while getopts ":eh" opt; do
 done
 
 pushd "$(dirname "$0")" > /dev/null # Set pwd to this directory
+python3 tools/sidebar-check/check_sidebar.py
+SIDEBAR_EXIT_CODE=$?
 docker run --pull always --tty -e EXTERNAL=${EXTERNAL} -e ABSOLUTE=true -e HEADINGS=true -v ./python:/validate/core/docs -v ./groovy:/validate/core/groovy/docs -v ./validator-results:/results ghcr.io/deephaven/salmon-validator:1
 EXIT_CODE=$?
 popd > /dev/null # Reset pwd
+
+if [ $EXIT_CODE -eq 0 ]; then
+  EXIT_CODE=$SIDEBAR_EXIT_CODE
+fi
 
 exit $EXIT_CODE
