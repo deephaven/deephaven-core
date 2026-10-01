@@ -688,38 +688,43 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     }
 
     @Override
-    public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+    public int get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
         // array, whose header carries its shape and its reciprocal. Each shape's loop lives in a method of its own,
         // so that this dispatcher stays small enough to be inlined at the scalar cursor's call site with its kernel
         // calls inlined in turn: one method holding every loop measured as a real call per key on single-key chunks.
+        // Each loop counts the keys it found, on the value it has in hand, so a caller that treats misses differently
+        // (the redirection consults a second map for them) learns from the return whether a chunk had none, or only.
         final long[] localKvs = keysAndValues;
         switch (shapeTagOf(localKvs)) {
             case 1:
-                getK1V1(localKvs, keys, result);
-                break;
+                return getK1V1(localKvs, keys, result);
             case 4:
-                getK4V4(localKvs, keys, result);
-                break;
+                return getK4V4(localKvs, keys, result);
             case SHAPE_TAG_EMPTY:
-                getEmpty(keys, result);
-                break;
+                return getEmpty(keys, result);
             default:
                 throw new IllegalStateException("Unexpected shape tag " + shapeTagOf(localKvs));
         }
     }
 
-    private void getK1V1(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+    private int getK1V1(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         final int n = keys.size();
         final long numBucketsReciprocal = reciprocalOf(localKvs);
         final long noEntry = noEntryValue;
+        int found = 0;
         for (int ii = 0; ii < n; ++ii) {
-            result.set(ii, K1V1Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry));
+            final long value = K1V1Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry);
+            result.set(ii, value);
+            if (value != noEntry) {
+                ++found;
+            }
         }
         result.setSize(n);
+        return found;
     }
 
-    private void getK4V4(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+    private int getK4V4(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         final int n = keys.size();
         final long numBucketsReciprocal = reciprocalOf(localKvs);
         final long noEntry = noEntryValue;
@@ -751,14 +756,22 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         } else {
             windowed = readMode == ReadMode.WINDOW;
         }
+        final int found;
         if (windowed) {
-            K4V4Kernel.getBatch(localKvs, numBucketsReciprocal, keys, result, noEntry);
+            found = K4V4Kernel.getBatch(localKvs, numBucketsReciprocal, keys, result, noEntry);
         } else {
+            int serialFound = 0;
             for (int ii = 0; ii < n; ++ii) {
-                result.set(ii, K4V4Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry));
+                final long value = K4V4Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry);
+                result.set(ii, value);
+                if (value != noEntry) {
+                    ++serialFound;
+                }
             }
+            found = serialFound;
         }
         result.setSize(n);
+        return found;
     }
 
     /**
@@ -789,13 +802,11 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     }
 
     // No buckets: every key is a miss.
-    private void getEmpty(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+    private int getEmpty(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         final int n = keys.size();
-        final long noEntry = noEntryValue;
-        for (int ii = 0; ii < n; ++ii) {
-            result.set(ii, noEntry);
-        }
+        result.fillWithValue(0, n, noEntryValue);
         result.setSize(n);
+        return 0;
     }
 
     @Override

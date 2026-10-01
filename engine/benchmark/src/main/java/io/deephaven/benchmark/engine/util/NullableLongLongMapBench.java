@@ -573,12 +573,20 @@ public class NullableLongLongMapBench {
         }
 
         @Override
-        public void get(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> result) {
+        public int get(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> result) {
             final int size = keys.size();
+            final long noEntry = map.defaultReturnValue();
+            int found = 0;
             for (int ii = 0; ii < size; ++ii) {
-                result.set(ii, map.get(keys.get(ii)));
+                // One compare per key, as the maps under test pay for their count.
+                final long value = map.get(keys.get(ii));
+                result.set(ii, value);
+                if (value != noEntry) {
+                    ++found;
+                }
             }
             result.setSize(size);
+            return found;
         }
 
         @Override

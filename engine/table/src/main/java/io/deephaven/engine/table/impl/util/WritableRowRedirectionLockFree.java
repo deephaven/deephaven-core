@@ -289,7 +289,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         // on, and it is what makes the entries the writer's commit copied into 'baseline' visible to a reader whose
         // probe saw the post-commit 'updates' array. The keys the probe does not answer are then read from 'baseline'.
         final NullableLongLongMap localUpdates = this.updates;
-        localUpdates.get(outerRowKeys, innerRowKeys);
+        final int found = localUpdates.get(outerRowKeys, innerRowKeys);
         final NullableLongLongMap localBaseline = this.baseline;
         if (localUpdates == localBaseline) {
             // Prev tracking has not started (a static table's redirection, for one): one map under both names, and
@@ -297,16 +297,11 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             return;
         }
         final int size = outerRowKeys.size();
-        int missingCount = 0;
-        for (int ii = 0; ii < size; ++ii) {
-            if (innerRowKeys.get(ii) == UPDATES_KEY_NOT_FOUND) {
-                ++missingCount;
-            }
-        }
-        if (missingCount == 0) {
+        if (found == size) {
             return;
         }
-        if (missingCount == size) {
+        final int missingCount = size - found;
+        if (found == 0) {
             // Nothing in 'updates' for any of these keys, which is every read of a ticking table between its update
             // cycles, once the terminal commit has folded 'updates' into 'baseline': answer them all from 'baseline'
             // in one pass, with no gathering.

@@ -613,7 +613,7 @@ public class TestLongLongMap {
 
         // An empty keys chunk yields an empty result (the result-size contract).
         final WritableLongChunk<Any> emptyResult = WritableLongChunk.writableChunkWrap(new long[1]);
-        map.get(LongChunk.chunkWrap(new long[0]), emptyResult);
+        assertEquals(0, map.get(LongChunk.chunkWrap(new long[0]), emptyResult));
         assertEquals(0, emptyResult.size());
     }
 
@@ -648,11 +648,18 @@ public class TestLongLongMap {
         final WritableLongChunk<Any> resultChunk = WritableLongChunk.writableChunkWrap(new long[chunkSize]);
         for (int begin = 0; begin < probes.length; begin += chunkSize) {
             final int thisSize = Math.min(chunkSize, probes.length - begin);
-            map.get(LongChunk.chunkWrap(probes, begin, thisSize), resultChunk);
+            final int found = map.get(LongChunk.chunkWrap(probes, begin, thisSize), resultChunk);
             assertEquals(thisSize, resultChunk.size());
+            int expectedFound = 0;
             for (int ii = 0; ii < thisSize; ++ii) {
-                assertEquals(expected.applyAsLong(probes[begin + ii]), resultChunk.get(ii));
+                final long expectedValue = expected.applyAsLong(probes[begin + ii]);
+                assertEquals(expectedValue, resultChunk.get(ii));
+                if (expectedValue != map.defaultReturnValue()) {
+                    ++expectedFound;
+                }
             }
+            // The count of keys found is reported, so that callers can skip over all-hit and all-miss chunks.
+            assertEquals(expectedFound, found);
         }
     }
 
@@ -1215,12 +1222,19 @@ public class TestLongLongMap {
         }
 
         @Override
-        public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+        public int get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
             final int size = keys.size();
+            final long noEntry = map.defaultReturnValue();
+            int found = 0;
             for (int ii = 0; ii < size; ++ii) {
-                result.set(ii, map.get(keys.get(ii)));
+                final long value = map.get(keys.get(ii));
+                result.set(ii, value);
+                if (value != noEntry) {
+                    ++found;
+                }
             }
             result.setSize(size);
+            return found;
         }
 
         @Override
