@@ -15,10 +15,10 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 
 
-public class ObjectCompactKernel implements CompactKernel {
-    static ObjectCompactKernel INSTANCE = new ObjectCompactKernel();
+public class EqualsConsistentObjectCompactKernel implements CompactKernel {
+    static EqualsConsistentObjectCompactKernel INSTANCE = new EqualsConsistentObjectCompactKernel();
 
-    private ObjectCompactKernel() {} // use the instance
+    private EqualsConsistentObjectCompactKernel() {} // use the instance
 
     /**
      * Compact the values in values by retaining only the positions where retainValues is true.
@@ -131,7 +131,7 @@ public class ObjectCompactKernel implements CompactKernel {
      */
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return ObjectComparisons.compareEquals(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
         // endregion equality function
     }
     // endregion equality helper

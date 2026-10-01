@@ -7,16 +7,21 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.ssms;
 
+import java.lang.reflect.Array;
+
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+
+import java.util.Objects;
+
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.vector.FloatVector;
-import io.deephaven.vector.FloatVectorDirect;
-import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
-import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
+import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -24,14 +29,14 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import it.unimi.dsi.fastutil.floats.FloatSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiSet<Float>, FloatVector {
+public final class EqualsConsistentObjectSegmentedSortedMultiset extends AbstractObjectSegmentedSortedMultiset {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -44,11 +49,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * the largest value in a given leaf. The values are valid for 0 ... leafCount - 2, because the last leaf must
      * accept any value that is greater than the second to last leave's maximum.
      */
-    private float[] directoryValues;
+    private Object[] directoryValues;
     private long[] directoryCount;
 
     private int[] leafSizes;
-    private float[][] leafValues;
+    private Object[][] leafValues;
     private long[][] leafCounts;
 
     /**
@@ -56,27 +61,36 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * and its count directly here. This singleton state is identified by
      * {@code leafCount == 1 && directoryValues == null}.
      */
-    private float singletonValue;
+    private Object singletonValue;
     private long singletonCount;
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient FloatCompareOpenHashSet added;
-    private transient FloatCompareOpenHashSet removed;
-    private transient FloatVector prevValues;
+    private transient ObjectSet<Object> added;
+    private transient ObjectSet<Object> removed;
+    private transient ObjectVector prevValues;
     // endregion Deltas
 
 
     // region Constructor
+    private final Class componentType;
+
     /**
-     * Create a FloatSegmentedSortedArray with the given leafSize.
+     * Create an EqualsConsistentObjectSegmentedSortedMultiset with the given leafSize.
      *
      * @param leafSize the maximumSize for any leaf
+     * @param componentType the type of the underlying Object
      */
-    public FloatSegmentedSortedMultiset(int leafSize) {
+    public EqualsConsistentObjectSegmentedSortedMultiset(int leafSize, Class<?> componentType) {
         this.leafSize = leafSize;
+        this.componentType = componentType;
         leafCount = 0;
         size = 0;
+    }
+
+    @Override
+    public Class getComponentType() {
+        return componentType;
     }
     // endregion Constructor
 
@@ -89,14 +103,14 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     @Override
     public boolean insert(WritableChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
             int offset, int length) {
-        return insert(valuesToInsert.asWritableFloatChunk(), counts, offset, length);
+        return insert(valuesToInsert.asWritableObjectChunk(), counts, offset, length);
     }
 
     /**
      * Insert the {@code length} values beginning at {@code offset}; accepts an already-typed chunk so callers that
      * repeatedly insert from the same backing chunk can cast it once rather than per call.
      */
-    public boolean insert(WritableFloatChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+    public boolean insert(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
             int offset, int length) {
         final long beforeSize = size();
         insertInternal(valuesToInsert, counts, offset, length);
@@ -106,12 +120,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     /**
      * Insert {@code count} copies of a single {@code value}, returning whether a new distinct value was added (as
      * opposed to merging into an existing one). This does the work of
-     * {@link #insert(WritableFloatChunk, WritableIntChunk, int, int)} for one value without requiring the caller to wrap
+     * {@link #insert(WritableObjectChunk, WritableIntChunk, int, int)} for one value without requiring the caller to wrap
      * it in a chunk, so seeding a freshly created set is allocation-free. Values at the boundaries reuse
      * {@link #appendMaximum}/{@link #prependMinimum} (which handle leaf splitting); interior values are placed
      * directly, splitting the target leaf only when it is full.
      */
-    public boolean insert(float value, long count) {
+    public boolean insert(Object value, long count) {
         Assert.gtZero(count, "count");
         validate();
         if (leafCount == 0) {
@@ -136,7 +150,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         final boolean added;
-        final int maxComparison = FloatComparisons.compare(value, getMaxFloat());
+        final int maxComparison = ObjectComparisons.compare(value, getMaxObject());
         if (maxComparison > 0) {
             maybeAccumulateAddition(value);
             appendMaximum(value, count);
@@ -145,7 +159,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             addMaxCount(count);
             added = false;
         } else {
-            final int minComparison = FloatComparisons.compare(value, getMinFloat());
+            final int minComparison = ObjectComparisons.compare(value, getMinObject());
             if (minComparison < 0) {
                 maybeAccumulateAddition(value);
                 prependMinimum(value, count);
@@ -166,7 +180,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * into an existing equal value or placing a new one in sorted position. The directory (single-leaf) representation
      * is promoted to leaves when it would overflow; an interior insert into a full leaf splits that leaf in two.
      */
-    private boolean insertInterior(float value, long count) {
+    private boolean insertInterior(Object value, long count) {
         if (leafCount == 1) {
             final int ip = upperBound(directoryValues, 0, size, value);
             if (eq(directoryValues[ip], value)) {
@@ -193,7 +207,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         final int leaf = upperBound(directoryValues, 0, leafCount - 1, value);
-        final float[] leafValue = leafValues[leaf];
+        final Object[] leafValue = leafValues[leaf];
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int ip = upperBound(leafValue, 0, leafSz, value);
@@ -223,12 +237,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * Split the full leaf {@code leaf} in two, placing {@code count} copies of {@code value} at position {@code ip}.
      * The lower half stays in {@code leaf}; a fresh trailing leaf receives the upper half.
      */
-    private void splitLeafForInsert(int leaf, int ip, float value, long count) {
+    private void splitLeafForInsert(int leaf, int ip, Object value, long count) {
         makeLeafHole(leaf + 1, 1);
         leafCount++;
-        final float[] lowerValues = leafValues[leaf];
+        final Object[] lowerValues = leafValues[leaf];
         final long[] lowerCounts = leafCounts[leaf];
-        final float[] upperValues = leafValues[leaf + 1] = new float[leafSize];
+        final Object[] upperValues = leafValues[leaf + 1] = new Object[leafSize];
         final long[] upperCounts = leafCounts[leaf + 1] = new long[leafSize];
         final int total = leafSize + 1;
         final int lowerSize = total / 2;
@@ -261,14 +275,14 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
     }
 
-    private int insertExistingIntoLeaf(WritableFloatChunk<? extends Values> valuesToInsert,
-            WritableIntChunk<ChunkLengths> counts, int ripos, MutableInt wipos, int leafSize, float[] leafValues,
-            long[] leafCounts, float maxInsert, boolean lastLeaf, int end) {
+    private int insertExistingIntoLeaf(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts, int ripos, MutableInt wipos, int leafSize, Object[] leafValues,
+            long[] leafCounts, Object maxInsert, boolean lastLeaf, int end) {
         int rlpos = 0;
-        float nextValue;
+        Object nextValue;
         while (rlpos < leafSize && ripos < end
-                && (FloatComparisons.leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
-            if (FloatComparisons.gt(leafValues[rlpos], nextValue)) {
+                && (ObjectComparisons.leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
+            if (ObjectComparisons.gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
                 valuesToInsert.set(wipos.get(), nextValue);
                 counts.set(wipos.get(), counts.get(ripos));
@@ -288,7 +302,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                             : upperBound(valuesToInsert, ripos, end, maxInsert);
 
                     // noinspection unchecked
-                    valuesToInsert.copyFromTypedChunk((WritableFloatChunk) valuesToInsert, ripos, wipos.get(),
+                    valuesToInsert.copyFromTypedChunk((WritableObjectChunk) valuesToInsert, ripos, wipos.get(),
                             lastInsert - ripos);
                     counts.copyFromTypedChunk(counts, ripos, wipos.get(), lastInsert - ripos);
                     wipos.add(lastInsert - ripos);
@@ -299,7 +313,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         return ripos;
     }
 
-    private void distributeNewIntoLeaves(FloatChunk<? extends Values> valuesToInsert, IntChunk<ChunkLengths> counts,
+    private void distributeNewIntoLeaves(ObjectChunk<Object, ? extends Values> valuesToInsert, IntChunk<ChunkLengths> counts,
             final int insertStart, final int insertCount, int firstLeaf, int requiredLeaves, int newLeafSize) {
         Assert.gtZero(insertCount, "insertCount");
 
@@ -316,7 +330,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         leafSizes[firstLeaf] = valuesPerLeaf;
         for (int li = firstLeaf + 1; li < firstLeaf + requiredLeaves; ++li) {
-            leafValues[li] = new float[leafSize];
+            leafValues[li] = new Object[leafSize];
             leafCounts[li] = new long[leafSize];
             leafSizes[li] = valuesPerLeaf;
         }
@@ -328,9 +342,9 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         // starting at the last leaf, pull from either the chunk or the first leaf in the range as appropriate
         while (remaining-- > 0) {
-            final float insertValue = valuesToInsert.get(ripos);
-            final float leafValue = leafValues[firstLeaf][rlpos];
-            final boolean useInsertValue = FloatComparisons.gt(insertValue, leafValue);
+            final Object insertValue = valuesToInsert.get(ripos);
+            final Object leafValue = leafValues[firstLeaf][rlpos];
+            final boolean useInsertValue = ObjectComparisons.gt(insertValue, leafValue);
 
             if (useInsertValue) {
                 leafValues[wleaf][wpos] = insertValue;
@@ -462,8 +476,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         size += insertCount;
     }
 
-    private void insertNewIntoLeaf(WritableFloatChunk<? extends Values> valuesToInsert,
-            WritableIntChunk<ChunkLengths> counts, int insertStart, int insertCount, int leafSize, float[] leafValues,
+    private void insertNewIntoLeaf(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts, int insertStart, int insertCount, int leafSize, Object[] leafValues,
             long[] leafCounts) {
         assert insertCount > 0;
 
@@ -476,10 +490,10 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         int iwins = 0; // insert wins
 
         while (wpos >= 0) {
-            final float insertValue = valuesToInsert.get(ripos);
-            final float leafValue = leafValues[rlpos];
+            final Object insertValue = valuesToInsert.get(ripos);
+            final Object leafValue = leafValues[rlpos];
 
-            if (FloatComparisons.gt(insertValue, leafValue)) {
+            if (ObjectComparisons.gt(insertValue, leafValue)) {
                 leafValues[wpos] = insertValue;
                 totalSize += counts.get(ripos);
                 leafCounts[wpos] = counts.get(ripos);
@@ -554,8 +568,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
     }
 
-    private void copyRemainingValuesToLeaf(WritableFloatChunk<? extends Values> valuesToInsert,
-            WritableIntChunk<ChunkLengths> counts, int insertStart, float[] leafValues, long[] leafCounts, int ripos) {
+    private void copyRemainingValuesToLeaf(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts, int insertStart, Object[] leafValues, long[] leafCounts, int ripos) {
         valuesToInsert.copyToTypedArray(insertStart, leafValues, 0, ripos - insertStart + 1);
         for (int ii = 0; ii < ripos - insertStart + 1; ++ii) {
             totalSize += counts.get(ii + insertStart);
@@ -568,13 +582,13 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * shared chunk untouched, and return the number of survivors. Unlike a size-based compaction this never resizes the
      * chunk, so the caller may pass a sub-range of a larger chunk.
      */
-    private int maybeCompact(WritableFloatChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+    private int maybeCompact(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
             int offset, int ripos, int wipos, int end) {
         final int toCopy = end - ripos;
         if (wipos != ripos && toCopy > 0) {
             // we've found something to compact away
             // noinspection unchecked - how the heck does this type not actuall work?
-            valuesToInsert.copyFromTypedChunk((FloatChunk) valuesToInsert, ripos, wipos, toCopy);
+            valuesToInsert.copyFromTypedChunk((ObjectChunk) valuesToInsert, ripos, wipos, toCopy);
             counts.copyFromChunk(counts, ripos, wipos, toCopy);
         }
         return (wipos - offset) + toCopy;
@@ -584,7 +598,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * Merge the counts of any values in {@code [offset, offset + length)} that already exist in this set, and compact
      * the values that are genuinely new into {@code [offset, offset + result)}. Returns the number of new values.
      */
-    private int insertExisting(WritableFloatChunk<? extends Values> valuesToInsert,
+    private int insertExisting(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
             WritableIntChunk<ChunkLengths> counts, int offset, int length) {
         final int end = offset + length;
         if (leafCount == 0) {
@@ -593,7 +607,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         if (leafCount == 1) {
             final MutableInt wipos = new MutableInt(offset);
             final int ripos = insertExistingIntoLeaf(valuesToInsert, counts, offset, wipos, size, directoryValues,
-                    directoryCount, NULL_FLOAT, true, end);
+                    directoryCount, null, true, end);
             return maybeCompact(valuesToInsert, counts, offset, ripos, wipos.get(), end);
         }
 
@@ -602,11 +616,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         int ripos = offset;
         int nextLeaf = 0;
         while (ripos < end) {
-            final float startValue = valuesToInsert.get(ripos);
+            final Object startValue = valuesToInsert.get(ripos);
             nextLeaf = lowerBoundExclusive(directoryValues, nextLeaf, leafCount - 1, startValue);
             // find the thing in directoryValues
             final boolean lastLeaf = nextLeaf == leafCount - 1;
-            final float maxValue = lastLeaf ? NULL_FLOAT : directoryValues[nextLeaf];
+            final Object maxValue = lastLeaf ? null : directoryValues[nextLeaf];
             ripos = insertExistingIntoLeaf(valuesToInsert, counts, ripos, wipos, leafSizes[nextLeaf],
                     leafValues[nextLeaf], leafCounts[nextLeaf], maxValue, lastLeaf, end);
             if (lastLeaf) {
@@ -616,7 +630,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         return maybeCompact(valuesToInsert, counts, offset, ripos, wipos.get(), end);
     }
 
-    private void insertInternal(WritableFloatChunk<? extends Values> valuesToInsert,
+    private void insertInternal(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
             WritableIntChunk<ChunkLengths> counts,
             int offset, int length) {
         validate();
@@ -655,7 +669,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         maybeAccumulateAdditions(valuesToInsert, offset, length);
 
-        if (leafCount > 1 && FloatComparisons.gt(valuesToInsert.get(offset), getMaxFloat())) {
+        if (leafCount > 1 && ObjectComparisons.gt(valuesToInsert.get(offset), getMaxObject())) {
             doAppend(valuesToInsert, counts, offset, length);
             return;
         }
@@ -694,7 +708,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         int nextLeaf = 0;
 
         do {
-            final float insertValue = valuesToInsert.get(rpos);
+            final Object insertValue = valuesToInsert.get(rpos);
             // find out what leaf this belongs in
             nextLeaf = leafCount > 1 ? upperBound(directoryValues, nextLeaf, leafCount - 1, insertValue) : 0;
 
@@ -704,7 +718,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                 // we should insert all of the remaining values in this leaf
                 lastInsertValue = end;
             } else {
-                final float lastLeafValue = directoryValues[nextLeaf];
+                final Object lastLeafValue = directoryValues[nextLeaf];
                 lastInsertValue = upperBound(valuesToInsert, rpos, end, lastLeafValue);
             }
             final int originalLeafSize = leafSizes[nextLeaf];
@@ -731,7 +745,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     private void moveDirectoryToLeaf(int desiredLeafCount, int directoryLocation) {
-        leafValues = new float[desiredLeafCount][];
+        leafValues = new Object[desiredLeafCount][];
         leafCounts = new long[desiredLeafCount][];
         leafSizes = new int[desiredLeafCount];
 
@@ -747,10 +761,10 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         leafCount = 1;
 
         directoryCount = null;
-        directoryValues = new float[desiredLeafCount - 1];
+        directoryValues = new Object[desiredLeafCount - 1];
     }
 
-    private void doAppend(WritableFloatChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+    private void doAppend(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
             int offset, int length) {
         // We are doing a special case of appending to the SSM
         final int lastLeafIndex = leafCount - 1;
@@ -809,9 +823,9 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         Arrays.fill(leafCounts, holePosition, holePosition + holeSize, null);
         // region fillValue
         if (holePosition + holeSize < leafValues.length) {
-            Arrays.fill(directoryValues, holePosition, holePosition + holeSize, NULL_FLOAT);
+            Arrays.fill(directoryValues, holePosition, holePosition + holeSize, null);
         } else {
-            Arrays.fill(directoryValues, holePosition, holePosition + holeSize - 1, NULL_FLOAT);
+            Arrays.fill(directoryValues, holePosition, holePosition + holeSize - 1, null);
         }
         // endregion fillValue
     }
@@ -827,17 +841,17 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     private void allocateLeafArrays(int newSize) {
-        leafValues = new float[newSize][];
+        leafValues = new Object[newSize][];
         leafCounts = new long[newSize][];
         leafSizes = new int[newSize];
-        directoryValues = new float[newSize - 1];
+        directoryValues = new Object[newSize - 1];
     }
 
     private int leafArraySize(int minimumSize) {
         return Math.max(minimumSize, leafSizes.length * 2);
     }
 
-    private void makeLeavesInitial(FloatChunk<? extends Values> values, IntChunk<ChunkLengths> counts, int offset,
+    private void makeLeavesInitial(ObjectChunk<Object, ? extends Values> values, IntChunk<ChunkLengths> counts, int offset,
             int length) {
         leafCount = getDesiredLeafCount(length);
         size = length;
@@ -851,7 +865,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (leafCount == 1) {
-            directoryValues = new float[length];
+            directoryValues = new Object[length];
             directoryCount = new long[length];
             values.copyToTypedArray(offset, directoryValues, 0, length);
             for (int ii = 0; ii < length; ++ii) {
@@ -867,12 +881,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         packValuesIntoLeaves(values, counts, offset, 0, valuesPerLeaf, offset + length);
     }
 
-    private void packValuesIntoLeaves(FloatChunk<? extends Values> values, IntChunk<ChunkLengths> counts, int rpos,
+    private void packValuesIntoLeaves(ObjectChunk<Object, ? extends Values> values, IntChunk<ChunkLengths> counts, int rpos,
             int startLeaf, int valuesPerLeaf, int end) {
         while (rpos < end) {
             final int thisLeafSize = Math.min(valuesPerLeaf, end - rpos);
             leafSizes[startLeaf] = thisLeafSize;
-            leafValues[startLeaf] = new float[leafSize];
+            leafValues[startLeaf] = new Object[leafSize];
             values.copyToTypedArray(rpos, leafValues[startLeaf], 0, thisLeafSize);
             leafCounts[startLeaf] = new long[leafSize];
             for (int ii = 0; ii < thisLeafSize; ++ii) {
@@ -899,7 +913,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         directoryValues = null;
         directoryCount = null;
         singletonCount = 0;
-        singletonValue = NULL_FLOAT;
+        singletonValue = null;
     }
 
     private boolean isSingleton() {
@@ -916,7 +930,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return;
         }
         final int capacity = Math.min(leafSize, 1 + incomingValueCount);
-        directoryValues = new float[capacity];
+        directoryValues = new Object[capacity];
         directoryCount = new long[capacity];
         directoryValues[0] = singletonValue;
         directoryCount[0] = singletonCount;
@@ -945,11 +959,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the lowest index that is greater than or equal to valuesToSearch
      */
-    private static int lowerBound(float[] valuesToSearch, int lo, int hi, float searchValue) {
+    private static int lowerBound(Object[] valuesToSearch, int lo, int hi, Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final float testValue = valuesToSearch[mid];
-            final boolean moveLo = FloatComparisons.leq(testValue, searchValue);
+            final Object testValue = valuesToSearch[mid];
+            final boolean moveLo = ObjectComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 lo = mid;
                 if (lo == hi - 1) {
@@ -972,11 +986,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the lowest index that is greater than or equal to valuesToSearch
      */
-    private static int gallopBound(FloatChunk<? extends Any> valuesToSearch, int lo, int hi, float searchValue) {
+    private static int gallopBound(ObjectChunk<Object, ? extends Any> valuesToSearch, int lo, int hi, Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final float testValue = valuesToSearch.get(mid);
-            final boolean moveLo = FloatComparisons.leq(testValue, searchValue);
+            final Object testValue = valuesToSearch.get(mid);
+            final boolean moveLo = ObjectComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -999,11 +1013,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the lowest index that is greater than or equal to valuesToSearch
      */
-    private static int gallopBound(float[] valuesToSearch, int lo, int hi, float searchValue) {
+    private static int gallopBound(Object[] valuesToSearch, int lo, int hi, Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final float testValue = valuesToSearch[mid];
-            final boolean moveLo = FloatComparisons.leq(testValue, searchValue);
+            final Object testValue = valuesToSearch[mid];
+            final boolean moveLo = ObjectComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -1026,11 +1040,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(float[] valuesToSearch, int lo, int hi, float searchValue) {
+    private static int upperBound(Object[] valuesToSearch, int lo, int hi, Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final float testValue = valuesToSearch[mid];
-            final boolean moveHi = FloatComparisons.geq(testValue, searchValue);
+            final Object testValue = valuesToSearch[mid];
+            final boolean moveHi = ObjectComparisons.geq(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -1050,11 +1064,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(FloatChunk<? extends Values> valuesToSearch, int lo, int hi, float searchValue) {
+    private static int upperBound(ObjectChunk<Object, ? extends Values> valuesToSearch, int lo, int hi, Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final float testValue = valuesToSearch.get(mid);
-            final boolean moveHi = FloatComparisons.gt(testValue, searchValue);
+            final Object testValue = valuesToSearch.get(mid);
+            final boolean moveHi = ObjectComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -1074,11 +1088,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the lowest index that is greater than to valuesToSearch
      */
-    private static int lowerBoundExclusive(float[] valuesToSearch, int lo, int hi, float searchValue) {
+    private static int lowerBoundExclusive(Object[] valuesToSearch, int lo, int hi, Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final float testValue = valuesToSearch[mid];
-            final boolean moveLo = FloatComparisons.lt(testValue, searchValue);
+            final Object testValue = valuesToSearch[mid];
+            final boolean moveLo = ObjectComparisons.lt(testValue, searchValue);
             if (moveLo) {
                 lo = mid + 1;
                 if (lo == hi) {
@@ -1096,9 +1110,9 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * Test two values for equality consistent with the ordering of this set; the set holds one entry for each class of
      * equal values.
      */
-    private static boolean eq(float lhs, float rhs) {
+    private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return FloatComparisons.eq(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 
@@ -1119,14 +1133,14 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     @Override
     public boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove,
             WritableIntChunk<ChunkLengths> counts, int offset, int length) {
-        return remove(removeContext, valuesToRemove.asWritableFloatChunk(), counts, offset, length);
+        return remove(removeContext, valuesToRemove.asWritableObjectChunk(), counts, offset, length);
     }
 
     /**
      * Remove the {@code length} values beginning at {@code offset}; accepts an already-typed chunk so callers that
      * repeatedly remove from the same backing chunk can cast it once rather than per call.
      */
-    public boolean remove(RemoveContext removeContext, WritableFloatChunk<? extends Values> valuesToRemove,
+    public boolean remove(RemoveContext removeContext, WritableObjectChunk<Object, ? extends Values> valuesToRemove,
             WritableIntChunk<ChunkLengths> counts, int offset, int length) {
         final long beforeSize = size();
         removeInternal(removeContext, valuesToRemove, counts, offset, length);
@@ -1136,11 +1150,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     /**
      * Remove {@code count} copies of a single {@code value}, which must currently be present, returning whether the
      * distinct value was fully removed (its count reached zero). This does the work of
-     * {@link #remove(RemoveContext, WritableFloatChunk, WritableIntChunk, int, int)} for one value without requiring the
+     * {@link #remove(RemoveContext, WritableObjectChunk, WritableIntChunk, int, int)} for one value without requiring the
      * caller to wrap it in a chunk. Empty leaves are dropped and the set collapses back toward the directory and
      * singleton representations, but non-empty leaves are not opportunistically merged.
      */
-    public boolean remove(float value, long count) {
+    public boolean remove(Object value, long count) {
         Assert.gtZero(count, "count");
         validate();
         if (isSingleton()) {
@@ -1181,7 +1195,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         final int leaf = upperBound(directoryValues, 0, leafCount - 1, value);
-        final float[] leafValue = leafValues[leaf];
+        final Object[] leafValue = leafValues[leaf];
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int pos = upperBound(leafValue, 0, leafSz, value);
@@ -1235,7 +1249,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         maybePromoteLastLeaf();
     }
 
-    private void removeInternal(RemoveContext removeContext, FloatChunk<? extends Values> valuesToRemove,
+    private void removeInternal(RemoveContext removeContext, ObjectChunk<Object, ? extends Values> valuesToRemove,
             IntChunk<ChunkLengths> counts, int offset, int length) {
         validate();
         validateInputs(valuesToRemove, counts, offset, length);
@@ -1283,7 +1297,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             int cl = -1;
             do {
                 // figure out what the first leaf we can remove something from is
-                final float firstValueToRemove = valuesToRemove.get(rpos);
+                final Object firstValueToRemove = valuesToRemove.get(rpos);
                 nextLeaf = lowerBound(directoryValues, nextLeaf, leafCount - 1, firstValueToRemove);
 
                 final MutableInt sz = new MutableInt(leafSizes[nextLeaf]);
@@ -1488,12 +1502,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
     }
 
-    private int removeFromLeaf(RemoveContext removeContext, FloatChunk<? extends Values> valuesToRemove,
-            IntChunk<ChunkLengths> counts, int ripos, int end, float[] leafValues, long[] leafCounts, MutableInt sz) {
+    private int removeFromLeaf(RemoveContext removeContext, ObjectChunk<Object, ? extends Values> valuesToRemove,
+            IntChunk<ChunkLengths> counts, int ripos, int end, Object[] leafValues, long[] leafCounts, MutableInt sz) {
         int rlpos = 0;
         int cl = -1;
         while (ripos < end) {
-            final float removeValue = valuesToRemove.get(ripos);
+            final Object removeValue = valuesToRemove.get(ripos);
             rlpos = upperBound(leafValues, rlpos, sz.get(), removeValue);
             if (rlpos == sz.get()) {
                 break;
@@ -1537,7 +1551,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         return ripos;
     }
 
-    private int compactValues(RemoveContext removeContext, float[] leafValues, long[] leafCounts, int sz, int cl) {
+    private int compactValues(RemoveContext removeContext, Object[] leafValues, long[] leafCounts, int sz, int cl) {
         int removed = 0;
         for (int cli = 0; cli <= cl; cli++) {
             final int removeSize = removeContext.compactionLengths[cli];
@@ -1569,7 +1583,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         validateInternal();
     }
 
-    private void validateInputs(FloatChunk<? extends Values> valuesToInsert, IntChunk<ChunkLengths> counts, int offset,
+    private void validateInputs(ObjectChunk<Object, ? extends Values> valuesToInsert, IntChunk<ChunkLengths> counts, int offset,
             int length) {
         if (!SEGMENTED_SORTED_MULTISET_VALIDATION) {
             return;
@@ -1580,9 +1594,9 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
         for (int ii = offset + 1; ii < end; ++ii) {
             Assert.gtZero(counts.get(ii), "counts.get(ii)");
-            final float prevValue = valuesToInsert.get(ii - 1);
-            final float curValue = valuesToInsert.get(ii);
-            Assert.assertion(FloatComparisons.lt(prevValue, curValue), "FloatComparisons.lt(prevValue, curValue)",
+            final Object prevValue = valuesToInsert.get(ii - 1);
+            final Object curValue = valuesToInsert.get(ii);
+            Assert.assertion(ObjectComparisons.lt(prevValue, curValue), "ObjectComparisons.lt(prevValue, curValue)",
                     prevValue, "prevValue", curValue, "curValue");
         }
     }
@@ -1645,22 +1659,22 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
             for (int ii = 0; ii < leafCount; ++ii) {
                 validateLeaf(ii);
-                final float lastValue = leafValues[ii][leafSizes[ii] - 1];
+                final Object lastValue = leafValues[ii][leafSizes[ii] - 1];
                 if (ii < leafCount - 1) {
-                    final float directoryValue = directoryValues[ii];
-                    Assert.assertion(FloatComparisons.leq(lastValue, directoryValue), "lt(lastValue, directoryValue)",
+                    final Object directoryValue = directoryValues[ii];
+                    Assert.assertion(ObjectComparisons.leq(lastValue, directoryValue), "lt(lastValue, directoryValue)",
                             lastValue,
                             "leafValues[ii][leafSizes[ii] - 1]", directoryValue, "directoryValue");
 
                     if (ii < leafCount - 2) {
-                        final float nextDirectoryValue = directoryValues[ii + 1];
-                        Assert.assertion(FloatComparisons.lt(directoryValue, nextDirectoryValue),
+                        final Object nextDirectoryValue = directoryValues[ii + 1];
+                        Assert.assertion(ObjectComparisons.lt(directoryValue, nextDirectoryValue),
                                 "lt(directoryValue, nextDirectoryValue)", directoryValue, "directoryValue",
                                 nextDirectoryValue, "nextDirectoryValue");
                     }
 
-                    final float nextFirstValue = leafValues[ii + 1][0];
-                    Assert.assertion(FloatComparisons.lt(directoryValue, nextFirstValue),
+                    final Object nextFirstValue = leafValues[ii + 1][0];
+                    Assert.assertion(ObjectComparisons.lt(directoryValue, nextFirstValue),
                             "lt(directoryValue, nextFirstValue)",
                             directoryValue, "directoryValue", nextFirstValue, "nextFirstValue");
                 }
@@ -1681,9 +1695,9 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     private void validateLeafOrdering() {
         for (int leaf = 0; leaf < leafCount - 1; ++leaf) {
-            final float lastValue = leafValues[leaf][leafSizes[leaf] - 1];
-            final float nextValue = leafValues[leaf + 1][0];
-            Assert.assertion(FloatComparisons.lt(lastValue, nextValue), lastValue + " < " + nextValue);
+            final Object lastValue = leafValues[leaf][leafSizes[leaf] - 1];
+            final Object nextValue = leafValues[leaf + 1][0];
+            Assert.assertion(ObjectComparisons.lt(lastValue, nextValue), lastValue + " < " + nextValue);
         }
     }
 
@@ -1693,15 +1707,15 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         validateLeaf(leafValues[leaf], leafCounts[leaf], leafSizes[leaf]);
     }
 
-    private static void validateLeaf(float[] values, long[] counts, int size) {
+    private static void validateLeaf(Object[] values, long[] counts, int size) {
         Assert.gtZero(size, "size");
         for (int ii = 0; ii < size - 1; ++ii) {
             Assert.gtZero(counts[ii], "counts[ii]");
-            final float thisValue = values[ii];
-            final float nextValue = values[ii + 1];
-            Assert.assertion(FloatComparisons.lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])",
-                    (Float) thisValue,
-                    "values[ii]", (Float) nextValue, "values[ii + 1]", ii, "ii");
+            final Object thisValue = values[ii];
+            final Object nextValue = values[ii + 1];
+            Assert.assertion(ObjectComparisons.lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])",
+                    (Object) thisValue,
+                    "values[ii]", (Object) nextValue, "values[ii + 1]", ii, "ii");
         }
         if (size > 0) {
             Assert.gtZero(counts[size - 1], "counts[size - 1]");
@@ -1747,16 +1761,16 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public Float getMin() {
-        return getMinFloat();
+    public Object getMin() {
+        return getMinObject();
     }
 
     @Override
-    public Float getMax() {
-        return getMaxFloat();
+    public Object getMax() {
+        return getMaxObject();
     }
 
-    public float getMinFloat() {
+    public Object getMinObject() {
         if (leafCount == 0) {
             throw new IllegalStateException();
         } else if (leafCount == 1) {
@@ -1818,7 +1832,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         size--;
     }
 
-    public float getMaxFloat() {
+    public Object getMaxObject() {
         if (leafCount == 0) {
             throw new IllegalStateException();
         } else if (leafCount == 1) {
@@ -1875,7 +1889,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * Append {@code count} copies of {@code value} as a new maximum element. {@code value} must be strictly greater
      * than the current maximum, or this set must be empty.
      */
-    private void appendMaximum(float value, long count) {
+    private void appendMaximum(Object value, long count) {
         totalSize += count;
         if (leafCount == 0) {
             singletonValue = value;
@@ -1903,7 +1917,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             // the single leaf is full; convert it into a leaf and append the value into a fresh trailing leaf
             moveDirectoryToLeaf(2);
             directoryValues[0] = leafValues[0][leafSize - 1];
-            leafValues[1] = new float[leafSize];
+            leafValues[1] = new Object[leafSize];
             leafCounts[1] = new long[leafSize];
             leafValues[1][0] = value;
             leafCounts[1][0] = count;
@@ -1921,7 +1935,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         } else {
             reallocateLeafArrays(leafCount + 1);
             directoryValues[lastLeaf] = leafValues[lastLeaf][leafSize - 1];
-            leafValues[leafCount] = new float[leafSize];
+            leafValues[leafCount] = new Object[leafSize];
             leafCounts[leafCount] = new long[leafSize];
             leafValues[leafCount][0] = value;
             leafCounts[leafCount][0] = count;
@@ -1935,7 +1949,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * Prepend {@code count} copies of {@code value} as a new minimum element. {@code value} must be strictly less than
      * the current minimum, or this set must be empty.
      */
-    private void prependMinimum(float value, long count) {
+    private void prependMinimum(Object value, long count) {
         totalSize += count;
         if (leafCount == 0) {
             singletonValue = value;
@@ -1952,7 +1966,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             if (newSize <= leafSize) {
                 if (directoryValues.length < newSize) {
                     // grow and shift in a single copy rather than copying then shifting
-                    final float[] grownValues = new float[newSize];
+                    final Object[] grownValues = new Object[newSize];
                     final long[] grownCount = new long[newSize];
                     System.arraycopy(directoryValues, 0, grownValues, 1, size);
                     System.arraycopy(directoryCount, 0, grownCount, 1, size);
@@ -1969,7 +1983,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             }
             // the single leaf is full; move it to the trailing leaf and put the value alone in a fresh leading leaf
             moveDirectoryToLeaf(2, 1);
-            leafValues[0] = new float[leafSize];
+            leafValues[0] = new Object[leafSize];
             leafCounts[0] = new long[leafSize];
             leafValues[0][0] = value;
             leafCounts[0][0] = count;
@@ -1989,7 +2003,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         } else {
             makeLeafHole(0, 1);
             leafCount++;
-            leafValues[0] = new float[leafSize];
+            leafValues[0] = new Object[leafSize];
             leafCounts[0] = new long[leafSize];
             leafValues[0][0] = value;
             leafCounts[0][0] = count;
@@ -2002,7 +2016,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     // region Moving
     @Override
     public void moveFrontToBack(SegmentedSortedMultiSet untypedDestination, long count) {
-        final FloatSegmentedSortedMultiset destination = (FloatSegmentedSortedMultiset) untypedDestination;
+        final EqualsConsistentObjectSegmentedSortedMultiset destination = (EqualsConsistentObjectSegmentedSortedMultiset) untypedDestination;
         validate();
         destination.validate();
 
@@ -2015,15 +2029,15 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(FloatComparisons.geq(getMinFloat(), destination.getMaxFloat()),
-                        "geq(getMinFloat(), destination.getMaxFloat())");
+                Assert.assertion(ObjectComparisons.geq(getMinObject(), destination.getMaxObject()),
+                        "geq(getMinObject(), destination.getMaxObject())");
             }
         }
 
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the back of the destination (merging if it already holds that value as its maximum) and shed them.
-            if (destination.size > 0 && eq(singletonValue, destination.getMaxFloat())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMaxObject())) {
                 destination.addMaxCount(count);
             } else {
                 destination.appendMaximum(singletonValue, count);
@@ -2039,7 +2053,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return;
         }
 
-        if (destination.size > 0 && eq(getMinFloat(), destination.getMaxFloat())) {
+        if (destination.size > 0 && eq(getMinObject(), destination.getMaxObject())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -2143,7 +2157,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                         final int sizeOfLeftOverLeaf = leafSizes[rli];
                         size -= (sizeOfLeftOverLeaf - 1);
 
-                        final float[] tmpValues = new float[leafSize];
+                        final Object[] tmpValues = new Object[leafSize];
                         final long[] tmpCounts = new long[leafSize];
                         tmpValues[0] = leafValues[rli][sizeOfLeftOverLeaf - 1];
                         tmpCounts[0] = leftOver;
@@ -2182,9 +2196,9 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         boolean sourceLeavesMerged = false;
         if (partialUnique > 0) {
-            final float[] sourceValues;
+            final Object[] sourceValues;
             final long[] sourceCounts;
-            final float[] destinationValues;
+            final Object[] destinationValues;
             final long[] destinationCounts;
             final int copySize;
             final int destOffset;
@@ -2204,7 +2218,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
             if (appendToExtra) {
                 wleaf = destination.leafCount;
-                destinationValues = destination.leafValues[wleaf] = new float[leafSize];
+                destinationValues = destination.leafValues[wleaf] = new Object[leafSize];
                 destinationCounts = destination.leafCounts[wleaf] = new long[leafSize];
                 destOffset = 0;
                 destination.leafSizes[wleaf] = partialUnique;
@@ -2312,8 +2326,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(FloatComparisons.geq(getMinFloat(), destination.getMaxFloat()),
-                        "geq(getMinFloat(), destination.getMaxFloat())");
+                Assert.assertion(ObjectComparisons.geq(getMinObject(), destination.getMaxObject()),
+                        "geq(getMinObject(), destination.getMaxObject())");
             }
         }
 
@@ -2338,7 +2352,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         if (completeLeaves == 0) {
             // we are only going to append to the last leaf
             if (leafCount == 0) {
-                directoryValues = new float[finalSlots];
+                directoryValues = new Object[finalSlots];
                 directoryCount = new long[finalSlots];
                 return false;
             } else if (leafCount == 1) {
@@ -2369,7 +2383,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                 reallocateLeafArrays(leafCount + completeLeaves + extraLeafCount);
             }
             if (extraLeaf) {
-                leafValues[leafCount + completeLeaves] = new float[leafSize];
+                leafValues[leafCount + completeLeaves] = new Object[leafSize];
                 leafCounts[leafCount + completeLeaves] = new long[leafSize];
             }
             return extraLeaf;
@@ -2404,7 +2418,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             if (leafCount == 0) {
                 Assert.leq(initialSlots, "initialSlots", leafSize, "leafSize");
                 extraLeafCount = 1;
-                directoryValues = new float[initialSlots];
+                directoryValues = new Object[initialSlots];
                 directoryCount = new long[initialSlots];
             } else if (leafCount == 1) {
                 final boolean extraLeaf = initialSlots + size > leafSize;
@@ -2426,7 +2440,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         if (extraLeafCount == 0 && initialSlots > 0) {
             // make a hole in the first leaf that still has values
             if (directoryCount != null) {
-                final float[] tmpValues = new float[initialSlots + size];
+                final Object[] tmpValues = new Object[initialSlots + size];
                 final long[] tmpCount = new long[initialSlots + size];
                 System.arraycopy(directoryValues, 0, tmpValues, initialSlots, size);
                 System.arraycopy(directoryCount, 0, tmpCount, initialSlots, size);
@@ -2461,7 +2475,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     @Override
     public void moveBackToFront(SegmentedSortedMultiSet untypedDestination, long count) {
-        final FloatSegmentedSortedMultiset destination = (FloatSegmentedSortedMultiset) untypedDestination;
+        final EqualsConsistentObjectSegmentedSortedMultiset destination = (EqualsConsistentObjectSegmentedSortedMultiset) untypedDestination;
         validate();
         destination.validate();
 
@@ -2474,15 +2488,15 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(FloatComparisons.leq(getMaxFloat(), destination.getMinFloat()),
-                        "leq(getMaxFloat(), destination.getMinFloat())");
+                Assert.assertion(ObjectComparisons.leq(getMaxObject(), destination.getMinObject()),
+                        "leq(getMaxObject(), destination.getMinObject())");
             }
         }
 
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the front of the destination (merging if it already holds that value as its minimum) and shed them.
-            if (destination.size > 0 && eq(singletonValue, destination.getMinFloat())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMinObject())) {
                 destination.addMinCount(count);
             } else {
                 destination.prependMinimum(singletonValue, count);
@@ -2498,7 +2512,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return;
         }
 
-        if (destination.size > 0 && eq(getMaxFloat(), destination.getMinFloat())) {
+        if (destination.size > 0 && eq(getMaxObject(), destination.getMinObject())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {
@@ -2560,10 +2574,10 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         final boolean extraLeaf = destination.preparePrepend(slotsInPartialLeaf, completeLeavesToMove);
         if (slotsInPartialLeaf > 0) {
             final boolean leftOverExists = leftOver > 0;
-            final float[] destValues;
+            final Object[] destValues;
             final long[] destCounts;
 
-            final float[] srcValues;
+            final Object[] srcValues;
             final long[] srcCounts;
             final int srcSize;
 
@@ -2572,7 +2586,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                 destCounts = destination.directoryCount;
             } else {
                 if (extraLeaf) {
-                    destination.leafValues[0] = new float[leafSize];
+                    destination.leafValues[0] = new Object[leafSize];
                     destination.leafCounts[0] = new long[leafSize];
                 }
                 destValues = destination.leafValues[0];
@@ -2665,7 +2679,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                 if (hasLeftOverSlot) {
                     // we need to copy the array, so that it is not aliased to two different nodes
                     leafCounts[rleaf + 1] = new long[leafSize];
-                    leafValues[rleaf + 1] = new float[leafSize];
+                    leafValues[rleaf + 1] = new Object[leafSize];
                     leafValues[rleaf + 1][0] = destination.leafValues[0][0];
                     leafCounts[rleaf + 1][0] = leftOver;
                     leafSizes[rleaf + 1] = 1;
@@ -2684,7 +2698,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                 if (directoryMoves > 0) {
                     Arrays.fill(directoryValues, firstLeafTozero,
                             firstLeafTozero + directoryMoves - (completeLeavesToMove - numberOfLeavesToRemove),
-                            NULL_FLOAT);
+                            null);
                 }
                 maybePromoteLastLeaf();
             }
@@ -2703,8 +2717,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(FloatComparisons.leq(getMaxFloat(), destination.getMinFloat()),
-                        "leq(getMaxFloat(), destination.getMinFloat())");
+                Assert.assertion(ObjectComparisons.leq(getMaxObject(), destination.getMinObject()),
+                        "leq(getMaxObject(), destination.getMinObject())");
             }
         }
     }
@@ -2727,18 +2741,18 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     // endregion
 
     @Override
-    public WritableFloatChunk<?> keyChunk() {
-        final WritableFloatChunk<?> keyChunk = WritableFloatChunk.makeWritableChunk(intSize());
+    public WritableObjectChunk<Object, ?> keyChunk() {
+        final WritableObjectChunk<Object, ?> keyChunk = WritableObjectChunk.makeWritableChunk(intSize());
         fillKeyChunk(keyChunk, 0);
         return keyChunk;
     }
 
     @Override
     public void fillKeyChunk(WritableChunk<?> keyChunk, int offset) {
-        fillKeyChunk(keyChunk.asWritableFloatChunk(), offset);
+        fillKeyChunk(keyChunk.asWritableObjectChunk(), offset);
     }
 
-    private void fillKeyChunk(WritableFloatChunk<?> keyChunk, int offset) {
+    private void fillKeyChunk(WritableObjectChunk<Object, ?> keyChunk, int offset) {
         if (keyChunk.capacity() < offset + intSize()) {
             throw new IllegalArgumentException("Input chunk is not large enough");
         }
@@ -2777,32 +2791,32 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         return countChunk;
     }
 
-    private float[] keyArray() {
+    private Object[] keyArray() {
         return keyArray(0, size);
     }
 
     /**
      * Create an array of the current keys from {@code fromIndexInclusive} (inclusive) to {@code toIndexExclusive}
-     * (exclusive). Following the {@link FloatVector} contract, offsets outside {@code [0, size())} are legal and
+     * (exclusive). Following the {@link ObjectVector} contract, offsets outside {@code [0, size())} are legal and
      * contribute the null value rather than an error.
      *
      * @param fromIndexInclusive The first offset to include
      * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
      * @return An array of the requested keys, of length {@code toIndexExclusive - fromIndexInclusive}
      */
-    private float[] keyArray(final long fromIndexInclusive, final long toIndexExclusive) {
+    private Object[] keyArray(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
 
         final int totalSize =
                 LongSizedDataStructure.intSize("keyArray", toIndexExclusive - fromIndexInclusive);
         if (totalSize == 0) {
             // region EmptyKeyArrayAllocation
-            return ArrayTypeUtils.EMPTY_FLOAT_ARRAY;
+            return (Object[]) Array.newInstance(getComponentType(), 0);
             // endregion EmptyKeyArrayAllocation
         }
 
         // region KeyArrayAllocation
-        final float[] keyArray = new float[totalSize];
+        final Object[] keyArray = (Object[]) Array.newInstance(getComponentType(), totalSize);
         // endregion KeyArrayAllocation
 
         // the requested range may extend past either end of this SSM; those offsets read as null
@@ -2811,7 +2825,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         int remaining = (int) (lastExcluded - firstIncluded);
         if (remaining == 0) {
             // the range lies entirely outside this SSM, so every offset is null
-            Arrays.fill(keyArray, NULL_FLOAT);
+            Arrays.fill(keyArray, null);
             return keyArray;
         }
 
@@ -2819,10 +2833,10 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         // destOffset + remaining is at most its length
         final int destOffset = (int) (firstIncluded - fromIndexInclusive);
         if (destOffset > 0) {
-            Arrays.fill(keyArray, 0, destOffset, NULL_FLOAT);
+            Arrays.fill(keyArray, 0, destOffset, null);
         }
         if (destOffset + remaining < totalSize) {
-            Arrays.fill(keyArray, destOffset + remaining, totalSize, NULL_FLOAT);
+            Arrays.fill(keyArray, destOffset + remaining, totalSize, null);
         }
 
         if (leafCount == 1) {
@@ -2850,7 +2864,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     // region Delta Management
-    private void maybeAccumulateAdditions(WritableFloatChunk<? extends Values> valuesToInsert, int offset, int length) {
+    private void maybeAccumulateAdditions(WritableObjectChunk<Object, ? extends Values> valuesToInsert, int offset, int length) {
         if (!accumulateDeltas || length == 0) {
             return;
         }
@@ -2858,11 +2872,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         final int end = offset + length;
 
         if (prevValues == null) {
-            prevValues = new FloatVectorDirect(keyArray());
+            prevValues = new ObjectVectorDirect(keyArray());
         }
 
         if (added == null) {
-            added = new FloatCompareOpenHashSet(length);
+            added = new ObjectOpenHashSet<>(length);
         }
 
         if (removed == null) {
@@ -2871,7 +2885,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             }
         } else {
             for (int ii = offset; ii < end; ii++) {
-                float val = valuesToInsert.get(ii);
+                Object val = valuesToInsert.get(ii);
                 // Only add to the 'added' set if it was not removed before.
                 // if it was then this key is a net-no-change.
                 if (!removed.remove(val)) {
@@ -2881,17 +2895,17 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
     }
 
-    private void maybeAccumulateAddition(float valueAdded) {
+    private void maybeAccumulateAddition(Object valueAdded) {
         if (!accumulateDeltas) {
             return;
         }
 
         if (prevValues == null) {
-            prevValues = new FloatVectorDirect(keyArray());
+            prevValues = new ObjectVectorDirect(keyArray());
         }
 
         if (added == null) {
-            added = new FloatCompareOpenHashSet(1);
+            added = new ObjectOpenHashSet<>(1);
         }
 
         // only record as added if it was not removed before; if it was then this key is a net-no-change
@@ -2900,17 +2914,17 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
     }
 
-    private void maybeAccumulateRemoval(float valueRemoved) {
+    private void maybeAccumulateRemoval(Object valueRemoved) {
         if (!accumulateDeltas) {
             return;
         }
 
         if (prevValues == null) {
-            prevValues = new FloatVectorDirect(keyArray());
+            prevValues = new ObjectVectorDirect(keyArray());
         }
 
         if (removed == null) {
-            removed = new FloatCompareOpenHashSet();
+            removed = new ObjectOpenHashSet<>();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
@@ -2939,25 +2953,25 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         return removed == null ? 0 : removed.size();
     }
 
-    public void fillRemovedChunk(WritableFloatChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toFloatArray(), 0, position, removed.size());
+    public void fillRemovedChunk(WritableObjectChunk<Object, ? extends Values> chunk, int position) {
+        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
     }
 
-    public void fillAddedChunk(WritableFloatChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toFloatArray(), 0, position, added.size());
+    public void fillAddedChunk(WritableObjectChunk<Object, ? extends Values> chunk, int position) {
+        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
     }
 
-    public FloatVector getPrevValues() {
+    public ObjectVector getPrevValues() {
         return prevValues == null ? this : prevValues;
     }
     // endregion
 
-    // region FloatVector
+    // region ObjectVector
     @Override
-    public float get(long index) {
-        // offsets outside [0, size()) are legal and read as null, per the FloatVector contract
+    public Object get(long index) {
+        // offsets outside [0, size()) are legal and read as null, per the ObjectVector contract
         if (index < 0 || index >= size()) {
-            return NULL_FLOAT;
+            return null;
         }
 
         if (leafCount == 1) {
@@ -2984,7 +2998,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * SSM-valued column is used as an aggregation key.
      */
     @Override
-    public ValueIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIterator<Object> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
 
         // The requested slice may extend past either end of this SSM; those offsets are legal and iterate as null.
@@ -2994,7 +3008,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         final long innerFrom = Math.max(fromIndexInclusive, 0);
         final long innerLength = innerFrom < size ? Math.min(size - innerFrom, totalWanted - prefixNulls) : 0;
 
-        return ValueIteratorOfFloat.wrapWithNulls(
+        return ValueIterator.wrapWithNulls(
                 innerLength == 0 ? null : inRangeIterator(innerFrom, innerFrom + innerLength),
                 prefixNulls,
                 totalWanted - prefixNulls - innerLength);
@@ -3007,15 +3021,15 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    private ValueIteratorOfFloat inRangeIterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    private ValueIterator<Object> inRangeIterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (leafCount <= 1) {
             // Empty, singleton, and single-leaf SSMs store their values contiguously, so get(long) is already O(1).
-            return new ValueIteratorOfFloat() {
+            return new ValueIterator<Object>() {
 
                 private long nextIndex = fromIndexInclusive;
 
                 @Override
-                public float nextFloat() {
+                public Object next() {
                     if (nextIndex >= toIndexExclusive) {
                         throw new NoSuchElementException();
                     }
@@ -3046,18 +3060,18 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         final int startLeaf = firstLeaf;
         final int startOffset = (int) firstOffset;
 
-        return new ValueIteratorOfFloat() {
+        return new ValueIterator<Object>() {
 
             private int leaf = startLeaf;
             private int offset = startOffset;
             private long remaining = toIndexExclusive - fromIndexInclusive;
 
             // Safe to cache: consumers drain the iterator synchronously, so no split can intervene.
-            private float[] values = startLeaf < leafCount ? leafValues[startLeaf] : null;
+            private Object[] values = startLeaf < leafCount ? leafValues[startLeaf] : null;
             private int leafSize = startLeaf < leafCount ? leafSizes[startLeaf] : 0;
 
             @Override
-            public float nextFloat() {
+            public Object next() {
                 if (remaining <= 0) {
                     throw new NoSuchElementException();
                 }
@@ -3088,30 +3102,30 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public FloatVector subVector(long fromIndexInclusive, long toIndexExclusive) {
-        // materialized rather than a FloatVectorSlice view: an SSM is live and mutable, and a slice would capture our
+    public ObjectVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        // materialized rather than a ObjectVectorSlice view: an SSM is live and mutable, and a slice would capture our
         // size at construction and then read stale bounds
-        return new FloatVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
+        return new ObjectVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
-    public FloatVector subVectorByPositions(long[] positions) {
-        final float[] keyArray = new float[positions.length];
+    public ObjectVector subVectorByPositions(long[] positions) {
+        final Object[] keyArray = new Object[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = get(position);
         }
 
-        return new FloatVectorDirect(keyArray);
+        return new ObjectVectorDirect(keyArray);
     }
 
     @Override
-    public float[] toArray() {
+    public Object[] toArray() {
         return keyArray();
     }
 
     @Override
-    public float[] copyToArray() {
+    public Object[] copyToArray() {
         return toArray();
     }
 
@@ -3121,25 +3135,25 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public FloatVector getDirect() {
-        return new FloatVectorDirect(keyArray());
+    public ObjectVector getDirect() {
+        return new ObjectVectorDirect(keyArray());
     }
     // endregion
 
-    private boolean equalsArray(FloatVector o) {
+    private boolean equalsArray(ObjectVector<?> o) {
         if (size() != o.size()) {
             return false;
         }
 
         // iterate o exactly once; random access via get can be expensive for some Vector implementations
-        try (final CloseablePrimitiveIteratorOfFloat oit = o.iterator()) {
+        try (final CloseableIterator<?> oit = o.iterator()) {
             if (size == 1) {
-                return FloatComparisons.eq(get(0), oit.nextFloat());
+                return ObjectComparisons.eq(get(0), oit.next());
             }
 
             if (leafCount == 1) {
                 for (int ii = 0; ii < size; ii++) {
-                    if (!FloatComparisons.eq(directoryValues[ii], oit.nextFloat())) {
+                    if (!ObjectComparisons.eq(directoryValues[ii], oit.next())) {
                         return false;
                     }
                 }
@@ -3149,7 +3163,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
             for (int li = 0; li < leafCount; ++li) {
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (!FloatComparisons.eq(leafValues[li][ai], oit.nextFloat())) {
+                    if (!ObjectComparisons.eq(leafValues[li][ai], oit.next())) {
                         return false;
                     }
                 }
@@ -3163,15 +3177,15 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * {@inheritDoc}
      *
      * <p>
-     * Equal to any {@link FloatVector} holding the same values, including another SSM: an SSM <em>is</em> a
-     * {@link FloatVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
+     * Equal to any {@link ObjectVector} holding the same values, including another SSM: an SSM <em>is</em> a
+     * {@link ObjectVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
      * Two SSMs can hold identical values in different layouts -- leaves need not be full, and the node sizes need not
      * agree -- so layout is not a sound basis for equality.
      *
      * <p>
-     * Nothing else is equal, exactly as {@link FloatVector#equals(FloatVector, Object)} requires: a Vector that stores
+     * Nothing else is equal, exactly as {@link ObjectVector#equals(ObjectVector, Object)} requires: a Vector that stores
      * its elements some other way cannot be accepted without breaking the {@link #hashCode()} contract, and would not
-     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link FloatVector}.
+     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link ObjectVector}.
      */
     @Override
     public boolean equals(Object o) {
@@ -3179,8 +3193,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return true;
         }
 
-        if (o instanceof FloatVector) {
-            return equalsArray((FloatVector) o);
+        if (o instanceof ObjectVector) {
+            return equalsArray((ObjectVector<?>) o);
         }
 
         return false;
@@ -3191,14 +3205,14 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      *
      * <p>
      * {@link #equals(Object)} accepts any Vector with matching contents, so this must produce exactly the hash
-     * {@link FloatVector#hashCode(FloatVector)} would: the same seed, the same multiplier, and the same per-element
-     * {@link FloatComparisons#hashCode(float)}. That per-element hash is also why {@link #equals(Object)} must compare
-     * elements with {@link FloatComparisons#eq(float, float)} rather than {@code ==}.
+     * {@link ObjectVector#hashCode(ObjectVector)} would: the same seed, the same multiplier, and the same per-element
+     * {@link ObjectComparisons#hashCode(Object)}. That per-element hash is also why {@link #equals(Object)} must compare
+     * elements with {@link ObjectComparisons#eq(Object, Object)} rather than {@code ==}.
      *
      * <p>
      * Walking the leaves here rather than delegating to the helper avoids an iterator per call, which is worth roughly
      * 2x once the values span more than one leaf. Since that duplicates the helper's formula,
-     * {@code TestFloatSegmentedSortedMultiset#testHashCodeMatchesVectorHelper} pins the two against each other across
+     * {@code TestEqualsConsistentObjectSegmentedSortedMultiset#testHashCodeMatchesVectorHelper} pins the two against each other across
      * every representation so they cannot drift apart.
      */
     @Override
@@ -3210,21 +3224,21 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (leafCount == 1) {
             if (directoryValues == null) {
-                return 31 * result + FloatComparisons.hashCode(singletonValue);
+                return 31 * result + ObjectComparisons.hashCode(singletonValue);
             }
 
             for (int ii = 0; ii < size; ++ii) {
-                result = 31 * result + FloatComparisons.hashCode(directoryValues[ii]);
+                result = 31 * result + ObjectComparisons.hashCode(directoryValues[ii]);
             }
 
             return result;
         }
 
         for (int li = 0; li < leafCount; ++li) {
-            final float[] values = leafValues[li];
+            final Object[] values = leafValues[li];
             final int leafSz = leafSizes[li];
             for (int ai = 0; ai < leafSz; ++ai) {
-                result = 31 * result + FloatComparisons.hashCode(values[ai]);
+                result = 31 * result + ObjectComparisons.hashCode(values[ai]);
             }
         }
 

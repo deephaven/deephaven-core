@@ -264,12 +264,7 @@ public class ReplicateSortKernel {
                 "    }");
         lines = replaceRegion(lines, "comparison functions", ascending ? ascendingComparison : descendingComparison);
         if (equalityFromComparison) {
-            lines = simpleFixup(lines, "equality function", "ObjectComparisons\\.eq\\(lhs, rhs\\)",
-                    "ObjectComparisons.compareEquals(lhs, rhs)");
-            if (lines.stream().anyMatch(line -> line.contains("region equality function"))
-                    && lines.stream().noneMatch(line -> line.contains("ObjectComparisons.compareEquals(lhs, rhs)"))) {
-                throw new IllegalStateException("equality function region does not use ObjectComparisons.eq");
-            }
+            lines = fixupObjectEquality(lines);
         } else {
             lines = simpleFixup(
                     lines,
@@ -278,6 +273,24 @@ public class ReplicateSortKernel {
         lines = addMissingImports(lines, "import io.deephaven.util.compare.ObjectComparisons;");
         if (lines.stream().anyMatch(line -> line.contains("Objects."))) {
             lines = addMissingImports(lines, "import java.util.Objects;");
+        }
+        return lines;
+    }
+
+    /**
+     * Make the equality function region, if there is one, an Object equality test consistent with
+     * {@code ObjectComparisons.compare}: the region must contain {@code ObjectComparisons.eq(lhs, rhs)}, which becomes
+     * {@code ObjectComparisons.compareEquals(lhs, rhs)} (e.g., BigDecimal values that differ only in scale are equal).
+     *
+     * @param lines the lines of the file to fix up
+     * @return the fixed up lines
+     */
+    public static List<String> fixupObjectEquality(List<String> lines) {
+        lines = simpleFixup(lines, "equality function", "ObjectComparisons\\.eq\\(lhs, rhs\\)",
+                "ObjectComparisons.compareEquals(lhs, rhs)");
+        if (lines.stream().anyMatch(line -> line.contains("region equality function"))
+                && lines.stream().noneMatch(line -> line.contains("ObjectComparisons.compareEquals(lhs, rhs)"))) {
+            throw new IllegalStateException("equality function region does not use ObjectComparisons.eq");
         }
         return lines;
     }

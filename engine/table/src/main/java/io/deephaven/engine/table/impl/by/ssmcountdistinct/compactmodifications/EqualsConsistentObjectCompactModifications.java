@@ -7,14 +7,13 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications;
 
-import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.compare.ByteComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.mutable.MutableInt;
 
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 /**
  * Reduces a parallel pair of "removed" (pre-modify) and "added" (post-modify) value runs to the net change required of
@@ -22,7 +21,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  * removed and added in equal quantity cancel out, leaving only the net removals in {@code removedValues} and the net
  * additions in {@code addedValues}.
  */
-public class ByteCompactModifications {
+public class EqualsConsistentObjectCompactModifications {
     /**
      * Diff the {@code removedLength} removed values beginning at {@code removedStart} against the {@code addedLength}
      * added values beginning at {@code addedStart}: values that were both removed and added in equal quantity cancel
@@ -46,9 +45,9 @@ public class ByteCompactModifications {
      * @param removedSize set to the number of surviving net removals
      * @param addedSize set to the number of surviving net additions
      */
-    public static void compactAndCountModifications(
-            WritableByteChunk<? extends Values> removedValues, WritableIntChunk<ChunkLengths> removedCounts,
-            WritableByteChunk<? extends Values> addedValues, WritableIntChunk<ChunkLengths> addedCounts,
+    public static <T> void compactAndCountModifications(
+            WritableObjectChunk<T, ? extends Values> removedValues, WritableIntChunk<ChunkLengths> removedCounts,
+            WritableObjectChunk<T, ? extends Values> addedValues, WritableIntChunk<ChunkLengths> addedCounts,
             int removedStart, int removedLength, int addedStart, int addedLength, boolean countNull, boolean countNaN,
             MutableInt removedSize, MutableInt addedSize) {
         final int removedEnd = removedStart + removedLength;
@@ -63,9 +62,9 @@ public class ByteCompactModifications {
 
         // walk both sorted ranges; for each distinct value emit only the net change, dropping ignored (null/NaN) runs
         while (rRead < removedEnd && aRead < addedEnd) {
-            final byte removedValue = removedValues.get(rRead);
-            final byte addedValue = addedValues.get(aRead);
-            final int comparison = ByteComparisons.compare(removedValue, addedValue);
+            final T removedValue = removedValues.get(rRead);
+            final T addedValue = addedValues.get(aRead);
+            final int comparison = ObjectComparisons.compare(removedValue, addedValue);
             if (comparison == 0) {
                 final int removedRun = countRun(removedValues, rRead, removedEnd);
                 final int addedRun = countRun(addedValues, aRead, addedEnd);
@@ -103,7 +102,7 @@ public class ByteCompactModifications {
 
         // drain any remaining removals
         while (rRead < removedEnd) {
-            final byte removedValue = removedValues.get(rRead);
+            final T removedValue = removedValues.get(rRead);
             final int removedRun = countRun(removedValues, rRead, removedEnd);
             rRead += removedRun;
             if (!ignore(removedValue, countNull, countNaN)) {
@@ -115,7 +114,7 @@ public class ByteCompactModifications {
 
         // drain any remaining additions
         while (aRead < addedEnd) {
-            final byte addedValue = addedValues.get(aRead);
+            final T addedValue = addedValues.get(aRead);
             final int addedRun = countRun(addedValues, aRead, addedEnd);
             aRead += addedRun;
             if (!ignore(addedValue, countNull, countNaN)) {
@@ -129,8 +128,8 @@ public class ByteCompactModifications {
         addedSize.set(aWrite - addedStart);
     }
 
-    private static int countRun(WritableByteChunk<? extends Values> values, int pos, int end) {
-        final byte value = values.get(pos);
+    private static <T> int countRun(WritableObjectChunk<T, ? extends Values> values, int pos, int end) {
+        final T value = values.get(pos);
         int run = 1;
         while (pos + run < end && eq(values.get(pos + run), value)) {
             run++;
@@ -142,14 +141,14 @@ public class ByteCompactModifications {
      * Test two values for equality consistent with the order in which the runs are sorted; each class of equal values
      * forms one run.
      */
-    private static boolean eq(byte lhs, byte rhs) {
+    private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return ByteComparisons.eq(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 
-    private static boolean ignore(byte value, boolean countNull, boolean countNaN) {
-        if (!countNull && value == NULL_BYTE) {
+    private static boolean ignore(Object value, boolean countNull, boolean countNaN) {
+        if (!countNull && value == null) {
             return true;
         }
         // region maybeIgnoreNaN
