@@ -1,8 +1,8 @@
 {
   "name": "Default",
-  // The relative-worktrees setup in README.md needs git 2.48+. The `base:noble
-  // image ships with git 2.52 at /usr/local/bin which gets precedent over Noble's
-  // apt 2.43, which satisfies this requirement. Keep this in mind if we ever
+  // The relative-worktrees setup in README.md needs git 2.48+. The `base:noble`
+  // image ships with git 2.52 at /usr/local/bin, which takes precedence over Noble's
+  // apt 2.43 and satisfies this requirement. Keep this in mind if we ever
   // switch the base image.
   "image": "mcr.microsoft.com/devcontainers/base:noble",
   "features": {

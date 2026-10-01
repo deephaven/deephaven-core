@@ -5,7 +5,10 @@ Configuration for running a development environment in a devcontainer. This prov
 - Tool installation for developing Deephaven Core
 - A sandbox environment for allowing AI agents more autonomy to accomplish tasks without constant approval prompts
 
-> IMPORTANT: it is not recommended to use Linux rootful Docker setups with this config due to the seccomp filter settings required to run nested podman without `--privileged`.
+> IMPORTANT: it is not recommended to use Linux rootful Docker setups with this config. There the
+> podman-as-docker Feature's `apparmor=unconfined` removes Docker's default AppArmor confinement,
+> and the relaxed seccomp profile weighs more because container root is closer to host root. See
+> [Nested containers](#nested-containers-docker-inside-the-devcontainer).
 
 ## Git worktrees
 
@@ -149,8 +152,9 @@ and `docs/manual-verification.md` § 13.9.
 
 - **`podman run` fails with `cannot clone: Operation not permitted` or `cannot re-exec process`**
   — the seccomp profile did not reach the container. Check that `runArgs` still references
-  `seccomp-podman.json` and that the file exists at that path on the host. `post-start.sh` prints
-  a diagnosis for this on every start.
+  `seccomp-podman.json` and that the file exists at that path on the host. The podman-as-docker
+  Feature's own post-start step (not `.devcontainer/post-start.sh`) prints a diagnosis for this
+  on every start.
 - **Nested containers cannot resolve each other by name** — `/dev/net/tun` missing from
   `runArgs`, or the Feature's `rootlessNetworkCmd` is not `slirp4netns`.
 - **`./gradlew` dies with `Could not create parent directory for lock file`** — the Gradle cache
@@ -170,16 +174,11 @@ and `docs/manual-verification.md` § 13.9.
 
 ## Reference: why global auto-approve is not set here
 
-`chat.tools.global.autoApprove` looks like the setting that would remove the remaining prompts. It
-does not work from `devcontainer.json`. In `vs/platform/agentHost` it is registered `policyOnly`,
-so only an enterprise policy value is read — user, machine and remote values are ignored — and it
-contributes something only when set to **`false`**, where it emits `disableBypassPermissionsMode`.
-Set to `true` it maps to nothing at all: it is a restriction knob, not an enabler.
-`chat.tools.terminal.autoApprove` is registered `anyGlobal`, which is why that one is honoured
-here.
-
-Enabling global auto-approve is therefore a per-user decision in local settings, where VS Code
-shows a deliberate warning the first time it is used. This repo does not make it for you.
+`chat.tools.global.autoApprove` would remove the remaining prompts, and this config deliberately
+does not set it. It approves every tool call, not just terminal commands, and VS Code's own
+description calls it "never recommended, even [in] containerized environments like Codespaces and
+Dev Containers". Enabling it is a per-user decision in local settings, where VS Code shows a
+deliberate warning the first time it is used. This repo does not make it for you.
 
 Two further limits worth knowing. The rules are merged across configuration scopes and
 `devcontainer.json` can only write the machine scope, so a user's own host-level rules still apply
