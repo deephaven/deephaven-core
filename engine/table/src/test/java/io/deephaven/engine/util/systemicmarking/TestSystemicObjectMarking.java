@@ -118,4 +118,21 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
             return null;
         });
     }
+
+    @Test
+    public void testAddNonSystemicAttributeOnSystemicThread() {
+        final Table systemic = SystemicObjectTracker.executeSystemically(true, () -> TableTools.emptyTable(1));
+        assertEquals(Boolean.TRUE, systemic.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+
+        SystemicObjectTracker.executeSystemically(true, () -> {
+            assertEquals(Boolean.FALSE,
+                    systemic.withAttributes(Map.of(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.FALSE))
+                            .getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            final Table replaced = systemic.withAttributes(
+                    Map.of(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.FALSE, "Other", "o"), List.of("Missing"));
+            assertEquals(Boolean.FALSE, replaced.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertEquals("o", replaced.getAttribute("Other"));
+            return null;
+        });
+    }
 }

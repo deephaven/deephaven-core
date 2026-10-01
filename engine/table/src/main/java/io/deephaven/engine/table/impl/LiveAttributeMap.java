@@ -276,6 +276,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
                 copy(buildAttributes(ak -> !effectiveRemoves.contains(ak), toAdd));
         // TODO: should we override systemic attributes.
+        result.reapplyAttributes(toAdd);
         result.removeAttributes(effectiveRemoves::contains);
         // noinspection unchecked
         return (IFACE_TYPE) result;
@@ -287,8 +288,10 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             return prepareReturnThis();
         }
 
+        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy(buildAttributes(ak -> true, toAdd));
+        result.reapplyAttributes(toAdd);
         // noinspection unchecked
-        return (IFACE_TYPE) copy(buildAttributes(ak -> true, toAdd));
+        return (IFACE_TYPE) result;
     }
 
     @Override
@@ -340,6 +343,18 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         });
         result.putAll(toAdd);
         return result.isEmpty() ? EMPTY_ATTRIBUTES : Collections.unmodifiableMap(result);
+    }
+
+    /**
+     * Assign each of {@code toAdd}'s values to its key. A copy's constructor may replace attributes it was given, as
+     * {@code BaseTable} does with {@link io.deephaven.engine.table.Table#SYSTEMIC_TABLE_ATTRIBUTE} on a systemic
+     * thread; this restores any such attribute that the caller asked to add. It does nothing, and in particular does
+     * not call {@link #ensureAttributes()}, when every value is already assigned.
+     *
+     * @param toAdd The attributes that the caller asked to add
+     */
+    private void reapplyAttributes(@NotNull final Map<String, Object> toAdd) {
+        toAdd.forEach(this::setAttribute);
     }
 
     /**
