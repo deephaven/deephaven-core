@@ -43,10 +43,10 @@ network. It cannot see the rest of your filesystem, your host's processes, or it
 There is no egress filtering: whatever an agent can read, it can send somewhere.
 
 Copilot Chat runs with terminal commands auto-approved except for VS Code's own built-in rules,
-which still prompt — roughly one command in eight, from a deny list shaped for a host rather than
-a container (`rm`, `curl`, `chmod`, `ps`, …). Some prompts come from neither: VS Code always
-confirms a variable assignment (`LOG=/tmp/x`) or a redirect outside the workspace, whatever the
-rules say. Approving in chat is a click; nothing is blocked outright.
+which still prompt — roughly one command in eight with those rules, from a deny list shaped for
+a host rather than a container (`rm`, `curl`, `chmod`, `ps`, …). Some prompts come from neither:
+VS Code always confirms a variable assignment (`LOG=/tmp/x`) or a redirect outside the
+workspace, whatever the rules say. Approving in chat is a click; nothing is blocked outright.
 
 ### What is mounted
 
@@ -87,8 +87,8 @@ only on rootful Linux:
 
 - **`seccomp-podman.json`**, referenced from `runArgs`. Docker's default seccomp filter blocks the
   syscalls that create user namespaces and mount filesystems unless the container holds
-  `CAP_SYS_ADMIN`. Podman needs exactly those, so this profile is Docker's own default profile,
-  complete and unmodified, with **one rule added**: an unconditional allow for
+  `CAP_SYS_ADMIN`. Podman needs exactly those, so this profile is a snapshot of Docker's default
+  profile (pinned below) with **one rule added**: an unconditional allow for
   `unshare setns clone clone3 mount umount2 pivot_root mount_setattr open_tree open_tree_attr
 move_mount fsopen fsconfig fsmount fspick sethostname setdomainname keyctl`.
   The kernel's own checks still apply. For the mount and namespace calls that means
@@ -96,7 +96,7 @@ move_mount fsopen fsconfig fsmount fspick sethostname setdomainname keyctl`.
   itself — how rootless podman works on any ordinary Linux desktop. Two are broader:
   `clone`/`clone3` lose the argument filter that rejects `CLONE_NEW*`, which is what lets podman
   create that namespace, and `keyctl` becomes callable at all — Docker blocks it because the
-  kernel keyring is not namespaced. Everything else Docker's default blocks stays blocked.
+  kernel keyring is not namespaced. Everything else that snapshot blocks stays blocked.
 - **`systempaths=unconfined`** (declared by the Feature, not here): without it the nested
   container runtime cannot mount its own `/proc`. Without `CAP_SYS_ADMIN` this mostly exposes
   read-only kernel information; the kernel's permission checks on `/proc/sys` still apply.
@@ -107,11 +107,14 @@ move_mount fsopen fsconfig fsmount fspick sethostname setdomainname keyctl`.
   podman's storage setup. There it is a real relaxation, and a silent one: the container loses
   AppArmor confinement rather than failing.
 
-The file is long because a seccomp profile cannot say "the defaults plus X". **Do not hand-edit
-it** — regenerate by prepending that one rule to the upstream default
-(`https://github.com/moby/profiles/blob/main/seccomp/default.json`, Apache-2.0). The canonical
-copy is `https://github.com/devc-tools/devc-tools/blob/main/features/podman-as-docker/seccomp-podman.json`; it is duplicated here
-because the Docker CLI reads it on the host at creation time, where a Feature cannot reach.
+The file is long because a seccomp profile cannot say "the defaults plus X". It is based on
+`moby/profiles` `seccomp/default.json` at commit `6fe7deb1b9fb` (2026-09-17, Apache-2.0) and is
+not kept in step with upstream; Docker's current default may differ. **Do not hand-edit it** —
+regenerate by prepending that one rule to the upstream file at a chosen commit, and update the
+commit here. The canonical copy is
+`https://github.com/devc-tools/devc-tools/blob/main/features/podman-as-docker/seccomp-podman.json`;
+it is duplicated here because the Docker CLI reads it on the host at creation time, where a
+Feature cannot reach.
 
 `--device=/dev/net/tun` in `runArgs` gives nested containers their own private networks with
 name resolution between them, which the `deephaven-in-docker` Gradle tests rely on.
