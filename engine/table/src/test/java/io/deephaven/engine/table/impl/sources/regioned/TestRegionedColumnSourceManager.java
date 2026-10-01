@@ -1067,6 +1067,63 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         });
     }
 
+    /**
+     * Adding two locations for the same new partition value in one cycle creates that key's bucket and then grows it.
+     * The index table must report the key's position only as added, never as both added and modified.
+     */
+    @Test
+    public void testPartitioningIndexNewKeyFromTwoLocationsInOneCycle() {
+        SUT = new RegionedColumnSourceManager(true, true, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+        captureIndexes(SUT.initialize());
+        checkIndexes();
+
+        final DataIndex partitioningIndex = capturedPartitioningColumnIndex;
+        final AtomicReference<RowSet> addedDuringUpdate = new AtomicReference<>();
+        final AtomicReference<RowSet> modifiedDuringUpdate = new AtomicReference<>();
+        final TableUpdateListener updateRecorder =
+                new InstrumentedTableUpdateListenerAdapter(partitioningIndex.table(), false) {
+                    @Override
+                    public void onUpdate(final TableUpdate upstream) {
+                        addedDuringUpdate.set(upstream.added().copy());
+                        modifiedDuringUpdate.set(upstream.modified().copy());
+                    }
+                };
+        partitioningIndex.table().addUpdateListener(updateRecorder);
+
+        // Add and include all 4 locations in one cycle. Partition A arrives as regions 0 and 1, partition B as regions
+        // 2 and 3, so each new key's bucket is created by one location and grown by the other.
+        Arrays.stream(tableLocations).forEach(SUT::addLocation);
+        setSizeExpectations(true, true, 5, 1000, 5003, 2);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
+        checkIndexes();
+        partitioningIndex.table().removeUpdateListener(updateRecorder);
+
+        // expect table locations to be cleaned up via LivenessScope release as the test exits, even if an assertion
+        // below fails
+        IntStream.range(0, tableLocations.length).forEachOrdered(li -> {
+            final TableLocation tl = tableLocations[li];
+            jmock.checking(new Expectations() {
+                {
+                    oneOf(tl).supportsSubscriptions();
+                    if (li % 2 == 0) {
+                        // Even locations don't support subscriptions
+                        will(returnValue(false));
+                    } else {
+                        will(returnValue(true));
+                        oneOf(tl).unsubscribe(with(subscriptionBuffers[li]));
+                    }
+                }
+            });
+        });
+
+        try (final RowSet added = addedDuringUpdate.get();
+                final RowSet modified = modifiedDuringUpdate.get()) {
+            assertRowSetEquals(RowSetFactory.fromRange(0, 1), added);
+            assertTrue("modified " + modified + " overlaps added " + added, modified.isEmpty());
+        }
+    }
+
     private static void maybePrintStackTrace(@NotNull final Exception e) {
         if (PRINT_STACK_TRACES) {
             e.printStackTrace();

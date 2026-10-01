@@ -54,7 +54,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
      * Whether a selection of {@code size} rows is large enough, relative to the index table, for the index to pay off.
      * The estimate and the pushdown must agree, or the estimate advertises a round that the pushdown then declines.
      */
-    private boolean worthUsingIndex(final long size) {
+    private boolean shouldUseDataIndex(final long size) {
         return size > selectionThreshold;
     }
 
@@ -70,7 +70,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
         final DataIndexPushdownContext ctx = (DataIndexPushdownContext) context;
 
-        final long dataIndexCost = worthUsingIndex(selection.size())
+        final long dataIndexCost = shouldUseDataIndex(selection.size())
                 ? PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST
                 : PushdownResult.UNSUPPORTED_ACTION_COST;
 
@@ -121,7 +121,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     jobScheduler,
                     result -> {
                         // Run the data index filter if the selection is large enough.
-                        if (worthUsingIndex(result.maybeMatch().size())) {
+                        if (shouldUseDataIndex(result.maybeMatch().size())) {
                             onComplete.accept(pushdownDataIndex(
                                     selection,
                                     filter,
@@ -151,7 +151,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         }
 
         // Run the data index filter if the selection is large enough.
-        if (worthUsingIndex(selection.size())) {
+        if (shouldUseDataIndex(selection.size())) {
             onComplete.accept(pushdownDataIndex(
                     selection,
                     filter,

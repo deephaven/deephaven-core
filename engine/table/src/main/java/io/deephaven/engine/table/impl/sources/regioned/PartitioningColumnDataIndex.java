@@ -196,6 +196,8 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
             added = RowSetFactory.empty();
         } else {
             added = RowSetFactory.fromRange(previousSize, newSize - 1);
+            // A new key's bucket may be grown by further locations in the same cycle; it is still only an add.
+            modified.remove(added);
         }
         final RowSet removed = removedPositionsBuilder.build();
         modified.remove(removed);
@@ -332,7 +334,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
             if (position == KEY_NOT_FOUND) {
                 return RowSequence.NULL_ROW_KEY;
             }
-            // A key whose bucket was emptied keeps its position but is not in the index table.
+            // A key whose locations are all removed keeps its position but is not in the index table.
             return (usePrev ? indexRowSet.prev() : indexRowSet).containsRange(position, position)
                     ? position
                     : RowSequence.NULL_ROW_KEY;
