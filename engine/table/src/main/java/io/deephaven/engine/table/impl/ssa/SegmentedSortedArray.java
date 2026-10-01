@@ -22,29 +22,35 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
      * Make a SegmentedSortedArray for values of the given type.
      *
      * @param chunkType the chunk type of the values
-     * @param dataType the data type of the values; for Object values whose natural ordering is consistent with equals
-     *        (see {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}) the SSA tests equality with
-     *        {@code equals}, otherwise with {@link ObjectComparisons#compareEquals(Object, Object)}
+     * @param equalsConsistent true when values of the data type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject SSA that tests Object equality with {@code equals}; when false, Object equality is
+     *        tested with {@link ObjectComparisons#compareEquals(Object, Object)}. Other chunk types ignore it. An
+     *        operation reads the registry once and passes the same decision to every kernel it creates, so its kernels
+     *        come from one family.
      * @param reverse true for a descending SSA
      * @param nodeSize the leaf size of the SSA
      * @return a new SegmentedSortedArray
      */
-    static SegmentedSortedArray make(ChunkType chunkType, Class<?> dataType, boolean reverse, int nodeSize) {
-        return makeFactory(chunkType, dataType, reverse, nodeSize).get();
+    static SegmentedSortedArray make(ChunkType chunkType, boolean equalsConsistent, boolean reverse, int nodeSize) {
+        return makeFactory(chunkType, equalsConsistent, reverse, nodeSize).get();
     }
 
     /**
      * Make a factory for SegmentedSortedArrays of values of the given type, choosing the implementation once.
      *
      * @param chunkType the chunk type of the values
-     * @param dataType the data type of the values; for Object values whose natural ordering is consistent with equals
-     *        (see {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}) the SSA tests equality with
-     *        {@code equals}, otherwise with {@link ObjectComparisons#compareEquals(Object, Object)}
+     * @param equalsConsistent true when values of the data type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject SSA that tests Object equality with {@code equals}; when false, Object equality is
+     *        tested with {@link ObjectComparisons#compareEquals(Object, Object)}. Other chunk types ignore it. An
+     *        operation reads the registry once and passes the same decision to every kernel it creates, so its kernels
+     *        come from one family.
      * @param reverse true for a descending SSA
      * @param nodeSize the leaf size of the SSA
      * @return a factory for new SegmentedSortedArrays
      */
-    static Supplier<SegmentedSortedArray> makeFactory(ChunkType chunkType, Class<?> dataType, boolean reverse,
+    static Supplier<SegmentedSortedArray> makeFactory(ChunkType chunkType, boolean equalsConsistent, boolean reverse,
             int nodeSize) {
         switch (chunkType) {
             case Char:
@@ -69,7 +75,7 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
                 return reverse ? () -> new DoubleReverseSegmentedSortedArray(nodeSize)
                         : () -> new DoubleSegmentedSortedArray(nodeSize);
             case Object:
-                if (BinarySearchKernelHelper.compareConsistentWithEquality(dataType)) {
+                if (equalsConsistent) {
                     return reverse ? () -> new EqualsConsistentObjectReverseSegmentedSortedArray(nodeSize)
                             : () -> new EqualsConsistentObjectSegmentedSortedArray(nodeSize);
                 }

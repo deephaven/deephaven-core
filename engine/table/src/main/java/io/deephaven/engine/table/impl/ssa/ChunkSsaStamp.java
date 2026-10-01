@@ -16,12 +16,16 @@ public interface ChunkSsaStamp {
      * Make a ChunkSsaStamp for values of the given type, which must match the type of the SSAs it is given.
      *
      * @param type the chunk type of the values
-     * @param dataType the data type of the values, as passed to
-     *        {@link SegmentedSortedArray#make(ChunkType, Class, boolean, int)}
+     * @param equalsConsistent true when values of the data type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject stamp for Object values; it is the same decision passed to
+     *        {@link SegmentedSortedArray#make(ChunkType, boolean, boolean, int)} for the SSAs this stamp is given.
+     *        Other chunk types ignore it. An operation reads the registry once and passes the same decision to every
+     *        kernel it creates, so its kernels come from one family.
      * @param reverse true for descending SSAs
      * @return the ChunkSsaStamp
      */
-    static ChunkSsaStamp make(ChunkType type, Class<?> dataType, boolean reverse) {
+    static ChunkSsaStamp make(ChunkType type, boolean equalsConsistent, boolean reverse) {
         if (reverse) {
             switch (type) {
                 case Char:
@@ -39,7 +43,7 @@ public interface ChunkSsaStamp {
                 case Double:
                     return DoubleReverseChunkSsaStamp.INSTANCE;
                 case Object:
-                    return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+                    return equalsConsistent
                             ? EqualsConsistentObjectReverseChunkSsaStamp.INSTANCE
                             : ObjectReverseChunkSsaStamp.INSTANCE;
                 default:
@@ -63,7 +67,7 @@ public interface ChunkSsaStamp {
                 case Double:
                     return DoubleChunkSsaStamp.INSTANCE;
                 case Object:
-                    return BinarySearchKernelHelper.compareConsistentWithEquality(dataType)
+                    return equalsConsistent
                             ? EqualsConsistentObjectChunkSsaStamp.INSTANCE
                             : ObjectChunkSsaStamp.INSTANCE;
                 default:
