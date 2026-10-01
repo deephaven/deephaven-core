@@ -5,6 +5,7 @@ package io.deephaven.engine.rowset.impl.rsp.container;
 
 import org.junit.Test;
 
+import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.cardinalityByIteration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -14,20 +15,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestRunContainerNotLongRun {
 
-    /** Cardinality counted from the container itself, independent of whatever it recorded. */
-    private static int countByIteration(final Container c) {
-        int n = 0;
-        final ShortIterator it = c.getShortIterator();
-        while (it.hasNext()) {
-            it.nextAsInt();
-            ++n;
-        }
-        return n;
-    }
-
     private static void assertComplement(final String what, final Container original, final Container complement,
             final int rangeStart, final int rangeEnd) {
-        assertEquals(what + ": cardinality agrees with the contents", countByIteration(complement),
+        assertEquals(what + ": cardinality agrees with the contents", cardinalityByIteration(complement),
                 complement.getCardinality());
         for (int v = 0; v < 65536; ++v) {
             final boolean inRange = v >= rangeStart && v < rangeEnd;
@@ -59,7 +49,7 @@ public class TestRunContainerNotLongRun {
 
         final Container full = new RunContainer(0, 65536);
         final Container xored = full.xor(Container.singleRange(11822, 65473));
-        assertEquals("xor cardinality agrees with the contents", countByIteration(xored), xored.getCardinality());
+        assertEquals("xor cardinality agrees with the contents", cardinalityByIteration(xored), xored.getCardinality());
         assertComplement("xor", full, xored, 11822, 65473);
     }
 

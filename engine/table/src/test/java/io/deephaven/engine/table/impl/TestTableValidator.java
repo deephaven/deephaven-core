@@ -12,6 +12,7 @@ import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.util.SafeCloseable;
+import org.junit.Test;
 
 import java.util.Random;
 
@@ -19,6 +20,7 @@ import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class TestTableValidator extends RefreshingTableTestCase {
+    @Test
     public void testValidator() {
         ChunkPoolReleaseTracking.enableStrict();
 

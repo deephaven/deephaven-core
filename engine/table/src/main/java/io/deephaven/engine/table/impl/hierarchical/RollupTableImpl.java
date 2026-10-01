@@ -798,7 +798,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final int nodeSlot = nodeSlot(childNodeId);
 
         final TrackingRowSet rowSet = levelTables[nodeDepth - 1].getRowSet();
-        if ((usePrev ? rowSet.findPrev(nodeSlot) : rowSet.find(nodeSlot)) == NULL_ROW_KEY) {
+        if ((usePrev ? rowSet.findPrev(nodeSlot) : rowSet.find(nodeSlot)) < 0) {
             // the aggregation knows about this key, but it does not actually exist in the table
             return NULL_ROW_KEY;
         }

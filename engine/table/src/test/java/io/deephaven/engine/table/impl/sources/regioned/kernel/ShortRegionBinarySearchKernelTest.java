@@ -13,6 +13,11 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.MatchOptions;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.ShortRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionShort;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -26,10 +31,12 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.IntToLongFunction;
+import static io.deephaven.util.QueryConstants.MAX_SHORT;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 import static org.junit.Assert.*;
 
@@ -625,5 +632,154 @@ public class ShortRegionBinarySearchKernelTest {
                         return values.size();
                     }
                 });
+    }
+
+    /** Ascending, engine-ordered (null sentinel first), with a repeated value so a bound can land inside a run. */
+    private static final List<Short> DISPATCH_DATA =
+            List.of(NULL_SHORT, (short) 1, (short) 2, (short) 5, (short) 5, (short) 9);
+
+    /**
+     * The two {@code binsearch*Filter} entry points are the region kernel's front door, and the Parquet regions are
+     * their only production callers -- nothing else in this class reaches them, so the dispatch they perform goes
+     * unchecked here even though the searches it selects are covered thoroughly.
+     *
+     * <p>
+     * Each shape is asserted to agree with the search it should dispatch to, rather than against hand-computed row
+     * keys: the question this answers is which search a filter selects, and comparing against the search itself cannot
+     * drift from the semantics the rest of this class already pins down. A two-sided range is the case worth having,
+     * since the two one-sided shortcuts each skip half the work and only the two-sided form searches both bounds.
+     */
+    @Test
+    public void testRangeFilterEntryPointDispatch() {
+        for (final boolean descending : new boolean[] {false, true}) {
+            final List<Short> data;
+            final SortColumn sortColumn;
+            if (descending) {
+                data = new ArrayList<>(DISPATCH_DATA);
+                Collections.reverse(data);
+                sortColumn = SortColumn.desc(ColumnName.of("test"));
+            } else {
+                data = DISPATCH_DATA;
+                sortColumn = SortColumn.asc(ColumnName.of("test"));
+            }
+            final ColumnRegionShort<Values> region = makeColumnRegionShort(data);
+            final long lastKey = data.size() - 1;
+
+            // Two-sided: neither bound covers everything beyond it, so both are searched.
+            for (final boolean lowerInc : new boolean[] {false, true}) {
+                for (final boolean upperInc : new boolean[] {false, true}) {
+                    try (final RowSet viaFilter = ShortRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                            sortColumn, new ShortRangeFilter("test", (short) 2, (short) 5, lowerInc, upperInc));
+                            final RowSet viaSearch = ShortRegionBinarySearchKernel.binarySearchMinMax(region, 0, lastKey,
+                                    sortColumn, (short) 2, (short) 5, lowerInc, upperInc)) {
+                        assertEquals("descending=" + descending + " lowerInc=" + lowerInc + " upperInc=" + upperInc,
+                                viaSearch, viaFilter);
+                    }
+                }
+            }
+
+            // An inclusive null lower bound covers everything below the upper bound, so only the upper is searched.
+            try (final RowSet viaFilter = ShortRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                    sortColumn, new ShortRangeFilter("test", NULL_SHORT, (short) 5, true, true));
+                    final RowSet viaSearch = ShortRegionBinarySearchKernel.binarySearchMax(region, 0, lastKey,
+                            sortColumn, (short) 5, true)) {
+                assertEquals("descending=" + descending, viaSearch, viaFilter);
+            }
+
+            // An inclusive max upper bound covers everything above the lower bound, so only the lower is searched.
+            try (final RowSet viaFilter = ShortRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                    sortColumn, new ShortRangeFilter("test", (short) 2, MAX_SHORT, true, true));
+                    final RowSet viaSearch = ShortRegionBinarySearchKernel.binarySearchMin(region, 0, lastKey,
+                            sortColumn, (short) 2, true)) {
+                assertEquals("descending=" + descending, viaSearch, viaFilter);
+            }
+        }
+    }
+
+    /**
+     * The match entry point converts a {@link MatchFilter}'s values and hands them to the match search, except for an
+     * empty value list, which matches nothing and must not touch the region at all.
+     */
+    @Test
+    public void testMatchFilterEntryPointDispatch() {
+        final ColumnRegionShort<Values> region = makeColumnRegionShort(DISPATCH_DATA);
+        final long lastKey = DISPATCH_DATA.size() - 1;
+        final SortColumn sortColumn = SortColumn.asc(ColumnName.of("test"));
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofShort("test"));
+
+        final MatchFilter matchFilter = new MatchFilter(MatchOptions.REGULAR, "test", (short) 5, NULL_SHORT);
+        matchFilter.init(tableDefinition);
+        try (final RowSet viaFilter = ShortRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey, sortColumn,
+                matchFilter);
+                final RowSet viaSearch = ShortRegionBinarySearchKernel.binarySearchMatch(region, 0, lastKey, sortColumn,
+                        new Object[] {(short) 5, NULL_SHORT})) {
+            assertEquals(viaSearch, viaFilter);
+        }
+
+        // No values to look for, so nothing matches and the search is skipped outright.
+        final MatchFilter emptyFilter = new MatchFilter(MatchOptions.REGULAR, "test");
+        emptyFilter.init(tableDefinition);
+        try (final RowSet viaFilter = ShortRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey, sortColumn,
+                emptyFilter)) {
+            assertTrue(viaFilter.isEmpty());
+        }
+    }
+
+    /**
+     * A match search walks its value list once against the region, advancing a cursor as it goes, so the list must be
+     * ordered the way the data is -- the engine's null-aware order, in which the null sentinel sorts first ascending --
+     * or every value after the first is searched only in the tail and can be missed.
+     *
+     * <p>
+     * Only a multi-value list can detect a mismatch, and only one containing the null sentinel can detect one that
+     * affects the sentinel specifically; every other call site in this class passes a single value.
+     */
+    @Test
+    public void testMatchMultipleValuesIncludingNull() {
+        final List<Short> ascending =
+                List.of(NULL_SHORT, (short) 1, (short) 2, (short) 5, (short) 5, (short) 9);
+
+        assertMatchKeys(ascending, new Short[] {(short) 5, NULL_SHORT}, List.of(0L, 3L, 4L));
+        assertMatchKeys(ascending, new Short[] {NULL_SHORT, (short) 5}, List.of(0L, 3L, 4L));
+        assertMatchKeys(ascending, new Short[] {(short) 9, (short) 1, NULL_SHORT}, List.of(0L, 1L, 5L));
+        assertMatchKeys(ascending, new Short[] {NULL_SHORT}, List.of(0L));
+        assertMatchKeys(ascending, new Short[] {(short) 1, (short) 9}, List.of(1L, 5L));
+        assertMatchKeys(ascending, new Short[] {(short) 1, (short) 3, (short) 9}, List.of(1L, 5L));
+        assertMatchKeys(ascending, new Short[] {(short) 3, (short) 7}, List.of());
+    }
+
+    /**
+     * Asserts that searching {@code ascendingData} for {@code searchValues} returns exactly {@code expectedAscending}
+     * row keys, checked in both sort directions; for descending the data and expected keys are mirrored.
+     */
+    private static void assertMatchKeys(
+            final List<Short> ascendingData,
+            final Short[] searchValues,
+            final List<Long> expectedAscending) {
+        for (final boolean descending : new boolean[] {false, true}) {
+            final List<Short> data;
+            final List<Long> expected = new ArrayList<>();
+            if (descending) {
+                data = new ArrayList<>(ascendingData);
+                Collections.reverse(data);
+                for (int ii = expectedAscending.size() - 1; ii >= 0; --ii) {
+                    expected.add(ascendingData.size() - 1 - expectedAscending.get(ii));
+                }
+            } else {
+                data = ascendingData;
+                expected.addAll(expectedAscending);
+            }
+            final ColumnRegionShort<Values> region = makeColumnRegionShort(data);
+            final SortColumn sortColumn = descending
+                    ? SortColumn.desc(ColumnName.of("test"))
+                    : SortColumn.asc(ColumnName.of("test"));
+            try (final RowSet matched = ShortRegionBinarySearchKernel.binarySearchMatch(
+                    region, 0, data.size() - 1, sortColumn, searchValues)) {
+                final List<Long> actual = new ArrayList<>();
+                matched.forAllRowKeys(actual::add);
+                assertEquals("descending=" + descending + " values=" + Arrays.toString(searchValues),
+                        expected, actual);
+            }
+        }
     }
 }

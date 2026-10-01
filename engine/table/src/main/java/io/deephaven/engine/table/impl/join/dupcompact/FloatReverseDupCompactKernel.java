@@ -8,12 +8,11 @@
 
 package io.deephaven.engine.table.impl.join.dupcompact;
 
-import io.deephaven.util.compare.FloatComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.compare.FloatComparisons;
 import org.jetbrains.annotations.NotNull;
 
 public class FloatReverseDupCompactKernel implements DupCompactKernel {
@@ -108,6 +107,7 @@ public class FloatReverseDupCompactKernel implements DupCompactKernel {
     }
 
     // region comparison functions
+    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(float lhs, float rhs) {
         return -1 * FloatComparisons.compare(lhs, rhs);
     }

@@ -94,7 +94,7 @@ display(DeephavenWidget(f))
 
 ![Figure](../assets/how-to/jupyter/figure.png)
 
-By default, the Deephaven server is located at `http://localhost:{port}`, where `{port}` is the port set in the Deephaven server creation call. If the server is not there, such as when running Jupyter Notebook in a Docker container, modify the `DEEPHAVEN_IPY_URL` environmental variable to the correct URL before creating a `DeephavenWidget`.
+By default, the Deephaven server is located at `http://localhost:{port}`, where `{port}` is the port set in the Deephaven server creation call. If the server is not there, such as when running Jupyter Notebook in a Docker container, modify the `DEEPHAVEN_IPY_URL` environment variable to the correct URL before creating a `DeephavenWidget`.
 
 ```python skip-test
 import os

@@ -3,23 +3,25 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
 import io.deephaven.engine.rowset.RowSequence;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link ColumnRegionByte}.
  */
-@SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase"})
+@SuppressWarnings("AutoBoxing")
 public abstract class TstColumnRegionByte {
 
     static class Identity implements ColumnRegionByte<Values>, Page.WithDefaults<Values> {
@@ -66,42 +68,42 @@ public abstract class TstColumnRegionByte {
 
     public static class TestNull extends TstColumnRegionPrimative<ColumnRegionByte<Values>> {
 
-        @Override
+        @Before
         public void setUp() throws Exception {
-            super.setUp();
             SUT = ColumnRegionByte.createNull(Long.MAX_VALUE);
         }
 
         @Override
+        @Test
         public void testGet() {
-            TestCase.assertEquals(QueryConstants.NULL_BYTE, SUT.getByte(0));
-            TestCase.assertEquals(QueryConstants.NULL_BYTE, SUT.getByte(1));
-            TestCase.assertEquals(QueryConstants.NULL_BYTE, SUT.getByte(Integer.MAX_VALUE));
-            TestCase.assertEquals(QueryConstants.NULL_BYTE, SUT.getByte((1L << 40) - 2));
-            TestCase.assertEquals(QueryConstants.NULL_BYTE, SUT.getByte(Long.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_BYTE, SUT.getByte(0));
+            assertEquals(QueryConstants.NULL_BYTE, SUT.getByte(1));
+            assertEquals(QueryConstants.NULL_BYTE, SUT.getByte(Integer.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_BYTE, SUT.getByte((1L << 40) - 2));
+            assertEquals(QueryConstants.NULL_BYTE, SUT.getByte(Long.MAX_VALUE));
         }
 
+        @Test
         public void testGetBytes() {
             byte[] result = new byte[1024];
             SUT.getBytes(0, result, 0, result.length);
             for (byte b : result) {
-                TestCase.assertEquals(QueryConstants.NULL_BYTE, b);
+                assertEquals(QueryConstants.NULL_BYTE, b);
             }
             SUT.getBytes(Integer.MAX_VALUE, result, 100, result.length - 200);
             for (byte b : result) {
-                TestCase.assertEquals(QueryConstants.NULL_BYTE, b);
+                assertEquals(QueryConstants.NULL_BYTE, b);
             }
         }
     }
 
     public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionByte<Values>> {
 
-        @Override
+        @Before
         public void setUp() throws Exception {
-            super.setUp();
             // noinspection unchecked
-            regionSupplier = mock(Supplier.class, "R1");
-            checking(new Expectations() {
+            regionSupplier = jmock.mock(Supplier.class, "R1");
+            jmock.checking(new Expectations() {
                 {
                     oneOf(regionSupplier).get();
                     will(returnValue(new TstColumnRegionByte.Identity()));
@@ -111,18 +113,20 @@ public abstract class TstColumnRegionByte {
         }
 
         @Override
+        @Test
         public void testGet() {
             assertEquals((byte) 8, SUT.getByte(8));
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
             assertEquals((byte) 127, SUT.getByte(127));
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
         }
 
+        @Test
         public void testGetBytes() {
             assertArrayEquals(new byte[] {(byte) 0, (byte) 1, (byte) 2}, SUT.getBytes(0, new byte[3], 0, 3));
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
             assertArrayEquals(new byte[] {(byte) 5, (byte) 6, (byte) 7}, SUT.getBytes(5, new byte[3], 0, 3));
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
         }
     }
 }

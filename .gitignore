@@ -61,5 +61,10 @@ node_modules
 # Personal workflows (fork-specific)
 .devin/workflows/sync-fork.md
 
+# Devin/Claude plugin artifacts
+skills-lock.json
+.agents/
+.claude/skills/skill-creator
+
 # devenv.sh local state (see devenv.nix)
 .devenv/

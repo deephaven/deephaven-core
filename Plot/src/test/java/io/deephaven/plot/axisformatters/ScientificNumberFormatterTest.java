@@ -3,12 +3,15 @@
 //
 package io.deephaven.plot.axisformatters;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
 import java.text.FieldPosition;
 
-public class ScientificNumberFormatterTest extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class ScientificNumberFormatterTest {
+
+    @Test
     public void testFormat() {
         final ScientificNumberFormatter formatter = new ScientificNumberFormatter(3, 1E-5, 1E5);
 

@@ -7,7 +7,10 @@ The `transform` method applies a function to all constituents of a partitioned t
 ## Syntax
 
 ```python syntax
-transform(func: Callable[[Table], Table]) -> PartitionedTable
+transform(
+  func: Callable[[Table], Table],
+  dependencies: Optional[Sequence[Union[Table, PartitionedTable]]] = None,
+) -> PartitionedTable
 ```
 
 ## Parameters
@@ -15,7 +18,12 @@ transform(func: Callable[[Table], Table]) -> PartitionedTable
 <ParamTable>
 <Param name="func" type="Callable[[Table], Table]">
 
-A function that takes a table as input and returns a table. The table operations applied within the function _must_ be done from within an [execution context](../../../conceptual/execution-context.md).
+A function that takes a table as input and returns a table. The table operations applied within the function _must_ be done from within an [execution context](../../../conceptual/execution-context.md). The function must also be stateless, safe for concurrent use, and able to return a valid result for an empty input table.
+
+</Param>
+<Param name="dependencies" type="Optional[Sequence[Union[Table, PartitionedTable]]]" optional>
+
+Additional dependencies that must be satisfied before applying `func` to added or modified constituents during update processing. If `func` uses any other refreshing table or refreshing partitioned table, include it in this argument. The default is `None`.
 
 </Param>
 </ParamTable>

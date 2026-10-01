@@ -14,5 +14,6 @@ dependencies {
 
     compileOnly libs.jetbrains.annotations
 
+    testImplementation project(':base-test-utils')
     testImplementation libs.junit4
 }

@@ -5,7 +5,7 @@ CXX_STD = CXX17
 # The code below assumes an environment variable DHCPP is defined and
 # points to a pre-existing directory where the deephaven C++ client
 # and its dependent libraries was built, as per the instructions in
-# https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md
+# https://github.com/deephaven/deephaven-core/blob/main/cpp-client/BUILDING.md
 #
 DEPENDENCY_DIRS = -L$(DHCPP)/lib
 

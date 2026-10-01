@@ -3,11 +3,14 @@
 //
 package io.deephaven.base.string.cache;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-public class TestCharSequenceAdapterBuilder extends TestCase {
+public class TestCharSequenceAdapterBuilder {
 
+    @Test
     public void testBuilder() {
         final CharSequenceAdapterBuilder builder = new CharSequenceAdapterBuilder();
 

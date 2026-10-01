@@ -27,7 +27,7 @@ The other `PartitionedTable` to find constituents in.
 </Param>
 <Param name="transformer" type="BinaryOperator<Table>">
 
-The `BinaryOperator` to apply to all pairs of constituent tables.
+The `BinaryOperator` to apply to all pairs of constituent tables. `transformer` must be stateless, safe for concurrent use, and able to return a valid result for empty input tables.
 
 </Param>
 <Param name="dependencies" type="NotificationQueue.Dependency...">

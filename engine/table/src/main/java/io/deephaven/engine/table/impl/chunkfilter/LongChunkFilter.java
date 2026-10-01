@@ -49,7 +49,7 @@ public abstract class LongChunkFilter implements ChunkFilter {
         final LongChunk<? extends Values> longChunk = values.asLongChunk();
         final int len = values.size();
         int count = 0;
-        // Count the values that changed from true to false
+        // Count the values that remain true
         for (int ii = 0; ii < len; ++ii) {
             final boolean result = results.get(ii);
             if (!result) {

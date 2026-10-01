@@ -11,6 +11,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +28,7 @@ public class TestModelFarm extends RefreshingTableTestCase {
     /**
      * Ensure that the ModelFarm terminates immediately if it is shut down while not busy with an empty queue.
      */
+    @Test
     public void testModelFarmNoWorkShutdown() throws Exception {
         final CountDownLatch latchThreadStart = new CountDownLatch(0);
         final CountDownLatch latchThreadComplete = new CountDownLatch(0);
@@ -52,6 +54,7 @@ public class TestModelFarm extends RefreshingTableTestCase {
      * Ensure that the ModelFarm drains its work queue and then exits when {@link ModelFarmBase#shutdown()} and
      * {@link ModelFarmBase#awaitTermination}, but not {@link ModelFarmBase#terminate()}, are called.
      */
+    @Test
     public void testModelFarmBusyShutdownNoTerminate() throws Exception {
         final int nModelFarmThreads = 2;
         final int nKeys = nModelFarmThreads / 2;
@@ -91,6 +94,7 @@ public class TestModelFarm extends RefreshingTableTestCase {
      * Ensure that the ModelFarm interrupts its worker threads, stops processing its queue, and terminates immediately
      * if it is {@link ModelFarm#terminate() terminated} while busy and with work in its queue.
      */
+    @Test
     public void testModelFarmBusyShutdownAndTerminate() throws Exception {
         final int nKeys = nModelFarmThreadsDefault * 8;
         final CountDownLatch latchThreadStart = new CountDownLatch(nModelFarmThreadsDefault);
@@ -123,7 +127,6 @@ public class TestModelFarm extends RefreshingTableTestCase {
             Require.eqFalse(terminated, "terminated");
             Require.eq(modelFarmTick.getState(), "modelFarmTick.getState()", ModelFarmBase.State.SHUTDOWN);
         }
-
 
         // Test awaitTermination() after calling terminate(). The ModelFarm should shut down almost immediately calling
         // terminate().

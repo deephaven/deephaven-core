@@ -22,6 +22,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.*;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.*;
@@ -417,7 +418,6 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         validator.getResultTable().addUpdateListener(listener);
 
         TstUtils.assertTableEquals(expected, result);
-
 
         for (int step = 0; step < maxStep; ++step) {
             if (printTableUpdates()) {

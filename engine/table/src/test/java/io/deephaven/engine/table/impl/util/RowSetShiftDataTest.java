@@ -62,15 +62,15 @@ public class RowSetShiftDataTest {
     @Test(expected = IllegalArgumentException.class)
     public void testPostOverlapNegativeShifts() {
         final RowSetShiftData.Builder builder = newBuilder();
-        builder.shiftRange(0, 9, -20);
-        builder.shiftRange(10, 19, -21);
+        builder.shiftRange(100, 109, -20);
+        builder.shiftRange(110, 119, -21);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testPostCrossNegativeShifts() {
         final RowSetShiftData.Builder builder = newBuilder();
-        builder.shiftRange(0, 9, -10);
-        builder.shiftRange(10, 19, -100);
+        builder.shiftRange(100, 109, -10);
+        builder.shiftRange(110, 119, -100);
     }
 
     @Test(expected = IllegalArgumentException.class)

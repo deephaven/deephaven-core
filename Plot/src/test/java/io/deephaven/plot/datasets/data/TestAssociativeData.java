@@ -8,10 +8,12 @@ import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class TestAssociativeData extends RefreshingTableTestCase {
     private final String[] cats = {"A", "B"};
@@ -40,6 +42,7 @@ public class TestAssociativeData extends RefreshingTableTestCase {
         super.tearDown();
     }
 
+    @Test
     public void testAssociativeDataHashMap() {
 
         final Map<String, Integer> moreData = new HashMap<>();
@@ -58,11 +61,12 @@ public class TestAssociativeData extends RefreshingTableTestCase {
         assertNull(dataHashMap.get("MISSING"));
     }
 
+    @Test
     public void testAssociativeDataTable() {
         try {
             new AssociativeDataTable<String, Integer, Integer>(null, "Cat", "Values", String.class, Integer.class,
                     null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
@@ -70,7 +74,7 @@ public class TestAssociativeData extends RefreshingTableTestCase {
         try {
             new AssociativeDataTable<String, Integer, Integer>(tableHandle, null, "Values", String.class, Integer.class,
                     null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
@@ -78,7 +82,7 @@ public class TestAssociativeData extends RefreshingTableTestCase {
         try {
             new AssociativeDataTable<String, Integer, Integer>(tableHandle, "Cat", null, String.class, Integer.class,
                     null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
@@ -88,7 +92,7 @@ public class TestAssociativeData extends RefreshingTableTestCase {
 
         try {
             associativeDataTable.put("C", 234);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Modifying"));
         }
@@ -97,12 +101,13 @@ public class TestAssociativeData extends RefreshingTableTestCase {
         moreValues.put("C", 234);
         try {
             associativeDataTable.putAll(moreValues);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Modifying"));
         }
     }
 
+    @Test
     public void testAssociativeDataWithDefault() {
         final int def = 2;
         final Map<String, Integer> moreData = new HashMap<>();

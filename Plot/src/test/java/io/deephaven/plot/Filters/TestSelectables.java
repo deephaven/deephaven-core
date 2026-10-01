@@ -13,12 +13,13 @@ import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.PartitionedTable;
-import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.*;
+
+import static org.junit.Assert.*;
 
 public class TestSelectables {
 
@@ -42,15 +43,15 @@ public class TestSelectables {
     public void testFilteredTableOneClick() {
         try {
             Selectables.oneClick((Table) null, byColumn);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RequirementFailure e) {
-            TestCase.assertTrue(e.getMessage().contains("null"));
+            assertTrue(e.getMessage().contains("null"));
         }
         try {
             Selectables.oneClick((Table) null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
-            TestCase.assertTrue(e.getMessage().contains("empty"));
+            assertTrue(e.getMessage().contains("empty"));
         }
         testFilteredTable(Selectables.oneClick(table, byColumn));
         testFilteredTable(new SelectableDataSetOneClick(table.partitionBy(byColumn)));
@@ -70,10 +71,10 @@ public class TestSelectables {
     }
 
     private void testTableEquals(final Table t1, final Table t2) {
-        TestCase.assertNotNull(t1);
-        TestCase.assertNotNull(t2);
+        assertNotNull(t1);
+        assertNotNull(t2);
         final List<String> columnNames = t1.getDefinition().getColumnNames();
-        TestCase.assertEquals(columnNames.size(), t2.numColumns());
+        assertEquals(columnNames.size(), t2.numColumns());
         t2.hasColumns(columnNames);
     }
 }

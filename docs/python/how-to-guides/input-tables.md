@@ -3,6 +3,9 @@ title: Create and use input tables
 sidebar_label: Input tables
 ---
 
+> [!TIP]
+> This guide covers input tables created and used directly on the Deephaven server. To stream data from an external Python application using `pydeephaven`, see [Client input tables](./client-input-tables.md).
+
 Input tables allow users to enter new data into tables in two ways: programmatically, and manually through the UI.
 
 In the first case, data is added to a table with `add`, an input table-specific method similar to [`merge`](../reference/table-operations/merge/merge.md). In the second case, data is added to a table through the UI by clicking on cells and typing in the contents, similar to a spreadsheet program like [MS Excel](https://www.microsoft.com/en-us/microsoft-365/excel).
@@ -130,9 +133,6 @@ my_input_table.add(my_table)
 ```
 
 Data can also be added to an input table asynchronously. Asynchronous function calls in the same thread are queued and processed in order. However, ordering is not guaranteed across threads. The following code block asynchronously adds data to a keyed input table:
-
-> [!IMPORTANT]
-> Asynchronous adds can only be done on keyed input tables.
 
 ```python order=my_input_table
 from deephaven import empty_table, input_table

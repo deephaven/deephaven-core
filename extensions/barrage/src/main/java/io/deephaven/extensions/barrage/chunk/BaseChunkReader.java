@@ -6,6 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
@@ -28,6 +29,33 @@ public abstract class BaseChunkReader<READ_CHUNK_TYPE extends WritableChunk<Valu
      */
     protected static final int BULK_READ_BUFFER_BYTES = Configuration.getInstance()
             .getIntegerForClassWithDefault(BaseChunkReader.class, "bulkReadBufferBytes", 4096);
+
+    /** Number of {@code int}s decoded per bulk-read window (see {@link #BULK_READ_BUFFER_BYTES}). */
+    private static final int BULK_READ_INTS = Math.max(1, BULK_READ_BUFFER_BYTES / Integer.BYTES);
+
+    /**
+     * Read {@code numElements} little-endian {@code int}s — an Arrow offsets or lengths buffer — into {@code dest},
+     * pulling the payload in bounded windows into a reused buffer rather than making one {@link DataInput} call, i.e.
+     * four individual byte reads, per value.
+     *
+     * @param is the input to read from
+     * @param dest the chunk to populate, starting at position zero
+     * @param numElements the number of values to read
+     */
+    protected static void readIntBuffer(
+            @NotNull final DataInput is,
+            @NotNull final WritableIntChunk<?> dest,
+            final int numElements) throws IOException {
+        final byte[] buffer = new byte[Math.min(numElements, BULK_READ_INTS) * Integer.BYTES];
+        for (int ei = 0; ei < numElements;) {
+            final int n = Math.min(BULK_READ_INTS, numElements - ei);
+            is.readFully(buffer, 0, n * Integer.BYTES);
+            for (int jj = 0; jj < n; ++jj) {
+                dest.set(ei + jj, LittleEndianCodec.getInt(buffer, jj * Integer.BYTES));
+            }
+            ei += n;
+        }
+    }
 
     @FunctionalInterface
     public interface ChunkTransformer<READ_CHUNK_TYPE extends Chunk<Values>, DEST_CHUNK_TYPE extends WritableChunk<Values>> {

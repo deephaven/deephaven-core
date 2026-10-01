@@ -19,8 +19,8 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseableList;
-import io.deephaven.util.datastructures.hash.HashMapK4V4;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
+import io.deephaven.engine.table.impl.util.hash.HashMapK4V4;
+import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -110,11 +110,13 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         // This sort operation might leverage a data index.
         dataIndex = optimalIndex(parent);
 
-        if (QueryTable.USE_INDIRECT_SORT_KERNELS && dataIndex == null) {
+        if (QueryTable.USE_INDIRECT_SORT_KERNELS) {
             // Resolve (compiling on demand if necessary) the multi-column sort kernel for this sort now, while we
             // are on a thread whose ExecutionContext has a QueryCompiler; the sort listener may otherwise be the
-            // first to need it, on an update graph thread that cannot compile. For an initially empty table (a
-            // refreshing blink table, for instance) the listener is always first.
+            // first to need it, on an update graph thread that cannot compile. This is required even when this sort
+            // has a data index: the index accelerates the initial sort, but the listener's incremental sorts of
+            // added and modified rows do not use it. For an initially empty table (a refreshing blink table, for
+            // instance) the listener is always first.
             SortHelpers.prepareSortKernel(sortOrder, sortColumns, comparators, comparatorsRespectEquality);
         }
     }
@@ -307,7 +309,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
+            // Size the map so the initial population completes without any rehashing.
+            final HashMapK4V4 reverseLookup = HashMapLockFreeK4V4.ofExpectedSize(sortedKeys.length, 0.75, -3);
+
             sortMapping = SortHelpers.createSortRowRedirection();
 
             // Center the keys around middleKeyToUse
@@ -344,7 +348,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
             resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMappingColumnName);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
-                final long outerRowKey = reverseLookup.get(innerRowKey);
+                final long outerRowKey = reverseLookup.getOne(innerRowKey);
                 return outerRowKey == reverseLookup.defaultReturnValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
             });
 
@@ -429,7 +433,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortRedirection == null) {
             return null;
         }
-        final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortResult.intSize(), .75f, RowSequence.NULL_ROW_KEY);
+        // Size the map so the population below completes without any rehashing.
+        final HashMapK4V4 reverseLookup =
+                HashMapLockFreeK4V4.ofExpectedSize(sortResult.intSize(), 0.75, RowSequence.NULL_ROW_KEY);
         try (final LongColumnIterator innerRowKeys =
                 new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
                 final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {
@@ -437,7 +443,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 reverseLookup.put(innerRowKeys.nextLong(), outerRowKeys.nextLong());
             }
         }
-        return reverseLookup::get;
+        return reverseLookup::getOne;
     }
 
     private static void setReverseLookup(

@@ -14,15 +14,15 @@ public enum ChunkType implements ChunkFactory {
 
     // @formatter:off
 
-    Boolean(new BooleanChunkFactory()),
-    Char(new CharChunkFactory()),
-    Byte(new ByteChunkFactory()),
-    Short(new ShortChunkFactory()),
-    Int(new IntChunkFactory()),
-    Long(new LongChunkFactory()),
-    Float(new FloatChunkFactory()),
-    Double(new DoubleChunkFactory()),
-    Object(new ObjectChunkFactory());
+    Boolean(new BooleanChunkFactory(), java.lang.Byte.BYTES),
+    Char(new CharChunkFactory(), java.lang.Character.BYTES),
+    Byte(new ByteChunkFactory(), java.lang.Byte.BYTES),
+    Short(new ShortChunkFactory(), java.lang.Short.BYTES),
+    Int(new IntChunkFactory(), java.lang.Integer.BYTES),
+    Long(new LongChunkFactory(), java.lang.Long.BYTES),
+    Float(new FloatChunkFactory(), java.lang.Float.BYTES),
+    Double(new DoubleChunkFactory(), java.lang.Double.BYTES),
+    Object(new ObjectChunkFactory(), java.lang.Long.BYTES);
 
     // @formatter:on
 
@@ -34,11 +34,22 @@ public enum ChunkType implements ChunkFactory {
         return fromElementTypeMap.get(elementType);
     }
 
-    ChunkType(ChunkFactory factory) {
+    ChunkType(ChunkFactory factory, int elementBytes) {
         this.factory = factory;
+        this.elementBytes = elementBytes;
     }
 
     final ChunkFactory factory;
+
+    private final int elementBytes;
+
+    /**
+     * The width in bytes of one slot of a chunk's backing array. {@link #Object} reports the widest a reference can be,
+     * so it over-estimates where the JVM uses compressed ordinary object pointers, and it never includes referents.
+     */
+    public final int elementBytes() {
+        return elementBytes;
+    }
 
     // Convenience methods
     @NotNull

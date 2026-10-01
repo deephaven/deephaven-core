@@ -71,7 +71,7 @@ Deephaven has several pre-built Docker images to choose from. Your choice should
 - Basic Python: `ghcr.io/deephaven/server:{VERSION}`
 - Python with [NLTK](https://www.nltk.org): `ghcr.io/deephaven/server-nltk:{VERSION}`
 - Python with [PyTorch](https://pytorch.org): `ghcr.io/deephaven/server-pytorch:{VERSION}`
-- Python with [SciKit-Learn](https://scikit-learn.org): `ghcr.io/deephaven/server-sklearn:{VERSION}`
+- Python with [scikit-learn](https://scikit-learn.org): `ghcr.io/deephaven/server-sklearn:{VERSION}`
 - Python with [TensorFlow](https://tensorflow.org): `ghcr.io/deephaven/server-tensorflow:{VERSION}`
 - Python with all of the above: `ghcr.io/deephaven/server-all-ai:{VERSION}`
 - Basic Groovy: `ghcr.io/deephaven/server-slim:{VERSION}`

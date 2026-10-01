@@ -4,18 +4,20 @@
 package io.deephaven.chunk.util.pools;
 
 import io.deephaven.chunk.ChunkType;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CHUNK_LOG2_CAPACITY;
+import static org.junit.Assert.*;
 
 /**
  * Basic unit tests for chunk pooling.
  */
-public class TestChunkPooling extends TestCase {
+public class TestChunkPooling {
 
+    @Test
     public void testTakeAndGiveWithTracking() {
         ChunkPoolReleaseTracking.enable();
         try {
@@ -41,6 +43,7 @@ public class TestChunkPooling extends TestCase {
         }
     }
 
+    @Test
     public void testTakeAndGiveEmpty() {
         ChunkPoolReleaseTracking.enable();
         try {
@@ -50,7 +53,7 @@ public class TestChunkPooling extends TestCase {
                 for (int ci = 0; ci < 100; ++ci) {
                     chunksToGive.add(chunkType.makeWritableChunk(0));
                 }
-                TestCase.assertEquals(1, chunksToGive.stream().distinct().count());
+                assertEquals(1, chunksToGive.stream().distinct().count());
                 chunksToGive.forEach(PoolableChunk::close);
                 chunksToGive.clear();
                 ChunkPoolReleaseTracking.check();

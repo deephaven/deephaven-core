@@ -8,6 +8,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.valuesOf;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -24,15 +25,6 @@ public class TestBitmapContainerIandRange {
             c.iset((short) v);
         }
         return c;
-    }
-
-    private static List<Integer> valuesOf(final Container c) {
-        final List<Integer> out = new ArrayList<>();
-        c.forEach((short v) -> {
-            out.add(ContainerUtil.toIntUnsigned(v));
-            return true;
-        });
-        return out;
     }
 
     @Test

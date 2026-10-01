@@ -126,7 +126,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                 riView.reset();
                 ri = new SingletonContainer.SearchRangeIter(lowBits(singletonValue));
             } else {
-                riView.init(p.arr(), p.arrIdx(), spanInfo, s);
+                riView.init(spanInfo, s);
                 ri = riView.getContainer().getShortRangeIterator(0);
             }
             // ri.hasNext() has to be true by construction; this container can't be empty or it wouldn't be present.
@@ -148,7 +148,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         if (getFullBlockSpanLen(spanInfo, s) > 0) {
             return spanKey;
         }
-        try (SpanView res = workDataPerThread.get().borrowSpanView(p.arr(), p.arrIdx(), spanInfo, s)) {
+        try (SpanView res = workDataPerThread.get().borrowSpanView(spanInfo, s)) {
             return spanKey | (long) res.getContainer().first();
         }
     }

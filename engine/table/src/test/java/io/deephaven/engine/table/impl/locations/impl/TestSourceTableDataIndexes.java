@@ -16,7 +16,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,6 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@code PartitioningColumnDataIndex} and {@code MergedDataIndex}.
@@ -63,7 +63,7 @@ public class TestSourceTableDataIndexes {
                     tries++;
                 }
             } while (!success && tries < 10);
-            TestCase.assertTrue(success);
+            assertTrue(success);
         }
     }
 
@@ -170,7 +170,7 @@ public class TestSourceTableDataIndexes {
                 "DataIndexer.hasDataIndex(actual, \"Part\")");
 
         // Without
-        TestCase.assertEquals(!missingIndexes, DataIndexer.hasDataIndex(actual, "Sym"));
+        assertEquals(!missingIndexes, DataIndexer.hasDataIndex(actual, "Sym"));
 
         TstUtils.assertTableEquals(expected.groupBy("Sym").ungroup(), actual.groupBy("Sym").ungroup());
     }
@@ -186,7 +186,7 @@ public class TestSourceTableDataIndexes {
 
         ParquetTools.writeTable(raw, path);
 
-        TestCase.assertFalse(DataIndexer.hasDataIndex(
+        assertFalse(DataIndexer.hasDataIndex(
                 ParquetTools.readTable(path).dropColumns("Sym").coalesce(), "Sym"));
     }
 
@@ -195,7 +195,7 @@ public class TestSourceTableDataIndexes {
         final List<Integer> observedOrder = Collections.synchronizedList(new ArrayList<>());
         final int[] intArray = IntStream.range(0, 10000).parallel().peek(observedOrder::add).toArray();
         for (int ii = 1; ii < intArray.length; ++ii) {
-            TestCase.assertTrue(intArray[ii - 1] < intArray[ii]);
+            assertTrue(intArray[ii - 1] < intArray[ii]);
         }
         System.out.println("Out of order observed: " + IntStream.range(1, intArray.length)
                 .anyMatch(ii -> observedOrder.get(ii - 1) > observedOrder.get(ii)));
@@ -204,7 +204,7 @@ public class TestSourceTableDataIndexes {
         final List<Integer> integerList = Arrays.stream(intArray).boxed().parallel().peek(observedOrder::add)
                 .collect(Collectors.toList());
         for (int ii = 0; ii < integerList.size(); ++ii) {
-            TestCase.assertEquals(intArray[ii], integerList.get(ii).intValue());
+            assertEquals(intArray[ii], integerList.get(ii).intValue());
         }
         System.out.println("Out of order observed: " + IntStream.range(1, intArray.length)
                 .anyMatch(ii -> observedOrder.get(ii - 1) > observedOrder.get(ii)));
@@ -227,7 +227,7 @@ public class TestSourceTableDataIndexes {
 
         final int[] outputArray = stringMap.values().parallelStream().mapToInt(Integer::parseInt).toArray();
         for (int ii = 0; ii < outputArray.length; ++ii) {
-            TestCase.assertEquals(intArray[ii], outputArray[ii]);
+            assertEquals(intArray[ii], outputArray[ii]);
         }
     }
 }

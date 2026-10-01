@@ -618,16 +618,21 @@ public class AggregationProcessor implements AggregationContextFactory {
                 return sc.column().name();
             }).toArray(String[]::new);
             final ChunkSource.WithPrev<Values> inputSource;
+            final Class<?> inputType;
             if (sortColumnNames.length == 1) {
-                inputSource = table.getColumnSource(sortColumnNames[0]);
+                final ColumnSource<?> sortSource = table.getColumnSource(sortColumnNames[0]);
+                inputSource = sortSource;
+                inputType = sortSource.getType();
             } else {
                 // Create a tuple source, because our underlying SSA does not handle multiple sort columns
                 inputSource = TupleSourceFactory.makeTupleSource(
                         Arrays.stream(sortColumnNames).map(table::getColumnSource).toArray(ColumnSource[]::new));
+                // tuples order their elements by compareTo but test them for equality with equals
+                inputType = Object.class;
             }
             addOperator(
-                    makeSortedFirstOrLastOperator(inputSource.getChunkType(), isFirst, aggregations.size() > 1,
-                            MatchPair.fromPairs(resultPairs), table, exposeRedirectionAs),
+                    makeSortedFirstOrLastOperator(inputSource.getChunkType(), inputType, isFirst,
+                            aggregations.size() > 1, MatchPair.fromPairs(resultPairs), table, exposeRedirectionAs),
                     inputSource, sortColumnNames);
         }
 
@@ -2579,6 +2584,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     static IterativeChunkedAggregationOperator makeSortedFirstOrLastOperator(
             @NotNull final ChunkType chunkType,
+            @NotNull final Class<?> dataType,
             final boolean isFirst,
             final boolean multipleAggs,
             @NotNull final MatchPair[] resultPairs,
@@ -2614,7 +2620,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             // @formatter:on
         }
-        return new SortedFirstOrLastChunkedOperator(chunkType, isFirst, resultPairs, sourceTable,
+        return new SortedFirstOrLastChunkedOperator(chunkType, dataType, isFirst, resultPairs, sourceTable,
                 exposeRedirectionAs);
     }
 

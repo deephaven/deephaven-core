@@ -10,6 +10,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.render;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rangesOf;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -18,15 +20,6 @@ import static org.junit.Assert.assertEquals;
  * ascending in both keyspaces (see {@code validate()}), so unapplying is "cut each window out, put it back moved".
  */
 public class RowSetShiftDataUnapplyOffsetTest {
-
-    private static List<long[]> rangesOf(final RowSet rs) {
-        final List<long[]> out = new ArrayList<>();
-        rs.forEachRowKeyRange((s, e) -> {
-            out.add(new long[] {s, e});
-            return true;
-        });
-        return out;
-    }
 
     private static List<long[]> intersect(final List<long[]> ranges, final long lo, final long hi) {
         final List<long[]> out = new ArrayList<>();
@@ -88,14 +81,6 @@ public class RowSetShiftDataUnapplyOffsetTest {
         final List<long[]> all = new ArrayList<>(remaining);
         all.addAll(moved);
         return normalize(all);
-    }
-
-    private static String render(final List<long[]> ranges) {
-        final StringBuilder sb = new StringBuilder();
-        for (final long[] r : ranges) {
-            sb.append(r[0]).append('-').append(r[1]).append(' ');
-        }
-        return sb.toString();
     }
 
     private static void check(final RowSetShiftData sd, final WritableRowSet rowSet, final long offset) {

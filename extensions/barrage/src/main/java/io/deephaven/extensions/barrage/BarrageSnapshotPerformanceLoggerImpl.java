@@ -24,7 +24,6 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
     private final BarrageSnapshotPerformanceSink sink;
     private final BarrageSnapshotPerformanceStreamPublisher publisher;
     // Keep, may eventually want to manage / close
-    @SuppressWarnings("FieldCanBeLocal")
     private final StreamToBlinkTableAdapter adapter;
     private final Table blink;
 
@@ -57,10 +56,10 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
                 helper.tableId,
                 helper.tableKey,
                 requestTimeEpochNanos,
-                helper.queueNanos / 1e6,
-                helper.snapshotNanos / 1e6,
-                writeNanos / 1e6,
-                (8 * bytesWritten) / 1e6);
+                helper.queueNanos,
+                helper.snapshotNanos,
+                writeNanos,
+                bytesWritten);
 
         if (encounteredError) {
             return;
@@ -79,5 +78,12 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
 
     public Table blinkTable() {
         return blink;
+    }
+
+    /**
+     * @return the adapter feeding {@link #blinkTable()}; exposed so tests can drive an update cycle directly
+     */
+    StreamToBlinkTableAdapter adapter() {
+        return adapter;
     }
 }

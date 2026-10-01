@@ -3,18 +3,23 @@
 //
 package io.deephaven.engine.rowset.impl.rsp;
 
+import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.TreeSet;
 
+import io.deephaven.engine.rowset.impl.RowSetTestCommon;
+
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.render;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.shiftRanges;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.sortedRangesImplOf;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.unionRanges;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Inserting a {@link SortedRanges} into an {@link RspBitmap} first makes room, in one pass, for the blocks it only
@@ -26,35 +31,49 @@ public class RspBitmapSortedRangesInsertTest {
 
     private static final long BS = BLOCK_SIZE;
 
-    private static SortedRanges sortedRangesOf(final long[]... ranges) {
-        SortedRanges sr = SortedRanges.makeSingleRange(ranges[0][0], ranges[0][1]);
-        for (int i = 1; i < ranges.length; ++i) {
-            sr = sr.addRange(ranges[i][0], ranges[i][1]);
-            assertNotNull("ranges did not fit in a SortedRanges", sr);
+    private static List<long[]> rangesOf(final SortedRanges sr) {
+        final List<long[]> out = new ArrayList<>();
+        sr.forEachLongRange((s, e) -> {
+            out.add(new long[] {s, e});
+            return true;
+        });
+        return out;
+    }
+
+    /**
+     * The block the padding spans start at; every fixture and range in these tests sits well below it, so padding
+     * changes nothing about how the ranges relate to the fixture, only how many spans the receiver has.
+     */
+    private static final long PADDING_FIRST_BLOCK = 100_000;
+
+    /**
+     * The receiver with enough singleton spans appended, far past anything the tests touch, to take it over
+     * {@link RspBitmap#PARTIAL_BLOCK_PREPASS_MIN_SPANS}. The insert only makes room ahead of time above that many
+     * spans, so this is what exercises that pass; the unpadded fixtures exercise the insert without it.
+     */
+    private static RspBitmap padded(final RspBitmap receiver) {
+        RspBitmap rb = receiver.deepCopy();
+        for (int i = 0; i <= RspBitmap.PARTIAL_BLOCK_PREPASS_MIN_SPANS; ++i) {
+            rb = rb.appendUnsafe((PADDING_FIRST_BLOCK + i) * BS + 7);
         }
-        return sr;
+        rb.finishMutations();
+        return rb;
     }
 
     private static void checkInsert(final RspBitmap receiver, final SortedRanges sr) {
-        final TreeSet<Long> expected = new TreeSet<>();
-        receiver.forEachLong(v -> {
-            expected.add(v);
-            return true;
-        });
-        sr.forEachLong(v -> {
-            expected.add(v);
-            return true;
-        });
-        final RspBitmap w = receiver.writeCheck();
+        checkInsertOnce(receiver, sr, "unpadded");
+        checkInsertOnce(padded(receiver), sr, "padded");
+    }
+
+    private static void checkInsertOnce(final RspBitmap receiver, final SortedRanges sr, final String what) {
+        // Compared as ranges: the fixtures hold whole blocks, far too many keys to enumerate.
+        final String expected = render(unionRanges(RowSetTestCommon.rangesOf(receiver), rangesOf(sr)));
+        // A copy, so the receiver is still the fixture when it is inserted into again in another form.
+        final RspBitmap w = receiver.deepCopy();
         w.insertOrderedLongSetUnsafeNoWriteCheck(sr);
         w.finishMutations();
-        w.validate("after insert");
-        final List<Long> got = new ArrayList<>();
-        w.forEachLong(v -> {
-            got.add(v);
-            return true;
-        });
-        assertEquals(new ArrayList<>(expected), got);
+        w.validate("after insert, " + what);
+        assertEquals(what, expected, render(RowSetTestCommon.rangesOf(w)));
     }
 
     private static RspBitmap containersAtEvenBlocks(final int blocks) {
@@ -70,7 +89,7 @@ public class RspBitmapSortedRangesInsertTest {
     @Test
     public void testMultipleRangesInOneMissingBlock() {
         checkInsert(containersAtEvenBlocks(6),
-                sortedRangesOf(new long[] {3 * BS + 5, 3 * BS + 10},
+                sortedRangesImplOf(new long[] {3 * BS + 5, 3 * BS + 10},
                         new long[] {3 * BS + 20, 3 * BS + 30},
                         new long[] {3 * BS + 40, 3 * BS + 50}));
     }
@@ -79,14 +98,14 @@ public class RspBitmapSortedRangesInsertTest {
     @Test
     public void testRangeSpanningWholeAndPartialBlocks() {
         checkInsert(containersAtEvenBlocks(8),
-                sortedRangesOf(new long[] {3 * BS + 300, 6 * BS + 40}));
+                sortedRangesImplOf(new long[] {3 * BS + 300, 6 * BS + 40}));
     }
 
     /** A range that covers its blocks exactly, so no partial-block span is needed at all. */
     @Test
     public void testRangeCoveringWholeBlocksExactly() {
         checkInsert(containersAtEvenBlocks(8),
-                sortedRangesOf(new long[] {3 * BS, 5 * BS + BLOCK_LAST}));
+                sortedRangesImplOf(new long[] {3 * BS, 5 * BS + BLOCK_LAST}));
     }
 
     /** Blocks already covered by a multi-block full block span of ours need no new span. */
@@ -96,7 +115,7 @@ public class RspBitmapSortedRangesInsertTest {
         rb = rb.appendRangeUnsafe(0, 4L * BS - 1); // full block span over blocks 0..3
         rb = rb.appendRangeUnsafe(8L * BS + 100, 8L * BS + 140);
         rb.finishMutations();
-        checkInsert(rb, sortedRangesOf(new long[] {1 * BS + 5, 1 * BS + 9},
+        checkInsert(rb, sortedRangesImplOf(new long[] {1 * BS + 5, 1 * BS + 9},
                 new long[] {2 * BS + 5, 2 * BS + 9},
                 new long[] {6 * BS + 5, 6 * BS + 9}));
     }
@@ -105,7 +124,7 @@ public class RspBitmapSortedRangesInsertTest {
     @Test
     public void testRangesPastOurEnd() {
         checkInsert(containersAtEvenBlocks(4),
-                sortedRangesOf(new long[] {20 * BS + 5, 20 * BS + 9},
+                sortedRangesImplOf(new long[] {20 * BS + 5, 20 * BS + 9},
                         new long[] {22 * BS + 5, 22 * BS + 9}));
     }
 
@@ -116,7 +135,7 @@ public class RspBitmapSortedRangesInsertTest {
         rb = rb.appendRangeUnsafe(10L * BS + 100, 10L * BS + 140);
         rb = rb.appendRangeUnsafe(12L * BS + 100, 12L * BS + 140);
         rb.finishMutations();
-        checkInsert(rb, sortedRangesOf(new long[] {2 * BS + 5, 2 * BS + 9}));
+        checkInsert(rb, sortedRangesImplOf(new long[] {2 * BS + 5, 2 * BS + 9}));
     }
 
     /**
@@ -126,7 +145,7 @@ public class RspBitmapSortedRangesInsertTest {
     @Test
     public void testRangeStraddlingOurEnd() {
         final RspBitmap rb = containersAtEvenBlocks(4); // blocks 0,2,4,6
-        checkInsert(rb, sortedRangesOf(new long[] {5 * BS + 300, 9 * BS + 40},
+        checkInsert(rb, sortedRangesImplOf(new long[] {5 * BS + 300, 9 * BS + 40},
                 new long[] {12 * BS + 5, 12 * BS + 9},
                 new long[] {14 * BS + 5, 14 * BS + 9}));
     }
@@ -139,7 +158,7 @@ public class RspBitmapSortedRangesInsertTest {
         rb = rb.appendRangeUnsafe(4L * BS + 100, 4L * BS + 140);
         rb.finishMutations();
         // Block 4 is our last; block 3 is missing and only partially covered.
-        checkInsert(rb, sortedRangesOf(new long[] {3 * BS + 5, 3 * BS + 9},
+        checkInsert(rb, sortedRangesImplOf(new long[] {3 * BS + 5, 3 * BS + 9},
                 new long[] {4 * BS + 200, 4 * BS + 240}));
     }
 
@@ -147,7 +166,7 @@ public class RspBitmapSortedRangesInsertTest {
     @Test
     public void testSingleBlockWhollyCoveredRange() {
         checkInsert(containersAtEvenBlocks(6),
-                sortedRangesOf(new long[] {3 * BS, 3 * BS + BLOCK_LAST}));
+                sortedRangesImplOf(new long[] {3 * BS, 3 * BS + BLOCK_LAST}));
     }
 
     /** Single-block ranges that stop short of the block end: the run computation must find no run at all. */
@@ -157,7 +176,7 @@ public class RspBitmapSortedRangesInsertTest {
         rb = rb.appendRangeUnsafe(4L * BS + 100, 4L * BS + 140);
         rb.finishMutations();
         // Block 0 is missing and these cover only part of it, including a range starting at key 0.
-        checkInsert(rb, sortedRangesOf(new long[] {0, 10}, new long[] {20, 30}));
+        checkInsert(rb, sortedRangesImplOf(new long[] {0, 10}, new long[] {20, 30}));
     }
 
     /** A run of complete blocks that covers spans of ours, so it has to be absorbed rather than placed as-is. */
@@ -169,7 +188,7 @@ public class RspBitmapSortedRangesInsertTest {
         }
         rb.finishMutations();
         // Blocks 2..5 are covered completely and we have a container in each of them.
-        checkInsert(rb, sortedRangesOf(new long[] {1 * BS + 500, 6 * BS + 40}));
+        checkInsert(rb, sortedRangesImplOf(new long[] {1 * BS + 500, 6 * BS + 40}));
     }
 
     /** A run immediately after a full block span of ours, which would have to merge with it. */
@@ -180,7 +199,7 @@ public class RspBitmapSortedRangesInsertTest {
         rb = rb.appendRangeUnsafe(9L * BS + 100, 9L * BS + 140);
         rb.finishMutations();
         // Covers blocks 2 and 3 completely, directly adjacent to our full block span.
-        checkInsert(rb, sortedRangesOf(new long[] {2 * BS, 4 * BS - 1}));
+        checkInsert(rb, sortedRangesImplOf(new long[] {2 * BS, 4 * BS - 1}));
     }
 
     /**
@@ -196,7 +215,7 @@ public class RspBitmapSortedRangesInsertTest {
         rb = rb.appendRangeUnsafe(9L * BS + 100, 9L * BS + 140);
         rb.finishMutations();
         // Covers blocks 2,3,4 completely; we lack block 2 but hold 3 and 4.
-        checkInsert(rb, sortedRangesOf(new long[] {2 * BS, 5 * BS - 1}));
+        checkInsert(rb, sortedRangesImplOf(new long[] {2 * BS, 5 * BS - 1}));
     }
 
     @Test
@@ -246,6 +265,88 @@ public class RspBitmapSortedRangesInsertTest {
                 continue;
             }
             checkInsert(rb, sr);
+        }
+    }
+
+    /** A container in every one of the first {@code blocks} blocks. */
+    private static RspBitmap containersAtEveryBlock(final int blocks) {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        for (int i = 0; i < blocks; ++i) {
+            rb = rb.appendRangeUnsafe(i * BS + 100, i * BS + 140);
+        }
+        rb.finishMutations();
+        return rb;
+    }
+
+    /**
+     * Ranges covering blocks 3j and 3j+1 completely, each absorbing two spans of ours; block 3j+2 is left alone so the
+     * ranges do not coalesce. The spans absorbed are only compacted out once, after every range is in.
+     */
+    @Test
+    public void testRangesAbsorbingTwoOfOurSpansEach() {
+        final RspBitmap receiver = containersAtEveryBlock(40);
+        SortedRanges sr = SortedRanges.makeSingleRange(0, 2 * BS - 1);
+        for (int j = 1; j < 12; ++j) {
+            sr = sr.addRange(3L * j * BS, (3L * j + 2) * BS - 1);
+        }
+        checkInsert(receiver, sr);
+    }
+
+    /** Ranges filling the one block between two full block spans of ours, so three spans become one. */
+    @Test
+    public void testRangesBridgingOurFullBlockSpans() {
+        RspBitmap receiver = RspBitmap.makeEmpty();
+        for (int i = 0; i < 40; ++i) {
+            if (i % 3 == 1) {
+                receiver = receiver.appendRangeUnsafe(i * BS + 100, i * BS + 140); // the block to be filled
+            } else {
+                receiver = receiver.appendRangeUnsafe(i * BS, (i + 1) * BS - 1); // full block span
+            }
+        }
+        receiver.finishMutations();
+        SortedRanges sr = SortedRanges.makeSingleRange(BS, 2 * BS - 1);
+        for (int j = 1; j < 13; ++j) {
+            sr = sr.addRange((3L * j + 1) * BS, (3L * j + 2) * BS - 1);
+        }
+        checkInsert(receiver, sr);
+    }
+
+    /** Partial blocks on either side of a run of whole blocks that absorb spans of ours, several times over. */
+    @Test
+    public void testRangesWithPartialEndsAroundAbsorbedBlocks() {
+        final RspBitmap receiver = containersAtEveryBlock(60);
+        SortedRanges sr = SortedRanges.makeSingleRange(BS - 10, 4 * BS + 10);
+        for (int j = 1; j < 10; ++j) {
+            final long base = 6L * j * BS;
+            sr = sr.addRange(base + BS - 10, base + 4 * BS + 10);
+        }
+        checkInsert(receiver, sr);
+    }
+
+    /** The shifted insert takes the same batched path; the shift is not a whole number of blocks. */
+    @Test
+    public void testShiftedRangesAbsorbingOurSpans() {
+        final RspBitmap receiver = containersAtEveryBlock(40);
+        SortedRanges sr = SortedRanges.makeSingleRange(0, 2 * BS - 1);
+        for (int j = 1; j < 12; ++j) {
+            sr = sr.addRange(3L * j * BS, (3L * j + 2) * BS - 1);
+        }
+        for (final RspBitmap target : new RspBitmap[] {receiver, padded(receiver)}) {
+            for (final long shift : new long[] {0, BS, 100, BS + 100}) {
+                final String expected =
+                        render(unionRanges(RowSetTestCommon.rangesOf(target), shiftRanges(rangesOf(sr), shift)));
+                final RspBitmap w = target.deepCopy();
+                final OrderedLongSet result = w.ixInsertWithShift(shift, sr);
+                final List<long[]> got = new ArrayList<>();
+                result.ixForEachLongRange((s, e) -> {
+                    got.add(new long[] {s, e});
+                    return true;
+                });
+                assertEquals("shift " + shift, expected, render(got));
+                if (result instanceof RspBitmap) {
+                    ((RspBitmap) result).validate("shift " + shift);
+                }
+            }
         }
     }
 }

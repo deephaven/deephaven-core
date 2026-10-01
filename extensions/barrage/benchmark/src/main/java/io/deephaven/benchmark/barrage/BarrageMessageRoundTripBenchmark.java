@@ -11,6 +11,7 @@ import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
@@ -59,7 +60,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Benchmarks the cost of serializing and deserializing a Barrage snapshot message composed of a large number of random
- * primitive columns of a single type.
+ * columns of a single type.
  * <p>
  * The write path mirrors what a Barrage producer does: a {@link BarrageMessage} is handed to a
  * {@link BarrageMessageWriter}, and its full-snapshot {@link BarrageMessageWriter.MessageView} is drained to a byte
@@ -69,6 +70,11 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * The source data is held in array-backed chunks whose {@code close()} is a no-op, so the pre-built message survives
  * repeated serialization and each invocation measures serialization only (no per-invocation data marshalling).
+ * <p>
+ * The whole message must land in a single record batch, since the reader parses one. That bounds
+ * {@code numColumns * numRows * bytes-per-cell}, so the wider {@code String} cells need fewer columns than the
+ * primitives do; {@code jmhRunBarrageRoundTripStrings} runs the {@code String} arm at a shape that fits. Exceed the
+ * bound and setup fails with a message saying so rather than reporting a bogus number.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -80,7 +86,13 @@ public class BarrageMessageRoundTripBenchmark {
 
     private static final BarrageMessageWriter.Factory WRITER_FACTORY = new BarrageMessageWriterImpl.Factory();
 
-    /** The primitive element type of every column. */
+    /** Number of distinct values a {@code String} column draws from; see {@link #makeStringPool(Random)}. */
+    private static final int STRING_POOL_SIZE = 1024;
+
+    /**
+     * The element type of every column. {@code String} is reachable but not in the default set, because it needs a
+     * smaller {@code numColumns} to stay within one record batch; run it via {@code jmhRunBarrageRoundTripStrings}.
+     */
     @Param({"double", "float", "long", "int", "short", "byte"})
     private String columnType;
 
@@ -91,6 +103,14 @@ public class BarrageMessageRoundTripBenchmark {
     /** Number of rows per column. */
     @Param({"2000"})
     private int numRows;
+
+    /**
+     * Length of each generated {@code String} value; ignored by the primitive types. The offsets buffer costs four
+     * bytes per row regardless of this, so it governs how much of the encode cost is payload rather than bookkeeping.
+     * Single-valued so that it does not multiply the primitive runs — override with {@code -p stringLength=8,64}.
+     */
+    @Param({"16"})
+    private int stringLength;
 
     /** Fraction of cells that are null; exercises the validity-buffer / DH-null encoding paths. */
     @Param({"0.0", "0.1"})
@@ -110,6 +130,9 @@ public class BarrageMessageRoundTripBenchmark {
     private Class<?>[] wireTypes;
     private Class<?>[] wireComponentTypes;
 
+    /** The distinct values drawn from for {@code String} columns; null for the primitive types. */
+    private String[] stringPool;
+
     // the reusable, pre-built message and its pre-serialized bytes
     private BarrageMessage message;
     private ChunkWriter<Chunk<Values>>[] chunkWriters;
@@ -125,7 +148,7 @@ public class BarrageMessageRoundTripBenchmark {
                 .build();
         reader = new BarrageMessageReaderImpl();
 
-        final Class<?> dataType = primitiveClass(columnType);
+        final Class<?> dataType = elementClass(columnType);
         final ChunkType chunkType = ChunkType.fromElementType(dataType);
 
         // Build the flat table schema of numColumns columns of the chosen type.
@@ -152,6 +175,7 @@ public class BarrageMessageRoundTripBenchmark {
         // Generate the random column data once. The chunks are array-backed and have a no-op close(), so the message
         // can be handed to a writer repeatedly without losing its data.
         final Random random = new Random(0xB33FCAFEL);
+        stringPool = columnType.equals("String") ? makeStringPool(random) : null;
         final BarrageMessage.AddColumnData[] addColumnData = new BarrageMessage.AddColumnData[numColumns];
         for (int ci = 0; ci < numColumns; ++ci) {
             final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
@@ -193,7 +217,7 @@ public class BarrageMessageRoundTripBenchmark {
         executionContext.close();
     }
 
-    private static Class<?> primitiveClass(final String type) {
+    private static Class<?> elementClass(final String type) {
         switch (type) {
             case "double":
                 return double.class;
@@ -207,6 +231,8 @@ public class BarrageMessageRoundTripBenchmark {
                 return short.class;
             case "byte":
                 return byte.class;
+            case "String":
+                return String.class;
             default:
                 throw new IllegalArgumentException("Unknown column type: " + type);
         }
@@ -214,6 +240,26 @@ public class BarrageMessageRoundTripBenchmark {
 
     private boolean nextIsNull(final Random random) {
         return nullFraction > 0.0 && random.nextDouble() < nullFraction;
+    }
+
+    /**
+     * Build the pool of distinct values that {@code String} cells are drawn from.
+     * <p>
+     * Cells share these instances rather than each holding a unique {@code String}, which both keeps
+     * {@code numColumns * numRows} cells within a reasonable heap and matches how string columns actually look in
+     * practice — symbols and identifiers repeat. Sharing does not shortcut any of the measured work: the writer still
+     * encodes every cell to UTF-8 and the reader still constructs a fresh {@code String} per cell.
+     */
+    private String[] makeStringPool(final Random random) {
+        final char[] chars = new char[stringLength];
+        final String[] pool = new String[STRING_POOL_SIZE];
+        for (int pi = 0; pi < pool.length; ++pi) {
+            for (int ci = 0; ci < stringLength; ++ci) {
+                chars[ci] = (char) ('a' + random.nextInt(26));
+            }
+            pool[pi] = new String(chars);
+        }
+        return pool;
     }
 
     private WritableChunk<Values> makeColumn(final Random random) {
@@ -259,6 +305,13 @@ public class BarrageMessageRoundTripBenchmark {
                     values[ri] = nextIsNull(random) ? QueryConstants.NULL_BYTE : (byte) random.nextInt();
                 }
                 return WritableByteChunk.writableChunkWrap(values);
+            }
+            case "String": {
+                final String[] values = new String[numRows];
+                for (int ri = 0; ri < numRows; ++ri) {
+                    values[ri] = nextIsNull(random) ? null : stringPool[random.nextInt(stringPool.length)];
+                }
+                return WritableObjectChunk.writableChunkWrap(values);
             }
             default:
                 throw new IllegalArgumentException("Unknown column type: " + columnType);

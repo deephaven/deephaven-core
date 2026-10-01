@@ -3,17 +3,19 @@
 //
 package io.deephaven.function;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import org.apache.commons.lang3.ArrayUtils;
+import org.junit.Test;
 
 import static io.deephaven.function.Random.*;
+import static org.junit.Assert.*;
 
 /**
  * Test Random.
  */
-public class TestRandom extends BaseArrayTestCase {
+public class TestRandom {
     final int n = 10000;
 
+    @Test
     public void testRandom() {
         final double[] vals = new double[n];
 
@@ -32,6 +34,7 @@ public class TestRandom extends BaseArrayTestCase {
         assertEquals(Math.sqrt(1.0 / 12.0), std, 0.05);
     }
 
+    @Test
     public void testRandomBool() {
         final boolean[] vals = randomBool(n);
 
@@ -47,6 +50,7 @@ public class TestRandom extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testRandomInt() {
         final int a = 5;
         final int b = 11;
@@ -60,6 +64,7 @@ public class TestRandom extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testRandomLong() {
         final int a = 5;
         final int b = 11;
@@ -80,6 +85,7 @@ public class TestRandom extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testRandomFloat() {
         final float a = (float) 4.5;
         final float b = (float) 95.6;
@@ -97,6 +103,7 @@ public class TestRandom extends BaseArrayTestCase {
     }
 
     @SuppressWarnings("RedundantCast")
+    @Test
     public void testRandomDouble() {
         final double a = (double) 4.5;
         final double b = (double) 95.6;
@@ -114,6 +121,7 @@ public class TestRandom extends BaseArrayTestCase {
     }
 
     @SuppressWarnings("RedundantCast")
+    @Test
     public void testRandomGaussian() {
         final double m = (double) 4.5;
         final double s = (double) 2.6;

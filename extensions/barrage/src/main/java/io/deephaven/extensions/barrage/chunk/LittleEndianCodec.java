@@ -25,6 +25,8 @@ final class LittleEndianCodec {
             MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
     private static final VarHandle SHORT =
             MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN);
+    private static final VarHandle CHAR =
+            MethodHandles.byteArrayViewVarHandle(char[].class, ByteOrder.LITTLE_ENDIAN);
     private static final VarHandle DOUBLE =
             MethodHandles.byteArrayViewVarHandle(double[].class, ByteOrder.LITTLE_ENDIAN);
     private static final VarHandle FLOAT =
@@ -40,6 +42,15 @@ final class LittleEndianCodec {
 
     static short getShort(final byte[] b, final int o) {
         return (short) SHORT.get(b, o);
+    }
+
+    static char getChar(final byte[] b, final int o) {
+        return (char) CHAR.get(b, o);
+    }
+
+    /** A single byte has no byte order; present so the replicated readers/writers can share one shape. */
+    static byte getByte(final byte[] b, final int o) {
+        return b[o];
     }
 
     static double getDouble(final byte[] b, final int o) {
@@ -60,6 +71,15 @@ final class LittleEndianCodec {
 
     static void putShort(final byte[] b, final int o, final short v) {
         SHORT.set(b, o, v);
+    }
+
+    static void putChar(final byte[] b, final int o, final char v) {
+        CHAR.set(b, o, v);
+    }
+
+    /** A single byte has no byte order; present so the replicated readers/writers can share one shape. */
+    static void putByte(final byte[] b, final int o, final byte v) {
+        b[o] = v;
     }
 
     static void putDouble(final byte[] b, final int o, final double v) {
