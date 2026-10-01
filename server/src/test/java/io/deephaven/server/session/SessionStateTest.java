@@ -992,7 +992,7 @@ public class SessionStateTest {
                 if (failure[0] != null) {
                     return;
                 }
-                // The creator holds nothing, so a listener may create an export from its callback.
+                // The creator holds its own export's monitor but not the map, so a listener may create an export.
                 session.newExport(createdFromCallbackId);
                 // returning releases the listener monitor, which lets the creator finish
             }

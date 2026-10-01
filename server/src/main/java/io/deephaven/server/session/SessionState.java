@@ -1102,7 +1102,7 @@ public class SessionState {
          * by {@link #createExport} when the export is published, since the constructor does not notify.
          */
         private synchronized void notifyListeners() {
-            // the export map must never be held while an export's monitor is, nor while listeners run
+            // the export map's monitor is a leaf: never held while taking an export's monitor or running listeners
             Assert.assertion(session == null || !Thread.holdsLock(session.exportMap),
                     "session == null || !Thread.holdsLock(session.exportMap)");
             if (exportId != NON_EXPORT_ID) {
