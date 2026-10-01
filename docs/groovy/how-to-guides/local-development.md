@@ -23,7 +23,7 @@ repositories {
     mavenCentral()
 }
 
-def dhcVersion = '0.37.0' // Use the version that matches your Deephaven server
+def dhcVersion = '42.5' // Use the version that matches your Deephaven server
 
 dependencies {
     implementation "io.deephaven:deephaven-engine-api:$dhcVersion"
@@ -36,7 +36,7 @@ dependencies {
     runtimeOnly 'org.slf4j:slf4j-simple:2.0.9'
     // Align with the Groovy version Deephaven itself uses to avoid a
     // conflicting Groovy runtime on the classpath.
-    implementation "org.codehaus.groovy:groovy:3.0.22"
+    implementation "org.codehaus.groovy:groovy:3.0.25"
 }
 ```
 
@@ -46,7 +46,7 @@ Add dependencies to your `pom.xml`:
 
 ```xml
 <properties>
-    <dhc.version>0.37.0</dhc.version> <!-- Use the version that matches your Deephaven server -->
+    <dhc.version>42.5</dhc.version> <!-- Use the version that matches your Deephaven server -->
 </properties>
 
 <dependencies>
@@ -95,7 +95,7 @@ Add dependencies to your `pom.xml`:
     <dependency>
         <groupId>org.codehaus.groovy</groupId>
         <artifactId>groovy</artifactId>
-        <version>3.0.22</version>
+        <version>3.0.25</version>
     </dependency>
 </dependencies>
 ```

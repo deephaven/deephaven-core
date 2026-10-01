@@ -17,12 +17,12 @@ pip install deephaven-server
 
 ### Related packages
 
-| Use case                             | Package                                      |
-| ------------------------------------ | -------------------------------------------- |
-| Connect to a remote Deephaven server | `pydeephaven`                                |
-| Read/write Parquet files             | `pyarrow` (included with `deephaven-server`) |
-| NumPy integration                    | `numpy` (included with `deephaven-server`)   |
-| Pandas integration                   | `pandas` (included with `deephaven-server`)  |
+| Use case                             | Package                                                       |
+| ------------------------------------ | ------------------------------------------------------------- |
+| Connect to a remote Deephaven server | `pydeephaven`                                                 |
+| Read/write Parquet files             | `deephaven.parquet` module (included with `deephaven-server`) |
+| NumPy integration                    | `numpy` (included with `deephaven-server`)                    |
+| Pandas integration                   | `pandas` (included with `deephaven-server`)                   |
 
 ## Local unit testing
 
@@ -186,7 +186,7 @@ my_project/
 └── README.md
 ```
 
-### Example pyproject.toml
+### Example `pyproject.toml`
 
 ```toml skip-test
 [project]
@@ -194,7 +194,7 @@ name = "my-deephaven-project"
 version = "0.1.0"
 requires-python = ">=3.9"
 dependencies = [
-  "deephaven-server>=0.37.0",
+  "deephaven-server>=42.5",
 ]
 
 [project.optional-dependencies]
