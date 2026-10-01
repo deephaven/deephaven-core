@@ -1,6 +1,5 @@
 ---
 title: Use Deephaven in a GCP Linux instance
-sidebar_label: GCP
 ---
 
 This guide will show you how to use the [Google Cloud Platform (GCP)](https://cloud.google.com/) to run [deephaven-core](https://github.com/deephaven/deephaven-core/) from [Docker](https://docker.com/). It will show you how to launch a single VM instance, deploy the Deephaven server container to it, and then connect via your local machine.

@@ -1,6 +1,5 @@
 ---
 title: How to use Deephaven in an AWS ECS instance
-sidebar_label: Use Deephaven with AWS ECS
 ---
 
 [Amazon Web Services](https://aws.amazon.com/) (AWS) is the world's most popular cloud computing service. It offers a wide variety of cloud solutions - these tend to pair well with Deephaven Community Core.

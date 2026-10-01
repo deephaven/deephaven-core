@@ -59,6 +59,7 @@ Sidebar rules:
 - Labels use sentence case.
 - Every group holds at least two items, unless it's listed as an intentional one-page group.
 - Every listed file exists.
+- Pages don't set `sidebar_label` in their front matter. The site ignores it; the sidebar label comes from `sidebar.json`, and the page's `title` can be a longer name.
 
 `./docs/validate` checks these rules, locally and in Docs CI. It runs `docs/tools/sidebar-check/check_sidebar.py` before the salmon validator.
 

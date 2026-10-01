@@ -3,7 +3,6 @@ title: Community Core Docs
 description: Learn how to use the Deephaven real-time query engine. Find getting started tutorials, practical how-to guides, deep conceptual explanations, detailed API references, and helpful cheat sheets.
 hide_title: true
 # hide_table_of_contents: true
-sidebar_label: Introduction
 slug: /docs
 ---
 

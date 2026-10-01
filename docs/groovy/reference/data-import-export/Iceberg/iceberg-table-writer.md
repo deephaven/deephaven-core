@@ -1,6 +1,5 @@
 ---
 title: IcebergTableWriter
-sidebar_label: IcebergTableWriter
 ---
 
 The `IcebergTableWriter` class is responsible for writing Deephaven tables to Iceberg tables. Each instance is associated with a single [`IcebergTableAdapter`](./iceberg-table-adapter.md) and is used to write multiple Deephaven tables to a single Iceberg table.

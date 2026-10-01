@@ -1,6 +1,5 @@
 ---
 title: Use TensorBoard with Deephaven
-sidebar_label: TensorBoard
 ---
 
 This guide will show you how to use [TensorBoard](https://www.tensorflow.org/tensorboard) with either [TensorFlow](https://www.tensorflow.org/) or [PyTorch](https://pytorch.org/) in Deephaven queries.

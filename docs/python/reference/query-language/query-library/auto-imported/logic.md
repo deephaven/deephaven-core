@@ -1,6 +1,5 @@
 ---
 title: Logic functions
-sidebar_label: Logic functions
 ---
 
 Boolean operations: and, or, not.

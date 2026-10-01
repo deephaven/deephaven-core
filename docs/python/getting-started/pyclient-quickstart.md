@@ -1,6 +1,5 @@
 ---
 title: Deephaven Community Core Quickstart for the Python Client
-sidebar_label: Python Client Quickstart
 ---
 
 Deephaven's Python client [`pydeephaven`](https://pypi.org/project/pydeephaven/) enables users to connect to a Deephaven server running anywhere in the world. This guide will walk you through installing [`pydeephaven`](https://pypi.org/project/pydeephaven/), connecting to a server, and using the client to perform some real-time data tasks.

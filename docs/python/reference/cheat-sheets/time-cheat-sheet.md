@@ -1,6 +1,5 @@
 ---
 title: Time Operations Cheatsheet
-sidebar_label: Time operations
 ---
 
 Deephaven is a real-time data platform. Many of the applications that Deephaven is used for time-stamped data in some way, and this guide outlines the toolbox at your disposal. The guide on [working with time in Deephaven](../../conceptual/time-in-deephaven.md) provides conceptual detail that is not covered here.

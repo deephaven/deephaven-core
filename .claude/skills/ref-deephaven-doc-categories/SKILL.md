@@ -84,11 +84,10 @@ definition, and two kinds of exception are common enough to expect, not treat as
 advice or extraneous tips. JavaDocs, PyDocs, and other API documentation are reference guides.
 - Tone: dry, formal, third-person, no contractions. **Exception:** the 50+ *individual Q&A pages*
   under `reference/community-questions/*` (not the directory's own index page — see below) are a
-  conversational Q&A format, not API documentation. The question isn't reliably in any one
-  field — `sidebar_label` usually carries it ("Does it make any difference if I separate table
-  operations or chain them together?"), but `title` doesn't always: `chained-operations.md`'s
-  `title` is the same question, while `why-do-my-python-type-hints-error.md`'s `title` is just
-  "Why" (truncated) and the actual question is in its body's opening `<em>` tag instead. Identify
+  conversational Q&A format, not API documentation. Each page's `title` is its question
+  ("Does it make any difference if I separate table operations or chain them together?"), and its
+  `sidebar.json` label may be a shorter form of it. Many bodies also restate the question in an
+  opening `<em>` tag (`why-do-my-python-type-hints-error.md` does). Identify
   these pages by directory and the Q&A shape of their content — a single question answered
   conversationally, often with an opening emphasized question — not by assuming any specific
   front-matter field always holds it. The body doesn't have to open with a first-person question

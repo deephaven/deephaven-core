@@ -7,6 +7,9 @@ Checks docs/python/sidebar.json and docs/groovy/sidebar.json for:
     - labels in Title Case instead of sentence case
     - capitalized Deephaven terms (for example "Execution Context") written in another case
 
+It also fails on any page that sets sidebar_label in its front matter. The site
+ignores that field and shows the label from sidebar.json instead.
+
 Intentional exceptions live in allowlist.json next to this script. The check
 also fails on allowlist entries that no longer match anything, so the list
 stays current.
@@ -27,6 +30,10 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.dirname(os.path.dirname(HERE))
 LANGUAGES = ["python", "groovy"]
+FRONT_MATTER = re.compile(r"---\n(.*?\n)---\n", re.DOTALL)
+
+# Problems that concern a page rather than sidebar.json, mapped to that page for annotations.
+FILE_FOR_ERROR = {}
 
 # A word that is capitalized but not all caps (APIs and acronyms like CSV pass).
 # Identifiers such as format_columns, deephaven.ui, and InputTable never match.
@@ -117,11 +124,32 @@ def check_language(lang, allow, used):
     return errors
 
 
+def check_front_matter(lang):
+    """Returns pages that set the unused sidebar_label front-matter field."""
+    errors = []
+    root = os.path.join(DOCS, lang)
+    for dirpath, _, files in os.walk(root):
+        for name in sorted(files):
+            if not name.endswith(".md"):
+                continue
+            path = os.path.join(dirpath, name)
+            with open(path, encoding="utf-8") as f:
+                match = FRONT_MATTER.match(f.read())
+            if match and re.search(r"^sidebar_label:", match.group(1), re.MULTILINE):
+                rel = os.path.relpath(path, root)
+                error = (f"{lang}: {rel} sets sidebar_label, which the site ignores. "
+                         "Remove it; the sidebar label comes from sidebar.json.")
+                FILE_FOR_ERROR[error] = f"docs/{lang}/{rel}"
+                errors.append(error)
+    return errors
+
+
 def annotate(error):
     """Prints a GitHub Actions error annotation for one problem."""
     source = error.split(":", 1)[0]
-    file = ("docs/tools/sidebar-check/allowlist.json" if source == "allowlist"
-            else f"docs/{source}/sidebar.json")
+    file = FILE_FOR_ERROR.get(error) or (
+        "docs/tools/sidebar-check/allowlist.json" if source == "allowlist"
+        else f"docs/{source}/sidebar.json")
     message = error.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
     print(f"::error file={file},title=Sidebar check::{message}")
 
@@ -132,6 +160,7 @@ def main():
     errors = []
     for lang in LANGUAGES:
         errors += check_language(lang, allow, used)
+        errors += check_front_matter(lang)
 
     for lang, groups in allow["single_page_groups"].items():
         errors += [f"allowlist: single-page group '{g}' ({lang}) no longer exists or has more items"

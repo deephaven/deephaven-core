@@ -1,6 +1,5 @@
 ---
 title: Use scikit-learn in Deephaven
-sidebar_label: scikit-learn
 ---
 
 This guide will show you how to use [scikit-learn](https://scikit-learn.org/stable/) in Deephaven queries.

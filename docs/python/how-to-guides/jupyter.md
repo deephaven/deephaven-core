@@ -1,6 +1,5 @@
 ---
 title: Use Deephaven in Jupyter
-sidebar_label: Jupyter
 ---
 
 This guide will show you how to use Deephaven from [Jupyter](https://jupyter.org/). Jupyter notebooks are powerful tools that simplify the process of sharing data science workflows to others through easy-to-follow interactive cells.

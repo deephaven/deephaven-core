@@ -1,6 +1,5 @@
 ---
 title: Chart Builder
-sidebar_label: Plot without writing queries
 ---
 
 Deephaven makes it easy to visualize your data. Users can plot data using the Deephaven Query Language, or directly in the Deephaven IDE user interface. This guide focuses on the Chart Builder feature.

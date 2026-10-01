@@ -1,6 +1,5 @@
 ---
 title: Use PyTorch in Deephaven
-sidebar_label: PyTorch
 ---
 
 This guide will show you how to use [PyTorch](https://pytorch.org) in Deephaven queries.
