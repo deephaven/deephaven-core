@@ -56,10 +56,12 @@ jobs:
             }
             core.setOutput('found', 'true');
       # Each suite is unzipped into its own directory so that two suites cannot collide on a
-      # path; the report globs through them either way.
+      # path; the report globs through them either way. unzip -d creates only the last
+      # component of the destination, so the results parent must already exist.
       - name: Unzip artifacts
         if: steps.download.outputs.found == 'true'
         run: |
+          mkdir -p results
           for zip in artifacts/*.zip; do
             unzip -q -o "$zip" -d "results/$(basename "$zip" .zip)"
           done
