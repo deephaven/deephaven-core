@@ -15,10 +15,7 @@
       // 17 & 25 Used for certain CI tests. TBD whether we need in devcontainer
       // "additionalVersions": "17,25",
       "jdkDistro": "tem",
-      "gradleVersion": "latest",
-      "mavenVersion": "latest",
-      "antVersion": "latest",
-      "groovyVersion": "latest"
+      "gradleVersion": "latest"
     },
     "ghcr.io/devcontainers/features/node:1": {
       "nodeGypDependencies": true,

@@ -31,7 +31,9 @@ warn() {
 VENV_DIR="/usr/local/share/deephaven-core/venv"
 VENV_PARENT="$(dirname "$VENV_DIR")"
 
-if [ ! -x "$VENV_DIR/bin/python" ]; then
+# Test for pip, not python: venv creates bin/python before ensurepip runs, so a failed ensurepip
+# would otherwise leave a venv that post-start.sh rejects and a rerun here never repairs.
+if [ ! -x "$VENV_DIR/bin/pip" ]; then
   # /usr/local/share is root-owned; hand the parent over before creating the venv unprivileged.
   if sudo -n mkdir -p "$VENV_PARENT" 2> /dev/null &&
     sudo -n chown "$(id -un)" "$VENV_PARENT" 2> /dev/null; then
