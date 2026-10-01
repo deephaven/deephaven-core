@@ -1164,7 +1164,7 @@
               },
               {
                 "label": "Custom environment variables",
-                "path": "how-to-guides/custom-environmental-variables.md"
+                "path": "how-to-guides/custom-environment-variables.md"
               },
               {
                 "label": "Periodic Update Graph configuration",
