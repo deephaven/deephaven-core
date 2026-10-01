@@ -68,7 +68,7 @@ with (
 #### ADBC Java
 
 The [ADBC Java](https://arrow.apache.org/adbc/current/java/index.html) library (driver manager) loads the Flight SQL driver, and is simple to use from Java.
-[Installation](https://arrow.apache.org/adbc/current/java/quickstart.html) requires a dependency on `org.apache.arrow.adbc.adbc-driver-jni`.
+[Installation](https://arrow.apache.org/adbc/current/java/quickstart.html) requires a dependency on `org.apache.arrow.adbc:adbc-driver-jni`.
 
 ```java skip-test
 final String DRIVER_FACTORY = "org.apache.arrow.adbc.driver.jni.JniDriverFactory";
