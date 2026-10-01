@@ -362,6 +362,7 @@ public class SessionState {
      *         one; null if the id has been released
      */
     private <T> ExportObject<T> createExport(final int exportId) {
+        Assert.assertion(!Thread.holdsLock(exportMap), "!Thread.holdsLock(exportMap)");
         final ExportObject<T> created = new ExportObject<>(errorTransformer, this, exportId);
         ExportObject<T> published = null;
         try {
@@ -1101,6 +1102,9 @@ public class SessionState {
          * by {@link #createExport} when the export is published, since the constructor does not notify.
          */
         private synchronized void notifyListeners() {
+            // the export map must never be held while an export's monitor is, nor while listeners run
+            Assert.assertion(session == null || !Thread.holdsLock(session.exportMap),
+                    "session == null || !Thread.holdsLock(session.exportMap)");
             if (exportId != NON_EXPORT_ID) {
                 log.debug().append(session.logPrefix).append("export '").append(logIdentity)
                         .append("' is ExportState.").append(state.name()).endl();
