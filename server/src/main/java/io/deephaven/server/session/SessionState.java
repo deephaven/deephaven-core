@@ -592,6 +592,10 @@ public class SessionState {
      * <p>
      * If called after the session has expired, this will throw, and the close() method on the provided instance will
      * not be called.
+     * <p>
+     * Because of that, this call must be the first side-effecting step of attaching an object to the session: register
+     * first, then publish (add to a map, hand to another observer, create exports). Anything published before a throw
+     * from this method is unreachable by session teardown and must be undone by the caller.
      *
      * @param onClose the callback to invoke at end-of-life
      */

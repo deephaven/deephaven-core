@@ -1716,6 +1716,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         static final SecureRandom SECURE_RANDOM = new SecureRandom();
     }
 
+    @VisibleForTesting
+    int numPreparedStatements() {
+        return preparedStatements.size();
+    }
+
     private static ByteString randomHandleId() {
         // While we don't _rely_ on security through obscurity, we don't want to have a simple incrementing counter
         // since it would be trivial to deduce other users' handleIds.
@@ -1745,8 +1750,10 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             this.parameterizedQuery = Objects.requireNonNull(parameterizedQuery);
             this.handleId = randomHandleId();
             this.queries = new HashSet<>();
-            preparedStatements.put(handleId, this);
+            // Register before publishing: if the session has expired this throws, and nothing published before it
+            // would ever be cleaned up.
             this.session.addOnCloseCallback(onSessionClosedCallback = this::onSessionClosed);
+            preparedStatements.put(handleId, this);
         }
 
         public ByteString handleId() {
