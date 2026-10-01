@@ -1,1 +1,1 @@
-{"file":"core/docs/getting-started/crash-course/deephaven-ui.md","objects":{}}
+{"file":"getting-started/crash-course/deephaven-ui.md","objects":{"hello_world":{"type":"deephaven.ui.Element","data":{"document":{"__dhElemName":"deephaven.ui.components.Heading","props":{"children":["Hello World"],"level":3}},"state":"{}"}}}}

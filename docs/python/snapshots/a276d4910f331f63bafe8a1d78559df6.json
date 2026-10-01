@@ -1,1 +1,1 @@
-{"file":"core/docs/getting-started/crash-course/deephaven-ui.md","objects":{}}
+{"file":"getting-started/crash-course/deephaven-ui.md","objects":{"button":{"type":"deephaven.ui.Element","data":{"document":{"__dhElemName":"deephaven.ui.components.Button","props":{"variant":"accent","style":"fill","type":"button","onPress":{"__dhCbid":"cb0"},"children":"Click me!"}},"state":"{}"}}}}
