@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
@@ -250,12 +251,42 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
      * the class comment depends on. (Before prev tracking starts, 'updates' and 'baseline' are the same map, whose
      * no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass answers every key and the baseline pass is empty.)
      */
+    /**
+     * A fill context that owns the scratch the mixed path of {@link #fillChunk} needs: the keys a chunk did not find in
+     * 'updates', where they sat in the chunk, and what 'baseline' says about them. A caller that fills many chunks
+     * through one context, as RedirectedColumnSource does, allocates them once instead of once per chunk; the fill only
+     * reaches for them when a chunk is split between the two maps.
+     */
+    private static final class FillContext implements ChunkSource.FillContext {
+        private final WritableLongChunk<RowKeys> missingKeys;
+        private final WritableLongChunk<RowKeys> missingValues;
+        private final WritableIntChunk<ChunkPositions> missingPositions;
+
+        private FillContext(final int chunkCapacity) {
+            missingKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+            missingValues = WritableLongChunk.makeWritableChunk(chunkCapacity);
+            missingPositions = WritableIntChunk.makeWritableChunk(chunkCapacity);
+        }
+
+        @Override
+        public void close() {
+            missingKeys.close();
+            missingValues.close();
+            missingPositions.close();
+        }
+    }
+
+    @Override
+    public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+        return new FillContext(chunkCapacity);
+    }
+
     @Override
     public void fillChunk(
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        fillFromMaps(outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
+        fillFromMaps(fillContext, updates, baseline, outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
     }
 
     @Override
@@ -263,7 +294,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys) {
-        fillFromMaps(outerRowKeys, innerRowKeys.asWritableLongChunk());
+        fillFromMaps(fillContext, updates, baseline, outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
     @Override
@@ -282,21 +313,20 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         baseline.get(outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
-    private void fillFromMaps(
+    private static void fillFromMaps(
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final NullableLongLongMap updates,
+            @NotNull final NullableLongLongMap baseline,
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
             @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys) {
-        // Probe 'updates' first: its volatile array read is the acquire that the class comment's argument #1 rests
-        // on, and it is what makes the entries the writer's commit copied into 'baseline' visible to a reader whose
-        // probe saw the post-commit 'updates' array. The keys the probe does not answer are then read from 'baseline'.
-        final NullableLongLongMap localUpdates = this.updates;
-        final int found = localUpdates.get(outerRowKeys, innerRowKeys);
-        final NullableLongLongMap localBaseline = this.baseline;
-        if (localUpdates == localBaseline) {
-            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and
-            // the probe above answered every key.
+        if (updates == baseline) {
+            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and it
+            // answers every key.
+            baseline.get(outerRowKeys, innerRowKeys);
             return;
         }
         final int size = outerRowKeys.size();
+        final int found = updates.get(outerRowKeys, innerRowKeys);
         if (found == size) {
             return;
         }
@@ -314,27 +344,56 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             // the commit had not finished publishing, and return a stale value for a key updated that cycle. Probing
             // first and acting on the probe's result keeps the acquire where the protocol puts it; the fast path only
             // spares the gather.
-            localBaseline.get(outerRowKeys, innerRowKeys);
+            baseline.get(outerRowKeys, innerRowKeys);
             return;
         }
         // Keys not present in 'updates' get their result from 'baseline': gather them into a dense chunk, do one
-        // chunked lookup, and scatter the results back.
+        // chunked lookup, and scatter the results back. The scratch comes from the fill context when the caller made
+        // one of ours (RedirectedColumnSource makes one per fill context and reuses it across chunks); a caller
+        // holding the default context, which has no state, gets scratch allocated for this call.
+        if (fillContext instanceof FillContext) {
+            final FillContext ctx = (FillContext) fillContext;
+            gatherFromBaseline(baseline, outerRowKeys, innerRowKeys, missingCount,
+                    ctx.missingKeys, ctx.missingValues, ctx.missingPositions);
+            return;
+        }
         try (final WritableLongChunk<RowKeys> missingKeys = WritableLongChunk.makeWritableChunk(missingCount);
                 final WritableLongChunk<RowKeys> missingValues = WritableLongChunk.makeWritableChunk(missingCount);
                 final WritableIntChunk<ChunkPositions> missingPositions =
                         WritableIntChunk.makeWritableChunk(missingCount)) {
-            int mi = 0;
-            for (int ii = 0; ii < size; ++ii) {
-                if (innerRowKeys.get(ii) == UPDATES_KEY_NOT_FOUND) {
-                    missingPositions.set(mi, ii);
-                    missingKeys.set(mi, outerRowKeys.get(ii));
-                    ++mi;
-                }
+            gatherFromBaseline(baseline, outerRowKeys, innerRowKeys, missingCount,
+                    missingKeys, missingValues, missingPositions);
+        }
+    }
+
+    /**
+     * The mixed path's second half: the keys 'updates' did not have, gathered into {@code missingKeys} with their
+     * positions, looked up in 'baseline' in one call, and scattered back into {@code innerRowKeys}. The scratch chunks
+     * need capacity for {@code missingCount}; their sizes are set here.
+     */
+    private static void gatherFromBaseline(
+            @NotNull final NullableLongLongMap baseline,
+            @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
+            @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys,
+            final int missingCount,
+            @NotNull final WritableLongChunk<RowKeys> missingKeys,
+            @NotNull final WritableLongChunk<RowKeys> missingValues,
+            @NotNull final WritableIntChunk<ChunkPositions> missingPositions) {
+        final int size = outerRowKeys.size();
+        missingKeys.setSize(missingCount);
+        missingValues.setSize(missingCount);
+        missingPositions.setSize(missingCount);
+        int mi = 0;
+        for (int ii = 0; ii < size; ++ii) {
+            if (innerRowKeys.get(ii) == UPDATES_KEY_NOT_FOUND) {
+                missingPositions.set(mi, ii);
+                missingKeys.set(mi, outerRowKeys.get(ii));
+                ++mi;
             }
-            localBaseline.get(missingKeys, missingValues);
-            for (int ii = 0; ii < missingCount; ++ii) {
-                innerRowKeys.set(missingPositions.get(ii), missingValues.get(ii));
-            }
+        }
+        baseline.get(missingKeys, missingValues);
+        for (int ii = 0; ii < missingCount; ++ii) {
+            innerRowKeys.set(missingPositions.get(ii), missingValues.get(ii));
         }
     }
 
