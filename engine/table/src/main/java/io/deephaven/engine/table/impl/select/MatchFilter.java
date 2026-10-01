@@ -9,6 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
@@ -51,12 +52,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /** A fail-over WhereFilter supplier should the match filter initialization fail. */
     private final CachingSupplier<ConditionFilter> failoverFilter;
+    /**
+     * Whether init failed over, so that this filter delegates to the (initialized) failover. That the supplier has
+     * cached a failover is no substitute: copies, renames and a failover whose own init failed all fill its cache
+     * without this filter failing over.
+     */
+    private boolean failedOver;
 
     @NotNull
     private String columnName;
     private Class<?> columnType;
     private Object[] values;
-    private final String[] strValues;
+    private String[] strValues;
     private final MatchOptions matchOptions;
 
     private boolean initialized;
@@ -66,18 +73,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
      *
      * @param matchOptions options controlling how the match is performed
      * @param columnName the column name to match against
-     * @param values the values to match
+     * @param values the values to match, any of which may be null
      */
     public MatchFilter(
             @NotNull final MatchOptions matchOptions,
             @NotNull final String columnName,
-            @Nullable final Object... values) {
+            @NotNull final Object... values) {
         this(null, matchOptions, columnName, null, values);
     }
 
     /**
      * Create a new MatchFilter with either string values (which may be converted to actual values) or a list of values
-     * to match.
+     * to match. Exactly one of {@code strValues} and {@code values} must be non-null.
      *
      * @param failoverFilter a fail-over WhereFilter supplier should the match filter initialization fail
      * @param matchOptions options controlling how the match is performed
@@ -95,20 +102,30 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         this.failoverFilter = failoverFilter;
         this.matchOptions = matchOptions;
         this.columnName = columnName;
-        if (strValues != null && values != null) {
-            throw new IllegalArgumentException("Only one of `strValues` or `values` should be specified");
+        if ((strValues == null) == (values == null)) {
+            throw new IllegalArgumentException("Exactly one of `strValues` or `values` must be specified");
         }
         this.strValues = strValues;
         this.values = values;
     }
 
+    /**
+     * @return the {@link ConditionFilter} this filter delegates to because init failed over, or null if it did not
+     */
     @InternalUseOnly
     @Nullable
-    public ConditionFilter getFailoverFilterIfCached() {
-        return failoverFilter != null ? failoverFilter.getIfCached() : null;
+    public ConditionFilter getFailoverFilter() {
+        return failedOver ? failoverFilter.get() : null;
     }
 
     public WhereFilter renameFilter(Map<String, String> renames) {
+        final ConditionFilter failover = getFailoverFilter();
+        if (failover != null) {
+            // The failover defines this filter, and uses columns that the renames may cover without covering ours. A
+            // renamed MatchFilter would re-convert its values against the renamed table, where a column this filter
+            // compares with may instead resolve as a query-scope variable.
+            return failover.renameFilter(renames);
+        }
         final String newName = renames.get(columnName);
         Assert.neqNull(newName, "newName");
         if (strValues == null) {
@@ -188,7 +205,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         if (!initialized) {
             throw new IllegalStateException("Filter must be initialized to invoke getColumnName");
         }
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.getColumns();
         }
@@ -200,7 +217,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         if (!initialized) {
             throw new IllegalStateException("Filter must be initialized to invoke getColumnArrays");
         }
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.getColumnArrays();
         }
@@ -212,15 +229,29 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         if (!initialized) {
             throw new IllegalStateException("Filter must be initialized to invoke hasVirtualRowVariables");
         }
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         return failover != null && failover.hasVirtualRowVariables();
     }
 
     @Override
     public boolean canPushdown() {
         // The failover is not visible to a walk of the filter tree, so answer for it here.
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         return failover == null || failover.canPushdown();
+    }
+
+    @Override
+    public void validateSafeForRefresh(final BaseTable<?> sourceTable) {
+        final WhereFilter failover = getFailoverFilter();
+        if (failover != null) {
+            failover.validateSafeForRefresh(sourceTable);
+        }
+    }
+
+    @Override
+    public boolean permitParallelization() {
+        final WhereFilter failover = getFailoverFilter();
+        return failover == null || failover.permitParallelization();
     }
 
     @Override
@@ -243,7 +274,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     // fix up for the case where column name and variable name were swapped
                     String tmp = columnName;
                     columnName = strValues[0];
-                    strValues[0] = tmp;
+                    strValues = new String[] {tmp};
                 } else {
                     throw new RuntimeException("Column \"" + columnName
                             + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
@@ -272,6 +303,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             } catch (final RuntimeException ignored) {
                 throw err;
             }
+            failedOver = true;
         }
         initialized = true;
     }
@@ -280,7 +312,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     @Override
     public WritableRowSet filter(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.filter(selection, fullSet, table, usePrev);
         }
@@ -296,7 +328,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             @NotNull final RowSet fullSet,
             @NotNull final Table table,
             final boolean usePrev) {
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.filterInverse(selection, fullSet, table, usePrev);
         }
@@ -311,7 +343,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     @Override
     public Optional<ChunkFilter> chunkFilter() {
         if (chunkFilter == null) {
-            final WhereFilter failover = getFailoverFilterIfCached();
+            final WhereFilter failover = getFailoverFilter();
             if (failover != null) {
                 if (failover instanceof ExposesChunkFilter) {
                     return ((ExposesChunkFilter) failover).chunkFilter();
@@ -328,7 +360,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     @Override
     public boolean isSimpleFilter() {
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.isSimpleFilter();
         }
@@ -338,11 +370,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /**
      * Return an {@link Optional} containing the {@link MatchFilter} if the provided filter is a match filter that can
-     * be pushed down (i.e. is not implemented by a ConditionFilter). Otherwise returns {@code Optional.empty()}.
+     * be pushed down (i.e. is not implemented by a ConditionFilter, and has values to match). Otherwise returns
+     * {@code Optional.empty()}.
      */
     public static Optional<MatchFilter> extractMatchFilter(WhereFilter filter) {
-        if (filter instanceof MatchFilter &&
-                ((MatchFilter) filter).getFailoverFilterIfCached() == null) {
+        if (filter instanceof MatchFilter
+                && ((MatchFilter) filter).getFailoverFilter() == null
+                && ((MatchFilter) filter).getValues() != null) {
             return Optional.of((MatchFilter) filter);
         }
         return Optional.empty();
@@ -914,7 +948,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             return false;
         }
 
-        return Objects.equals(getFailoverFilterIfCached(), that.getFailoverFilterIfCached());
+        return Objects.equals(getFailoverFilter(), that.getFailoverFilter());
     }
 
     @Override
@@ -932,35 +966,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     @Override
     public boolean canMemoize() {
         // we can be memoized once our values have been initialized; but not before
-        return initialized && (getFailoverFilterIfCached() == null || getFailoverFilterIfCached().canMemoize());
+        return initialized && (getFailoverFilter() == null || getFailoverFilter().canMemoize());
     }
 
     @Override
     public WhereFilter copy() {
         final MatchFilter copy;
         if (strValues != null) {
-            if (!initialized) {
-                // Wrap the failover filter supplier if it exists.
-                final CachingSupplier<ConditionFilter> copiedSupplier =
-                        failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy());
-                copy = new MatchFilter(copiedSupplier, matchOptions, columnName, strValues, null);
-            } else {
-                final ConditionFilter cachedFilter = getFailoverFilterIfCached();
-                if (cachedFilter == null) {
-                    // Not failing over, we will do normal matching. The supplier is never invoked by the copy, but it
-                    // is provided so that a renameFilter() of the copy can still fail over.
-                    copy = new MatchFilter(
-                            failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
-                            matchOptions, columnName, strValues, null);
-                } else {
-                    // Already in failover mode. The cached filter is copied and wrapped in a new supplier for the copy.
-                    final ConditionFilter copiedFilter = cachedFilter.copy();
-                    final CachingSupplier<ConditionFilter> copiedSupplier = new CachingSupplier<>(() -> copiedFilter);
-                    // Force the copied supplier to populate the cache.
-                    copiedSupplier.get();
-                    copy = new MatchFilter(copiedSupplier, matchOptions, columnName, strValues, null);
-                }
-            }
+            // The supplier copies our failover lazily: a copy that fails over (below) gets a copy of our initialized
+            // failover, and one that does not still needs it so that a renameFilter() of the copy can fail over.
+            copy = new MatchFilter(
+                    failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
+                    matchOptions, columnName, strValues, null);
         } else {
             // when we're constructed with values then there is no failover filter
             copy = new MatchFilter(matchOptions, columnName, values);
@@ -969,6 +986,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             copy.initialized = true;
             copy.values = values;
             copy.columnType = columnType;
+            // If we failed over, the copy must too, or it would claim to be initialized without any values to match.
+            copy.failedOver = failedOver;
         }
         return copy;
     }

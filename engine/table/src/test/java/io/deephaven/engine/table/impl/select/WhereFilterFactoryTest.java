@@ -533,13 +533,13 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
             final WhereFilter f = WhereFilterFactory.getExpression(expression);
             f.init(t.getDefinition());
             assertTrue(f instanceof MatchFilter);
-            assertNotNull("sanity: " + expression + " fails over", ((MatchFilter) f).getFailoverFilterIfCached());
+            assertNotNull("sanity: " + expression + " fails over", ((MatchFilter) f).getFailoverFilter());
 
             final WhereFilter copy = f.copy();
             assertNotNull(expression + ": the copy must carry the failover",
-                    ((MatchFilter) copy).getFailoverFilterIfCached());
-            assertNotSame(((MatchFilter) f).getFailoverFilterIfCached(),
-                    ((MatchFilter) copy).getFailoverFilterIfCached());
+                    ((MatchFilter) copy).getFailoverFilter());
+            assertNotSame(((MatchFilter) f).getFailoverFilter(),
+                    ((MatchFilter) copy).getFailoverFilter());
 
             try (final RowSet expected = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
                     final RowSet actual = copy.filter(t.getRowSet().copy(), t.getRowSet(), t, false)) {
