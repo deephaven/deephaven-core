@@ -1,1 +1,1 @@
-{"file":"conceptual/table-types.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"}],"rows":[]}}}}
+{"file":"core/docs/conceptual/table-types.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"}],"rows":[]}}}}

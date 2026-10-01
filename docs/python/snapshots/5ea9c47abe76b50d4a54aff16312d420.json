@@ -1,1 +1,1 @@
-{"file":"how-to-guides/use-numba.md","objects":{":log":{"type":"Log","data":"Execution time (without JIT) = 0.0079803466796875\nExecution time (JIT + compilation) = 0.04128146171569824\nExecution time (JIT) = 7.557868957519531e-05\n"}}}
+{"file":"how-to-guides/use-numba.md","objects":{":log":{"type":"Log","data":"Execution time (without JIT) = 0.007965087890625\nExecution time (JIT + compilation) = 0.047128915786743164\nExecution time (JIT) = 7.891654968261719e-05\n"}}}

@@ -1,1 +1,1 @@
-{"file":"conceptual/table-types.md","objects":{"t_ring_without_initial":{"type":"Table","data":{"columns":[{"name":"X","type":"long"}],"rows":[]}}}}
+{"file":"core/docs/conceptual/table-types.md","objects":{"t_ring_without_initial":{"type":"Table","data":{"columns":[{"name":"X","type":"long"}],"rows":[]}}}}

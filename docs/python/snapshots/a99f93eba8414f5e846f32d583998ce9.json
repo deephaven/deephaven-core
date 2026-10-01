@@ -1,1 +1,1 @@
-{"file":"how-to-guides/data-import-export/kafka-stream.md","objects":{"source_group":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"java.lang.Object"},{"name":"Y","type":"int"}],"rows":[]}}}}
+{"file":"core/docs/reference/data-import-export/Kafka/produce.md","objects":{"source_group":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"java.lang.String"},{"name":"Y","type":"int"}],"rows":[]}}}}

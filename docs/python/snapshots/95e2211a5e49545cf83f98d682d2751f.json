@@ -1,1 +1,1 @@
-{"file":"getting-started/crash-course/deephaven-ui.md","objects":{"foo_bar":{"type":"deephaven.ui.Element","data":{"document":{"__dhElemName":"__main__.ui_foo_bar","props":{"children":[{"__dhElemName":"deephaven.ui.components.Heading","props":{"children":["Click button below"],"level":3}},{"__dhElemName":"deephaven.ui.components.Button","props":{"variant":"accent","style":"fill","type":"button","onPress":{"__dhCbid":"cb0"},"children":"Click Me!"}}]}},"state":"{}"}}}}
+{"file":"core/docs/getting-started/crash-course/deephaven-ui.md","objects":{}}

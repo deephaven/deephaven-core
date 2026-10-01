@@ -1,1 +1,1 @@
-{"file":"how-to-guides/business-calendar.md","objects":{":log":{"type":"Log","data":"['USBANK_EXAMPLE', 'USNYSE_EXAMPLE', 'UTC']\n<class 'io.deephaven.time.calendar.BusinessCalendar'>\n"}}}
+{"file":"core/docs/how-to-guides/business-calendar.md","objects":{":log":{"type":"Log","data":"['USBANK_EXAMPLE', 'USNYSE_EXAMPLE', 'UTC']\n<class 'io.deephaven.time.calendar.BusinessCalendar'>\n"}}}
