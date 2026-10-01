@@ -51,7 +51,7 @@ Deephaven offers several pre-built Docker images that can be downloaded and used
 - `server-slim`: Groovy
 - `server-nltk`: Python with [NLTK](https://www.nltk.org/)
 - `server-pytorch`: Python with [PyTorch](https://pytorch.org/)
-- `server-sklearn`: Python with [SciKit-Learn](https://scikit-learn.org/stable/)
+- `server-sklearn`: Python with [scikit-learn](https://scikit-learn.org/stable/)
 - `server-tensorflow`: Python with [TensorFlow](https://www.tensorflow.org/)
 
 Deephaven also has many pre-built `docker-compose.yml` files that build the images above with some additional features, including [example data](https://github.com/deephaven/examples) and [Redpanda](https://redpanda.com/). They are located [here](https://github.com/deephaven/deephaven-core/tree/main/containers).

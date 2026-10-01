@@ -353,7 +353,7 @@ iris_predicted_live = learn.learn(
 - [How to install and use Python packages](./install-and-use-python-packages.md)
 - [How to use deephaven.learn](./use-deephaven-learn.md)
 - [How to use PyTorch](./use-pytorch.md)
-- [How to use SciKit-Learn](./use-scikit-learn.md)
+- [How to use scikit-learn](./use-scikit-learn.md)
 - [Python variables in query strings](./python-variables.md)
 - [Python functions in query strings](./python-functions.md)
 - [Python classes and objects in query strings](./python-classes.md)

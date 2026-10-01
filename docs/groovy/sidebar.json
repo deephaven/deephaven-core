@@ -171,18 +171,18 @@
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
               },
               {
-                "label": "Arrow/Barrage Schema",
+                "label": "Arrow/Barrage schema",
                 "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "CSV",
                 "items": [
                   {
-                    "label": "Import CSV files",
+                    "label": "Read CSV files",
                     "path": "how-to-guides/data-import-export/csv-import.md"
                   },
                   {
-                    "label": "Export CSV files",
+                    "label": "Write CSV files",
                     "path": "how-to-guides/data-import-export/csv-export.md"
                   },
                   {
@@ -199,7 +199,7 @@
                     "path": "how-to-guides/data-import-export/html-import.md"
                   },
                   {
-                    "label": "Export HTML files",
+                    "label": "Convert tables to HTML",
                     "path": "how-to-guides/data-import-export/html-export.md"
                   }
                 ]
@@ -212,7 +212,7 @@
                 "label": "Kafka",
                 "items": [
                   {
-                    "label": "Kafka Overview",
+                    "label": "Kafka overview",
                     "path": "how-to-guides/overview-kafka.md"
                   },
                   {
@@ -237,11 +237,11 @@
                     "path": "how-to-guides/data-import-export/parquet-formats.md"
                   },
                   {
-                    "label": "Import Parquet files",
+                    "label": "Read Parquet files",
                     "path": "how-to-guides/data-import-export/parquet-import.md"
                   },
                   {
-                    "label": "Export to Parquet",
+                    "label": "Write Parquet files",
                     "path": "how-to-guides/data-import-export/parquet-export.md"
                   },
                   {
@@ -284,7 +284,7 @@
                 "path": "how-to-guides/drop-move-rename-columns.md"
               },
               {
-                "label": "Apply color formatting to columns",
+                "label": "Format columns",
                 "path": "how-to-guides/format-columns.md"
               },
               {
@@ -345,7 +345,7 @@
                 "label": "Join",
                 "items": [
                   {
-                    "label": "Exact and Relational Joins",
+                    "label": "Exact and relational joins",
                     "path": "how-to-guides/joins-exact-relational.md"
                   },
                   {
@@ -479,7 +479,7 @@
                     "path": "how-to-guides/built-in-constants.md"
                   },
                   {
-                    "label": "Built-in Variables",
+                    "label": "Built-in variables",
                     "path": "how-to-guides/built-in-variables.md"
                   },
                   {
@@ -504,7 +504,7 @@
                     "path": "how-to-guides/groovy-closures.md"
                   },
                   {
-                    "label": "Classes & Objects",
+                    "label": "Classes & objects",
                     "path": "how-to-guides/groovy-classes.md"
                   }
                 ]
@@ -519,7 +519,7 @@
                 "path": "conceptual/execution-context.md"
               },
               {
-                "label": "Liveness Scopes",
+                "label": "Liveness Scope",
                 "path": "conceptual/liveness-scope-concept.md"
               },
               {
@@ -648,7 +648,7 @@
                     "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
                   },
                   {
-                    "label": "Create input tables",
+                    "label": "Create Input Tables",
                     "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
                   },
                   {
@@ -669,7 +669,7 @@
                     "path": "how-to-guides/java-client.md"
                   },
                   {
-                    "label": "Stream data with input tables",
+                    "label": "Stream data with Input Tables",
                     "path": "how-to-guides/java-client-input-tables.md"
                   }
                 ]
@@ -835,7 +835,7 @@
                     "path": "how-to-guides/data-indexes.md"
                   },
                   {
-                    "label": "Predicate Pushdown Filtering",
+                    "label": "Predicate Pushdown filtering",
                     "path": "how-to-guides/predicate-pushdown.md"
                   },
                   {
@@ -1033,7 +1033,7 @@
                 "path": "how-to-guides/configuration/configuration-properties.md"
               },
               {
-                "label": "Web Defaults",
+                "label": "Web defaults",
                 "path": "how-to-guides/configuration/configure-web.md"
               },
               {
@@ -1041,8 +1041,8 @@
                 "path": "how-to-guides/configuration/js-plugins.md"
               },
               {
-                "label": "Custom environmental variables",
-                "path": "how-to-guides/custom-environmental-variables.md"
+                "label": "Custom environment variables",
+                "path": "how-to-guides/custom-environment-variables.md"
               },
               {
                 "label": "Periodic Update Graph configuration",
@@ -2040,7 +2040,7 @@
                     "path": "reference/table-operations/join/left-outer-join.md"
                   },
                   {
-                    "label": "Multi-Join",
+                    "label": "Multi-join",
                     "path": "reference/table-operations/join/multijoin.md"
                   },
                   {
@@ -2662,7 +2662,7 @@
                 "label": "Variables",
                 "items": [
                   {
-                    "label": "Query scope",
+                    "label": "Query Scope",
                     "path": "reference/query-language/variables/scope.md"
                   },
                   {
@@ -2775,11 +2775,11 @@
             "label": "Imports",
             "items": [
               {
-                "label": "Automatic Groovy Imports",
+                "label": "Automatic Groovy imports",
                 "path": "reference/groovy/groovy-auto-imports.md"
               },
               {
-                "label": "Backend Imports",
+                "label": "Backend imports",
                 "path": "reference/groovy/backend-imports.md"
               },
               {
@@ -2890,7 +2890,7 @@
             "label": "FAQs",
             "items": [
               {
-                "label": "FAQ Overview",
+                "label": "FAQ overview",
                 "path": "reference/community-questions/cq-index.md"
               },
               {

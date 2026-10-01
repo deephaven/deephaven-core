@@ -314,5 +314,5 @@ So, you have a trained AI/ML model and aren't sure which workflow to use. Here a
 
 - [`deephaven.learn`](./use-deephaven-learn.md)
 - [PyTorch in Deephaven](./use-pytorch.md)
-- [SciKit-Learn in Deephaven](./use-scikit-learn.md)
+- [scikit-learn in Deephaven](./use-scikit-learn.md)
 - [TensorFlow in Deephaven](./use-tensorflow.md)

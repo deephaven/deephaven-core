@@ -231,7 +231,7 @@ This is overkill for simply adding two columns. This can easily be done with som
 
 In this section, we integrate the following popular AI packages:
 
-- [SciKit-Learn](https://scikit-learn.org/stable/)
+- [scikit-learn](https://scikit-learn.org/stable/)
 - [TensorFlow](https://www.tensorflow.org/)
 
 These modules are not a part of the base Deephaven Docker image. Refer to our guide [How to install Python packages](./install-and-use-python-packages.md) for an explanation of how to install these modules.
@@ -239,12 +239,12 @@ These modules are not a part of the base Deephaven Docker image. Refer to our gu
 Examples exist in our documentation that cover specific Python modules. Those, on top of what's presented below, serve as a good reference for how to use the Python modules themselves, as well as [`deephaven.learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn). Here is a list of how-to guides for specific packages that cover their use both with and without [`deephaven.learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn):
 
 - [How to use PyTorch in Deephaven](./use-pytorch.md)
-- [How to use SciKit-Learn in Deephaven](./use-scikit-learn.md)
+- [How to use scikit-learn in Deephaven](./use-scikit-learn.md)
 - [How to use TensorFlow in Deephaven](./use-tensorflow.md)
 
-### Predict insurance charges using SciKit-Learn and Deephaven
+### Predict insurance charges using scikit-learn and Deephaven
 
-This first example uses a linear regression model from [SciKit-Learn](https://scikit-learn.org/stable/). This model will predict insurance charges for customers depending on a few different health factors.
+This first example uses a linear regression model from [scikit-learn](https://scikit-learn.org/stable/). This model will predict insurance charges for customers depending on a few different health factors.
 
 The code uses this [insurance dataset](https://www.kaggle.com/datasets/teertha/ushealthinsurancedataset), which can be found in [Deephaven's Examples repository](https://github.com/deephaven/examples). If you are using a Deephaven deployment with example data, it is mounted at `/data/examples/Insurance/csv` within the Deephaven Docker container. For more information on this location, see our guide [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md).
 
@@ -454,7 +454,7 @@ testing_predictions = testing_predictions.view(
 
 - [How to install and use Python packages in Deephaven](./install-and-use-python-packages.md)
 - [How to use PyTorch](./use-pytorch.md)
-- [How to use SciKit-Learn](./use-scikit-learn.md)
+- [How to use scikit-learn](./use-scikit-learn.md)
 - [How to use TensorFlow](./use-tensorflow.md)
 - [How to write data to a real-time, in-memory table](./table-publisher.md)
 - [`drop_columns`](../reference/table-operations/select/drop-columns.md)
