@@ -48,7 +48,7 @@ np_subtables = dhnp.to_numpy(result, "X")
 np_result_a = np_subtables[0][0]
 np_result_b = np_subtables[1][0]
 
-pd_subtables = dhpd.to_pandas(result, ["X"])
+pd_subtables = dhpd.to_pandas(result, ["X"], dtype_backend=None)
 
 pd_result_a = pd_subtables["X"][0]
 pd_result_b = pd_subtables["X"][1]
