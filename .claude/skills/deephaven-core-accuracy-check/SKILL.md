@@ -153,6 +153,6 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 - [ ] Every worked example demonstrating "you need X" checked for whether X is actually load-bearing, given every other mechanism already active in that example
 - [ ] Every classification (supported/unsupported, parallelized/not parallelized, incremental/recomputed) verified member-by-member under every evaluation mode, including deferred evaluation on the reader's thread
 - [ ] Every prescriptive row (quick-reference Scenario → Solution tables, "Choosing an approach," "Use X when…" takeaways) checked for whether the remedy's documented contract is actually sufficient for that scenario
-- [ ] Every proposed fix that adds a property name, default, hedge, or parenthetical to Concept-guide narrative redirected to a Configuration section or reference link instead
+- [ ] Every proposed fix that adds a property name, default, or threshold to Concept-guide or Tutorial narrative redirected to a Configuration section or reference link instead; a non-configuration caveat the reader needs at that point kept as its own sentence, and any other caveat cut
 - [ ] Every claim you couldn't verify recorded as an author query, not hedged
 - [ ] No style or structure comments included (those are out of scope), except the destination for a fix that would otherwise inject configuration detail
