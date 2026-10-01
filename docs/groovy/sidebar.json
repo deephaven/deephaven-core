@@ -2040,7 +2040,7 @@
                     "path": "reference/table-operations/join/left-outer-join.md"
                   },
                   {
-                    "label": "Multi-Join",
+                    "label": "Multi-join",
                     "path": "reference/table-operations/join/multijoin.md"
                   },
                   {

@@ -31,8 +31,9 @@ LANGUAGES = ["python", "groovy"]
 # A word that is capitalized but not all caps (APIs and acronyms like CSV pass).
 # Identifiers such as format_columns, deephaven.ui, and InputTable never match.
 CAPITALIZED_WORD = re.compile(r"^[A-Z][a-z]+$")
-# Keeps dotted and underscored identifiers together as one token.
-WORD = re.compile(r"[A-Za-z][\w'-]*(?:\.[A-Za-z_][\w-]*)*")
+# Keeps dotted and underscored identifiers together as one token, and splits
+# hyphenated words so each part is checked ("Title-Case" -> "Title", "Case").
+WORD = re.compile(r"[A-Za-z][\w']*(?:\.[A-Za-z_]\w*)*")
 
 
 def phrase_pattern(phrase):
