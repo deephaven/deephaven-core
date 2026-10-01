@@ -3,7 +3,7 @@ Sidebar consistency check
 
 Checks docs/python/sidebar.json and docs/groovy/sidebar.json for:
     - pages whose file does not exist
-    - groups that hold only one item
+    - groups that hold fewer than two items
     - labels in Title Case instead of sentence case
     - capitalized Deephaven terms (for example "Execution Context") written in another case
 
@@ -27,29 +27,39 @@ DOCS = os.path.dirname(os.path.dirname(HERE))
 LANGUAGES = ["python", "groovy"]
 
 # A word that is capitalized but not all caps (APIs and acronyms like CSV pass).
+# Identifiers such as format_columns, deephaven.ui, and InputTable never match.
 CAPITALIZED_WORD = re.compile(r"^[A-Z][a-z]+$")
-WORD = re.compile(r"[A-Za-z][\w'-]*")
+# Keeps dotted and underscored identifiers together as one token.
+WORD = re.compile(r"[A-Za-z][\w'-]*(?:\.[A-Za-z_][\w-]*)*")
 
 
-def looks_like_code(label):
-    """Labels that name an API element (format_columns, formatColumns, InputTable, ...)."""
-    return bool(re.search(r"[_().]|^[a-z]+[A-Z]|^[A-Z][a-z]+[A-Z]", label))
+def phrase_pattern(phrase):
+    """Matches a capitalized phrase or its plural, in any case."""
+    return re.compile(r"\b" + r"\s+".join(map(re.escape, phrase.split())) + r"(?:e?s)?\b", re.IGNORECASE)
 
 
-def title_case_words(label, allow):
+def title_case_words(label, allow, used):
     """Returns the words after the first that should be lowercase in sentence case."""
     for phrase in allow["capitalized_phrases"]:
-        label = label.replace(phrase, "")
+        # Lowercase rather than delete the phrase, so the label's first word stays first.
+        label = label.replace(phrase, phrase.lower())
     words = WORD.findall(label)
-    return [w for w in words[1:] if CAPITALIZED_WORD.match(w) and w not in allow["proper_nouns"]]
+    found = []
+    for w in words[1:]:
+        if CAPITALIZED_WORD.match(w):
+            if w in allow["proper_nouns"]:
+                used.add(("noun", w))
+            else:
+                found.append(w)
+    return found
 
 
-def miscased_phrases(label, allow):
+def miscased_phrases(label, allow, used):
     """Returns uses of a capitalized phrase (or its plural) written in a different case."""
     found = []
     for phrase in allow["capitalized_phrases"]:
-        pattern = r"\b" + r"\s+".join(map(re.escape, phrase.split())) + r"(?:e?s)?\b"
-        for m in re.finditer(pattern, label, re.IGNORECASE):
+        for m in phrase_pattern(phrase).finditer(label):
+            used.add(("phrase", phrase))
             if not m.group(0).startswith(phrase):
                 found.append(f"'{m.group(0)}' should be '{phrase}{m.group(0)[len(phrase):]}'")
     return found
@@ -70,13 +80,12 @@ def check_language(lang, allow, used):
                 not trail  # top-level sections keep their names
                 or any(where.startswith(s) for s in exempt_subtrees)
                 or item.get("path") in case_exempt_paths
-                or looks_like_code(label)
             )
             if not exempt:
-                words = title_case_words(label, allow)
+                words = title_case_words(label, allow, used)
                 if words:
                     errors.append(f"{lang}: '{where}' is not sentence case ({', '.join(words)})")
-                errors.extend(f"{lang}: '{where}': {m}" for m in miscased_phrases(label, allow))
+                errors.extend(f"{lang}: '{where}': {m}" for m in miscased_phrases(label, allow, used))
             for s in exempt_subtrees:
                 if where.startswith(s):
                     used.add(("subtree", s))
@@ -84,11 +93,10 @@ def check_language(lang, allow, used):
                 used.add(("path", lang, item["path"]))
 
             if "items" in item:
-                if len(item["items"]) == 1:
-                    if where in single_ok:
-                        used.add(("single", lang, where))
-                    else:
-                        errors.append(f"{lang}: group '{where}' holds only one item")
+                if len(item["items"]) == 1 and where in single_ok:
+                    used.add(("single", lang, where))
+                elif len(item["items"]) < 2:
+                    errors.append(f"{lang}: group '{where}' holds {len(item['items'])} item(s); groups need at least two")
                 walk(item["items"], trail + [label])
             elif "path" in item:
                 if not os.path.isfile(os.path.join(DOCS, lang, item["path"])):
@@ -113,6 +121,10 @@ def main():
                    for p in paths if ("path", lang, p) not in used]
     errors += [f"allowlist: case-exempt subtree '{s}' is not in any sidebar"
                for s in allow["case_exempt_subtrees"] if ("subtree", s) not in used]
+    errors += [f"allowlist: capitalized phrase '{p}' is not in any checked label"
+               for p in allow["capitalized_phrases"] if ("phrase", p) not in used]
+    errors += [f"allowlist: proper noun '{n}' is not in any checked label"
+               for n in allow["proper_nouns"] if ("noun", n) not in used]
 
     for e in errors:
         print(e)
