@@ -2008,16 +2008,17 @@ public final class ParquetTableFilterTest {
     /**
      * A {@link BigDecimal} column orders inconsistently with equals -- {@code 500} and {@code 500.00} compare equal
      * while {@code equals} separates them -- but its match filter matches by ordering, as the query language's
-     * {@code ==} does, so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} answers its match filters by
-     * ordering alone rather than routing them to {@code ComparableRegionBinarySearchKernel}. This exercises that
-     * dispatch through the Parquet region, which is its only production caller.
+     * {@code ==} does, so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} answers its match filters with
+     * {@code binarySearchMatchWithConsistentEquality}, which lets ordering alone decide a match, rather than with
+     * {@code binarySearchMatchWithGeneralEquality}, which tests each row that compares equal for equality. This
+     * exercises that choice through the Parquet region, which is its only production caller.
      *
      * <p>
      * What this cannot pin down is the choice the dispatch makes: Parquet's DECIMAL logical type stores a single scale
      * for a whole column, so every value read back carries that one scale and an ordering-equal run is always an equal
-     * run, which both kernels answer alike. A run that separates them has to be built directly against a region, as
-     * {@code ComparableRegionBinarySearchKernelTest} does. What is checked here is that a sorted BigDecimal column
-     * filters correctly end to end, including for a search value whose scale no stored value shares.
+     * run, which both searches answer alike. A run that separates them has to be built directly against a region, as
+     * {@code ObjectRegionBinarySearchKernelBigDecimalTest} does. What is checked here is that a sorted BigDecimal
+     * column filters correctly end to end, including for a search value whose scale no stored value shares.
      */
     @Test
     public void sortedFlatPartitionsBigDecimalTest() {

@@ -35,20 +35,39 @@ public class ObjectComparisons {
     }
 
     /**
-     * Compare two Objects for equality, by {@link Objects#equals(Object, Object)}.
+     * Compare two Objects for equality using {@link Objects#equals(Object, Object)}; this is consistent with
+     * {@link #hashCode(Object)}, that is {@code eq(x, y) => hashCode(x) == hashCode(y)}.
      *
      * <p>
-     * For a type whose ordering is consistent with equals this is consistent with {@link #compare(Object, Object)} --
-     * {@code compare(lhs, rhs) == 0 ⇒ eq(lhs, rhs)} and {@code compare(lhs, rhs) != 0 ⇒ !eq(lhs, rhs)} -- and logically
-     * equivalent to {@code compare(lhs, rhs) == 0}. For other types the two can disagree:
-     * {@link java.math.BigDecimal}'s {@code 5.0} and {@code 5.00} compare equal but are not equal.
-     * 
+     * For types whose {@link Comparable#compareTo(Object) compareTo} is not consistent with
+     * {@link Object#equals(Object) equals} (e.g., {@link java.math.BigDecimal} 1.0 and 1.00), {@code eq} may be false
+     * for values where {@code compare(lhs, rhs) == 0}. Use {@link #compareEquals(Object, Object)} for equality that is
+     * consistent with {@link #compare(Object, Object)}.
+     *
      * @param lhs the first value
      * @param rhs the second value
      * @return {@code true} if the values are equal, {@code false} otherwise
      */
     public static boolean eq(Object lhs, Object rhs) {
         return Objects.equals(lhs, rhs);
+    }
+
+    /**
+     * Compare two Objects for equality consistent with {@link #compare(Object, Object)}; logically equivalent to
+     * {@code compare(lhs, rhs) == 0}.
+     *
+     * <p>
+     * This equality is suitable for any ordering in which distinct objects that are not {@link Object#equals(Object)
+     * equals} may share an equivalence class (e.g., {@link java.math.BigDecimal} 1.0 and 1.00). Unlike
+     * {@link #eq(Object, Object)}, it is not consistent with {@link #hashCode(Object)}, so it must not be used for
+     * hashing.
+     *
+     * @param lhs the first value
+     * @param rhs the second value
+     * @return {@code true} if {@code compare(lhs, rhs) == 0}, {@code false} otherwise
+     */
+    public static boolean compareEquals(Object lhs, Object rhs) {
+        return compare(lhs, rhs) == 0;
     }
 
     /**

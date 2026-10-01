@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.SortSpec;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
@@ -21,38 +20,39 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectRegionBinarySearchKernel.lowerBoundAscending;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectRegionBinarySearchKernel.lowerBoundDescending;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectRegionBinarySearchKernel.upperBoundAscending;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectRegionBinarySearchKernel.upperBoundDescending;
 
 /**
- * Match search over a sorted column region whose data type is not known to order consistently with equals -- see
- * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}. Where {@link ObjectRegionBinarySearchKernel}
- * can answer a match with the run its bounds locate, this kernel must treat that run as a superset and pick the matches
- * out of it by equality, which is the relation the chunk filter it stands in for uses.
- *
- * <p>
- * A run is read in chunks rather than a row at a time. A run has no bounded length -- every row in the region can
- * compare equal to the search value -- and a per-row fetch pays the region's page lookup again on each one. The bounds
- * that locate the run stay on single-row reads: a binary search probes O(log n) scattered rows, and reading a chunk
- * around each probe would fetch far more than it saves.
- *
- * <p>
- * Only the match search differs; the bounds it navigates by, and every range search, are
- * {@link ObjectRegionBinarySearchKernel}'s.
+ * The match behind {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality}, which is correct for
+ * any {@link Comparable} type.
  */
-public class ComparableRegionBinarySearchKernel {
-
-    /** Rows per slice when scanning a run. Matches the other chunked scans in {@code engine/table}. */
+final class ObjectRegionBinarySearchMatchHelper {
+    /**
+     * Rows per slice when scanning a run of rows that compare equal to a search value. Matches the other chunked scans
+     * in {@code engine/table}.
+     */
     private static final int CHUNK_SIZE = 1 << 12;
 
-    private ComparableRegionBinarySearchKernel() {}
+    private ObjectRegionBinarySearchMatchHelper() {}
 
     /**
-     * Performs a binary search on a given column region to find the row keys that are equal to one of
+     * Performs a binary search on a given column region to find the row keys holding a value equal to one of
      * {@code searchValues}. The method returns the {@link RowSet} containing the matched row keys.
+     *
      * <p>
-     * NB: equality is determined by {@link ObjectComparisons#eq(Object, Object)}, which may differ from
-     * {@code compareTo()} for certain types. For example,
-     * {@code new BigDecimal("1.0").compareTo(new BigDecimal("1.00")) == 0} but
-     * {@code new BigDecimal("1.0").equals(new BigDecimal("1.00")) == false}.
+     * The ordering only locates the rows to test: the bounds find the run of rows that compare equal to a search value,
+     * and each row of that run is returned exactly when {@link ObjectComparisons#eq(Object, Object)} holds for it and
+     * one of the search values that compare equal to the run. The result is therefore correct even where values that
+     * compare equal are not all equal.
+     *
+     * <p>
+     * A run is read in chunks rather than a row at a time. A run has no bounded length, since every row in the region
+     * can compare equal to the search value, and a per-row fetch pays the region's page lookup again on each one. The
+     * bounds that locate the run stay on single-row reads: a binary search probes O(log n) scattered rows, and reading
+     * a chunk around each probe would fetch far more than it saves.
      *
      * @param region The column region in which the search will be performed.
      * @param firstKey The first key in the column region to consider for the search.
@@ -62,7 +62,7 @@ public class ComparableRegionBinarySearchKernel {
      *
      * @return A {@link RowSet} containing the row keys that are equal to one of the search values.
      */
-    public static RowSet binarySearchMatch(
+    static RowSet binarySearchMatchWithGeneralEquality(
             @NotNull final ColumnRegionObject<?, ?> region,
             long firstKey,
             final long lastKey,
@@ -71,7 +71,6 @@ public class ComparableRegionBinarySearchKernel {
         if (firstKey > lastKey || searchValues.length == 0) {
             return RowSetFactory.empty();
         }
-        final SortSpec.Order order = sortColumn.order();
         final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);
         if (sortColumn.isAscending()) {
             try (final ObjectTimsortKernel.ObjectSortKernelContext<Any> context =
@@ -86,31 +85,31 @@ public class ComparableRegionBinarySearchKernel {
         }
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        final boolean ascending = order.isAscending();
+        final boolean ascending = sortColumn.isAscending();
 
         // Allocated once and reused by every run, sized to the search span so a small region does not pay for a full
         // chunk. Runs are read in slices of at most this many rows.
         final int contextSize = (int) Math.min(CHUNK_SIZE, lastKey - firstKey + 1);
         try (final ChunkSource.GetContext getContext = region.makeGetContext(contextSize)) {
             for (int idx = 0; idx < copiedValues.length && firstKey <= lastKey;) {
-                // First, we are identifying a set of comparison-equal values.
+                // First, identify the group of search values that compare equal to each other.
                 int groupEnd = idx + 1;
                 while (groupEnd < copiedValues.length
                         && ObjectComparisons.compare(copiedValues[groupEnd], copiedValues[idx]) == 0) {
                     ++groupEnd;
                 }
-                // Second, find the bounds of a run in the region that compares equal to the search value.
+                // Second, find the bounds of the run in the region that compares equal to the group.
                 final Object toFind = copiedValues[idx];
                 final long lowerResult = ascending
-                        ? ObjectRegionBinarySearchKernel.lowerBoundAscending(region, firstKey, lastKey, toFind, true)
-                        : ObjectRegionBinarySearchKernel.lowerBoundDescending(region, firstKey, lastKey, toFind, true);
+                        ? lowerBoundAscending(region, firstKey, lastKey, toFind, true)
+                        : lowerBoundDescending(region, firstKey, lastKey, toFind, true);
                 final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);
                 final long upperResult = ascending
-                        ? ObjectRegionBinarySearchKernel.upperBoundAscending(region, runStart, lastKey, toFind, true)
-                        : ObjectRegionBinarySearchKernel.upperBoundDescending(region, runStart, lastKey, toFind, true);
+                        ? upperBoundAscending(region, runStart, lastKey, toFind, true)
+                        : upperBoundDescending(region, runStart, lastKey, toFind, true);
                 final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);
-                // Third, check each value of the run for Object equality with the set of comparison-equal search
-                // values, reading the run a slice at a time.
+                // Third, keep each row of the run that is equal to a member of the group, reading the run a slice at a
+                // time.
                 for (long sliceStart = runStart; sliceStart < runEnd; sliceStart += contextSize) {
                     final long sliceEnd = Math.min(sliceStart + contextSize, runEnd);
                     final ObjectChunk<?, ?> valueChunk =
@@ -119,8 +118,6 @@ public class ComparableRegionBinarySearchKernel {
                         final Object value = valueChunk.get(ii);
                         for (int valueIdx = idx; valueIdx < groupEnd; ++valueIdx) {
                             if (ObjectComparisons.eq(value, copiedValues[valueIdx])) {
-                                // This row matches at least one of the search values, so add its row key to the
-                                // result.
                                 builder.appendKey(sliceStart + ii);
                                 break;
                             }

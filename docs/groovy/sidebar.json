@@ -1394,7 +1394,7 @@
             ]
           },
           {
-            "label": "Work with Tables",
+            "label": "Work with tables",
             "items": [
               {
                 "label": "Metadata",
@@ -2894,29 +2894,12 @@
                 "path": "reference/community-questions/cq-index.md"
               },
               {
-                "label": "General",
+                "label": "Install and upgrade",
                 "items": [
-                  {
-                    "label": "Can I integrate custom data sources with Deephaven?",
-                    "path": "reference/community-questions/custom-data-sources.md"
-                  },
                   {
                     "label": "How can I find which Core version to which a feature or fix was added?",
                     "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
                   },
-                  {
-                    "label": "Is it possible to read a Parquet file from a remote location?",
-                    "path": "reference/community-questions/is-it-possible-read-parquet-from-remote.md"
-                  },
-                  {
-                    "label": "When does Deephaven load data into memory for Parquet reads?",
-                    "path": "reference/community-questions/when-does-dh-load-data-into-memory-parquet-reads.md"
-                  }
-                ]
-              },
-              {
-                "label": "Installation",
-                "items": [
                   {
                     "label": "Is docker compose required?",
                     "path": "reference/community-questions/is-docker-compose-required.md"
@@ -2928,7 +2911,7 @@
                 ]
               },
               {
-                "label": "Configuration",
+                "label": "Configure the server",
                 "items": [
                   {
                     "label": "How do I configure Deephaven to use another port?",
@@ -2949,6 +2932,35 @@
                   {
                     "label": "How can I manage the number of cores Deephaven can use?",
                     "path": "reference/community-questions/manage-thread-pool-size.md"
+                  },
+                  {
+                    "label": "Where can I find the password for the Deephaven IDE?",
+                    "path": "reference/community-questions/find-password-for-ide.md"
+                  },
+                  {
+                    "label": "How do I increase the maximum message size?",
+                    "path": "reference/community-questions/message-larger-than-max.md"
+                  }
+                ]
+              },
+              {
+                "label": "Import and export data",
+                "items": [
+                  {
+                    "label": "Can I integrate custom data sources with Deephaven?",
+                    "path": "reference/community-questions/custom-data-sources.md"
+                  },
+                  {
+                    "label": "Is it possible to read a Parquet file from a remote location?",
+                    "path": "reference/community-questions/is-it-possible-read-parquet-from-remote.md"
+                  },
+                  {
+                    "label": "When does Deephaven load data into memory for Parquet reads?",
+                    "path": "reference/community-questions/when-does-dh-load-data-into-memory-parquet-reads.md"
+                  },
+                  {
+                    "label": "How can I periodically write a ticking table to disk?",
+                    "path": "reference/community-questions/write-ticking-table-periodically.md"
                   }
                 ]
               },
@@ -2972,10 +2984,6 @@
                     "path": "reference/community-questions/extract-distinct-dates-list.md"
                   },
                   {
-                    "label": "Why do queries run faster the second time they are run?",
-                    "path": "reference/community-questions/query-memoization.md"
-                  },
-                  {
                     "label": "How do row keys and positional indices behave during table operations?",
                     "path": "reference/community-questions/shifts.md"
                   },
@@ -2996,36 +3004,6 @@
                     "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
                   },
                   {
-                    "label": "How do I filter by time of day across all dates?",
-                    "path": "reference/community-questions/filter-time-window-all-dates.md"
-                  }
-                ]
-              },
-              {
-                "label": "Troubleshooting",
-                "items": [
-                  {
-                    "label": "How do I solve a `hash table exceeds maximum size` error?",
-                    "path": "reference/community-questions/hash-table-exceeds-maximum-size.md"
-                  },
-                  {
-                    "label": "What's the best approach to monitor Deephaven server health?",
-                    "path": "reference/community-questions/monitor-dh-server-health.md"
-                  },
-                  {
-                    "label": "Why am I getting an UpdateGraphConflictException?",
-                    "path": "reference/community-questions/update-graph-conflict-exception.md"
-                  }
-                ]
-              },
-              {
-                "label": "Server-side APIs",
-                "items": [
-                  {
-                    "label": "Is there a way to find out how much memory a table is using?",
-                    "path": "reference/community-questions/find-how-much-memory-a-table-is-using.md"
-                  },
-                  {
                     "label": "Does it make any difference if I separate table operations or chain them together?",
                     "path": "reference/community-questions/chained-operations.md"
                   },
@@ -3034,41 +3012,29 @@
                     "path": "reference/community-questions/convert-array-types.md"
                   },
                   {
-                    "label": "How can I convert year, day, and minute to an Instant?",
-                    "path": "reference/community-questions/convert-year-day-minute-instant.md"
-                  },
-                  {
                     "label": "Why isn't `lastBy` ticking?",
                     "path": "reference/community-questions/last-by-not-ticking.md"
                   },
                   {
-                    "label": "How can I periodically write a ticking table to disk?",
-                    "path": "reference/community-questions/write-ticking-table-periodically.md"
-                  },
-                  {
-                    "label": "Is there a utility to pretty print a table to log?",
-                    "path": "reference/community-questions/utility-to-pretty-print-table.md"
-                  },
-                  {
-                    "label": "How do I control what objects are displayed in the console?",
-                    "path": "reference/community-questions/display-objects.md"
-                  },
-                  {
                     "label": "How efficient are my table selection operations?",
                     "path": "reference/community-questions/selection-method-properties.md"
-                  }
-                ]
-              },
-              {
-                "label": "Server-side APIs: Query Language",
-                "items": [
-                  {
-                    "label": "Why are my table operations producing incorrect results?",
-                    "path": "reference/community-questions/why-table-ops-producing-incorrect-results.md"
                   },
                   {
                     "label": "How do I shift values in columns?",
                     "path": "reference/community-questions/how-do-i-shift-values-in-columns.md"
+                  }
+                ]
+              },
+              {
+                "label": "Dates and times",
+                "items": [
+                  {
+                    "label": "How do I filter by time of day across all dates?",
+                    "path": "reference/community-questions/filter-time-window-all-dates.md"
+                  },
+                  {
+                    "label": "How can I convert year, day, and minute to an Instant?",
+                    "path": "reference/community-questions/convert-year-day-minute-instant.md"
                   },
                   {
                     "label": "How can I convert an integer date to a formatted string?",
@@ -3077,20 +3043,54 @@
                 ]
               },
               {
-                "label": "Client APIs",
+                "label": "Console and IDE",
                 "items": [
                   {
-                    "label": "Where can I find the password for the Deephaven IDE?",
-                    "path": "reference/community-questions/find-password-for-ide.md"
+                    "label": "Is there a utility to pretty print a table to log?",
+                    "path": "reference/community-questions/utility-to-pretty-print-table.md"
                   },
                   {
-                    "label": "How do I increase the maximum message size?",
-                    "path": "reference/community-questions/message-larger-than-max.md"
+                    "label": "How do I control what objects are displayed in the console?",
+                    "path": "reference/community-questions/display-objects.md"
                   }
                 ]
               },
               {
-                "label": "Integrations: AWS",
+                "label": "Performance and memory",
+                "items": [
+                  {
+                    "label": "Why do queries run faster the second time they are run?",
+                    "path": "reference/community-questions/query-memoization.md"
+                  },
+                  {
+                    "label": "What's the best approach to monitor Deephaven server health?",
+                    "path": "reference/community-questions/monitor-dh-server-health.md"
+                  },
+                  {
+                    "label": "Is there a way to find out how much memory a table is using?",
+                    "path": "reference/community-questions/find-how-much-memory-a-table-is-using.md"
+                  }
+                ]
+              },
+              {
+                "label": "Troubleshoot errors",
+                "items": [
+                  {
+                    "label": "How do I solve a `hash table exceeds maximum size` error?",
+                    "path": "reference/community-questions/hash-table-exceeds-maximum-size.md"
+                  },
+                  {
+                    "label": "Why am I getting an UpdateGraphConflictException?",
+                    "path": "reference/community-questions/update-graph-conflict-exception.md"
+                  },
+                  {
+                    "label": "Why are my table operations producing incorrect results?",
+                    "path": "reference/community-questions/why-table-ops-producing-incorrect-results.md"
+                  }
+                ]
+              },
+              {
+                "label": "Run on AWS",
                 "items": [
                   {
                     "label": "How do I run Deephaven behind AWS ALB?",

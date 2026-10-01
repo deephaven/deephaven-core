@@ -29,17 +29,18 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Coverage for the region match search over a type whose natural ordering is inconsistent with equals, which is the
- * case {@link ComparableRegionBinarySearchKernel} exists to serve. {@link ObjectRegionBinarySearchKernelTest} covers
- * the ordering-consistent types that take the fast path instead.
+ * Coverage for {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality} over a type whose natural
+ * ordering is inconsistent with equals, where the rows that compare equal to a search value must be tested for
+ * equality. {@link ObjectRegionBinarySearchKernelTest} covers a type whose ordering is consistent with equals, through
+ * {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}.
  *
  * <p>
- * Most of these drive the kernel directly with {@link BigDecimal} at mixed scales, whose equals is a ready-made
- * inconsistency. The engine itself matches BigDecimal by ordering, so a {@link MatchFilter} sends it down the fast path
- * instead; the dispatch tests say so.
+ * Most of these drive the search directly with {@link BigDecimal} at mixed scales, whose equals is a ready-made
+ * inconsistency. The engine itself matches BigDecimal by ordering, so a {@link MatchFilter} sends it to
+ * {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality} instead; the dispatch tests say so.
  */
 @Category(ParallelTest.class)
-public class ComparableRegionBinarySearchKernelTest {
+public class ObjectRegionBinarySearchKernelBigDecimalTest {
 
     private static final int PAGE_SIZE = 1 << 16;
 
@@ -153,7 +154,7 @@ public class ComparableRegionBinarySearchKernelTest {
     }
 
     /**
-     * {@link ObjectRegionBinarySearchKernel#binsearchMatchFilter} is the only production route to this kernel, and the
+     * {@link ObjectRegionBinarySearchKernel#binsearchMatchFilter} is the entry point the Parquet regions call, and the
      * dispatch it makes on the column's data type is what chooses between answering a match by ordering alone and
      * picking the matches out of the ordering-equal run by equality. A run holding values that compare equal while
      * being unequal separates the two: only the truly equal row may come back, where the ordering-only search would
@@ -202,7 +203,7 @@ public class ComparableRegionBinarySearchKernelTest {
             }
         }
 
-        try (final RowSet matched = ComparableRegionBinarySearchKernel.binarySearchMatch(
+        try (final RowSet matched = ObjectRegionBinarySearchKernel.binarySearchMatchWithGeneralEquality(
                 makeBigDecimalRegion(data, smallPageSize), 0, size - 1,
                 SortColumn.asc(ColumnName.of("test")), new Object[] {scale1})) {
             final List<Long> actual = new ArrayList<>();
@@ -241,7 +242,7 @@ public class ComparableRegionBinarySearchKernelTest {
             final SortColumn sortColumn = descending
                     ? SortColumn.desc(ColumnName.of("test"))
                     : SortColumn.asc(ColumnName.of("test"));
-            try (final RowSet matched = ComparableRegionBinarySearchKernel.binarySearchMatch(
+            try (final RowSet matched = ObjectRegionBinarySearchKernel.binarySearchMatchWithGeneralEquality(
                     region, 0, data.size() - 1, sortColumn, toFind.toArray())) {
                 final List<Long> actual = new ArrayList<>();
                 matched.forAllRowKeys(actual::add);

@@ -32,11 +32,9 @@ public class BinarySearchKernelHelper {
     }
 
     /**
-     * Types whose ordering is treated as consistent with equality, seeded with those the engine knows and extended by
-     * {@link #registerConsistentType(Class)}. Most are documented to have a natural ordering consistent with equals.
-     * {@link BigDecimal} is not, but its match filter matches by {@link BigDecimal#compareTo(BigDecimal)}, as the query
-     * language's {@code ==} does, so the ordering decides a BigDecimal match all the same. Boxed primitives are absent
-     * deliberately: sorted pushdown dispatches them to their primitive kernel, so they never reach the Object kernels.
+     * Types documented to have a natural ordering consistent with equals, seeded with those the engine knows and
+     * extended by {@link #registerConsistentType(Class)}. Boxed primitives are absent deliberately: sorted pushdown
+     * dispatches them to their primitive kernel, so they never reach the Object kernels.
      *
      * <p>
      * Copy-on-write, so reads need no synchronization: registration happens a handful of times at startup, while this
@@ -45,7 +43,6 @@ public class BinarySearchKernelHelper {
     private static volatile Set<Class<?>> consistentTypes = Set.of(
             String.class,
             BigInteger.class,
-            BigDecimal.class,
             Boolean.class,
             Instant.class,
             LocalDate.class,
@@ -59,7 +56,8 @@ public class BinarySearchKernelHelper {
      * decides.
      *
      * <p>
-     * The property is not verified; registering a type that lacks it will produce incorrect filter results.
+     * The property is not verified; registering a type that lacks it will produce incorrect filter, as-of join, range
+     * join, and sorted first or last results.
      *
      * <p>
      * Registration is additive and idempotent, and a type cannot be withdrawn. Register types during startup: a search
@@ -86,7 +84,7 @@ public class BinarySearchKernelHelper {
     /**
      * Whether {@code dataType} compares consistently with equality, meaning
      * {@code ObjectComparisons.compare(a, b) == 0} exactly when {@code ObjectComparisons.eq(a, b)}, for every pair of
-     * values. {@link BigDecimal} is the one deliberate exception, explained below.
+     * values.
      *
      * <p>
      * This decides how a sorted binary search may answer a match. The search navigates by
@@ -95,16 +93,25 @@ public class BinarySearchKernelHelper {
      * {@link io.deephaven.util.compare.ObjectComparisons#eq(Object, Object)}, which is
      * {@link java.util.Objects#equals(Object, Object)} -- the same relation the chunk filter uses. When the two agree,
      * the ordering-equal run the search locates is exactly the set of matching rows and the search can answer the match
-     * outright. When they disagree that run is only a superset, and the matches have to be picked out of it by
-     * equality. {@link BigDecimal}, whose match filter matches by ordering, is answered {@code true} whatever its
-     * equals does.
+     * outright. When they disagree -- {@link java.math.BigDecimal} at differing scales, for one -- that run is only a
+     * superset, and the matches have to be picked out of it by equality. Sorted pushdown therefore matches a column of
+     * a type for which {@link #matchByOrdering(Class)} holds with
+     * {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality} or
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, and a column of any other type
+     * with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality} or
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}.
      *
      * <p>
-     * Only this stronger both-ways guarantee is checked, and only where documented, since {@link BigDecimal}'s equals
+     * Only this stronger both-ways guarantee is checked, and only where documented, since {@link java.math.BigDecimal}
      * is a common counterexample. A {@code false} answer still assumes the weaker
      * {@code eq(a, b) implies compare(a, b) == 0}, which {@link Comparable} recommends and without which a type is
      * unusable in any sorted context. An enum qualifies because its ordering is by ordinal and its equality is
      * identity.
+     *
+     * <p>
+     * The same answer selects between the EqualsConsistentObject and Object segmented sorted array, SSA stamp, and
+     * duplicate compaction kernels, which test equality with {@code equals} and with
+     * {@link io.deephaven.util.compare.ObjectComparisons#compareEquals(Object, Object)} respectively.
      *
      * <p>
      * The engine's own types are answered here; a type it does not know is answered {@code false} until
@@ -116,5 +123,24 @@ public class BinarySearchKernelHelper {
      */
     public static boolean compareConsistentWithEquality(@NotNull final Class<?> dataType) {
         return consistentTypes.contains(dataType) || dataType.isEnum();
+    }
+
+    /**
+     * Whether a sorted binary search may answer a match filter over a column of {@code dataType} by ordering alone,
+     * returning every row that compares equal to a search value.
+     *
+     * <p>
+     * This holds wherever {@link #compareConsistentWithEquality(Class)} does, and for {@link BigDecimal} too: its
+     * equals is not consistent with its ordering, but its match filter matches by
+     * {@link BigDecimal#compareTo(BigDecimal)}, as the query language's {@code ==} does, so the ordering decides a
+     * BigDecimal match all the same. Only match searches may use this; {@link BigDecimal} must still answer
+     * {@code false} to {@link #compareConsistentWithEquality(Class)}, which also selects the segmented sorted array,
+     * SSA stamp, and duplicate compaction kernels.
+     *
+     * @param dataType the column's data type
+     * @return {@code true} if a search by ordering alone decides a match filter for this type
+     */
+    public static boolean matchByOrdering(@NotNull final Class<?> dataType) {
+        return dataType == BigDecimal.class || compareConsistentWithEquality(dataType);
     }
 }

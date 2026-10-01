@@ -49,7 +49,8 @@ class AsOfStampContext implements Context {
     private final StampKernel stampKernel;
 
     AsOfStampContext(SortingOrder order, boolean disallowExactMatch, ColumnSource<?> leftStampSource,
-            ColumnSource<?> rightStampSource, ColumnSource<?> originalRightStampSource) {
+            ColumnSource<?> rightStampSource, ColumnSource<?> originalRightStampSource,
+            boolean stampEqualsConsistent) {
         this.order = order;
         this.leftStampSource = leftStampSource;
         this.rightStampSource = rightStampSource;
@@ -62,8 +63,8 @@ class AsOfStampContext implements Context {
         }
         this.stampType = leftType;
         this.stampKernel = StampKernel.makeStampKernel(stampType, order, disallowExactMatch);
-        this.rightDupCompact =
-                DupCompactKernel.makeDupCompactDeephavenOrdering(stampType, order == SortingOrder.Descending);
+        this.rightDupCompact = DupCompactKernel.makeDupCompactDeephavenOrdering(stampType,
+                stampEqualsConsistent, order == SortingOrder.Descending);
     }
 
     private void ensureSortCapacity(int length) {

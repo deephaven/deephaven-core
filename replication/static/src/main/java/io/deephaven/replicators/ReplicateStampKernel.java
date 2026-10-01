@@ -52,7 +52,7 @@ public class ReplicateStampKernel {
         List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
 
         if (path.contains("Object")) {
-            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false);
+            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false, true);
         } else {
             lines = ReplicateSortKernel.invertComparisons(lines);
         }
@@ -76,7 +76,8 @@ public class ReplicateStampKernel {
     private static void fixupObjectStamp(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, ReplicateSortKernel.fixupObjectComparisons(fixupChunkAttributes(lines)));
+        FileUtils.writeLines(objectFile,
+                ReplicateSortKernel.fixupObjectComparisons(fixupChunkAttributes(lines), true, true));
     }
 
     @NotNull

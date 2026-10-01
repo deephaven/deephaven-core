@@ -494,7 +494,8 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
                 final long idxl = sourceRowKeys[rposl];
                 final double vali = valuesToInsert.get(rposi);
                 final long idxi = rowKeys.get(rposi);
-                final boolean takeFromLeaf = eq(vall, vali) ? idxl > idxi : gt(vall, vali);
+                final int comparison = doComparison(vall, vali);
+                final boolean takeFromLeaf = comparison == 0 ? idxl > idxi : comparison > 0;
                 if (takeFromLeaf) {
                     slotValues[wpos] = vall;
                     slotRowKeys[wpos] = idxl;
@@ -617,7 +618,8 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
             final double vali = insertValues.get(rposi);
             final long idxl = leafRowKeys[rposl];
             final long idxi = insertRowKeys.get(rposi);
-            final boolean takeFromLeaf = eq(vall, vali) ? idxl > idxi : gt(vall, vali);
+            final int comparison = doComparison(vall, vali);
+            final boolean takeFromLeaf = comparison == 0 ? idxl > idxi : comparison > 0;
 
             if (takeFromLeaf) {
                 lwins++;
@@ -652,8 +654,8 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
 
                 final double firstInsert = insertValues.get(0);
                 final int gallopLength;
-                if (lt(searchValue, firstInsert)
-                        || (eq(searchValue, firstInsert) && searchKey < insertRowKeys.get(0))) {
+                final int firstComparison = doComparison(searchValue, firstInsert);
+                if (firstComparison < 0 || (firstComparison == 0 && searchKey < insertRowKeys.get(0))) {
                     // copy the whole thing
                     gallopLength = rposi + 1;
                 } else {
@@ -693,7 +695,8 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
 
                 final double firstLeaf = leafValues[0];
                 final int gallopLength;
-                if (lt(searchValue, firstLeaf) || (eq(searchValue, firstLeaf) && searchKey < leafRowKeys[0])) {
+                final int firstComparison = doComparison(searchValue, firstLeaf);
+                if (firstComparison < 0 || (firstComparison == 0 && searchKey < leafRowKeys[0])) {
                     // copy the whole thing
                     gallopLength = rposl + 1;
                 } else {
@@ -1296,8 +1299,9 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
                         firstValueForLeaf = lowerBound(stampChunk, keyChunk, 0, lastValuesPosition + 1, leafMinValue,
                                 leafMinRowKey);
                         double foundValue = stampChunk.get(firstValueForLeaf);
-                        if (lt(foundValue, leafMinValue)
-                                || (eq(foundValue, leafMinValue) && keyChunk.get(firstValueForLeaf) < leafMinRowKey)) {
+                        final int foundComparison = doComparison(foundValue, leafMinValue);
+                        if (foundComparison < 0
+                                || (foundComparison == 0 && keyChunk.get(firstValueForLeaf) < leafMinRowKey)) {
                             firstValueForLeaf++;
                             foundValue = stampChunk.get(firstValueForLeaf);
                         }
