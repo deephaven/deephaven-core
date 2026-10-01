@@ -51,9 +51,15 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
     @Override
     public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
-        // array. (getImpl tolerates a null snapshot.)
+        // array.
         final long[] localKvs = keysAndValues;
         final int size = keys.size();
+        if (localKvs == null) {
+            // Never populated, or reset: every key is a miss, and we need not probe to know it.
+            result.fillWithValue(0, size, defaultReturnValue());
+            result.setSize(size);
+            return;
+        }
         for (int ii = 0; ii < size; ++ii) {
             result.set(ii, getImpl(localKvs, keys.get(ii)));
         }
