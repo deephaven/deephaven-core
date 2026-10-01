@@ -65,6 +65,11 @@ def miscased_phrases(label, allow, used):
     return found
 
 
+def in_subtree(where, subtree):
+    """True if the trail is the subtree itself or one of its descendants."""
+    return where == subtree or where.startswith(subtree + " > ")
+
+
 def check_language(lang, allow, used):
     errors = []
     sidebar = json.load(open(os.path.join(DOCS, lang, "sidebar.json")))
@@ -78,16 +83,17 @@ def check_language(lang, allow, used):
             where = " > ".join(trail + [label])
             exempt = (
                 not trail  # top-level sections keep their names
-                or any(where.startswith(s) for s in exempt_subtrees)
+                or any(in_subtree(where, s) for s in exempt_subtrees)
                 or item.get("path") in case_exempt_paths
             )
             if not exempt:
                 words = title_case_words(label, allow, used)
                 if words:
                     errors.append(f"{lang}: '{where}' is not sentence case ({', '.join(words)})")
-                errors.extend(f"{lang}: '{where}': {m}" for m in miscased_phrases(label, allow, used))
+            # Proper nouns keep their capitals everywhere, even in labels exempt from sentence case.
+            errors.extend(f"{lang}: '{where}': {m}" for m in miscased_phrases(label, allow, used))
             for s in exempt_subtrees:
-                if where.startswith(s):
+                if in_subtree(where, s):
                     used.add(("subtree", s))
             if item.get("path") in case_exempt_paths:
                 used.add(("path", lang, item["path"]))
