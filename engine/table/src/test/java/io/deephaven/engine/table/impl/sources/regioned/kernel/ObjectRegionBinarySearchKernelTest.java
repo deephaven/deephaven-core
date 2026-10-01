@@ -106,7 +106,7 @@ public class ObjectRegionBinarySearchKernelTest {
             final long startRow = Math.max(0, firstKey.applyAsLong(ii));
             final long endRow = Math.min(size - 1, lastKey.applyAsLong(ii));
             // Test match search and min/max search give the same results for this value.
-            try (final RowSet matchRs = ObjectRegionBinarySearchKernel.binarySearchMatch(
+            try (final RowSet matchRs = ObjectRegionBinarySearchKernel.binarySearchMatchWithConsistentEquality(
                     region, startRow, endRow, sortColumn, new String[] {value});
                     final RowSet minMaxRs = ObjectRegionBinarySearchKernel.binarySearchMinMax(
                             region, startRow, endRow, sortColumn, value, value, true, true)) {
@@ -146,7 +146,7 @@ public class ObjectRegionBinarySearchKernelTest {
         for (String missingValue : missingValues) {
             final long startRow = 0;
             final long endRow = size - 1;
-            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMatch(
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMatchWithConsistentEquality(
                     region, startRow, endRow, sortColumn, new String[] {missingValue})) {
                 assertTrue(valuesFound.isEmpty());
             }
@@ -712,10 +712,10 @@ public class ObjectRegionBinarySearchKernelTest {
     }
 
     /**
-     * A {@link String} orders consistently with equals, so the match entry point answers by ordering alone rather than
-     * routing to {@link ComparableRegionBinarySearchKernel} -- the counterpart to the inconsistent-type case that
-     * {@code ComparableRegionBinarySearchKernelTest} covers. An empty value list matches nothing and must not touch the
-     * region at all.
+     * A {@link String} orders consistently with equals, so the match entry point answers with
+     * {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}, the counterpart to the
+     * {@link java.math.BigDecimal} case that {@code ObjectRegionBinarySearchKernelBigDecimalTest} covers. An empty
+     * value list matches nothing and must not touch the region at all.
      */
     @Test
     public void testMatchFilterEntryPointDispatch() {
@@ -730,8 +730,9 @@ public class ObjectRegionBinarySearchKernelTest {
         assertTrue(BinarySearchKernelHelper.compareConsistentWithEquality(matchFilter.getColumnType()));
         try (final RowSet viaFilter = ObjectRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey,
                 sortColumn, matchFilter);
-                final RowSet viaSearch = ObjectRegionBinarySearchKernel.binarySearchMatch(region, 0, lastKey,
-                        sortColumn, new Object[] {"e", "a"})) {
+                final RowSet viaSearch =
+                        ObjectRegionBinarySearchKernel.binarySearchMatchWithConsistentEquality(region, 0, lastKey,
+                                sortColumn, new Object[] {"e", "a"})) {
             assertEquals(viaSearch, viaFilter);
         }
 

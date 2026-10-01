@@ -14,7 +14,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.ShortComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jetbrains.annotations.Nullable;
@@ -30,10 +30,10 @@ import java.util.function.LongConsumer;
  * The segmented array allows us to either insert or remove elements and only shift values in a "leaf" block and
  * possibly a "directory" block. It can be thought of as similar to a single-level b+ tree with only keys.
  *
- * We must be totally ordered, which is accomplished by sorting on the short values, and then on the corresponding row
+ * We must be totally ordered, which is accomplished by sorting on the Object values, and then on the corresponding row
  * key.
  */
-public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
+public final class EqualsConsistentObjectSegmentedSortedArray implements SegmentedSortedArray {
     final private int leafSize;
     private int leafCount;
     private int size;
@@ -45,19 +45,19 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * the largest value in a given leaf. The values are valid for 0 ... leafCount - 2, because the last leaf must
      * accept any value that is greater than the second to last leave's maximum.
      */
-    private short[] directoryValues;
+    private Object[] directoryValues;
     private long[] directoryRowKeys;
 
     private int[] leafSizes;
-    private short[][] leafValues;
+    private Object[][] leafValues;
     private long[][] leafRowKeys;
 
     /**
-     * Create a ShortSegmentedSortedArray with the given leafSize.
+     * Create a EqualsConsistentObjectSegmentedSortedArray with the given leafSize.
      *
      * @param leafSize the maximumSize for any leaf
      */
-    public ShortSegmentedSortedArray(int leafSize) {
+    public EqualsConsistentObjectSegmentedSortedArray(int leafSize) {
         this.leafSize = leafSize;
         leafCount = 0;
         size = 0;
@@ -65,7 +65,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
     @Override
     public void insert(Chunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeysToInsert) {
-        insert(valuesToInsert.asShortChunk(), rowKeysToInsert);
+        insert(valuesToInsert.asObjectChunk(), rowKeysToInsert);
     }
 
     @Override
@@ -75,17 +75,17 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         if (insertSize == 0) {
             return 0;
         }
-        final ShortChunk<T> insertChunk = valuesToInsert.asShortChunk();
+        final ObjectChunk<Object, T> insertChunk = valuesToInsert.asObjectChunk();
         if (leafCount == 0
                 || (leafCount == 1 ? isAfterLeaf(size, directoryValues, insertChunk, directoryRowKeys, rowKeysToInsert)
                         : isAfterLeaf(leafSizes[leafCount - 1], leafValues[leafCount - 1], insertChunk,
                                 leafRowKeys[leafCount - 1], rowKeysToInsert))) {
             // every value follows this SSA, so each is followed by the next inserted value and the last by nothing
             insert(insertChunk, rowKeysToInsert, null);
-            nextValue.asWritableShortChunk().copyFromTypedChunk(insertChunk, 1, 0, insertSize - 1);
+            nextValue.asWritableObjectChunk().copyFromTypedChunk(insertChunk, 1, 0, insertSize - 1);
             return insertSize - 1;
         }
-        insert(insertChunk, rowKeysToInsert, WritableShortChunk.upcast(nextValue.asWritableShortChunk()));
+        insert(insertChunk, rowKeysToInsert, WritableObjectChunk.upcast(nextValue.asWritableObjectChunk()));
         // only the last inserted value can lack a next value, when it is the last value of this SSA
         return getLast() == rowKeysToInsert.get(insertSize - 1) ? insertSize - 1 : insertSize;
     }
@@ -96,7 +96,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * @param valuesToInsert the valuesToInsert to insert (must be sorted, with ties broken by the row key)
      * @param rowKeysToInsert the corresponding rowKeysToInsert
      */
-    void insert(ShortChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeysToInsert) {
+    void insert(ObjectChunk<Object, ? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeysToInsert) {
         insert(valuesToInsert, rowKeysToInsert, null);
     }
 
@@ -110,8 +110,8 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      *        in this SSA after the insertion; the position of an inserted value that becomes the last value of this SSA
      *        is left unchanged. Must be null when this SSA is empty.
      */
-    private void insert(ShortChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeysToInsert,
-            @Nullable WritableShortChunk<Any> nextValues) {
+    private void insert(ObjectChunk<Object, ? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeysToInsert,
+            @Nullable WritableObjectChunk<Object, Any> nextValues) {
         final int insertSize = valuesToInsert.size();
         validate();
 
@@ -145,7 +145,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                 validateLeafOrdering(0, newLeafCount - 1);
             }
         } else {
-            try (final ResettableShortChunk<Any> leafValuesInsertChunk = ResettableShortChunk.makeResettableChunk();
+            try (final ResettableObjectChunk<Object, Any> leafValuesInsertChunk = ResettableObjectChunk.makeResettableChunk();
                     final ResettableLongChunk<RowKeys> leafKeysInsertChunk =
                             ResettableLongChunk.makeResettableChunk()) {
                 int firstValuesPosition = 0;
@@ -160,7 +160,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                     if (firstLeaf == leafCount - 1) {
                         lastValueForLeaf = insertSize - 1;
                     } else {
-                        final short leafMaxValue = leafValues[firstLeaf + 1][0];
+                        final Object leafMaxValue = leafValues[firstLeaf + 1][0];
                         final long leafMaxRowKey = leafRowKeys[firstLeaf + 1][0];
                         lastValueForLeaf = lowerBound(valuesToInsert, rowKeysToInsert, firstValuesPosition, insertSize,
                                 leafMaxValue, leafMaxRowKey);
@@ -197,7 +197,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
                             for (int leaf = firstLeaf; leaf < firstLeaf + newLeafCount; ++leaf) {
                                 if (leaf > firstLeaf) {
-                                    leafValues[leaf] = new short[leafSize];
+                                    leafValues[leaf] = new Object[leafSize];
                                     leafRowKeys[leaf] = new long[leafSize];
                                 }
                                 copyToLeaf(leafSizes[leaf], leafValues[leaf], leafValuesInsertChunk, leafRowKeys[leaf],
@@ -246,7 +246,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * that first value is final.
      */
     private void recordNextLeafFirst(int leaf, LongChunk<? extends RowKeys> rowKeysToInsert, int insertPosition,
-            WritableShortChunk<Any> nextValues) {
+            WritableObjectChunk<Object, Any> nextValues) {
         if (leaf < leafCount - 1 && leafRowKeys[leaf][leafSizes[leaf] - 1] == rowKeysToInsert.get(insertPosition)) {
             nextValues.set(insertPosition, leafValues[leaf + 1][0]);
         }
@@ -268,7 +268,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
         copyLeafValues(leaf + 1, leaf, destinationSize, sourceSize, 0);
 
-        final short[] tmpValues = leafValues[leaf + 1];
+        final Object[] tmpValues = leafValues[leaf + 1];
         final long[] tmpRowKeys = leafRowKeys[leaf + 1];
 
         leafValues[leaf + 1] = leafValues[leaf];
@@ -295,7 +295,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         copyLeafValues(leaf + 1, leaf, destinationSize, sourceMiddleSize, 0);
         copyLeafValues(leaf + 2, leaf, destinationSize + sourceMiddleSize, sourceRightSize, 0);
 
-        final short[] tmpValues = leafValues[leaf + 1];
+        final Object[] tmpValues = leafValues[leaf + 1];
         final long[] tmpRowKeys = leafRowKeys[leaf + 1];
 
         leafValues[leaf + 2] = leafValues[leaf];
@@ -337,18 +337,18 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         System.arraycopy(directoryRowKeys, srcPos, directoryRowKeys, destPos, length);
     }
 
-    private void copyToLeaf(int leafOffset, short[] leafValues, ShortChunk<? extends Any> insertValues,
+    private void copyToLeaf(int leafOffset, Object[] leafValues, ObjectChunk<Object, ? extends Any> insertValues,
             long[] leafRowKeys, LongChunk<? extends RowKeys> insertRowKeys) {
         copyToLeaf(leafOffset, leafValues, insertValues, leafRowKeys, insertRowKeys, 0, insertRowKeys.size());
     }
 
-    private void copyToLeaf(int leafOffset, short[] leafValues, ShortChunk<? extends Any> insertValues,
+    private void copyToLeaf(int leafOffset, Object[] leafValues, ObjectChunk<Object, ? extends Any> insertValues,
             long[] leafRowKeys, LongChunk<? extends RowKeys> insertRowKeys, int srcOffset, int length) {
         insertValues.copyToTypedArray(srcOffset, leafValues, leafOffset, length);
         insertRowKeys.copyToTypedArray(srcOffset, leafRowKeys, leafOffset, length);
     }
 
-    private void moveLeafValues(short[] leafValues, long[] leafRowKeys, int srcPos, int destPos, int length) {
+    private void moveLeafValues(Object[] leafValues, long[] leafRowKeys, int srcPos, int destPos, int length) {
         System.arraycopy(leafValues, srcPos, leafValues, destPos, length);
         System.arraycopy(leafRowKeys, srcPos, leafRowKeys, destPos, length);
     }
@@ -357,14 +357,15 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * Clears positions [from, to) of a values array that hold no live entries, so that they do not keep stamp objects
      * reachable. Primitive values need no clearing.
      */
-    private static void clearValues(short[] values, int from, int to) {
+    private static void clearValues(Object[] values, int from, int to) {
         // region clearValues
+        Arrays.fill(values, from, to, null);
         // endregion clearValues
     }
 
     private void promoteDirectory(int newLeafCount) {
         leafSizes = new int[newLeafCount];
-        leafValues = new short[newLeafCount][];
+        leafValues = new Object[newLeafCount][];
         leafRowKeys = new long[newLeafCount][];
 
         leafSizes[0] = size;
@@ -376,7 +377,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             leafRowKeys[0] = Arrays.copyOf(leafRowKeys[0], leafSize);
         }
 
-        directoryValues = new short[newLeafCount];
+        directoryValues = new Object[newLeafCount];
         directoryRowKeys = new long[newLeafCount];
         directoryValues[0] = leafValues[0][size - 1];
         directoryRowKeys[0] = leafRowKeys[0][size - 1];
@@ -398,7 +399,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         Arrays.fill(leafRowKeys, holePosition, holePosition + holeSize, null);
         Arrays.fill(directoryRowKeys, holePosition, holePosition + holeSize, -1);
         // region fillValue
-        Arrays.fill(directoryValues, holePosition, holePosition + holeSize, Short.MIN_VALUE);
+        Arrays.fill(directoryValues, holePosition, holePosition + holeSize, null);
         // endregion fillValue
 
         leafCount += holeSize;
@@ -424,8 +425,8 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * @param nextOffset the position in nextValues that corresponds to the first of valuesToInsert
      */
     private void distributeValues(int targetSize, int startingLeaf, int distributionSlots,
-            ShortChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeys,
-            @Nullable WritableShortChunk<Any> nextValues, int nextOffset) {
+            ObjectChunk<Object, ? extends Any> valuesToInsert, LongChunk<? extends RowKeys> rowKeys,
+            @Nullable WritableObjectChunk<Object, Any> nextValues, int nextOffset) {
         final int lastSlot = startingLeaf + distributionSlots - 1;
         final int startingLeafSize = leafSizes[startingLeaf];
         final int totalInsertions = valuesToInsert.size() + startingLeafSize;
@@ -438,17 +439,17 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         int insertedValues = 0;
 
         // the starting leaf keeps its arrays, and is both the source of the leaf values and the lowest slot
-        final short[] sourceValues = leafValues[startingLeaf];
+        final Object[] sourceValues = leafValues[startingLeaf];
         final long[] sourceRowKeys = leafRowKeys[startingLeaf];
 
         // we are distributing our values from right to left (i.e. higher slots to lower slots), this way we can keep
         // the values in the starting leaf, and will not overwrite them until they have already been consumed
         for (int workingSlot = startingLeaf + distributionSlots - 1; workingSlot >= startingLeaf; workingSlot--) {
             if (workingSlot > startingLeaf) {
-                leafValues[workingSlot] = new short[leafSize];
+                leafValues[workingSlot] = new Object[leafSize];
                 leafRowKeys[workingSlot] = new long[leafSize];
             }
-            final short[] slotValues = leafValues[workingSlot];
+            final Object[] slotValues = leafValues[workingSlot];
             final long[] slotRowKeys = leafRowKeys[workingSlot];
 
             final int leafSize;
@@ -488,9 +489,9 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                     break;
                 }
 
-                final short vall = sourceValues[rposl];
+                final Object vall = sourceValues[rposl];
                 final long idxl = sourceRowKeys[rposl];
-                final short vali = valuesToInsert.get(rposi);
+                final Object vali = valuesToInsert.get(rposi);
                 final long idxi = rowKeys.get(rposi);
                 final int comparison = doComparison(vall, vali);
                 final boolean takeFromLeaf = comparison == 0 ? idxl > idxi : comparison > 0;
@@ -526,14 +527,14 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         Assert.eq(totalInsertions, "totalInsertions", insertedValues, "insertedValues");
     }
 
-    private void makeSingletonLeaf(ShortChunk<? extends Any> values, LongChunk<? extends RowKeys> rowKeys) {
-        directoryValues = new short[values.size()];
+    private void makeSingletonLeaf(ObjectChunk<Object, ? extends Any> values, LongChunk<? extends RowKeys> rowKeys) {
+        directoryValues = new Object[values.size()];
         directoryRowKeys = new long[rowKeys.size()];
         copyToLeaf(0, directoryValues, values, directoryRowKeys, rowKeys);
         leafCount = 1;
     }
 
-    private void makeLeavesInitial(ShortChunk<? extends Any> values, LongChunk<? extends RowKeys> rowKeys) {
+    private void makeLeavesInitial(ObjectChunk<Object, ? extends Any> values, LongChunk<? extends RowKeys> rowKeys) {
         final int insertSize = values.size();
         if (insertSize <= leafSize) {
             makeSingletonLeaf(values, rowKeys);
@@ -545,16 +546,16 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         Assert.leq(valuesPerLeaf, "valuesPerLeaf", leafSize, "leafSize");
 
         leafSizes = new int[leafCount];
-        leafValues = new short[leafCount][];
+        leafValues = new Object[leafCount][];
         leafRowKeys = new long[leafCount][];
-        directoryValues = new short[leafCount];
+        directoryValues = new Object[leafCount];
         directoryRowKeys = new long[leafCount];
 
         int offset = 0;
         for (int ii = 0; ii < leafCount; ++ii) {
             final int valuesInThisLeaf = Math.min(valuesPerLeaf, insertSize - offset);
             leafSizes[ii] = valuesInThisLeaf;
-            leafValues[ii] = new short[leafSize];
+            leafValues[ii] = new Object[leafSize];
             leafRowKeys[ii] = new long[leafSize];
 
             copyToLeaf(0, leafValues[ii], values, leafRowKeys[ii], rowKeys, offset, valuesInThisLeaf);
@@ -574,9 +575,9 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      *        last value of the leaf
      * @param nextOffset the position in nextValues that corresponds to the first of insertValues
      */
-    private void insertIntoLeaf(int leafSize, short[] leafValues, ShortChunk<? extends Any> insertValues,
+    private void insertIntoLeaf(int leafSize, Object[] leafValues, ObjectChunk<Object, ? extends Any> insertValues,
             long[] leafRowKeys, LongChunk<? extends RowKeys> insertRowKeys,
-            @Nullable WritableShortChunk<Any> nextValues, int nextOffset) {
+            @Nullable WritableObjectChunk<Object, Any> nextValues, int nextOffset) {
         final int insertSize = insertValues.size();
 
         // if we are at the end; we can just copy to the end
@@ -612,8 +613,8 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                 break;
             }
 
-            final short vall = leafValues[rposl];
-            final short vali = insertValues.get(rposi);
+            final Object vall = leafValues[rposl];
+            final Object vali = insertValues.get(rposi);
             final long idxl = leafRowKeys[rposl];
             final long idxi = insertRowKeys.get(rposi);
             final int comparison = doComparison(vall, vali);
@@ -647,10 +648,10 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             // the number of consecutive wins so that we don't enter gallop mode too early.
             if (iwins > minGallop) {
                 // find position the smallest position in insertValues that is larger than the next leaf value
-                final short searchValue = leafValues[rposl];
+                final Object searchValue = leafValues[rposl];
                 final long searchKey = leafRowKeys[rposl];
 
-                final short firstInsert = insertValues.get(0);
+                final Object firstInsert = insertValues.get(0);
                 final int gallopLength;
                 final int firstComparison = doComparison(searchValue, firstInsert);
                 if (firstComparison < 0 || (firstComparison == 0 && searchKey < insertRowKeys.get(0))) {
@@ -688,10 +689,10 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                 }
             } else if (lwins > minGallop) {
                 // find the next insert value in the leaf
-                final short searchValue = insertValues.get(rposi);
+                final Object searchValue = insertValues.get(rposi);
                 final long searchKey = insertRowKeys.get(rposi);
 
-                final short firstLeaf = leafValues[0];
+                final Object firstLeaf = leafValues[0];
                 final int gallopLength;
                 final int firstComparison = doComparison(searchValue, firstLeaf);
                 if (firstComparison < 0 || (firstComparison == 0 && searchKey < leafRowKeys[0])) {
@@ -743,10 +744,10 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * @param insertRowKeys the row keys to insert, parallel to insertValues
      * @return true if the first value to insert sorts after the last value of the leaf
      */
-    private boolean isAfterLeaf(int leafSize, short[] leafValues, ShortChunk<? extends Any> insertValues,
+    private boolean isAfterLeaf(int leafSize, Object[] leafValues, ObjectChunk<Object, ? extends Any> insertValues,
             long[] leafRowKeys, LongChunk<? extends RowKeys> insertRowKeys) {
-        final short firstInsertValue = insertValues.get(0);
-        final short lastLeafValue = leafValues[leafSize - 1];
+        final Object firstInsertValue = insertValues.get(0);
+        final Object lastLeafValue = leafValues[leafSize - 1];
         final int comparison = doComparison(lastLeafValue, firstInsertValue);
         if (comparison == 0) {
             final long firstInsertKey = insertRowKeys.get(0);
@@ -766,7 +767,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         directoryRowKeys = null;
     }
 
-    private void removeFromLeaf(int leafSize, short[] leafValues, ShortChunk<? extends Any> removeValues,
+    private void removeFromLeaf(int leafSize, Object[] leafValues, ObjectChunk<Object, ? extends Any> removeValues,
             long[] leafRowKeys, LongChunk<? extends RowKeys> removeRowKeys,
             @Nullable WritableLongChunk<? extends RowKeys> priorRedirections, long firstPriorRedirection) {
         Assert.leq(leafSize, "leafSize", this.leafSize, "this.leafSize");
@@ -801,7 +802,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                 lwin = 0;
                 // the leaf is consistently winning, so we need to search in the leaf for the next value in remove
 
-                final short searchValue = removeValues.get(rposi);
+                final Object searchValue = removeValues.get(rposi);
                 final long searchKey = removeRowKeys.get(rposi);
 
                 final int locationToRemoveInLeaf =
@@ -828,11 +829,11 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
     }
 
 
-    private static int lowerBound(ShortChunk<? extends Any> valuesToSearch, LongChunk<? extends RowKeys> rowKeysToSearch,
-            int lo, int hi, short searchValue, long searchKey) {
+    private static int lowerBound(ObjectChunk<Object, ? extends Any> valuesToSearch, LongChunk<? extends RowKeys> rowKeysToSearch,
+            int lo, int hi, Object searchValue, long searchKey) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final short testValue = valuesToSearch.get(mid);
+            final Object testValue = valuesToSearch.get(mid);
             final int comparison = doComparison(testValue, searchValue);
             final boolean moveLo = comparison == 0 ? rowKeysToSearch.get(mid) < searchKey : comparison < 0;
             if (moveLo) {
@@ -848,11 +849,11 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         return lo;
     }
 
-    private static int upperBound(ShortChunk<? extends Any> valuesToSearch, LongChunk<? extends RowKeys> rowKeysToSearch,
-            int lo, int hi, short searchValue, long searchKey) {
+    private static int upperBound(ObjectChunk<Object, ? extends Any> valuesToSearch, LongChunk<? extends RowKeys> rowKeysToSearch,
+            int lo, int hi, Object searchValue, long searchKey) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final short testValue = valuesToSearch.get(mid);
+            final Object testValue = valuesToSearch.get(mid);
             final int comparison = doComparison(testValue, searchValue);
             final boolean moveLo = comparison == 0 ? rowKeysToSearch.get(mid) <= searchKey : comparison < 0;
             if (moveLo) {
@@ -868,11 +869,11 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         return lo;
     }
 
-    private static int lowerBound(short[] valuesToSearch, long[] rowKeysToSearch, int lo, int hi, short searchValue,
+    private static int lowerBound(Object[] valuesToSearch, long[] rowKeysToSearch, int lo, int hi, Object searchValue,
             long searchKey) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final short testValue = valuesToSearch[mid];
+            final Object testValue = valuesToSearch[mid];
             final int comparison = doComparison(testValue, searchValue);
             final boolean moveLo = comparison == 0 ? rowKeysToSearch[mid] < searchKey : comparison < 0;
             if (moveLo) {
@@ -888,10 +889,10 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         return lo;
     }
 
-    private static int upperBound(short[] valuesToSearch, int lo, int hi, short searchValue) {
+    private static int upperBound(Object[] valuesToSearch, int lo, int hi, Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final short testValue = valuesToSearch[mid];
+            final Object testValue = valuesToSearch[mid];
             final int comparison = doComparison(testValue, searchValue);
             final boolean moveLo = comparison < 0;
             if (moveLo) {
@@ -918,11 +919,11 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * @param searchRowKey the row key to search for
      * @return the highest row key with a value greater than searchValue
      */
-    private static int bound(short[] valuesToSearch, long[] rowKeysToSearch, final short searchValue, long searchRowKey,
+    private static int bound(Object[] valuesToSearch, long[] rowKeysToSearch, final Object searchValue, long searchRowKey,
             int lo, int hi) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final short testValue = valuesToSearch[mid];
+            final Object testValue = valuesToSearch[mid];
             final int comparison = doComparison(testValue, searchValue);
             final boolean moveLo = comparison == 0 ? rowKeysToSearch[mid] < searchRowKey : comparison <= 0;
             if (moveLo) {
@@ -938,16 +939,16 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
     @Override
     public void remove(Chunk<? extends Any> valuesToRemove, LongChunk<? extends RowKeys> rowKeysToRemove) {
-        remove(valuesToRemove.asShortChunk(), rowKeysToRemove);
+        remove(valuesToRemove.asObjectChunk(), rowKeysToRemove);
     }
 
     @Override
     public void removeAndGetPrior(Chunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> rowKeysToRemove,
             WritableLongChunk<? extends RowKeys> priorRedirections) {
-        removeAndGetNextInternal(stampChunk.asShortChunk(), rowKeysToRemove, priorRedirections);
+        removeAndGetNextInternal(stampChunk.asObjectChunk(), rowKeysToRemove, priorRedirections);
     }
 
-    private void remove(ShortChunk<? extends Any> valuesToRemove, LongChunk<? extends RowKeys> rowKeysToRemove) {
+    private void remove(ObjectChunk<Object, ? extends Any> valuesToRemove, LongChunk<? extends RowKeys> rowKeysToRemove) {
         removeAndGetNextInternal(valuesToRemove, rowKeysToRemove, null);
     }
 
@@ -958,7 +959,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      * @param rowKeysToRemove the corresponding rowKeys
      * @param priorRedirections the prior redirection for a removed value
      */
-    private void removeAndGetNextInternal(ShortChunk<? extends Any> valuesToRemove,
+    private void removeAndGetNextInternal(ObjectChunk<Object, ? extends Any> valuesToRemove,
             LongChunk<? extends RowKeys> rowKeysToRemove,
             @Nullable WritableLongChunk<? extends RowKeys> priorRedirections) {
         validate();
@@ -983,7 +984,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             removeFromLeaf(size, directoryValues, valuesToRemove, directoryRowKeys, rowKeysToRemove, priorRedirections,
                     RowSequence.NULL_ROW_KEY);
         } else {
-            try (final ResettableShortChunk<Any> leafValuesRemoveChunk = ResettableShortChunk.makeResettableChunk();
+            try (final ResettableObjectChunk<Object, Any> leafValuesRemoveChunk = ResettableObjectChunk.makeResettableChunk();
                     final ResettableLongChunk<RowKeys> leafKeysRemoveChunk = ResettableLongChunk.makeResettableChunk();
                     final ResettableWritableLongChunk<RowKeys> priorRedirectionsSlice =
                             priorRedirections == null ? null : ResettableWritableLongChunk.makeResettableChunk()) {
@@ -1003,7 +1004,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                     if (firstLeaf == leafCount - 1) {
                         lastPositionForLeaf = removeSize - 1;
                     } else {
-                        final short leafMaxValue = directoryValues[firstLeaf];
+                        final Object leafMaxValue = directoryValues[firstLeaf];
                         final long leafMaxRowKey = directoryRowKeys[firstLeaf];
                         lastPositionForLeaf = upperBound(valuesToRemove, rowKeysToRemove, firstValuesPosition,
                                 removeSize, leafMaxValue, leafMaxRowKey);
@@ -1164,16 +1165,16 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
     @Override
     public void applyShift(Chunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk, long shiftDelta) {
-        applyShift(stampChunk.asShortChunk(), keyChunk, shiftDelta);
+        applyShift(stampChunk.asObjectChunk(), keyChunk, shiftDelta);
     }
 
     @Override
     public void applyShiftReverse(Chunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk,
             long shiftDelta) {
-        applyShiftReverse(stampChunk.asShortChunk(), keyChunk, shiftDelta);
+        applyShiftReverse(stampChunk.asObjectChunk(), keyChunk, shiftDelta);
     }
 
-    private void applyShift(ShortChunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk,
+    private void applyShift(ObjectChunk<Object, ? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk,
             long shiftDelta) {
         validate();
         final int shiftSize = stampChunk.size();
@@ -1184,7 +1185,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         if (leafCount == 1) {
             shiftLeaf(size, directoryValues, stampChunk, directoryRowKeys, keyChunk, shiftDelta);
         } else {
-            try (final ResettableShortChunk<Any> leafValuesChunk = ResettableShortChunk.makeResettableChunk();
+            try (final ResettableObjectChunk<Object, Any> leafValuesChunk = ResettableObjectChunk.makeResettableChunk();
                     final ResettableLongChunk<RowKeys> leafKeyChunk = ResettableLongChunk.makeResettableChunk()) {
                 int firstValuesPosition = 0;
                 while (firstValuesPosition < shiftSize) {
@@ -1198,7 +1199,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                         lastValueForLeaf = shiftSize - 1;
                     } else {
                         // every value up to and including the leaf's directory entry is in this leaf
-                        final short leafMaxValue = directoryValues[firstLeaf];
+                        final Object leafMaxValue = directoryValues[firstLeaf];
                         final long leafMaxRowKey = directoryRowKeys[firstLeaf];
                         lastValueForLeaf = upperBound(stampChunk, keyChunk, firstValuesPosition, shiftSize,
                                 leafMaxValue, leafMaxRowKey);
@@ -1221,7 +1222,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         validate();
     }
 
-    private void shiftLeaf(int leafSize, short[] leafValues, ShortChunk<? extends Any> shiftValues, long[] leafRowKeys,
+    private void shiftLeaf(int leafSize, Object[] leafValues, ObjectChunk<Object, ? extends Any> shiftValues, long[] leafRowKeys,
             LongChunk<? extends RowKeys> shiftRowKeys, long shiftDelta) {
         Assert.leq(leafSize, "leafSize", this.leafSize, "this.leafSize");
         final int shiftSize = shiftValues.size();
@@ -1246,7 +1247,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                 lwin = 0;
                 // the leaf is consistently winning, so we need to search in the leaf for the next value in shift
 
-                final short searchValue = shiftValues.get(shiftPos);
+                final Object searchValue = shiftValues.get(shiftPos);
                 final long searchKey = shiftRowKeys.get(shiftPos);
 
                 final int locationToShiftInLeaf =
@@ -1268,7 +1269,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         }
     }
 
-    private void applyShiftReverse(ShortChunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk,
+    private void applyShiftReverse(ObjectChunk<Object, ? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk,
             long shiftDelta) {
         validate();
         final int shiftSize = stampChunk.size();
@@ -1279,7 +1280,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         if (leafCount == 1) {
             shiftLeafReverse(size, directoryValues, stampChunk, directoryRowKeys, keyChunk, shiftDelta);
         } else {
-            try (final ResettableShortChunk<Any> leafValuesChunk = ResettableShortChunk.makeResettableChunk();
+            try (final ResettableObjectChunk<Object, Any> leafValuesChunk = ResettableObjectChunk.makeResettableChunk();
                     final ResettableLongChunk<RowKeys> leafKeyChunk = ResettableLongChunk.makeResettableChunk()) {
                 int lastValuesPosition = shiftSize - 1;
                 while (lastValuesPosition >= 0) {
@@ -1292,11 +1293,11 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                     if (firstLeaf == 0) {
                         firstValueForLeaf = 0;
                     } else {
-                        final short leafMinValue = leafValues[firstLeaf][0];
+                        final Object leafMinValue = leafValues[firstLeaf][0];
                         final long leafMinRowKey = leafRowKeys[firstLeaf][0];
                         firstValueForLeaf = lowerBound(stampChunk, keyChunk, 0, lastValuesPosition + 1, leafMinValue,
                                 leafMinRowKey);
-                        short foundValue = stampChunk.get(firstValueForLeaf);
+                        Object foundValue = stampChunk.get(firstValueForLeaf);
                         final int foundComparison = doComparison(foundValue, leafMinValue);
                         if (foundComparison < 0
                                 || (foundComparison == 0 && keyChunk.get(firstValueForLeaf) < leafMinRowKey)) {
@@ -1329,7 +1330,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         validate();
     }
 
-    private void shiftLeafReverse(int leafSize, short[] leafValues, ShortChunk<? extends Any> shiftValues,
+    private void shiftLeafReverse(int leafSize, Object[] leafValues, ObjectChunk<Object, ? extends Any> shiftValues,
             long[] leafRowKeys, LongChunk<? extends RowKeys> shiftRowKeys, long shiftDelta) {
         Assert.leq(leafSize, "leafSize", this.leafSize, "this.leafSize");
         final int shiftSize = shiftValues.size();
@@ -1355,7 +1356,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                 lwin = 0;
                 // the leaf is consistently winning, so we need to search in the leaf for the next value in shift
 
-                final short searchValue = shiftValues.get(shiftPos);
+                final Object searchValue = shiftValues.get(shiftPos);
                 final long searchKey = shiftRowKeys.get(shiftPos);
 
                 final int locationToShiftInLeaf =
@@ -1427,8 +1428,8 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
             for (int ii = 0; ii < leafCount; ++ii) {
                 validateLeaf(ii);
-                final short lastValue = leafValues[ii][leafSizes[ii] - 1];
-                final short directoryValue = directoryValues[ii];
+                final Object lastValue = leafValues[ii][leafSizes[ii] - 1];
+                final Object directoryValue = directoryValues[ii];
                 Assert.assertion(leq(lastValue, directoryValue), "lt(lastValue, directoryValue)", lastValue,
                         "leafValues[ii][leafSizes[ii] - 1]", directoryValue, "directoryValue");
                 if (eq(lastValue, directoryValue)) {
@@ -1436,7 +1437,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                             directoryRowKeys[ii]);
                 }
                 if (ii < leafCount - 1) {
-                    final short nextFirstValue = leafValues[ii + 1][0];
+                    final Object nextFirstValue = leafValues[ii + 1][0];
                     final long nextFirstKey = leafRowKeys[ii + 1][0];
                     Assert.assertion(leq(directoryValue, nextFirstValue), "leq(directoryValue, nextFirstValue)",
                             directoryValue, "directoryValue", nextFirstValue, "nextFirstValue");
@@ -1473,9 +1474,9 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             return;
         }
         for (int leaf = firstLeaf; leaf < lastLeaf; ++leaf) {
-            final short lastValue = leafValues[leaf][leafSizes[leaf] - 1];
+            final Object lastValue = leafValues[leaf][leafSizes[leaf] - 1];
             final long lastKey = leafRowKeys[leaf][leafSizes[leaf] - 1];
-            final short nextValue = leafValues[leaf + 1][0];
+            final Object nextValue = leafValues[leaf + 1][0];
             final long nextKey = leafRowKeys[leaf + 1][0];
             Assert.assertion(leq(lastValue, nextValue), lastValue + " < " + nextValue);
             if (eq(lastValue, nextValue)) {
@@ -1488,7 +1489,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         validateLeaf(leafValues[leaf], leafRowKeys[leaf], leafSizes[leaf]);
     }
 
-    private static void validateLeaf(short[] values, long[] rowKeys, int size) {
+    private static void validateLeaf(Object[] values, long[] rowKeys, int size) {
         if (!SEGMENTED_SORTED_ARRAY_VALIDATION) {
             return;
         }
@@ -1515,9 +1516,9 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
      *
      * @return a chunk of the SSAs value's, the caller owns the chunk and should close it
      */
-    WritableShortChunk<? extends Any> asShortChunk() {
+    WritableObjectChunk<Object, ? extends Any> asObjectChunk() {
         final int chunkSize = intSize();
-        final WritableShortChunk<? extends Any> values = WritableShortChunk.makeWritableChunk(chunkSize);
+        final WritableObjectChunk<Object, ? extends Any> values = WritableObjectChunk.makeWritableChunk(chunkSize);
         if (leafCount == 0) {
             return values;
         }
@@ -1580,30 +1581,31 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
     }
 
     // region comparison functions
-    private static int doComparison(short lhs, short rhs) {
-        return ShortComparisons.compare(lhs, rhs);
+    // ascending comparison
+    private static int doComparison(Object lhs, Object rhs) {
+        return ObjectComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
-    private static boolean gt(short lhs, short rhs) {
+    private static boolean gt(Object lhs, Object rhs) {
         return doComparison(lhs, rhs) > 0;
     }
 
-    private static boolean lt(short lhs, short rhs) {
+    private static boolean lt(Object lhs, Object rhs) {
         return doComparison(lhs, rhs) < 0;
     }
 
-    private static boolean leq(short lhs, short rhs) {
+    private static boolean leq(Object lhs, Object rhs) {
         return doComparison(lhs, rhs) <= 0;
     }
 
-    private static boolean geq(short lhs, short rhs) {
+    private static boolean geq(Object lhs, Object rhs) {
         return doComparison(lhs, rhs) >= 0;
     }
 
-    private static boolean eq(short lhs, short rhs) {
+    private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return ShortComparisons.eq(lhs, rhs);
+        return ObjectComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 
@@ -1660,7 +1662,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             return leafIndex < leafCount - 1 || (indexWithinLeaf < leafSizes[leafIndex] - 1);
         }
 
-        public short getValue() {
+        public Object getValue() {
             if (leafCount == 1) {
                 return directoryValues[indexWithinLeaf];
             } else {
@@ -1668,7 +1670,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             }
         }
 
-        public short nextValue() {
+        public Object nextValue() {
             Assert.assertion(hasNext(), "hasNext()");
             if (leafCount == 1) {
                 return directoryValues[indexWithinLeaf + 1];
@@ -1704,7 +1706,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
          *
          * @param value the value we are searching for
          */
-        public void advanceToLast(short value) {
+        public void advanceToLast(Object value) {
             advanceToInternal(value, true);
         }
 
@@ -1713,7 +1715,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
          *
          * @param value the value we are searching for
          */
-        public void advanceToBeforeFirst(short value) {
+        public void advanceToBeforeFirst(Object value) {
             advanceToInternal(value, false);
             if (disallowExactMatch) {
                 if (hasNext() && eq(nextValue(), value)) {
@@ -1723,7 +1725,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             }
         }
 
-        private void advanceToInternal(short value, boolean advanceToLast) {
+        private void advanceToInternal(Object value, boolean advanceToLast) {
             if (leafCount == 0) {
                 return;
             }
@@ -1812,7 +1814,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
          * Advance the iterator to the last value which is equal to the current value.
          */
         public void advanceWhileEqual() {
-            final short value = getValue();
+            final Object value = getValue();
             findLastInLeaf(value);
             while (leafIndex < leafCount - 1) {
                 if (indexWithinLeaf < leafSizes[leafIndex] - 1) {
@@ -1831,7 +1833,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
          * We know that if the value is to be found, it is to be found in this leaf, advance indexWithinLeaf until we
          * find it.
          */
-        private void findInLeaf(short value) {
+        private void findInLeaf(Object value) {
             if (disallowExactMatch) {
                 if (leafCount == 1) {
                     indexWithinLeaf = upperBound(directoryValues, indexWithinLeaf, size, value);
@@ -1843,7 +1845,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             }
         }
 
-        private void findLastInLeaf(short value) {
+        private void findLastInLeaf(Object value) {
             if (leafCount == 1) {
                 indexWithinLeaf =
                         lowerBound(directoryValues, directoryRowKeys, indexWithinLeaf, size, value, Long.MAX_VALUE);
@@ -1857,7 +1859,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
          * We know that if the value is to be found, it is to be found in this leaf, advance indexWithinLeaf until we
          * find it.
          */
-        private void findFirstInLeaf(short value) {
+        private void findFirstInLeaf(Object value) {
             final int startIndex = Math.max(0, indexWithinLeaf);
             if (leafCount == 1) {
                 indexWithinLeaf = upperBound(directoryValues, startIndex, size, value);
