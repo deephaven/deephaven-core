@@ -63,8 +63,10 @@ def miscased_phrases(label, allow, used):
     for phrase in allow["capitalized_phrases"]:
         for m in phrase_pattern(phrase).finditer(label):
             used.add(("phrase", phrase))
-            if not m.group(0).startswith(phrase):
-                found.append(f"'{m.group(0)}' should be '{phrase}{m.group(0)[len(phrase):]}'")
+            # The phrase keeps its capitals; a plural suffix is lowercase.
+            expected = phrase + m.group(0)[len(phrase):].lower()
+            if m.group(0) != expected:
+                found.append(f"'{m.group(0)}' should be '{expected}'")
     return found
 
 
