@@ -273,8 +273,9 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             return prepareReturnThis();
         }
 
-        final IMPL_TYPE result = copy(ak -> !toAdd.containsKey(ak) && !effectiveRemoves.contains(ak));
-        toAdd.forEach(result::setAttribute);
+        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
+                copy(buildAttributes(ak -> !effectiveRemoves.contains(ak), toAdd));
+        result.removeAttributes(effectiveRemoves::contains);
         // noinspection unchecked
         return (IFACE_TYPE) result;
     }
@@ -285,10 +286,8 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             return prepareReturnThis();
         }
 
-        final IMPL_TYPE result = copy(ak -> !toAdd.containsKey(ak));
-        toAdd.forEach(result::setAttribute);
         // noinspection unchecked
-        return (IFACE_TYPE) result;
+        return (IFACE_TYPE) copy(buildAttributes(ak -> true, toAdd));
     }
 
     @Override
@@ -298,8 +297,11 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         }
 
         final Set<String> toRemoveSet = new HashSet<>(toRemove);
+        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
+                copy(buildAttributes(ak -> !toRemoveSet.contains(ak), Map.of()));
+        result.removeAttributes(toRemoveSet::contains);
         // noinspection unchecked
-        return (IFACE_TYPE) copy(ak -> !toRemoveSet.contains(ak));
+        return (IFACE_TYPE) result;
     }
 
     @Override
@@ -309,18 +311,71 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         }
 
         final Set<String> toRetainSet = new HashSet<>(toRetain);
+        final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy(buildAttributes(toRetainSet::contains, Map.of()));
+        result.removeAttributes(ak -> !toRetainSet.contains(ak));
         // noinspection unchecked
-        return (IFACE_TYPE) copy(toRetainSet::contains);
+        return (IFACE_TYPE) result;
     }
 
     /**
-     * Create a copy of {@code this} that holds only the attributes whose keys satisfy {@code shouldCopy}, managing each
-     * copied attribute value that requires management exactly once.
+     * Build the attributes for a copy of {@code this}: our attributes whose keys satisfy {@code shouldKeep}, overlaid
+     * with {@code toAdd}.
      *
-     * @param shouldCopy Should we copy the attribute with this key?
+     * @param shouldKeep Should we keep our attribute with this key?
+     * @param toAdd Attributes to add, replacing any of ours with the same keys
+     * @return An unmodifiable map of the resulting attributes
+     */
+    private Map<String, Object> buildAttributes(
+            @NotNull final Predicate<String> shouldKeep,
+            @NotNull final Map<String, Object> toAdd) {
+        final Map<String, Object> localImmutableAttributes = immutableAttributes();
+        final Map<String, Object> result = new HashMap<>(localImmutableAttributes.size() + toAdd.size());
+        localImmutableAttributes.forEach((ak, av) -> {
+            if (shouldKeep.test(ak)) {
+                result.put(ak, av);
+            }
+        });
+        result.putAll(toAdd);
+        return result.isEmpty() ? EMPTY_ATTRIBUTES : Collections.unmodifiableMap(result);
+    }
+
+    /**
+     * Remove the attributes whose keys satisfy {@code shouldRemove}, unmanaging their values. A copy's constructor may
+     * add attributes beyond the ones it was given, as {@code BaseTable} does with
+     * {@link io.deephaven.engine.table.Table#SYSTEMIC_TABLE_ATTRIBUTE} on a systemic thread; this removes any such
+     * attribute that the caller asked to be absent. It does nothing, and in particular does not call
+     * {@link #ensureAttributes()}, when no key satisfies {@code shouldRemove}.
+     *
+     * @param shouldRemove Should we remove the attribute with this key?
+     */
+    private void removeAttributes(@NotNull final Predicate<String> shouldRemove) {
+        if (currentAttributes().keySet().stream().noneMatch(shouldRemove)) {
+            return;
+        }
+        final List<LivenessReferent> removedReferents = new ArrayList<>();
+        for (final Iterator<Map.Entry<String, Object>> it = ensureAttributes().entrySet().iterator(); it.hasNext();) {
+            final Map.Entry<String, Object> attrEntry = it.next();
+            if (!shouldRemove.test(attrEntry.getKey())) {
+                continue;
+            }
+            final Object removedValue = attrEntry.getValue();
+            it.remove();
+            if (needsManagement(removedValue)) {
+                removedReferents.add((LivenessReferent) removedValue);
+            }
+        }
+        if (!removedReferents.isEmpty()) {
+            unmanage(removedReferents.stream());
+        }
+    }
+
+    /**
+     * Create a copy of {@code this} that is constructed with {@code attributes} as its initial attributes.
+     *
+     * @param attributes The unmodifiable attributes for the copy
      * @return The copy
      */
-    protected abstract IMPL_TYPE copy(@NotNull Predicate<String> shouldCopy);
+    protected abstract IMPL_TYPE copy(@NotNull Map<String, Object> attributes);
 
     @Override
     @ConcurrentMethod

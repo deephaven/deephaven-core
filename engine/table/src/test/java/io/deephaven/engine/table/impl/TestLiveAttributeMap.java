@@ -13,14 +13,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -29,45 +25,21 @@ import static org.junit.Assert.*;
 /**
  * Unit tests for {@link LiveAttributeMap}.
  */
-@RunWith(Parameterized.class)
 public class TestLiveAttributeMap {
-
-    @Parameterized.Parameters(name = "copyViaSetAttribute={0}")
-    public static Collection<Object[]> parameters() {
-        return List.of(new Object[] {false}, new Object[] {true});
-    }
 
     private static final class AttrMap extends LiveAttributeMap<AttrMap, AttrMap> {
 
-        /**
-         * Whether {@link #copy(Predicate)} fills the result with {@link #copyAttributes}, as the table implementations
-         * do, rather than passing our attributes as the initial attributes, as the hierarchical table implementations
-         * do.
-         */
-        private final boolean copyViaSetAttribute;
-
-        private AttrMap(@Nullable final Map<String, Object> initialAttributes, final boolean copyViaSetAttribute) {
+        private AttrMap(@Nullable final Map<String, Object> initialAttributes) {
             super(initialAttributes, false);
-            this.copyViaSetAttribute = copyViaSetAttribute;
         }
 
         @Override
-        protected AttrMap copy(@NotNull final Predicate<String> shouldCopy) {
-            if (!copyViaSetAttribute) {
-                return new AttrMap(getAttributes(shouldCopy), false);
-            }
-            final AttrMap result = new AttrMap(null, true);
-            copyAttributes(this, result, shouldCopy);
-            return result;
+        protected AttrMap copy(@NotNull final Map<String, Object> attributes) {
+            return new AttrMap(attributes);
         }
     }
 
-    private final boolean copyViaSetAttribute;
     private final List<LivenessScope> scopes = new ArrayList<>();
-
-    public TestLiveAttributeMap(final boolean copyViaSetAttribute) {
-        this.copyViaSetAttribute = copyViaSetAttribute;
-    }
 
     @After
     public void tearDown() {
@@ -92,7 +64,7 @@ public class TestLiveAttributeMap {
     }
 
     private AttrMap newMap(@NotNull final LivenessScope scope, @Nullable final Map<String, Object> initialAttributes) {
-        return inScope(scope, () -> new AttrMap(initialAttributes, copyViaSetAttribute));
+        return inScope(scope, () -> new AttrMap(initialAttributes));
     }
 
     /**
@@ -144,7 +116,7 @@ public class TestLiveAttributeMap {
 
     @Test
     public void testEmpty() {
-        final AttrMap empty = new AttrMap(null, copyViaSetAttribute);
+        final AttrMap empty = new AttrMap(null);
         final Map<String, Object> emptyAttrs = empty.getAttributes();
         assertTrue(emptyAttrs.isEmpty());
     }

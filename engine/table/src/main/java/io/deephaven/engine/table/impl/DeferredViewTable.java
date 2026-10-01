@@ -42,7 +42,20 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             @Nullable final String[] deferredDropColumns,
             @Nullable final SelectColumn[] deferredViewColumns,
             @Nullable final WhereFilter[] deferredFilters) {
-        super(definition, description);
+        this(definition, description, tableReference, deferredDropColumns, deferredViewColumns, deferredFilters, null);
+    }
+
+    /**
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     */
+    public DeferredViewTable(@NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @NotNull final TableReference tableReference,
+            @Nullable final String[] deferredDropColumns,
+            @Nullable final SelectColumn[] deferredViewColumns,
+            @Nullable final WhereFilter[] deferredFilters,
+            @Nullable final Map<String, Object> attributes) {
+        super(definition, description, attributes);
         this.tableReference = tableReference;
         this.deferredDropColumns =
                 deferredDropColumns == null ? ArrayTypeUtils.EMPTY_STRING_ARRAY : deferredDropColumns;
@@ -398,12 +411,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     }
 
     @Override
-    protected DeferredViewTable copy(@NotNull final Predicate<String> shouldCopy) {
-        final DeferredViewTable result =
-                new DeferredViewTable(definition, getDescription(), new CopiedTableReference(this, tableReference),
-                        null, null, null);
-        LiveAttributeMap.copyAttributes(this, result, shouldCopy);
-        return result;
+    protected DeferredViewTable copy(@NotNull final Map<String, Object> attributes) {
+        return new DeferredViewTable(definition, getDescription(), new CopiedTableReference(this, tableReference),
+                null, null, null, attributes);
     }
 
     @Override

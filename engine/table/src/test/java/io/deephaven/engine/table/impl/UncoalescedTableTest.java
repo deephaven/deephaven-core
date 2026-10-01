@@ -17,9 +17,9 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.function.Predicate;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
@@ -189,7 +189,7 @@ public class UncoalescedTableTest {
         }
 
         @Override
-        protected NonMemoizingUncoalescedTable copy(final Predicate<String> shouldCopy) {
+        protected NonMemoizingUncoalescedTable copy(final Map<String, Object> attributes) {
             return new NonMemoizingUncoalescedTable();
         }
     }
@@ -217,7 +217,7 @@ public class UncoalescedTableTest {
         }
 
         @Override
-        protected TestUncoalescedTable copy(final Predicate<String> shouldCopy) {
+        protected TestUncoalescedTable copy(final Map<String, Object> attributes) {
             return new TestUncoalescedTable(refreshing, resultSupplier);
         }
 

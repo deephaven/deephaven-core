@@ -218,8 +218,8 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    protected TreeTableImpl copy(@NotNull final Predicate<String> shouldCopy) {
-        return new TreeTableImpl(getAttributes(shouldCopy), source, tree, sourceRowLookup, identifierColumn,
+    protected TreeTableImpl copy(@NotNull final Map<String, Object> attributes) {
+        return new TreeTableImpl(attributes, source, tree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, nodeOperations, availableColumnDefinitions);
     }
 

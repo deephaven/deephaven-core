@@ -17,6 +17,7 @@ import io.deephaven.engine.util.TableTools;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.col;
@@ -98,5 +99,23 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
             return false;
         }
         return throwables.get(0).getCause().getClass().equals(NullPointerException.class);
+    }
+
+    @Test
+    public void testRemoveSystemicAttributeOnSystemicThread() {
+        final Table systemic = SystemicObjectTracker.executeSystemically(true, () -> TableTools.emptyTable(1));
+        assertTrue(systemic.hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+
+        SystemicObjectTracker.executeSystemically(true, () -> {
+            assertFalse(systemic.withoutAttributes(List.of(Table.SYSTEMIC_TABLE_ATTRIBUTE))
+                    .hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertFalse(systemic.retainingAttributes(List.of())
+                    .hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            final Table replaced = systemic.withAttributes(Map.of("Other", "o"),
+                    List.of(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertFalse(replaced.hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertEquals("o", replaced.getAttribute("Other"));
+            return null;
+        });
     }
 }

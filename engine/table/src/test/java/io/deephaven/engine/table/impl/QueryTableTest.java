@@ -3841,7 +3841,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         @Override
-        protected MockUncoalescedTable copy(final Predicate<String> shouldCopy) {
+        protected MockUncoalescedTable copy(final Map<String, Object> attributes) {
             return new MockUncoalescedTable(supplier);
         }
     }
