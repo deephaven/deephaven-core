@@ -1,0 +1,37 @@
+{
+  "single_page_groups": {
+    "python": [
+      "Reference > Work with tables > Transpose"
+    ]
+  },
+  "case_exempt_subtrees": [
+    "Getting Started > A Crash Course in Deephaven"
+  ],
+  "case_exempt_paths": {
+    "groovy": [
+      "reference/table-operations/create/InputTable.md"
+    ]
+  },
+  "capitalized_phrases": [
+    "Application Mode",
+    "Periodic Update Graph",
+    "Update By",
+    "Table API"
+  ],
+  "proper_nouns": [
+    "Barrage",
+    "Core",
+    "Deephaven",
+    "Docker",
+    "Express",
+    "Flight",
+    "Groovy",
+    "Instant",
+    "Java",
+    "Javadocs",
+    "Kafka",
+    "Parquet",
+    "Python",
+    "Seaborn"
+  ]
+}

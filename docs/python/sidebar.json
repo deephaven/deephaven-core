@@ -21,11 +21,11 @@
             "path": "getting-started/quickstart.md"
           },
           {
-            "label": "Jupyter Quickstart",
+            "label": "Jupyter quickstart",
             "path": "getting-started/jupyter-quickstart.md"
           },
           {
-            "label": "Python Client Quickstart",
+            "label": "Python client quickstart",
             "path": "getting-started/pyclient-quickstart.md"
           },
           {
@@ -195,7 +195,7 @@
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
               },
               {
-                "label": "Arrow/Barrage Schema",
+                "label": "Arrow/Barrage schema",
                 "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
@@ -232,7 +232,7 @@
                 "label": "Kafka",
                 "items": [
                   {
-                    "label": "Kafka Overview",
+                    "label": "Kafka overview",
                     "path": "how-to-guides/overview-kafka.md"
                   },
                   {
@@ -365,7 +365,7 @@
                 "label": "Join",
                 "items": [
                   {
-                    "label": "Exact and Relational Joins",
+                    "label": "Exact and relational joins",
                     "path": "how-to-guides/joins-exact-relational.md"
                   },
                   {
@@ -499,7 +499,7 @@
                     "path": "how-to-guides/built-in-constants.md"
                   },
                   {
-                    "label": "Built-in Variables",
+                    "label": "Built-in variables",
                     "path": "how-to-guides/built-in-variables.md"
                   },
                   {
@@ -512,7 +512,7 @@
                 "label": "Python",
                 "items": [
                   {
-                    "label": "Query Scope",
+                    "label": "Query scope",
                     "path": "how-to-guides/query-scope.md"
                   },
                   {
@@ -524,7 +524,7 @@
                     "path": "how-to-guides/python-functions.md"
                   },
                   {
-                    "label": "Classes & Objects",
+                    "label": "Classes & objects",
                     "path": "how-to-guides/python-classes.md"
                   },
                   {
@@ -608,7 +608,7 @@
                 "label": "Advanced Python topics",
                 "items": [
                   {
-                    "label": "Execution Context",
+                    "label": "Execution context",
                     "path": "conceptual/execution-context.md"
                   },
                   {
@@ -616,7 +616,7 @@
                     "path": "conceptual/liveness-scope-concept.md"
                   },
                   {
-                    "label": "Systemic Object Marking",
+                    "label": "Systemic object marking",
                     "path": "conceptual/systemic-object-marking.md"
                   }
                 ]
@@ -933,11 +933,11 @@
                     "path": "how-to-guides/performance/reduce-update-frequency.md"
                   },
                   {
-                    "label": "Data Indexes",
+                    "label": "Data indexes",
                     "path": "how-to-guides/data-indexes.md"
                   },
                   {
-                    "label": "Predicate Pushdown Filtering",
+                    "label": "Predicate pushdown filtering",
                     "path": "how-to-guides/predicate-pushdown.md"
                   },
                   {
@@ -961,7 +961,7 @@
                     "path": "conceptual/python-java-boundary.md"
                   },
                   {
-                    "label": "Run Garbage Collection",
+                    "label": "Run garbage collection",
                     "path": "how-to-guides/performance/garbage-collection.md"
                   },
                   {
@@ -1054,7 +1054,7 @@
                 "path": "conceptual/what-is-barrage.md"
               },
               {
-                "label": "Deephaven Vectors",
+                "label": "Deephaven vectors",
                 "path": "conceptual/arrays-vs-vectors.md"
               }
             ]
@@ -1155,7 +1155,7 @@
                 "path": "how-to-guides/configuration/configuration-properties.md"
               },
               {
-                "label": "Web Defaults",
+                "label": "Web defaults",
                 "path": "how-to-guides/configuration/configure-web.md"
               },
               {
@@ -2686,7 +2686,7 @@
             "label": "Imports",
             "items": [
               {
-                "label": "Backend Imports",
+                "label": "Backend imports",
                 "path": "reference/python/backend-imports.md"
               },
               {
@@ -2801,7 +2801,7 @@
             "label": "FAQs",
             "items": [
               {
-                "label": "FAQ Overview",
+                "label": "FAQ overview",
                 "path": "reference/community-questions/cq-index.md"
               },
               {
