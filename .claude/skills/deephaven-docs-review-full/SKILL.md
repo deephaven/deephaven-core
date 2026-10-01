@@ -177,9 +177,10 @@ structural edit introduces into content nobody re-reads afterward.
 
 For each code example (the structure review's structure map lists them), check what no other
 step does. The accuracy check has verified its API use and claimed behavior against source, but it
-doesn't run snippets. The docs snapshotter runs them when snapshots are regenerated
+doesn't run snippets. The docs snapshotter runs runnable examples when snapshots are regenerated
 (`docs/README.md`), so an example edited in this review hasn't been run until then — say so in the
-report rather than assuming it works. Then check:
+report rather than assuming it works. Blocks marked `syntax` or `skip-test` are never run
+(`docs/snapshotter/README.md`), so nothing will validate them later; check those by reading. Then check:
 
 - **Does it illustrate the concept its lead-in names?** An example introduced as "a formula with
   side effects" that has none, or a barrier example where the barrier isn't what makes the output
@@ -214,7 +215,7 @@ facts just because it isn't the accuracy step.
 
 When the user asked for edits, every fix — from any step — passes one question before it's
 applied: **does this fix belong here, or somewhere else?** A fix that adds a property name, a
-default, a hedge, or a parenthetical caveat to Concept-guide narrative is usually true and still
+default, a hedge, or a parenthetical caveat to Concept-guide or Tutorial narrative is usually true and still
 wrong for the page; put the detail in a Configuration section or behind a reference link, and
 make the narrative sentence correct at its own level of abstraction (see
 `deephaven-core-accuracy-check`'s **Placement of configuration detail**). This matters most when

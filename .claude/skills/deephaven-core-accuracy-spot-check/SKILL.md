@@ -19,9 +19,12 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    that skill's "Technical accuracy review" step for the full path list). Search source first;
    never correct an example from memory.
 
-   **Placement gate:** a verified-true fix can still be the wrong fix. If correcting the claim
-   would add a property name, default, threshold, hedge, or parenthetical caveat to Concept-guide
-   or Tutorial narrative, don't paste it inline — propose rewriting the sentence at the section's
+   **Placement gate:** a verified-true fix can still be the wrong fix. This applies only to
+   narrative pages: Concept guides (`conceptual/`) and Tutorials (`getting-started/crash-course/`).
+   On Reference pages and configuration pages (such as `conceptual/query-table-configuration.md`),
+   the precise property, default, or threshold is the content, so fix it inline. On a narrative
+   page, if correcting the claim would add a property name, default, threshold, hedge, or
+   parenthetical caveat to the narrative, don't paste it inline — propose rewriting the sentence at the section's
    level of abstraction and putting the precise detail in the page's Configuration section or a
    link to the configuration reference (see `deephaven-core-accuracy-check`'s **Placement of
    configuration detail**). If you can't verify the claim, raise an author query rather than
