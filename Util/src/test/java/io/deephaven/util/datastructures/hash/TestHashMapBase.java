@@ -107,4 +107,21 @@ public class TestHashMapBase {
             assertEquals(expected, buckets);
         }
     }
+
+    /**
+     * A growing rehash doubles the bucket count, but never past the width's maximum: at the maximum the doubling used
+     * to overflow int and hand the prime finder a negative count.
+     */
+    @Test
+    public void grownBucketCountSaturatesAtTheMaximum() {
+        for (final int entriesPerBucket : new int[] {1, 2, 4}) {
+            final int max = HashMapBase.getMaxBucketCapacity(entriesPerBucket);
+            // Each width's maximum is the largest prime whose array fits in an int: near 2^31 / (2 * width).
+            assertTrue(max > Integer.MAX_VALUE / (2 * entriesPerBucket) - 100_000);
+            assertEquals(2000, HashMapBase.grownBucketCount(1000, entriesPerBucket));
+            assertEquals(max, HashMapBase.grownBucketCount(max / 2 + 1, entriesPerBucket));
+            assertEquals(max, HashMapBase.grownBucketCount(max - 1, entriesPerBucket));
+            assertEquals(max, HashMapBase.grownBucketCount(max, entriesPerBucket));
+        }
+    }
 }

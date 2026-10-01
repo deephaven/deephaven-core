@@ -33,7 +33,7 @@ Null values, infinity, and numeric limits.
 | CONSTANT | NEG_INFINITY_FLOAT  | [float](https://deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NEG_INFINITY_FLOAT)   | Negative infinity of type float.       |
 | CONSTANT | NULL_BOOLEAN        | [Boolean](https://deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_BOOLEAN)       | Null boolean value.                    |
 | CONSTANT | NULL_BYTE           | [byte](https://deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_BYTE)             | Null byte value.                       |
-| CONSTANT | NULL_BYTE_BOXED     | [Byte](https://deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_BYTE_BOXED)       | Null boxed Byte value.F.               |
+| CONSTANT | NULL_BYTE_BOXED     | [Byte](https://deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_BYTE_BOXED)       | Null boxed Byte value.                 |
 | CONSTANT | NULL_CHAR           | [char](https://deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_CHAR)             | Null char value.                       |
 | CONSTANT | NULL_CHAR_BOXED     | [Character](https://deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_CHAR_BOXED)  | Null boxed Character value.            |
 | CONSTANT | NULL_DOUBLE         | [double](https://deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_DOUBLE)         | Null double value.                     |
