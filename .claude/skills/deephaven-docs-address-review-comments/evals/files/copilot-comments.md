@@ -1,7 +1,7 @@
 # Review comments on docs/python/getting-started/crash-course/parallelization.md
 
 Source: copilot-pull-request-reviewer[bot], review round 7 on this PR. Line numbers refer to
-`evals/files/crash-course-parallelization.md`. Earlier rounds on this page were already addressed.
+`.claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md`. Earlier rounds on this page were already addressed.
 
 **C1 (line 155)**
 The broken-counter snippet calls `empty_table(100)` but never imports it. A reader who copies this block gets `NameError: name 'empty_table' is not defined`. Add `from deephaven import empty_table`, as the corrected version below does.

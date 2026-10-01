@@ -3,10 +3,10 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "This parallelization concept guide feels hard to follow. Review its structure and organization: .claude/skills/deephaven-doc-structure-review/evals/files/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "prompt": "This parallelization concept guide feels hard to follow. Review its structure and organization: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
       "expected_output": "A structure critique that states the page's purpose and flags the intro/heading terminology mismatch, misplaced GIL/config detail, the mixed-category quick-reference table, and lists that don't match their section.",
       "files": [
-        "evals/files/parallelization-pre-review.md"
+        "../eval-fixtures/parallelization-pre-review.md"
       ],
       "expectations": [
         "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",

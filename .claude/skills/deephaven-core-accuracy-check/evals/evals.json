@@ -3,10 +3,10 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Check the parallelization concept guide at .claude/skills/deephaven-core-accuracy-check/evals/files/parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "prompt": "Check the parallelization concept guide at .claude/skills/eval-fixtures/parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
       "expected_output": "An accuracy report that catches the deferred-evaluation misclassification of view/update_view/lazy_update, cites the engine's stateful-column guard, and treats the inline config properties as a placement problem rather than proposing more of them.",
       "files": [
-        "evals/files/parallelization-pre-review.md"
+        "../eval-fixtures/parallelization-pre-review.md"
       ],
       "expectations": [
         "Flags the 'What does NOT get parallelized' classification of view/update_view/lazy_update as wrong or misleading, because deferred formulas run on the reading thread and can run concurrently",
@@ -18,10 +18,10 @@
     },
     {
       "id": 2,
-      "prompt": "Check the parallelization chapter of the Crash Course at .claude/skills/deephaven-core-accuracy-check/evals/files/crash-course-parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "prompt": "Check the parallelization chapter of the Crash Course at .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
       "expected_output": "Held-out doc (not used to write the skill changes). The report flags that 'use with_serial any time your formula depends on shared state' is insufficient when several columns share the state, treats the inline QueryTable.minimumParallelSelectRows as a Tutorial placement problem, and corrects the threshold semantics.",
       "files": [
-        "evals/files/crash-course-parallelization-pre-review.md"
+        "../eval-fixtures/crash-course-parallelization-pre-review.md"
       ],
       "expectations": [
         "Flags the prescription to use with_serial whenever a formula depends on shared state (the NOTE after the fix and/or the Key takeaways) as insufficient when more than one column or formula shares that state, because with_serial only prevents an expression from running concurrently with itself",
