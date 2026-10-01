@@ -101,16 +101,21 @@ public class MatchFilterCopyTest {
     }
 
     @Test
-    public void swappedColumnAndVariableDoNotLeakBetweenCopies() {
+    public void originalStillSwapsAfterItsCopyDid() {
         QueryScope.addParam("matchFilterSwapVal", 1);
+        // parses with the column and variable swapped: column "matchFilterSwapVal", value "X"
         final MatchFilter filter = (MatchFilter) WhereFilterFactory.getExpression("matchFilterSwapVal in X");
         final MatchFilter copy = (MatchFilter) filter.copy();
         final Table table = data();
-        final Table expected = newTable(intCol("X", 1), intCol("Y", 1));
 
-        // the copy's init swaps the column and variable names; the original must still see them unswapped
-        assertTableEquals(expected, table.where(copy));
-        assertTableEquals(expected, table.where(filter));
+        // The copy shares the original's string values. Were init to swap them in place, the original would be left
+        // with neither name a column, and its own init would throw.
+        copy.init(table.getDefinition());
+        assertEquals(List.of("X"), copy.getColumns());
+
+        filter.init(table.getDefinition());
+        assertEquals(List.of("X"), filter.getColumns());
+        assertTableEquals(newTable(intCol("X", 1), intCol("Y", 1)), table.where(filter));
     }
 
     @Test
