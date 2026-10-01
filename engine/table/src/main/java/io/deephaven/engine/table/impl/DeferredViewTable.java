@@ -24,7 +24,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.function.Predicate;
 
 /**
  * An uncoalesced table with view and where operations to be applied after {@link #coalesce()} is forced.

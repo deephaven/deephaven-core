@@ -31,7 +31,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import java.util.function.Predicate;
 
 /**
  * A source table that can filter partitions before coalescing. Refer to {@link TableLocationKey} for an explanation of

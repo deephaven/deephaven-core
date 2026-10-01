@@ -26,7 +26,6 @@ import org.junit.experimental.categories.Category;
 
 import java.util.*;
 import java.util.stream.IntStream;
-import java.util.function.Predicate;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
