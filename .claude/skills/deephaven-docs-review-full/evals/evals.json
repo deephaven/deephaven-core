@@ -41,7 +41,8 @@
         "The final report lists what changed and says moved, merged, or reworded passages were re-verified against source (or equivalent evidence the re-verify and style steps ran after the edits)",
         "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
         "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)"
-      ]
+      ],
+      "setup": "Edit mode: never let a run edit the live docs. Give each run its own copies of the two files in `files`, tell it they stand for docs/python/conceptual/liveness-scope-concept.md and docs/groovy/conceptual/liveness-scope-concept.md (so relative links resolve from there), and allow edits to those copies only. Iterations 3-5 in RESULTS.md ran this way."
     }
   ]
 }

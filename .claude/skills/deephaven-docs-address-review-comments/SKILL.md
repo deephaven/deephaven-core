@@ -24,8 +24,9 @@ explicitly asks — replying is outward-facing.
 ## 1. Gather and orient
 
 - Get every comment with its location: from the PR (`gh api --paginate repos/<owner>/<repo>/pulls/<n>/comments`,
-  plus review bodies from `gh api --paginate .../reviews`), or from what the user pasted. Always paginate:
-  both endpoints return 30 items per page, and a long review history spans several pages. For open vs.
+  plus review bodies from `gh api --paginate .../reviews` and Conversation-tab comments from
+  `gh api --paginate repos/<owner>/<repo>/issues/<n>/comments`, which have no code location), or from what the user pasted. Always paginate:
+  these endpoints return 30 items per page, and a long review history spans several pages. For open vs.
   resolved threads, page through GraphQL `reviewThreads` (`pageInfo`/`endCursor`). Bot reviews can also
   list findings only in the review body ("previously missed"), with no inline thread. Note which comments are
   from bots and which review round each belongs to — how many rounds this page has already had
