@@ -93,7 +93,11 @@ public class BinarySearchKernelHelper {
      * {@link java.util.Objects#equals(Object, Object)} -- the same relation the chunk filter uses. When the two agree,
      * the ordering-equal run the search locates is exactly the set of matching rows and the search can answer the match
      * outright. When they disagree -- {@link java.math.BigDecimal} at differing scales, for one -- that run is only a
-     * superset, and the matches have to be picked out of it by equality.
+     * superset, and the matches have to be picked out of it by equality. Sorted pushdown therefore matches a column of
+     * a type for which this holds with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}
+     * or {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, and a column of any other type
+     * with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality} or
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}.
      *
      * <p>
      * Only this stronger both-ways guarantee is checked, and only where documented, since {@link java.math.BigDecimal}
@@ -103,9 +107,9 @@ public class BinarySearchKernelHelper {
      * identity.
      *
      * <p>
-     * The same answer selects the Object segmented sorted array, SSA stamp, and duplicate compaction kernels: for a
-     * type that compares consistently with equality they test equality with {@code equals}, and otherwise with
-     * {@link io.deephaven.util.compare.ObjectComparisons#compareEquals(Object, Object)}.
+     * The same answer selects between the EqualsConsistentObject and Object segmented sorted array, SSA stamp, and
+     * duplicate compaction kernels, which test equality with {@code equals} and with
+     * {@link io.deephaven.util.compare.ObjectComparisons#compareEquals(Object, Object)} respectively.
      *
      * <p>
      * The engine's own types are answered here; a type it does not know is answered {@code false} until

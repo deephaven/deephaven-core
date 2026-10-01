@@ -29,12 +29,13 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Coverage for the region match search over a type whose natural ordering is inconsistent with equals, which is the
- * case {@link ComparableRegionBinarySearchKernel} exists to serve. {@link ObjectRegionBinarySearchKernelTest} covers
- * the ordering-consistent types that take the fast path instead.
+ * Coverage for {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality} over a type whose natural
+ * ordering is inconsistent with equals, where the rows that compare equal to a search value must be tested for
+ * equality. {@link ObjectRegionBinarySearchKernelTest} covers a type whose ordering is consistent with equals, through
+ * {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}.
  */
 @Category(ParallelTest.class)
-public class ComparableRegionBinarySearchKernelTest {
+public class ObjectRegionBinarySearchKernelBigDecimalTest {
 
     private static final int PAGE_SIZE = 1 << 16;
 
@@ -102,18 +103,15 @@ public class ComparableRegionBinarySearchKernelTest {
     }
 
     /**
-     * {@link ObjectRegionBinarySearchKernel#binsearchMatchFilter} is the only production route to this kernel, and the
-     * dispatch it makes on the column's data type is what chooses between answering a match by ordering alone and
-     * picking the matches out of the ordering-equal run by equality. A run holding values that compare equal while
-     * being unequal separates the two: only the truly equal row may come back, where the ordering-only search would
-     * answer with the run -- or, since its bounds are themselves equality-checked, with nothing at all.
+     * {@link ObjectRegionBinarySearchKernel#binsearchMatchFilter} is the entry point the Parquet regions call. A run
+     * holding values that compare equal while being unequal must yield only the truly equal row through it.
      *
      * <p>
      * The run is built directly here because no Parquet column can carry one: the DECIMAL logical type stores a single
      * scale for a whole column, so values read back from it are equal whenever they compare equal.
      */
     @Test
-    public void testMatchFilterDispatchesInconsistentTypeToEqualitySearch() {
+    public void testMatchFilterEntryPointTestsEquality() {
         final BigDecimal oneScale1 = new BigDecimal("1.0");
         final BigDecimal oneScale2 = new BigDecimal("1.00");
         final BigDecimal two = new BigDecimal("2.0");
@@ -158,7 +156,7 @@ public class ComparableRegionBinarySearchKernelTest {
             }
         }
 
-        try (final RowSet matched = ComparableRegionBinarySearchKernel.binarySearchMatch(
+        try (final RowSet matched = ObjectRegionBinarySearchKernel.binarySearchMatchWithGeneralEquality(
                 makeBigDecimalRegion(data, smallPageSize), 0, size - 1,
                 SortColumn.asc(ColumnName.of("test")), new Object[] {scale1})) {
             final List<Long> actual = new ArrayList<>();
@@ -197,7 +195,7 @@ public class ComparableRegionBinarySearchKernelTest {
             final SortColumn sortColumn = descending
                     ? SortColumn.desc(ColumnName.of("test"))
                     : SortColumn.asc(ColumnName.of("test"));
-            try (final RowSet matched = ComparableRegionBinarySearchKernel.binarySearchMatch(
+            try (final RowSet matched = ObjectRegionBinarySearchKernel.binarySearchMatchWithGeneralEquality(
                     region, 0, data.size() - 1, sortColumn, toFind.toArray())) {
                 final List<Long> actual = new ArrayList<>();
                 matched.forAllRowKeys(actual::add);
