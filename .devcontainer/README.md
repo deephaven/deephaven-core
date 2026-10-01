@@ -69,7 +69,9 @@ rules say. Approving in chat is a click; nothing is blocked outright.
   - **ssh-agent** ssh credentials are forwarded to devcontainer if `ssh-agent` is running. Disable by not running `ssh-agent` on host.
   - **git credential helper** installed by default proxying to your host's credential manager. Opt out by setting
     `dev.containers.gitCredentialHelperConfigLocation: "none"` in VS Code host settings.
-- **Copilot Chat in VS Code** configured in `devcontainer.json` to run without per-command approval via `"chat.tools.global.autoApprove": true`
+- **Copilot Chat in VS Code** configured in `devcontainer.json` to auto-approve terminal commands via
+  `"chat.tools.terminal.autoApprove"`, except those VS Code's built-in rules flag, which still prompt.
+  See [Agent permissions](#agent-permissions).
 
 ## Nested containers: `docker` inside the devcontainer
 
