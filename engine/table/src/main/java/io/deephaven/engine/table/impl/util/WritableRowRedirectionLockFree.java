@@ -6,11 +6,16 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK1V1;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK2V2;
@@ -179,14 +184,14 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (outerRowKey == -1) {
             return BASELINE_KEY_NOT_FOUND;
         }
-        final long result = updates.get(outerRowKey);
+        final long result = updates.getOne(outerRowKey);
         if (result != UPDATES_KEY_NOT_FOUND) {
             // The prior value from updates is either some ordinary previous value, or BASELINE_KEY_NOT_FOUND.
             // In either case, return it to the caller.
             return result;
         }
         // There's no entry in 'updates' so we return the entry in 'baseline'.
-        return baseline.get(outerRowKey);
+        return baseline.getOne(outerRowKey);
     }
 
     /**
@@ -200,7 +205,104 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (outerRowKey == -1) {
             return BASELINE_KEY_NOT_FOUND;
         }
-        return baseline.get(outerRowKey);
+        return baseline.getOne(outerRowKey);
+    }
+
+    /**
+     * The chunked read path. Per key, semantically identical to {@link #get(long)}: consult 'updates' first, and
+     * 'baseline' only for keys absent from 'updates' — the same per-key ordering the lock-free protocol described in
+     * the class comment depends on. (Before prev tracking starts, 'updates' and 'baseline' are the same map, whose
+     * no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass answers every key and the baseline pass is empty.)
+     */
+    @Override
+    public void fillChunk(
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
+        fillFromMaps(updates, baseline, outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
+    }
+
+    @Override
+    public void fillChunkUnordered(
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> outerRowKeys) {
+        fillFromMaps(updates, baseline, outerRowKeys, innerRowKeys.asWritableLongChunk());
+    }
+
+    @Override
+    public void fillPrevChunk(
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
+        baseline.get(outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> outerRowKeys) {
+        baseline.get(outerRowKeys, innerRowKeys.asWritableLongChunk());
+    }
+
+    private static void fillFromMaps(
+            @NotNull final NullableLongLongMap updates,
+            @NotNull final NullableLongLongMap baseline,
+            @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
+            @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys) {
+        if (updates == baseline) {
+            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and it
+            // answers every key.
+            baseline.get(outerRowKeys, innerRowKeys);
+            return;
+        }
+        updates.get(outerRowKeys, innerRowKeys);
+        final int size = outerRowKeys.size();
+        int missingCount = 0;
+        for (int ii = 0; ii < size; ++ii) {
+            if (innerRowKeys.get(ii) == UPDATES_KEY_NOT_FOUND) {
+                ++missingCount;
+            }
+        }
+        if (missingCount == 0) {
+            return;
+        }
+        if (missingCount == size) {
+            // Nothing in 'updates' for any of these keys, which is every read of a ticking table between its update
+            // cycles, once the terminal commit has folded 'updates' into 'baseline': answer them all from 'baseline'
+            // in one pass, with no gathering.
+            //
+            // Why this is decided from the probe just made and not from updates.isEmpty(): the lock-free argument in
+            // the class comment has a Reader@Idle see the writer's commit through the volatile read of the 'updates'
+            // array; when that read returns null (or an array without the key), every write to 'baseline' that
+            // preceded the writer's release of the array is visible too. The map's size is a plain field with no such
+            // guarantee. A reader that skipped the probe because it saw size == 0 could go on to read a 'baseline'
+            // the commit had not finished publishing, and return a stale value for a key updated that cycle. Probing
+            // first and acting on the probe's result keeps the acquire where the protocol puts it; the fast path only
+            // spares the gather.
+            baseline.get(outerRowKeys, innerRowKeys);
+            return;
+        }
+        // Keys not present in 'updates' get their result from 'baseline': gather them into a dense chunk, do one
+        // chunked lookup, and scatter the results back.
+        try (final WritableLongChunk<RowKeys> missingKeys = WritableLongChunk.makeWritableChunk(missingCount);
+                final WritableLongChunk<RowKeys> missingValues = WritableLongChunk.makeWritableChunk(missingCount);
+                final WritableIntChunk<ChunkPositions> missingPositions =
+                        WritableIntChunk.makeWritableChunk(missingCount)) {
+            int mi = 0;
+            for (int ii = 0; ii < size; ++ii) {
+                if (innerRowKeys.get(ii) == UPDATES_KEY_NOT_FOUND) {
+                    missingPositions.set(mi, ii);
+                    missingKeys.set(mi, outerRowKeys.get(ii));
+                    ++mi;
+                }
+            }
+            baseline.get(missingKeys, missingValues);
+            for (int ii = 0; ii < missingCount; ++ii) {
+                innerRowKeys.set(missingPositions.get(ii), missingValues.get(ii));
+            }
+        }
     }
 
     /**
@@ -266,7 +368,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (result != UPDATES_KEY_NOT_FOUND) {
             return result;
         }
-        return baseline.get(key);
+        return baseline.getOne(key);
     }
 
     @Override
