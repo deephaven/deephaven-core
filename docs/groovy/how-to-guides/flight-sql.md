@@ -50,19 +50,17 @@ The [ADBC Python](https://arrow.apache.org/adbc/current/python/index.html) libra
 ```python skip-test
 from adbc_driver_manager import dbapi
 
-with (
-    dbapi.connect(
-        driver="flightsql",
-        db_kwargs={
-            "uri": "grpc://localhost:10000",
-            "adbc.flight.sql.authorization_header": "Anonymous",
-        },
-    ) as connection,
-    connection.cursor() as cursor,
-):
-    cursor.execute("SELECT 42 as Foo")
-    pa_table = cursor.fetch_arrow_table()
-    print(pa_table)
+with dbapi.connect(
+    driver="flightsql",
+    db_kwargs={
+        "uri": "grpc://localhost:10000",
+        "adbc.flight.sql.authorization_header": "Anonymous",
+    },
+) as connection:
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 42 as Foo")
+        pa_table = cursor.fetch_arrow_table()
+        print(pa_table)
 ```
 
 #### ADBC Java
@@ -179,19 +177,17 @@ pip install adbc-driver-manager pyarrow
 ```python skip-test
 from adbc_driver_manager import dbapi
 
-with (
-    dbapi.connect(
-        driver="flightsql",
-        db_kwargs={
-            "uri": "grpc://localhost:10000",
-            "adbc.flight.sql.authorization_header": "Bearer io.deephaven.authentication.psk.PskAuthenticationHandler deephaven",
-        },
-    ) as connection,
-    connection.cursor() as cursor,
-):
-    cursor.execute("SELECT 42 as Foo")
-    pa_table = cursor.fetch_arrow_table()
-    print(pa_table)
+with dbapi.connect(
+    driver="flightsql",
+    db_kwargs={
+        "uri": "grpc://localhost:10000",
+        "adbc.flight.sql.authorization_header": "Bearer io.deephaven.authentication.psk.PskAuthenticationHandler deephaven",
+    },
+) as connection:
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 42 as Foo")
+        pa_table = cursor.fetch_arrow_table()
+        print(pa_table)
 ```
 
 #### Python Flight SQL Client
