@@ -111,8 +111,9 @@
     // we only bind mount the config.toml file.
     "type=bind,source=${localEnv:HOME}/.config/devc/herdr/config.toml,target=/home/vscode/.config/herdr/config.toml,consistency=cached",
 
-    // Your git name and email, extracted from the host by initialize-command.sh.
-    "type=bind,source=${localEnv:HOME}/.config/devc/gitconfig-identity,target=/usr/local/share/devc-features/git-container-config/identity/gitconfig,consistency=cached,readonly",
+    // Your git name and email, extracted from the host by initialize-command.sh. The directory,
+    // not the file inside it, so a regenerated identity reaches containers already running.
+    "type=bind,source=${localEnv:HOME}/.config/devc/git-identity,target=/usr/local/share/devc-features/git-container-config/identity,consistency=cached,readonly",
 
     // Volume mount node_modules folders to avoid host and container fighting over contents
     "type=volume,source=node-modules-${devcontainerId}-proto-openapi,target=${containerWorkspaceFolder}/proto/raw-js-openapi/node_modules",

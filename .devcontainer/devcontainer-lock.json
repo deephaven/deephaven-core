@@ -6,9 +6,9 @@
       "integrity": "sha256:03563b3d5900313862f1df3703523eb506787b677374709c932ea8880f44199e"
     },
     "ghcr.io/devc-tools/features/git-container-config:0": {
-      "version": "0.1.1",
-      "resolved": "ghcr.io/devc-tools/features/git-container-config@sha256:f12bfd010e0e2b97af07236fd0b0c8f78ba6ae6c67e81305c951814fd15b1ee2",
-      "integrity": "sha256:f12bfd010e0e2b97af07236fd0b0c8f78ba6ae6c67e81305c951814fd15b1ee2"
+      "version": "0.1.2",
+      "resolved": "ghcr.io/devc-tools/features/git-container-config@sha256:81d73a6507b2f2a22405b2fb66bcf429120de06ea52de9c05856627a109a6661",
+      "integrity": "sha256:81d73a6507b2f2a22405b2fb66bcf429120de06ea52de9c05856627a109a6661"
     },
     "ghcr.io/devc-tools/features/node-nvmrc:0": {
       "version": "0.3.0",
@@ -16,9 +16,9 @@
       "integrity": "sha256:3f921d932f9e1b0004a1bd3fb3a55b0694f4719899b4813fd319a4775a7913c1"
     },
     "ghcr.io/devc-tools/features/podman-as-docker:0": {
-      "version": "0.2.0",
-      "resolved": "ghcr.io/devc-tools/features/podman-as-docker@sha256:e8433de858230d07c25345d893834662786a11cab6c422ad32d533b11d2dbd74",
-      "integrity": "sha256:e8433de858230d07c25345d893834662786a11cab6c422ad32d533b11d2dbd74"
+      "version": "0.2.1",
+      "resolved": "ghcr.io/devc-tools/features/podman-as-docker@sha256:238356af762bab14460cc73081d297762920d00116a532ea81543e6a4a21ca27",
+      "integrity": "sha256:238356af762bab14460cc73081d297762920d00116a532ea81543e6a4a21ca27"
     },
     "ghcr.io/devc-tools/features/rootless-remap:0": {
       "version": "0.1.0",
