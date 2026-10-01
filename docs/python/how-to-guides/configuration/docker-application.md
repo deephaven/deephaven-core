@@ -112,10 +112,10 @@ RUN pip install some-awesome-package
 
 ### Extended Python images
 
-- `ghcr.io/deephaven/server-all-ai`: Deephaven's server-side API with NLTK, Tensorflow, PyTorch, and SciKit-Learn.
+- `ghcr.io/deephaven/server-all-ai`: Deephaven's server-side API with NLTK, Tensorflow, PyTorch, and scikit-learn.
 - `ghcr.io/deephaven/server-nltk`: Deephaven's server-side API with NLTK.
 - `ghcr.io/deephaven/server-pytorch`: Deephaven's server-side API with PyTorch.
-- `ghcr.io/deephaven/server-sklearn`: Deephaven's server-side API with SciKit-Learn.
+- `ghcr.io/deephaven/server-sklearn`: Deephaven's server-side API with scikit-learn.
 - `ghcr.io/deephaven/server-tensorflow`: Deephaven's server-side API with Tensorflow.
 
 ### Debugging
