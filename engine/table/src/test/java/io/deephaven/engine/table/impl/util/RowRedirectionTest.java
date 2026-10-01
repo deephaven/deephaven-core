@@ -116,17 +116,20 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
      * The chunked fill methods of WritableRowRedirectionLockFree must agree with the scalar get()/getPrev() overlay for
      * every kind of key: served by 'baseline', updated this cycle (served by 'updates'), removed this cycle (tombstoned
      * in 'updates'), never present, and the NULL_ROW_KEY sentinel — both mid-cycle and after the terminal commit folds
-     * 'updates' into 'baseline'.
+     * 'updates' into 'baseline', and before prev tracking starts, when the two names are one map.
      */
+    @Test
     public void testChunkedFillsMatchScalarGets() {
         final WritableRowRedirection redirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
         assertTrue(redirection instanceof WritableRowRedirectionLockFree);
         for (int ii = 0; ii < 100; ++ii) {
             redirection.put(ii * 2, 1000 + ii);
         }
+        final long[] probes = {-1, 0, 1, 2, 4, 6, 9, 48, 50, 52, 100, 150, 198, 200, 5000};
+        // Before prev tracking: a static table's redirection, one map under both names.
+        checkFillsMatchScalars(redirection, probes);
         redirection.startTrackingPrevValues();
 
-        final long[] probes = {-1, 0, 1, 2, 4, 6, 9, 48, 50, 52, 100, 150, 198, 200, 5000};
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
