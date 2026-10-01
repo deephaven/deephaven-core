@@ -158,6 +158,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // Properly flag this table as systemic or not. Note that we use the initial attributes map, rather than
         // getAttribute, in order to avoid triggering the "immutable after first access" restrictions of
         // LiveAttributeMap.
+        // TODO: should we perform the converse check here, and remove the systemic attribute from a table created on a
+        // thread that is not systemic?
         if (SystemicObjectTracker.isSystemicThread()
                 && (attributes == null || !Boolean.TRUE.equals(attributes.get(Table.SYSTEMIC_TABLE_ATTRIBUTE)))) {
             setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);

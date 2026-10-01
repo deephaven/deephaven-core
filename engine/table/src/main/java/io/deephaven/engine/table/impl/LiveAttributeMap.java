@@ -275,6 +275,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
 
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
                 copy(buildAttributes(ak -> !effectiveRemoves.contains(ak), toAdd));
+        // TODO: should we override systemic attributes.
         result.removeAttributes(effectiveRemoves::contains);
         // noinspection unchecked
         return (IFACE_TYPE) result;
@@ -299,6 +300,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         final Set<String> toRemoveSet = new HashSet<>(toRemove);
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
                 copy(buildAttributes(ak -> !toRemoveSet.contains(ak), Map.of()));
+        // TODO: should we override systemic attributes.
         result.removeAttributes(toRemoveSet::contains);
         // noinspection unchecked
         return (IFACE_TYPE) result;
@@ -312,6 +314,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
 
         final Set<String> toRetainSet = new HashSet<>(toRetain);
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy(buildAttributes(toRetainSet::contains, Map.of()));
+        // TODO: should we override systemic attributes.
         result.removeAttributes(ak -> !toRetainSet.contains(ak));
         // noinspection unchecked
         return (IFACE_TYPE) result;
