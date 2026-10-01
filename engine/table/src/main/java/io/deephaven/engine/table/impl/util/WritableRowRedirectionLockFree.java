@@ -12,10 +12,10 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
-import io.deephaven.util.datastructures.hash.NullableLongLongMap;
+import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK1V1;
+import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK2V2;
+import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
