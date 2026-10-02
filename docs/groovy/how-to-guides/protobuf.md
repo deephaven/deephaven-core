@@ -1,6 +1,5 @@
 ---
 title: Protocol Buffers and Remote Procedure Calls
-sidebar_label: Protobuf and RPC
 ---
 
 [Protobuf](https://protobuf.dev/), short for Protocol Buffers, is a language-neutral, platform-neutral mechanism for serializing structured data. By defining how data is structured a single time, you can use Protobuf to generate source code in multiple languages, which can then be used to serialize and deserialize data consistently across different systems.

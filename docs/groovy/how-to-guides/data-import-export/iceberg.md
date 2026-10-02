@@ -1,6 +1,5 @@
 ---
 title: Iceberg and Deephaven
-sidebar_label: Iceberg
 ---
 
 [Apache Iceberg](https://iceberg.apache.org/) is a high-performance format for tabular data. Deephaven's Iceberg integration enables users to interact with Iceberg catalogs, namespaces, tables, and snapshots. This guide walks through reading from Iceberg with a single table and snapshot, then writes multiple Deephaven tables to the same Iceberg namespace. The examples presented this guide interact with a [REST catalog](https://iceberg.apache.org/rest-catalog-spec/).

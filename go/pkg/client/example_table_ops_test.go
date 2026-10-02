@@ -74,6 +74,7 @@ func Example_tableOps() {
     //         metadata: ["deephaven:isSortable": "true", "deephaven:type": "int"]
     //     - Magnitude: type=int32, nullable
     //            metadata: ["deephaven:isSortable": "true", "deephaven:type": "int"]
+    //   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean"]
     //   rows: 5
     //   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
     //   col[1][Close]: [53.8 38.7 453 26.7 544.9]

@@ -1,6 +1,5 @@
 ---
 title: Apply color formatting to columns
-sidebar_label: Format columns
 ---
 
 This guide shows you how to apply various color formatting options to the columns in your static or dynamic tables.

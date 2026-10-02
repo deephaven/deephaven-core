@@ -26,6 +26,7 @@ import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.ShortCompactModifications;
 import io.deephaven.engine.table.impl.util.compact.ShortCompactKernel;
 import io.deephaven.util.compare.ShortComparisons;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -97,7 +98,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        ShortCompactKernel.compactAndCount((WritableShortChunk<? extends Values>) context.valueCopy, context.counts,
+        doCompactAndCount((WritableShortChunk<? extends Values>) context.valueCopy, context.counts,
                 startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
@@ -171,7 +172,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
 
             // reduce the bucket's modify to its net effect: net removals in preValueCopy, net additions in
             // postValueCopy, with the unchanged overlap cancelled
-            ShortCompactModifications.compactAndCountModifications(preValueCopy, context.counts,
+            doCompactAndCountModifications(preValueCopy, context.counts,
                     postValueCopy, context.postCounts, startPosition, runLength, startPosition, runLength,
                     countNullNaN, countNullNaN, context.removedSize, context.addedSize);
 
@@ -189,7 +190,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
-        ShortCompactKernel.compactAndCount((WritableShortChunk<? extends Values>) context.valueCopy, context.counts,
+        doCompactAndCount((WritableShortChunk<? extends Values>) context.valueCopy, context.counts,
                 countNullNaN, countNullNaN);
         return context;
     }
@@ -205,7 +206,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
         context.valueCopy.copyFromChunk(preValues, 0, 0, length);
         context.postValues.setSize(length);
         context.postValues.copyFromChunk(postValues, 0, 0, length);
-        ShortCompactModifications.compactAndCountModifications(
+        doCompactAndCountModifications(
                 (WritableShortChunk<? extends Values>) context.valueCopy, context.counts,
                 (WritableShortChunk<? extends Values>) context.postValues, context.postCounts,
                 0, length, 0, length, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
@@ -256,7 +257,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
         final long priorState = singletonCount.getUnsafe(destination);
         if (isUnique(priorState)) {
             final short held = internalResult.getUnsafe(destination);
-            if (len == 1 && ShortComparisons.eq(values.get(start), held)) {
+            if (len == 1 && eq(values.get(start), held)) {
                 // the single distinct value being added is the one we already hold; just bump its multiplicity. The
                 // result value is unchanged; only the (internal) count moves.
                 singletonCount.set(destination, priorState + counts.get(start));
@@ -295,8 +296,8 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
         if (isUnique(priorState)) {
             // a unique state can only be asked to remove its one held value, and never more copies than it holds
             Assert.eq(len, "len", 1);
-            Assert.assertion(ShortComparisons.eq(values.get(start), internalResult.getUnsafe(destination)),
-                    "values.get(start) == internalResult.getUnsafe(destination)");
+            Assert.assertion(eq(values.get(start), internalResult.getUnsafe(destination)),
+                    "eq(values.get(start), internalResult.getUnsafe(destination))");
             final long remaining = priorState - counts.get(start);
             Assert.geqZero(remaining, "remaining");
             if (remaining == 0) {
@@ -441,5 +442,52 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
     private void clearSsm(long destination) {
         ssms.clear(destination);
     }
+
+    /**
+     * Test two values for equality consistent with the ordering of the SSM; a state holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(short lhs, short rhs) {
+        // region equality function
+        return ShortComparisons.eq(lhs, rhs);
+        // endregion equality function
+    }
     // endregion
+
+    /**
+     * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in
+     * {@code counts}; both chunks are resized to the number of distinct values.
+     */
+    private void doCompactAndCount(WritableShortChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, boolean countNull, boolean countNaN) {
+        // region CompactAndCount
+        ShortCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);
+        // endregion CompactAndCount
+    }
+
+    /**
+     * Sorts and compacts each run of {@code valueChunk} given by {@code startPositions} and {@code lengths}, setting
+     * each distinct value's count in {@code counts} and each run's distinct value count in {@code lengths}.
+     */
+    private void doCompactAndCount(WritableShortChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths, boolean countNull, boolean countNaN) {
+        // region CompactAndCountRuns
+        ShortCompactKernel.compactAndCount(valueChunk, counts, startPositions, lengths, countNull, countNaN);
+        // endregion CompactAndCountRuns
+    }
+
+    /**
+     * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
+     * with counts, and sets the surviving lengths in {@code removedSize} and {@code addedSize}.
+     */
+    private void doCompactAndCountModifications(WritableShortChunk<? extends Values> removedValues,
+            WritableIntChunk<ChunkLengths> removedCounts, WritableShortChunk<? extends Values> addedValues,
+            WritableIntChunk<ChunkLengths> addedCounts, int removedStart, int removedLength, int addedStart,
+            int addedLength, boolean countNull, boolean countNaN, MutableInt removedSize, MutableInt addedSize) {
+        // region CompactAndCountModifications
+        ShortCompactModifications.compactAndCountModifications(removedValues, removedCounts, addedValues, addedCounts,
+                removedStart, removedLength, addedStart, addedLength, countNull, countNaN, removedSize, addedSize);
+        // endregion CompactAndCountModifications
+    }
 }

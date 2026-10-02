@@ -61,7 +61,8 @@ public class CharCompactModifications {
         while (rRead < removedEnd && aRead < addedEnd) {
             final char removedValue = removedValues.get(rRead);
             final char addedValue = addedValues.get(aRead);
-            if (CharComparisons.eq(removedValue, addedValue)) {
+            final int comparison = CharComparisons.compare(removedValue, addedValue);
+            if (comparison == 0) {
                 final int removedRun = countRun(removedValues, rRead, removedEnd);
                 final int addedRun = countRun(addedValues, aRead, addedEnd);
                 rRead += removedRun;
@@ -77,7 +78,7 @@ public class CharCompactModifications {
                         aWrite++;
                     }
                 }
-            } else if (CharComparisons.lt(removedValue, addedValue)) {
+            } else if (comparison < 0) {
                 final int removedRun = countRun(removedValues, rRead, removedEnd);
                 rRead += removedRun;
                 if (!ignore(removedValue, countNull, countNaN)) {
@@ -127,10 +128,20 @@ public class CharCompactModifications {
     private static int countRun(WritableCharChunk<? extends Values> values, int pos, int end) {
         final char value = values.get(pos);
         int run = 1;
-        while (pos + run < end && CharComparisons.eq(values.get(pos + run), value)) {
+        while (pos + run < end && eq(values.get(pos + run), value)) {
             run++;
         }
         return run;
+    }
+
+    /**
+     * Test two values for equality consistent with the order in which the runs are sorted; each class of equal values
+     * forms one run.
+     */
+    private static boolean eq(char lhs, char rhs) {
+        // region equality function
+        return CharComparisons.eq(lhs, rhs);
+        // endregion equality function
     }
 
     private static boolean ignore(char value, boolean countNull, boolean countNaN) {

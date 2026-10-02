@@ -1,6 +1,5 @@
 ---
 title: Send data to Deephaven from a Python client
-sidebar_label: Client input tables
 ---
 
 This guide shows how to send data to Deephaven from an external Python application using `pydeephaven` and input tables. Input tables allow a client to add, update, and delete rows in a Deephaven table.

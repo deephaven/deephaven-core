@@ -1,6 +1,5 @@
 ---
 title: Set custom environment variables
-sidebar_label: Custom environment variables
 ---
 
 Applications commonly use environment variables, especially for sensitive information like API keys. This guide shows how to set environment variables for use in Deephaven via Docker.

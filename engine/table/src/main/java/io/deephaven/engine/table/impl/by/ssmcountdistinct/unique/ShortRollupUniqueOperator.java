@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.ssms.ShortSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.ShortCompactKernel;
 import io.deephaven.util.compare.ShortComparisons;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -224,7 +225,7 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
                 }
             }
             // net the two so values unchanged across the modify cancel out, then apply the surviving removals/additions
-            ShortCompactModifications.compactAndCountModifications(removeValues, context.counts, addValues,
+            doCompactAndCountModifications(removeValues, context.counts, addValues,
                     context.postCounts, 0, removeCount, 0, addCount, true, true, context.removedSize,
                     context.addedSize);
             applyRemoves(destination, removeValues, context.removedSize.get(), context.counts, context.removeContext,
@@ -347,7 +348,7 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
             }
         }
         // net the two so values unchanged across the modify cancel out, then apply the surviving removals/additions
-        ShortCompactModifications.compactAndCountModifications(removeValues, context.counts, addValues,
+        doCompactAndCountModifications(removeValues, context.counts, addValues,
                 context.postCounts, 0, removeCount, 0, addCount, true, true, context.removedSize, context.addedSize);
         applyRemoves(destination, removeValues, context.removedSize.get(), context.counts, context.removeContext, count,
                 ssmHolder);
@@ -390,7 +391,7 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
             return;
         }
         values.setSize(addCount);
-        ShortCompactKernel.compactAndCount(values, counts, true, true);
+        doCompactAndCount(values, counts, true, true);
         applyAdds(destination, values, values.size(), counts, count, ssmHolder);
     }
 
@@ -426,7 +427,7 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
         }
         // singleton: a single held value with a positive count
         final short held = singletonValue.getUnsafe(destination);
-        if (distinctCount == 1 && ShortComparisons.eq(values.get(0), held)) {
+        if (distinctCount == 1 && eq(values.get(0), held)) {
             count.add(counts.get(0));
             return;
         }
@@ -450,7 +451,7 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
             return;
         }
         values.setSize(removeCount);
-        ShortCompactKernel.compactAndCount(values, counts, true, true);
+        doCompactAndCount(values, counts, true, true);
         applyRemoves(destination, values, values.size(), counts, removeContext, count, ssmHolder);
     }
 
@@ -607,5 +608,40 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
     private void clearSsm(long destination) {
         ssms.clear(destination);
     }
+
+    /**
+     * Test two values for equality consistent with the ordering of the SSM; a state holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(short lhs, short rhs) {
+        // region equality function
+        return ShortComparisons.eq(lhs, rhs);
+        // endregion equality function
+    }
     // endregion
+
+    /**
+     * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in
+     * {@code counts}; both chunks are resized to the number of distinct values.
+     */
+    private void doCompactAndCount(WritableShortChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, boolean countNull, boolean countNaN) {
+        // region CompactAndCount
+        ShortCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);
+        // endregion CompactAndCount
+    }
+
+    /**
+     * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
+     * with counts, and sets the surviving lengths in {@code removedSize} and {@code addedSize}.
+     */
+    private void doCompactAndCountModifications(WritableShortChunk<? extends Values> removedValues,
+            WritableIntChunk<ChunkLengths> removedCounts, WritableShortChunk<? extends Values> addedValues,
+            WritableIntChunk<ChunkLengths> addedCounts, int removedStart, int removedLength, int addedStart,
+            int addedLength, boolean countNull, boolean countNaN, MutableInt removedSize, MutableInt addedSize) {
+        // region CompactAndCountModifications
+        ShortCompactModifications.compactAndCountModifications(removedValues, removedCounts, addedValues, addedCounts,
+                removedStart, removedLength, addedStart, addedLength, countNull, countNaN, removedSize, addedSize);
+        // endregion CompactAndCountModifications
+    }
 }

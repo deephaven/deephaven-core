@@ -1,6 +1,5 @@
 ---
 title: InferenceResolver
-sidebar_label: InferenceResolver
 ---
 
 The `InferenceResolver` class provides a consolidated set of inference options for use in [`LoadTableOptions`](./load-table-options.md). This class is most useful when the caller does not know the structure of the table being loaded, and thus wants the resultant table definition to be inferred from the Iceberg table schema.

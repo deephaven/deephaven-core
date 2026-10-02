@@ -93,6 +93,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.IntegerSingleValueSource;
 import io.deephaven.engine.table.impl.sources.ObjectSingleValueSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.ssms.EqualsConsistentObjectSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
@@ -122,6 +123,7 @@ import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_S
 import static io.deephaven.engine.table.Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.compareConsistentWithEquality;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
 import static io.deephaven.util.type.NumericTypeUtils.isNumeric;
@@ -1051,12 +1053,14 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            addBasicOperators((t, n) -> makeCountDistinctOperator(t, n, countDistinct.countNulls(), false, false));
+            addBasicOperators((t, n) -> makeCountDistinctOperator(t, compareConsistentWithEquality(t), n,
+                    countDistinct.countNulls(), false, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            addBasicOperators((t, n) -> makeDistinctOperator(t, n, distinct.includeNulls(), false, false));
+            addBasicOperators((t, n) -> makeDistinctOperator(t, compareConsistentWithEquality(t), n,
+                    distinct.includeNulls(), false, false));
         }
 
         @Override
@@ -1111,7 +1115,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecMedian median) {
-            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, 0.50d, median.averageEvenlyDivided(), n));
+            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, compareConsistentWithEquality(t), 0.50d,
+                    median.averageEvenlyDivided(), n));
         }
 
         @Override
@@ -1122,7 +1127,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecPercentile pct) {
             addBasicOperators(
-                    (t, n) -> new SsmChunkedPercentileOperator(t, pct.percentile(), pct.averageEvenlyDivided(), n));
+                    (t, n) -> new SsmChunkedPercentileOperator(t, compareConsistentWithEquality(t), pct.percentile(),
+                            pct.averageEvenlyDivided(), n));
         }
 
         @Override
@@ -1153,8 +1159,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNulls(), null,
-                    unique.nonUniqueSentinel().orElse(null), false, false, null));
+            addBasicOperators((t, n) -> makeUniqueOperator(t, compareConsistentWithEquality(t), n,
+                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), false, false, null));
         }
 
         @Override
@@ -1472,12 +1478,14 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
-            addBasicOperators((t, n) -> makeCountDistinctOperator(t, n, countDistinct.countNulls(), true, false));
+            addBasicOperators((t, n) -> makeCountDistinctOperator(t, compareConsistentWithEquality(t), n,
+                    countDistinct.countNulls(), true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
-            addBasicOperators((t, n) -> makeDistinctOperator(t, n, distinct.includeNulls(), true, false));
+            addBasicOperators((t, n) -> makeDistinctOperator(t, compareConsistentWithEquality(t), n,
+                    distinct.includeNulls(), true, false));
         }
 
         @Override
@@ -1522,8 +1530,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNulls(), null,
-                    unique.nonUniqueSentinel().orElse(null), true, false, null));
+            addBasicOperators((t, n) -> makeUniqueOperator(t, compareConsistentWithEquality(t), n,
+                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, false, null));
         }
 
         @Override
@@ -1747,13 +1755,15 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
             reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeCountDistinctOperator(
-                    ssmSrc.getComponentType(), n, countDistinct.countNulls(), true, true));
+                    ssmSrc.getComponentType(), ssmsEqualsConsistent(ssmSrc), n, countDistinct.countNulls(), true,
+                    true));
         }
 
         @Override
         public void visit(@NotNull final AggSpecDistinct distinct) {
             reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeDistinctOperator(
-                    priorResultSrc.getComponentType(), n, distinct.includeNulls(), true, true));
+                    priorResultSrc.getComponentType(), ssmsEqualsConsistent(ssmSrc), n, distinct.includeNulls(), true,
+                    true));
         }
 
         @Override
@@ -1809,9 +1819,10 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final String singletonCountName =
                         resultName + ROLLUP_DISTINCT_SSM_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                 final ColumnSource<?> singletonCountSource = table.getColumnSource(singletonCountName);
-                final IterativeChunkedAggregationOperator operator = makeUniqueOperator(rawValueSource.getType(),
-                        resultName, unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, true,
-                        singletonCountSource);
+                final Class<?> rawValueType = rawValueSource.getType();
+                final IterativeChunkedAggregationOperator operator = makeUniqueOperator(rawValueType,
+                        compareConsistentWithEquality(rawValueType), resultName, unique.includeNulls(), null,
+                        unique.nonUniqueSentinel().orElse(null), true, true, singletonCountSource);
                 addOperator(operator, valueSource, resultName, singletonCountName);
             }
         }
@@ -2168,7 +2179,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             final boolean isMin,
             final boolean isBlinkOrAddOnly) {
         if (!isBlinkOrAddOnly) {
-            return new SsmChunkedMinMaxOperator(type, isMin, name);
+            return new SsmChunkedMinMaxOperator(type, compareConsistentWithEquality(type), isMin, name);
         }
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedAddOnlyMinMaxOperator(isMin, name);
@@ -2191,8 +2202,23 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
     }
 
+    /**
+     * A reaggregated rollup level merges the sets of the level below into its own, so it adopts the equality decision
+     * with which those sets were created, and every level of the rollup holds sets of one family. An Object set column
+     * has the data type of the sets it holds (see
+     * {@link io.deephaven.engine.table.impl.by.ssmcountdistinct.ObjectSsmBackedSource}); other set columns ignore the
+     * decision.
+     *
+     * @param ssmSource the set column of the level below
+     * @return true when the sets of the level below are EqualsConsistentObject sets
+     */
+    private static boolean ssmsEqualsConsistent(@NotNull final ColumnSource<?> ssmSource) {
+        return ssmSource.getType() == EqualsConsistentObjectSegmentedSortedMultiset.class;
+    }
+
     private static IterativeChunkedAggregationOperator makeCountDistinctOperator(
             @NotNull final Class<?> type,
+            final boolean equalsConsistent,
             @NotNull final String name,
             final boolean countNulls,
             final boolean exposeInternal,
@@ -2227,13 +2253,14 @@ public class AggregationProcessor implements AggregationContextFactory {
                     : new ShortChunkedCountDistinctOperator(name, countNulls, exposeInternal);
         } else {
             return reaggregated
-                    ? new ObjectRollupCountDistinctOperator(type, name, countNulls)
-                    : new ObjectChunkedCountDistinctOperator(type, name, countNulls, exposeInternal);
+                    ? new ObjectRollupCountDistinctOperator(type, equalsConsistent, name, countNulls)
+                    : new ObjectChunkedCountDistinctOperator(type, equalsConsistent, name, countNulls, exposeInternal);
         }
     }
 
     private static IterativeChunkedAggregationOperator makeDistinctOperator(
             @NotNull final Class<?> type,
+            final boolean equalsConsistent,
             @NotNull final String name,
             final boolean includeNulls,
             final boolean exposeInternal,
@@ -2268,13 +2295,14 @@ public class AggregationProcessor implements AggregationContextFactory {
                     : new ShortChunkedDistinctOperator(name, includeNulls, exposeInternal);
         } else {
             return reaggregated
-                    ? new ObjectRollupDistinctOperator(type, name, includeNulls)
-                    : new ObjectChunkedDistinctOperator(type, name, includeNulls, exposeInternal);
+                    ? new ObjectRollupDistinctOperator(type, equalsConsistent, name, includeNulls)
+                    : new ObjectChunkedDistinctOperator(type, equalsConsistent, name, includeNulls, exposeInternal);
         }
     }
 
     private static IterativeChunkedAggregationOperator makeUniqueOperator(
             @NotNull final Class<?> type,
+            final boolean equalsConsistent,
             @NotNull final String resultName,
             final boolean includeNulls,
             @SuppressWarnings("SameParameterValue") final UnionObject onlyNullsSentinel,
@@ -2338,8 +2366,10 @@ public class AggregationProcessor implements AggregationContextFactory {
         final Object onsAsType = maybeConvertType(type, onlyNullsSentinel);
         final Object nusAsType = maybeConvertType(type, nonUniqueSentinel);
         return reaggregated
-                ? new ObjectRollupUniqueOperator(type, resultName, onsAsType, nusAsType, constituentSingletonCount)
-                : new ObjectChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                ? new ObjectRollupUniqueOperator(type, equalsConsistent, resultName, onsAsType, nusAsType,
+                        constituentSingletonCount)
+                : new ObjectChunkedUniqueOperator(type, equalsConsistent, resultName, includeNulls, exposeInternal,
+                        onsAsType, nusAsType);
     }
 
     private static long instantNanosValue(UnionObject obj) {

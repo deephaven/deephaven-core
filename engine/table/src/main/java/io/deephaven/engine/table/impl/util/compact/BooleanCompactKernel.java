@@ -122,4 +122,7 @@ public class BooleanCompactKernel implements CompactKernel {
         // endregion compactAndCount
         return wpos + 1;
     }
+
+    // region equality helper
+    // endregion equality helper
 }
