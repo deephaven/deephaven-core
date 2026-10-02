@@ -18,19 +18,19 @@ Commonly asked questions about Deephaven Community Core.
 
 <CoreTutorialCard to="/core/docs/reference/community-questions/how-do-i-find-a-specific-build/">
 
-## General
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/reference/community-questions/is-docker-compose-required/">
-
-## Installation
+## Install and upgrade
 
 </CoreTutorialCard>
 
 <CoreTutorialCard to="/core/docs/reference/community-questions/configure-dh-to-use-another-port/">
 
-## Configuration
+## Configure the server
+
+</CoreTutorialCard>
+
+<CoreTutorialCard to="/core/docs/reference/community-questions/custom-data-sources/">
+
+## Import and export data
 
 </CoreTutorialCard>
 
@@ -40,27 +40,33 @@ Commonly asked questions about Deephaven Community Core.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/reference/community-questions/can-i-reset-py-kernel-without-restarting-dh/">
+<CoreTutorialCard to="/core/docs/reference/community-questions/filter-time-window-all-dates/">
 
-## Troubleshooting
+## Dates and times
 
 </CoreTutorialCard>
 
 <CoreTutorialCard to="/core/docs/reference/community-questions/utility-to-pretty-print-table/">
 
-## Server-side APIs: Groovy
+## Console and IDE
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/reference/community-questions/why-table-ops-producing-incorrect-results/">
+<CoreTutorialCard to="/core/docs/reference/community-questions/query-memoization/">
 
-## Server-side APIs: Query language
+## Performance and memory
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/reference/community-questions/find-password-for-ide/">
+<CoreTutorialCard to="/core/docs/reference/community-questions/hash-table-exceeds-maximum-size/">
 
-## Client APIs
+## Troubleshoot errors
+
+</CoreTutorialCard>
+
+<CoreTutorialCard to="/core/docs/reference/community-questions/aws-alb-configuration/">
+
+## Run on AWS
 
 </CoreTutorialCard>
 

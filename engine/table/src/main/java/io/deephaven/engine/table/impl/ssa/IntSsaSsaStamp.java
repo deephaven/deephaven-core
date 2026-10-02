@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.util.compare.IntComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -289,7 +290,7 @@ public class IntSsaSsaStamp implements SsaSsaStamp {
 
     // region comparison functions
     private static int doComparison(int lhs, int rhs) {
-        return Integer.compare(lhs, rhs);
+        return IntComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.compare.CharComparisons;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jetbrains.annotations.Nullable;
@@ -487,7 +488,8 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                 final long idxl = sourceRowKeys[rposl];
                 final char vali = valuesToInsert.get(rposi);
                 final long idxi = rowKeys.get(rposi);
-                final boolean takeFromLeaf = eq(vall, vali) ? idxl > idxi : gt(vall, vali);
+                final int comparison = doComparison(vall, vali);
+                final boolean takeFromLeaf = comparison == 0 ? idxl > idxi : comparison > 0;
                 if (takeFromLeaf) {
                     slotValues[wpos] = vall;
                     slotRowKeys[wpos] = idxl;
@@ -610,7 +612,8 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
             final char vali = insertValues.get(rposi);
             final long idxl = leafRowKeys[rposl];
             final long idxi = insertRowKeys.get(rposi);
-            final boolean takeFromLeaf = eq(vall, vali) ? idxl > idxi : gt(vall, vali);
+            final int comparison = doComparison(vall, vali);
+            final boolean takeFromLeaf = comparison == 0 ? idxl > idxi : comparison > 0;
 
             if (takeFromLeaf) {
                 lwins++;
@@ -645,8 +648,8 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
 
                 final char firstInsert = insertValues.get(0);
                 final int gallopLength;
-                if (lt(searchValue, firstInsert)
-                        || (eq(searchValue, firstInsert) && searchKey < insertRowKeys.get(0))) {
+                final int firstComparison = doComparison(searchValue, firstInsert);
+                if (firstComparison < 0 || (firstComparison == 0 && searchKey < insertRowKeys.get(0))) {
                     // copy the whole thing
                     gallopLength = rposi + 1;
                 } else {
@@ -686,7 +689,8 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
 
                 final char firstLeaf = leafValues[0];
                 final int gallopLength;
-                if (lt(searchValue, firstLeaf) || (eq(searchValue, firstLeaf) && searchKey < leafRowKeys[0])) {
+                final int firstComparison = doComparison(searchValue, firstLeaf);
+                if (firstComparison < 0 || (firstComparison == 0 && searchKey < leafRowKeys[0])) {
                     // copy the whole thing
                     gallopLength = rposl + 1;
                 } else {
@@ -1289,8 +1293,9 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                         firstValueForLeaf = lowerBound(stampChunk, keyChunk, 0, lastValuesPosition + 1, leafMinValue,
                                 leafMinRowKey);
                         char foundValue = stampChunk.get(firstValueForLeaf);
-                        if (lt(foundValue, leafMinValue)
-                                || (eq(foundValue, leafMinValue) && keyChunk.get(firstValueForLeaf) < leafMinRowKey)) {
+                        final int foundComparison = doComparison(foundValue, leafMinValue);
+                        if (foundComparison < 0
+                                || (foundComparison == 0 && keyChunk.get(firstValueForLeaf) < leafMinRowKey)) {
                             firstValueForLeaf++;
                             foundValue = stampChunk.get(firstValueForLeaf);
                         }
@@ -1572,7 +1577,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return Character.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -1594,7 +1599,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
 
     private static boolean eq(char lhs, char rhs) {
         // region equality function
-        return lhs == rhs;
+        return CharComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.time.DateTimeUtils;
@@ -155,6 +156,21 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
     public boolean canPushdown() {
         // The real filter is not visible to a walk of the filter tree, so answer for it here.
         return filter == null || filter.canPushdown();
+    }
+
+    @Override
+    public void validateSafeForRefresh(final BaseTable<?> sourceTable) {
+        if (filter == null) {
+            super.validateSafeForRefresh(sourceTable);
+        } else {
+            filter.validateSafeForRefresh(sourceTable);
+        }
+    }
+
+    @Override
+    public boolean permitParallelization() {
+        // A failover ConditionFilter may not permit parallelization, so answer for the real filter.
+        return filter == null ? super.permitParallelization() : filter.permitParallelization();
     }
 
     @VisibleForTesting

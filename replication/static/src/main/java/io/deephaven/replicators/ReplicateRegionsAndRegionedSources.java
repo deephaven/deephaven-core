@@ -38,6 +38,13 @@ public class ReplicateRegionsAndRegionedSources {
     private static final String GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH =
             "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharColumnBinarySearchKernel.java";
 
+    /**
+     * The Object kernel's match that lets ordering alone decide a match; the Char source names it binarySearchMatch.
+     */
+    private static final String CONSISTENT_MATCH = "binarySearchMatchWithConsistentEquality";
+    /** The Object kernel's match that selects the rows of each compare-equal run by equality. */
+    private static final String GENERAL_MATCH = "binarySearchMatchWithGeneralEquality";
+
     public static void main(String... args) throws IOException {
         // Note that Byte and Object regions are not replicated!
         charToAllButBooleanAndByte(TASK,
@@ -302,6 +309,39 @@ public class ReplicateRegionsAndRegionedSources {
                 "unboxed", "copiedValues");
         lines = addImport(lines, "import java.util.Arrays;");
         if (file.getName().contains("Column")) {
+            lines = addGeneralMatch(lines, Arrays.asList(
+                    "    /**",
+                    "     * Performs a binary search on a given sorted {@link ColumnSource} to find the row keys from a"
+                            + " provided",
+                    "     * {@link RowSet} that hold a value equal to one of {@code searchValues}. The method returns the"
+                            + " {@link RowSet}",
+                    "     * containing the matched row keys.",
+                    "     *",
+                    "     * <p>",
+                    "     * Correct for any {@link Comparable} type: ordering locates the run of rows that compare equal"
+                            + " to a search",
+                    "     * value, and {@link ObjectComparisons#eq(Object, Object)} selects the rows of that run that"
+                            + " match.",
+                    "     *",
+                    "     * @param source The column source in which the search will be performed.",
+                    "     * @param selection The {@link RowSet} defining which rows are populated and the order in which"
+                            + " they are searched.",
+                    "     * @param sortColumn A {@link SortColumn} object representing the sorting order of the column.",
+                    "     * @param searchValues An array of keys to find within the source.",
+                    "     * @param usePrev If true, the search will use the previous values instead of current values.",
+                    "     *",
+                    "     * @return A {@link RowSet} containing the row keys that are equal to one of the search values.",
+                    "     */",
+                    "    public static RowSet " + GENERAL_MATCH + "(",
+                    "            @NotNull final ColumnSource<?> source,",
+                    "            @NotNull final RowSet selection,",
+                    "            @NotNull final SortColumn sortColumn,",
+                    "            @NotNull final Object[] searchValues,",
+                    "            final boolean usePrev) {",
+                    "        return ObjectColumnBinarySearchMatchHelper." + GENERAL_MATCH + "(source, selection,"
+                            + " sortColumn,",
+                    "                searchValues, usePrev);",
+                    "    }"));
             lines = replaceRegion(lines, "binsearchRangeFilter", Arrays.asList(
                     "    /**",
                     "     * Performs a binary search on a sorted {@link ElementSource} using bounds from an"
@@ -340,10 +380,41 @@ public class ReplicateRegionsAndRegionedSources {
                     "                rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);",
                     "    }"));
             lines = addImport(lines,
+                    "import io.deephaven.engine.table.ColumnSource;",
                     "import io.deephaven.engine.table.impl.select.AbstractRangeFilter;",
                     "import io.deephaven.engine.table.impl.select.ComparableRangeFilter;",
                     "import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;");
         } else {
+            lines = addGeneralMatch(lines, Arrays.asList(
+                    "    /**",
+                    "     * Performs a binary search on a given column region to find the row keys holding a value equal"
+                            + " to one of",
+                    "     * {@code searchValues}. The method returns the {@link RowSet} containing the matched row keys.",
+                    "     *",
+                    "     * <p>",
+                    "     * Correct for any {@link Comparable} type: ordering locates the run of rows that compare equal"
+                            + " to a search",
+                    "     * value, and {@link ObjectComparisons#eq(Object, Object)} selects the rows of that run that"
+                            + " match.",
+                    "     *",
+                    "     * @param region The column region in which the search will be performed.",
+                    "     * @param firstKey The first key in the column region to consider for the search.",
+                    "     * @param lastKey The last key in the column region to consider for the search.",
+                    "     * @param sortColumn A {@link SortColumn} object representing the sorting order of the column.",
+                    "     * @param searchValues An array of keys to find within the column region.",
+                    "     *",
+                    "     * @return A {@link RowSet} containing the row keys that are equal to one of the search values.",
+                    "     */",
+                    "    public static RowSet " + GENERAL_MATCH + "(",
+                    "            @NotNull final ColumnRegionObject<?, ?> region,",
+                    "            final long firstKey,",
+                    "            final long lastKey,",
+                    "            @NotNull final SortColumn sortColumn,",
+                    "            @NotNull final Object[] searchValues) {",
+                    "        return ObjectRegionBinarySearchMatchHelper." + GENERAL_MATCH
+                            + "(region, firstKey, lastKey,",
+                    "                sortColumn, searchValues);",
+                    "    }"));
             lines = replaceRegion(lines, "binsearchRangeFilter", Arrays.asList(
                     "    /**",
                     "     * Performs a binary search on a sorted column region using bounds from an"
@@ -389,11 +460,9 @@ public class ReplicateRegionsAndRegionedSources {
                     "     * is not applied here; the caller must invert the result itself.",
                     "     *",
                     "     * <p>",
-                    "     * Ordering alone decides a match only for a type whose comparison is consistent with"
-                            + " equality. For any other type",
-                    "     * the ordered search returns a superset, and"
-                            + " {@link ComparableRegionBinarySearchKernel} picks the matches out of",
-                    "     * it by equality.",
+                    "     * The filter's column type chooses the search: {@link #" + CONSISTENT_MATCH + "} when",
+                    "     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds for it, and",
+                    "     * {@link #" + GENERAL_MATCH + "} otherwise.",
                     "     *",
                     "     * @param region The column region to search.",
                     "     * @param firstKey The first key in the column region to consider for the search.",
@@ -413,9 +482,10 @@ public class ReplicateRegionsAndRegionedSources {
                     "            return RowSetFactory.empty();",
                     "        }",
                     "        return BinarySearchKernelHelper.compareConsistentWithEquality(filter.getColumnType())",
-                    "                ? binarySearchMatch(region, firstKey, lastKey, sortColumn, filter.getValues())",
-                    "                : ComparableRegionBinarySearchKernel.binarySearchMatch(region, firstKey, lastKey, sortColumn,",
-                    "                        filter.getValues());",
+                    "                ? " + CONSISTENT_MATCH + "(region, firstKey, lastKey, sortColumn,"
+                            + " filter.getValues())",
+                    "                : " + GENERAL_MATCH
+                            + "(region, firstKey, lastKey, sortColumn, filter.getValues());",
                     "    }"));
             lines = addImport(lines,
                     "import io.deephaven.engine.table.impl.select.AbstractRangeFilter;",
@@ -423,5 +493,34 @@ public class ReplicateRegionsAndRegionedSources {
                     "import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;");
         }
         FileUtils.writeLines(new File(charToObject), lines);
+    }
+
+    /**
+     * Rename the Char source's {@code binarySearchMatch} to {@link #CONSISTENT_MATCH}, describe in its javadoc which
+     * types its ordering match serves, and follow it with {@code generalMatch}, the {@link #GENERAL_MATCH} method.
+     */
+    private static List<String> addGeneralMatch(final List<String> lines, final List<String> generalMatch) {
+        final List<String> newLines =
+                new ArrayList<>(globalReplacements(lines, "\\bbinarySearchMatch\\b", CONSISTENT_MATCH));
+        final int signature = newLines.indexOf("    public static RowSet " + CONSISTENT_MATCH + "(");
+        if (signature < 0) {
+            throw new IllegalStateException("No " + CONSISTENT_MATCH + " declaration");
+        }
+        final int end = signature + newLines.subList(signature, newLines.size()).indexOf("    }");
+        newLines.add(end + 1, "");
+        newLines.addAll(end + 2, generalMatch);
+
+        final int javadocStart = newLines.subList(0, signature).lastIndexOf("    /**");
+        final int firstBreak = javadocStart + newLines.subList(javadocStart, signature).indexOf("     *");
+        newLines.addAll(firstBreak, Arrays.asList(
+                "     *",
+                "     * <p>",
+                "     * Ordering alone decides a match: every row that compares equal to a search value is returned."
+                        + " This is valid for",
+                "     * types whose values compare equal exactly when they are equal, as",
+                "     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes; for any other"
+                        + " type,",
+                "     * {@link #" + GENERAL_MATCH + "} applies."));
+        return newLines;
     }
 }

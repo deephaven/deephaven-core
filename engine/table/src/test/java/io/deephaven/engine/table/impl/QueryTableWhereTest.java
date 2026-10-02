@@ -1988,7 +1988,7 @@ public abstract class QueryTableWhereTest {
         final WhereFilter filter = WhereFilter.of(RawString.of("A == ii"));
         filter.init(makeVirtualRowVariableTable().getDefinition());
         assertTrue("sanity: parses to a MatchFilter, was " + filter.getClass(), filter instanceof MatchFilter);
-        assertNotNull("sanity: fails over to a ConditionFilter", ((MatchFilter) filter).getFailoverFilterIfCached());
+        assertNotNull("sanity: fails over to a ConditionFilter", ((MatchFilter) filter).getFailoverFilter());
 
         assertIndexedWhereMatchesUnindexed(RawString.of("A == ii"));
     }

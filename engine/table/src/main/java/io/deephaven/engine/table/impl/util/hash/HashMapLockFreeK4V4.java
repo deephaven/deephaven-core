@@ -1,0 +1,102 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.engine.table.impl.util.hash;
+
+import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
+
+public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongMapTestAccessors {
+    private volatile long[] keysAndValues;
+
+    public static HashMapLockFreeK4V4 ofExpectedSize(int expectedSize, double loadFactor, long noEntryValue) {
+        final int desiredInitialCapacity = capacityForExpectedEntries(expectedSize, loadFactor);
+        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue);
+    }
+
+    public HashMapLockFreeK4V4() {
+        this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
+    }
+
+    public HashMapLockFreeK4V4(int desiredInitialCapacity) {
+        this(desiredInitialCapacity, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
+    }
+
+    HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor) {
+        this(desiredInitialCapacity, loadFactor, DEFAULT_NO_ENTRY_VALUE);
+    }
+
+    public HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
+        super(desiredInitialCapacity, loadFactor, noEntryValue);
+        this.keysAndValues = null;
+    }
+
+    @Override
+    void setKeysAndValues(long[] keysAndValues) {
+        this.keysAndValues = keysAndValues;
+    }
+
+    @Override
+    public long put(long key, long value) {
+        return putImpl(keysAndValues, key, value, false);
+    }
+
+    @Override
+    public long putIfAbsent(long key, long value) {
+        return putImpl(keysAndValues, key, value, true);
+    }
+
+    @Override
+    public long get(long key) {
+        return getImpl(keysAndValues, key);
+    }
+
+    @Override
+    public long remove(long key) {
+        return removeImpl(keysAndValues, key);
+    }
+
+    public int capacity() {
+        return capacityImpl(keysAndValues);
+    }
+
+    @Override
+    public void clear() {
+        clearImpl(keysAndValues);
+    }
+
+    public void resetToNull() {
+        resetToNullImpl();
+        keysAndValues = null;
+    }
+
+    @Override
+    public void resetToNullRetainingCapacity() {
+        resetToNullRetainingCapacityImpl(keysAndValues);
+        keysAndValues = null;
+    }
+
+    @Override
+    public long[] keyArray() {
+        return keysOrValuesImpl(keysAndValues, null, false);
+    }
+
+    @Override
+    public long[] keyArray(long[] space) {
+        return keysOrValuesImpl(keysAndValues, space, false);
+    }
+
+    @Override
+    public long[] valueArray() {
+        return keysOrValuesImpl(keysAndValues, null, true);
+    }
+
+    @Override
+    public long[] valueArray(long[] space) {
+        return keysOrValuesImpl(keysAndValues, space, true);
+    }
+
+    @Override
+    public void forEach(LongLongBiConsumer consumer) {
+        forEachImpl(keysAndValues, consumer);
+    }
+}

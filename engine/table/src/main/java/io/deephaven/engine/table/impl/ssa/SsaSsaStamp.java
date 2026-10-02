@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.ssa;
 
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -11,11 +12,24 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
 public interface SsaSsaStamp {
-    static SsaSsaStamp make(ChunkType type, boolean reverse) {
+    /**
+     * Make a SsaSsaStamp for values of the given type, which must match the type of the SSAs it is given.
+     *
+     * @param type the chunk type of the values
+     * @param equalsConsistent true when values of the data type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject stamp for Object values; it is the same decision passed to
+     *        {@link SegmentedSortedArray#make(ChunkType, boolean, boolean, int)} for the SSAs this stamp is given.
+     *        Other chunk types ignore it. An operation reads the registry once and passes the same decision to every
+     *        kernel it creates, so its kernels come from one family.
+     * @param reverse true for descending SSAs
+     * @return the SsaSsaStamp
+     */
+    static SsaSsaStamp make(ChunkType type, boolean equalsConsistent, boolean reverse) {
         if (reverse) {
             switch (type) {
                 case Char:
-                    return NullAwareCharReverseSsaSsaStamp.INSTANCE;
+                    return CharReverseSsaSsaStamp.INSTANCE;
                 case Byte:
                     return ByteReverseSsaSsaStamp.INSTANCE;
                 case Short:
@@ -29,7 +43,9 @@ public interface SsaSsaStamp {
                 case Double:
                     return DoubleReverseSsaSsaStamp.INSTANCE;
                 case Object:
-                    return ObjectReverseSsaSsaStamp.INSTANCE;
+                    return equalsConsistent
+                            ? EqualsConsistentObjectReverseSsaSsaStamp.INSTANCE
+                            : ObjectReverseSsaSsaStamp.INSTANCE;
                 default:
                 case Boolean:
                     throw new UnsupportedOperationException();
@@ -37,7 +53,7 @@ public interface SsaSsaStamp {
         } else {
             switch (type) {
                 case Char:
-                    return NullAwareCharSsaSsaStamp.INSTANCE;
+                    return CharSsaSsaStamp.INSTANCE;
                 case Byte:
                     return ByteSsaSsaStamp.INSTANCE;
                 case Short:
@@ -51,7 +67,9 @@ public interface SsaSsaStamp {
                 case Double:
                     return DoubleSsaSsaStamp.INSTANCE;
                 case Object:
-                    return ObjectSsaSsaStamp.INSTANCE;
+                    return equalsConsistent
+                            ? EqualsConsistentObjectSsaSsaStamp.INSTANCE
+                            : ObjectSsaSsaStamp.INSTANCE;
                 default:
                 case Boolean:
                     throw new UnsupportedOperationException();

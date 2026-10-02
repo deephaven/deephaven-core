@@ -1,6 +1,7 @@
 package io.deephaven.tools.docker
 
 import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerExecContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerLogsContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
@@ -34,6 +35,7 @@ public abstract class DeephavenInDockerExtension {
     final TaskProvider<DockerInspectContainer> portTask
     final TaskProvider<? extends Task> endTask
     final TaskProvider<? extends Task> logTask
+    final TaskProvider<? extends Task> threadDumpTask
 
     final String deephavenServerProject
     final String serverTask
@@ -131,10 +133,27 @@ public abstract class DeephavenInDockerExtension {
             )
         }
 
+        // Only runs when a task registered via shouldLogIfTaskFails has failed. The container is still up at that
+        // point (stopDeephaven is ordered after this), so even though the client-side test has ended, a server-side
+        // deadlock or stuck thread will still be visible. The server image is a full JDK and its entrypoint execs
+        // java, so jcmd can attach to PID 1; the dump is written to this task's stdout.
+        threadDumpTask = project.tasks.register('threadDumpServer', DockerExecContainer) { task ->
+            task.targetContainerId containerName.get()
+            task.commands.add(['jcmd', '1', 'Thread.print', '-l'] as String[])
+
+            task.onlyIf = Specs.convertClosureToSpec { Task t ->
+                shouldLog.get().isSatisfiedBy(t)
+            }
+        }
+        logTask.configure { Task t ->
+            // cosmetic: print the dump before the (much longer) server logs
+            t.mustRunAfter(threadDumpTask)
+        }
+
         endTask = project.tasks.register('stopDeephaven', DockerRemoveContainer) { task ->
             task.dependsOn createDeephavenGrpcApi
 //            task.dependsOn logTask// this seems to prevent start/healthy task from triggering logs
-            task.mustRunAfter(logTask)
+            task.mustRunAfter(logTask, threadDumpTask)
             task.finalizedBy removeDeephavenGrpcApiNetwork
 
             task.targetContainerId containerName.get()
@@ -151,12 +170,12 @@ public abstract class DeephavenInDockerExtension {
     }
 
     /**
-     * If the given task fails, print server logs to console. This implies that
-     * the log task can't run until after the provided task has ended.
+     * If the given task fails, take a thread dump of the server and print server logs to console. This implies
+     * that the thread dump and log tasks can't run until after the provided task has ended.
      */
     void shouldLogIfTaskFails(TaskProvider<? extends Task> task) {
         task.configure { Task t ->
-            t.finalizedBy logTask
+            t.finalizedBy threadDumpTask, logTask
             shouldLog.set(Specs.convertClosureToSpec({
                 t.state.failure != null
             }))
