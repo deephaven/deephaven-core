@@ -16,6 +16,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
@@ -382,8 +383,12 @@ public abstract class UpdateByOperator {
      */
     protected void collectSparseSources(@NotNull final Consumer<SparseArrayColumnSource<?>> consumer) {
         for (final ColumnSource<?> outputSource : getOutputColumns().values()) {
-            if (outputSource instanceof SparseArrayColumnSource) {
-                consumer.accept((SparseArrayColumnSource<?>) outputSource);
+            // a reinterpretable output, such as an Instant source, may hold its values in a sparse primitive source
+            final ColumnSource<?> storage = outputSource instanceof SparseArrayColumnSource
+                    ? outputSource
+                    : ReinterpretUtils.maybeConvertToPrimitive(outputSource);
+            if (storage instanceof SparseArrayColumnSource) {
+                consumer.accept((SparseArrayColumnSource<?>) storage);
             }
         }
     }

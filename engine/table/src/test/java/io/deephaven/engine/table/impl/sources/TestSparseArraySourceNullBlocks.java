@@ -335,7 +335,7 @@ public class TestSparseArraySourceNullBlocks {
     }
 
     private static long sparseSize(final Table result, final String column) {
-        final ColumnSource<?> source = result.getColumnSource(column);
+        final ColumnSource<?> source = ReinterpretUtils.maybeConvertToPrimitive(result.getColumnSource(column));
         assertTrue(source.getClass().getName(), source instanceof SparseArrayColumnSource);
         return ((SparseArrayColumnSource<?>) source).estimateSize();
     }
@@ -448,6 +448,14 @@ public class TestSparseArraySourceNullBlocks {
         for (final String[] byColumns : List.of(new String[0], new String[] {"Key"})) {
             checkMarchingBounded(marchingLeft(), left -> left.updateBy(UpdateByOperation.CumSum("Summed=Stamp"),
                     byColumns), table -> sparseSize(table, "Summed"));
+        }
+    }
+
+    @Test
+    public void testUpdateByInstantOutputMarchingBounded() {
+        for (final String[] byColumns : List.of(new String[0], new String[] {"Key"})) {
+            checkMarchingBounded(marchingLeft(), left -> left.updateBy(UpdateByOperation.CumMax("MaxTs=Ts"),
+                    byColumns), table -> sparseSize(table, "MaxTs"));
         }
     }
 
