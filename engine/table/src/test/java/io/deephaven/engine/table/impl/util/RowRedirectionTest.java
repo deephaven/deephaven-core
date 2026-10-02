@@ -216,14 +216,18 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
         // The key the mutator toggles lies beyond the readers' keys and in neither redirection.
         final long toggled = 3L * n + 100;
         final Thread mutator = new Thread(() -> {
-            for (int it = 0; failure.get() == null && !Thread.currentThread().isInterrupted(); ++it) {
-                if ((it & 1) == 0) {
-                    shared.insert(toggled);
-                } else {
-                    shared.remove(toggled);
+            try {
+                for (int it = 0; failure.get() == null && !Thread.currentThread().isInterrupted(); ++it) {
+                    if ((it & 1) == 0) {
+                        shared.insert(toggled);
+                    } else {
+                        shared.remove(toggled);
+                    }
+                    // and read it the way another reader of the table would, keeping its cached chunk in play
+                    shared.asRowKeyChunk();
                 }
-                // and read it the way another reader of the table would, keeping its cached chunk in play
-                shared.asRowKeyChunk();
+            } catch (final Throwable e) {
+                failure.compareAndSet(null, "mutator threw " + e);
             }
         }, "mutator");
         final Thread[] readers = new Thread[2];

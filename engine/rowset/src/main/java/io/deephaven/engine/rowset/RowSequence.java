@@ -70,32 +70,24 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
     /**
      * Get a {@link LongChunk} representation of the individual row keys in this {@code RowSequence}.
      *
-     * <p>
-     * The result is this {@code RowSequence}'s own cached state: it is built on the first call, and rebuilt in place by
-     * the first call after any mutation, with no synchronization. Call this method only on a {@code RowSequence} you
-     * own, typically one you obtained from your own {@link Iterator}. Never call it on a sequence that other code may
-     * be reading or mutating at the same time, a table's {@link RowSet} above all: two concurrent callers rebuild one
-     * chunk under each other and read garbage. To take the keys of a sequence you were handed, iterate it
-     * ({@link #forAllRowKeys}) or copy them into a chunk of your own ({@link #fillRowKeyChunk}).
-     *
      * @return A {@link LongChunk} containing the row keys in this {@code RowSequence}
      * @apiNote This {@code RowSequence} owns the result, which is valid only as long as this {@code RowSequence}
-     *          remains valid and unmodified. You must not mutate the result.
+     *          remains valid. You must not mutate the result.
+     * @implNote Until DH-23886 is addressed, implementations that cache the result (a {@link RowSet}, for one) rebuild
+     *           it in place, unsynchronized, on the first call after a mutation; two threads making that first call on
+     *           one shared sequence can each see a partly rebuilt chunk. A caller that cannot rule that out copies the
+     *           keys with {@link #fillRowKeyChunk} instead.
      */
     LongChunk<OrderedRowKeys> asRowKeyChunk();
 
     /**
      * Get a {@link LongChunk} representation of row key ranges in this {@code RowSequence}.
      *
-     * <p>
-     * As with {@link #asRowKeyChunk()}, the result is this {@code RowSequence}'s own cached state, rebuilt in place
-     * without synchronization. Call this method only on a {@code RowSequence} you own, never on a shared one such as a
-     * table's {@link RowSet}; to take the ranges of a sequence you were handed, iterate it
-     * ({@link #forAllRowKeyRanges}) or copy them into a chunk of your own ({@link #fillRowKeyRangesChunk}).
-     *
      * @return A {@link LongChunk} containing the row key ranges in this {@code RowSequence}
      * @apiNote This {@code RowSequence} owns the result, which is valid only as long as this {@code RowSequence}
-     *          remains valid and unmodified. You must not mutate the result.
+     *          remains valid. You must not mutate the result.
+     * @implNote The same limitation as {@link #asRowKeyChunk()} until DH-23886 is addressed; a caller that cannot rule
+     *           out a concurrent first call copies the ranges with {@link #fillRowKeyRangesChunk} instead.
      */
     LongChunk<OrderedRowKeyRanges> asRowKeyRangesChunk();
 

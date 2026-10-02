@@ -243,12 +243,6 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     }
 
     /**
-     * The chunked read path. Per key, semantically identical to {@link #get(long)}: consult 'updates' first, and
-     * 'baseline' only for keys absent from 'updates' — the same per-key ordering the lock-free protocol described in
-     * the class comment depends on. (Before prev tracking starts, 'updates' and 'baseline' are the same map, whose
-     * no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass answers every key and the baseline pass is empty.)
-     */
-    /**
      * The context of a chunked read: a chunk of this redirection's own to copy the row keys of a {@link RowSequence}
      * into before they are looked up.
      *
@@ -258,7 +252,8 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
      * and the sequence a caller passes to {@link #fillChunk} is often a table's live
      * {@link io.deephaven.engine.rowset.RowSet}, shared with every other reader of the table and mutated by its
      * refresh. Two readers of one table, two sorts of it in one batch for instance, would rebuild that one chunk under
-     * each other's reads and look up garbage keys.
+     * each other's reads and look up garbage keys (DH-23886; once the cache is made safe for concurrent readers, this
+     * copy becomes optional).
      */
     private static final class FillContext implements ChunkSource.FillContext {
         private final WritableLongChunk<OrderedRowKeys> outerRowKeys;
@@ -278,23 +273,28 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         return new FillContext(chunkCapacity);
     }
 
+    /**
+     * The chunked read path. Per key, semantically identical to {@link #get(long)}: consult 'updates' first, and
+     * 'baseline' only for keys absent from 'updates' — the same per-key ordering the lock-free protocol described in
+     * the class comment depends on. (Before prev tracking starts, 'updates' and 'baseline' are the same map, whose
+     * no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass answers every key and the baseline pass is empty.)
+     */
     @Override
     public void fillChunk(
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        if (fillContext instanceof FillContext) {
-            final WritableLongChunk<OrderedRowKeys> keys = ((FillContext) fillContext).outerRowKeys;
-            outerRowKeys.fillRowKeyChunk(keys);
-            fillFromMaps(updates, baseline, keys, innerRowKeys.asWritableLongChunk());
-            return;
+        final WritableLongChunk<OrderedRowKeys> keys = contextKeys(fillContext);
+        outerRowKeys.fillRowKeyChunk(keys);
+        fillFromMaps(updates, baseline, keys, innerRowKeys.asWritableLongChunk());
+    }
+
+    /** The key chunk of a context made by {@link #makeFillContext}; any other context is a caller's bug. */
+    private static WritableLongChunk<OrderedRowKeys> contextKeys(@NotNull final ChunkSource.FillContext fillContext) {
+        if (!(fillContext instanceof FillContext)) {
+            throw Assert.statementNeverExecuted("fill context not made by this redirection's makeFillContext");
         }
-        // A context that is not ours (the default instance): copy the keys into a pooled chunk for this one call.
-        try (final WritableLongChunk<OrderedRowKeys> keys =
-                WritableLongChunk.makeWritableChunk(outerRowKeys.intSize())) {
-            outerRowKeys.fillRowKeyChunk(keys);
-            fillFromMaps(updates, baseline, keys, innerRowKeys.asWritableLongChunk());
-        }
+        return ((FillContext) fillContext).outerRowKeys;
     }
 
     @Override
@@ -310,17 +310,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        if (fillContext instanceof FillContext) {
-            final WritableLongChunk<OrderedRowKeys> keys = ((FillContext) fillContext).outerRowKeys;
-            outerRowKeys.fillRowKeyChunk(keys);
-            baseline.get(keys, innerRowKeys.asWritableLongChunk());
-            return;
-        }
-        try (final WritableLongChunk<OrderedRowKeys> keys =
-                WritableLongChunk.makeWritableChunk(outerRowKeys.intSize())) {
-            outerRowKeys.fillRowKeyChunk(keys);
-            baseline.get(keys, innerRowKeys.asWritableLongChunk());
-        }
+        final WritableLongChunk<OrderedRowKeys> keys = contextKeys(fillContext);
+        outerRowKeys.fillRowKeyChunk(keys);
+        baseline.get(keys, innerRowKeys.asWritableLongChunk());
     }
 
     @Override
