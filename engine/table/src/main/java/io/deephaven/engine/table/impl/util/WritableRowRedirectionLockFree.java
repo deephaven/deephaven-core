@@ -185,13 +185,11 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             return BASELINE_KEY_NOT_FOUND;
         }
         final ScalarAccessPair scalarAccessPair = SCALAR_ACCESS_PAIR.get();
-        try (final NullableLongLongMap.ScalarAccess forUpdates = scalarAccessPair.forUpdates.bind(updates)) {
-            final long result = forUpdates.get(outerRowKey);
-            if (result != UPDATES_KEY_NOT_FOUND) {
-                // The prior value from updates is either some ordinary previous value, or BASELINE_KEY_NOT_FOUND.
-                // In either case, return it to the caller.
-                return result;
-            }
+        final long result = scalarAccessPair.getFromUpdates(updates, outerRowKey);
+        if (result != UPDATES_KEY_NOT_FOUND) {
+            // The prior value from updates is either some ordinary previous value, or BASELINE_KEY_NOT_FOUND.
+            // In either case, return it to the caller.
+            return result;
         }
         // There's no entry in 'updates' so we return the entry in 'baseline'.
         return scalarAccessPair.getFromBaseline(baseline, outerRowKey);
@@ -225,6 +223,12 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     private static final class ScalarAccessPair {
         private final NullableLongLongMap.ScalarAccessHolder forUpdates = new NullableLongLongMap.ScalarAccessHolder();
         private final NullableLongLongMap.ScalarAccessHolder forBaseline = new NullableLongLongMap.ScalarAccessHolder();
+
+        long getFromUpdates(final NullableLongLongMap updates, final long key) {
+            try (final NullableLongLongMap.ScalarAccess scalarAccess = forUpdates.bind(updates)) {
+                return scalarAccess.get(key);
+            }
+        }
 
         long getFromBaseline(final NullableLongLongMap baseline, final long key) {
             try (final NullableLongLongMap.ScalarAccess scalarAccess = forBaseline.bind(baseline)) {
