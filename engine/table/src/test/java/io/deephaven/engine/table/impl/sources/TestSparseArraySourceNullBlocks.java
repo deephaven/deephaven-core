@@ -19,6 +19,8 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,6 +42,7 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -96,6 +99,47 @@ public class TestSparseArraySourceNullBlocks {
         for (long key = firstKey; key <= lastKey; ++key) {
             final long expected = delta == NULL_LONG ? RowSet.NULL_ROW_KEY : (key - delta) * 10;
             assertEquals(expected, prev ? fixture.redirection.getPrev(key) : fixture.redirection.get(key));
+        }
+    }
+
+    @Test
+    public void testTopBlockReleased() throws InterruptedException {
+        final long topKey = Long.MAX_VALUE;
+        try (final RowSet rows = i(topKey - 1, topKey)) {
+            final Fixture fixture = new Fixture(rows, rows);
+            final long sizeBefore = fixture.source.estimateSize();
+            final ExecutionContext context = ExecutionContext.getContext();
+            final MutableObject<Throwable> failure = new MutableObject<>();
+
+            // the update runs on its own thread so that a release that fails to terminate fails this test
+            final Thread updateThread = new Thread(() -> {
+                try (final SafeCloseable ignored = context.open()) {
+                    updateGraph().runWithinUnitTestCycle(() -> {
+                        try (final RowSet removed = i(topKey)) {
+                            fixture.update(removed, RowSetShiftData.EMPTY);
+                        }
+                    });
+                    assertEquals(sizeBefore, fixture.source.estimateSize());
+                    updateGraph().runWithinUnitTestCycle(() -> {
+                        try (final RowSet removed = i(topKey - 1)) {
+                            fixture.update(removed, RowSetShiftData.EMPTY);
+                        }
+                    });
+                } catch (final Throwable err) {
+                    failure.setValue(err);
+                }
+            }, "TestSparseArraySourceNullBlocks-top-block");
+            updateThread.setDaemon(true);
+            updateThread.start();
+            updateThread.join(60_000);
+            assertFalse("releasing the top block terminates", updateThread.isAlive());
+            if (failure.getValue() != null) {
+                throw new AssertionError(failure.getValue());
+            }
+
+            assertTrue(fixture.source.estimateSize() < sizeBefore);
+            assertEquals(RowSet.NULL_ROW_KEY, fixture.redirection.get(topKey - 1));
+            assertEquals(RowSet.NULL_ROW_KEY, fixture.redirection.get(topKey));
         }
     }
 

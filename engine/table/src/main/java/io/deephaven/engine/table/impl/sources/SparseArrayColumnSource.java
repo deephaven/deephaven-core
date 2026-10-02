@@ -292,12 +292,16 @@ public abstract class SparseArrayColumnSource<T>
         long startOfNextBlock = 0;
         while (candidateIterator.advance(startOfNextBlock)) {
             final long candidateKey = candidateIterator.currentValue();
-            startOfNextBlock = (candidateKey | (blockSize - 1)) + 1;
+            final long endOfCandidateBlock = candidateKey | (blockSize - 1);
 
             final long startOfCandidateBlock = candidateKey & ~(blockSize - 1);
-            if (!liveIterator.advance(startOfCandidateBlock) || liveIterator.currentValue() >= startOfNextBlock) {
+            if (!liveIterator.advance(startOfCandidateBlock) || liveIterator.currentValue() > endOfCandidateBlock) {
                 removeBlockBuilder.appendKey(candidateKey >> logBlockSize);
             }
+            if (endOfCandidateBlock == Long.MAX_VALUE) {
+                break;
+            }
+            startOfNextBlock = endOfCandidateBlock + 1;
         }
         return removeBlockBuilder.build();
     }
