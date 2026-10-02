@@ -157,17 +157,31 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     }
 
     /**
-     * For a {@link BigDecimal} column, returns {@code searchValues} with only its {@link BigDecimal} and null values;
-     * for any other column, returns {@code searchValues} unchanged.
+     * Removes from {@code searchValues} the values that can never match a row of this column, so that {@link #values}
+     * holds only values a consumer can match by the column's own comparison. This is the last step of {@link #init}:
+     * call it on the final, converted value array, after {@link #maybeDropNaN}, on every path that assigns
+     * {@link #values}. {@link #maybeDropNaN} handles the one other unmatchable value, NaN on a primitive floating-point
+     * column; between them they uphold the {@link #getValues()} contract.
      *
      * <p>
-     * A {@link BigDecimal} column is matched by {@link BigDecimal#compareTo(BigDecimal)}, by its chunk filter
-     * ({@code BigDecimalChunkMatchFilterFactory}) and by the sorted binary search alike. The chunk filter skips a value
-     * that is not a {@link BigDecimal}, but the sorted search, which reads {@link #getValues()}, would fail to compare
-     * one. Such a value can never match the column, so removing it selects what matching it by equality would. When
-     * there is nothing to remove, {@code searchValues} itself is returned.
+     * Only a {@link BigDecimal} column has anything to drop here. It is matched by
+     * {@link BigDecimal#compareTo(BigDecimal)}, as the query language's {@code ==} matches it, and only a
+     * {@link BigDecimal} can be compared that way. The convertor passes a query-scope variable or a direct value of
+     * another type through as it is -- an {@link Integer} {@code 5} for a {@code BigDecimal} column, say -- and no row
+     * of the column can match such a value. Null is kept: it matches a null cell.
+     *
+     * <p>
+     * Dropping the value does not change which rows the filter selects, but it protects the consumers of
+     * {@link #getValues()}. The column's chunk filter ({@code BigDecimalChunkMatchFilterFactory}) skips a value of
+     * another type itself, but the sorted-column pushdown ({@code SortedColumnPushdownManager} and the region binary
+     * search kernels) locates every value by ordering, and {@code compareTo} between a {@link BigDecimal} and a value
+     * of another type throws {@link ClassCastException}.
+     *
+     * @param searchValues the converted values
+     * @return {@code searchValues} without the values that can never match, or {@code searchValues} itself when there
+     *         is nothing to remove, which is always the case for a column of any other type
      */
-    private Object[] retainBigDecimalAndNull(final Object[] searchValues) {
+    private Object[] dropUnmatchable(final Object[] searchValues) {
         if (searchValues == null || columnType != BigDecimal.class) {
             return searchValues;
         }
@@ -273,7 +287,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             }
             columnType = column.getDataType();
             if (strValues == null) {
-                values = retainBigDecimalAndNull(maybeDropNaN(values));
+                values = dropUnmatchable(maybeDropNaN(values));
                 initialized = true;
                 return;
             }
@@ -284,7 +298,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
-            values = retainBigDecimalAndNull(maybeDropNaN(valueList.toArray()));
+            values = dropUnmatchable(maybeDropNaN(valueList.toArray()));
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;
