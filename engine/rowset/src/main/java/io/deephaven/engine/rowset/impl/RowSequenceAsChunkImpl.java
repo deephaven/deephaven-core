@@ -10,10 +10,12 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Any;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.function.BiConsumer;
 
 /**
  * Base for {@link RowSequence} implementations that cache the results of {@link #asRowKeyChunk()} and
@@ -90,32 +92,8 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
         if (published != null) {
             return published;
         }
-        return buildKeyIndicesChunk();
-    }
-
-    @SuppressWarnings("unchecked")
-    private LongChunk<OrderedRowKeys> buildKeyIndicesChunk() {
-        final int isize = intSize();
-        WritableLongChunk<OrderedRowKeys> chunk =
-                (WritableLongChunk<OrderedRowKeys>) STALE_KEY_INDICES_CHUNK.getAndSet(this, null);
-        if (chunk != null && chunk.capacity() < isize) {
-            ChunkPoolReleaseTracking.untracked(chunk::close);
-            chunk = null;
-        }
-        if (chunk == null) {
-            chunk = ChunkPoolReleaseTracking.untracked(() -> WritableLongChunk.makeWritableChunk(isize));
-        } else {
-            chunk.setSize(chunk.capacity());
-        }
-        fillRowKeyChunk(chunk);
-        final WritableLongChunk<OrderedRowKeys> witness =
-                (WritableLongChunk<OrderedRowKeys>) KEY_INDICES_CHUNK.compareAndExchange(this, null, chunk);
-        if (witness == null) {
-            return chunk;
-        }
-        // Another reader published first; our chunk was never visible to anyone else.
-        ChunkPoolReleaseTracking.untracked(chunk::close);
-        return witness;
+        return buildChunk(KEY_INDICES_CHUNK, STALE_KEY_INDICES_CHUNK, intSize(),
+                RowSequenceAsChunkImpl::fillRowKeyChunk);
     }
 
     @Override
@@ -127,24 +105,39 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
         if (published != null) {
             return published;
         }
-        return buildKeyRangesChunk();
+        return buildChunk(KEY_RANGES_CHUNK, STALE_KEY_RANGES_CHUNK, sizeForRangesChunk(),
+                RowSequenceAsChunkImpl::fillRowKeyRangesChunk);
     }
 
+    /**
+     * Fill a chunk that only this thread can see, reusing the stale chunk when it is large enough, and publish it.
+     *
+     * @param publishedHandle The handle for the published chunk field
+     * @param staleHandle The handle for the stale chunk field of the same kind
+     * @param capacity The capacity the chunk needs
+     * @param filler Fills the chunk from this sequence
+     * @return The published chunk, which is ours unless another reader published first
+     */
     @SuppressWarnings("unchecked")
-    private LongChunk<OrderedRowKeyRanges> buildKeyRangesChunk() {
-        final int size = sizeForRangesChunk();
-        WritableLongChunk<OrderedRowKeyRanges> chunk =
-                (WritableLongChunk<OrderedRowKeyRanges>) STALE_KEY_RANGES_CHUNK.getAndSet(this, null);
-        if (chunk != null && chunk.capacity() < size) {
+    private <ATTR extends Any> LongChunk<ATTR> buildChunk(
+            final VarHandle publishedHandle,
+            final VarHandle staleHandle,
+            final int capacity,
+            final BiConsumer<RowSequenceAsChunkImpl, WritableLongChunk<ATTR>> filler) {
+        WritableLongChunk<ATTR> chunk =
+                (WritableLongChunk<ATTR>) staleHandle.getAndSet(this, (WritableLongChunk<ATTR>) null);
+        if (chunk != null && chunk.capacity() < capacity) {
             ChunkPoolReleaseTracking.untracked(chunk::close);
             chunk = null;
         }
         if (chunk == null) {
-            chunk = ChunkPoolReleaseTracking.untracked(() -> WritableLongChunk.makeWritableChunk(size));
+            chunk = ChunkPoolReleaseTracking.untracked(() -> WritableLongChunk.makeWritableChunk(capacity));
+        } else {
+            chunk.setSize(chunk.capacity());
         }
-        fillRowKeyRangesChunk(chunk);
-        final WritableLongChunk<OrderedRowKeyRanges> witness =
-                (WritableLongChunk<OrderedRowKeyRanges>) KEY_RANGES_CHUNK.compareAndExchange(this, null, chunk);
+        filler.accept(this, chunk);
+        final WritableLongChunk<ATTR> witness = (WritableLongChunk<ATTR>) publishedHandle.compareAndExchange(
+                this, (WritableLongChunk<ATTR>) null, chunk);
         if (witness == null) {
             return chunk;
         }
