@@ -6,7 +6,6 @@ package io.deephaven.server.runner.scheduler;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
-import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -77,7 +76,7 @@ public class SchedulerModule {
             }
         };
 
-        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor, Clock.system());
+        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor);
     }
 
     private static class ThreadFactory extends NamingThreadFactory {

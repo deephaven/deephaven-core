@@ -68,7 +68,7 @@ public class DoExchangeMarshallerLockOrderTest {
         scheduler = new TestControlledScheduler();
         // initializeExpiration is protected, so we invoke it via an instance initializer in an
         // anonymous subclass — same pattern SessionState's own tests would use from inside the package.
-        session = new SessionState(scheduler, new SessionService.ObfuscatingErrorTransformer(),
+        session = new SessionState(scheduler, scheduler, new SessionService.ObfuscatingErrorTransformer(),
                 TestExecutionContext::createForUnitTests, AUTH_CONTEXT) {
             {
                 initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
