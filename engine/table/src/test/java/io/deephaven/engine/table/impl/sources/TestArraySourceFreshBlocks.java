@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -133,8 +134,16 @@ public class TestArraySourceFreshBlocks {
         });
     }
 
+    /**
+     * {@code prepareForParallelPopulation} copies the current values of the rows to be populated into their previous
+     * values, so that the population itself need not record them. For a block allocated during the cycle, the
+     * previous-value array is shared by every source of the element type and shape, so copying into it would change the
+     * previous values of every other fresh block. The rows are written before the call, so that there are values other
+     * than the allocated ones to copy, and again after it, as the population would; another source's fresh block shows
+     * whether the shared array was written.
+     */
     @Test
-    public void testParallelPopulationLeavesTheSharedBlockUnwritten() {
+    public void testPrepareForParallelPopulationLeavesTheSharedBlockUnwritten() {
         final LongArraySource populated = new LongArraySource();
         final LongArraySource other = new LongArraySource();
         final ObjectArraySource<String> populatedObjects = new ObjectArraySource<>(String.class);
@@ -151,12 +160,20 @@ public class TestArraySourceFreshBlocks {
                 populated.set(ii, 5L);
                 populatedObjects.set(ii, "value");
             }
-            // parallel population of a block allocated this cycle must not copy its values into the shared block
-            populated.prepareForParallelPopulation(RowSetFactory.flat(BLOCK_SIZE));
-            populatedObjects.prepareForParallelPopulation(RowSetFactory.flat(BLOCK_SIZE));
+            try (final RowSet toPopulate = RowSetFactory.flat(BLOCK_SIZE)) {
+                populated.prepareForParallelPopulation(toPopulate);
+                populatedObjects.prepareForParallelPopulation(toPopulate);
+            }
+            // the population itself
+            for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
+                populated.set(ii, 6L);
+                populatedObjects.set(ii, "populated");
+            }
             other.ensureCapacity(BLOCK_SIZE);
             otherObjects.ensureCapacity(BLOCK_SIZE);
             for (int ii = 0; ii < BLOCK_SIZE; ++ii) {
+                assertEquals(6L, populated.getLong(ii));
+                assertEquals("populated", populatedObjects.get(ii));
                 assertEquals(QueryConstants.NULL_LONG, populated.getPrevLong(ii));
                 assertEquals(QueryConstants.NULL_LONG, other.getPrevLong(ii));
                 assertNull(populatedObjects.getPrev(ii));
