@@ -80,8 +80,9 @@ public class TestArraySourceFreshBlocks {
             }
         });
 
-        // after the cycle, previous values are current values, and the new block records previous values as usual
-        for (long key = BLOCK_SIZE; key < 2L * BLOCK_SIZE; ++key) {
+        // after the cycle, previous values are current values in both blocks, and the new block records previous values
+        // as usual
+        for (long key = 0; key < 2L * BLOCK_SIZE; ++key) {
             assertEquals(longs.getLong(key), longs.getPrevLong(key));
             assertEquals(defaults.getLong(key), defaults.getPrevLong(key));
             assertEquals(objects.get(key), objects.getPrev(key));
@@ -98,6 +99,17 @@ public class TestArraySourceFreshBlocks {
             assertEquals(key, defaults.getPrevLong(key));
             assertEquals("new", objects.getPrev(key));
             assertEquals(Boolean.FALSE, booleans.getPrev(key));
+
+            // a row of the new block that the first cycle did not write, whose previous values are the allocated ones
+            final long unwrittenKey = BLOCK_SIZE + 2;
+            longs.set(unwrittenKey, -2L);
+            defaults.set(unwrittenKey, 10L);
+            objects.set(unwrittenKey, "newest");
+            booleans.set(unwrittenKey, Boolean.TRUE);
+            assertEquals(QueryConstants.NULL_LONG, longs.getPrevLong(unwrittenKey));
+            assertEquals(0L, defaults.getPrevLong(unwrittenKey));
+            assertNull(objects.getPrev(unwrittenKey));
+            assertNull(booleans.getPrev(unwrittenKey));
         });
     }
 
