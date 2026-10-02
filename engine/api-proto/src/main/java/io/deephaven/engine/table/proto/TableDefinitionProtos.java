@@ -180,37 +180,29 @@ public final class TableDefinitionProtos {
             @NotNull final PersistedTableDefinitionProto proto,
             @NotNull final ClassLoader classLoader) {
         checkNoUnknownFields("Persisted table definition", proto);
-        switch (proto.getDefinitionCase()) {
-            case TABLE_DEFINITION:
-                return fromProto(proto.getTableDefinition(), classLoader);
-            default:
+        return switch (proto.getDefinitionCase()) {
+            case TABLE_DEFINITION -> fromProto(proto.getTableDefinition(), classLoader);
+            case DEFINITION_NOT_SET ->
                 throw new IllegalArgumentException("Persisted table definition has no definition set");
-        }
+        };
     }
 
     private static ColumnTypeProto toProto(@NotNull final ColumnDefinition.ColumnType columnType) {
-        switch (columnType) {
-            case Normal:
-                return ColumnTypeProto.COLUMN_TYPE_NORMAL;
-            case Partitioning:
-                return ColumnTypeProto.COLUMN_TYPE_PARTITIONING;
-            default:
-                throw new IllegalArgumentException("Unexpected column type " + columnType);
-        }
+        return switch (columnType) {
+            case Normal -> ColumnTypeProto.COLUMN_TYPE_NORMAL;
+            case Partitioning -> ColumnTypeProto.COLUMN_TYPE_PARTITIONING;
+        };
     }
 
     private static ColumnDefinition.ColumnType fromProto(
             @NotNull final String columnName,
             @NotNull final ColumnTypeProto columnType) {
-        switch (columnType) {
-            case COLUMN_TYPE_NORMAL:
-                return ColumnDefinition.ColumnType.Normal;
-            case COLUMN_TYPE_PARTITIONING:
-                return ColumnDefinition.ColumnType.Partitioning;
-            default:
-                throw new IllegalArgumentException(
-                        "Column '" + columnName + "' has unsupported column type " + columnType);
-        }
+        return switch (columnType) {
+            case COLUMN_TYPE_NORMAL -> ColumnDefinition.ColumnType.Normal;
+            case COLUMN_TYPE_PARTITIONING -> ColumnDefinition.ColumnType.Partitioning;
+            case COLUMN_TYPE_UNSPECIFIED, UNRECOGNIZED -> throw new IllegalArgumentException(
+                    "Column '" + columnName + "' has unsupported column type " + columnType);
+        };
     }
 
     private static JavaClassProto toProto(@NotNull final Class<?> clazz) {
@@ -256,47 +248,40 @@ public final class TableDefinitionProtos {
             @NotNull final JavaClassProto proto,
             @NotNull final ClassLoader classLoader) {
         checkNoUnknownFields("Column '" + columnName + "' class", proto);
-        switch (proto.getKindCase()) {
-            case PRIMITIVE:
-                return fromPrimitiveProto(columnName, proto.getPrimitive());
-            case CLASS_NAME:
-                final String className = proto.getClassName();
-                try {
-                    return Class.forName(className, false, classLoader);
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalArgumentException(
-                            "Column '" + columnName + "' references class '" + className + "', which was not found",
-                            e);
-                }
-            default:
-                throw new IllegalArgumentException("Column '" + columnName + "' has an unset class");
+        return switch (proto.getKindCase()) {
+            case PRIMITIVE -> fromPrimitiveProto(columnName, proto.getPrimitive());
+            case CLASS_NAME -> forName(columnName, proto.getClassName(), classLoader);
+            case KIND_NOT_SET -> throw new IllegalArgumentException("Column '" + columnName + "' has an unset class");
+        };
+    }
+
+    private static Class<?> forName(
+            @NotNull final String columnName,
+            @NotNull final String className,
+            @NotNull final ClassLoader classLoader) {
+        try {
+            return Class.forName(className, false, classLoader);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException(
+                    "Column '" + columnName + "' references class '" + className + "', which was not found", e);
         }
     }
 
     private static Class<?> fromPrimitiveProto(
             @NotNull final String columnName,
             @NotNull final PrimitiveTypeProto proto) {
-        switch (proto) {
-            case PRIMITIVE_TYPE_BOOLEAN:
-                return boolean.class;
-            case PRIMITIVE_TYPE_BYTE:
-                return byte.class;
-            case PRIMITIVE_TYPE_CHAR:
-                return char.class;
-            case PRIMITIVE_TYPE_SHORT:
-                return short.class;
-            case PRIMITIVE_TYPE_INT:
-                return int.class;
-            case PRIMITIVE_TYPE_LONG:
-                return long.class;
-            case PRIMITIVE_TYPE_FLOAT:
-                return float.class;
-            case PRIMITIVE_TYPE_DOUBLE:
-                return double.class;
-            default:
-                throw new IllegalArgumentException(
-                        "Column '" + columnName + "' has unsupported primitive type " + proto);
-        }
+        return switch (proto) {
+            case PRIMITIVE_TYPE_BOOLEAN -> boolean.class;
+            case PRIMITIVE_TYPE_BYTE -> byte.class;
+            case PRIMITIVE_TYPE_CHAR -> char.class;
+            case PRIMITIVE_TYPE_SHORT -> short.class;
+            case PRIMITIVE_TYPE_INT -> int.class;
+            case PRIMITIVE_TYPE_LONG -> long.class;
+            case PRIMITIVE_TYPE_FLOAT -> float.class;
+            case PRIMITIVE_TYPE_DOUBLE -> double.class;
+            case PRIMITIVE_TYPE_UNSPECIFIED, UNRECOGNIZED -> throw new IllegalArgumentException(
+                    "Column '" + columnName + "' has unsupported primitive type " + proto);
+        };
     }
 
     /**
