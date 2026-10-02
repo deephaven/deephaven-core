@@ -15,8 +15,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 /**
- * A block that an array source allocates during an update cycle records no previous values: its previous values are the
- * ones it was allocated with, until the cycle ends.
+ * When a block is allocated during an update cycle, there are no previous values to preserve. Therefore, all
+ * freshly-allocated blocks share read-only arrays for their prevBlocks and prevInUse entries. There is a single in-use
+ * array, and one previous-value array for each element type and shape, where the shape is whether the block is
+ * null-filled or zeroed.
  */
 public class TestArraySourceFreshBlocks {
     private static final int BLOCK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
