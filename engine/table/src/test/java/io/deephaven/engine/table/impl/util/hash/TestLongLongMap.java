@@ -656,6 +656,52 @@ public class TestLongLongMap {
                 assertEquals(expectedOld == null ? noEntryValue : expectedOld, oldValues.get(ii));
             }
         }
+        checkAgainstReference(map, reference);
+    }
+
+    /**
+     * The two puts that report no old values, in slices of several sizes: the pair form writes each key's own value and
+     * the one-value form writes the same value under every key; both overwrite what is there, take a duplicate key in
+     * index order, and rehash mid-call like the reporting form. java.util.HashMap, fed the same elements in the same
+     * order, is the standard of correctness.
+     */
+    @Test
+    public void chunkedPutWithoutOldValues() {
+        final int distinct = 5000;
+        final long[] keys = new long[2 * distinct];
+        final long[] values = new long[keys.length];
+        for (int ii = 0; ii < distinct; ++ii) {
+            final long key = 1_000_003L * ii + 17;
+            keys[2 * ii] = key;
+            values[2 * ii] = 1_000_000 + ii;
+            keys[2 * ii + 1] = key;
+            values[2 * ii + 1] = 2_000_000 + ii;
+        }
+        for (final int chunkSize : new int[] {1, 7, 4096, keys.length}) {
+            final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+            final Map<Long, Long> reference = new HashMap<>();
+            for (int begin = 0; begin < keys.length; begin += chunkSize) {
+                final int thisSize = Math.min(chunkSize, keys.length - begin);
+                map.put(LongChunk.chunkWrap(keys, begin, thisSize), LongChunk.chunkWrap(values, begin, thisSize));
+                for (int ii = 0; ii < thisSize; ++ii) {
+                    reference.put(keys[begin + ii], values[begin + ii]);
+                }
+            }
+            checkAgainstReference(map, reference);
+            // Then the one-value form over the same keys, overwriting every entry.
+            for (int begin = 0; begin < keys.length; begin += chunkSize) {
+                final int thisSize = Math.min(chunkSize, keys.length - begin);
+                map.put(LongChunk.chunkWrap(keys, begin, thisSize), 77);
+                for (int ii = 0; ii < thisSize; ++ii) {
+                    reference.put(keys[begin + ii], 77L);
+                }
+            }
+            checkAgainstReference(map, reference);
+        }
+    }
+
+    /** The map holds exactly the reference's entries: the same size, and every reference key reads back its value. */
+    private static void checkAgainstReference(final NullableLongLongMap map, final Map<Long, Long> reference) {
         assertEquals(reference.size(), map.size());
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         for (final Map.Entry<Long, Long> entry : reference.entrySet()) {
@@ -959,6 +1005,22 @@ public class TestLongLongMap {
                 oldValues.set(ii, map.putIfAbsent(keys.get(ii), values.get(ii)));
             }
             oldValues.setSize(size);
+        }
+
+        @Override
+        public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                map.put(keys.get(ii), values.get(ii));
+            }
+        }
+
+        @Override
+        public void put(LongChunk<? extends Any> keys, long value) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                map.put(keys.get(ii), value);
+            }
         }
 
         @Override

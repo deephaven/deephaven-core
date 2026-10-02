@@ -502,6 +502,22 @@ public class NullableLongLongMapBench {
         }
 
         @Override
+        public void put(final LongChunk<? extends Any> keys, final LongChunk<? extends Any> values) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                map.put(keys.get(ii), values.get(ii));
+            }
+        }
+
+        @Override
+        public void put(final LongChunk<? extends Any> keys, final long value) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                map.put(keys.get(ii), value);
+            }
+        }
+
+        @Override
         public void get(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> result) {
             final int size = keys.size();
             for (int ii = 0; ii < size; ++ii) {

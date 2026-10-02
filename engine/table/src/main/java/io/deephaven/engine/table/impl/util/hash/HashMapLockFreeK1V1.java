@@ -61,6 +61,23 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
     }
 
     @Override
+    public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values) {
+        final int size = keys.size();
+        for (int ii = 0; ii < size; ++ii) {
+            // As above: the volatile read is not hoisted, because any put may rehash.
+            putImpl(keysAndValues, keys.get(ii), values.get(ii), false);
+        }
+    }
+
+    @Override
+    public void put(LongChunk<? extends Any> keys, long value) {
+        final int size = keys.size();
+        for (int ii = 0; ii < size; ++ii) {
+            putImpl(keysAndValues, keys.get(ii), value, false);
+        }
+    }
+
+    @Override
     public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
         // array.

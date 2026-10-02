@@ -71,6 +71,26 @@ public interface NullableLongLongMap {
             WritableLongChunk<? extends Any> oldValues);
 
     /**
+     * For each element ii of {@code keys}: adds a mapping from {@code keys.get(ii)} to {@code values.get(ii)}, as
+     * {@link #put(LongChunk, LongChunk, WritableLongChunk)} does, without reporting the previous values: the form for a
+     * caller that has no use for them, which then stages no chunk to receive them. Elements are processed in index
+     * order. {@code values} must have at least {@code keys.size()} elements.
+     *
+     * @param keys the keys to add
+     * @param values the values to add
+     */
+    void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values);
+
+    /**
+     * Adds a mapping from every element of {@code keys} to the one {@code value}, without reporting the previous
+     * values. Elements are processed in index order.
+     *
+     * @param keys the keys to add
+     * @param value the value every key maps to
+     */
+    void put(LongChunk<? extends Any> keys, long value);
+
+    /**
      * Gets the value associated with each element of {@code keys}, writing it to the corresponding element of
      * {@code result}. Keys with no mapping yield {@link #defaultReturnValue()}. On return, the size of {@code result}
      * is set to {@code keys.size()}; its capacity must be at least that large.
