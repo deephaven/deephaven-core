@@ -13,6 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -22,6 +23,8 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
@@ -55,6 +58,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
 
@@ -148,6 +152,33 @@ public class BarrageMessageProducer extends LivenessArtifact
     public static final double COMPACTION_MIN_FREED_FRACTION = Configuration.getInstance()
             .getDoubleForClassWithDefault(BarrageMessageProducer.class, "compactionMinFreedFraction", 0.5);
 
+    /**
+     * The most threads that write one propagation phase's messages to its subscribers at once, counting the thread that
+     * runs the propagation job. Writing to a subscriber serializes the message into the gRPC transport's buffers, which
+     * accept it without waiting for the client, so each write is independent work bounded by the processor; with one
+     * thread a phase takes as long as all of its subscribers' writes put together. The threads beyond the job's own
+     * come from a pool that every producer in the process shares, and that pool never holds more than this number less
+     * one, whatever the number of producers. One or less writes to every subscriber in turn on the job's thread.
+     *
+     * @see #PROPAGATION_JOB_SCHEDULER
+     */
+    public static final int PROPAGATION_THREADS = Configuration.getInstance().getIntegerForClassWithDefault(
+            BarrageMessageProducer.class, "propagationThreads", Runtime.getRuntime().availableProcessors());
+
+    /**
+     * The name under which the server binds the {@code Supplier<JobScheduler>} that producers write to their
+     * subscribers through. Each propagation phase takes a {@link JobScheduler} from it and runs its writes as one
+     * {@link JobScheduler#invokeParallel invokeParallel} on it, so the schedulers it supplies must be usable from any
+     * thread. The server's are backed by a pool sized by {@link #PROPAGATION_THREADS}.
+     */
+    public static final String PROPAGATION_JOB_SCHEDULER = "BarrageMessageProducer.propagationJobScheduler";
+
+    /**
+     * Supplies the scheduler that writes to every subscriber in turn on the propagation job's own thread: a new
+     * {@link ImmediateJobScheduler} for each phase, as one of those serves a single thread at a time.
+     */
+    public static final Supplier<JobScheduler> SEQUENTIAL_PROPAGATION = ImmediateJobScheduler::new;
+
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
 
@@ -164,14 +195,19 @@ public class BarrageMessageProducer extends LivenessArtifact
         private final BaseTable<?> parent;
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
+        private final Supplier<JobScheduler> propagationJobSchedulerFactory;
 
+        /**
+         * Makes an operation whose producer writes to its subscribers in turn, on its propagation job's thread.
+         */
         public Operation(
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
                 final BarrageMessageWriter.Factory streamGeneratorFactory,
                 final BaseTable<?> parent,
                 final long updateIntervalMs) {
-            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null);
+            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null,
+                    SEQUENTIAL_PROPAGATION);
         }
 
         @VisibleForTesting
@@ -182,12 +218,33 @@ public class BarrageMessageProducer extends LivenessArtifact
                 final BaseTable<?> parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
+            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot,
+                    SEQUENTIAL_PROPAGATION);
+        }
+
+        /**
+         * Makes an operation whose producer writes to its subscribers on the schedulers that
+         * {@code propagationJobSchedulerFactory} supplies, which run the writes of each propagation phase in parallel
+         * when they have the threads to.
+         *
+         * @param onGetSnapshot runs around each snapshot the producer takes, for tests; {@code null} for none
+         * @param propagationJobSchedulerFactory supplies the scheduler each propagation phase writes to subscribers on
+         */
+        public Operation(
+                final Scheduler scheduler,
+                final SessionService.ErrorTransformer errorTransformer,
+                final BarrageMessageWriter.Factory streamGeneratorFactory,
+                final BaseTable<?> parent,
+                final long updateIntervalMs,
+                @Nullable final Runnable onGetSnapshot,
+                @NotNull final Supplier<JobScheduler> propagationJobSchedulerFactory) {
             this.scheduler = scheduler;
             this.errorTransformer = errorTransformer;
             this.streamGeneratorFactory = streamGeneratorFactory;
             this.parent = parent;
             this.updateIntervalMs = updateIntervalMs;
             this.onGetSnapshot = onGetSnapshot;
+            this.propagationJobSchedulerFactory = Objects.requireNonNull(propagationJobSchedulerFactory);
         }
 
         @Override
@@ -208,7 +265,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         @Override
         public Result<BarrageMessageProducer> initialize(final boolean usePrev, final long beforeClock) {
             final BarrageMessageProducer result = new BarrageMessageProducer(scheduler, errorTransformer,
-                    streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
+                    streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot, propagationJobSchedulerFactory);
             return new Result<>(result, result.constructListener());
         }
     }
@@ -240,6 +297,11 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final Scheduler scheduler;
     private final SessionService.ErrorTransformer errorTransformer;
     private final BarrageMessageWriter.Factory streamGeneratorFactory;
+    /**
+     * Supplies the scheduler each propagation phase writes its messages to subscribers on, in parallel when it has the
+     * threads to.
+     */
+    private final Supplier<JobScheduler> propagationJobSchedulerFactory;
 
     private final BaseTable<?> parent;
     private final long updateIntervalMs;
@@ -360,11 +422,24 @@ public class BarrageMessageProducer extends LivenessArtifact
             final BaseTable<?> parent,
             final long updateIntervalMs,
             final Runnable onGetSnapshot) {
+        this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot,
+                SEQUENTIAL_PROPAGATION);
+    }
+
+    public BarrageMessageProducer(
+            final Scheduler scheduler,
+            final SessionService.ErrorTransformer errorTransformer,
+            final BarrageMessageWriter.Factory streamGeneratorFactory,
+            final BaseTable<?> parent,
+            final long updateIntervalMs,
+            final Runnable onGetSnapshot,
+            @NotNull final Supplier<JobScheduler> propagationJobSchedulerFactory) {
         this.logPrefix = "BarrageMessageProducer(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
 
         this.scheduler = scheduler;
         this.errorTransformer = errorTransformer;
         this.streamGeneratorFactory = streamGeneratorFactory;
+        this.propagationJobSchedulerFactory = Objects.requireNonNull(propagationJobSchedulerFactory);
         this.parent = parent;
         this.isBlinkTable = parent.isBlink();
 
@@ -1872,15 +1947,19 @@ public class BarrageMessageProducer extends LivenessArtifact
                     log.debug().append(logPrefix).append("Sending snapshot to ").append(activeSubscriptions.size())
                             .append(" subscriber(s).").endl();
                 }
+                final List<Subscription> snapshotTargets = new ArrayList<>(growingSubscriptions.size());
                 for (final Subscription subscription : growingSubscriptions) {
-                    if (subscription.pendingDelete) {
-                        continue;
+                    if (!subscription.pendingDelete) {
+                        snapshotTargets.add(subscription);
                     }
-
-                    final long startTm = System.nanoTime();
-                    propagateSnapshotForSubscription(subscription, snapshotGenerator);
-                    recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
                 }
+
+                // Each subscription's snapshot is written independently of the others', so they are written in
+                // parallel; the writer is closed only once every one of them has finished.
+                final long startTm = System.nanoTime();
+                writeToSubscribers(snapshotTargets,
+                        subscription -> propagateSnapshotForSubscription(subscription, snapshotGenerator));
+                recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
             }
         }
 
@@ -1930,7 +2009,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         // Check shared dictionary states for overflow before building any batches. When the cumulative dictionary size
         // exceeds the current live row count, the dictionary has grown larger than the data it encodes; reset it so
         // the next DictionaryBatch is isDelta=false with a compacted set of values. FullSubscriptionDictionaryState
-        // instances detect the reset lazily via the SharedWriterDictionary generation counter.
+        // instances detect the reset lazily via the SharedWriterDictionary generation counter. This must happen here,
+        // before the writes start: they run in parallel, and a reset is only safe while none is running.
         final long fullTableRowCount = propRowSetForMessage.size();
         for (final SharedWriterDictionary sharedState : sharedDictionaryStates.values()) {
             if (sharedState.getTotalSize() > fullTableRowCount) {
@@ -1938,51 +2018,96 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
         }
 
+        final List<Subscription> targets = collectPropagationTargets();
+
         // message is released via transfer to stream generator (as it must live until all views are closed)
         try (final BarrageMessageWriter bmw = streamGeneratorFactory.newMessageWriter(
                 message, chunkWriters, this::recordWriteMetrics)) {
-            for (final Subscription subscription : activeSubscriptions) {
-                if (subscription.pendingInitialSnapshot || subscription.pendingDelete) {
-                    continue;
-                }
+            // Each subscriber's view is written independently of the others', so they are written in parallel; the
+            // writer is closed only once every one of them has finished.
+            writeToSubscribers(targets, subscription -> propagateToSubscriber(
+                    bmw, subscription, propRowSetForMessagePrev, propRowSetForMessage));
+        }
+    }
 
-                // There are four messages that might be sent this update:
-                // - pre-snapshot: snapshotViewport/snapshotColumn values apply during this phase
-                // - pre-snapshot flush: rm all existing rows from a blink table to make empty snapshot valid
-                // - snapshot: here we close and clear the snapshotViewport/snapshotColumn values; officially we
-                // recognize the subscription change
-                // - post-snapshot: now we use the viewport/subscribedColumn values (these are the values the UGP
-                // listener uses)
+    /**
+     * Writes to each of {@code targets} through {@code write}, on as many threads as the propagation job scheduler
+     * supplies with this one among them, and returns only once every write has finished, so that the caller may then
+     * release what the writes were reading. Each write handles its own subscriber's failure; what this throws is a
+     * failure none of them handled, once the writes already running have finished.
+     */
+    private void writeToSubscribers(final List<Subscription> targets, final Consumer<Subscription> write) {
+        propagationJobSchedulerFactory.get().invokeParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append(logPrefix).append("propagation"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, targets.size(),
+                (context, targetIndex, nestedErrorConsumer) -> write.accept(targets.get(targetIndex)),
+                () -> {
+                }, () -> {
+                }, failure -> {
+                });
+    }
 
-                final boolean isPreSnapshot = subscription.snapshotViewport != null;
-
-                final RowSet vp = isPreSnapshot ? subscription.snapshotViewport : subscription.viewport;
-                final BitSet cols = isPreSnapshot ? subscription.snapshotColumns : subscription.subscribedColumns;
-                final boolean isReversed =
-                        isPreSnapshot ? subscription.snapshotReverseViewport : subscription.reverseViewport;
-
-                try (final RowSet clientViewPrev =
-                        vp != null ? propRowSetForMessagePrev.subSetForPositions(vp, isReversed) : null;
-                        final RowSet clientView =
-                                vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
-                    // For viewport subscriptions, check their private local dictionary registries for overflow.
-                    // Full subscriptions are handled above via the shared dictionary reset.
-                    if (subscription.dictionaryRegistry != null && subscription.targetViewport != null) {
-                        final long viewportRowCount = clientView != null ? clientView.size() : 0;
-                        subscription.dictionaryRegistry.resetOverflowedEntries(viewportRowCount);
-                    }
-                    subscription.listener.onNext(bmw.getSubView(
-                            effectiveOptions(subscription.options), false, subscription.isFullSubscription(), vp,
-                            subscription.reverseViewport, clientViewPrev, clientView, cols,
-                            subscription.dictionaryRegistry));
-                } catch (final Exception e) {
-                    try {
-                        subscription.listener.onError(errorTransformer.transform(e));
-                    } catch (final Exception ignored) {
-                    }
-                    removeSubscription(subscription.listener);
-                }
+    /**
+     * The subscriptions that a propagated update is written to: every active one except those still waiting for their
+     * initial snapshot and those being removed. Decided once per propagation phase, before any of its writes begins.
+     */
+    private List<Subscription> collectPropagationTargets() {
+        final List<Subscription> targets = new ArrayList<>(activeSubscriptions.size());
+        for (final Subscription subscription : activeSubscriptions) {
+            if (!subscription.pendingInitialSnapshot && !subscription.pendingDelete) {
+                targets.add(subscription);
             }
+        }
+        return targets;
+    }
+
+    /**
+     * Writes one subscriber's view of {@code bmw}'s message. Writes to different subscribers run at the same time, so
+     * this touches only {@code subscription}'s own state, besides reading the writer and the row sets; a failure is
+     * reported to this subscriber alone, which is then removed.
+     */
+    private void propagateToSubscriber(
+            final BarrageMessageWriter bmw,
+            final Subscription subscription,
+            final RowSet propRowSetForMessagePrev,
+            final RowSet propRowSetForMessage) {
+        // There are four messages that might be sent this update:
+        // - pre-snapshot: snapshotViewport/snapshotColumn values apply during this phase
+        // - pre-snapshot flush: rm all existing rows from a blink table to make empty snapshot valid
+        // - snapshot: here we close and clear the snapshotViewport/snapshotColumn values; officially we
+        // recognize the subscription change
+        // - post-snapshot: now we use the viewport/subscribedColumn values (these are the values the UGP
+        // listener uses)
+
+        final boolean isPreSnapshot = subscription.snapshotViewport != null;
+
+        final RowSet vp = isPreSnapshot ? subscription.snapshotViewport : subscription.viewport;
+        final BitSet cols = isPreSnapshot ? subscription.snapshotColumns : subscription.subscribedColumns;
+        final boolean isReversed =
+                isPreSnapshot ? subscription.snapshotReverseViewport : subscription.reverseViewport;
+
+        try (final RowSet clientViewPrev =
+                vp != null ? propRowSetForMessagePrev.subSetForPositions(vp, isReversed) : null;
+                final RowSet clientView =
+                        vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
+            // For viewport subscriptions, check their private local dictionary registries for overflow.
+            // Full subscriptions are handled in propagateToSubscribers via the shared dictionary reset.
+            if (subscription.dictionaryRegistry != null && subscription.targetViewport != null) {
+                final long viewportRowCount = clientView != null ? clientView.size() : 0;
+                subscription.dictionaryRegistry.resetOverflowedEntries(viewportRowCount);
+            }
+            subscription.listener.onNext(bmw.getSubView(
+                    effectiveOptions(subscription.options), false, subscription.isFullSubscription(), vp,
+                    subscription.reverseViewport, clientViewPrev, clientView, cols,
+                    subscription.dictionaryRegistry));
+        } catch (final Exception e) {
+            try {
+                subscription.listener.onError(errorTransformer.transform(e));
+            } catch (final Exception ignored) {
+            }
+            removeSubscription(subscription.listener);
         }
     }
 

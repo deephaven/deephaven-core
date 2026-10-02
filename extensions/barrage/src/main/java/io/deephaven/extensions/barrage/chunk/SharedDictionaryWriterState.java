@@ -25,7 +25,14 @@ import org.jetbrains.annotations.Nullable;
  * in future delta batches.
  *
  * <p>
- * Thread-safety: not thread-safe; access is serialized by the barrage propagation thread (the UGP cycle).
+ * {@link #resetDelta()} advances past exactly the values that the last {@link #buildDeltaChunk()} covered, not past
+ * whatever the shared dictionary holds by then. Full subscribers write in parallel, so other subscribers may add values
+ * between this subscriber's building a DictionaryBatch and its sending it; those values were not in the batch, and they
+ * stay in this subscriber's next delta.
+ *
+ * <p>
+ * Thread-safety: each instance belongs to one subscription and is used by one thread at a time. The
+ * {@link SharedWriterDictionary} it delegates to is shared, and is safe to use from several threads at once.
  */
 public final class SharedDictionaryWriterState implements DictionaryWriterState {
 
@@ -59,6 +66,11 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
      * after one or more compactions does not incorrectly treat the first batch as a post-reset.
      */
     private int lastSeenGeneration;
+    /**
+     * The end of the range of values that the last {@link #buildDeltaChunk()} covered, which {@link #resetDelta()}
+     * advances {@link #flushedOffset} to; {@code -1} when no delta has been built since the last advance.
+     */
+    private int builtDeltaEnd = -1;
 
     public SharedDictionaryWriterState(@NotNull final SharedWriterDictionary shared) {
         this.shared = shared;
@@ -74,6 +86,8 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
         if (lastSeenGeneration != currentGeneration) {
             flushedOffset = 0;
             needsFullBatch = true;
+            // a delta built before the reset names values that no longer exist
+            builtDeltaEnd = -1;
             lastSeenGeneration = currentGeneration;
         }
     }
@@ -108,13 +122,28 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
     @NotNull
     public WritableChunk<Values> buildDeltaChunk() {
         syncGeneration();
-        return shared.buildDeltaChunk(flushedOffset, shared.getTotalSize());
+        // Measure and copy under one lock, so the chunk holds exactly the values up to the end that resetDelta() will
+        // advance to.
+        synchronized (shared) {
+            final int deltaEnd = shared.getTotalSize();
+            final WritableChunk<Values> delta = shared.buildDeltaChunk(flushedOffset, deltaEnd);
+            builtDeltaEnd = deltaEnd;
+            return delta;
+        }
     }
 
+    /**
+     * Advances past the values that the last {@link #buildDeltaChunk()} covered. With no delta built since the last
+     * advance, nothing was sent and nothing changes.
+     */
     @Override
     public void resetDelta() {
         syncGeneration();
-        flushedOffset = shared.getTotalSize();
+        if (builtDeltaEnd < 0) {
+            return;
+        }
+        flushedOffset = builtDeltaEnd;
+        builtDeltaEnd = -1;
         needsFullBatch = false;
     }
 

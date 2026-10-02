@@ -8,6 +8,10 @@ dependencies {
     implementation project(':extensions-barrage')
     implementation project(':engine-table')
     implementation project(':BenchmarkSupport')
+    // BarrageMessageProducerPropagateBenchmark drives a real BarrageMessageProducer on a TestControlledScheduler
+    implementation project(':server')
+    implementation project(':server-test-utils')
+    implementation libs.dsi.fastutil
     implementation libs.arrow.vector
     implementation libs.flatbuffers.java
     implementation platform(libs.grpc.bom)
@@ -49,6 +53,21 @@ def createJmhTask = {
 }
 
 createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')
+
+// One propagation phase's writes to N subscribers, fanned out over T threads (T=1 is the sequential loop).
+createJmhTask('jmhRunBarrageFanOut', 'BarrageSubscriberFanOutBenchmark')
+
+// The same, over viewport and mixed full/viewport subscriptions.
+createJmhTask('jmhRunBarrageFanOutMixed',
+        ['BarrageSubscriberFanOutBenchmark', '-p', 'mix=viewport,mixed', '-p', 'subscribers=4,8,16'])
+
+// String and dictionary-encoded String columns; full subscribers of the latter share one dictionary per column.
+createJmhTask('jmhRunBarrageFanOutStrings',
+        ['BarrageSubscriberFanOutBenchmark', '-p', 'columnType=String,dictString', '-p', 'subscribers=1,4,8,16',
+         '-p', 'threads=1,8'])
+
+// A real BarrageMessageProducer's propagation job, end to end: initial snapshots and ticking updates.
+createJmhTask('jmhRunBarrageProducerPropagate', 'BarrageMessageProducerPropagateBenchmark')
 
 createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
 

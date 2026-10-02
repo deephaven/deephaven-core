@@ -8,9 +8,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.OperationInitializer;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,21 +64,8 @@ public class OperationInitializerJobScheduler implements JobScheduler {
         } else {
             basePerformanceEntry = null;
         }
-        try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
-            runnable.run();
-        } catch (Exception e) {
-            onError.accept(e);
-        } catch (Error e) {
-            // Deliver the error before reporting it. Anything waiting on this job's completion has no other way to
-            // learn that the job failed, and would otherwise wait forever for a completion that cannot happen.
-            try {
-                onError.accept(JobScheduler.asDeliverableException(e));
-            } catch (Throwable t) {
-                e.addSuppressed(t);
-            }
-            final String logMessage = new LogOutputStringImpl().append(description).append(" Error").toString();
-            ProcessEnvironment.getGlobalFatalErrorReporter().report(logMessage, e);
-            throw e;
+        try {
+            JobScheduler.runJob(executionContext, runnable, description, onError);
         } finally {
             if (basePerformanceEntry != null) {
                 Assert.equals(currentBaseEntry.get(), "currentBaseEntry.get()", basePerformanceEntry,

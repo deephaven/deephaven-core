@@ -145,6 +145,15 @@ The two thresholds answer different questions. The fraction asks whether compact
 > [!NOTE]
 > The `PendingDeltaCount` and `PendingDeltaBytes` metrics in the subscription table measure what the server holds for subscribers it has not yet served, so they are the place to look when tuning these properties.
 
+## Write to subscribers in parallel
+
+Each time the server propagates an update to a table's subscribers, it writes each subscriber its own view of the update: only the columns, rows, and encoding that subscriber asked for. Writing a message serializes it into the gRPC stream's buffers, which is processor work that does not wait for the client, so the server writes to several subscribers at once rather than one after another.
+
+- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. The other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` writes to subscribers one after another.
+
+> [!NOTE]
+> `PropagateNanos` measures the time to write an update to all of a table's subscribers, so with parallel writes it can be much less than the sum of their `WriteNanos`. A single subscriber's write still runs on one thread.
+
 ## Additional Barrage configuration
 
 The following properties control other aspects of Barrage behavior:
@@ -183,7 +192,7 @@ If `WriteNanos` is high or `WriteBytes` is large:
 
 If `PropagateNanos` is consistently high:
 
-- Many subscribers may be connected to the same table. Consider load balancing across multiple server instances.
+- Many subscribers may be connected to the same table. Compare `PropagateNanos` with the sum of the subscribers' `WriteNanos`: when the two are close, the writes are not overlapping, either because `BarrageMessageProducer.propagationThreads` is low (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)) or because the server's processors are already busy. Consider load balancing across multiple server instances.
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
 
 ### Subscription errors

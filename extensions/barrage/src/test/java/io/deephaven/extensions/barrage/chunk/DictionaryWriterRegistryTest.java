@@ -22,6 +22,11 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -204,5 +209,52 @@ public class DictionaryWriterRegistryTest {
         // The new subscriber's first buildDeltaChunk() returns the pre-existing value
         assertThat(sub.needsFullBatch()).isTrue();
         assertThat(deltaObjectValues(sub)).containsExactly("pre");
+    }
+
+    /**
+     * Full subscribers' registries share the producer's dictionary map, and the producer writes to its subscribers in
+     * parallel. When several registries need the same dictionary id for the first time at once, they must still end up
+     * sharing one dictionary for it.
+     */
+    @Test
+    public void testConcurrentSharedBackedRegistriesCreateOneDictionaryPerId() throws Exception {
+        final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries = new Long2ObjectOpenHashMap<>();
+        final ChunkWriter<Chunk<Values>> writer = intWriter();
+        final int numRegistries = 8;
+        final int numIds = 200;
+
+        final ExecutorService executor = Executors.newFixedThreadPool(numRegistries);
+        try {
+            final CyclicBarrier start = new CyclicBarrier(numRegistries);
+            final List<Future<DictionaryWriterRegistry>> futures = new ArrayList<>();
+            for (int ri = 0; ri < numRegistries; ++ri) {
+                futures.add(executor.submit(() -> {
+                    final DictionaryWriterRegistry registry = new DictionaryWriterRegistryImpl(sharedDictionaries);
+                    start.await();
+                    for (long id = 0; id < numIds; ++id) {
+                        registry.getOrCreate(id, writer, ChunkType.Object);
+                    }
+                    return registry;
+                }));
+            }
+            final List<DictionaryWriterRegistry> registries = new ArrayList<>();
+            for (final Future<DictionaryWriterRegistry> future : futures) {
+                registries.add(future.get(1, TimeUnit.MINUTES));
+            }
+
+            assertThat(sharedDictionaries).hasSize(numIds);
+            // a value added through one registry is visible, at the same index, through every other registry
+            for (long id = 0; id < numIds; ++id) {
+                final DictionaryWriterState first = registries.get(0).getOrCreate(id, writer, ChunkType.Object);
+                assertThat(indexForObject(first, "value-" + id)).isZero();
+                for (final DictionaryWriterRegistry registry : registries) {
+                    final DictionaryWriterState state = registry.getOrCreate(id, writer, ChunkType.Object);
+                    assertThat(state.totalSize()).isEqualTo(1);
+                    assertThat(indexForObject(state, "value-" + id)).isZero();
+                }
+            }
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }

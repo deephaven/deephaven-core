@@ -24,7 +24,11 @@ import org.jetbrains.annotations.Nullable;
  * {@code flushedOffset} into this list so it knows which values have already been sent to that subscriber.
  *
  * <p>
- * Thread-safety: not thread-safe; access is serialized by the barrage propagation thread (the UGP cycle).
+ * Thread-safety: the producer writes to its subscribers in parallel, so full subscribers fill, measure and read this
+ * dictionary from different threads at once. Every method holds the dictionary's monitor, so fills register values one
+ * at a time; the methods that measure and copy the value list are called once per batch, not per row. Because values
+ * are only appended, a range of the list that a subscriber has measured stays valid however many values are added
+ * afterwards. {@link #reset()} must be called only while no subscriber is writing.
  */
 public final class SharedWriterDictionary {
 
@@ -45,7 +49,8 @@ public final class SharedWriterDictionary {
         return dictId;
     }
 
-    void fillIndexChunk(
+    /** Fills {@code out} with the index of each value, registering values as it meets them. */
+    synchronized void fillIndexChunk(
             @NotNull final Chunk<Values> source,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options,
@@ -54,7 +59,7 @@ public final class SharedWriterDictionary {
     }
 
     /** Total number of distinct values currently in the dictionary (reset to 0 after {@link #reset()}). */
-    public int getTotalSize() {
+    public synchronized int getTotalSize() {
         return map.size();
     }
 
@@ -63,12 +68,12 @@ public final class SharedWriterDictionary {
      * owned by the caller and must be closed when no longer needed.
      */
     @NotNull
-    WritableChunk<Values> buildDeltaChunk(final int fromOffset, final int toOffset) {
+    synchronized WritableChunk<Values> buildDeltaChunk(final int fromOffset, final int toOffset) {
         return map.buildChunk(fromOffset, toOffset);
     }
 
     /** Returns the current generation counter. Increments each time {@link #reset()} is called. */
-    public int getGeneration() {
+    public synchronized int getGeneration() {
         return generation;
     }
 
@@ -77,7 +82,7 @@ public final class SharedWriterDictionary {
      * instances that reference this shared dictionary will detect the reset on their next query and re-emit an
      * {@code isDelta=false} DictionaryBatch.
      */
-    public void reset() {
+    public synchronized void reset() {
         generation++;
         map.reset();
     }
