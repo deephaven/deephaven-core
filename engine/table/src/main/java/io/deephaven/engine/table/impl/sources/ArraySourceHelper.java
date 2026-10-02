@@ -141,8 +141,10 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         // Allocate storage up to 'requestedNumBlocks' (not roundedNumBlocks). The difference is that the array size may
         // double, but we only allocate the minimum number of blocks needed. Put another way, we only allocate blocks up
         // to the requested capacity, not all the way up to (the capacity rounded to the next power of two).
-        // No row key in a block allocated during an update cycle existed before it, so its previous values are the
-        // values it is allocated with, which a shared read-only block holds; between cycles they are its values.
+        // When a block is allocated during an update cycle, there are no previous values to preserve. Therefore, all
+        // freshly-allocated blocks share read-only arrays for their prevBlocks and prevInUse entries. There is a single
+        // in-use array, and one previous-value array for each element type and shape, where the shape is whether the
+        // block is null-filled or zeroed.
         final boolean markFresh = prevFlusher != null && allocatedNumBlocks < requestedNumBlocks
                 && updateGraph.clock().currentState() == LogicalClock.State.Updating;
         for (int ii = allocatedNumBlocks; ii < requestedNumBlocks; ++ii) {
