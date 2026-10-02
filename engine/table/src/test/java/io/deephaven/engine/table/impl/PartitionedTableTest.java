@@ -13,6 +13,7 @@ import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -1861,5 +1862,66 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             map.put((K) data[nIndex], (V) data[nIndex + 1]);
         }
         return map;
+    }
+
+    @Test
+    public void testTransformConstituentsFollowCreatorSystemicMarking() {
+        for (final boolean systemic : new boolean[] {true, false}) {
+            checkTransformConstituentsFollowCreatorSystemicMarking(systemic);
+        }
+    }
+
+    /**
+     * Create transformations with the current thread's systemic marking set to {@code systemic}, then add and fail a
+     * constituent in cycles run with the opposite marking. The new result constituents must match the creator of the
+     * transformation, and so must whether their failures reach the {@link AsyncClientErrorNotifier}.
+     */
+    private void checkTransformConstituentsFollowCreatorSystemicMarking(final boolean systemic) {
+        final QueryTable source = testRefreshingTable(i(1).toTracking(), col("Sym", "aa"), col("intCol", 10));
+        final PartitionedTable partitioned = source.partitionBy("Sym");
+        final String checkedFormula = "Checked = java.util.Objects.checkIndex(intCol, 100)";
+        final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
+        final List<PartitionedTable> results = SystemicObjectTracker.executeSystemically(systemic, () -> List.of(
+                partitioned.transform(executionContext, t -> t.update(checkedFormula), true),
+                partitioned.partitionedTransform(partitioned, executionContext, (l, r) -> l.update(checkedFormula),
+                        true)));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        SystemicObjectTracker.executeSystemically(!systemic, () -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(source, i(2), col("Sym", "bb"), col("intCol", 20));
+                source.notifyListeners(i(2), i(), i());
+            });
+            return null;
+        });
+        for (final PartitionedTable result : results) {
+            assertEquals(2, result.table().size());
+            for (final Table constituent : result.constituents()) {
+                assertEquals(systemic, Boolean.TRUE.equals(constituent.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE)));
+            }
+        }
+
+        final AtomicInteger reportCount = new AtomicInteger();
+        final UpdateErrorReporter oldReporter =
+                AsyncClientErrorNotifier.setReporter(t -> reportCount.incrementAndGet());
+        try {
+            SystemicObjectTracker.executeSystemically(!systemic, () -> {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(source, i(2), col("Sym", "bb"), col("intCol", 500));
+                    source.notifyListeners(i(), i(), i(2));
+                });
+                return null;
+            });
+        } finally {
+            AsyncClientErrorNotifier.setReporter(oldReporter);
+        }
+        for (final PartitionedTable result : results) {
+            assertTrue(result.constituentFor("bb").isFailed());
+        }
+        if (systemic) {
+            assertTrue(reportCount.get() > 0);
+        } else {
+            assertEquals(0, reportCount.get());
+        }
     }
 }
