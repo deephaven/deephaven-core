@@ -58,7 +58,7 @@ cd /d %DHSRC%\deephaven-core\cpp-client\deephaven || exit /b
 %VCPKG_ROOT%\vcpkg.exe install --triplet x64-windows || exit /b
 
 echo *** CONFIGURING DEEPHAVEN BUILD ***
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%DHINSTALL% -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON || exit /b
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%DHINSTALL% || exit /b
 
 echo *** BUILDING C++ CLIENT ***
 cmake --build build --config RelWithDebInfo --target install -- /m:1 || exit /b
@@ -176,7 +176,16 @@ if not exist "%DHSRC%" (
 )
 
 cd /d %DHSRC% || exit /b
-git clone --depth 1 https://github.com/microsoft/vcpkg.git || exit /b
+REM Full clone, checked out at the builtin-baseline from vcpkg.json: vcpkg's
+REM versioning resolves ports through the clone's own git history, so a
+REM shallow clone of main fails with "failed to unpack tree object".
+for /f "tokens=2 delims=:, " %%a in ('findstr "builtin-baseline" "%DHSRC%\deephaven-core\cpp-client\deephaven\vcpkg.json"') do set VCPKG_BASELINE=%%~a
+if not defined VCPKG_BASELINE (
+  echo Could not read builtin-baseline from vcpkg.json
+  exit /b 1
+)
+git clone https://github.com/microsoft/vcpkg.git || exit /b
+git -C vcpkg checkout %VCPKG_BASELINE% || exit /b
 
 exit /b 0
 

@@ -9,7 +9,7 @@ endif()
 project(deephaven)
 
 set(deephaven_VERSION 43.0)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if(WIN32)
     add_compile_definitions(WIN32_LEAN_AND_MEAN NOMINMAX)
@@ -52,6 +52,37 @@ if(NOT DHCORE_ONLY)
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
+    # Make the install prefix self-contained at *runtime* by copying the
+    # vcpkg-built shared libraries next to ours, so programs linked against the
+    # prefix (CI artifacts, the enterprise client, ...) run without a vcpkg
+    # tree. Building against the prefix with CMake still needs the
+    # dependencies' own CMake packages (find_dependency in deephavenConfig.cmake),
+    # which consumers get from their own vcpkg tree built with the same pins —
+    # hence the vcpkg.json installed below. This copies all of vcpkg's shared
+    # libraries, not just the ones we link (~65MB extra);
+    # trimming would need install(RUNTIME_DEPENDENCY_SET) with per-platform
+    # system-library exclusions and is not worth it at this size.
+    # VCPKG_INSTALLED_DIR is set by the vcpkg toolchain in every mode: in
+    # manifest mode it is ${CMAKE_BINARY_DIR}/vcpkg_installed, but the Docker
+    # build points it at a prebuilt tree elsewhere.
+    if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+        if(WIN32)
+            install(DIRECTORY ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin/
+                DESTINATION ${CMAKE_INSTALL_BINDIR}
+                FILES_MATCHING PATTERN "*.dll"
+            )
+        else()
+            install(DIRECTORY ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib/
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                FILES_MATCHING
+                    PATTERN "*.so"
+                    PATTERN "*.so.*"
+                    PATTERN "pkgconfig" EXCLUDE
+                    PATTERN "cmake" EXCLUDE
+            )
+        endif()
+    endif()
+
       include(CMakePackageConfigHelpers)
       write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/deephaven/deephavenConfigVersion.cmake"
@@ -86,5 +117,21 @@ if(NOT DHCORE_ONLY)
         COMPONENT
         Devel
         )
-      
+
+      # Publish our vcpkg manifest next to the CMake package config so that
+      # downstream consumers (e.g. the enterprise client) can verify at their
+      # configure time that they build with the same vcpkg baseline and
+      # version overrides. Mismatched pins mean the two projects install
+      # incompatible copies of shared third-party DLLs (abseil, protobuf,
+      # arrow, ...) into the same prefix, which fails at load time with
+      # "Entry Point Not Found".
+      install(
+        FILES
+        vcpkg.json
+        DESTINATION
+        ${ConfigPackageLocation}
+        COMPONENT
+        Devel
+        )
+
 endif()
