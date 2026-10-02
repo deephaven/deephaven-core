@@ -7,8 +7,17 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.compare.DoubleComparisons;
 
+/**
+ * Creates range filters for double values.
+ * <p>
+ * Each filter carries its own copy of the {@link DoubleChunkFilter} loops (the {@code filterLoops} regions, filled in by
+ * {@code ReplicateChunkFilters}), so that its {@code matches} call is never a virtual call shared with other filters.
+ */
 public class DoubleRangeComparator {
     private DoubleRangeComparator() {} // static use only
 
@@ -31,6 +40,58 @@ public class DoubleRangeComparator {
         public boolean matches(double value) {
             return DoubleComparisons.geq(value, lower) && DoubleComparisons.leq(value, upper);
         }
+
+        // region filterLoops
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = doubleChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(doubleChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that remain true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+        // endregion filterLoops
     }
 
     private final static class DoubleDoubleInclusiveExclusiveFilter extends DoubleDoubleFilter {
@@ -42,6 +103,58 @@ public class DoubleRangeComparator {
         public boolean matches(double value) {
             return DoubleComparisons.geq(value, lower) && DoubleComparisons.lt(value, upper);
         }
+
+        // region filterLoops
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = doubleChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(doubleChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that remain true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+        // endregion filterLoops
     }
 
     private final static class DoubleDoubleExclusiveInclusiveFilter extends DoubleDoubleFilter {
@@ -53,6 +166,58 @@ public class DoubleRangeComparator {
         public boolean matches(double value) {
             return DoubleComparisons.gt(value, lower) && DoubleComparisons.leq(value, upper);
         }
+
+        // region filterLoops
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = doubleChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(doubleChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that remain true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+        // endregion filterLoops
     }
 
     private final static class DoubleDoubleExclusiveExclusiveFilter extends DoubleDoubleFilter {
@@ -64,6 +229,58 @@ public class DoubleRangeComparator {
         public boolean matches(double value) {
             return DoubleComparisons.gt(value, lower) && DoubleComparisons.lt(value, upper);
         }
+
+        // region filterLoops
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = doubleChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(doubleChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that remain true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+        // endregion filterLoops
     }
 
     public static DoubleChunkFilter makeDoubleFilter(double lower, double upper, boolean lowerInclusive,

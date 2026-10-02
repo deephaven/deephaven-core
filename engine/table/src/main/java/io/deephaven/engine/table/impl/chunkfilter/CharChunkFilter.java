@@ -7,11 +7,21 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 
+/**
+ * A {@link ChunkFilter} for char values that tests each value with {@link #matches(char)}.
+ * <p>
+ * The loops in the {@code filterLoops} region are shared by every subclass, so once a few filter types have run through
+ * them, the JIT sees many receivers at the {@code matches} call and leaves it as a virtual call per value.
+ * {@code ReplicateChunkFilters} copies this region into the filters whose {@code matches} is only a compare or two (the
+ * range comparators and the one-to-three value match filters), so that each copy calls {@code matches} on one class
+ * only. Edit the loops here and run {@code ./gradlew replicateChunkFilters} to update the copies.
+ */
 public abstract class CharChunkFilter implements ChunkFilter {
     public abstract boolean matches(char value);
 
+    // region filterLoops
     @Override
-    public final void filter(
+    public void filter(
             final Chunk<? extends Values> values,
             final LongChunk<OrderedRowKeys> keys,
             final WritableLongChunk<OrderedRowKeys> results) {
@@ -27,7 +37,7 @@ public abstract class CharChunkFilter implements ChunkFilter {
     }
 
     @Override
-    public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+    public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
         final CharChunk<? extends Values> charChunk = values.asCharChunk();
         final int len = values.size();
         int count = 0;
@@ -41,7 +51,7 @@ public abstract class CharChunkFilter implements ChunkFilter {
     }
 
     @Override
-    public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+    public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
         final CharChunk<? extends Values> charChunk = values.asCharChunk();
         final int len = values.size();
         int count = 0;
@@ -59,5 +69,6 @@ public abstract class CharChunkFilter implements ChunkFilter {
         }
         return count;
     }
+    // endregion filterLoops
 }
 
