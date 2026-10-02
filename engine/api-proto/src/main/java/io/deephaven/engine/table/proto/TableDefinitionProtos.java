@@ -240,6 +240,9 @@ public final class TableDefinitionProtos {
         if (clazz == double.class) {
             return PrimitiveTypeProto.PRIMITIVE_TYPE_DOUBLE;
         }
+        if (clazz == void.class) {
+            return PrimitiveTypeProto.PRIMITIVE_TYPE_VOID;
+        }
         throw new IllegalArgumentException("Unsupported primitive class " + clazz);
     }
 
@@ -279,6 +282,7 @@ public final class TableDefinitionProtos {
             case PRIMITIVE_TYPE_LONG -> long.class;
             case PRIMITIVE_TYPE_FLOAT -> float.class;
             case PRIMITIVE_TYPE_DOUBLE -> double.class;
+            case PRIMITIVE_TYPE_VOID -> void.class;
             case PRIMITIVE_TYPE_UNSPECIFIED, UNRECOGNIZED -> throw new IllegalArgumentException(
                     "Column '" + columnName + "' has unsupported primitive type " + proto);
         };

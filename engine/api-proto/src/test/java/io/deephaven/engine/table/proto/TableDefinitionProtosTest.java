@@ -44,6 +44,8 @@ public class TableDefinitionProtosTest {
             ColumnDefinition.ofDouble("Double"),
             ColumnDefinition.fromGenericType("BoxedInt", Integer.class),
             ColumnDefinition.fromGenericType("PrimitiveBoolean", boolean.class),
+            ColumnDefinition.fromGenericType("PrimitiveVoid", void.class),
+            ColumnDefinition.fromGenericType("BoxedVoid", Void.class),
             ColumnDefinition.ofString("String"),
             ColumnDefinition.ofTime("Instant"),
             ColumnDefinition.ofLocalDate("LocalDate"),
