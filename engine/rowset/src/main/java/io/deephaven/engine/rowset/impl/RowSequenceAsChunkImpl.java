@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -199,13 +200,13 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
         final WritableLongChunk<OrderedRowKeys> keys = keyIndicesChunk;
         if (keys != null) {
             // The build that published keys emptied the stale slot, and only invalidation stores into it.
-            assert staleKeyIndicesChunk == null;
+            Assert.eqNull(staleKeyIndicesChunk, "staleKeyIndicesChunk");
             KEY_INDICES_CHUNK.setRelease(this, null);
             STALE_KEY_INDICES_CHUNK.setRelease(this, keys);
         }
         final WritableLongChunk<OrderedRowKeyRanges> ranges = keyRangesChunk;
         if (ranges != null) {
-            assert staleKeyRangesChunk == null;
+            Assert.eqNull(staleKeyRangesChunk, "staleKeyRangesChunk");
             KEY_RANGES_CHUNK.setRelease(this, null);
             STALE_KEY_RANGES_CHUNK.setRelease(this, ranges);
         }
