@@ -58,8 +58,12 @@ class AddToInputTable extends FlightExampleBase {
             flight.session().publish("timestamp", timestampHandle).get(5, TimeUnit.SECONDS);
             flight.session().publish("timestampLastBy", timestampLastByHandle).get(5, TimeUnit.SECONDS);
 
-            flight.session().console("groovy").get().executeCode(
-                    "tsv = io.deephaven.server.table.inputtables.RangeValidatingInputTable.make(timestamp, \"Int\", 0, 30)");
+            flight.session().console("python").get().executeCode(String.join("\n",
+                    "import jpy",
+                    "from deephaven.table import Table",
+                    "_RangeValidatingInputTable = jpy.get_type(",
+                    "    'io.deephaven.server.table.inputtables.RangeValidatingInputTable')",
+                    "tsv = Table(_RangeValidatingInputTable.make(timestamp.j_table, 'Int', 0, 30))"));
 
             final TableHandle tsv = flight.session().ticket(TicketTable.fromQueryScopeField("tsv").ticket());
 
