@@ -8,6 +8,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -15,6 +16,10 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
 import org.junit.Test;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.LongStream;
 
 import static org.junit.Assert.*;
 
@@ -188,5 +193,75 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
                 }
             }
         }
+    }
+
+    /**
+     * Two readers fill from two lock-free redirections through ONE shared RowSet, concurrently, while a third thread
+     * mutates it, as two sorts of one live table do in one batch. Each reader owns its destination and its fill
+     * context; only the RowSequence is shared, and the redirection must not borrow the chunk that sequence caches.
+     */
+    @Test
+    public void testLockFreeFillChunkDoesNotBorrowTheRowSequencesChunk() throws InterruptedException {
+        final int n = 1000;
+        final int iterations = 3000;
+        final WritableRowSet shared = RowSetFactory.fromKeys(LongStream.range(0, n).map(k -> 3 * k).toArray());
+        final WritableRowRedirection r1 = WritableRowRedirection.FACTORY.createRowRedirection(2048);
+        final WritableRowRedirection r2 = WritableRowRedirection.FACTORY.createRowRedirection(2048);
+        shared.forAllRowKeys(k -> {
+            r1.put(k, 1_000_000 + k);
+            r2.put(k, 2_000_000 + k);
+        });
+        final AtomicReference<String> failure = new AtomicReference<>();
+        final CountDownLatch start = new CountDownLatch(1);
+        // The key the mutator toggles lies beyond the readers' keys and in neither redirection.
+        final long toggled = 3L * n + 100;
+        final Thread mutator = new Thread(() -> {
+            for (int it = 0; failure.get() == null && !Thread.currentThread().isInterrupted(); ++it) {
+                if ((it & 1) == 0) {
+                    shared.insert(toggled);
+                } else {
+                    shared.remove(toggled);
+                }
+                // and read it the way another reader of the table would, keeping its cached chunk in play
+                shared.asRowKeyChunk();
+            }
+        }, "mutator");
+        final Thread[] readers = new Thread[2];
+        for (int t = 0; t < 2; ++t) {
+            final WritableRowRedirection r = t == 0 ? r1 : r2;
+            final long base = t == 0 ? 1_000_000 : 2_000_000;
+            final String name = "reader" + t;
+            readers[t] = new Thread(() -> {
+                try (final ChunkSource.FillContext fc = r.makeFillContext(n + 1, null);
+                        final WritableLongChunk<RowKeys> dest = WritableLongChunk.makeWritableChunk(n + 1)) {
+                    start.await();
+                    for (int it = 0; it < iterations && failure.get() == null; ++it) {
+                        r.fillChunk(fc, dest, shared);
+                        if (dest.size() != n && dest.size() != n + 1) {
+                            failure.compareAndSet(null, name + " iteration " + it + ": size " + dest.size());
+                            return;
+                        }
+                        for (int ii = 0; ii < n; ++ii) {
+                            if (dest.get(ii) != base + 3L * ii) {
+                                failure.compareAndSet(null, name + " iteration " + it + ": position " + ii + " got "
+                                        + dest.get(ii) + " expected " + (base + 3L * ii));
+                                return;
+                            }
+                        }
+                    }
+                } catch (final Throwable e) {
+                    failure.compareAndSet(null, name + " threw " + e);
+                }
+            }, name);
+            readers[t].start();
+        }
+        mutator.start();
+        start.countDown();
+        for (final Thread reader : readers) {
+            reader.join();
+        }
+        mutator.interrupt();
+        mutator.join();
+        assertNull(failure.get(), failure.get());
     }
 }
