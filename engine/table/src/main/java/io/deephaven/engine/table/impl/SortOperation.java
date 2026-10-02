@@ -20,6 +20,7 @@ import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.engine.table.impl.util.hash.HashMapK4V4;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -348,7 +349,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
             resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMappingColumnName);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
-                final long outerRowKey = reverseLookup.getOne(innerRowKey);
+                final long outerRowKey = getSingle(reverseLookup, innerRowKey);
                 return outerRowKey == reverseLookup.defaultReturnValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
             });
 
@@ -443,12 +444,28 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 reverseLookup.put(innerRowKeys.nextLong(), outerRowKeys.nextLong());
             }
         }
-        return reverseLookup::getOne;
+        return (final long innerRowKey) -> getSingle(reverseLookup, innerRowKey);
     }
 
     private static void setReverseLookup(
             @NotNull final QueryTable sortResult,
             @NotNull final LongUnaryOperator reverseLookup) {
         sortResult.setAttribute(SORT_REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
+    }
+
+    private static final ThreadLocal<NullableLongLongMap.AutoCloseableScalarAccess> REVERSE_LOOKUP_SCALAR_ACCESS =
+            ThreadLocal.withInitial(NullableLongLongMap.AutoCloseableScalarAccess::new);
+
+    /**
+     * Per-element adapter for the {@link LongUnaryOperator} reverse-lookup contract, which is per-element by design.
+     * Deliberately private so batch-capable callers use the chunked {@link NullableLongLongMap#get} directly. The
+     * cursor is bound for the one read and released: a thread-local cursor outlives every sorted table the thread
+     * touches, and must not keep the last one's map reachable.
+     */
+    private static long getSingle(final NullableLongLongMap map, final long key) {
+        try (final NullableLongLongMap.AutoCloseableScalarAccess scalarAccess = REVERSE_LOOKUP_SCALAR_ACCESS.get()) {
+            scalarAccess.reset(map);
+            return scalarAccess.get(key);
+        }
     }
 }

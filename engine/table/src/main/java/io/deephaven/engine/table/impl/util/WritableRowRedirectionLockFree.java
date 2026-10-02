@@ -184,14 +184,18 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (outerRowKey == -1) {
             return BASELINE_KEY_NOT_FOUND;
         }
-        final long result = updates.getOne(outerRowKey);
-        if (result != UPDATES_KEY_NOT_FOUND) {
-            // The prior value from updates is either some ordinary previous value, or BASELINE_KEY_NOT_FOUND.
-            // In either case, return it to the caller.
-            return result;
+        try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
+            sap.forUpdates.reset(updates);
+            final long result = sap.forUpdates.get(outerRowKey);
+            if (result != UPDATES_KEY_NOT_FOUND) {
+                // The prior value from updates is either some ordinary previous value, or BASELINE_KEY_NOT_FOUND.
+                // In either case, return it to the caller.
+                return result;
+            }
+            // There's no entry in 'updates' so we return the entry in 'baseline'.
+            sap.forBaseline.reset(baseline);
+            return sap.forBaseline.get(outerRowKey);
         }
-        // There's no entry in 'updates' so we return the entry in 'baseline'.
-        return baseline.getOne(outerRowKey);
     }
 
     /**
@@ -205,7 +209,35 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (outerRowKey == -1) {
             return BASELINE_KEY_NOT_FOUND;
         }
-        return baseline.getOne(outerRowKey);
+        try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
+            sap.forBaseline.reset(baseline);
+            return sap.forBaseline.get(outerRowKey);
+        }
+    }
+
+    private static final ThreadLocal<AutoCloseableScalarAccessPair> SCALAR_ACCESS_PAIR =
+            ThreadLocal.withInitial(AutoCloseableScalarAccessPair::new);
+
+    /**
+     * Per-thread pair of scalar-access cursors for the read paths (get, getPrev, and putImpl's baseline consultation).
+     * One cursor per map role, deliberately separate so each can memoize per-map state (in future map implementations)
+     * without churning between the two maps we know alternate; one holder behind a single ThreadLocal lookup. Static
+     * rather than per-map: the scratch belongs to the calling thread's computation, not to any particular redirection,
+     * and these lookups never reenter. Each cursor is bound for the one read and released, so a thread keeps no map
+     * reachable between calls: a redirection and the arrays behind it are collectable as soon as their table is.
+     */
+    private static final class AutoCloseableScalarAccessPair implements AutoCloseable {
+        private final NullableLongLongMap.ScalarAccess forUpdates = new NullableLongLongMap.ScalarAccess(null);
+        private final NullableLongLongMap.ScalarAccess forBaseline = new NullableLongLongMap.ScalarAccess(null);
+
+        /**
+         * Drops the bindings of {@link #forUpdates} and {@link #forBaseline}.
+         */
+        @Override
+        public void close() {
+            forUpdates.reset(null);
+            forBaseline.reset(null);
+        }
     }
 
     /**
@@ -368,7 +400,10 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (result != UPDATES_KEY_NOT_FOUND) {
             return result;
         }
-        return baseline.getOne(key);
+        try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
+            sap.forBaseline.reset(baseline);
+            return sap.forBaseline.get(key);
+        }
     }
 
     @Override

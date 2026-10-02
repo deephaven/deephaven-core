@@ -245,6 +245,17 @@ public class SortListener extends BaseTable.ListenerImpl {
                     comparators, comparatorsRespectEquality, null, addedAndModified, false, DISALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
+            // Batch the reverse lookups for the loop below up front. This is value-identical to looking each key up
+            // at its own iteration: the in-place compaction only writes addedInputKeys[j] for j <= ii, and only after
+            // addedInputKeys[ii] has been read; and reverseLookup is not mutated anywhere in the loop.
+            final long[] currentOutputKeys;
+            if (modifiedNeedsSorting) {
+                currentOutputKeys = new long[addedInputKeys.length];
+                reverseLookup.get(LongChunk.chunkWrap(addedInputKeys),
+                        WritableLongChunk.writableChunkWrap(currentOutputKeys));
+            } else {
+                currentOutputKeys = null;
+            }
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
                     : ArrayTypeUtils.EMPTY_LONG_ARRAY;
 
@@ -254,7 +265,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 final long after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
                 final long outputKey = after == -1 ? indexKeyForLeftmostInsert : after;
                 final long curr =
-                        modifiedNeedsSorting ? reverseLookup.getOne(addedInputKeys[ii]) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
+                        modifiedNeedsSorting ? currentOutputKeys[ii] : REVERSE_LOOKUP_NO_ENTRY_VALUE;
 
                 // check if new location differs from current location or if the previous row needs to slot here
                 if (curr != outputKey || (numAddedKeys > 0 && addedOutputKeys[numAddedKeys - 1] == curr)) {
@@ -348,8 +359,12 @@ public class SortListener extends BaseTable.ListenerImpl {
 
                 downstream.modified = modifiedBuilder.build();
             } else {
-                final long[] modifiedOutputKeys = new long[upstream.modified().intSize()];
-                fillArray(modifiedOutputKeys, upstream.modified(), 0, reverseLookup::getOne);
+                final long[] modifiedInputKeys = new long[upstream.modified().intSize()];
+                final long[] modifiedOutputKeys = new long[modifiedInputKeys.length];
+                final WritableLongChunk<OrderedRowKeys> modifiedInputChunk =
+                        WritableLongChunk.writableChunkWrap(modifiedInputKeys);
+                upstream.modified().fillRowKeyChunk(modifiedInputChunk);
+                reverseLookup.get(modifiedInputChunk, WritableLongChunk.writableChunkWrap(modifiedOutputKeys));
                 Arrays.sort(modifiedOutputKeys);
                 downstream.modified = sortedArrayToIndex(modifiedOutputKeys, 0, modifiedOutputKeys.length);
             }
