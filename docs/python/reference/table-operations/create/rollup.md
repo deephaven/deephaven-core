@@ -134,7 +134,7 @@ result = source.rollup(aggs=agg_list, by=by_list)
 
 ![The above `result` rollup table](../../../assets/how-to/rollup-table-realtime.gif)
 
-## Formula Aggregations in Rollups
+## Formula aggregations in rollups
 
 When a rollup includes a formula aggregation, care should be taken with the function being applied. On each tick, the formula is evaluated for every changed row in the output table. Since the aggregated rows include numerous source rows, the input vectors for a formula aggregation can become very large — encompassing the entire source table at the root level. If the formula is inefficient when handling large input vectors, it may negatively impact the rollup's performance.
 
@@ -161,7 +161,7 @@ simple_sum = source.rollup(
 
 To calculate the sum for the root row, every row in the source table is read. The Deephaven engine provides detailed update information for rows in the table (i.e., which rows are added, removed, modified, or shifted). Even though a vector contains many values, it is contained within a single row; therefore, the Deephaven engine does not provide detailed update information for a vector. Every time the table ticks, the formula is completely re-evaluated.
 
-### Formula Reaggregation
+### Formula reaggregation
 
 Formula reaggregation can be used to limit the size of input vectors while evaluating changes to a rollup. When writing your query, be mindful of the requirement that your formula must be applicable to each level of the rollup and produce the same output type.
 
@@ -222,7 +222,7 @@ Exception type            : io.deephaven.engine.table.impl.lang.QueryLanguagePar
 Exception message         : Cannot find variable or class Value
 ```
 
-### Formula Depth and Keys
+### Formula depth and keys
 
 Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) containing the keys of the rows at the current level of the rollup. The following formulas demonstrate the values of depth and keys:
 
