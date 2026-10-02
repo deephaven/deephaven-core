@@ -72,20 +72,6 @@ public interface NullableLongLongMap {
     void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result);
 
     /**
-     * Gets the value associated with a single key by delegating to {@link #get(LongChunk, WritableLongChunk)} with
-     * freshly-allocated single-element chunks. This is a convenience for cold paths and tests; hot paths should batch
-     * their lookups into real chunks.
-     *
-     * @param key the key to get
-     * @return the value of the key (or {@link #defaultReturnValue()})
-     */
-    default long getOne(long key) {
-        final long[] result = new long[1];
-        get(LongChunk.chunkWrap(new long[] {key}), WritableLongChunk.writableChunkWrap(result));
-        return result[0];
-    }
-
-    /**
      * Remove a mapping for a key. Return the removed value of key (or {@link #defaultReturnValue()}) if one does not
      * exist.
      * 
@@ -100,4 +86,88 @@ public interface NullableLongLongMap {
     void clear();
 
     void forEach(LongLongBiConsumer consumer);
+
+    /**
+     * Keeps one {@link ScalarAccess} for a caller whose own shape is per-element and who therefore has no loop to hoist
+     * a cursor over, typically behind a {@link ThreadLocal}. {@link #bind} hands out the cursor bound to a map; closing
+     * it at the end of the try-with-resources that received it drops the binding, so the holder retains no map between
+     * uses and a thread that read a since-dropped table keeps none of it reachable.
+     *
+     * <p>
+     * A holder serves one thread at a time, and its binds do not nest: an inner bind on the same holder rebinds the
+     * cursor out from under an outer one.
+     */
+    final class ScalarAccessHolder {
+        private final ScalarAccess scalarAccess = new ScalarAccess(null);
+
+        /**
+         * The held cursor, bound to {@code map}; close it when the read is done.
+         *
+         * @param map the map to bind the cursor to
+         * @return the held {@link ScalarAccess}, bound
+         */
+        public ScalarAccess bind(final NullableLongLongMap map) {
+            scalarAccess.reset(map);
+            return scalarAccess;
+        }
+    }
+
+    /**
+     * A reusable cursor for scalar access to a {@link NullableLongLongMap}, for callers whose shape is genuinely
+     * per-element. {@link #reset} binds the cursor to a map and performs (and, in future map implementations, caches)
+     * whatever per-batch setup the map's chunked operations need, so that {@link #get} calls are cheap: callers with a
+     * loop should reset once outside the loop.
+     *
+     * <p>
+     * Contract: an instance may be used by only one thread at a time. It is valid from the time of {@link #reset}, with
+     * the same semantics as any other read of these maps: a concurrent writer will not make it crash, but readers under
+     * a clock discipline must discard their work if the clock tells them to. One footnote for writers reading their own
+     * map: a mutation invalidates that thread's own bindings to the mutated map — reset again before the next scalar
+     * read.
+     *
+     * <p>
+     * Keep one cursor per map you are working with (rather than ping-ponging one cursor between maps): future
+     * implementations memoize per-map state keyed on the map's backing storage, and rebinding churns that cache.
+     */
+    final class ScalarAccess implements AutoCloseable {
+        private NullableLongLongMap map;
+        private final WritableLongChunk<Any> keyChunk = WritableLongChunk.writableChunkWrap(new long[1]);
+        private final WritableLongChunk<Any> valueChunk = WritableLongChunk.writableChunkWrap(new long[1]);
+
+        public ScalarAccess(final NullableLongLongMap map) {
+            this.map = map;
+        }
+
+        /**
+         * Binds the cursor to {@code map}, replacing any earlier binding. Whatever per-batch setup the map's chunked
+         * operations need happens here, once, rather than in every {@link #get}. The binding stays fresh across this
+         * cursor's own calls, but a mutation of the map through any other path (a chunked call, another cursor, a
+         * clear) invalidates it: reset again before the next use.
+         *
+         * @param map the map to bind the cursor to
+         */
+        public void reset(final NullableLongLongMap map) {
+            this.map = map;
+        }
+
+        /**
+         * Drops the binding made by the constructor or {@link #reset}, keeping the cursor's scratch for the next one. A
+         * cursor that lives longer than the maps it reads, a thread-local one in particular, is closed after each use
+         * so that it never keeps a map, and the array behind it, reachable after the map's owner has let it go.
+         */
+        @Override
+        public void close() {
+            this.map = null;
+        }
+
+        /**
+         * Gets the value associated with key, exactly as {@link NullableLongLongMap#get} would. Returns the bound map's
+         * {@link NullableLongLongMap#defaultReturnValue()} if no mapping exists.
+         */
+        public long get(final long key) {
+            keyChunk.set(0, key);
+            map.get(keyChunk, valueChunk);
+            return valueChunk.get(0);
+        }
+    }
 }

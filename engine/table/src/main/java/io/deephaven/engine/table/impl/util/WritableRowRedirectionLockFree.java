@@ -184,14 +184,17 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (outerRowKey == -1) {
             return BASELINE_KEY_NOT_FOUND;
         }
-        final long result = updates.getOne(outerRowKey);
-        if (result != UPDATES_KEY_NOT_FOUND) {
-            // The prior value from updates is either some ordinary previous value, or BASELINE_KEY_NOT_FOUND.
-            // In either case, return it to the caller.
-            return result;
+        final ScalarAccessPair scalarAccessPair = SCALAR_ACCESS_PAIR.get();
+        try (final NullableLongLongMap.ScalarAccess forUpdates = scalarAccessPair.forUpdates.bind(updates)) {
+            final long result = forUpdates.get(outerRowKey);
+            if (result != UPDATES_KEY_NOT_FOUND) {
+                // The prior value from updates is either some ordinary previous value, or BASELINE_KEY_NOT_FOUND.
+                // In either case, return it to the caller.
+                return result;
+            }
         }
         // There's no entry in 'updates' so we return the entry in 'baseline'.
-        return baseline.getOne(outerRowKey);
+        return scalarAccessPair.getFromBaseline(baseline, outerRowKey);
     }
 
     /**
@@ -205,7 +208,29 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (outerRowKey == -1) {
             return BASELINE_KEY_NOT_FOUND;
         }
-        return baseline.getOne(outerRowKey);
+        return SCALAR_ACCESS_PAIR.get().getFromBaseline(baseline, outerRowKey);
+    }
+
+    /**
+     * Per-thread pair of scalar-access cursors for the read paths (get, getPrev, and putImpl's baseline consultation).
+     * One cursor per map role, deliberately separate so each can memoize per-map state (in future map implementations)
+     * without churning between the two maps we know alternate; one holder behind a single ThreadLocal lookup. Static
+     * rather than per-map: the scratch belongs to the calling thread's computation, not to any particular redirection,
+     * and these lookups never reenter. Each cursor is bound for the one read and released, so a thread keeps no map
+     * reachable between calls: a redirection and the arrays behind it are collectable as soon as their table is.
+     */
+    private static final ThreadLocal<ScalarAccessPair> SCALAR_ACCESS_PAIR =
+            ThreadLocal.withInitial(ScalarAccessPair::new);
+
+    private static final class ScalarAccessPair {
+        private final NullableLongLongMap.ScalarAccessHolder forUpdates = new NullableLongLongMap.ScalarAccessHolder();
+        private final NullableLongLongMap.ScalarAccessHolder forBaseline = new NullableLongLongMap.ScalarAccessHolder();
+
+        long getFromBaseline(final NullableLongLongMap baseline, final long key) {
+            try (final NullableLongLongMap.ScalarAccess scalarAccess = forBaseline.bind(baseline)) {
+                return scalarAccess.get(key);
+            }
+        }
     }
 
     /**
@@ -368,7 +393,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (result != UPDATES_KEY_NOT_FOUND) {
             return result;
         }
-        return baseline.getOne(key);
+        return SCALAR_ACCESS_PAIR.get().getFromBaseline(baseline, key);
     }
 
     @Override

@@ -67,8 +67,10 @@ public class TestLongLongMap {
     public void zeroKey() {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         map.put(0, 12345);
-        assertEquals(map.getOne(0), 12345);
-        assertEquals(map.size(), 1);
+        try (final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map)) {
+            assertEquals(12345, scalarAccess.get(0));
+            assertEquals(1, map.size());
+        }
     }
 
     @Test
@@ -103,8 +105,14 @@ public class TestLongLongMap {
         map.put(0, 1);
         map.put(2, 3);
         map.resetToNull();
-        for (int ii = 0; ii < 4; ++ii) {
-            assertEquals(map.getOne(ii), noEntryValue);
+        // The hoisted ScalarAccess pattern: allocate and reset a cursor once, outside the loop; gets inside the
+        // loop are then cheap. (Reset again after mutating the map. Code whose enclosing method is itself invoked
+        // per-element has no loop to hoist over — stash the cursor in a ThreadLocal instead; see
+        // WritableRowRedirectionLockFree for that form.)
+        try (final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map)) {
+            for (int ii = 0; ii < 4; ++ii) {
+                assertEquals(scalarAccess.get(ii), noEntryValue);
+            }
         }
     }
 
@@ -157,10 +165,12 @@ public class TestLongLongMap {
             final long actualPrevious = map.putIfAbsent(key, key + 10000);
             assertEquals(expectedPrevious, actualPrevious);
         }
-        for (long key = beginKey; key < endKey; ++key) {
-            final long expectedValue = (key % 2) == 0 ? key + 5000 : key + 10000;
-            final long actualValue = map.getOne(key);
-            assertEquals(expectedValue, actualValue);
+        try (final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map)) {
+            for (long key = beginKey; key < endKey; ++key) {
+                final long expectedValue = (key % 2) == 0 ? key + 5000 : key + 10000;
+                final long actualValue = scalarAccess.get(key);
+                assertEquals(expectedValue, actualValue);
+            }
         }
     }
 
@@ -170,11 +180,11 @@ public class TestLongLongMap {
         final int sizeAtWhichToClear = 10000;
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         for (int iteration = 0; iteration < numIterations; ++iteration) {
-            assertEquals(map.size(), 0);
+            assertEquals(0, map.size());
             for (long ii = 0; ii < sizeAtWhichToClear; ++ii) {
                 map.put(ii, ii + 1);
             }
-            assertEquals(map.size(), sizeAtWhichToClear);
+            assertEquals(sizeAtWhichToClear, map.size());
             map.clear();
         }
     }
@@ -187,13 +197,13 @@ public class TestLongLongMap {
         }
         final int numIterations = 10;
         final int sizeAtWhichToClear = 10000;
-        NullableLongLongMap map = (NullableLongLongMap) factory.create(initialCapacity, loadFactor);
+        NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         for (int iteration = 0; iteration < numIterations; ++iteration) {
-            assertEquals(map.size(), 0);
+            assertEquals(0, map.size());
             for (long ii = 0; ii < sizeAtWhichToClear; ++ii) {
                 map.put(ii, ii + 1);
             }
-            assertEquals(map.size(), sizeAtWhichToClear);
+            assertEquals(sizeAtWhichToClear, map.size());
             map.resetToNull();
         }
     }
@@ -339,7 +349,11 @@ public class TestLongLongMap {
         // The tombstone was reused: the count of non-empty slots did not grow, and the map holds what it should.
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
         assertEquals(where, entriesPerBucket + filled, map.size());
-        assertEquals(where, 99, map.getOne(key));
+        // Bind the cursor only now: the puts and the remove above went through the map, which invalidates any
+        // binding made before them.
+        try (final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map)) {
+            assertEquals(where, 99, cursor.get(key));
+        }
     }
 
     /**
@@ -420,8 +434,8 @@ public class TestLongLongMap {
         Arrays.sort(actualKeys);
         Arrays.sort(actualValues);
 
-        assertTrue(Arrays.equals(expectedKeys, actualKeys));
-        assertTrue(Arrays.equals(expectedValues, actualValues));
+        assertArrayEquals(expectedKeys, actualKeys);
+        assertArrayEquals(expectedValues, actualValues);
 
         if (test instanceof HashMapBase) {
             // Also exercise the caller-provided-space overloads.
@@ -431,8 +445,8 @@ public class TestLongLongMap {
             assertSame(valueSpace, test.valueArray(valueSpace));
             Arrays.sort(keySpace);
             Arrays.sort(valueSpace);
-            assertTrue(Arrays.equals(expectedKeys, keySpace));
-            assertTrue(Arrays.equals(expectedValues, valueSpace));
+            assertArrayEquals(expectedKeys, keySpace);
+            assertArrayEquals(expectedValues, valueSpace);
         }
     }
 
@@ -446,21 +460,24 @@ public class TestLongLongMap {
         for (long key = beginKey; key < endKey; ++key) {
             map.put(key, key + 1000000);
         }
-        assertEquals(map.size(), size);
-        // These lookups should fail
-        for (long key = beginKey - size; key < beginKey; ++key) {
-            final long result = map.getOne(key);
-            assertEquals(result, noEntryValue);
-        }
-        // These lookups should succeed
-        for (long key = beginKey; key < endKey; ++key) {
-            final long result = map.getOne(key);
-            assertEquals(result, key + 1000000);
-        }
-        // These lookups should fail
-        for (long key = endKey; key < endKey + size; ++key) {
-            final long result = map.getOne(key);
-            assertEquals(result, noEntryValue);
+        assertEquals(size, map.size());
+        // One setting for 'map' serves all three read loops: the map is not mutated between them.
+        try (final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map)) {
+            // These lookups should fail
+            for (long key = beginKey - size; key < beginKey; ++key) {
+                final long result = scalarAccess.get(key);
+                assertEquals(result, noEntryValue);
+            }
+            // These lookups should succeed
+            for (long key = beginKey; key < endKey; ++key) {
+                final long result = scalarAccess.get(key);
+                assertEquals(result, key + 1000000);
+            }
+            // These lookups should fail
+            for (long key = endKey; key < endKey + size; ++key) {
+                final long result = scalarAccess.get(key);
+                assertEquals(result, noEntryValue);
+            }
         }
     }
 
@@ -477,11 +494,13 @@ public class TestLongLongMap {
         for (long key = beginKey; key < endKey; key += 2) {
             map.remove(key);
         }
-        assertEquals(map.size(), size / 2);
-        for (long key = beginKey; key < endKey; ++key) {
-            final long expectedResult = (key % 2) == 0 ? noEntryValue : key + 1000000;
-            final long actualResult = map.getOne(key);
-            assertEquals(expectedResult, actualResult);
+        assertEquals(size / 2, map.size());
+        try (final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map)) {
+            for (long key = beginKey; key < endKey; ++key) {
+                final long expectedResult = (key % 2) == 0 ? noEntryValue : key + 1000000;
+                final long actualResult = scalarAccess.get(key);
+                assertEquals(expectedResult, actualResult);
+            }
         }
     }
 
@@ -584,7 +603,7 @@ public class TestLongLongMap {
         final int iterations = 1000000;
         final long randomMod = 1000000000; // 1 billion
         // Use this interface because we want to access 'capacity'
-        NullableLongLongMap map = (NullableLongLongMap) factory.create(initialCapacity, loadFactor);
+        NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         Random insertStream = new Random(67890);
         Random deleteStream = new Random(67890);
 
@@ -630,31 +649,37 @@ public class TestLongLongMap {
         // Resetting a never-allocated map is a no-op.
         map.resetToNullRetainingCapacity();
         assertEquals(0, map.capacity());
-        assertEquals(noEntryValue, map.getOne(0));
+        try (final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map)) {
+            assertEquals(noEntryValue, scalarAccess.get(0));
 
-        for (int ii = 0; ii < size; ++ii) {
-            map.put(ii * 7, ii);
-        }
-        final int filledCapacity = map.capacity();
-        map.resetToNullRetainingCapacity();
+            for (int ii = 0; ii < size; ++ii) {
+                map.put(ii * 7, ii);
+            }
+            final int filledCapacity = map.capacity();
+            map.resetToNullRetainingCapacity();
 
-        // The array is released, so the map holds no storage while it sits empty.
-        assertEquals(0, map.size());
-        assertTrue(map.isEmpty());
-        assertEquals(0, map.capacity());
-        for (int ii = 0; ii < size; ++ii) {
-            assertEquals(noEntryValue, map.getOne(ii * 7));
-        }
+            // The array is released, so the map holds no storage while it sits empty.
+            assertEquals(0, map.size());
+            assertTrue(map.isEmpty());
+            assertEquals(0, map.capacity());
+            // The puts above invalidated the binding (the writer footnote in the ScalarAccess contract): reset again.
+            scalarAccess.reset(map);
+            for (int ii = 0; ii < size; ++ii) {
+                assertEquals(noEntryValue, scalarAccess.get(ii * 7));
+            }
 
-        // The remembered capacity is restored by the next allocation, so refilling to the same size never rehashes.
-        map.put(0, 1);
-        assertEquals(filledCapacity, map.capacity());
-        for (int ii = 1; ii < size; ++ii) {
-            map.put(ii * 7, ii + 1);
-        }
-        assertEquals(filledCapacity, map.capacity());
-        for (int ii = 1; ii < size; ++ii) {
-            assertEquals(ii + 1, map.getOne(ii * 7));
+            // The remembered capacity is restored by the next allocation, so refilling to the same size never rehashes.
+            map.put(0, 1);
+            assertEquals(filledCapacity, map.capacity());
+            for (int ii = 1; ii < size; ++ii) {
+                map.put(ii * 7, ii + 1);
+            }
+            assertEquals(filledCapacity, map.capacity());
+            // Mutated again: reset again.
+            scalarAccess.reset(map);
+            for (int ii = 1; ii < size; ++ii) {
+                assertEquals(ii + 1, scalarAccess.get(ii * 7));
+            }
         }
     }
 
@@ -668,23 +693,20 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        NullableLongLongMap nullableMap = map;
-        nullableMap.resetToNull();
+        map.resetToNull();
         emptyMapHelper(map);
     }
 
     private void emptyMapHelper(NullableLongLongMap map) {
         final MutableInt count = new MutableInt();
-        map.forEach((key, value) -> {
-            count.increment();
-        });
+        map.forEach((key, value) -> count.increment());
         assertEquals(0, count.get());
     }
 
     static class Factory {
         private final String name;
         private final int entriesPerBucket;
-        private BiFunction<Integer, Float, NullableLongLongMap> constructor;
+        private final BiFunction<Integer, Float, NullableLongLongMap> constructor;
 
         Factory(String name, int entriesPerBucket, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
             this.name = name;
