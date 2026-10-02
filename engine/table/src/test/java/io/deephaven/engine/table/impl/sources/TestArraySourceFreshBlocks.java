@@ -75,21 +75,29 @@ public class TestArraySourceFreshBlocks {
                 assertEquals(fresh ? null : Boolean.TRUE, booleans.getPrev(key));
                 assertEquals(written ? key : fresh ? QueryConstants.NULL_LONG : 7L, longs.getLong(key));
                 assertEquals(written ? key : fresh ? 0L : 7L, defaults.getLong(key));
+                assertEquals(written ? "new" : fresh ? null : "old", objects.get(key));
+                assertEquals(written ? Boolean.FALSE : fresh ? null : Boolean.TRUE, booleans.get(key));
             }
         });
 
         // after the cycle, previous values are current values, and the new block records previous values as usual
         for (long key = BLOCK_SIZE; key < 2L * BLOCK_SIZE; ++key) {
             assertEquals(longs.getLong(key), longs.getPrevLong(key));
+            assertEquals(defaults.getLong(key), defaults.getPrevLong(key));
             assertEquals(objects.get(key), objects.getPrev(key));
+            assertEquals(booleans.get(key), booleans.getPrev(key));
         }
         updateGraph().runWithinUnitTestCycle(() -> {
             // a row of the new block that the first cycle wrote
             final long key = BLOCK_SIZE + 1;
             longs.set(key, -1L);
+            defaults.set(key, 9L);
             objects.set(key, "newer");
+            booleans.set(key, Boolean.TRUE);
             assertEquals(key, longs.getPrevLong(key));
+            assertEquals(key, defaults.getPrevLong(key));
             assertEquals("new", objects.getPrev(key));
+            assertEquals(Boolean.FALSE, booleans.getPrev(key));
         });
     }
 
