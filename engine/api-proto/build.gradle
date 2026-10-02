@@ -1,0 +1,44 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+    id 'com.google.protobuf' version '0.9.6'
+}
+
+description 'Engine API Proto: internal protobuf representations of engine-api types, not intended for RPC'
+
+dependencies {
+    api project(':engine-api')
+    api libs.protobuf.java
+
+    compileOnly libs.jetbrains.annotations
+
+    testImplementation libs.assertj
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly libs.slf4j.simple
+}
+
+test {
+    useJUnitPlatform()
+}
+
+spotless {
+    java {
+        targetExclude(
+                'build/generated/sources/proto/main/java/**',
+        )
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = libs.protoc.get().toString()
+    }
+}
