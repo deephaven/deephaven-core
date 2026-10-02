@@ -48,7 +48,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     private transient int firstFreshBlock = NO_FIRST_FRESH_BLOCK;
 
     private static long[] makeFreshInUse() {
-        final long[] inUse = new long[BLOCK_SIZE >> LOG_INUSE_BITSET_SIZE];
+        final long[] inUse = new long[IN_USE_BLOCK_SIZE];
         Arrays.fill(inUse, -1L);
         return inUse;
     }
