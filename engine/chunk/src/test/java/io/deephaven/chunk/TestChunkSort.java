@@ -200,49 +200,6 @@ public class TestChunkSort {
     }
 
     @Test
-    public void testBooleanChunkSort() {
-        final int maxSize = 6;
-        // Reusable chunk large enough to hold any pattern plus the max offset.
-        try (final WritableBooleanChunk<Any> chunk = WritableBooleanChunk.makeWritableChunk(maxSize + MAX_OFFSET)) {
-            for (int size = 0; size <= maxSize; size++) {
-                for (int bits = 0; bits < 1 << size; bits++) {
-                    for (final int offset : OFFSET_ARRAY) {
-                        chunk.setSize(offset + size);
-                        // The values before the offset are out of range, so they must be left alone.
-                        for (int ii = 0; ii < offset; ii++) {
-                            chunk.set(ii, true);
-                        }
-                        int falseCount = 0;
-                        for (int ii = 0; ii < size; ii++) {
-                            final boolean value = (bits & (1 << ii)) != 0;
-                            falseCount += value ? 0 : 1;
-                            chunk.set(offset + ii, value);
-                        }
-                        chunk.sort(offset, size);
-                        for (int ii = 0; ii < offset; ii++) {
-                            assertTrue("Out of range value changed at index " + ii, chunk.get(ii));
-                        }
-                        for (int ii = 0; ii < size; ii++) {
-                            // false sorts before true
-                            assertEquals("Wrong value at index " + ii + " of pattern " + bits,
-                                    ii >= falseCount, chunk.get(offset + ii));
-                        }
-                    }
-                }
-            }
-        }
-
-        try (final WritableBooleanChunk<Any> chunk =
-                WritableBooleanChunk.writableChunkWrap(new boolean[] {true, false, true, false, false})) {
-            chunk.sort();
-            assertEquals(5, chunk.size());
-            for (int ii = 0; ii < chunk.size(); ii++) {
-                assertEquals("Wrong value at index " + ii, ii >= 3, chunk.get(ii));
-            }
-        }
-    }
-
-    @Test
     public void testByteChunkSort() {
         final List<Byte> expected = new ArrayList<>();
         // this is explicitly the order we expect after sorting

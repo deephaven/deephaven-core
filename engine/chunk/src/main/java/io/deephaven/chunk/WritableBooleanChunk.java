@@ -172,19 +172,6 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
     }
 
     // region sort
-    @Override
-    public final void sort(int start, int length) {
-        final int from = offset + start;
-        final int to = from + length;
-        int falseCount = 0;
-        for (int ii = from; ii < to; ++ii) {
-            if (!data[ii]) {
-                ++falseCount;
-            }
-        }
-        Arrays.fill(data, from, from + falseCount, false);
-        Arrays.fill(data, from + falseCount, to, true);
-    }
     // endregion sort
 
     @Override
