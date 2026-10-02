@@ -9,7 +9,7 @@ import io.deephaven.protobuf.test.FooBar;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
-public class ConfluentProtobufCompatTest {
+class ConfluentProtobufCompatTest {
 
     /**
      * Regression test meant to better guard against Deephaven's runtime protobuf version falling behind the protoc
@@ -26,7 +26,7 @@ public class ConfluentProtobufCompatTest {
      * @see KafkaToolsIntegrationTest#protobufSchemaRegistryTest(KafkaService, TestInfo) for a fuller integration test
      */
     @Test
-    void canConstructConfluentProtobufSchemaWithDeephavenCompiledProto() {
+    void canConstructConfluentProtobufSchemaWithDeephavensRuntimeProtobufVersion() {
         new ProtobufSchema(FooBar.getDescriptor());
     }
 }
