@@ -275,7 +275,6 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
 
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
                 copy(buildAttributes(ak -> !effectiveRemoves.contains(ak), toAdd));
-        // TODO: should we override systemic attributes.
         result.reapplyAttributes(toAdd);
         result.removeAttributes(effectiveRemoves::contains);
         // noinspection unchecked
@@ -303,7 +302,6 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         final Set<String> toRemoveSet = new HashSet<>(toRemove);
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result =
                 copy(buildAttributes(ak -> !toRemoveSet.contains(ak), Map.of()));
-        // TODO: should we override systemic attributes.
         result.removeAttributes(toRemoveSet::contains);
         // noinspection unchecked
         return (IFACE_TYPE) result;
@@ -317,7 +315,6 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
 
         final Set<String> toRetainSet = new HashSet<>(toRetain);
         final LiveAttributeMap<IFACE_TYPE, IMPL_TYPE> result = copy(buildAttributes(toRetainSet::contains, Map.of()));
-        // TODO: should we override systemic attributes.
         result.removeAttributes(ak -> !toRetainSet.contains(ak));
         // noinspection unchecked
         return (IFACE_TYPE) result;
@@ -346,10 +343,10 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     }
 
     /**
-     * Assign each of {@code toAdd}'s values to its key. A copy's constructor may replace attributes it was given, as
-     * {@code BaseTable} does with {@link io.deephaven.engine.table.Table#SYSTEMIC_TABLE_ATTRIBUTE} on a systemic
-     * thread; this restores any such attribute that the caller asked to add. It does nothing, and in particular does
-     * not call {@link #ensureAttributes()}, when every value is already assigned.
+     * Assign each of {@code toAdd}'s values to its key. A copy's constructor may replace or drop attributes it was
+     * given, as {@code BaseTable} does with {@link io.deephaven.engine.table.Table#SYSTEMIC_TABLE_ATTRIBUTE} according
+     * to whether the current thread is systemic; this restores any such attribute that the caller asked to add. It does
+     * nothing, and in particular does not call {@link #ensureAttributes()}, when every value is already assigned.
      *
      * @param toAdd The attributes that the caller asked to add
      */
