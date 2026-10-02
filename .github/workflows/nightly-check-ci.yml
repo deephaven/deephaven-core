@@ -58,6 +58,13 @@ jobs:
           .github/scripts/gradle-properties.sh 17 21 25 >> gradle.properties
           cat gradle.properties
 
+      - name: Start hang watchdog
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/build/test-results/watchdog"
+          nohup .github/scripts/hang-watchdog.sh \
+            > "$GITHUB_WORKSPACE/build/test-results/watchdog/watchdog.log" 2>&1 &
+          echo "watchdog started, pid $!"
+
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
         run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER
         
