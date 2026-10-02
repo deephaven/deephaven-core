@@ -231,7 +231,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         private final NullableLongLongMap.ScalarAccess forBaseline = new NullableLongLongMap.ScalarAccess(null);
 
         /**
-         * Drops the bindings for {@link forUpdates} and {@link forBaseline}.
+         * Drops the bindings of {@link #forUpdates} and {@link #forBaseline}.
          */
         @Override
         public void close() {

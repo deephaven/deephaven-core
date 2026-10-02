@@ -137,25 +137,27 @@ public interface NullableLongLongMap {
     }
 
     /**
-     * An AutoCloseable version of ScalarAccess, suitable for use with thread statics and try-with-resources. The
-     * rationale for its existence is this tension: we want to use the class in a long-lived context (like a
-     * {@link ThreadLocal}) but we also want it to automatically reset itself when the programmer is done using it
-     * (so that it doesn't hold on to the underlying map longer than necessary). Typical usage:
+     * The {@link ScalarAccess} for a cursor that outlives its uses, a thread-local one in particular, where the plain
+     * cursor's lifetime no longer bounds how long the bound map stays reachable. It is {@link AutoCloseable} so that
+     * try-with-resources releases the binding at the end of each use, and {@link #close} is {@code reset(null)}:
+     * whatever {@link #reset} binds, {@code close} drops. A cursor that lives in a local variable has no need of this;
+     * it dies with its frame. Typical usage:
+     *
      * <pre>{@code
      * try (final NullableLongLongMap.AutoCloseableScalarAccess sa = REVERSE_LOOKUP_SCALAR_ACCESS.get()) {
-     *   sa.reset(map);
-     *   return sa.get(key);
+     *     sa.reset(map);
+     *     return sa.get(key);
+     * }
      * }</pre>
      */
-    class AutoCloseableScalarAccess extends ScalarAccess implements AutoCloseable {
+    final class AutoCloseableScalarAccess extends ScalarAccess implements AutoCloseable {
         public AutoCloseableScalarAccess() {
             super(null);
         }
 
         /**
-         * Drops the binding made by the constructor or {@link #reset}, keeping the cursor's scratch for the next one. A
-         * cursor that lives longer than the maps it reads, a thread-local one in particular, is closed after each use
-         * so that it never keeps a map, and the array behind it, reachable after the map's owner has let it go.
+         * Drops the binding made by {@link #reset}, keeping the cursor's scratch for the next one, so that the cursor
+         * never keeps a map, and the array behind it, reachable after the map's owner has let it go.
          */
         @Override
         public void close() {
