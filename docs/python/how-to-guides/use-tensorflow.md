@@ -1,6 +1,5 @@
 ---
 title: Use TensorFlow in Deephaven
-sidebar_label: TensorFlow
 ---
 
 This guide will show you how to use [TensorFlow](https://www.tensorflow.org/) in Deephaven queries.

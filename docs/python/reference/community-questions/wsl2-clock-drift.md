@@ -1,6 +1,5 @@
 ---
 title: Why do my ticking tables stall on WSL 2?
-sidebar_label: Why do ticking tables stall on WSL 2?
 ---
 
 _I'm running Deephaven on WSL 2. My [ticking tables](../../conceptual/table-types.md) seem to stop ticking at random, and I sometimes see warnings like `System clock's jumped back by ~13 sec` from my IDE or `Time jumped backwards, rotating` in `journalctl`. What's going on?_

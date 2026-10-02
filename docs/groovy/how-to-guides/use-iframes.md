@@ -1,6 +1,5 @@
 ---
 title: Display tables in an Inline Frame
-sidebar_label: IFrames
 ---
 
 In this guide, you'll learn how to create a basic web page with embedded tables and charts from Deephaven using Inline Frames (IFrames). In addition to the Deephaven Web UI, the Deephaven server also provides endpoints for fetching individual tables or charts. Add the following script using [Application Mode](./application-mode.md) to run through the examples below:

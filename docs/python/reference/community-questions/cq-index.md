@@ -1,5 +1,5 @@
 ---
-title: FAQ Overview
+title: FAQ overview
 description: Commonly asked questions about Deephaven Community Core.
 hide_table_of_contents: true
 ---

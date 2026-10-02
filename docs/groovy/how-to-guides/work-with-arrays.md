@@ -1,6 +1,5 @@
 ---
 title: Arrays
-sidebar_label: Arrays
 ---
 
 This guide shows you how to work with [arrays](../reference/query-language/types/arrays.md) in [query strings](./query-string-overview.md).

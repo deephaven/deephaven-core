@@ -1,6 +1,5 @@
 ---
 title: Use deephaven.learn for AI/ML applications
-sidebar_label: deephaven.learn
 ---
 
 This guide will show you how to perform calculations in Python with Deephaven tables through the [`deephaven.learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn) submodule.
