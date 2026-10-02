@@ -16,12 +16,15 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Consumer;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -214,6 +217,14 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
         }
     }
     // endregion Shifts
+
+    @Override
+    protected void collectSparseSources(@NotNull final Consumer<SparseArrayColumnSource<?>> consumer) {
+        super.collectSparseSources(consumer);
+        if (emaSource instanceof SparseArrayColumnSource) {
+            consumer.accept((SparseArrayColumnSource<?>) emaSource);
+        }
+    }
 
     @Override
     public void prepareForParallelPopulation(final RowSet changedRows) {

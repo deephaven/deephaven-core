@@ -192,6 +192,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             // first we remove anything that is not of interest from the left hand side, because we don't want to
             // process the relevant right hand side changes
             if (leftTicked) {
+                rowRedirection.releaseVacatedStorage(leftRecorder.getRemoved(), leftRecorder.getShifted(),
+                        leftTable.getRowSet());
                 final RowSet leftRestampRemovals;
                 if (leftStampModified || leftKeysModified) {
                     leftRestampRemovals = leftRecorder.getRemoved().union(leftRecorder.getModifiedPreShift());

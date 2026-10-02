@@ -380,6 +380,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             // Update the final result RowSet.
             resultRowSet.insert(downstream.added());
 
+            sortMapping.releaseVacatedStorage(downstream.removed(), downstream.shifted(), result.getRowSet());
+
             result.notifyListeners(downstream);
         }
     }

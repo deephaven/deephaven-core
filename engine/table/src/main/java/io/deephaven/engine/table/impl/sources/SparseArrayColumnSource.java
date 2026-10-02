@@ -19,6 +19,8 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -232,6 +234,72 @@ public abstract class SparseArrayColumnSource<T>
         this.blocks2ToClear = removeBlocks2.copy();
         this.blocks1ToClear = removeBlocks1.copy();
         this.emptyResult = empty;
+    }
+
+    /**
+     * At the end of this cycle, release each block, block2 and block1 structure of {@code sources} that holds a row key
+     * of {@code candidateRowKeys} and no row key of {@code liveRowSet}.
+     *
+     * <p>
+     * The values each source holds at row keys outside {@code liveRowSet} must be unused after this cycle. The cost is
+     * proportional to the number of blocks that {@code candidateRowKeys} spans, so it should hold the row keys that
+     * were live at the start of this cycle and are not live now (the removed rows and the rows that shifts vacated),
+     * and as few others as practical. Each source may be passed to this method, or to
+     * {@link #clearBlocks(RowSet, RowSet, RowSet, boolean)}, at most once per cycle.
+     * </p>
+     *
+     * @param candidateRowKeys the row keys whose blocks may have no live rows
+     * @param liveRowSet the row keys whose values the sources hold after this cycle
+     * @param sources the sources to release blocks from
+     */
+    public static void clearBlocksWithoutLiveRows(
+            @NotNull final RowSet candidateRowKeys,
+            @NotNull final RowSet liveRowSet,
+            @NotNull final SparseArrayColumnSource<?>... sources) {
+        if (sources.length == 0 || candidateRowKeys.isEmpty()) {
+            return;
+        }
+        try (final RowSet removeBlocks = getBlocksWithoutLiveRows(candidateRowKeys, liveRowSet, LOG_BLOCK_SIZE);
+                final RowSet removeBlocks2 = removeBlocks.isNonempty()
+                        ? getBlocksWithoutLiveRows(candidateRowKeys, liveRowSet, BLOCK1_SHIFT)
+                        : RowSetFactory.empty();
+                final RowSet removeBlocks1 = removeBlocks2.isNonempty()
+                        ? getBlocksWithoutLiveRows(candidateRowKeys, liveRowSet, BLOCK0_SHIFT)
+                        : RowSetFactory.empty()) {
+            if (removeBlocks.isEmpty()) {
+                return;
+            }
+            for (final SparseArrayColumnSource<?> source : sources) {
+                source.clearBlocks(removeBlocks, removeBlocks2, removeBlocks1, liveRowSet.isEmpty());
+            }
+        }
+    }
+
+    /**
+     * @return the indices ({@code rowKey >> logBlockSize}) of the blocks of {@code 1 << logBlockSize} row keys that
+     *         hold a row key of {@code candidateRowKeys} and no row key of {@code liveRowSet}
+     */
+    @NotNull
+    private static RowSet getBlocksWithoutLiveRows(
+            final RowSet candidateRowKeys,
+            final RowSet liveRowSet,
+            final int logBlockSize) {
+        final long blockSize = 1L << logBlockSize;
+        final RowSet.SearchIterator liveIterator = liveRowSet.searchIterator();
+        final RowSet.SearchIterator candidateIterator = candidateRowKeys.searchIterator();
+
+        final RowSetBuilderSequential removeBlockBuilder = RowSetFactory.builderSequential();
+        long startOfNextBlock = 0;
+        while (candidateIterator.advance(startOfNextBlock)) {
+            final long candidateKey = candidateIterator.currentValue();
+            startOfNextBlock = (candidateKey | (blockSize - 1)) + 1;
+
+            final long startOfCandidateBlock = candidateKey & ~(blockSize - 1);
+            if (!liveIterator.advance(startOfCandidateBlock) || liveIterator.currentValue() >= startOfNextBlock) {
+                removeBlockBuilder.appendKey(candidateKey >> logBlockSize);
+            }
+        }
+        return removeBlockBuilder.build();
     }
 
     public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
