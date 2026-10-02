@@ -13,6 +13,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -371,10 +372,15 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             updateCommitter.maybeActivate();
         }
 
-        try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
-            final NullableLongLongMap.ScalarAccess forUpdates = sap.forUpdates;
-            forUpdates.reset(updates);
-            rowSequence.forAllRowKeys(key -> forUpdates.put(key, BASELINE_KEY_NOT_FOUND));
+        // One value under every key, a chunk at a time: the keys are staged from the row sequence, and the map writes
+        // the marker under all of them in one call.
+        final int chunkSize = (int) Math.min(REMOVAL_CHUNK_SIZE, Math.max(1, rowSequence.size()));
+        try (final RowSequence.Iterator outerRowKeys = rowSequence.getRowSequenceIterator();
+                final WritableLongChunk<OrderedRowKeys> keys = WritableLongChunk.makeWritableChunk(chunkSize)) {
+            while (outerRowKeys.hasMore()) {
+                outerRowKeys.getNextRowSequenceWithLength(chunkSize).fillRowKeyChunk(keys);
+                updates.put(keys, BASELINE_KEY_NOT_FOUND);
+            }
         }
     }
 
@@ -383,13 +389,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
-        try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
-            final NullableLongLongMap.ScalarAccess forUpdates = sap.forUpdates;
-            forUpdates.reset(updates);
-            for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
-                forUpdates.put(outerRowKeys.get(ii), BASELINE_KEY_NOT_FOUND);
-            }
-        }
+        updates.put(outerRowKeys, BASELINE_KEY_NOT_FOUND);
     }
 
     @Override
@@ -432,10 +432,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
 
         final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
         final LongChunk<? extends RowKeys> outerRowKeysTyped = outerRowKeys.asRowKeyChunk();
-        try (final WritableLongChunk<RowKeys> oldValues =
-                WritableLongChunk.makeWritableChunk(outerRowKeysTyped.size())) {
-            updates.put(outerRowKeysTyped, innerRowKeysTyped, oldValues);
-        }
+        // The previous values are of no interest here, so the put that reports none: nothing to stage, per call or
+        // per context.
+        updates.put(outerRowKeysTyped, innerRowKeysTyped);
     }
 
     @Override
@@ -448,11 +447,14 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         }
 
         final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
-        try (final WritableLongChunk<RowKeys> oldValues =
-                WritableLongChunk.makeWritableChunk(innerRowKeysTyped.size())) {
-            updates.put(outerRowKeys, innerRowKeysTyped, oldValues);
-        }
+        updates.put(outerRowKeys, innerRowKeysTyped);
     }
+
+    /**
+     * The staging chunk size for a removal given as a {@link RowSequence}: its keys are filled into a chunk of at most
+     * this many and marked removed in the updates map one chunk at a time.
+     */
+    private static final int REMOVAL_CHUNK_SIZE = 4096;
 
     private static final int hashBucketWidth = Configuration.getInstance()
             .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "hashBucketWidth", 1);

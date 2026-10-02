@@ -13,7 +13,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.impl.util.hash.HashMapK4V4;
-import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.ChunkType;
@@ -676,17 +675,17 @@ public class SortListener extends BaseTable.ListenerImpl {
                     sortMapping.fillFromChunk(fillFromContext, valuesChunk, rowSequence);
                 }
 
-                final NullableLongLongMap.ScalarAccess reverseLookupAccess =
-                        new NullableLongLongMap.ScalarAccess(reverseLookup);
-                for (int jj = 0; jj < thisSize; ++jj) {
-                    final long index = valuesChunk.get(jj);
-                    if (index != RowSequence.NULL_ROW_KEY) {
-                        reverseLookupAccess.put(index, keysChunk.get(jj));
-                    } else {
-                        reverseLookup.remove(index);
-                        // remove() does not go through the cursor yet: reset the invalidated binding.
-                        reverseLookupAccess.reset(reverseLookup);
-                    }
+                // The sort put the vacated slots, those whose inner key is NULL_ROW_KEY, at the front. They have
+                // nothing to do in the reverse lookup, whose keys are inner row keys (a removed row's entry went in
+                // onUpdate, a moved row's is overwritten by its new slot below), so the rest of the chunk is one put
+                // of inner key -> slot, previous values unreported.
+                int firstKept = 0;
+                while (firstKept < thisSize && valuesChunk.get(firstKept) == RowSequence.NULL_ROW_KEY) {
+                    ++firstKept;
+                }
+                if (firstKept < thisSize) {
+                    reverseLookup.put(valuesChunk.slice(firstKept, thisSize - firstKept),
+                            keysChunk.slice(firstKept, thisSize - firstKept));
                 }
             }
 
