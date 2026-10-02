@@ -13,6 +13,7 @@ import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Map;
@@ -22,6 +23,7 @@ public class ManyLocationsTest extends RefreshingTableTestCase {
 
     private static final boolean DISABLE_PERFORMANCE_TEST = true;
 
+    @Test
     public void testManyLocationsCoalesce() {
         if (DISABLE_PERFORMANCE_TEST) {
             return;

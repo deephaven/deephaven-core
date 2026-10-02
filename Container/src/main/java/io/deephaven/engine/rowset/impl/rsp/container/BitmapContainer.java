@@ -262,7 +262,7 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public ArrayContainer and(final ArrayContainer value2) {
-        final ArrayContainer answer = new ArrayContainer(value2.content.length);
+        final ArrayContainer answer = new ArrayContainer(value2.capacity());
         int c = value2.cardinality;
         for (int k = 0; k < c; ++k) {
             short v = value2.content[k];
@@ -881,6 +881,15 @@ public final class BitmapContainer extends Container implements Cloneable {
     }
 
     @Override
+    public SearchRangeIterator getShortRangeIterator(final int initialSeek, final RankCursor cursor) {
+        if (DEBUG && initialSeek != 0 && initialSeek >= cardinality) {
+            throw new IllegalArgumentException("initialSeek=" + initialSeek);
+        }
+        final int word = cursor.bitmapWordForRank(this, initialSeek);
+        return new BitmapContainerRangeIterator(bitmap, word, initialSeek - cursor.cardBefore());
+    }
+
+    @Override
     public Container iadd(final int begin, final int end) {
         // TODO: may need to convert to a RunContainer
         if (end == begin) {
@@ -1115,6 +1124,9 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container inot(final int firstOfRange, final int lastOfRange) {
+        if (lastOfRange <= firstOfRange) {
+            return this;
+        }
         final BitmapContainer ans = deepCopyIfShared();
         return ans.inotImpl(firstOfRange, lastOfRange);
     }
@@ -1360,6 +1372,9 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container not(final int firstOfRange, final int lastOfRange) {
+        if (lastOfRange <= firstOfRange) {
+            return cowRef();
+        }
         final BitmapContainer answer = deepCopy();
         return answer.inot(firstOfRange, lastOfRange);
     }

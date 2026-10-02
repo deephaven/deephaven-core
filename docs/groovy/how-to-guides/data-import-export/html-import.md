@@ -10,5 +10,5 @@ Once Jsoup is available, you can use it in Groovy scripts to fetch and parse HTM
 
 ## Related documentation
 
-- [Export HTML files](./html-export.md)
+- [Convert tables to HTML strings](./html-export.md)
 - [Install and use Java packages](../install-and-use-java-packages.md)

@@ -31,16 +31,19 @@ import java.util.function.LongConsumer;
  * The IntTestSource is a ColumnSource used only for testing; not in live code.
  * <p>
  * It uses a fastutil open addressed hash map from long RowSet keys to int values. Previous data is stored in a
- * completely separate map, which is copied from the primary map on the first change in a given cycle. If an
- * uninitialized key is accessed; then an IllegalStateException is thrown. The previous value map is discarded in an
- * {@link UpdateCommitter} using a {@link TerminalNotification} after the live table monitor cycle is complete.
+ * completely separate map: on the first change in a given cycle, the current map is copied into a fresh map that
+ * receives the cycle's mutations, and the prior map is retained as the previous values. A map is never mutated once it
+ * has been retained as previous, so readers access the volatile map references without locking while mutators
+ * synchronize on this source. If an uninitialized key is accessed; then an IllegalStateException is thrown. The
+ * previous value map reference is reset to the current map in an {@link UpdateCommitter} using a
+ * {@link TerminalNotification} after the live table monitor cycle is complete.
  */
 public class IntTestSource extends AbstractColumnSource<Integer>
         implements MutableColumnSourceGetDefaults.ForInt, TestColumnSource<Integer> {
 
     private long lastAdditionTime;
-    protected final Long2IntOpenHashMap data = new Long2IntOpenHashMap();
-    protected Long2IntOpenHashMap prevData;
+    protected volatile Long2IntOpenHashMap data = new Long2IntOpenHashMap();
+    protected volatile Long2IntOpenHashMap prevData;
 
     private final UpdateCommitter<IntTestSource> prevFlusher =
             new UpdateCommitter<>(this, updateGraph, IntTestSource::flushPrevious);
@@ -116,8 +119,9 @@ public class IntTestSource extends AbstractColumnSource<Integer>
             return;
         }
         prevFlusher.maybeActivate();
-        prevData = new Long2IntOpenHashMap(this.data);
-        setDefaultReturnValue(prevData);
+        final Long2IntOpenHashMap newData = this.data.clone();
+        prevData = data;
+        data = newData;
         lastAdditionTime = currentStep;
     }
 
@@ -149,13 +153,14 @@ public class IntTestSource extends AbstractColumnSource<Integer>
     // endregion boxed get
 
     @Override
-    public synchronized int getInt(long index) {
+    public int getInt(long index) {
         if (index == RowSet.NULL_ROW_KEY) {
             return QueryConstants.NULL_INT;
         }
         // If a test asks for a non-existent positive index something is wrong.
         // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
         // has an empty redirection index entry that just gets passed through to the inner column source as -1.
+        final Long2IntOpenHashMap data = this.data;
         final int retVal = data.get(index);
         if (retVal == QueryConstants.NULL_INT && !data.containsKey(index)) {
             throw new IllegalStateException("Asking for a non-existent key: " + index);
@@ -176,15 +181,12 @@ public class IntTestSource extends AbstractColumnSource<Integer>
     // endregion boxed getPrev
 
     @Override
-    public synchronized int getPrevInt(long index) {
+    public int getPrevInt(long index) {
         if (index == RowSet.NULL_ROW_KEY) {
             return QueryConstants.NULL_INT;
         }
 
-        if (prevData == null) {
-            return getInt(index);
-        }
-
+        final Long2IntOpenHashMap prevData = this.prevData;
         final int retVal = prevData.get(index);
         if (retVal == QueryConstants.NULL_INT && !prevData.containsKey(index)) {
             throw new IllegalStateException("Asking for a non-existent previous key: " + index);
@@ -193,7 +195,7 @@ public class IntTestSource extends AbstractColumnSource<Integer>
     }
 
     public static void flushPrevious(IntTestSource source) {
-        source.prevData = null;
+        source.prevData = source.data;
     }
 
     @Override

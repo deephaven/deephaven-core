@@ -39,7 +39,7 @@ public class MockPool<T> extends RecordingMockObject implements Pool<T> {
 
     // ----------------------------------------------------------------
     public void assertIsEmpty() {
-        junit.framework.Assert.assertTrue("all items taken", m_items.isEmpty());
+        org.junit.Assert.assertTrue("all items taken", m_items.isEmpty());
     }
 
     // ----------------------------------------------------------------

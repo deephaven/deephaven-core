@@ -1,6 +1,5 @@
 ---
 title: Parallelizing queries
-sidebar_label: Parallelization
 ---
 
 Deephaven supports using multiple processors to speed up query evaluation. The extent to which Deephaven employs multiple processors depends on both the phase of operation and the query itself.

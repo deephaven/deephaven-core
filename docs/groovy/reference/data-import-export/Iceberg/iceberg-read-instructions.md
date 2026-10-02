@@ -1,6 +1,5 @@
 ---
 title: IcebergReadInstructions
-sidebar_label: IcebergReadInstructions
 ---
 
 The `IcebergReadInstructions` class provides instructions for reading Iceberg catalogs and tables.

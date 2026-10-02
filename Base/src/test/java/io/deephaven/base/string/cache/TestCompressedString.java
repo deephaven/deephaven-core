@@ -3,13 +3,15 @@
 //
 package io.deephaven.base.string.cache;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import static org.junit.Assert.*;
+
 @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-public class TestCompressedString extends TestCase {
+public class TestCompressedString {
 
     private static CompressedString cs() {
         return new CompressedString();
@@ -43,6 +45,7 @@ public class TestCompressedString extends TestCase {
         return new CompressedString(data, offset, length);
     }
 
+    @Test
     public void testContentEquality() {
         CompressedString cs;
 
@@ -87,6 +90,7 @@ public class TestCompressedString extends TestCase {
         assertTrue(Arrays.equals(cs.getData(), "hog".getBytes()));
     }
 
+    @Test
     public void testEquals() {
         assertTrue(cs().equals(cs("")));
         assertTrue(cs("abc").equals(cs("abc")));
@@ -103,6 +107,7 @@ public class TestCompressedString extends TestCase {
         assertFalse(cs("0BC").equals(cs("abc")));
     }
 
+    @Test
     public void testCompareTo() {
         assertTrue(cs().compareTo("") == 0);
         assertTrue(cs("abc").compareTo("abc") == 0);
@@ -122,6 +127,7 @@ public class TestCompressedString extends TestCase {
         assertTrue(cs("abc").compareTo("BBC") > 0);
     }
 
+    @Test
     public void testIsEmpty() {
         assertTrue(cs().isEmpty());
         assertTrue(cs("").isEmpty());
@@ -129,6 +135,7 @@ public class TestCompressedString extends TestCase {
         assertFalse(cs("0123456789").isEmpty());
     }
 
+    @Test
     public void testLength() {
         assertEquals(cs().length(), 0);
         assertEquals(cs("").length(), 0);
@@ -136,6 +143,7 @@ public class TestCompressedString extends TestCase {
         assertEquals(cs("0123456789").length(), 10);
     }
 
+    @Test
     public void testCharAt() {
         try {
             cs().charAt(0);
@@ -164,6 +172,7 @@ public class TestCompressedString extends TestCase {
         assertEquals(cs("abc").codePointCount(1, 2), "abc".codePointCount(1, 2));
     }
 
+    @Test
     public void testEqualsIgnoreCase() {
         assertTrue(cs().equalsIgnoreCase(""));
         assertTrue(cs("abc").equalsIgnoreCase("abc"));
@@ -180,6 +189,7 @@ public class TestCompressedString extends TestCase {
         assertFalse(cs("0BC").equalsIgnoreCase("abc"));
     }
 
+    @Test
     public void testCompareToIgnoreCase() {
         assertTrue(cs().compareToIgnoreCase("") == 0);
         assertTrue(cs("abc").compareToIgnoreCase("abc") == 0);
@@ -194,6 +204,7 @@ public class TestCompressedString extends TestCase {
         assertTrue(cs("BBC").compareToIgnoreCase("abc") > 0);
     }
 
+    @Test
     public void testRegionMatches() {
         assertTrue(cs("abcdefghij").regionMatches(false, 0, "abc", 0, 3));
         assertTrue(cs("abcdefghij").regionMatches(false, 1, "bcd", 0, 3));
@@ -212,6 +223,7 @@ public class TestCompressedString extends TestCase {
         assertFalse(cs("abCdeFghIj").regionMatches(true, 2, "0cE3", 1, 2));
     }
 
+    @Test
     public void testStartsWith() {
         assertTrue(cs("abc").startsWith("ab"));
         assertTrue(cs("abc").startsWith("abc"));
@@ -224,6 +236,7 @@ public class TestCompressedString extends TestCase {
         assertFalse(cs("abcdefg").startsWith("bce", 1));
     }
 
+    @Test
     public void testEndsWith() {
         assertTrue(cs("0123").endsWith("3"));
         assertTrue(cs("0123").endsWith("23"));
@@ -233,6 +246,7 @@ public class TestCompressedString extends TestCase {
         assertFalse(cs("0123").endsWith("4"));
     }
 
+    @Test
     public void testIndexOfChar() {
         assertEquals(cs("abcdef").indexOf('a'), "abcdef".indexOf('a'));
         assertEquals(cs("abcdef").indexOf('f'), "abcdef".indexOf('f'));

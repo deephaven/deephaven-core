@@ -1136,20 +1136,26 @@ class StaticChunkedCrossJoinStateManager
     private void verifyKeyHashes() {
         final int maxSize = tableHashPivot;
 
-        final ChunkSource.FillContext [] keyFillContext = makeFillContexts(keySources, SharedContext.makeSharedContext(), maxSize);
+        final ChunkSource.FillContext [] keyFillContext = new ChunkSource.FillContext[keySources.length];
         final WritableChunk [] keyChunks = getWritableKeyChunks(maxSize);
 
-        try (final WritableLongChunk<RowKeys> positions = WritableLongChunk.makeWritableChunk(maxSize);
+        try (final SharedContext sharedContext = SharedContext.makeSharedContext();
+             final SafeCloseableArray ignored = new SafeCloseableArray<>(keyFillContext);
+             final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
+             final WritableLongChunk<RowKeys> positions = WritableLongChunk.makeWritableChunk(maxSize);
              final WritableBooleanChunk exists = WritableBooleanChunk.makeWritableChunk(maxSize);
              final WritableIntChunk hashChunk = WritableIntChunk.makeWritableChunk(maxSize);
              final WritableLongChunk<RowKeys> tableLocationsChunk = WritableLongChunk.makeWritableChunk(maxSize);
-             final SafeCloseableArray ignored = new SafeCloseableArray<>(keyFillContext);
-             final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
+             final RowSet flatRowSet = RowSetFactory.flat(tableHashPivot);
              // @StateChunkName@ from \QLongChunk\E
              final WritableLongChunk stateChunk = WritableLongChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = slotSource.makeFillContext(maxSize)) {
 
-            slotSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
+            for (int ii = 0; ii < keySources.length; ++ii) {
+                keyFillContext[ii] = keySources[ii].makeFillContext(maxSize, sharedContext);
+            }
+
+            slotSource.fillChunk(fillContext, stateChunk, flatRowSet);
 
             ChunkUtils.fillInOrder(positions);
 

@@ -126,7 +126,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return true;
         }
         if (isSingleton()) {
-            if (FloatComparisons.eq(value, singletonValue)) {
+            if (eq(value, singletonValue)) {
                 singletonCount += count;
                 totalSize += count;
                 validate();
@@ -136,21 +136,21 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         final boolean added;
-        final float max = getMaxFloat();
-        if (FloatComparisons.gt(value, max)) {
+        final int maxComparison = FloatComparisons.compare(value, getMaxFloat());
+        if (maxComparison > 0) {
             maybeAccumulateAddition(value);
             appendMaximum(value, count);
             added = true;
-        } else if (FloatComparisons.eq(value, max)) {
+        } else if (maxComparison == 0) {
             addMaxCount(count);
             added = false;
         } else {
-            final float min = getMinFloat();
-            if (FloatComparisons.lt(value, min)) {
+            final int minComparison = FloatComparisons.compare(value, getMinFloat());
+            if (minComparison < 0) {
                 maybeAccumulateAddition(value);
                 prependMinimum(value, count);
                 added = true;
-            } else if (FloatComparisons.eq(value, min)) {
+            } else if (minComparison == 0) {
                 addMinCount(count);
                 added = false;
             } else {
@@ -169,7 +169,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     private boolean insertInterior(float value, long count) {
         if (leafCount == 1) {
             final int ip = upperBound(directoryValues, 0, size, value);
-            if (FloatComparisons.eq(directoryValues[ip], value)) {
+            if (eq(directoryValues[ip], value)) {
                 directoryCount[ip] += count;
                 totalSize += count;
                 return false;
@@ -197,7 +197,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int ip = upperBound(leafValue, 0, leafSz, value);
-        if (ip < leafSz && FloatComparisons.eq(leafValue[ip], value)) {
+        if (ip < leafSz && eq(leafValue[ip], value)) {
             leafCount[ip] += count;
             totalSize += count;
             return false;
@@ -277,7 +277,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             } else {
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
-                    if (FloatComparisons.eq(leafValues[rlpos], nextValue)) {
+                    if (eq(leafValues[rlpos], nextValue)) {
                         totalSize += counts.get(ripos);
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
@@ -634,7 +634,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (isSingleton()) {
-            if (length == 1 && FloatComparisons.eq(valuesToInsert.get(offset), singletonValue)) {
+            if (length == 1 && eq(valuesToInsert.get(offset), singletonValue)) {
                 // the only value being inserted is the one we already hold; just bump its count
                 singletonCount += counts.get(offset);
                 totalSize += counts.get(offset);
@@ -1092,6 +1092,16 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         return lo;
     }
 
+    /**
+     * Test two values for equality consistent with the ordering of this set; the set holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(float lhs, float rhs) {
+        // region equality function
+        return FloatComparisons.eq(lhs, rhs);
+        // endregion equality function
+    }
+
     // endregion
 
     // region Removal
@@ -1134,13 +1144,13 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         Assert.gtZero(count, "count");
         validate();
         if (isSingleton()) {
-            Assert.assertion(FloatComparisons.eq(value, singletonValue),
-                    "FloatComparisons.eq(value, singletonValue)");
+            Assert.assertion(eq(value, singletonValue),
+                    "eq(value, singletonValue)");
             Assert.leq(count, "count", singletonCount, "singletonCount");
             singletonCount -= count;
             totalSize -= count;
             if (singletonCount == 0) {
-                maybeAccumulateRemoval(value);
+                maybeAccumulateRemoval(singletonValue);
                 clear();
                 validate();
                 return true;
@@ -1150,8 +1160,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
         if (leafCount == 1) {
             final int pos = upperBound(directoryValues, 0, size, value);
-            Assert.assertion(pos < size && FloatComparisons.eq(directoryValues[pos], value),
-                    "pos < size && FloatComparisons.eq(directoryValues[pos], value)");
+            Assert.assertion(pos < size && eq(directoryValues[pos], value),
+                    "pos < size && eq(directoryValues[pos], value)");
             Assert.leq(count, "count", directoryCount[pos], "directoryCount[pos]");
             directoryCount[pos] -= count;
             totalSize -= count;
@@ -1159,7 +1169,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                 validate();
                 return false;
             }
-            maybeAccumulateRemoval(value);
+            maybeAccumulateRemoval(directoryValues[pos]);
             System.arraycopy(directoryValues, pos + 1, directoryValues, pos, size - pos - 1);
             System.arraycopy(directoryCount, pos + 1, directoryCount, pos, size - pos - 1);
             size--;
@@ -1175,8 +1185,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int pos = upperBound(leafValue, 0, leafSz, value);
-        Assert.assertion(pos < leafSz && FloatComparisons.eq(leafValue[pos], value),
-                "pos < leafSz && FloatComparisons.eq(leafValue[pos], value)");
+        Assert.assertion(pos < leafSz && eq(leafValue[pos], value),
+                "pos < leafSz && eq(leafValue[pos], value)");
         Assert.leq(count, "count", leafCount[pos], "leafCount[pos]");
         leafCount[pos] -= count;
         totalSize -= count;
@@ -1184,7 +1194,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             validate();
             return false;
         }
-        maybeAccumulateRemoval(value);
+        maybeAccumulateRemoval(leafValue[pos]);
         System.arraycopy(leafValue, pos + 1, leafValue, pos, leafSz - pos - 1);
         System.arraycopy(leafCount, pos + 1, leafCount, pos, leafSz - pos - 1);
         leafSizes[leaf] = leafSz - 1;
@@ -1240,8 +1250,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             // by contract we only remove values that are present, so a singleton can only be asked to remove its one
             // value
             Assert.eq(length, "length", 1);
-            Assert.assertion(FloatComparisons.eq(valuesToRemove.get(offset), singletonValue),
-                    "FloatComparisons.eq(valuesToRemove.get(offset), singletonValue)");
+            Assert.assertion(eq(valuesToRemove.get(offset), singletonValue),
+                    "eq(valuesToRemove.get(offset), singletonValue)");
             singletonCount -= counts.get(offset);
             totalSize -= counts.get(offset);
             Assert.geqZero(singletonCount, "singletonCount");
@@ -1488,11 +1498,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             if (rlpos == sz.get()) {
                 break;
             }
+            Assert.assertion(eq(leafValues[rlpos], removeValue), "eq(leafValues[rlpos], removeValue)");
             leafCounts[rlpos] -= counts.get(ripos);
             totalSize -= counts.get(ripos);
             Assert.geqZero(leafCounts[rlpos], "leafCounts[rlpos]");
             if (leafCounts[rlpos] == 0) {
-                maybeAccumulateRemoval(removeValue);
+                maybeAccumulateRemoval(leafValues[rlpos]);
                 // we need to do some compaction at the end of this iteration
                 if (cl == -1) {
                     removeContext.compactionLocations[cl = 0] = rlpos;
@@ -2012,7 +2023,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the back of the destination (merging if it already holds that value as its maximum) and shed them.
-            if (destination.size > 0 && FloatComparisons.eq(singletonValue, destination.getMaxFloat())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMaxFloat())) {
                 destination.addMaxCount(count);
             } else {
                 destination.appendMaximum(singletonValue, count);
@@ -2028,7 +2039,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return;
         }
 
-        if (destination.size > 0 && FloatComparisons.eq(getMinFloat(), destination.getMaxFloat())) {
+        if (destination.size > 0 && eq(getMinFloat(), destination.getMaxFloat())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -2471,7 +2482,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the front of the destination (merging if it already holds that value as its minimum) and shed them.
-            if (destination.size > 0 && FloatComparisons.eq(singletonValue, destination.getMinFloat())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMinFloat())) {
                 destination.addMinCount(count);
             } else {
                 destination.prependMinimum(singletonValue, count);
@@ -2487,7 +2498,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return;
         }
 
-        if (destination.size > 0 && FloatComparisons.eq(getMaxFloat(), destination.getMinFloat())) {
+        if (destination.size > 0 && eq(getMaxFloat(), destination.getMinFloat())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {

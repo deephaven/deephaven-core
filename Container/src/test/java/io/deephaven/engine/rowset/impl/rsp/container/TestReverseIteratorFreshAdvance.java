@@ -5,6 +5,7 @@ package io.deephaven.engine.rowset.impl.rsp.container;
 
 import org.junit.Test;
 
+import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.containersHoldingRange;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -15,22 +16,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestReverseIteratorFreshAdvance {
 
-    private static Container[] containersHolding(final int begin, final int endExclusive) {
-        final ArrayContainer array = new ArrayContainer(endExclusive - begin);
-        for (int v = begin; v < endExclusive; ++v) {
-            array.iset((short) v);
-        }
-        return new Container[] {
-                array,
-                new RunContainer(begin, endExclusive),
-                new BitmapContainer().iadd(begin, endExclusive),
-                Container.singleRange(begin, endExclusive),
-        };
-    }
-
     @Test
     public void testFreshAdvanceAboveTheContainerLandsOnItsLastValue() {
-        for (final Container c : containersHolding(32766, 32769)) {
+        for (final Container c : containersHoldingRange(32766, 32769)) {
             final String name = c.getClass().getSimpleName();
             final ShortAdvanceIterator it = c.getReverseShortIterator();
             assertTrue(name + ": advance from a fresh iterator", it.advance(65535));
@@ -41,7 +29,7 @@ public class TestReverseIteratorFreshAdvance {
 
     @Test
     public void testFreshAdvanceInsideTheContainer() {
-        for (final Container c : containersHolding(10, 21)) {
+        for (final Container c : containersHoldingRange(10, 21)) {
             final String name = c.getClass().getSimpleName();
             final ShortAdvanceIterator it = c.getReverseShortIterator();
             assertTrue(name + ": advance to a key inside", it.advance(15));
@@ -49,7 +37,7 @@ public class TestReverseIteratorFreshAdvance {
             assertTrue(name + ": the value is in the container", c.contains((short) it.currAsInt()));
         }
         // Exactly at the last value.
-        for (final Container c : containersHolding(10, 21)) {
+        for (final Container c : containersHoldingRange(10, 21)) {
             final String name = c.getClass().getSimpleName();
             final ShortAdvanceIterator it = c.getReverseShortIterator();
             assertTrue(name + ": advance to the last value", it.advance(20));
@@ -60,7 +48,7 @@ public class TestReverseIteratorFreshAdvance {
     /** Stepping first and then advancing already worked; keep it working. */
     @Test
     public void testAdvanceAfterStepping() {
-        for (final Container c : containersHolding(10, 21)) {
+        for (final Container c : containersHoldingRange(10, 21)) {
             final String name = c.getClass().getSimpleName();
             final ShortAdvanceIterator it = c.getReverseShortIterator();
             assertEquals(name + ": first value going down", 20, it.nextAsInt());

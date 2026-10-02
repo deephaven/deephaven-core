@@ -1,6 +1,5 @@
 ---
 title: Date-time literals in query strings
-sidebar_label: Date-time
 ---
 
 Date-time literals in query strings directly correspond to data types from the [java.time](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/package-summary.html) package. Deephaven leverages these Java date-time types to perform date-time arithmetic and comparisons within queries, allowing you to work with dates, times, durations, periods, and more using familiar and precise formats.

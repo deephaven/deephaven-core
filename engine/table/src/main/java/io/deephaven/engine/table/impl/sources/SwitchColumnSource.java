@@ -70,8 +70,12 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
         final int chunkCapacity;
         final SharedContext sharedContext;
 
+        /** The inner context for {@link #currentSource}, and the delegate it was created for. */
         private CT currentContext;
+        private ColumnSource<T> currentContextSource;
+        /** The inner context for {@link #prevSource}, and the delegate it was created for. */
         private CT prevContext;
+        private ColumnSource<T> prevContextSource;
 
         private SwitchContext(final int chunkCapacity, final SharedContext sharedContext) {
             this.chunkCapacity = Require.geqZero(chunkCapacity, "chunkCapacity");
@@ -80,18 +84,35 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
         abstract CT makeContext(@NotNull final ColumnSource innerSource);
 
+        /**
+         * A context created for one delegate must not be handed to a different delegate, which may be a different
+         * implementation with its own context type. Callers may reuse this switch context across
+         * {@link #setNewCurrent(ColumnSource)} calls, so the inner context is recreated whenever the delegate it was
+         * made for is no longer the one in use.
+         */
         public CT getCurrentContext() {
-            return currentContext == null
-                    ? currentContext = makeContext(currentSource)
-                    : currentContext;
+            if (currentContext == null || currentContextSource != currentSource) {
+                if (currentContext != null) {
+                    currentContext.close();
+                }
+                currentContext = makeContext(currentSource);
+                currentContextSource = currentSource;
+            }
+            return currentContext;
         }
 
         public CT getPrevContext() {
-            return prevInvalid()
-                    ? getCurrentContext()
-                    : prevContext == null
-                            ? prevContext = makeContext(prevSource)
-                            : prevContext;
+            if (prevInvalid()) {
+                return getCurrentContext();
+            }
+            if (prevContext == null || prevContextSource != prevSource) {
+                if (prevContext != null) {
+                    prevContext.close();
+                }
+                prevContext = makeContext(prevSource);
+                prevContextSource = prevSource;
+            }
+            return prevContext;
         }
 
         @Override

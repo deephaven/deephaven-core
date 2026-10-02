@@ -1,6 +1,5 @@
 ---
 title: Python classes and objects in query strings
-sidebar_label: Classes & Objects
 ---
 
 The ability to use your own custom Python [variables](./python-variables.md), [functions](./python-functions.md), classes, and objects in Deephaven query strings is one of its most powerful features. The use of Python classes in query strings follows some basic rules, which are outlined in this guide.

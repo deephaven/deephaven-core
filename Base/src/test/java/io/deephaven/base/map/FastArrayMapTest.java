@@ -5,13 +5,15 @@ package io.deephaven.base.map;
 
 import io.deephaven.base.array.FastArrayTest;
 import io.deephaven.base.array.TrialClassA;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.io.*;
 import java.util.Random;
 import java.util.function.Supplier;
 
-public class FastArrayMapTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class FastArrayMapTest {
 
     private FastArrayMap<LongWrapper, TrialClassA> constructTestMap() {
         Supplier<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject = new FactoryObjectToObject();
@@ -32,6 +34,7 @@ public class FastArrayMapTest extends TestCase {
     private static LongWrapper dummyKey1 = new LongWrapper(913L);
     private static LongWrapper dummyKey2 = new LongWrapper(993L);
 
+    @Test
     public void testAdding() {
         FastArrayMap<LongWrapper, TrialClassA> map = constructTestMap();
         assertEquals(0, map.size());
@@ -231,6 +234,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key10).equals(value10));
     }
 
+    @Test
     public void testClear() {
         FastArrayMap<LongWrapper, TrialClassA> map = constructTestMap();
         assertEquals(0, map.size());
@@ -278,6 +282,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(new LongWrapper(6L)) == null);
     }
 
+    @Test
     public void testRemove() {
         FastArrayMap<LongWrapper, TrialClassA> map = constructTestMap();
         assertEquals(0, map.size());
@@ -435,44 +440,54 @@ public class FastArrayMapTest extends TestCase {
         checkExternalization(mapInput, mapReceiver);
     }
 
+    @Test
     public void testExternalizationInput0Receiver0() throws Exception {
         checkExternalization(0, 0);
     }
 
+    @Test
     public void testExternalizationInput1Receiver0() throws Exception {
         checkExternalization(1, 0);
     }
 
+    @Test
     public void testExternalizationInputManyReceiver0() throws Exception {
         checkExternalization(6, 0);
     }
 
+    @Test
     public void testExternalizationInput0Receiver1() throws Exception {
         checkExternalization(0, 1);
     }
 
+    @Test
     public void testExternalizationInput1Receiver1() throws Exception {
         checkExternalization(1, 1);
     }
 
+    @Test
     public void testExternalizationInputManyReceiver1() throws Exception {
         checkExternalization(6, 1);
     }
 
+    @Test
     public void testExternalizationInput0ReceiverMany() throws Exception {
         checkExternalization(0, 7);
     }
 
+    @Test
     public void testExternalizationInput1ReceiverMany() throws Exception {
         checkExternalization(1, 7);
     }
 
+    @Test
     public void testExternalizationInputManyReceiverMany() throws Exception {
         checkExternalization(6, 5);
         checkExternalization(6, 6);
         checkExternalization(6, 7);
     }
 
+    @Test
     public void testExternalizationScan() throws Exception {
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
@@ -551,18 +566,22 @@ public class FastArrayMapTest extends TestCase {
         }
     }
 
+    @Test
     public void testCopyValuesDeepNoItems() {
         checkCopyValuesDeep(0);
     }
 
+    @Test
     public void testCopyValuesDeepOneItem() {
         checkCopyValuesDeep(1);
     }
 
+    @Test
     public void testCopyValuesDeepManyItems() {
         checkCopyValuesDeep(6);
     }
 
+    @Test
     public void testCopyValuesDeepGeneralScan() {
         for (int nItems = 0; nItems < 10; nItems++) {
             checkCopyValuesDeep(nItems);
@@ -594,18 +613,22 @@ public class FastArrayMapTest extends TestCase {
         }
     }
 
+    @Test
     public void testDeepCloneNoItems() {
         checkDeepClone(0);
     }
 
+    @Test
     public void testDeepCloneOneItem() {
         checkDeepClone(1);
     }
 
+    @Test
     public void testDeepCloneManyItems() {
         checkDeepClone(8);
     }
 
+    @Test
     public void testDeepCloneManyItemsGeneralScan() {
         for (int nItems = 0; nItems < 10; nItems++) {
             checkDeepClone(nItems);

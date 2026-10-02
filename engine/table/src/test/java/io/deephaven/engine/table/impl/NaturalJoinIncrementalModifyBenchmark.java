@@ -17,10 +17,13 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.test.types.OutOfBandTest;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.LinkedHashMap;
 import java.util.Random;
+
+import static org.junit.Assert.*;
 
 /**
  * A throughput/latency micro-benchmark (written as a unit test so it can be driven by the controlled update graph) that
@@ -113,6 +116,7 @@ public class NaturalJoinIncrementalModifyBenchmark extends RefreshingTableTestCa
     /** A persistent permutation of [0, size); a partial Fisher-Yates shuffle picks a fresh random subset each cycle. */
     private int[] permutation;
 
+    @Test
     public void testNaturalJoinIncrementalModify() {
         final int numKeys = NUM_KEYS;
         final int size = SIZE;

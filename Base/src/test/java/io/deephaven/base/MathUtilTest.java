@@ -3,10 +3,13 @@
 //
 package io.deephaven.base;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class MathUtilTest extends TestCase {
+import static org.junit.Assert.*;
 
+public class MathUtilTest {
+
+    @Test
     public void testGCD() {
         check(0, 0, 0);
         check(0, 1, 1);
@@ -25,6 +28,7 @@ public class MathUtilTest extends TestCase {
         assertEquals(expect, MathUtil.gcd(-b, -a));
     }
 
+    @Test
     public void testRoundUpPowerOf2() {
         pow2(0, 1);
         pow2(1, 1);
@@ -39,6 +43,7 @@ public class MathUtilTest extends TestCase {
         }
     }
 
+    @Test
     public void testRoundUpArraySize() {
         arraySize(0, 1);
         arraySize(1, 1);

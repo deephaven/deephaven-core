@@ -23,7 +23,8 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
     }
 
     private static Iterator<Table> splitByMaxRows(final Table input, final long maxRows) {
-        if (maxRows == Long.MAX_VALUE) {
+        // An empty input would compute zero RowGroups below; emit it as a single RowGroup, as SingleGroup does
+        if (maxRows == Long.MAX_VALUE || input.isEmpty()) {
             return List.of(input).iterator();
         }
         final long numRowGroups = (input.size() / maxRows) + ((input.size() % maxRows) > 0 ? 1 : 0);
@@ -32,7 +33,8 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
     private static Iterator<Table> splitByMaxGroups(final Table table, final long numGroups) {
         if (numGroups < 1) {
-            throw new IllegalArgumentException("Number of groups must be at least 1, got: " + numGroups);
+            // Unreachable: RowGroupInfo validates its arguments, and splitByMaxRows handles the empty input
+            throw new IllegalStateException("Number of groups must be at least 1, got: " + numGroups);
         } else if (numGroups == 1) {
             return List.of(table).iterator();
         }

@@ -24,6 +24,7 @@ import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.junit.Test;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -53,6 +54,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMergedTableKeyColumnsGetREE() {
         // Tests detectStructuralRunEndEncoding directly: merged key columns always get REE
         final Table table = newTable(
@@ -73,6 +75,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(encodings).doesNotContainKey("Size");
     }
 
+    @Test
     public void testNonMergedTableNoAutoREE() {
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "MSFT"),
@@ -85,6 +88,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertFieldIsNotREE(schema, "Exchange");
     }
 
+    @Test
     public void testMergedTableWithoutKeyColumnsAttributeNoAutoREE() {
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "MSFT"),
@@ -97,6 +101,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertFieldIsNotREE(schema, "Exchange");
     }
 
+    @Test
     public void testSymbolTableColumnGetsStructuralDictionary() throws Exception {
         // detectStructuralDictionaryEncoding keys off whether a source is symbol-table backed, NOT off whether it is a
         // String. To make the negative meaningful both columns are Strings; they differ only in cardinality:
@@ -133,6 +138,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testClusteredSymbolColumnGetsBothDictionaryAndRee() throws Exception {
         // A clustered low-cardinality String column read back from Parquet is the canonical doubly-encoded candidate:
         // it is symbol-table backed (structural dictionary fires) AND laid out in long adjacent runs (REE sampling
@@ -173,6 +179,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testStructuralDictionaryComposesWithSampledReeForClusteredSymbolColumn() throws Exception {
         // Regression anchor for the structural-dictionary / REE-sampling interaction.
         //
@@ -226,6 +233,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testStructuralReeComposesWithSampledDictForMergedKeyColumn() {
         // Mirror-image regression anchor to testStructuralDictionaryComposesWithSampledReeForClusteredSymbolColumn.
         //
@@ -278,6 +286,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                 .isEqualTo(reeAndDict);
     }
 
+    @Test
     public void testSamplingDoesNotAddDictionaryToSingleValueColumn() {
         // A SingleValueColumnSource is a single run of one distinct value: REE is the whole story and a dictionary
         // would be pure overhead. Structural REE marks it, and the augmenting sampling pass must NOT add a dictionary
@@ -298,6 +307,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                 .isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
+    @Test
     public void testExplicitBarrageSchemaAttributeSuppressesAutoREE() {
         final Table base = newTable(
                 stringCol("Symbol", "AAPL", "MSFT"),
@@ -315,6 +325,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertFieldIsNotREE(schema, "Exchange");
     }
 
+    @Test
     public void testSingleValueColumnSourceGetREE() {
         // update() with a constant expression produces SingleValueColumnSource for each column
         final Table table = emptyTable(100).update("X = 42", "Y = `hello`", "Z = 1.5");
@@ -327,6 +338,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected.get("Z")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
+    @Test
     public void testNullValueColumnSourceGetREE() {
         // NullValueColumnSource represents a column that is always null (e.g. outer-join missing side)
         // and is a trivial single-run case for REE.
@@ -339,6 +351,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
+    @Test
     public void testREEFieldStructureInt32RunEndsForLargeBatch() {
         // Verify the flatbuf IPC path: Int32 run_ends regardless of batch size.
         // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
@@ -368,6 +381,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(((ArrowType.Int) runEnds.getType()).getIsSigned()).isTrue();
     }
 
+    @Test
     public void testREEFieldStructure() {
         // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
         final Table table = newTable(
@@ -397,6 +411,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(values.getType().getTypeID()).isEqualTo(ArrowType.ArrowTypeID.Utf8);
     }
 
+    @Test
     public void testConvertArrowSchemaRoundtrip() {
         // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
         final Table table = newTable(
@@ -432,6 +447,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(converted.tableDef.getColumn("Size").getDataType()).isEqualTo(long.class);
     }
 
+    @Test
     public void testSamplingDetectsRepetitiveColumn() {
         // Calls sampleColumnsForEncoding directly (REE detection on, dictionary off) to validate sampling logic.
         final int N = 100;
@@ -448,6 +464,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected.get("Price")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
+    @Test
     public void testSamplingSkipsDistinctColumn() {
         // All-distinct values produce a run ratio of 1.0, above the threshold — no REE.
         final int N = 100;
@@ -463,6 +480,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected).doesNotContainKey("X");
     }
 
+    @Test
     public void testSamplingMixedTable() {
         // Repetitive column (runs of 4) gets REE; all-distinct column does not.
         final int N = 100;
@@ -481,6 +499,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected).doesNotContainKey("X");
     }
 
+    @Test
     public void testSamplingSkippedForSmallTable() {
         // Tables with fewer than REE_MIN_SAMPLE_SIZE rows return early without sampling.
         final int N = BarrageUtil.REE_MIN_SAMPLE_SIZE - 1;
@@ -496,6 +515,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected).doesNotContainKey("Y");
     }
 
+    @Test
     public void testSamplingDetectsLowCardinalityStringColumn() {
         // A String column with few distinct values, but not clustered (values alternate every row so run-end
         // encoding would not help). Dictionary detection on, REE off.
@@ -513,6 +533,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
     }
 
+    @Test
     public void testSamplingSkipsHighCardinalityStringColumn() {
         // All-distinct String values produce a cardinality ratio of 1.0, above the threshold — no dictionary.
         final int N = 100;
@@ -528,6 +549,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected).doesNotContainKey("Symbol");
     }
 
+    @Test
     public void testSamplingDictOnlyForObjectColumns() {
         // Primitive columns are never dictionary-encoded even when highly repetitive; REE is the better fit.
         final int N = 100;
@@ -543,6 +565,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(detected).doesNotContainKey("X");
     }
 
+    @Test
     public void testSamplingComposesReeAndDictForClusteredStrings() {
         // A clustered low-cardinality String column shows an advantage for both facets, so sampling composes them
         // into a doubly-encoded RunEndEncoded<Dictionary<...>>.
@@ -561,6 +584,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                 ColumnEncoding.of(ColumnEncoding.RunEndWidth.INT32, ColumnEncoding.DictWidth.INT32));
     }
 
+    @Test
     public void testExplicitReeSchemaHonoredWhenGlobalDisabled() {
         // Even when REE_AUTO_DETECT_ENABLED is false, a user-supplied BARRAGE_SCHEMA_ATTRIBUTE with
         // REE columns must be passed through verbatim.
@@ -608,6 +632,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                 .isEqualTo(ArrowType.ArrowTypeID.RunEndEncoded);
     }
 
+    @Test
     public void testUserSuppliedInt16ReeSchemaPreservesWidth() {
         final Table base = newTable(intCol("X", 1, 2), stringCol("Y", "a", "b"));
         final Schema userSchema = buildReeSchema("X", Types.MinorType.SMALLINT, "Y", Types.MinorType.INT);
@@ -619,6 +644,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertRunEndsWidth(schema, "Y", 32);
     }
 
+    @Test
     public void testUserSuppliedInt64ReeSchemaPreservesWidth() {
         final Table base = newTable(intCol("X", 1, 2), stringCol("Y", "a", "b"));
         final Schema userSchema = buildReeSchema("X", Types.MinorType.BIGINT, "Y", Types.MinorType.INT);
@@ -672,6 +698,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     // Dictionary encoding schema tests
     // -------------------------------------------------------------------------
 
+    @Test
     public void testMakeSchemaWithDictionaryInt32() {
         final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
         final Schema schema = BarrageUtil.makeSchema(
@@ -686,6 +713,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(enc.getId()).isEqualTo(0L);
     }
 
+    @Test
     public void testMakeSchemaWithDictionaryInt8() {
         final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
         final Schema schema = BarrageUtil.makeSchema(
@@ -700,6 +728,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(enc.getId()).isEqualTo(0L);
     }
 
+    @Test
     public void testMakeSchemaWithDictionaryInt16() {
         final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
         final Schema schema = BarrageUtil.makeSchema(
@@ -714,6 +743,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(enc.getId()).isEqualTo(0L);
     }
 
+    @Test
     public void testTwoDictionaryColumnsGetSequentialIds() {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofString("Symbol"),
@@ -734,6 +764,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(new long[] {symbolId, exchangeId}).containsExactlyInAnyOrder(0L, 1L);
     }
 
+    @Test
     public void testEncodingsFromSchemaRoundTripsDictionary() {
         final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
         final Schema dictSchema = BarrageUtil.makeSchema(
@@ -766,6 +797,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     // Combined REE + dictionary (doubly-encoded) schema tests
     // -------------------------------------------------------------------------
 
+    @Test
     public void testMakeSchemaComposesReeOverDictionary() {
         final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
         final Schema schema = BarrageUtil.makeSchema(
@@ -779,6 +811,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertFieldIsReeOverDictionary(schema, "Symbol", 32, 32);
     }
 
+    @Test
     public void testMakeSchemaComposesReeOverDictionaryNonDefaultWidths() {
         final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
         final Schema schema = BarrageUtil.makeSchema(
@@ -791,6 +824,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertFieldIsReeOverDictionary(schema, "Symbol", 16, 8);
     }
 
+    @Test
     public void testEncodingsFromSchemaRoundTripsReeDictionary() {
         final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
         final Schema composed = BarrageUtil.makeSchema(
@@ -808,6 +842,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertFieldIsReeOverDictionary(result, "Symbol", 32, 16);
     }
 
+    @Test
     public void testMakeSchemaComposesReeOverDictionaryColumnsAsList() {
         final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
         final Schema schema = BarrageUtil.makeSchema(

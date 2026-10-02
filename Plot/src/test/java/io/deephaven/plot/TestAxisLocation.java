@@ -3,13 +3,16 @@
 //
 package io.deephaven.plot;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Test AxisLocation.
  */
-public class TestAxisLocation extends BaseArrayTestCase {
+public class TestAxisLocation {
 
+    @Test
     public void testLocation() {
         final BaseFigureImpl fig1 = new BaseFigureImpl(3, 2);
         final ChartImpl c11 = fig1.newChart(2, 1);

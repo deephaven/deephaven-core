@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
+import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger.StatType;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
@@ -672,9 +673,9 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (logger) {
-                flush(now, logger, deserialize, "DeserializationMillis");
-                flush(now, logger, processUpdate, "ProcessUpdateMillis");
-                flush(now, logger, refresh, "RefreshMillis");
+                flush(now, logger, deserialize, StatType.DESERIALIZATION_NANOS);
+                flush(now, logger, processUpdate, StatType.PROCESS_UPDATE_NANOS);
+                flush(now, logger, refresh, StatType.REFRESH_NANOS);
             }
         }
 

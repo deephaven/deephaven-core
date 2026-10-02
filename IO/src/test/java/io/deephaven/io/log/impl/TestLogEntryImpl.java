@@ -6,26 +6,29 @@ package io.deephaven.io.log.impl;
 import io.deephaven.io.log.LogBufferPool;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.log.LogSink;
-import junit.framework.TestCase;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.nio.ByteBuffer;
 
-public class TestLogEntryImpl extends TestCase {
+public class TestLogEntryImpl {
 
     Mockery context;
     LogBufferPool pool;
     LogSink sink;
 
+    @Before
     public void setUp() throws Exception {
         context = new Mockery();
         pool = context.mock(LogBufferPool.class);
         sink = context.mock(LogSink.class);
     }
 
+    @Test
     public void testStartWritten() {
         final LogEntryImpl SUT = new LogEntryImpl(pool);
         final ByteBuffer buf = ByteBuffer.allocate(LogOutputBaseImpl.START_SIZE_BYTES);

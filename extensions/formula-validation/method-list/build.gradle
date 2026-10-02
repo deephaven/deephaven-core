@@ -9,6 +9,8 @@ dependencies {
     shadow project(':Util')
     shadow project(':engine-validation')
     implementation libs.rewrite.java
+    // openrewrite brings an older Jackson; align the shaded copy with our version
+    implementation platform(libs.jackson.bom)
 
     testImplementation project(":engine-test-utils")
     testImplementation project(":extensions-validation-base")

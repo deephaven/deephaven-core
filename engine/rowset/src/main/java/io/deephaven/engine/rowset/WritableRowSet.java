@@ -46,6 +46,22 @@ public interface WritableRowSet extends RowSet {
     void insert(RowSet added);
 
     /**
+     * Add all of the keys in {@code other} to this RowSet if they are not already present, leaving {@code other} empty.
+     * <p>
+     * Unlike {@link #insert(RowSet)}, this is allowed to consume {@code other}: either side's storage may be reused for
+     * the result, so the implementation can mutate whichever of the two is cheaper to edit rather than always editing
+     * this one. Callers that were going to discard {@code other} right after the insert should prefer this,
+     * particularly when {@code other} is the larger or denser side, or holds the lower keys.
+     * <p>
+     * {@code other} stays open and usable, and its owner must still {@link #close() close} it.
+     *
+     * @param other The RowSet whose keys to take, emptied by this call
+     * @throws IllegalArgumentException If {@code other} is this RowSet, which has no answer: the union with ourselves
+     *         is the keys we already hold, and emptying the argument would take them away
+     */
+    void subsume(WritableRowSet other);
+
+    /**
      * Remove a single key from this RowSet if it's present.
      *
      * @param key The key to remove

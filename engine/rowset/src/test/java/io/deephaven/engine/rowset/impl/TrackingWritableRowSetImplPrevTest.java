@@ -181,6 +181,31 @@ public class TrackingWritableRowSetImplPrevTest {
     }
 
     @Test
+    public void testPrevViewRejectsEmptyRangeMutators() {
+        final TrackingWritableRowSet ix = RowSetFactory.fromKeys(1, 2, 3).toTracking();
+        final WritableRowSetImpl prev = (WritableRowSetImpl) ix.prev();
+        // A range holding no keys is a no-op on a writable rowset, but the unmodifiable prev view must still throw.
+        for (final long[] range : new long[][] {{5, 4}, {-10, -1}, {-1, -10}}) {
+            try {
+                prev.removeRange(range[0], range[1]);
+                org.junit.Assert.fail("expected UnsupportedOperationException from removeRange");
+            } catch (UnsupportedOperationException expected) {
+            }
+            try {
+                prev.retainRange(range[0], range[1]);
+                org.junit.Assert.fail("expected UnsupportedOperationException from retainRange");
+            } catch (UnsupportedOperationException expected) {
+            }
+            try {
+                prev.insertRange(range[0], range[1]);
+                org.junit.Assert.fail("expected UnsupportedOperationException from insertRange");
+            } catch (UnsupportedOperationException expected) {
+            }
+        }
+        ix.close();
+    }
+
+    @Test
     public void testCloseReleasesPrevReference() {
         RspBitmap rb = RspBitmap.makeEmpty();
         rb = rb.addRange(0, 9);

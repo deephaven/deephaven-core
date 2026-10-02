@@ -31,7 +31,12 @@ public interface SingleRangeMixin extends RowSequence {
         return larc.accept(rangeStart(), rangeEnd());
     }
 
-    default RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
+    default RowSequence getRowSequenceByPosition(final long startPositionInclusiveIn, final long lengthIn) {
+        if (lengthIn <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long startPositionInclusive = Math.max(startPositionInclusiveIn, 0);
+        final long length = startPositionInclusiveIn < 0 ? startPositionInclusiveIn + lengthIn : lengthIn;
         // A length of zero or less asks for nothing. Falling through with a negative one would build a row sequence
         // whose end lies before its start, reporting a negative size rather than an empty one.
         if (startPositionInclusive >= size() || length <= 0) {

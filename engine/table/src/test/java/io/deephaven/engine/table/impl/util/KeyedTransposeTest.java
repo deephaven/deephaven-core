@@ -15,11 +15,13 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 public class KeyedTransposeTest extends RefreshingTableTestCase {
     final Table staticSource = TableTools.newTable(
@@ -34,6 +36,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
     /**
      * Test the JavaDoc example for {@link KeyedTranspose} method.
      */
+    @Test
     public void testJavaDocExample() {
         Table staticSource = TableTools.newTable(
                 stringCol("Date", "2025-08-05", "2025-08-05", "2025-08-06", "2025-08-07"),
@@ -48,6 +51,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testOneAggOneByColWithInitialGroups() {
         Table initialGroups = TableTools.newTable(stringCol("Level", "ERROR", "WARN", "INFO"))
                 .join(staticSource.selectDistinct("Date", "Host"));
@@ -63,6 +67,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testOneAggOneByColNoInitialGroups() {
         Table initialGroups = TableTools.emptyTable(0);
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")), colsOf("Date", "Host"),
@@ -77,6 +82,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testTwoAggOneByCol() {
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count"), AggSum("Sum=Cat")),
                 colsOf("Date", "Host"), colsOf("Level"));
@@ -93,6 +99,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testOneAggTwoByCol() {
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count")),
                 colsOf("Date", "Host"), colsOf("Level", "Cat"));
@@ -108,6 +115,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testTwoAggTwoByColWithInitialGroups() {
         Table initialGroups = TableTools.newTable(stringCol("Level", "INFO", "WARN", "ERROR"),
                 intCol("Cat", 3, 2, 1)).join(staticSource.selectDistinct("Date", "Host"));
@@ -132,6 +140,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testTwoAggTwoByColNoInitialGroups() {
         Table t = KeyedTranspose.keyedTranspose(staticSource, List.of(AggCount("Count"), AggSum("Sum=Cat")),
                 colsOf("Date", "Host"), colsOf("Level", "Cat"));
@@ -152,6 +161,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testTwoAggTwoByColEmptySource() {
         Table initialGroups = TableTools.newTable(stringCol("Level", "INFO", "WARN", "ERROR"),
                 intCol("Cat", 3, 2, 1)).join(staticSource.selectDistinct("Date", "Host"));
@@ -171,6 +181,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testOneAggOneByColWithIllegalValues() {
         Table initialGroups = TableTools.newTable(floatCol("BadInt", 0.1f, 20, NULL_FLOAT, -30),
                 stringCol("BadStr", "A-B", "C D", "E.F", NULL_STRING))
@@ -189,6 +200,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    @Test
     public void testEmptyTableForSource() {
         Table emptySource = TableTools.newTable(stringCol("Date"), stringCol("Level"));
         try {
@@ -202,6 +214,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testNewRow() {
         testNewRow(KeyedTranspose.NewColumnBehavior.IGNORE);
         testNewRow(KeyedTranspose.NewColumnBehavior.FAIL);

@@ -1,6 +1,5 @@
 ---
 title: Import and Export Data
-sidebar_label: Data I/O
 ---
 
 Data I/O is mission-critical for any real-time data analysis platform. Deephaven supports a wide variety of data sources and formats, including [CSV](../../reference/cheat-sheets/csv.md), [Parquet](../../reference/cheat-sheets/parquet.md), [Kafka](../../reference/cheat-sheets/kafka.md), and more. This document covers those formats in Deephaven.

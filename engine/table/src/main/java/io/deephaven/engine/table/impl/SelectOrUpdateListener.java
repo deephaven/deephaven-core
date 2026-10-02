@@ -109,13 +109,17 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                 },
                 error -> {
                     if (!hasNotified.getAndSet(true)) {
-                        handleException(error);
+                        handleException(error, acquiredUpdate);
                     }
                 });
     }
 
-    private void handleException(Exception e) {
+    private void handleException(final Exception e, final TableUpdate upstream) {
         try {
+            // The job scheduler delivers layer failures here instead of letting them escape onUpdate, so
+            // InstrumentedTableListenerBase never logs them; log here so that the failure identifies this listener.
+            logUncaughtException(e, upstream);
+            failed = true;
             onFailure(e, getEntry());
         } finally {
             updateInProgress = false;

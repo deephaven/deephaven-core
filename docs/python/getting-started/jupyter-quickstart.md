@@ -1,6 +1,5 @@
 ---
 title: Deephaven Community Core Quickstart for Jupyter
-sidebar_label: Jupyter Quickstart
 ---
 
 Deephaven Community Core + [Jupyter](https://jupyter.org) is a powerful real-time data science workflow that few frameworks can hope to match. You can start and use a Deephaven server directly from Jupyter with [pip-installed Deephaven](../getting-started/pip-install.md). Alternatively, you can use the [Deephaven Python client](/core/client-api/python/) from Jupyter to connect to an already-running Deephaven server.

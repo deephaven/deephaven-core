@@ -2045,6 +2045,42 @@ public class SortedRangesTest {
         assertEquals(sr.last(), sr.get(sr.getCardinality() - 1));
     }
 
+    /**
+     * {@link SortedRanges#packedGallopingSearch} is documented as {@link SortedRanges#packedBinarySearch} with a
+     * galloping bracket in front of it, so the two have to agree everywhere: on the position they report, and on the
+     * sign that says whether the target was present.
+     */
+    @Test
+    public void testPackedGallopingSearchAgreesWithBinarySearch() {
+        final long[][] shapes = {
+                {0, 0},
+                {0, 0, 2, 2, 4, 4},
+                {0, 10},
+                {0, 10, 20, 30, 40, 40, 50, 60},
+                {5, 5, 100, 200, 1000, 1000, 5000, 9000},
+        };
+        for (final long[] shape : shapes) {
+            SortedRanges sr = SortedRanges.makeEmpty();
+            for (int i = 0; i < shape.length; i += 2) {
+                sr = sr.appendRange(shape[i], shape[i + 1]);
+                assertNotNull(sr);
+            }
+            final String m = "shape==" + Arrays.toString(shape);
+            final long last = sr.last();
+            for (int startPos = 0; startPos < sr.count(); ++startPos) {
+                if (sr.packedGet(startPos) < 0) {
+                    // The end of a range; neither search takes one as a starting position.
+                    continue;
+                }
+                for (long v = sr.first(); v <= last + 2; ++v) {
+                    final String m2 = m + " && startPos==" + startPos + " && v==" + v;
+                    assertEquals(m2, sr.unpackedBinarySearch(v, startPos),
+                            sr.packedGallopingSearch(sr.pack(v), startPos));
+                }
+            }
+        }
+    }
+
     private static void checkEquals(final String m, final LongArrayList vs, final SortedRanges sr) {
         checkEquals(m, vs, vs.size(), sr);
     }

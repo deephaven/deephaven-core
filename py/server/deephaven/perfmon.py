@@ -195,6 +195,9 @@ def barrage_subscription_performance_log() -> Table:
     """Returns a table with Deephaven Barrage subscription performance data. Barrage is Deephaven's IPC table
     transport; these statistics are recorded for ticking subscriptions.
 
+    Each row summarizes one statistic for one subscription over one flush cycle. The percentile columns hold raw
+    values in the unit named by StatType: durations are nanoseconds and payload sizes are bytes.
+
     Returns:
         a Table
 
@@ -214,6 +217,8 @@ def barrage_subscription_performance_log() -> Table:
 def barrage_snapshot_performance_log() -> Table:
     """Returns a table with Deephaven Barrage snapshot performance data. Barrage is Deephaven's IPC table
     transport; these statistics are recorded for one-off requests such as an Arrow Flight `DoGet`.
+
+    Each row describes one request. Durations are nanoseconds and payload sizes are bytes.
 
     Returns:
         a Table

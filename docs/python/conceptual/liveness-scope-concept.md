@@ -1,6 +1,5 @@
 ---
 title: How to use liveness scopes
-sidebar_label: Liveness scope
 ---
 
 This guide discusses liveness scopes. It covers what a liveness scope is, how to use one, and why queries can benefit from its use.

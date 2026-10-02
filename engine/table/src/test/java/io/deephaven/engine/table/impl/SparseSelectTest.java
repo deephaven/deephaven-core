@@ -18,7 +18,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -28,6 +27,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.TstUtils.i;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class SparseSelectTest {
@@ -165,14 +165,14 @@ public class SparseSelectTest {
                 .update("V2=Value*2");
         final Table selected = SparseSelect.sparseSelect(table);
         assertTableEquals(table, selected);
-        TestCase.assertSame(table.getColumnSource("V2"), selected.getColumnSource("V2"));
-        TestCase.assertNotSame(table.getColumnSource("Value"), selected.getColumnSource("Value"));
+        assertSame(table.getColumnSource("V2"), selected.getColumnSource("V2"));
+        assertNotSame(table.getColumnSource("Value"), selected.getColumnSource("Value"));
 
         final Table tt = TableTools.newTable(TableTools.intCol("Val", intVals)).updateView("V2=Val*2");
-        TestCase.assertTrue(tt.getColumnSource("Val") instanceof ArrayBackedColumnSource);
+        assertTrue(tt.getColumnSource("Val") instanceof ArrayBackedColumnSource);
         final Table selected2 = SparseSelect.sparseSelect(tt);
-        TestCase.assertSame(tt.getColumnSource("Val"), selected2.getColumnSource("Val"));
-        TestCase.assertNotSame(tt.getColumnSource("V2"), selected2.getColumnSource("V2"));
+        assertSame(tt.getColumnSource("Val"), selected2.getColumnSource("Val"));
+        assertNotSame(tt.getColumnSource("V2"), selected2.getColumnSource("V2"));
     }
 
     @Test

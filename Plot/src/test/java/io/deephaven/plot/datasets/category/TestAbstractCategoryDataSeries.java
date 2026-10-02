@@ -3,7 +3,6 @@
 //
 package io.deephaven.plot.datasets.category;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.plot.*;
 import io.deephaven.plot.datasets.data.IndexableDataArray;
 import io.deephaven.plot.datasets.data.IndexableNumericDataArrayInt;
@@ -12,11 +11,14 @@ import io.deephaven.plot.util.functions.ClosureFunction;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.shape.NamedShape;
 import groovy.lang.Closure;
+import org.junit.Test;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
+import static org.junit.Assert.*;
+
+public class TestAbstractCategoryDataSeries {
     private static final String[] categories = {"A", "B", "C"};
     private static final int[] values = {1, 2, 3};
     private final Color c1 = new Color(0, 0, 0);
@@ -38,6 +40,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testVisibility() {
         final TestCat data = new TestCat();
 
@@ -50,6 +53,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         assertFalse(data.getPointsVisible());
     }
 
+    @Test
     public void testLineStyle() {
         final TestCat data = new TestCat();
         final LineStyle style = LineStyle.lineStyle(0.5);
@@ -59,6 +63,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         assertEquals(data.getLineStyle(), style);
     }
 
+    @Test
     public void testLineColor() {
         final ChartImpl chart = new BaseFigureImpl().newChart();
         final TestCat data = new TestCat(chart.newAxes());
@@ -71,6 +76,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         assertEquals(data.getLineColor(), PlotUtils.intToColor(1));
     }
 
+    @Test
     public void testErrorBarColor() {
         final ChartImpl chart = new BaseFigureImpl().newChart();
         final TestCat data = new TestCat(chart.newAxes());
@@ -83,55 +89,56 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         assertEquals(data.getErrorBarColor(), PlotUtils.intToColor(1));
     }
 
+    @Test
     public void testPointSize() {
         final TestCat data = new TestCat();
 
         data.pointSize(1);
-        assertEquals(data.getPointSize(categories[0]), 1.0);
+        assertEquals(data.getPointSize(categories[0]), 1.0, 0.0);
 
         data.pointSize(2.0);
-        assertEquals(data.getPointSize(categories[1]), 2.0);
+        assertEquals(data.getPointSize(categories[1]), 2.0, 0.0);
 
         data.pointSize(3L);
-        assertEquals(data.getPointSize(categories[2]), 3.0);
+        assertEquals(data.getPointSize(categories[2]), 3.0, 0.0);
 
         data.pointSize(new AtomicInteger(4));
-        assertEquals(data.getPointSize(categories[2]), 4.0);
+        assertEquals(data.getPointSize(categories[2]), 4.0, 0.0);
 
         data.pointSize(categories[0], 1);
-        assertEquals(data.getPointSize(categories[0]), 1.0);
+        assertEquals(data.getPointSize(categories[0]), 1.0, 0.0);
 
         data.pointSize(categories[1], 2.0);
-        assertEquals(data.getPointSize(categories[1]), 2.0);
+        assertEquals(data.getPointSize(categories[1]), 2.0, 0.0);
 
         data.pointSize(categories[2], 3L);
-        assertEquals(data.getPointSize(categories[2]), 3.0);
+        assertEquals(data.getPointSize(categories[2]), 3.0, 0.0);
 
         data.pointSize(categories[0], new AtomicInteger(4));
-        assertEquals(data.getPointSize(categories[0]), 4.0);
+        assertEquals(data.getPointSize(categories[0]), 4.0, 0.0);
 
         int[] sizes = {1, 2, 3};
         data.pointSize(categories, sizes);
         for (int i = 0; i < sizes.length; i++) {
-            assertEquals(data.getPointSize(categories[i]), (double) sizes[i]);
+            assertEquals(data.getPointSize(categories[i]), (double) sizes[i], 0.0);
         }
 
         long[] lsizes = {1, 2, 3};
         data.pointSize(categories, lsizes);
         for (int i = 0; i < lsizes.length; i++) {
-            assertEquals(data.getPointSize(categories[i]), (double) lsizes[i]);
+            assertEquals(data.getPointSize(categories[i]), (double) lsizes[i], 0.0);
         }
 
         double[] dsizes = {1, 2, 3};
         data.pointSize(categories, dsizes);
         for (int i = 0; i < sizes.length; i++) {
-            assertEquals(data.getPointSize(categories[i]), dsizes[i]);
+            assertEquals(data.getPointSize(categories[i]), dsizes[i], 0.0);
         }
 
         AtomicInteger[] asizes = {new AtomicInteger(1), new AtomicInteger(2), new AtomicInteger(3)};
         data.pointSize(categories, asizes);
         for (int i = 0; i < asizes.length; i++) {
-            assertEquals(data.getPointSize(categories[i]), asizes[i].doubleValue());
+            assertEquals(data.getPointSize(categories[i]), asizes[i].doubleValue(), 0.0);
         }
 
         Map<String, Number> map = new HashMap<>();
@@ -140,7 +147,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         }
         data.pointSize(map);
         for (int i = 0; i < categories.length; i++) {
-            assertEquals(data.getPointSize(categories[i]), (double) values[i]);
+            assertEquals(data.getPointSize(categories[i]), (double) values[i], 0.0);
         }
 
         assertEquals(0, data.chart().figure().getFigureFunctionList().size());
@@ -148,9 +155,8 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         data.pointSize(s -> 1.0);
 
         for (Comparable category : categories) {
-            assertEquals(data.getPointSize(category), 1.0);
+            assertEquals(data.getPointSize(category), 1.0, 0.0);
         }
-
 
         Closure<Double> op = new Closure<Double>(null) {
             @Override
@@ -166,10 +172,11 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         data.pointSize(op);
         data.pointSize(s -> 2.0);
         for (String category : categories) {
-            assertEquals(data.getPointSize(category), 2.0);
+            assertEquals(data.getPointSize(category), 2.0, 0.0);
         }
     }
 
+    @Test
     public void testPointColor() {
         final ChartImpl chart = new BaseFigureImpl().newChart();
         final TestCat data = new TestCat(chart.newAxes());
@@ -185,7 +192,6 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
 
         data.pointColor(categories[0], colors[0]);
         assertEquals(data.getColor(categories[0]), colors[0]);
-
 
         final Map<String, Color> colorMap = new HashMap<>();
         for (int i = 0; i < categories.length; i++) {
@@ -239,6 +245,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         data.pointColor(colorMap);
     }
 
+    @Test
     public void testSeriesColor() {
         final AbstractCategoryDataSeries series = new TestCat();
         series.seriesColor("red");
@@ -254,6 +261,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testPointLabel() {
         final TestCat data = new TestCat();
 
@@ -298,6 +306,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         assertEquals(data.getLabel(categories[0]), "S");
     }
 
+    @Test
     public void testPointShape() {
         final TestCat data = new TestCat();
 
@@ -329,6 +338,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         assertEquals(NamedShape.SQUARE, data.getPointShape(categories[2]));
     }
 
+    @Test
     public void testPointShapeExceptions() {
         final TestCat data = new TestCat();
 
@@ -348,6 +358,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testGroup() {
         final AbstractCategoryDataSeries series = new TestCat();
         series.group(10);

@@ -16,7 +16,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.util.function.ThrowingRunnable;
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -27,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.*;
 
 public class TestKeyedArrayBackedInputTable {
 
@@ -60,7 +59,7 @@ public class TestKeyedArrayBackedInputTable {
         assertTableEquals(input, kabut);
 
         final InputTableUpdater inputTableUpdater = InputTableUpdater.from(kabut);
-        TestCase.assertNotNull(inputTableUpdater);
+        assertNotNull(inputTableUpdater);
 
         final Table input2 = TableTools.newTable(stringCol("Name", "Randy"), stringCol("Employer", "USGS"));
 
@@ -91,7 +90,7 @@ public class TestKeyedArrayBackedInputTable {
         handleDelayedRefresh(() -> inputTableUpdater.delete(delete1), kabut);
         System.out.println("KABUT.rowSet after delete: " + kabut.getRowSet());
         final long sizeAfterDelete = kabut.size();
-        TestCase.assertEquals(sizeBeforeDelete - 1, sizeAfterDelete);
+        assertEquals(sizeBeforeDelete - 1, sizeAfterDelete);
 
         showWithRowSet(kabut);
 
@@ -118,7 +117,7 @@ public class TestKeyedArrayBackedInputTable {
         assertTableEquals(input, aoabmt);
 
         final InputTableUpdater inputTableUpdater = InputTableUpdater.from(aoabmt);
-        TestCase.assertNotNull(inputTableUpdater);
+        assertNotNull(inputTableUpdater);
 
         final Table input2 =
                 TableTools.newTable(stringCol("Name", "Randy", "George"), stringCol("Employer", "USGS", "Cogswell"));
@@ -143,7 +142,7 @@ public class TestKeyedArrayBackedInputTable {
         final Table fs = kabut.where("Name.length() == 4").sort("Name");
 
         final InputTableUpdater inputTableUpdater = InputTableUpdater.from(fs);
-        TestCase.assertNotNull(inputTableUpdater);
+        assertNotNull(inputTableUpdater);
 
         final Table delete = TableTools.newTable(stringCol("Name", "Fred"));
 
@@ -165,7 +164,7 @@ public class TestKeyedArrayBackedInputTable {
         assertTableEquals(input, kabut);
 
         final InputTableUpdater inputTableUpdater = InputTableUpdater.from(kabut);
-        TestCase.assertNotNull(inputTableUpdater);
+        assertNotNull(inputTableUpdater);
 
         final Table input2 =
                 TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));

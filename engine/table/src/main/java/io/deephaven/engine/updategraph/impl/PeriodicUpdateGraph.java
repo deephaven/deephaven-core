@@ -471,7 +471,11 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
         resetForUnitTests(after, errors);
 
-        if (randomizedNotifications) {
+        if (after) {
+            // The graph is done being used; leave it in the same unstarted state as a freshly-constructed graph rather
+            // than installing a processor whose threads nothing will ever shut down.
+            notificationProcessor = PoisonedNotificationProcessor.INSTANCE;
+        } else if (randomizedNotifications) {
             notificationProcessor = makeRandomizedNotificationProcessor(notificationRandomizer,
                     maxRandomizedThreadCount, notificationStartDelay);
         } else {

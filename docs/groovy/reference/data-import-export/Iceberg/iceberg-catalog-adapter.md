@@ -1,6 +1,5 @@
 ---
 title: IcebergCatalogAdapter
-sidebar_label: IcebergCatalogAdapter
 ---
 
 `IcebergCatalogAdapter` is a class used to interact with Iceberg catalogs.

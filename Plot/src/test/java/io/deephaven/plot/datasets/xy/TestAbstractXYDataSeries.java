@@ -16,12 +16,14 @@ import io.deephaven.plot.datasets.data.IndexableData;
 import io.deephaven.plot.datasets.data.IndexableDataArray;
 import io.deephaven.plot.datasets.data.IndexableDataInteger;
 import io.deephaven.plot.util.PlotUtils;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assert.*;
 
 public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
 
@@ -57,6 +59,7 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testVisibility() {
         final TestAXYDS data = new TestAXYDS();
 
@@ -68,11 +71,11 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         data.pointsVisible(false);
         assertFalse(data.getPointsVisible());
 
-
         data.gradientVisible(false);
         assertFalse(data.getGradientVisible());
     }
 
+    @Test
     public void testLineStyle() {
         final TestAXYDS data = new TestAXYDS();
         final LineStyle style = LineStyle.lineStyle(0.5);
@@ -82,6 +85,7 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         assertEquals(data.getLineStyle(), style);
     }
 
+    @Test
     public void testLineColor() {
         final AxesImpl axes = new BaseFigureImpl().newChart().newAxes();
         final TestAXYDS data = new TestAXYDS(axes);
@@ -97,6 +101,7 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         assertEquals(Color.color("red"), data.getLineColor());
     }
 
+    @Test
     public void testErrorBarColor() {
         final AxesImpl axes = new BaseFigureImpl().newChart().newAxes();
         final TestAXYDS data = new TestAXYDS(axes);
@@ -112,59 +117,59 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         assertEquals(Color.color("red"), data.getErrorBarColor());
     }
 
+    @Test
     public void testPointSize() {
         final TestAXYDS data = new TestAXYDS();
 
         data.pointSize(1);
-        assertEquals(data.getPointSize(0), 1.0);
+        assertEquals(data.getPointSize(0), 1.0, 0.0);
 
         data.pointSize(2.0);
-        assertEquals(data.getPointSize(0), 2.0);
+        assertEquals(data.getPointSize(0), 2.0, 0.0);
 
         data.pointSize(3L);
-        assertEquals(data.getPointSize(0), 3.0);
+        assertEquals(data.getPointSize(0), 3.0, 0.0);
 
         data.pointSize(new AtomicInteger(4));
-        assertEquals(data.getPointSize(0), 4.0);
+        assertEquals(data.getPointSize(0), 4.0, 0.0);
 
         int[] sizes = {1, 2, 3};
         data.pointSize(sizes);
         for (int i = 0; i < sizes.length; i++) {
-            assertEquals(data.getPointSize(i), (double) sizes[i]);
+            assertEquals(data.getPointSize(i), (double) sizes[i], 0.0);
         }
 
         long[] lsizes = {1, 2, 3};
         data.pointSize(lsizes);
         for (int i = 0; i < sizes.length; i++) {
-            assertEquals(data.getPointSize(i), (double) lsizes[i]);
+            assertEquals(data.getPointSize(i), (double) lsizes[i], 0.0);
         }
 
         double[] dsizes = {1, 2, 3};
         data.pointSize(dsizes);
         for (int i = 0; i < sizes.length; i++) {
-            assertEquals(data.getPointSize(i), (double) dsizes[i]);
+            assertEquals(data.getPointSize(i), (double) dsizes[i], 0.0);
         }
 
         AtomicInteger[] asizes = {new AtomicInteger(1), new AtomicInteger(2), new AtomicInteger(3)};
         data.pointSize(asizes);
         for (int i = 0; i < asizes.length; i++) {
-            assertEquals(data.getPointSize(i), asizes[i].doubleValue());
+            assertEquals(data.getPointSize(i), asizes[i].doubleValue(), 0.0);
         }
 
         final String[] cats = {"A", "B", "C"};
         Table t = TableTools.newTable(TableTools.doubleCol("Dubs", dsizes), TableTools.col("Str", cats)).ungroup();
         data.pointSize(t, "Dubs");
         for (int i = 0; i < t.size(); i++) {
-            assertEquals(data.getPointSize(i), dsizes[i]);
+            assertEquals(data.getPointSize(i), dsizes[i], 0.0);
         }
 
         try {
             data.pointSize(t, "Str");
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Unsupported numeric data type"));
         }
-
 
         // dsizes[0] = 2;
         // t = TableTools.newTable(TableTools.doubleCol("Dubs", dsizes), TableTools.col("Str", cats)).ungroup();
@@ -179,6 +184,7 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         // }
     }
 
+    @Test
     public void testPointColor() {
         final AxesImpl axes = new BaseFigureImpl().newChart().newAxes();
         final TestAXYDS data = new TestAXYDS(axes);
@@ -264,14 +270,14 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
 
         try {
             data.pointColor(t, "Str");
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Unsupported numeric data type"));
         }
 
         try {
             data.pointColor(t, "Str");
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Unsupported numeric data type"));
         }
@@ -279,12 +285,13 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         t = t.updateView("Dubs = (double) i");
         try {
             data.pointColor(t, "Dubs");
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("converted"));
         }
     }
 
+    @Test
     public void testPointLabel() {
         final TestAXYDS data = new TestAXYDS();
         final String[] labelArray = {"A", "B", "C"};
@@ -318,6 +325,7 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         assertEquals(labelFormat, data.getPointLabelFormat());
     }
 
+    @Test
     public void testPointShape() {
         final TestAXYDS data = new TestAXYDS();
         data.pointShape(NamedShape.UP_TRIANGLE);
@@ -372,6 +380,7 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
 
     }
 
+    @Test
     public void testPointShapeExceptions() {
         final TestAXYDS data = new TestAXYDS();
 
@@ -444,8 +453,8 @@ public class TestAbstractXYDataSeries extends RefreshingTableTestCase {
         assertEquals(original.name(), copy.name());
         assertEquals(original.size(), copy.size());
         for (int i = 0; i < original.size(); i++) {
-            assertEquals(original.getX(i), copy.getX(i));
-            assertEquals(original.getY(i), copy.getY(i));
+            assertEquals(original.getX(i), copy.getX(i), 0.0);
+            assertEquals(original.getY(i), copy.getY(i), 0.0);
             assertEquals(original.getPointLabel(i), copy.getPointLabel(i));
             assertEquals(original.getPointColor(i), copy.getPointColor(i));
             assertEquals(original.getPointSize(i), copy.getPointSize(i));

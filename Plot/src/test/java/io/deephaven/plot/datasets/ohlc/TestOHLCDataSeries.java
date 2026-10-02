@@ -16,9 +16,12 @@ import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.time.DateTimeUtils;
+import org.junit.Test;
 
 import java.time.Instant;
 import java.util.ArrayList;
+
+import static org.junit.Assert.*;
 
 public class TestOHLCDataSeries extends RefreshingTableTestCase {
     private final Instant[] datesA = {
@@ -42,6 +45,7 @@ public class TestOHLCDataSeries extends RefreshingTableTestCase {
     private final OHLCDataSeriesInternal dataSeries2 = new OHLCDataSeriesArray(
             new BaseFigureImpl().newChart().newAxes(), 1, "Test2", dates, close, high, low, open);
 
+    @Test
     public void testOHLCDataSeriesArray() {
         checkOHLCDataSeriesArray(dataSeries, datesA, openA, highA, lowA, closeA);
         checkOHLCDataSeriesArray(dataSeries2, datesA, closeA, highA, lowA, openA);
@@ -52,15 +56,16 @@ public class TestOHLCDataSeries extends RefreshingTableTestCase {
         assertEquals(dataSeries.size(), time.length);
 
         for (int i = 0; i < dataSeries.size(); i++) {
-            assertEquals(dataSeries.getX(i), (double) DateTimeUtils.epochNanos(time[i]));
-            assertEquals(dataSeries.getY(i), close[i]);
-            assertEquals(dataSeries.getOpen(i), open[i]);
-            assertEquals(dataSeries.getHigh(i), high[i]);
-            assertEquals(dataSeries.getLow(i), low[i]);
-            assertEquals(dataSeries.getClose(i), close[i]);
+            assertEquals(dataSeries.getX(i), (double) DateTimeUtils.epochNanos(time[i]), 0.0);
+            assertEquals(dataSeries.getY(i), close[i], 0.0);
+            assertEquals(dataSeries.getOpen(i), open[i], 0.0);
+            assertEquals(dataSeries.getHigh(i), high[i], 0.0);
+            assertEquals(dataSeries.getLow(i), low[i], 0.0);
+            assertEquals(dataSeries.getClose(i), close[i], 0.0);
         }
     }
 
+    @Test
     public void testCopy() {
         final OHLCDataSeriesArray ohlc1 = new OHLCDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 1, "Test",
                 dates, open, high, low, close);
@@ -98,10 +103,10 @@ public class TestOHLCDataSeries extends RefreshingTableTestCase {
         TestAbstractXYDataSeries.testCopy(original, copy, false);
 
         for (int i = 0; i < original.size(); i++) {
-            assertEquals(original.getOpen(i), copy.getOpen(i));
-            assertEquals(original.getHigh(i), copy.getHigh(i));
-            assertEquals(original.getLow(i), copy.getLow(i));
-            assertEquals(original.getClose(i), copy.getClose(i));
+            assertEquals(original.getOpen(i), copy.getOpen(i), 0.0);
+            assertEquals(original.getHigh(i), copy.getHigh(i), 0.0);
+            assertEquals(original.getLow(i), copy.getLow(i), 0.0);
+            assertEquals(original.getClose(i), copy.getClose(i), 0.0);
         }
     }
 }

@@ -439,7 +439,6 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         }
     }
 
-
     /**
      * Subscription delivery applies the table-bound filter, so a listener sees only the keys the filter accepts - both
      * the initial snapshot and keys pushed afterwards. This is the one discovery path a caller can take that
@@ -522,7 +521,6 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
             return provider;
         }
     }
-
 
     /**
      * A {@link PopulatedProvider} that supports subscriptions, so that listener delivery can be exercised. Keys added

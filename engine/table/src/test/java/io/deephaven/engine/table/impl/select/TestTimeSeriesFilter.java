@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.DateGenerator;
@@ -20,6 +21,7 @@ import io.deephaven.engine.util.TestClock;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import java.lang.ref.WeakReference;
 import java.text.ParseException;
@@ -33,8 +35,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 public class TestTimeSeriesFilter extends RefreshingTableTestCase {
+    @Test
     public void testSimple() {
         Instant[] times = new Instant[10];
 
@@ -83,6 +87,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(3, filtered.size());
     }
 
+    @Test
     public void testInverted() {
         Instant[] times = new Instant[10];
 
@@ -132,6 +137,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(7, filtered.size());
     }
 
+    @Test
     public void testIncremental() throws ParseException {
         for (int seed = 0; seed < 5; ++seed) {
             testIncremental(seed, 100, 24);
@@ -164,7 +170,6 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         EvalNugget[] en = makeNuggets(table, inclusionFilter, filtersToRefresh, updateGraph, exclusionFilter);
 
-
         final int updatesPerTick = 3;
         for (int steps = 0; steps < maxSteps * (updatesPerTick + 1); ++steps) {
             if (RefreshingTableTestCase.printTableUpdates) {
@@ -179,6 +184,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testIncremental2() throws ParseException {
         Random random = new Random(0);
 
@@ -310,6 +316,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testFilterSequence() {
         final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2024-09-18T21:29:00 NY"));
         final QueryTable source = testRefreshingTable(i().toTracking(), longCol("Timestamp"), intCol("Sentinel"));
@@ -351,7 +358,6 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(1, cfe1.count.intValue());
         assertEquals(0, cfe2.count.intValue());
 
-
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(10, 20, 30),
                     longCol("Timestamp", start, start + 300_000_000_000L, start + 4200_000_000_000L),
@@ -389,6 +395,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(2, cfe2.count.intValue());
     }
 
+    @Test
     public void testStatic() {
         final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2025-07-08T21:29:00 NY"));
 
@@ -421,6 +428,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(size, filtered2.size());
     }
 
+    @Test
     public void testComposed() {
         final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
 
@@ -446,5 +454,32 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         final WhereFilter inverted = WhereFilterInvertedImpl.of(timeSeriesFilter);
         assertTrue(inverted instanceof WhereFilterInvertedImpl);
+    }
+
+    /**
+     * A filter that asks for specific rows to be re-evaluated, rather than for all of them, also re-evaluates the match
+     * column. A time series filter is the only filter that makes that request.
+     */
+    @Test
+    public void testMatchWithRowSetRecomputeRequests() {
+        final Instant[] times = new Instant[10];
+        final long startMillis = System.currentTimeMillis() - (10 * times.length);
+        for (int ii = 0; ii < times.length; ++ii) {
+            times[ii] = DateTimeUtils.epochNanosToInstant((startMillis + (ii * 1000)) * 1000000L);
+        }
+        final Table source = TableTools.newTable(col("Timestamp", times));
+        final TestClock clock = new TestClock().setMillis(startMillis);
+        final TimeSeriesFilter filter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT00:00:05").clock(clock).build();
+
+        final Table result = source.wouldMatch(new WouldMatchPair("M", filter));
+        assertEquals(10, result.where("M").size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            clock.addMillis(10_000);
+            filter.runForUnitTests();
+        });
+        assertEquals(5, result.where("M").size());
     }
 }
