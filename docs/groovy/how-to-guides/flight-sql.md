@@ -66,7 +66,7 @@ with dbapi.connect(
 #### ADBC Java
 
 The [ADBC Java](https://arrow.apache.org/adbc/current/java/index.html) library (driver manager) loads the Flight SQL driver, and is simple to use from Java.
-[Installation](https://arrow.apache.org/adbc/current/java/quickstart.html) requires a dependency on `org.apache.arrow.adbc.adbc-driver-jni`.
+[Installation](https://arrow.apache.org/adbc/current/java/quickstart.html) requires a dependency on `org.apache.arrow.adbc:adbc-driver-jni`.
 
 ```java skip-test
 final String DRIVER_FACTORY = "org.apache.arrow.adbc.driver.jni.JniDriverFactory";
@@ -75,6 +75,7 @@ Map<String, Object> params = new HashMap<>();
 JniDriver.PARAM_DRIVER.set(params, "flightsql");
 params.put("uri", "grpc://localhost:10000");
 params.put("adbc.flight.sql.authorization_header", "Anonymous");
+params.put("adbc.flight.sql.rpc.with_cookie_middleware", "true");
 params.put("adbc.flight.sql.rpc.call_header.x-deephaven-auth-cookie-request", "true");
 try (
         BufferAllocator allocator = new RootAllocator();

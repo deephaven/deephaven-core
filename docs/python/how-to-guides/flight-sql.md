@@ -75,7 +75,7 @@ Map<String, Object> params = new HashMap<>();
 JniDriver.PARAM_DRIVER.set(params, "flightsql");
 params.put("uri", "grpc://localhost:10000");
 params.put("adbc.flight.sql.authorization_header", "Anonymous");
-params.put("adbc.flight.sql.rpc.with_cookie_middleware", true);
+params.put("adbc.flight.sql.rpc.with_cookie_middleware", "true");
 params.put("adbc.flight.sql.rpc.call_header.x-deephaven-auth-cookie-request", "true");
 try (
         BufferAllocator allocator = new RootAllocator();
