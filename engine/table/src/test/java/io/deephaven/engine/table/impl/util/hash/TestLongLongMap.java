@@ -592,6 +592,77 @@ public class TestLongLongMap {
         }
     }
 
+    /**
+     * The chunked put and putIfAbsent called directly, in slices of several sizes: the old-value chunk carries one
+     * entry per key and is sized by the call; a key that appears twice in a batch is processed in index order, so put's
+     * second element overwrites the first and reports its value as the old one, while putIfAbsent's second element
+     * keeps the first and reports it; and a batch far larger than the map's capacity rehashes several times inside one
+     * call without losing an element. A second pass over the same keys then finds every key present. java.util.HashMap,
+     * fed the same elements in the same order, is the standard of correctness.
+     */
+    @Test
+    public void chunkedPutAndPutIfAbsent() {
+        final int distinct = 5000;
+        final long[] keys = new long[2 * distinct];
+        final long[] values = new long[keys.length];
+        for (int ii = 0; ii < distinct; ++ii) {
+            final long key = 1_000_003L * ii + 17;
+            keys[2 * ii] = key;
+            values[2 * ii] = 1_000_000 + ii;
+            keys[2 * ii + 1] = key;
+            values[2 * ii + 1] = 2_000_000 + ii;
+        }
+        final long[] laterValues = new long[values.length];
+        for (int ii = 0; ii < values.length; ++ii) {
+            laterValues[ii] = values[ii] + 5;
+        }
+        for (final int chunkSize : new int[] {1, 7, 4096, keys.length}) {
+            for (final boolean ifAbsent : new boolean[] {false, true}) {
+                // A fresh map at the parameterized capacity (10 at the smallest), so the whole-batch slice rehashes
+                // repeatedly mid-call.
+                final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+                final Map<Long, Long> reference = new HashMap<>();
+                checkChunkedPut(map, keys, values, chunkSize, ifAbsent, reference);
+                checkChunkedPut(map, keys, laterValues, chunkSize, ifAbsent, reference);
+            }
+        }
+    }
+
+    /**
+     * Feed {@code keys} and {@code values} through the chunked put (or putIfAbsent) in slices of at most
+     * {@code chunkSize}, checking the old-value and size contract of every call against {@code reference}, which
+     * receives the same elements in the same order; then check that the map holds exactly what the reference holds.
+     */
+    private static void checkChunkedPut(final NullableLongLongMap map, final long[] keys, final long[] values,
+            final int chunkSize, final boolean ifAbsent, final Map<Long, Long> reference) {
+        final long noEntryValue = map.defaultReturnValue();
+        final WritableLongChunk<Any> oldValues = WritableLongChunk.writableChunkWrap(new long[chunkSize]);
+        for (int begin = 0; begin < keys.length; begin += chunkSize) {
+            final int thisSize = Math.min(chunkSize, keys.length - begin);
+            final LongChunk<Any> keyChunk = LongChunk.chunkWrap(keys, begin, thisSize);
+            final LongChunk<Any> valueChunk = LongChunk.chunkWrap(values, begin, thisSize);
+            // The call sizes the output; start it empty so that a call that forgot would be caught.
+            oldValues.setSize(0);
+            if (ifAbsent) {
+                map.putIfAbsent(keyChunk, valueChunk, oldValues);
+            } else {
+                map.put(keyChunk, valueChunk, oldValues);
+            }
+            assertEquals(thisSize, oldValues.size());
+            for (int ii = 0; ii < thisSize; ++ii) {
+                final Long expectedOld = ifAbsent
+                        ? reference.putIfAbsent(keys[begin + ii], values[begin + ii])
+                        : reference.put(keys[begin + ii], values[begin + ii]);
+                assertEquals(expectedOld == null ? noEntryValue : expectedOld, oldValues.get(ii));
+            }
+        }
+        assertEquals(reference.size(), map.size());
+        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
+        for (final Map.Entry<Long, Long> entry : reference.entrySet()) {
+            assertEquals((long) entry.getValue(), cursor.get(entry.getKey()));
+        }
+    }
+
     @Test
     public void do1MRandomOperationsLotsOfCollisions() {
         // Standard of correctness: java.util.HashMap
