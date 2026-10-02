@@ -110,10 +110,11 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                     if (logicalType instanceof LogicalTypes.TimestampMicros) {
                         return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, separator, schema, 1000L);
                     }
-                    throw new IllegalArgumentException(
-                            "Can not map field with unknown logical type to Instant: field=" + fieldPathStr
-                                    + ", logical type=" + logicalType);
-
+                    if (!(logicalType instanceof LogicalTypes.TimestampNanos)) {
+                        throw new IllegalArgumentException(
+                                "Can not map field with unknown logical type to Instant: field=" + fieldPathStr
+                                        + ", logical type=" + logicalType);
+                    }
                 }
                 return new GenericRecordLongFieldCopier(fieldPathStr, separator, schema);
             case Float:
@@ -152,10 +153,12 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                         if (logicalType instanceof LogicalTypes.TimestampMicros) {
                             return new GenericRecordInstantArrayFieldCopier(fieldPathStr, separator, schema, 1000L);
                         }
+                        if (logicalType instanceof LogicalTypes.TimestampNanos) {
+                            return new GenericRecordInstantArrayFieldCopier(fieldPathStr, separator, schema, 1L);
+                        }
                         throw new IllegalArgumentException(
                                 "Can not map field with unknown logical type to Instant[]: field=" + fieldPathStr
                                         + ", logical type=" + logicalType);
-
                     }
                     return new GenericRecordArrayFieldCopier(fieldPathStr, separator, schema, componentType);
                 }
