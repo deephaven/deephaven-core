@@ -24,7 +24,7 @@
             "label": "A Crash Course in Deephaven",
             "items": [
               {
-                "label": "Crash Course Overview",
+                "label": "Overview",
                 "path": "getting-started/crash-course/overview.md"
               },
               {
@@ -212,7 +212,7 @@
                 "label": "Kafka",
                 "items": [
                   {
-                    "label": "Kafka overview",
+                    "label": "Overview",
                     "path": "how-to-guides/overview-kafka.md"
                   },
                   {
@@ -220,11 +220,11 @@
                     "path": "conceptual/kafka-basic-terms.md"
                   },
                   {
-                    "label": "Connect to a Kafka stream",
+                    "label": "Connect to a stream",
                     "path": "how-to-guides/data-import-export/kafka-stream.md"
                   },
                   {
-                    "label": "Write your own custom parser for Kafka",
+                    "label": "Write a custom parser",
                     "path": "how-to-guides/data-import-export/write-your-own-custom-parser-for-kafka.md"
                   }
                 ]
@@ -233,7 +233,7 @@
                 "label": "Parquet",
                 "items": [
                   {
-                    "label": "Supported Parquet formats",
+                    "label": "Supported formats",
                     "path": "how-to-guides/data-import-export/parquet-formats.md"
                   },
                   {
@@ -268,7 +268,7 @@
             "label": "Work with tables",
             "items": [
               {
-                "label": "Table operations overview",
+                "label": "Overview",
                 "path": "conceptual/table-operations-overview.md"
               },
               {
@@ -475,15 +475,15 @@
                 "label": "Built-ins",
                 "items": [
                   {
-                    "label": "Built-in constants",
+                    "label": "Constants",
                     "path": "how-to-guides/built-in-constants.md"
                   },
                   {
-                    "label": "Built-in variables",
+                    "label": "Variables",
                     "path": "how-to-guides/built-in-variables.md"
                   },
                   {
-                    "label": "Built-in functions",
+                    "label": "Functions",
                     "path": "how-to-guides/built-in-functions.md"
                   }
                 ]
@@ -665,7 +665,7 @@
                 "label": "Java",
                 "items": [
                   {
-                    "label": "Extract data with a Java client",
+                    "label": "Extract data",
                     "path": "how-to-guides/java-client.md"
                   },
                   {
@@ -747,7 +747,7 @@
                     "href": "https://deephaven.io/core/client-api/r/index.html"
                   },
                   {
-                    "label": "Building blocks of the Deephaven R client",
+                    "label": "Building blocks",
                     "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#building-blocks-of-the-deephaven-r-client"
                   },
                   {
@@ -897,11 +897,11 @@
                     "path": "how-to-guides/debugging/debugging-landing.md"
                   },
                   {
-                    "label": "Docker setup",
+                    "label": "Docker",
                     "path": "how-to-guides/debugging/docker-setup.md"
                   },
                   {
-                    "label": "Source setup",
+                    "label": "Source",
                     "path": "how-to-guides/debugging/source-setup.md"
                   },
                   {
@@ -1060,19 +1060,19 @@
                 "label": "Application Mode",
                 "items": [
                   {
-                    "label": "Application Mode",
+                    "label": "Overview",
                     "path": "how-to-guides/application-mode.md"
                   },
                   {
-                    "label": "Application Mode libraries",
+                    "label": "Libraries",
                     "path": "how-to-guides/application-mode-libraries.md"
                   },
                   {
-                    "label": "Application Mode scripts",
+                    "label": "Scripts",
                     "path": "how-to-guides/application-mode-script.md"
                   },
                   {
-                    "label": "Application Mode configuration",
+                    "label": "Configuration",
                     "path": "reference/app-mode/application-mode-config.md"
                   }
                 ]
@@ -2890,7 +2890,7 @@
             "label": "FAQs",
             "items": [
               {
-                "label": "FAQ overview",
+                "label": "Overview",
                 "path": "reference/community-questions/cq-index.md"
               },
               {
