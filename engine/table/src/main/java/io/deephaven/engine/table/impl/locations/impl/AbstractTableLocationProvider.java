@@ -541,6 +541,32 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
+     * Notify subscribers that this provider is being shut down: deliver a terminal {@link TableDataException} to this
+     * provider's {@link TableLocationProvider.Listener}s and to the {@link TableLocation.Listener}s of every
+     * already-created {@link TableLocation}, then clear those subscriptions. Called from
+     * {@link AbstractTableDataService#shutdown()} when a service is retired (possibly to be replaced by one with
+     * different configuration or sources), so subscribers fail fast rather than silently reading stale state.
+     * <p>
+     * Idempotent: a second call finds no remaining subscribers. Does not materialize locations that were never created,
+     * and does not itself release liveness-managed keys/locations - the notified consumers do that as they tear down.
+     */
+    public void handleShutdown() {
+        final TableDataException exception = new TableDataException(this + " was shut down");
+        // Snapshot the tracked keys so we do not hold the map lock while taking per-location subscription locks.
+        final List<TrackedKeySupplier> trackedKeys;
+        synchronized (tableLocationKeyMap) {
+            trackedKeys = new ArrayList<>(tableLocationKeyMap.values());
+        }
+        for (final TrackedKeySupplier trackedKey : trackedKeys) {
+            final TableLocation location = trackedKey.tableLocation;
+            if (location instanceof AbstractTableLocation) {
+                ((AbstractTableLocation) location).invalidateAllSubscribers(exception);
+            }
+        }
+        invalidateAllSubscribers(exception);
+    }
+
+    /**
      * Remove a {@link TableLocationKey} and its corresponding {@link TableLocation} (if it was created). All
      * subscribers to this TableLocationProvider will be
      * {@link TableLocationProvider.Listener#handleTableLocationKeyRemoved(LiveSupplier<ImmutableTableLocationKey>)
