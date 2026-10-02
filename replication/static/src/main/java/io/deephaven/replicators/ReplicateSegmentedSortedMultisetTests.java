@@ -44,6 +44,8 @@ public class ReplicateSegmentedSortedMultisetTests {
                 charToObject("replicateSegmentedSortedMultisetTests",
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupObjectSsmTest(objectSsmTest);
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy("replicateSegmentedSortedMultisetTests",
+                "TestCharSegmentedSortedMultiset", objectSsmTest);
 
         final String compactModificationsTest =
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/compactmodifications/TestCharCompactModifications.java";

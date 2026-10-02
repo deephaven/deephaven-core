@@ -122,7 +122,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         stampChunkType = leftStampSource.getChunkType();
         chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, stampEqualsConsistent, reverse);
         stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
-        stampCompact = CompactKernel.makeCompact(stampChunkType);
+        stampCompact = CompactKernel.makeCompact(stampChunkType, stampEqualsConsistent);
 
         leftStampColumn = leftTable.newModifiedColumnSet(stampPair.leftColumn());
         rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());

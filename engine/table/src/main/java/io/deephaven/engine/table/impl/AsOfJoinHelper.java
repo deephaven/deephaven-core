@@ -861,7 +861,8 @@ public class AsOfJoinHelper {
                             final ResettableWritableChunk<Values> leftValuesChunk =
                                     rightStampSource.getChunkType().makeResettableWritableChunk()) {
                         final ChunkEquals stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
-                        final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType);
+                        final CompactKernel stampCompact =
+                                CompactKernel.makeCompact(stampChunkType, stampEqualsConsistent);
 
                         // When adding a row to the right hand side: we need to know which left hand side might be
                         // responsive. If we are a duplicate stamp and not the last one, we ignore it. Next, we should
@@ -1351,7 +1352,7 @@ public class AsOfJoinHelper {
         final ModifiedColumnSet.Transformer rightTransformer =
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
         final ChunkEquals stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
-        final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType);
+        final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType, stampEqualsConsistent);
 
         rightTable.addUpdateListener(
                 new BaseTable.ListenerImpl(makeListenerDescription(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,

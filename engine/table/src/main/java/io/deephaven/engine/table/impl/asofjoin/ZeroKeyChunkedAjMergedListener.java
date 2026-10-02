@@ -98,7 +98,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, stampEqualsConsistent,
                 order == SortingOrder.Descending);
         stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
-        stampCompact = CompactKernel.makeCompact(stampChunkType);
+        stampCompact = CompactKernel.makeCompact(stampChunkType, stampEqualsConsistent);
 
         leftStampColumn = leftTable.newModifiedColumnSet(stampPair.leftColumn());
         rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());

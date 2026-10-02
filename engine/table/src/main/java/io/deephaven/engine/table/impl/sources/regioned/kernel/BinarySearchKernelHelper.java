@@ -56,7 +56,7 @@ public class BinarySearchKernelHelper {
      *
      * <p>
      * The property is not verified; registering a type that lacks it will produce incorrect filter, as-of join, range
-     * join, and sorted first or last results.
+     * join, sorted first or last, minimum, maximum, median, percentile, count distinct, distinct and unique results.
      *
      * <p>
      * Registration is additive and idempotent, and a type cannot be withdrawn. Register types during startup: a search
@@ -107,8 +107,9 @@ public class BinarySearchKernelHelper {
      * identity.
      *
      * <p>
-     * The same answer selects between the EqualsConsistentObject and Object segmented sorted array, SSA stamp, and
-     * duplicate compaction kernels, which test equality with {@code equals} and with
+     * The same answer selects between the EqualsConsistentObject and Object segmented sorted array, SSA stamp,
+     * duplicate compaction, compaction, segmented sorted multiset, and compact modifications classes, which test
+     * equality with {@code equals} and with
      * {@link io.deephaven.util.compare.ObjectComparisons#compareEquals(Object, Object)} respectively.
      *
      * <p>

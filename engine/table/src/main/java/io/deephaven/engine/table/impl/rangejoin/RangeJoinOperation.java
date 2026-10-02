@@ -418,10 +418,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     rightRangeValues.getChunkType(), "rightRangeValues.getChunkType()");
             Assert.eq(valueChunkType, "valueChunkType",
                     leftEndValues.getChunkType(), "leftEndValues.getChunkType()");
+            // the dup compact and compact kernels of this join are created with this single decision
+            final boolean valueEqualsConsistent =
+                    BinarySearchKernelHelper.compareConsistentWithEquality(rightRangeValues.getType());
             valueChunkDupCompactKernel =
-                    DupCompactKernel.makeDupCompactNaturalOrdering(valueChunkType,
-                            BinarySearchKernelHelper.compareConsistentWithEquality(rightRangeValues.getType()), false);
-            valueChunkCompactKernel = CompactKernel.makeCompact(valueChunkType);
+                    DupCompactKernel.makeDupCompactNaturalOrdering(valueChunkType, valueEqualsConsistent, false);
+            valueChunkCompactKernel = CompactKernel.makeCompact(valueChunkType, valueEqualsConsistent);
             rangeSearchKernel = RangeSearchKernel.makeRangeSearchKernel(
                     valueChunkType, rangeMatch.rangeStartRule(), rangeMatch.rangeEndRule());
 
