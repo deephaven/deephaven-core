@@ -106,8 +106,10 @@ public interface NullableLongLongMap {
      * Contract: an instance may be used by only one thread at a time. It is valid from the time of {@link #reset}, with
      * the same semantics as any other read of these maps: a concurrent writer will not make it crash, but readers under
      * a clock discipline must discard their work if the clock tells them to. One footnote for writers reading their own
-     * map: a mutation invalidates that thread's own bindings to the mutated map — reset again before the next scalar
-     * read.
+     * map: a mutation performed through this cursor keeps the cursor's own binding fresh, but a mutation through any
+     * other path (a chunked call, another cursor, {@link NullableLongLongMap#remove},
+     * {@link NullableLongLongMap#clear}, {@link NullableLongLongMap#resetToNull}) invalidates that thread's bindings to
+     * the mutated map — reset again before the next use.
      *
      * <p>
      * Keep one cursor per map you are working with (rather than ping-ponging one cursor between maps): future

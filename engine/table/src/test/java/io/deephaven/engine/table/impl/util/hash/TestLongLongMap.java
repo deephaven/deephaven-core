@@ -280,6 +280,8 @@ public class TestLongLongMap {
         // Tombstones still count as non-empty.
         assertEquals(where, occupied, base.nonEmptySlots);
         final long fresh = colliding[occupied];
+        // remove() does not go through the cursor yet: reset the invalidated binding.
+        cursor.reset(map);
         cursor.put(fresh, 99);
         assertEquals(where, occupied, base.nonEmptySlots);
         // The keys in slot order: the fresh key stands where the earliest deleted key stood.
@@ -356,6 +358,8 @@ public class TestLongLongMap {
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
         map.remove(others[deleted]);
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
+        // remove() does not go through the cursor yet: reset the invalidated binding.
+        cursor.reset(map);
         cursor.put(key, 99);
         // The tombstone was reused: the count of non-empty slots did not grow, and the map holds what it should.
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
