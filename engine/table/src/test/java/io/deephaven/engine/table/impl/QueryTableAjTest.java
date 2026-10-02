@@ -57,6 +57,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -2404,6 +2405,82 @@ public class QueryTableAjTest {
     }
 
     /**
+     * With both sides refreshing and exact match columns, modifying a right column that the join does not add leaves
+     * the left rows that match the modified right row unmodified, even when the same cycle modifies another left row.
+     */
+    @Test
+    public void testBucketedRightModificationOfColumnNotAdded() {
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "A", "A", "A"),
+                intCol("LeftStamp", 1, 2, 3), intCol("LeftOther", 0, 0, 0));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "A", "A"),
+                intCol("RightStamp", 1, 3), intCol("Sentinel", 10, 11), intCol("RightOther", 0, 0));
+        final QueryTable result = (QueryTable) left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(2), col("Key", "A"), intCol("LeftStamp", 3), intCol("LeftOther", 1));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("LeftOther")));
+            // right row 0 matches left rows 0 and 1, but RightOther is not a column of the result
+            addToTable(right, i(0), col("Key", "A"), intCol("RightStamp", 1), intCol("Sentinel", 10),
+                    intCol("RightOther", 1));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("RightOther")));
+        });
+
+        Asserts.assertEquals(new int[] {10, 10, 11}, ColumnVectors.ofInt(result, "Sentinel").toArray());
+        assertEquals(1, listener.getCount());
+        assertEquals(i(2), listener.getUpdate().modified());
+        assertEquals(result.newModifiedColumnSet("LeftOther"), listener.getUpdate().modifiedColumnSet());
+        result.removeUpdateListener(listener);
+    }
+
+    /**
+     * With a refreshing right side, a cycle that modifies a right column the join does not add and also adds a right
+     * row reports only the left row that the added right row matches, for either left refresh mode and with or without
+     * exact match columns.
+     */
+    @Test
+    public void testRightModificationOfColumnNotAddedWithRightAdd() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean bucketed : new boolean[] {false, true}) {
+                final String description = "leftRefreshing=" + leftRefreshing + ", bucketed=" + bucketed;
+                final QueryTable left = leftRefreshing
+                        ? testRefreshingTable(i(0, 1, 2, 3).toTracking(), col("Key", "A", "A", "A", "B"),
+                                intCol("LeftStamp", 1, 2, 3, 20))
+                        : testTable(i(0, 1, 2, 3).toTracking(), col("Key", "A", "A", "A", "B"),
+                                intCol("LeftStamp", 1, 2, 3, 20));
+                final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "A", "A"),
+                        intCol("RightStamp", 1, 3), intCol("Sentinel", 10, 11), intCol("RightOther", 0, 0));
+                final QueryTable result = (QueryTable) left.aj(right,
+                        bucketed ? "Key,LeftStamp>=RightStamp" : "LeftStamp>=RightStamp", "Sentinel");
+                final SimpleListener listener = new SimpleListener(result);
+                result.addUpdateListener(listener);
+
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    // right row 0 matches left rows 0 and 1, but RightOther is not a column of the result
+                    addToTable(right, i(0), col("Key", "A"), intCol("RightStamp", 1), intCol("Sentinel", 10),
+                            intCol("RightOther", 1));
+                    // right row 5 is the match for left row 3 only
+                    addToTable(right, i(5), col("Key", "B"), intCol("RightStamp", 15), intCol("Sentinel", 12),
+                            intCol("RightOther", 0));
+                    right.notifyListeners(new TableUpdateImpl(i(5), i(), i(0), RowSetShiftData.EMPTY,
+                            right.newModifiedColumnSet("RightOther")));
+                });
+
+                Asserts.assertEquals(description, new int[] {10, 10, 11, 12},
+                        ColumnVectors.ofInt(result, "Sentinel").toArray());
+                assertEquals(description, 1, listener.getCount());
+                assertEquals(description, i(3), listener.getUpdate().modified());
+                result.removeUpdateListener(listener);
+            }
+        }
+    }
+
+    /**
      * With both sides refreshing, the first right row of a bucket that held only left rows modifies just the left rows
      * that it matches.
      */
@@ -2427,6 +2504,270 @@ public class QueryTableAjTest {
         assertEquals(1, listener.getCount());
         assertEquals(i(1, 2), listener.getUpdate().modified());
         result.removeUpdateListener(listener);
+    }
+
+    /**
+     * The result of an as-of join with a blink left table is itself a blink table, for aj and raj with and without
+     * exact match columns and against a static or refreshing right table, so a downstream aggregation accumulates over
+     * every row the left table has produced.
+     */
+    @Test
+    public void testBlinkLeftResultIsBlink() {
+        final QueryTable source = testRefreshingTable(i(0).toTracking(), col("Key", "A"), intCol("LeftStamp", 5));
+        final Table blinkLeft = source.assertBlink();
+        final QueryTable staticRight = testTable(i(0).toTracking(), col("Key", "A"), intCol("RightStamp", 1),
+                intCol("Sentinel", 7));
+        final QueryTable refreshingRight = testRefreshingTable(i(0).toTracking(), col("Key", "A"),
+                intCol("RightStamp", 1), intCol("Sentinel", 7));
+
+        final List<Table> counts = new ArrayList<>();
+        for (final QueryTable right : new QueryTable[] {staticRight, refreshingRight}) {
+            for (final String match : new String[] {"LeftStamp>=RightStamp", "Key,LeftStamp>=RightStamp"}) {
+                final QueryTable ajResult = (QueryTable) blinkLeft.aj(right, match, "Sentinel");
+                assertTrue(match + " aj", ajResult.isBlink());
+                counts.add(ajResult.countBy("N"));
+                final QueryTable rajResult =
+                        (QueryTable) blinkLeft.raj(right, match.replace(">=", "<="), "Sentinel");
+                assertTrue(match + " raj", rajResult.isBlink());
+                counts.add(rajResult.countBy("N"));
+            }
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(0));
+            addToTable(source, i(1), col("Key", "A"), intCol("LeftStamp", 6));
+            source.notifyListeners(i(1), i(0), i());
+        });
+
+        for (final Table count : counts) {
+            assertEquals(2L, ColumnVectors.ofLong(count, "N").get(0));
+        }
+    }
+
+    /**
+     * Against a static right table, the result of an as-of join with an add-only or append-only left table carries the
+     * same attribute, because a result row changes only when its left row does; against a refreshing right table the
+     * result carries neither.
+     */
+    @Test
+    public void testAddOnlyAndAppendOnlyLeftAgainstStaticRight() {
+        final QueryTable source = testRefreshingTable(i(0).toTracking(), col("Key", "A"), intCol("LeftStamp", 5));
+        final Table addOnlyLeft = source.assertAddOnly();
+        final Table appendOnlyLeft = source.assertAppendOnly();
+        final QueryTable staticRight = testTable(i(0).toTracking(), col("Key", "A"), intCol("RightStamp", 1),
+                intCol("Sentinel", 7));
+        final QueryTable refreshingRight = testRefreshingTable(i(0).toTracking(), col("Key", "A"),
+                intCol("RightStamp", 1), intCol("Sentinel", 7));
+
+        final List<SimpleListener> listeners = new ArrayList<>();
+        final List<QueryTable> results = new ArrayList<>();
+        for (final String match : new String[] {"LeftStamp>=RightStamp", "Key,LeftStamp>=RightStamp"}) {
+            for (final boolean reverse : new boolean[] {false, true}) {
+                final String description = match + (reverse ? " raj" : " aj");
+                final String rule = reverse ? match.replace(">=", "<=") : match;
+                final QueryTable addOnly = (QueryTable) (reverse ? addOnlyLeft.raj(staticRight, rule, "Sentinel")
+                        : addOnlyLeft.aj(staticRight, rule, "Sentinel"));
+                assertTrue(description + " add only", addOnly.isAddOnly());
+                final QueryTable appendOnly =
+                        (QueryTable) (reverse ? appendOnlyLeft.raj(staticRight, rule, "Sentinel")
+                                : appendOnlyLeft.aj(staticRight, rule, "Sentinel"));
+                assertTrue(description + " append only", appendOnly.isAppendOnly());
+                final QueryTable ticking = (QueryTable) (reverse ? appendOnlyLeft.raj(refreshingRight, rule, "Sentinel")
+                        : appendOnlyLeft.aj(refreshingRight, rule, "Sentinel"));
+                assertFalse(description + " refreshing right add only", ticking.isAddOnly());
+                assertFalse(description + " refreshing right append only", ticking.isAppendOnly());
+                for (final QueryTable result : new QueryTable[] {addOnly, appendOnly}) {
+                    final SimpleListener listener = new SimpleListener(result);
+                    result.addUpdateListener(listener);
+                    listeners.add(listener);
+                    results.add(result);
+                }
+            }
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), col("Key", "A"), intCol("LeftStamp", 6));
+            source.notifyListeners(i(1), i(), i());
+        });
+
+        for (int ii = 0; ii < listeners.size(); ++ii) {
+            final SimpleListener listener = listeners.get(ii);
+            assertEquals(1, listener.getCount());
+            assertEquals(i(1), listener.getUpdate().added());
+            assertTrue(listener.getUpdate().removed().isEmpty());
+            assertTrue(listener.getUpdate().modified().isEmpty());
+            results.get(ii).removeUpdateListener(listener);
+        }
+    }
+
+    /**
+     * An as-of join copies the column descriptions of the left table and of the right columns that it adds, under their
+     * result names, for aj and raj with and without exact match columns.
+     */
+    @Test
+    public void testColumnDescriptionsCopied() {
+        final Table left = testTable(i(0).toTracking(), col("Key", "A"), intCol("LeftStamp", 5))
+                .withColumnDescription("LeftStamp", "left stamp");
+        final Table right = testTable(i(0).toTracking(), col("Key", "A"), intCol("RightStamp", 1),
+                intCol("Sentinel", 7), intCol("Other", 8))
+                .withColumnDescriptions(Map.of("RightStamp", "right stamp", "Sentinel", "right value", "Other",
+                        "not added"));
+        final Map<String, String> expected = Map.of("LeftStamp", "left stamp", "RightStamp", "right stamp", "Renamed",
+                "right value");
+        for (final String match : new String[] {"LeftStamp>=RightStamp", "Key,LeftStamp>=RightStamp"}) {
+            assertEquals(match + " aj", expected, left.aj(right, match, "Renamed=Sentinel")
+                    .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+            assertEquals(match + " raj", expected, left.raj(right, match.replace(">=", "<="), "Renamed=Sentinel")
+                    .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
+        }
+    }
+
+    /**
+     * With both sides refreshing, successive right cycles that insert, then modify, then remove right rows in many
+     * buckets, each cycle changing the match of more left rows than a bucket has right rows, restamp every bucket
+     * correctly and report exactly the affected left rows, for aj and raj with and without exact match columns.
+     */
+    @Test
+    public void testRightChangesRestampManyLeftRowsPerBucket() {
+        final int bucketCount = 20;
+        final int leftPerBucket = 10;
+        final String[] leftKeys = new String[bucketCount * leftPerBucket];
+        final int[] leftStamps = new int[bucketCount * leftPerBucket];
+        for (int bucket = 0; bucket < bucketCount; ++bucket) {
+            for (int row = 0; row < leftPerBucket; ++row) {
+                leftKeys[bucket * leftPerBucket + row] = "K" + bucket;
+                leftStamps[bucket * leftPerBucket + row] = 100 + row;
+            }
+        }
+        final String[] rightKeys = new String[bucketCount];
+        final int[] rightStamps = new int[bucketCount];
+        final int[] rightSentinels = new int[bucketCount];
+        final String[] insertedKeys = new String[bucketCount];
+        final int[] insertedStamps = new int[bucketCount];
+        final int[] insertedSentinels = new int[bucketCount];
+        for (int bucket = 0; bucket < bucketCount; ++bucket) {
+            rightKeys[bucket] = "K" + bucket;
+            rightStamps[bucket] = 50;
+            rightSentinels[bucket] = bucket;
+            insertedKeys[bucket] = "K" + bucket;
+            insertedStamps[bucket] = 102;
+            insertedSentinels[bucket] = 1000 + bucket;
+        }
+
+        for (final boolean bucketed : new boolean[] {false, true}) {
+            for (final boolean reverse : new boolean[] {false, true}) {
+                final String description = (bucketed ? "bucketed" : "zero key") + (reverse ? " raj" : " aj");
+                final QueryTable left = testRefreshingTable(RowSetFactory.flat(leftKeys.length).toTracking(),
+                        stringCol("Key", leftKeys), intCol("LeftStamp", leftStamps));
+                final QueryTable right = testRefreshingTable(
+                        RowSetFactory.fromRange(0, bucketCount - 1).toTracking(), stringCol("Key", rightKeys),
+                        intCol("RightStamp", rightStamps), intCol("Sentinel", rightSentinels));
+                final String stamp = reverse ? "LeftStamp<=RightStamp" : "LeftStamp>=RightStamp";
+                final String match = bucketed ? "Key," + stamp : stamp;
+                final QueryTable result = (QueryTable) (reverse ? left.raj(right, match, "Sentinel")
+                        : left.aj(right, match, "Sentinel"));
+                final SimpleListener listener = new SimpleListener(result);
+                result.addUpdateListener(listener);
+
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                // insert one right row per bucket that takes over the match of most of that bucket's left rows
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(right, RowSetFactory.fromRange(100, 100 + bucketCount - 1),
+                            stringCol("Key", insertedKeys), intCol("RightStamp", insertedStamps),
+                            intCol("Sentinel", insertedSentinels));
+                    right.notifyListeners(RowSetFactory.fromRange(100, 100 + bucketCount - 1), i(), i());
+                });
+                final Table afterInsert = reverse ? left.snapshot().raj(right.snapshot(), match, "Sentinel")
+                        : left.snapshot().aj(right.snapshot(), match, "Sentinel");
+                assertTableEquals(afterInsert, result);
+                assertEquals(description, 1, listener.getCount());
+                final RowSet changedByInsert = listener.getUpdate().modified().copy();
+
+                // modify the added column of the inserted rows, then remove them
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final int[] modifiedSentinels = new int[bucketCount];
+                    Arrays.setAll(modifiedSentinels, bucket -> 2000 + bucket);
+                    addToTable(right, RowSetFactory.fromRange(100, 100 + bucketCount - 1),
+                            stringCol("Key", insertedKeys), intCol("RightStamp", insertedStamps),
+                            intCol("Sentinel", modifiedSentinels));
+                    right.notifyListeners(new TableUpdateImpl(i(), i(),
+                            RowSetFactory.fromRange(100, 100 + bucketCount - 1), RowSetShiftData.EMPTY,
+                            right.newModifiedColumnSet("Sentinel")));
+                });
+                assertTableEquals(reverse ? left.snapshot().raj(right.snapshot(), match, "Sentinel")
+                        : left.snapshot().aj(right.snapshot(), match, "Sentinel"), result);
+                assertEquals(description, changedByInsert, listener.getUpdate().modified());
+
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    removeRows(right, RowSetFactory.fromRange(100, 100 + bucketCount - 1));
+                    right.notifyListeners(i(), RowSetFactory.fromRange(100, 100 + bucketCount - 1), i());
+                });
+                assertTableEquals(reverse ? left.snapshot().raj(right.snapshot(), match, "Sentinel")
+                        : left.snapshot().aj(right.snapshot(), match, "Sentinel"), result);
+                assertEquals(description, changedByInsert, listener.getUpdate().modified());
+                assertTrue(description, changedByInsert.size() > bucketCount);
+
+                changedByInsert.close();
+                result.removeUpdateListener(listener);
+            }
+        }
+    }
+
+    /**
+     * With both sides refreshing and exact match columns, a bucket whose left rows have all been removed keeps its
+     * right rows through right removals, additions, modifications, and shifts without reporting any modified rows, and
+     * left rows that later return to the bucket stamp as a static join would, for aj and raj with and without exact
+     * matches.
+     */
+    @Test
+    public void testRightChangesInBucketWithoutLeftRows() {
+        for (final String stamp : new String[] {"LeftStamp>=RightStamp", "LeftStamp>RightStamp",
+                "LeftStamp<=RightStamp", "LeftStamp<RightStamp"}) {
+            final boolean reverse = stamp.contains("<");
+            final String match = "Key," + stamp;
+            final QueryTable left = testRefreshingTable(i(0, 1, 2, 10).toTracking(), col("Key", "A", "A", "A", "B"),
+                    intCol("LeftStamp", 15, 25, 35, 20));
+            final QueryTable right = testRefreshingTable(i(0, 1, 2, 3, 100).toTracking(),
+                    col("Key", "A", "A", "A", "A", "B"), intCol("RightStamp", 10, 20, 30, 40, 20),
+                    intCol("Sentinel", 0, 1, 2, 3, 100));
+            final QueryTable result = (QueryTable) (reverse ? left.raj(right, match, "Sentinel")
+                    : left.aj(right, match, "Sentinel"));
+            final SimpleListener listener = new SimpleListener(result);
+            result.addUpdateListener(listener);
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+            // remove every left row of bucket A
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(left, i(0, 1, 2));
+                left.notifyListeners(i(), i(0, 1, 2), i());
+            });
+
+            // remove, add, and modify right rows of bucket A
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(right, i(1));
+                addToTable(right, i(4, 5), col("Key", "A", "A"), intCol("RightStamp", 25, 35),
+                        intCol("Sentinel", 4, 5));
+                addToTable(right, i(2), col("Key", "A"), intCol("RightStamp", 30), intCol("Sentinel", 22));
+                right.notifyListeners(new TableUpdateImpl(i(4, 5), i(1), i(2), RowSetShiftData.EMPTY,
+                        right.newModifiedColumnSet("Sentinel")));
+            });
+            assertTrue(stamp, listener.getUpdate().modified().isEmpty());
+
+            // shift the right rows of bucket A
+            updateGraph.runWithinUnitTestCycle(() -> shiftTestTable(right, 0, 5, 50));
+            assertTrue(stamp, listener.getUpdate().modified().isEmpty());
+
+            // left rows return to bucket A
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(0, 1, 2, 3), col("Key", "A", "A", "A", "A"), intCol("LeftStamp", 5, 25, 32, 45));
+                left.notifyListeners(i(0, 1, 2, 3), i(), i());
+            });
+            assertTableEquals(reverse ? left.snapshot().raj(right.snapshot(), match, "Sentinel")
+                    : left.snapshot().aj(right.snapshot(), match, "Sentinel"), result);
+            result.removeUpdateListener(listener);
+        }
     }
 
     /**

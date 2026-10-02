@@ -20,6 +20,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.impl.ssa.SsaSsaStamp;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
@@ -150,7 +151,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 final WritableLongChunk<RowKeys> leftStampKeys =
                         leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(cycleLeftChunkSize) : null;
                 final LongSortKernel<Values, RowKeys> sortKernel = LongSortKernel.makeContext(stampChunkType, order,
-                        Math.max(cycleLeftChunkSize, cycleRightChunkSize), true)) {
+                        Math.max(cycleLeftChunkSize, cycleRightChunkSize), true);
+                final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
 
             // first we remove anything that is not of interest from the left hand side, because we don't want to
@@ -237,7 +239,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                                 rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
                                 ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys,
-                                        priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
+                                        priorRedirections, rowRedirection, modifiedBuilder, modifiedKeys,
+                                        disallowExactMatch);
                             }
                         }
 
@@ -345,7 +348,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                     stampCompact.compact(stampChunk, retainStamps);
 
                                     ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices, nextRightValue,
-                                            rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                                            rowRedirection, modifiedBuilder, modifiedKeys, endsWithLastValue,
+                                            disallowExactMatch);
                                 }
                             }
                         }
@@ -361,7 +365,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                     chunkOk.fillRowKeyChunk(rightStampKeys);
                                     sortKernel.sort(rightStampKeys, rightStampValues);
                                     ssaSsaStamp.findModified(leftSsa, rowRedirection, rightStampValues, rightStampKeys,
-                                            modifiedBuilder, disallowExactMatch);
+                                            modifiedBuilder, modifiedKeys, disallowExactMatch);
                                 }
                             }
                         }
