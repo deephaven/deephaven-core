@@ -87,7 +87,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
                 if (isFreshBlock(block)) {
                     // the block's previous values are the ones it was allocated with, and are shared
-                    it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
                     continue;
                 }
                 final int indexWithinBlock = (int) (firstKey & INDEX_MASK);
