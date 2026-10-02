@@ -37,8 +37,6 @@ def createApplication = { String name, String mainClass ->
 }
 
 application.applicationDistribution.into('bin') {
-    from(createApplication('publish-tables', 'io.deephaven.client.examples.PublishTables'))
-    from(createApplication('write-qsts', 'io.deephaven.client.examples.WriteExampleQsts'))
     from(createApplication('table-manager', 'io.deephaven.client.examples.TableManagerExample'))
     from(createApplication('execute-script', 'io.deephaven.client.examples.ExecuteScript'))
     from(createApplication('execute-code', 'io.deephaven.client.examples.ExecuteCode'))

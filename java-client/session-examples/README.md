@@ -21,7 +21,7 @@ java-client/session-examples/build/install/java-client-session-examples/bin/<pro
 ### Build
 
 ```shell
-./gradlew client-session-examples:build
+./gradlew java-client-session-examples:build
 ```
 
 produces:

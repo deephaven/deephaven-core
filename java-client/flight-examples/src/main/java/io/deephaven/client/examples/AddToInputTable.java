@@ -20,6 +20,7 @@ import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Schema;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 import java.time.Instant;
 import java.util.*;
@@ -30,6 +31,13 @@ import java.util.stream.Collectors;
 @Command(name = "add-to-input-table", mixinStandardHelpOptions = true,
         description = "Add to Input Table", version = "0.1.0")
 class AddToInputTable extends FlightExampleBase {
+
+    @Option(names = {"--rows"}, description = "The number of rows to add before exiting, unlimited if unset")
+    Long rows;
+
+    @Option(names = {"--sleep-millis"},
+            description = "The sleep milliseconds between rows, defaults to a random duration under one second")
+    Long sleepMillis;
 
     @Override
     protected void execute(FlightSession flight) throws Exception {
@@ -107,9 +115,10 @@ class AddToInputTable extends FlightExampleBase {
                 }
             }
 
+            final long numRows = rows == null ? Long.MAX_VALUE : rows;
             int rowCount = 0;
 
-            while (true) {
+            while (rowCount < numRows) {
                 // Add a new row, at least once every second
                 final NewTable newRow =
                         header.row(true, (byte) 42, 'a', (short) 32_000, rowCount++, 1234567890123L, 3.14f,
@@ -134,7 +143,7 @@ class AddToInputTable extends FlightExampleBase {
                     }
 
                 }
-                Thread.sleep(ThreadLocalRandom.current().nextLong(1000));
+                Thread.sleep(sleepMillis == null ? ThreadLocalRandom.current().nextLong(1000) : sleepMillis);
             }
         }
     }

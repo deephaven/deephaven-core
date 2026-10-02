@@ -5,9 +5,12 @@ package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.SessionFactory;
+import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceBlockingStub;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest.Builder;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -16,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Command(name = "subscribe-to-logs", mixinStandardHelpOptions = true,
         description = "Console#SubscribeToLogs", version = "0.1.0")
@@ -41,6 +45,11 @@ class SubscribeToLogs extends SessionExampleBase {
             description = "Limits the messages to the specified levels, defaults to all levels")
     Set<String> levels;
 
+    @Option(names = {"--timeout"},
+            description = "Exit after this duration even if fewer than --count messages arrived, for example PT5S; "
+                    + "unlimited if unset")
+    Duration timeout;
+
     @Override
     protected void execute(SessionFactory sessionFactory) throws Exception {
         try (final Session session = sessionFactory.newSession()) {
@@ -50,20 +59,28 @@ class SubscribeToLogs extends SessionExampleBase {
                     builder.addLevels(level);
                 }
             }
-            final Iterator<LogSubscriptionData> logs = session
-                    .channel()
-                    .consoleBlocking()
-                    .subscribeToLogs(builder.build());
+            ConsoleServiceBlockingStub console = session.channel().consoleBlocking();
+            if (timeout != null) {
+                console = console.withDeadlineAfter(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            }
+            final Iterator<LogSubscriptionData> logs = console.subscribeToLogs(builder.build());
             final long count = this.count == null ? Long.MAX_VALUE : this.count;
-            for (int i = 0; i < count && logs.hasNext();) {
-                for (int j = 0; i < count && j < batch && logs.hasNext(); ++j, ++i) {
-                    final LogSubscriptionData record = logs.next();
-                    if (!quiet) {
-                        System.out.println(format(record));
+            try {
+                for (int i = 0; i < count && logs.hasNext();) {
+                    for (int j = 0; i < count && j < batch && logs.hasNext(); ++j, ++i) {
+                        final LogSubscriptionData record = logs.next();
+                        if (!quiet) {
+                            System.out.println(format(record));
+                        }
                     }
+                    // this is useful for simulating different types of client behavior
+                    Thread.sleep(sleepDuration.toMillis());
                 }
-                // this is useful for simulating different types of client behavior
-                Thread.sleep(sleepDuration.toMillis());
+            } catch (StatusRuntimeException e) {
+                if (timeout == null || e.getStatus().getCode() != Code.DEADLINE_EXCEEDED) {
+                    throw e;
+                }
+                // The --timeout deadline passed; that is a normal exit.
             }
         }
     }

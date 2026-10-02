@@ -13,16 +13,25 @@ import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Command(name = "subscribe-fields", mixinStandardHelpOptions = true,
         description = "Subscribe to fields", version = "0.1.0")
 public final class SubscribeToFields extends SingleSessionExampleBase {
+
+    @Option(names = {"-c", "--count"},
+            description = "The number of field change notifications to receive before exiting, unlimited if unset")
+    Long count;
+
     @Override
     protected void execute(Session session) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
+        final long notificationsToReceive = count == null ? Long.MAX_VALUE : count;
+        final AtomicLong notificationsReceived = new AtomicLong();
         final Cancel cancel = session.subscribeToFields(new Listener() {
             @Override
             public void onNext(FieldChanges fields) {
@@ -41,6 +50,9 @@ public final class SubscribeToFields extends SingleSessionExampleBase {
                 for (FieldInfo fieldInfo : removed) {
                     System.out.println("Removed: " + fieldInfo);
                 }
+                if (notificationsReceived.incrementAndGet() >= notificationsToReceive) {
+                    latch.countDown();
+                }
             }
 
             @Override
@@ -58,6 +70,7 @@ public final class SubscribeToFields extends SingleSessionExampleBase {
         });
         Runtime.getRuntime().addShutdownHook(new Thread(cancel::cancel));
         latch.await();
+        cancel.cancel();
     }
 
     private static boolean isCancelled(Throwable t) {

@@ -44,6 +44,9 @@ abstract class AggInputBase extends FlightExampleBase {
             defaultValue = "100")
     long sleepMillis;
 
+    @Option(names = {"--cycles"}, description = "The number of update cycles to run before exiting, unlimited if unset")
+    Long cycles;
+
     public abstract LabeledTables labeledTables(TableSpec base);
 
     @Override
@@ -80,8 +83,9 @@ abstract class AggInputBase extends FlightExampleBase {
             final Random random = new Random();
 
             final int sizeGuess = (int) Math.round(inputTableSize * updatePercentage);
+            final long numCycles = cycles == null ? Long.MAX_VALUE : cycles;
 
-            while (true) {
+            for (long cycle = 0; cycle < numCycles; ++cycle) {
                 final ColumnHeaders8<Integer, Integer, Byte, Short, Integer, Long, Float, Double>.Rows rows =
                         headers.start(sizeGuess);
                 for (int i = 0; i < inputTableSize; ++i) {
