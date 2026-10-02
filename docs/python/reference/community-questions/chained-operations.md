@@ -1,6 +1,5 @@
 ---
 title: Does it make any difference if I separate table operations or chain them together?
-sidebar_label: Does it make any difference if I separate table operations or chain them together?
 ---
 
 <em>I have a query in which I create a series of tables via various table operations. I only really need a couple of the resultant tables as output. Does creating tables I don't need along the way affect performance?</em>

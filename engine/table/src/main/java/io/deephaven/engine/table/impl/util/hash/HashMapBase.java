@@ -1,0 +1,384 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.engine.table.impl.util.hash;
+
+import io.deephaven.base.verify.Assert;
+import io.deephaven.hash.PrimeFinder;
+import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
+
+import java.util.Arrays;
+import java.util.HashSet;
+
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
+public abstract class HashMapBase implements NullableLongLongMap {
+    static final int DEFAULT_INITIAL_CAPACITY = 10;
+    static final long DEFAULT_NO_ENTRY_VALUE = -1;
+    static final double DEFAULT_LOAD_FACTOR = 0.5;
+
+    // There are three "special keys" removed from the range of valid keys that are used to represent various slot
+    // states:
+    // 1. SPECIAL_KEY_FOR_EMPTY_SLOT is used to represent a slot that has never been used.
+    // 2. SPECIAL_KEY_FOR_DELETED_SLOT is used to represent a slot that was once in use, but the key that was formerly
+    // present there has been deleted.
+    // 3. NULL_LONG is used to represent the null key.
+    //
+    // These values must all be distinct.
+    //
+    // For the sake of efficiency, we define SPECIAL_KEY_FOR_EMPTY_SLOT to be 0. This means that our arrays are ready to
+    // go after being allocated, and we don't need to fill them with a special value. However, we are aware that our
+    // callers may wish to use 0 as a key. To support this, we remap key=0 on get, put, remove, and iteration operations
+    // to our special value called REDIRECTED_KEY_FOR_EMPTY_SLOT.
+    static final long SPECIAL_KEY_FOR_EMPTY_SLOT = 0;
+    static final long REDIRECTED_KEY_FOR_EMPTY_SLOT = NULL_LONG + 1;
+    static final long SPECIAL_KEY_FOR_DELETED_SLOT = NULL_LONG + 2;
+
+    /**
+     * This is the load factor we use as the hashtable nears its maximum size, in order to try to keep functioning
+     * (albeit with reduced performance) rather than failing.
+     */
+    private static final double NEARLY_FULL_LOAD_FACTOR = 0.9;
+
+    /**
+     * This is the fraction of the maximum possible size at which we just give up and throw an exception. It is kept
+     * slightly smaller than the NEARLY_FULL_LOAD_FACTOR (otherwise, we might end up in a situation where every put
+     * caused a rehash). Additionally, for some reason K2V2 is much less tolerant of getting full than the other two (it
+     * gets very slow as it approaches the max). For this reason, until we figure it out, we maintain individual size
+     * factors for each KnVn.
+     */
+    private static final double SIZE_LIMIT_FACTOR1 = 0.85;
+    private static final double SIZE_LIMIT_FACTOR2 = 0.75;
+    private static final double SIZE_LIMIT_FACTOR4 = 0.85;
+    /**
+     * This is the size at which we just give up and throw an exception rather than do a new put. It is number of
+     * entries (aka number of longs / 2) * SIZE_LIMIT_FACTORn.
+     */
+    static final int SIZE_LIMIT1 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR1);
+    static final int SIZE_LIMIT2 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR2);
+    static final int SIZE_LIMIT4 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR4);
+
+    static {
+        // All the "SPECIAL_" values need to be unique. This is one way to check this easily.
+        HashSet<Long> hs = new HashSet<>();
+        hs.add(NULL_LONG);
+        hs.add(SPECIAL_KEY_FOR_EMPTY_SLOT);
+        hs.add(REDIRECTED_KEY_FOR_EMPTY_SLOT);
+        hs.add(SPECIAL_KEY_FOR_DELETED_SLOT);
+        Assert.eq(hs.size(), "hs.size()", 4, "4");
+    }
+
+    // The entry capacity for the next backing array allocation. Starts at the construction-time request, and is
+    // raised by resetToNullRetainingCapacityImpl() to the capacity the map had reached.
+    private int desiredInitialCapacity;
+    private final double loadFactor;
+    private final long noEntryValue;
+    // There are three kinds of slots: empty, holding a value, and deleted (formerly holding a value).
+    // 'size' is the number of slots holding a value.
+    int size;
+    // 'nonEmptySlots' is the number of slots either holding a value or deleted. It is an invariant that
+    // nonEmptySlots >= size.
+    int nonEmptySlots;
+    // The threshold (generally loadFactor * capacity) at which a rehash is triggered. This happens when nonEmptySlots
+    // meets or exceeds rehashThreshold. There is a decision to make about whether to rehash at the same capacity or a
+    // larger capacity. The heuristic we use is that if size >= (2/3) * nonEmptySlots we rehash to a larger capacity.
+    int rehashThreshold;
+    // In various places in the code, we will be dealing with three kinds of units:
+    // - How many buckets in the array (this is always a prime number)
+    // - How many entries in the array (at 4 entries per bucket, this is numBuckets * 4)
+    // - How many longs in the array (at 2 longs per entry (key and value), this is numEntries * 2)
+    // The actual array of longs (with length (numBuckets * 4 * 2)) is stored in our child.
+
+    HashMapBase(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
+        this.desiredInitialCapacity = desiredInitialCapacity;
+        this.loadFactor = loadFactor;
+        this.noEntryValue = noEntryValue;
+        this.size = 0;
+        this.nonEmptySlots = 0;
+        this.rehashThreshold = 0;
+    }
+
+    static long fixKey(long key) {
+        Assert.neq(key, "key", REDIRECTED_KEY_FOR_EMPTY_SLOT, "REDIRECTED_KEY_FOR_EMPTY_SLOT");
+        Assert.neq(key, "key", SPECIAL_KEY_FOR_DELETED_SLOT, "SPECIAL_KEY_FOR_DELETED_SLOT");
+        return key == SPECIAL_KEY_FOR_EMPTY_SLOT ? REDIRECTED_KEY_FOR_EMPTY_SLOT : key;
+    }
+
+    /**
+     * Round an entry capacity up to a whole number of buckets, in long arithmetic so that a saturated request (near
+     * {@link Integer#MAX_VALUE}) cannot wrap negative.
+     */
+    static int desiredBucketCount(final int desiredEntryCapacity, final int entriesPerBucket) {
+        return (int) (((long) desiredEntryCapacity + entriesPerBucket - 1) / entriesPerBucket);
+    }
+
+    long[] allocateKeysAndValuesArray(int entriesPerBucket) {
+        final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
+        final int longCapacity = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
+        final long[] keysAndValues = new long[longCapacity];
+        setKeysAndValues(keysAndValues);
+        return keysAndValues;
+    }
+
+    void rehash(long[] oldKeysAndValues, boolean wantResize, int entriesPerBucket) {
+        final int oldNumLongs = oldKeysAndValues.length;
+
+        final int newNumLongs;
+        if (wantResize) {
+            final int oldBucketCapacity = oldNumLongs / (entriesPerBucket * 2);
+            final int desiredNumBuckets = grownBucketCount(oldBucketCapacity, entriesPerBucket);
+            newNumLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
+        } else {
+            newNumLongs = oldNumLongs;
+        }
+        size = 0;
+        nonEmptySlots = 0;
+        long[] newKvs = new long[newNumLongs];
+
+        // Copy the keys and values over.
+        for (int ii = 0; ii < oldKeysAndValues.length; ii += 2) {
+            final long oldKey = oldKeysAndValues[ii];
+            if (oldKey == SPECIAL_KEY_FOR_EMPTY_SLOT || oldKey == SPECIAL_KEY_FOR_DELETED_SLOT) {
+                continue;
+            }
+            final long oldValue = oldKeysAndValues[ii + 1];
+            putImplNoTranslate(newKvs, oldKey, oldValue, true);
+        }
+        setKeysAndValues(newKvs);
+    }
+
+    /**
+     * The bucket count a growing rehash asks for: double the current one, saturating at the width's maximum bucket
+     * capacity. Doubling in int arithmetic overflowed once the map sat at that maximum — and a growing rehash can be
+     * asked for there, because deleted slots count toward the rehash threshold while only live entries count toward the
+     * size limit — so the prime finder was handed a negative count and answered with a handful of buckets for a billion
+     * entries.
+     */
+    static int grownBucketCount(int oldBucketCapacity, int entriesPerBucket) {
+        return (int) Math.min(getMaxBucketCapacity(entriesPerBucket), 2L * oldBucketCapacity);
+    }
+
+    private int setRehashThresholdAndCalcLongCapacity(int desiredNumBuckets, int entriesPerBucket) {
+        // Because we want the number of buckets to be prime
+        final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
+        final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
+        final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
+        Assert.leq((long) newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
+                Integer.MAX_VALUE, "Integer.MAX_VALUE");
+        final int entryCapacity = newBucketCapacity * entriesPerBucket;
+        final int longCapacity = entryCapacity * 2;
+        // Once clamped to the maximum bucket capacity there is no larger size to grow into, so run at the
+        // nearly-full load factor rather than rehashing (at the same capacity) partway through a large fill.
+        final double loadFactorToUse = newBucketCapacity < maxBucketCapacity ? loadFactor : NEARLY_FULL_LOAD_FACTOR;
+        rehashThreshold = (int) (entryCapacity * loadFactorToUse);
+        return longCapacity;
+    }
+
+    void checkSize(int sizeLimit) {
+        // If the size reaches the max allowed value, then throw an exception.
+        if (size >= sizeLimit) {
+            throw new UnsupportedOperationException(
+                    String.format("The Hashtable has exceeded its maximum capacity of %d elements", sizeLimit));
+        }
+    }
+
+    abstract long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly);
+
+    abstract void setKeysAndValues(long[] keysAndValues);
+
+    @Override
+    public final int size() {
+        return size;
+    }
+
+    @Override
+    public final boolean isEmpty() {
+        return size == 0;
+    }
+
+    final int capacityImpl(long[] keysAndValues) {
+        return keysAndValues == null ? 0 : keysAndValues.length / 2;
+    }
+
+    final void clearImpl(long[] keysAndValues) {
+        size = 0;
+        nonEmptySlots = 0;
+        if (keysAndValues == null) {
+            // Never populated, or reset: there is no array to clear, and clearing an empty map is a no-op.
+            return;
+        }
+        // We leave rehashThreshold alone because the array size (and therefore the hashtable capacity) isn't changing.
+        Arrays.fill(keysAndValues, SPECIAL_KEY_FOR_EMPTY_SLOT);
+    }
+
+    final void resetToNullImpl() {
+        size = 0;
+        nonEmptySlots = 0;
+        rehashThreshold = 0;
+    }
+
+    final void resetToNullRetainingCapacityImpl(long[] keysAndValues) {
+        if (keysAndValues != null) {
+            // Remember the capacity, in entries, so that the next allocation lands back at this size directly rather
+            // than regrowing from the construction-time capacity through successive rehashes. We remember the size
+            // rather than holding the array itself so that the storage is reclaimable while the map sits empty.
+            desiredInitialCapacity = Math.max(desiredInitialCapacity, keysAndValues.length / 2);
+        }
+        resetToNullImpl();
+    }
+
+    /**
+     * Compute an entry capacity to request at construction so that the map can absorb {@code expectedEntries} entries
+     * (including deleted slots) without rehashing.
+     *
+     * <p>
+     * A put rehashes when nonEmptySlots reaches rehashThreshold, which is {@code (int) (entryCapacity * loadFactor)}.
+     * So we need the smallest capacity whose threshold is strictly greater than {@code expectedEntries}. We compute it
+     * directly, then check it against the same expression the map uses and bump by one if rounding left us short.
+     * Bucket-count rounding and prime selection in {@link #allocateKeysAndValuesArray} only ever increase the capacity,
+     * and the threshold is non-decreasing in the capacity, so the allocated map's threshold clears the expected count
+     * too.
+     *
+     * @param expectedEntries the number of slots the map must absorb without rehashing
+     * @param loadFactor the map's load factor
+     * @return an entry capacity to request, saturating at {@link Integer#MAX_VALUE} (at which point the map clamps to
+     *         its maximum capacity and runs at the nearly-full load factor)
+     */
+    static int capacityForExpectedEntries(final int expectedEntries, final double loadFactor) {
+        final long neededThreshold = (long) expectedEntries + 1;
+        long candidate = (long) Math.ceil(neededThreshold / loadFactor);
+        if (candidate < Integer.MAX_VALUE && (long) (candidate * loadFactor) < neededThreshold) {
+            // Because the arithmetic is in double and candidate fits in an int, one bump is always enough.
+            ++candidate;
+        }
+        return (int) Math.min(candidate, Integer.MAX_VALUE);
+    }
+
+    @Override
+    public final long defaultReturnValue() {
+        return noEntryValue;
+    }
+
+    /**
+     * @param kv Our keys and values array
+     * @param space The array to populate (if {@code array} is not null and {@code array.length} >=
+     *        {@link HashMapBase#size()}, otherwise an array of length {@link HashMapBase#size()} will be allocated.
+     * @param wantValues false to return keys; true to return values
+     * @return The passed-in or newly-allocated array of (keys or values).
+     */
+    final long[] keysOrValuesImpl(final long[] kv, final long[] space, final boolean wantValues) {
+        final int sz = size;
+        final long[] result = space != null && space.length >= sz ? space : new long[sz];
+        int nextIndex = 0;
+        // In a single-threaded case, we would not need the 'nextIndex < sz' part of the conjunction. But in the
+        // unsynchronized concurrent case, we might encounter more keys than would fit in the array. To avoid an index
+        // range exception, we do the 'nextIndex < sz' test here.
+        // A never-populated (or reset) map has no array; its keys and values are simply none.
+        final int length = kv == null ? 0 : kv.length;
+        for (int ii = 0; ii < length && nextIndex < sz; ii += 2) {
+            final long key = kv[ii];
+            if (key == SPECIAL_KEY_FOR_EMPTY_SLOT || key == SPECIAL_KEY_FOR_DELETED_SLOT) {
+                continue;
+            }
+            final long resultEntry;
+            if (wantValues) {
+                resultEntry = kv[ii + 1];
+            } else {
+                resultEntry = key == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : key;
+            }
+            result[nextIndex++] = resultEntry;
+        }
+        return result;
+    }
+
+    final void forEachImpl(final long[] kv, LongLongBiConsumer consumer) {
+        if (kv == null) {
+            return;
+        }
+        for (int nextIndex = findOccupiedSlot(kv, 0); nextIndex < kv.length; nextIndex =
+                findOccupiedSlot(kv, nextIndex + 2)) {
+            final long rawKey = kv[nextIndex];
+            final long key = rawKey == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : rawKey;
+            final long value = kv[nextIndex + 1];
+            consumer.accept(key, value);
+        }
+    }
+
+    /**
+     * Find next occupied slot starting at {@code beginSlot}.
+     *
+     * @param beginSlot The inclusive position from where to start looking.
+     * @return The slot containing the next occupied key, or keysAndValues.length if none.
+     */
+    private int findOccupiedSlot(long[] keysAndValues, int beginSlot) {
+        while (beginSlot < keysAndValues.length) {
+            final long key = keysAndValues[beginSlot];
+            if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
+                break;
+            }
+            beginSlot += 2;
+        }
+        return beginSlot;
+    }
+
+    // Run this at class load time to confirm that the values returned by getMaxBucketCapacity aren't too large.
+    // (It would be nice to also confirm that they are prime, but there's no easy way to do that)
+    static {
+        final int longsPerEntry = 2;
+        for (int entriesPerBucket : new int[] {1, 2, 4}) {
+            final long mbc = getMaxBucketCapacity(entriesPerBucket);
+            // Assert.isPrime(mbc);
+            Assert.leq(mbc * entriesPerBucket * longsPerEntry, "mbc * entriesPerBucket * longsPerEntry",
+                    Integer.MAX_VALUE, "Integer.MAX_VALUE");
+        }
+    }
+
+    /**
+     * @param entriesPerBucket Number of entries per bucket
+     * @return The largest prime p such that p * entriesPerBucket * 2 <= Integer.MAX_VALUE
+     */
+    static int getMaxBucketCapacity(int entriesPerBucket) {
+        switch (entriesPerBucket) {
+            case 1:
+                return 1073741789;
+            case 2:
+                return 536870909;
+            case 4:
+                return 268435399;
+            default:
+                throw new UnsupportedOperationException("Unexpected entriesPerBucket " + entriesPerBucket);
+        }
+    }
+
+    /**
+     * Computes Stafford variant 13 of 64bit mix function.
+     *
+     * <p>
+     * See David Stafford's <a href="http://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html">Mix13
+     * variant</a> / java.util.SplittableRandom#mix64(long).
+     */
+    static long mix64(long key) {
+        key ^= (key >>> 30);
+        key *= 0xbf58476d1ce4e5b9L;
+        key ^= (key >>> 27);
+        key *= 0x94d049bb133111ebL;
+        key ^= (key >>> 31);
+        return key;
+    }
+
+    /**
+     * This poorly distributed hash function has been intentionally left with the acknowledgement that some sequentially
+     * indexed key cases may benefit from the cacheability of the poor distribution. If we find common use cases in the
+     * future where this poor first hash causes more problems than it solves, we can update it to a better distributed
+     * hash function.
+     */
+    static int probe1(long key, int range) {
+        final long badHash = (key ^ (key >>> 32));
+        return (int) ((badHash & 0x7fffffffffffffffL) % range);
+    }
+
+    static int probe2(long key, int range) {
+        final long mixHash = mix64(key);
+        return (int) ((mixHash & 0x7fffffffffffffffL) % range);
+    }
+}

@@ -1,6 +1,5 @@
 ---
 title: Deephaven Community Core Quickstart
-sidebar_label: Quickstart
 ---
 
 Deephaven Community Core can be installed with [Docker](https://docs.docker.com/engine/install/) or [pip](https://packaging.python.org/en/latest/tutorials/installing-packages/). Docker-installed Deephaven runs in a [Docker container](https://www.docker.com/resources/what-container/) and requires [Docker](https://docs.docker.com/engine/install/) to be installed on your machine, while pip-installed Deephaven runs natively on your machine in a Python environment and requires the [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) package manager. If you don't have a preference, we recommend starting with [Docker](https://docs.docker.com/engine/install/).

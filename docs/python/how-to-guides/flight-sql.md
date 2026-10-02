@@ -1,6 +1,5 @@
 ---
 title: Connecting to a Deephaven Flight SQL server
-sidebar_label: Flight SQL
 ---
 
 [Flight SQL](https://arrow.apache.org/docs/format/FlightSql.html) is a protocol on top of

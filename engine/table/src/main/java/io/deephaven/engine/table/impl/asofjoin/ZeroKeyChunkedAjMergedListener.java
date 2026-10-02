@@ -73,6 +73,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
             SortingOrder order,
             boolean disallowExactMatch,
             SsaSsaStamp ssaSsaStamp,
+            boolean stampEqualsConsistent,
             SegmentedSortedArray leftSsa,
             SegmentedSortedArray rightSsa,
             WritableRowRedirection rowRedirection,
@@ -95,9 +96,10 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         rightChunkSize = joinControl.rightChunkSize();
 
         stampChunkType = leftStampSource.getChunkType();
-        chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, order == SortingOrder.Descending);
+        chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, stampEqualsConsistent,
+                order == SortingOrder.Descending);
         stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
-        stampCompact = CompactKernel.makeCompact(stampChunkType);
+        stampCompact = CompactKernel.makeCompact(stampChunkType, stampEqualsConsistent);
 
         leftStampColumn = leftTable.newModifiedColumnSet(stampPair.leftColumn());
         rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());

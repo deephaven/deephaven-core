@@ -1,6 +1,5 @@
 ---
 title: IcebergTableAdapter
-sidebar_label: IcebergTableAdapter
 ---
 
 An `IcebergTableAdapter` is a class that manages an Iceberg table and provides methods to interact with it.

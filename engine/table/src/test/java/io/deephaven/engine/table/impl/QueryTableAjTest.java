@@ -53,6 +53,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -64,6 +65,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -3151,5 +3153,118 @@ public class QueryTableAjTest {
             stringRight.notifyListeners(i(), i(1), i());
         });
         Asserts.assertEquals(new int[] {NULL_INT, 0, 0}, ColumnVectors.ofInt(stringResult, "Sentinel").toArray());
+    }
+
+    /**
+     * BigDecimal stamps are ordered by compareTo, so 1.0, 1.00 and 1.000 are one run of equal stamps even though they
+     * are not equals. An aj matches the last right row of the run and a raj matches the first, whatever the scale of
+     * the left stamp, for static and ticking right tables and with or without exact matches.
+     */
+    @Test
+    public void testBigDecimalCompareEqualStamps() {
+        final BigDecimal[] leftStamps = {new BigDecimal("1"), new BigDecimal("1.00"), new BigDecimal("1.0"),
+                new BigDecimal("2"), new BigDecimal("0.5")};
+        final Supplier<ColumnHolder<?>[]> leftColumns = () -> new ColumnHolder<?>[] {
+                col("Key", "A", "A", "A", "A", "A"), col("LeftStamp", leftStamps)};
+        final QueryTable staticLeft = testTable(i(0, 1, 2, 3, 4).toTracking(), leftColumns.get());
+        final QueryTable refreshingLeft = testRefreshingTable(i(0, 1, 2, 3, 4).toTracking(), leftColumns.get());
+
+        final QueryTable staticRight = testTable(i(10, 20, 30, 40, 50).toTracking(),
+                col("Key", "A", "A", "A", "A", "A"),
+                col("RightStamp", new BigDecimal("0.5"), new BigDecimal("1.0"), new BigDecimal("1.00"),
+                        new BigDecimal("1.000"), new BigDecimal("3")),
+                intCol("Sentinel", 0, 1, 2, 3, 4));
+        checkBigDecimalStamps("static right", staticLeft, refreshingLeft, staticRight,
+                new int[] {3, 3, 3, 3, 0}, new int[] {0, 0, 0, 3, NULL_INT},
+                new int[] {1, 1, 1, 4, 0}, new int[] {4, 4, 4, 4, 1});
+
+        // the right rows of the run arrive out of row key order
+        final QueryTable tickingRight = testRefreshingTable(i(10, 30, 50).toTracking(),
+                col("Key", "A", "A", "A"),
+                col("RightStamp", new BigDecimal("0.5"), new BigDecimal("1.00"), new BigDecimal("3")),
+                intCol("Sentinel", 0, 2, 4));
+        final Map<String, Table> results = new LinkedHashMap<>();
+        for (final QueryTable left : new QueryTable[] {staticLeft, refreshingLeft}) {
+            for (final String key : new String[] {"", "Key,"}) {
+                final String prefix = (left.isRefreshing() ? "refreshing" : "static") + " left " + key;
+                results.put(prefix + "aj", left.aj(tickingRight, key + "LeftStamp>=RightStamp", "Sentinel"));
+                results.put(prefix + "aj no exact", left.aj(tickingRight, key + "LeftStamp>RightStamp", "Sentinel"));
+                results.put(prefix + "raj", left.raj(tickingRight, key + "LeftStamp<=RightStamp", "Sentinel"));
+                results.put(prefix + "raj no exact",
+                        left.raj(tickingRight, key + "LeftStamp<RightStamp", "Sentinel"));
+            }
+        }
+        checkBigDecimalResults("initial", results,
+                new int[] {2, 2, 2, 2, 0}, new int[] {0, 0, 0, 2, NULL_INT},
+                new int[] {2, 2, 2, 4, 0}, new int[] {4, 4, 4, 4, 2});
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(tickingRight, i(20, 40), col("Key", "A", "A"),
+                    col("RightStamp", new BigDecimal("1.0"), new BigDecimal("1.000")), intCol("Sentinel", 1, 3));
+            tickingRight.notifyListeners(i(20, 40), i(), i());
+        });
+        checkBigDecimalResults("after add", results,
+                new int[] {3, 3, 3, 3, 0}, new int[] {0, 0, 0, 3, NULL_INT},
+                new int[] {1, 1, 1, 4, 0}, new int[] {4, 4, 4, 4, 1});
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(tickingRight, i(20, 40));
+            tickingRight.notifyListeners(i(), i(20, 40), i());
+        });
+        checkBigDecimalResults("after remove", results,
+                new int[] {2, 2, 2, 2, 0}, new int[] {0, 0, 0, 2, NULL_INT},
+                new int[] {2, 2, 2, 4, 0}, new int[] {4, 4, 4, 4, 2});
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(tickingRight, i(20, 40), col("Key", "A", "A"),
+                    col("RightStamp", new BigDecimal("1.000"), new BigDecimal("1.0")), intCol("Sentinel", 1, 3));
+            tickingRight.notifyListeners(i(20, 40), i(), i());
+        });
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(tickingRight, i(30));
+            tickingRight.notifyListeners(i(), i(30), i());
+        });
+        checkBigDecimalResults("after re-add and remove", results,
+                new int[] {3, 3, 3, 3, 0}, new int[] {0, 0, 0, 3, NULL_INT},
+                new int[] {1, 1, 1, 4, 0}, new int[] {4, 4, 4, 4, 1});
+    }
+
+    private static void checkBigDecimalStamps(final String context, final QueryTable staticLeft,
+            final QueryTable refreshingLeft, final QueryTable right, final int[] expectedAj,
+            final int[] expectedAjNoExact, final int[] expectedRaj, final int[] expectedRajNoExact) {
+        for (final QueryTable left : new QueryTable[] {staticLeft, refreshingLeft}) {
+            for (final String key : new String[] {"", "Key,"}) {
+                final String prefix = context + ", " + (left.isRefreshing() ? "refreshing" : "static") + " left " + key;
+                Asserts.assertEquals(prefix + "aj", expectedAj, ColumnVectors
+                        .ofInt(left.aj(right, key + "LeftStamp>=RightStamp", "Sentinel"), "Sentinel").toArray());
+                Asserts.assertEquals(prefix + "aj no exact", expectedAjNoExact, ColumnVectors
+                        .ofInt(left.aj(right, key + "LeftStamp>RightStamp", "Sentinel"), "Sentinel").toArray());
+                Asserts.assertEquals(prefix + "raj", expectedRaj, ColumnVectors
+                        .ofInt(left.raj(right, key + "LeftStamp<=RightStamp", "Sentinel"), "Sentinel").toArray());
+                Asserts.assertEquals(prefix + "raj no exact", expectedRajNoExact, ColumnVectors
+                        .ofInt(left.raj(right, key + "LeftStamp<RightStamp", "Sentinel"), "Sentinel").toArray());
+            }
+        }
+    }
+
+    private static void checkBigDecimalResults(final String context, final Map<String, Table> results,
+            final int[] expectedAj, final int[] expectedAjNoExact, final int[] expectedRaj,
+            final int[] expectedRajNoExact) {
+        for (final Map.Entry<String, Table> entry : results.entrySet()) {
+            final String name = entry.getKey();
+            final int[] expected;
+            if (name.endsWith("raj no exact")) {
+                expected = expectedRajNoExact;
+            } else if (name.endsWith("raj")) {
+                expected = expectedRaj;
+            } else if (name.endsWith("aj no exact")) {
+                expected = expectedAjNoExact;
+            } else {
+                expected = expectedAj;
+            }
+            Asserts.assertEquals(context + ", " + name, expected,
+                    ColumnVectors.ofInt(entry.getValue(), "Sentinel").toArray());
+        }
     }
 }

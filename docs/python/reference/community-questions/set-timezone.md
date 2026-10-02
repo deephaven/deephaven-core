@@ -1,6 +1,5 @@
 ---
 title: How do I set the default timezone in Deephaven Community Core?
-sidebar_label: How do I set the default timezone?
 ---
 
 There are two ways to set the default time zone in Deephaven.

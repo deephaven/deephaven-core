@@ -1,6 +1,5 @@
 ---
 title: Auto-imported functions
-sidebar_label: Auto-imported functions
 ---
 
 This guide lists the Java methods that are automatically imported into a Deephaven session upon startup.

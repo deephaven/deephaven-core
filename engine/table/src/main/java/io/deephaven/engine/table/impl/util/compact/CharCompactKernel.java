@@ -109,7 +109,7 @@ public class CharCompactKernel implements CompactKernel {
             }
             // region maybeCountNaN
             // endregion maybeCountNaN
-            if (wpos == -1 || !CharComparisons.eq(nextValue, lastValue)) {
+            if (wpos == -1 || !eq(nextValue, lastValue)) {
                 valueChunk.set(++wpos + start, nextValue);
                 counts.set(wpos + start, currentCount = 1);
                 lastValue = nextValue;
@@ -120,4 +120,16 @@ public class CharCompactKernel implements CompactKernel {
         // endregion compactAndCount
         return wpos + 1;
     }
+
+    // region equality helper
+    /**
+     * Test two values for equality consistent with the order in which {@code compactAndCount} sorts them; each class of
+     * equal values is compacted to one value and its count.
+     */
+    private static boolean eq(char lhs, char rhs) {
+        // region equality function
+        return CharComparisons.eq(lhs, rhs);
+        // endregion equality function
+    }
+    // endregion equality helper
 }

@@ -1,6 +1,5 @@
 ---
 title: How do I get the ISO week number from a datetime?
-sidebar_label: How do I get the ISO week number from a datetime?
 ---
 
 ISO week numbers (sometimes called ISO week dates) are defined by the ISO 8601 standard. The ISO week number represents the week of the year, with weeks starting on Monday and the first week of the year being the week that contains the first Thursday of the year.

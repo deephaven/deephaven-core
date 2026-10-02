@@ -97,6 +97,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             SortingOrder order,
             boolean disallowExactMatch,
             SsaSsaStamp ssaSsaStamp,
+            boolean stampEqualsConsistent,
             JoinControl control, RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager,
             WritableRowRedirection rowRedirection) {
         super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
@@ -120,9 +121,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         final boolean reverse = order == SortingOrder.Descending;
 
         stampChunkType = leftStampSource.getChunkType();
-        chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
+        chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, stampEqualsConsistent, reverse);
         stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
-        stampCompact = CompactKernel.makeCompact(stampChunkType);
+        stampCompact = CompactKernel.makeCompact(stampChunkType, stampEqualsConsistent);
 
         leftStampColumn = leftTable.newModifiedColumnSet(stampPair.leftColumn());
         rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());

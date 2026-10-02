@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.by.ssmminmax;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
-import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 
 
@@ -25,8 +24,7 @@ public class BooleanSetResult implements SsmChunkedMinMaxOperator.SetResult {
         if (ssm.size() == 0) {
             newResult = null;
         } else {
-            final ObjectSegmentedSortedMultiset objectSsm = (ObjectSegmentedSortedMultiset) ssm;
-            newResult = (Boolean) (minimum ? objectSsm.getMinObject() : objectSsm.getMaxObject());
+            newResult = (Boolean) (minimum ? ssm.getMin() : ssm.getMax());
         }
         return setResult(destination, newResult);
     }

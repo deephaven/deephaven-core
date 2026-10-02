@@ -234,6 +234,24 @@ public class ReplicateSortKernel {
     }
 
     public static List<String> fixupObjectComparisons(List<String> lines, boolean ascending) {
+        return fixupObjectComparisons(lines, ascending, false);
+    }
+
+    /**
+     * Replace the comparison functions region with an {@code ObjectComparisons} based {@code doComparison}, and make
+     * the equality function region an Object equality test.
+     *
+     * @param lines the lines of the file to fix up
+     * @param ascending true for an ascending {@code doComparison}, false for a descending {@code doComparison}
+     * @param equalityFromComparison if true, the equality function region must contain
+     *        {@code ObjectComparisons.eq(lhs, rhs)}, which becomes {@code ObjectComparisons.compareEquals(lhs, rhs)} so
+     *        that equality is consistent with the ordering (e.g., BigDecimal values that differ only in scale are
+     *        equal); if false, {@code lhs == rhs} in the equality function region becomes
+     *        {@code Objects.equals(lhs, rhs)}
+     * @return the fixed up lines
+     */
+    public static List<String> fixupObjectComparisons(List<String> lines, boolean ascending,
+            boolean equalityFromComparison) {
         final List<String> ascendingComparison = Arrays.asList(
                 "    // ascending comparison",
                 "    private static int doComparison(Object lhs, Object rhs) {",
@@ -245,12 +263,34 @@ public class ReplicateSortKernel {
                 "        return ObjectComparisons.compare(rhs, lhs);",
                 "    }");
         lines = replaceRegion(lines, "comparison functions", ascending ? ascendingComparison : descendingComparison);
-        lines = simpleFixup(
-                lines,
-                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)");
+        if (equalityFromComparison) {
+            lines = fixupObjectEquality(lines);
+        } else {
+            lines = simpleFixup(
+                    lines,
+                    "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)");
+        }
         lines = addMissingImports(lines, "import io.deephaven.util.compare.ObjectComparisons;");
         if (lines.stream().anyMatch(line -> line.contains("Objects."))) {
             lines = addMissingImports(lines, "import java.util.Objects;");
+        }
+        return lines;
+    }
+
+    /**
+     * Make the equality function region, if there is one, an Object equality test consistent with
+     * {@code ObjectComparisons.compare}: the region must contain {@code ObjectComparisons.eq(lhs, rhs)}, which becomes
+     * {@code ObjectComparisons.compareEquals(lhs, rhs)} (e.g., BigDecimal values that differ only in scale are equal).
+     *
+     * @param lines the lines of the file to fix up
+     * @return the fixed up lines
+     */
+    public static List<String> fixupObjectEquality(List<String> lines) {
+        lines = simpleFixup(lines, "equality function", "ObjectComparisons\\.eq\\(lhs, rhs\\)",
+                "ObjectComparisons.compareEquals(lhs, rhs)");
+        if (lines.stream().anyMatch(line -> line.contains("region equality function"))
+                && lines.stream().noneMatch(line -> line.contains("ObjectComparisons.compareEquals(lhs, rhs)"))) {
+            throw new IllegalStateException("equality function region does not use ObjectComparisons.eq");
         }
         return lines;
     }

@@ -1,6 +1,5 @@
 ---
 id: debugging-landing
-sidebar_label: Debugging Groovy code
 title: Debug Groovy code in Deephaven
 ---
 

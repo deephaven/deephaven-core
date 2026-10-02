@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.asofjoin.ZeroKeyChunkedAjMergedListener;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.ssa.SsaSsaStamp;
@@ -141,26 +142,31 @@ public class AsOfJoinHelper {
                 leftStampConverted != originalLeftStampSource && rightStampConverted != originalRightStampSource;
         final ColumnSource<?> leftStampSource = convertStamps ? leftStampConverted : originalLeftStampSource;
         final ColumnSource<?> rightStampSource = convertStamps ? rightStampConverted : originalRightStampSource;
+        // every SSA, stamp and dup compact kernel of this join is created with this single decision
+        final boolean stampEqualsConsistent =
+                BinarySearchKernelHelper.compareConsistentWithEquality(rightStampSource.getType());
 
         final WritableRowRedirection rowRedirection = JoinRowRedirection.makeRowRedirection(control, leftTable);
         if (keyColumnCount == 0) {
             return zeroKeyAj(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
-                    originalRightStampSource, rightStampSource, order, disallowExactMatch, rowRedirection);
+                    originalRightStampSource, rightStampSource, order, disallowExactMatch, stampEqualsConsistent,
+                    rowRedirection);
         }
 
         if (rightTable.isRefreshing()) {
             if (leftTable.isRefreshing()) {
                 return bothIncrementalAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                         disallowExactMatch, stampPair, originalLeftSources, leftSources, originalRightSources,
-                        rightSources, leftStampSource, originalRightStampSource, rightStampSource, rowRedirection);
+                        rightSources, leftStampSource, originalRightStampSource, rightStampSource,
+                        stampEqualsConsistent, rowRedirection);
             }
             return rightTickingLeftStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                     disallowExactMatch, stampPair, originalLeftSources, leftSources, originalRightSources, rightSources,
-                    leftStampSource, originalRightStampSource, rightStampSource, rowRedirection);
+                    leftStampSource, originalRightStampSource, rightStampSource, stampEqualsConsistent, rowRedirection);
         } else {
             return rightStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                     disallowExactMatch, stampPair, originalLeftSources, leftSources, originalRightSources, rightSources,
-                    leftStampSource, originalRightStampSource, rightStampSource, rowRedirection);
+                    leftStampSource, originalRightStampSource, rightStampSource, stampEqualsConsistent, rowRedirection);
         }
     }
 
@@ -180,6 +186,7 @@ public class AsOfJoinHelper {
             ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource,
+            boolean stampEqualsConsistent,
             WritableRowRedirection rowRedirection) {
 
         // region This block is mostly copied to other entry points
@@ -257,7 +264,7 @@ public class AsOfJoinHelper {
         boolean initialStampsComplete = false;
         try {
             try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
-                    rightStampSource, originalRightStampSource);
+                    rightStampSource, originalRightStampSource, stampEqualsConsistent);
                     final ResettableWritableLongChunk<RowKeys> keyChunk =
                             ResettableWritableLongChunk.makeResettableChunk();
                     final ResettableWritableChunk<Values> valuesChunk =
@@ -342,7 +349,7 @@ public class AsOfJoinHelper {
                         final int slotCount = asOfJoinStateManager.probeLeft(restampKeys, leftSources, updatedSlots);
 
                         try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch,
-                                leftStampSource, rightStampSource, originalRightStampSource);
+                                leftStampSource, rightStampSource, originalRightStampSource, stampEqualsConsistent);
                                 final ResettableWritableLongChunk<RowKeys> keyChunk =
                                         ResettableWritableLongChunk.makeResettableChunk();
                                 final ResettableWritableChunk<Values> valuesChunk =
@@ -511,16 +518,17 @@ public class AsOfJoinHelper {
     private static QueryTable zeroKeyAj(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource, ColumnSource<?> rightStampSource, SortingOrder order,
-            boolean disallowExactMatch, final WritableRowRedirection rowRedirection) {
+            boolean disallowExactMatch, boolean stampEqualsConsistent, final WritableRowRedirection rowRedirection) {
         if (rightTable.isRefreshing() && leftTable.isRefreshing()) {
             return zeroKeyAjBothIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
-                    rightStampSource, order, disallowExactMatch, rowRedirection);
+                    rightStampSource, order, disallowExactMatch, stampEqualsConsistent, rowRedirection);
         } else if (rightTable.isRefreshing()) {
             return zeroKeyAjRightIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
-                    rightStampSource, order, disallowExactMatch, rowRedirection);
+                    rightStampSource, order, disallowExactMatch, stampEqualsConsistent, rowRedirection);
         } else {
             return zeroKeyAjRightStatic(leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
-                    originalRightStampSource, rightStampSource, order, disallowExactMatch, rowRedirection);
+                    originalRightStampSource, rightStampSource, order, disallowExactMatch, stampEqualsConsistent,
+                    rowRedirection);
         }
     }
 
@@ -539,6 +547,7 @@ public class AsOfJoinHelper {
             ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource,
+            boolean stampEqualsConsistent,
             WritableRowRedirection rowRedirection) {
         if (leftTable.isRefreshing()) {
             throw new IllegalStateException();
@@ -548,8 +557,9 @@ public class AsOfJoinHelper {
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
         final Supplier<SegmentedSortedArray> ssaFactory =
-                SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
-        final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
+                SegmentedSortedArray.makeFactory(stampChunkType, stampEqualsConsistent, reverse,
+                        control.rightSsaNodeSize());
+        final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, stampEqualsConsistent, reverse);
 
         // region This block is mostly copied from rightStaticAj
         final DataIndex leftCandidateIndex = control.dataIndexToUse(leftTable, originalLeftSources);
@@ -871,7 +881,8 @@ public class AsOfJoinHelper {
                             final ResettableWritableChunk<Values> leftValuesChunk =
                                     rightStampSource.getChunkType().makeResettableWritableChunk()) {
                         final ChunkEquals stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
-                        final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType);
+                        final CompactKernel stampCompact =
+                                CompactKernel.makeCompact(stampChunkType, stampEqualsConsistent);
 
                         // When adding a row to the right hand side: we need to know which left hand side might be
                         // responsive. If we are a duplicate stamp and not the last one, we ignore it. Next, we should
@@ -1007,15 +1018,18 @@ public class AsOfJoinHelper {
             ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource,
+            boolean stampEqualsConsistent,
             WritableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
         final Supplier<SegmentedSortedArray> leftSsaSupplier =
-                SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.leftSsaNodeSize());
+                SegmentedSortedArray.makeFactory(stampChunkType, stampEqualsConsistent, reverse,
+                        control.leftSsaNodeSize());
         final Supplier<SegmentedSortedArray> rightSsaSupplier =
-                SegmentedSortedArray.makeFactory(stampChunkType, reverse, control.rightSsaNodeSize());
-        final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
+                SegmentedSortedArray.makeFactory(stampChunkType, stampEqualsConsistent, reverse,
+                        control.rightSsaNodeSize());
+        final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, stampEqualsConsistent, reverse);
 
         // region This block is mostly copied from rightStaticAj
         final DataIndex leftCandidateIndex = control.dataIndexToUse(leftTable, originalLeftSources);
@@ -1169,7 +1183,7 @@ public class AsOfJoinHelper {
                         leftSources,
                         rightSources, leftStampSource, rightStampSource,
                         leftSsaFactory, rightSsaFactory, order, disallowExactMatch,
-                        ssaSsaStamp, control, asOfJoinStateManager, rowRedirection);
+                        ssaSsaStamp, stampEqualsConsistent, control, asOfJoinStateManager, rowRedirection);
 
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
@@ -1188,19 +1202,21 @@ public class AsOfJoinHelper {
     private static QueryTable zeroKeyAjBothIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final WritableRowRedirection rowRedirection) {
+            boolean stampEqualsConsistent, final WritableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
         final int leftNodeSize = control.leftSsaNodeSize();
         final int rightNodeSize = control.rightSsaNodeSize();
-        final SegmentedSortedArray leftSsa = SegmentedSortedArray.make(stampChunkType, reverse, leftNodeSize);
-        final SegmentedSortedArray rightSsa = SegmentedSortedArray.make(stampChunkType, reverse, rightNodeSize);
+        final SegmentedSortedArray leftSsa =
+                SegmentedSortedArray.make(stampChunkType, stampEqualsConsistent, reverse, leftNodeSize);
+        final SegmentedSortedArray rightSsa =
+                SegmentedSortedArray.make(stampChunkType, stampEqualsConsistent, reverse, rightNodeSize);
 
         fillSsaWithSort(rightTable, rightStampSource, rightSsa, order);
         fillSsaWithSort(leftTable, leftStampSource, leftSsa, order);
 
-        final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
+        final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, stampEqualsConsistent, reverse);
         ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
 
         final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
@@ -1216,7 +1232,7 @@ public class AsOfJoinHelper {
                 new ZeroKeyChunkedAjMergedListener(leftRecorder, rightRecorder,
                         listenerDescription, result, leftTable, rightTable, stampPair, columnsToAdd,
                         leftStampSource, rightStampSource, order, disallowExactMatch,
-                        ssaSsaStamp, leftSsa, rightSsa, rowRedirection, control);
+                        ssaSsaStamp, stampEqualsConsistent, leftSsa, rightSsa, rowRedirection, control);
 
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
@@ -1308,20 +1324,21 @@ public class AsOfJoinHelper {
             QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final WritableRowRedirection rowRedirection) {
+            boolean stampEqualsConsistent, final WritableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
         final int rightNodeSize = control.rightSsaNodeSize();
         final int rightChunkSize = control.rightChunkSize();
-        final SegmentedSortedArray ssa = SegmentedSortedArray.make(stampChunkType, reverse, rightNodeSize);
+        final SegmentedSortedArray ssa =
+                SegmentedSortedArray.make(stampChunkType, stampEqualsConsistent, reverse, rightNodeSize);
 
         fillSsaWithSort(rightTable, rightStampSource, ssa, order);
 
         final int leftSize = leftTable.intSize();
         final WritableChunk<Values> leftStampValues = stampChunkType.makeWritableChunk(leftSize);
         final WritableLongChunk<RowKeys> leftStampKeys = WritableLongChunk.makeWritableChunk(leftSize);
-        final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
+        final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, stampEqualsConsistent, reverse);
         final QueryTable result;
         // if we fail to create the table, then we should make sure to close the left stamp chunks; if we are
         // successful, then the listener owns them and is responsible for closing them
@@ -1357,7 +1374,7 @@ public class AsOfJoinHelper {
         final ModifiedColumnSet.Transformer rightTransformer =
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
         final ChunkEquals stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
-        final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType);
+        final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType, stampEqualsConsistent);
 
         rightTable.addUpdateListener(
                 new BaseTable.ListenerImpl(makeListenerDescription(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
@@ -1621,7 +1638,7 @@ public class AsOfJoinHelper {
     private static QueryTable zeroKeyAjRightStatic(QueryTable leftTable, Table rightTable, MatchPair[] columnsToAdd,
             MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final WritableRowRedirection rowRedirection) {
+            boolean stampEqualsConsistent, final WritableRowRedirection rowRedirection) {
         final RowSet rightRowSet = rightTable.getRowSet();
 
         final WritableLongChunk<RowKeys> rightStampKeys = WritableLongChunk.makeWritableChunk(rightRowSet.intSize());
@@ -1630,7 +1647,7 @@ public class AsOfJoinHelper {
 
         try (final SafeCloseableList chunksToClose = new SafeCloseableList(rightStampKeys, rightStampValues)) {
             try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
-                    rightStampSource, originalRightStampSource)) {
+                    rightStampSource, originalRightStampSource, stampEqualsConsistent)) {
                 stampContext.getAndCompactStamps(rightRowSet, rightStampKeys, rightStampValues);
                 stampContext.processEntry(leftTable.getRowSet(), rightStampValues, rightStampKeys, rowRedirection);
             }
@@ -1696,7 +1713,8 @@ public class AsOfJoinHelper {
                                         if (restampKeys.isNonempty()) {
                                             try (final AsOfStampContext stampContext =
                                                     new AsOfStampContext(order, disallowExactMatch, leftStampSource,
-                                                            rightStampSource, originalRightStampSource)) {
+                                                            rightStampSource, originalRightStampSource,
+                                                            stampEqualsConsistent)) {
                                                 stampContext.processEntry(restampKeys, compactedRightStampValues,
                                                         compactedRightStampKeys, rowRedirection);
                                             }

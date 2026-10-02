@@ -11,7 +11,6 @@ import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 
 
@@ -30,9 +29,8 @@ public class ObjectSetResult implements SsmChunkedMinMaxOperator.SetResult {
         if (ssm.size() == 0) {
             newResult = null;
         } else {
-            final ObjectSegmentedSortedMultiset ObjectSsm = (ObjectSegmentedSortedMultiset) ssm;
             // region nan handling
-            newResult = minimum ? ObjectSsm.getMinObject() : ObjectSsm.getMaxObject();
+            newResult = minimum ? ssm.getMin() : ssm.getMax();
             // endregion nan handling
         }
         return setResult(destination, newResult);

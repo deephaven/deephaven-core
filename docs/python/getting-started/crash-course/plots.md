@@ -1,6 +1,5 @@
 ---
 title: Real-time Plots
-sidebar_label: Real-time Plots
 ---
 
 Whether your data is static or updating in real time, Deephaven supports plotting via multiple libraries, including its own built-in [plotting API](/core/pydoc/code/deephaven.plot.html#module-deephaven.plot).

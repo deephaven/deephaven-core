@@ -1,6 +1,5 @@
 ---
 title: Casting
-sidebar_label: Casting
 ---
 
 This guide covers casting in Deephaven. Data type conversion, or casting for short, is the process of changing a value from one data type to another.

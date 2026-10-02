@@ -119,7 +119,7 @@ public class ObjectReverseDupCompactKernel implements DupCompactKernel {
 
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return ObjectComparisons.eq(lhs, rhs);
+        return ObjectComparisons.compareEquals(lhs, rhs);
         // endregion equality function
     }
 }

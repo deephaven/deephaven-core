@@ -1,6 +1,5 @@
 ---
 title: How to run full Garbage Collection
-sidebar_label: Run Garbage Collection
 ---
 
 This guide shows how to perform full Garbage Collection (GC) using the convenience method [`garbage_collect`](../../reference/garbage-collect.md).
