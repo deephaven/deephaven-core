@@ -21,7 +21,11 @@ class Publish extends SingleSessionExampleBase {
 
     @Override
     protected void execute(Session session) throws Exception {
-        session.publish(tickets.get(0), tickets.get(1)).get();
+        // picocli fills a repeated group list with the last occurrence first, so the source given first on the
+        // command line is the last element.
+        final Ticket source = tickets.get(1);
+        final Ticket destination = tickets.get(0);
+        session.publish(source, destination).get();
     }
 
     public static void main(String[] args) {
