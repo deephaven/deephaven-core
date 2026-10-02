@@ -83,6 +83,7 @@ createJmhTask('jmhRunRowSetSubsetOf', 'RowSetSubsetOfBench')
 createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
 createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
 createJmhTask('jmhRunRowSetSubsume', 'RowSetSubsumeBench')
+createJmhTask('jmhRunNullableLongLongMap', 'NullableLongLongMapBench')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->

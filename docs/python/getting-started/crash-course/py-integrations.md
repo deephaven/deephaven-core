@@ -1,6 +1,5 @@
 ---
 title: Powerful Python Integrations
-sidebar_label: Python Integrations
 ---
 
 Deephaven empowers Python developers by providing efficient integrations with popular Python libraries. This section covers some highlights of Deephaven's Python interoperability as well as the inherent limitations of static Python data structures.

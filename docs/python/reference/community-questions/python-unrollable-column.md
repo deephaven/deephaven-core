@@ -1,6 +1,5 @@
 ---
 title: How do I create unrollable columns in the Python IDE?
-sidebar_label: How do I create unrollable columns in the Python IDE?
 ---
 
 Grouping and ungrouping (also referred to as "rolling up" or "unrolling") column data is a hugely important part of staying organized when working with Deephaven. However, since Deephaven's engine is built in Java, the [`ungroup`](../table-operations/group-and-aggregate/ungroup.md) method only works on Java arrays - for example, the following query will fail:

@@ -1,6 +1,5 @@
 ---
 title: IcebergWriteInstructions
-sidebar_label: IcebergWriteInstructions
 ---
 
 The `IcebergWriteInstructions` class provides instructions intended for writing Deephaven tables as partitions to Iceberg tables.

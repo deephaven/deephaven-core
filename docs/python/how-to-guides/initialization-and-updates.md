@@ -1,6 +1,5 @@
 ---
 title: Initialization and updates
-sidebar_label: Initialization and updates
 ---
 
 Deephaven code often looks like it runs sequentially, line by line, just like standard Python. But with ticking tables, that's not quite what happens — and this surprises many developers.

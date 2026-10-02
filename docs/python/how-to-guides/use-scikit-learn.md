@@ -1,22 +1,21 @@
 ---
-title: Use SciKit-Learn in Deephaven
-sidebar_label: SciKit-Learn
+title: Use scikit-learn in Deephaven
 ---
 
-This guide will show you how to use [SciKit-Learn](https://scikit-learn.org/stable/) in Deephaven queries.
+This guide will show you how to use [scikit-learn](https://scikit-learn.org/stable/) in Deephaven queries.
 
-[SciKit-Learn](https://scikit-learn.org/stable/) is an open-source machine learning library for Python. It features a variety of methods for classification, clustering, regression, and deep learning.
+[scikit-learn](https://scikit-learn.org/stable/) is an open-source machine learning library for Python. It features a variety of methods for classification, clustering, regression, and deep learning.
 
-[SciKit-Learn](https://scikit-learn.org/stable/) does not come stock with Deephaven's base Docker image. To use it within Deephaven, you can [install it yourself](./install-and-use-python-packages.md) or choose one of a [Deephaven Docker deployments](../getting-started/docker-install.md#choose-a-deployment) with support built-in. The following options will work:
+[scikit-learn](https://scikit-learn.org/stable/) does not come stock with Deephaven's base Docker image. To use it within Deephaven, you can [install it yourself](./install-and-use-python-packages.md) or choose one of a [Deephaven Docker deployments](../getting-started/docker-install.md#choose-a-deployment) with support built-in. The following options will work:
 
 - Without example data:
-  - [Python with SciKit-Learn](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/SciKit-Learn/docker-compose.yml)
+  - [Python with scikit-learn](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/SciKit-Learn/docker-compose.yml)
   - [Python with All AI](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/All-AI/docker-compose.yml)
 - With example data:
-  - [Python with SciKit-Learn](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/SciKit-Learn/docker-compose.yml)
+  - [Python with scikit-learn](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/SciKit-Learn/docker-compose.yml)
   - [Python with All AI](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/All-AI/docker-compose.yml)
 
-Two examples are given below. Both classify observations in the [Iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set), which can be found in [Deephaven's Examples repository](https://github.com/deephaven/examples). The first example uses [SciKit-Learn](https://scikit-learn.org/stable/), whereas the second integrates Deephaven tables to perform predictions on live data
+Two examples are given below. Both classify observations in the [Iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set), which can be found in [Deephaven's Examples repository](https://github.com/deephaven/examples). The first example uses [scikit-learn](https://scikit-learn.org/stable/), whereas the second integrates Deephaven tables to perform predictions on live data
 
 > [!NOTE]
 > In this guide, we read data from [Deephaven's examples repository](https://github.com/deephaven/examples). You can also load files that are in a mounted directory at the base of the Docker container. See [Docker data volumes](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
@@ -32,7 +31,7 @@ This is a classification problem suitable for a classifier algorithm. We'll use 
 
 ## Classify the Iris dataset
 
-This first example shows how to use [SciKit-Learn](https://scikit-learn.org/stable/) to classify Iris flowers from measurements.
+This first example shows how to use [scikit-learn](https://scikit-learn.org/stable/) to classify Iris flowers from measurements.
 
 Let's first import all the packages we'll need.
 

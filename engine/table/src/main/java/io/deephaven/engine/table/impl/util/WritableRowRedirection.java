@@ -10,7 +10,7 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.util.datastructures.hash.NullableLongLongMap;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import org.jetbrains.annotations.NotNull;

@@ -426,7 +426,7 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         np_array: Optional[np.ndarray[Any, Any]] = np.frombuffer(j_array, dtype=np.byte)
         s: pd.Series = pd.Series(data=np_array, dtype=pd.Int8Dtype(), copy=False)
         s.mask(s == _NULL_BOOLEAN_AS_BYTE, inplace=True)
-        return s.astype(pd.BooleanDtype(), copy=False)
+        return s.astype(pd.BooleanDtype())
 
     np_array = _j_array_to_numpy_array(dtype, j_array, conv_null=False)
     if (

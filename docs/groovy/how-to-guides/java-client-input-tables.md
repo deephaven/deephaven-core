@@ -1,6 +1,5 @@
 ---
 title: Send data to Deephaven from a Java client
-sidebar_label: Java client input tables
 ---
 
 This guide shows how to send data to Deephaven from an external Java application using the Deephaven Java client and input tables. Input tables allow a client to add, update, and delete rows in a Deephaven table.

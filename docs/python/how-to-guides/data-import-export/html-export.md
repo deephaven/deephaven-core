@@ -1,5 +1,5 @@
 ---
-title: Export HTML files
+title: Convert tables to HTML strings
 ---
 
 Deephaven can convert tables to HTML table-formatted strings via the [`deephaven.html`](/core/pydoc/code/deephaven.html.html) module. This module has a single function, [`to_html`](../../reference/data-import-export/HTML/to-html.md), which converts a Deephaven table to a string HTML table.

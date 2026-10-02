@@ -9,12 +9,6 @@
 
 package io.deephaven.engine.table.impl.ssa;
 
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -23,6 +17,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.util.compare.ObjectComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.

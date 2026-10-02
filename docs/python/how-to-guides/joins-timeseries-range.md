@@ -1,6 +1,5 @@
 ---
 title: Inexact, time-series, and range joins
-sidebar_label: Inexact, time-series, and range joins
 ---
 
 This guide covers as-of, reverse-as-of, and range joins in Deephaven. As-of joins are often referred to as time-series joins because they provide a mechanism for joining tables based on time columns, largely with the assumption that the match will often be inexact. All of these joins combine columns from two tables based on either 1) a single inexact key, like an ordered timestamp column, or 2) one or more exact, relational keys and a single inexact key.

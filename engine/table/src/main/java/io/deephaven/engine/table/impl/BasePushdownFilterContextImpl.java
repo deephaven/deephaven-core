@@ -63,8 +63,11 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
         executedFilterCost = 0;
 
         // Extract the effective filter and use it for populating the context. This removes wrapper layers (such as
-        // serial and barrier wrappers) which have already been processed.
-        final WhereFilter effectiveFilter = WhereFilterDelegating.maybeUnwrapFilter(filter);
+        // serial and barrier wrappers) which have already been processed, and a MatchFilter or RangeFilter that is
+        // implemented by a ConditionFilter, which is evaluated as that ConditionFilter.
+        final WhereFilter unwrappedFilter = WhereFilterDelegating.maybeUnwrapFilter(filter);
+        final ConditionFilter conditionFilter = ConditionFilter.extractConditionFilter(unwrappedFilter).orElse(null);
+        final WhereFilter effectiveFilter = conditionFilter != null ? conditionFilter : unwrappedFilter;
         this.filter = effectiveFilter;
 
         rangeFilter = RangeFilter.extractRangeFilter(effectiveFilter).orElse(null);
@@ -72,8 +75,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
 
         final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(effectiveFilter);
         supportsChunkFiltering = chunkFilter.isPresent()
-                || (effectiveFilter instanceof ConditionFilter
-                        && ((ConditionFilter) effectiveFilter).getNumInputsUsed() == 1);
+                || (conditionFilter != null && conditionFilter.getNumInputsUsed() == 1);
 
         conditionalFilterInitTable = null; // lazily initialized
         filterNullBehavior = null; // lazily initialized

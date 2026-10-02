@@ -1,6 +1,5 @@
 ---
 title: Use TensorBoard with Deephaven
-sidebar_label: TensorBoard
 ---
 
 This guide will show you how to use [TensorBoard](https://www.tensorflow.org/tensorboard) with either [TensorFlow](https://www.tensorflow.org/) or [PyTorch](https://pytorch.org/) in Deephaven queries.
@@ -401,7 +400,7 @@ You can also use TensorBoard to check the distribution of the weights and biases
 - [How to use deephaven.learn](./use-deephaven-learn.md)
 - [How to use PyTorch](./use-pytorch.md)
 - [How to use TensorFlow](./use-tensorflow.md)
-- [How to use SciKit-Learn](./use-scikit-learn.md)
+- [How to use scikit-learn](./use-scikit-learn.md)
 - [Python variables in query strings](./python-variables.md)
 - [Python functions in query strings](./python-functions.md)
 - [Python classes and objects in query strings](./python-classes.md)

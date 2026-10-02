@@ -2436,15 +2436,37 @@ public class QueryTable extends BaseTable<QueryTable> {
                 revisedAdded.add(new MatchPair(matchPair.rightColumn, matchPair.rightColumn));
             }
         }
+        // Naming a match column under its own name in columnsToAdd is an explicit request for that output, so the
+        // automatically added entry belongs to it and an alias cannot take it over. Collected up front so that the
+        // result does not depend on the order the two appear in.
+        final Set<String> explicitOriginals = new HashSet<>();
+        for (MatchPair matchPair : columnsToAdd) {
+            if (matchPair.leftColumn.equals(matchPair.rightColumn)) {
+                explicitOriginals.add(matchPair.rightColumn);
+            }
+        }
         for (MatchPair matchPair : columnsToAdd) {
             if (!addedColumns.contains(matchPair.rightColumn)) {
                 revisedAdded.add(matchPair);
             } else if (!matchPair.leftColumn.equals(matchPair.rightColumn)) {
-                for (int ii = 0; ii < revisedAdded.size(); ii++) {
-                    final MatchPair pair = revisedAdded.get(ii);
-                    if (pair.rightColumn.equals(matchPair.rightColumn)) {
-                        revisedAdded.set(ii, matchPair);
+                // A match column is added to the result under its own name. The first alias renames that
+                // automatically added entry unless the caller also asked for the column under its own name; each
+                // further alias of the same right column is an additional output column.
+                int automaticIndex = -1;
+                if (!explicitOriginals.contains(matchPair.rightColumn)) {
+                    for (int ii = 0; ii < revisedAdded.size(); ii++) {
+                        final MatchPair pair = revisedAdded.get(ii);
+                        if (pair.rightColumn.equals(matchPair.rightColumn)
+                                && pair.leftColumn.equals(pair.rightColumn)) {
+                            automaticIndex = ii;
+                            break;
+                        }
                     }
+                }
+                if (automaticIndex >= 0) {
+                    revisedAdded.set(automaticIndex, matchPair);
+                } else {
+                    revisedAdded.add(matchPair);
                 }
             }
         }

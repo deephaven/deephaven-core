@@ -1,6 +1,5 @@
 ---
 title: Execute SQL queries in Deephaven
-sidebar_label: SQL queries in Deephaven
 ---
 
 [Structured Query Language (SQL)](https://en.wikipedia.org/wiki/SQL) is the most popular programming language for database management and access. Its popularity can be attributed to a number of factors, including its simplicity, readability, and interoperability. Open-source options like MySQL and PostgreSQL have also played an important role in its popularity and advancement. SQL can be utilized from Deephaven with the `deephaven.dbc` Python submodule.
