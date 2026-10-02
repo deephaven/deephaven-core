@@ -32,6 +32,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.FloatCompactKernel;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -81,7 +82,7 @@ public class FloatChunkedCountDistinctOperator implements IterativeChunkedAggreg
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        FloatCompactKernel.compactAndCount((WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
+        doCompactAndCount((WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
                 startPositions, context.lengthCopy, countNullNan, countNullNan);
         return context;
     }
@@ -160,7 +161,7 @@ public class FloatChunkedCountDistinctOperator implements IterativeChunkedAggreg
             if (runLength != 0) {
                 // reduce the bucket's modify to its net effect: net removals compacted into preValueCopy and net
                 // additions into postValueCopy, each beginning at startPosition, with the unchanged overlap cancelled
-                FloatCompactModifications.compactAndCountModifications(preValueCopy, context.counts,
+                doCompactAndCountModifications(preValueCopy, context.counts,
                         postValueCopy, context.postCounts, startPosition, runLength, startPosition, runLength,
                         countNullNan, countNullNan, context.removedSize, context.addedSize);
                 final int removed = context.removedSize.get();
@@ -188,7 +189,7 @@ public class FloatChunkedCountDistinctOperator implements IterativeChunkedAggreg
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
-        FloatCompactKernel.compactAndCount((WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
+        doCompactAndCount((WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
                 countNullNan, countNullNan);
         return context;
     }
@@ -204,7 +205,7 @@ public class FloatChunkedCountDistinctOperator implements IterativeChunkedAggreg
         context.valueCopy.copyFromChunk(preValues, 0, 0, length);
         context.postValues.setSize(length);
         context.postValues.copyFromChunk(postValues, 0, 0, length);
-        FloatCompactModifications.compactAndCountModifications(
+        doCompactAndCountModifications(
                 (WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
                 (WritableFloatChunk<? extends Values>) context.postValues, context.postCounts,
                 0, length, 0, length, countNullNan, countNullNan, context.removedSize, context.addedSize);
@@ -368,5 +369,42 @@ public class FloatChunkedCountDistinctOperator implements IterativeChunkedAggreg
     public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
         ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
         resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    /**
+     * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in
+     * {@code counts}; both chunks are resized to the number of distinct values.
+     */
+    private void doCompactAndCount(WritableFloatChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, boolean countNull, boolean countNaN) {
+        // region CompactAndCount
+        FloatCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);
+        // endregion CompactAndCount
+    }
+
+    /**
+     * Sorts and compacts each run of {@code valueChunk} given by {@code startPositions} and {@code lengths}, setting
+     * each distinct value's count in {@code counts} and each run's distinct value count in {@code lengths}.
+     */
+    private void doCompactAndCount(WritableFloatChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths, boolean countNull, boolean countNaN) {
+        // region CompactAndCountRuns
+        FloatCompactKernel.compactAndCount(valueChunk, counts, startPositions, lengths, countNull, countNaN);
+        // endregion CompactAndCountRuns
+    }
+
+    /**
+     * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
+     * with counts, and sets the surviving lengths in {@code removedSize} and {@code addedSize}.
+     */
+    private void doCompactAndCountModifications(WritableFloatChunk<? extends Values> removedValues,
+            WritableIntChunk<ChunkLengths> removedCounts, WritableFloatChunk<? extends Values> addedValues,
+            WritableIntChunk<ChunkLengths> addedCounts, int removedStart, int removedLength, int addedStart,
+            int addedLength, boolean countNull, boolean countNaN, MutableInt removedSize, MutableInt addedSize) {
+        // region CompactAndCountModifications
+        FloatCompactModifications.compactAndCountModifications(removedValues, removedCounts, addedValues, addedCounts,
+                removedStart, removedLength, addedStart, addedLength, countNull, countNaN, removedSize, addedSize);
+        // endregion CompactAndCountModifications
     }
 }

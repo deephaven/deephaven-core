@@ -31,6 +31,7 @@ import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.LongCompactModifications;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 import io.deephaven.util.compare.LongComparisons;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -107,7 +108,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        LongCompactKernel.compactAndCount((WritableLongChunk<? extends Values>) context.valueCopy, context.counts,
+        doCompactAndCount((WritableLongChunk<? extends Values>) context.valueCopy, context.counts,
                 startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
@@ -181,7 +182,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
 
             // reduce the bucket's modify to its net effect: net removals in preValueCopy, net additions in
             // postValueCopy, with the unchanged overlap cancelled
-            LongCompactModifications.compactAndCountModifications(preValueCopy, context.counts,
+            doCompactAndCountModifications(preValueCopy, context.counts,
                     postValueCopy, context.postCounts, startPosition, runLength, startPosition, runLength,
                     countNullNaN, countNullNaN, context.removedSize, context.addedSize);
 
@@ -199,7 +200,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
-        LongCompactKernel.compactAndCount((WritableLongChunk<? extends Values>) context.valueCopy, context.counts,
+        doCompactAndCount((WritableLongChunk<? extends Values>) context.valueCopy, context.counts,
                 countNullNaN, countNullNaN);
         return context;
     }
@@ -215,7 +216,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         context.valueCopy.copyFromChunk(preValues, 0, 0, length);
         context.postValues.setSize(length);
         context.postValues.copyFromChunk(postValues, 0, 0, length);
-        LongCompactModifications.compactAndCountModifications(
+        doCompactAndCountModifications(
                 (WritableLongChunk<? extends Values>) context.valueCopy, context.counts,
                 (WritableLongChunk<? extends Values>) context.postValues, context.postCounts,
                 0, length, 0, length, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
@@ -266,7 +267,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         final long priorState = singletonCount.getUnsafe(destination);
         if (isUnique(priorState)) {
             final long held = internalResult.getUnsafe(destination);
-            if (len == 1 && LongComparisons.eq(values.get(start), held)) {
+            if (len == 1 && eq(values.get(start), held)) {
                 // the single distinct value being added is the one we already hold; just bump its multiplicity. The
                 // result value is unchanged; only the (internal) count moves.
                 singletonCount.set(destination, priorState + counts.get(start));
@@ -305,8 +306,8 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         if (isUnique(priorState)) {
             // a unique state can only be asked to remove its one held value, and never more copies than it holds
             Assert.eq(len, "len", 1);
-            Assert.assertion(LongComparisons.eq(values.get(start), internalResult.getUnsafe(destination)),
-                    "values.get(start) == internalResult.getUnsafe(destination)");
+            Assert.assertion(eq(values.get(start), internalResult.getUnsafe(destination)),
+                    "eq(values.get(start), internalResult.getUnsafe(destination))");
             final long remaining = priorState - counts.get(start);
             Assert.geqZero(remaining, "remaining");
             if (remaining == 0) {
@@ -451,6 +452,16 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     private void clearSsm(long destination) {
         ssms.clear(destination);
     }
+
+    /**
+     * Test two values for equality consistent with the ordering of the SSM; a state holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(long lhs, long rhs) {
+        // region equality function
+        return LongComparisons.eq(lhs, rhs);
+        // endregion equality function
+    }
     // endregion
 
     @Override
@@ -470,5 +481,42 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
         singletonCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
         ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    /**
+     * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in
+     * {@code counts}; both chunks are resized to the number of distinct values.
+     */
+    private void doCompactAndCount(WritableLongChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, boolean countNull, boolean countNaN) {
+        // region CompactAndCount
+        LongCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);
+        // endregion CompactAndCount
+    }
+
+    /**
+     * Sorts and compacts each run of {@code valueChunk} given by {@code startPositions} and {@code lengths}, setting
+     * each distinct value's count in {@code counts} and each run's distinct value count in {@code lengths}.
+     */
+    private void doCompactAndCount(WritableLongChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths, boolean countNull, boolean countNaN) {
+        // region CompactAndCountRuns
+        LongCompactKernel.compactAndCount(valueChunk, counts, startPositions, lengths, countNull, countNaN);
+        // endregion CompactAndCountRuns
+    }
+
+    /**
+     * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
+     * with counts, and sets the surviving lengths in {@code removedSize} and {@code addedSize}.
+     */
+    private void doCompactAndCountModifications(WritableLongChunk<? extends Values> removedValues,
+            WritableIntChunk<ChunkLengths> removedCounts, WritableLongChunk<? extends Values> addedValues,
+            WritableIntChunk<ChunkLengths> addedCounts, int removedStart, int removedLength, int addedStart,
+            int addedLength, boolean countNull, boolean countNaN, MutableInt removedSize, MutableInt addedSize) {
+        // region CompactAndCountModifications
+        LongCompactModifications.compactAndCountModifications(removedValues, removedCounts, addedValues, addedCounts,
+                removedStart, removedLength, addedStart, addedLength, countNull, countNaN, removedSize, addedSize);
+        // endregion CompactAndCountModifications
     }
 }

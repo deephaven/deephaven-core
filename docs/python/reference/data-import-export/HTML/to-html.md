@@ -59,5 +59,5 @@ print(html_table)
 ## Related documentation
 
 - [Import HTML Files](../../../how-to-guides/data-import-export/html-import.md)
-- [Export HTML Files](../../../how-to-guides/data-import-export/html-export.md)
+- [Convert tables to HTML strings](../../../how-to-guides/data-import-export/html-export.md)
 - [Pydoc](/core/pydoc/code/deephaven.html.html)

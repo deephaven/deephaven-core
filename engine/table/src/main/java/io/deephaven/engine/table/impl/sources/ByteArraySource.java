@@ -101,7 +101,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
                 if (isFreshBlock(block)) {
                     // the block's previous values are the ones it was allocated with, and are shared
-                    it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
                     continue;
                 }
 
@@ -245,9 +245,10 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
     }
 
     @Override
-    final byte[] allocateNullFilledBlock(int size) {
+    final byte[] allocateBlock(final int size, final boolean nullFilled) {
+        // a recycled block holds arbitrary values, so it is filled either way
         final byte[] newBlock = takeBlock(size);
-        Arrays.fill(newBlock, NULL_BYTE);
+        Arrays.fill(newBlock, nullFilled ? NULL_BYTE : (byte) 0);
         return newBlock;
     }
 
@@ -263,15 +264,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
     }
 
     @Override
-    final byte[] freshPrevBlock(final boolean nullFilled) {
+    final byte[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final byte[] allocateBlock(int size) {
-        final byte[] newBlock = takeBlock(size);
-        Arrays.fill(newBlock, (byte) 0);
-        return newBlock;
     }
 
     /**

@@ -1,6 +1,5 @@
 ---
 title: Install and use Python packages
-sidebar_label: Python packages
 ---
 
 This guide discusses how to install and use Python packages in Deephaven. Packages can be installed programmatically for use in a Deephaven instance or added to Deephaven Docker images to be available every time Deephaven is launched.

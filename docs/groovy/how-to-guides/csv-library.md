@@ -1,6 +1,5 @@
 ---
 title: Use the Deephaven CSV library
-sidebar_label: The Deephaven CSV library
 ---
 
 The [Deephaven CSV Library](https://github.com/deephaven/deephaven-csv) is a high-performance, column-oriented, type inferencing CSV parser. It differs from other CSV libraries in that it organizes data into columns rather than rows, which allows for more efficient storage and retrieval. It also can dynamically infer the types of those columns based on the input, so the caller is not required to specify the column types beforehand. Finally it provides a way for the caller to specify the underlying data structures used for columnar storage, This allows the library to store its data directly in the caller's preferred data structure, without the inefficiency of going through intermediate temporary objects.

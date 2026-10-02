@@ -112,7 +112,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
                 if (isFreshBlock(block)) {
                     // the block's previous values are the ones it was allocated with, and are shared
-                    it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
                     continue;
                 }
 
@@ -268,9 +268,10 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
 
     @Override
-    final long[] allocateNullFilledBlock(int size) {
+    final long[] allocateBlock(final int size, final boolean nullFilled) {
+        // a recycled block holds arbitrary values, so it is filled either way
         final long[] newBlock = takeBlock(size);
-        Arrays.fill(newBlock, NULL_LONG);
+        Arrays.fill(newBlock, nullFilled ? NULL_LONG : (long) 0);
         return newBlock;
     }
 
@@ -286,15 +287,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
 
     @Override
-    final long[] freshPrevBlock(final boolean nullFilled) {
+    final long[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final long[] allocateBlock(int size) {
-        final long[] newBlock = takeBlock(size);
-        Arrays.fill(newBlock, (long) 0);
-        return newBlock;
     }
 
     /**

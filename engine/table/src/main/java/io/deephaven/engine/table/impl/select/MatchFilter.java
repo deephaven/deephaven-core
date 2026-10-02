@@ -173,6 +173,40 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return retained;
     }
 
+    /**
+     * Removes from {@code searchValues} the values that can never match a row of this column, so that {@link #values}
+     * holds only values a consumer can match by the column's own comparison. This is the last step of {@link #init}:
+     * call it on the final, converted value array, after {@link #maybeDropNaN}, on every path that assigns
+     * {@link #values}. {@link #maybeDropNaN} handles the one other unmatchable value, NaN on a primitive floating-point
+     * column; between them they uphold the {@link #getValues()} contract.
+     *
+     * <p>
+     * Only a {@link BigDecimal} column has anything to drop here. It is matched by
+     * {@link BigDecimal#compareTo(BigDecimal)}, as the query language's {@code ==} matches it, and only a
+     * {@link BigDecimal} can be compared that way. The convertor passes a query-scope variable or a direct value of
+     * another type through as it is -- an {@link Integer} {@code 5} for a {@code BigDecimal} column, say -- and no row
+     * of the column can match such a value. Null is kept: it matches a null cell.
+     *
+     * <p>
+     * Dropping the value does not change which rows the filter selects, but it protects the consumers of
+     * {@link #getValues()}. The column's chunk filter ({@code BigDecimalChunkMatchFilterFactory}) skips a value of
+     * another type itself, but the sorted-column pushdown ({@code SortedColumnPushdownManager} and the region binary
+     * search kernels) locates every value by ordering, and {@code compareTo} between a {@link BigDecimal} and a value
+     * of another type throws {@link ClassCastException}.
+     *
+     * @param searchValues the converted values
+     * @return {@code searchValues} without the values that can never match, or {@code searchValues} itself when there
+     *         is nothing to remove, which is always the case for a column of any other type
+     */
+    private Object[] dropUnmatchable(final Object[] searchValues) {
+        if (searchValues == null || columnType != BigDecimal.class) {
+            return searchValues;
+        }
+        final Object[] retained =
+                Arrays.stream(searchValues).filter(value -> value == null || value instanceof BigDecimal).toArray();
+        return retained.length == searchValues.length ? searchValues : retained;
+    }
+
     private static boolean isNaN(final Object value) {
         return value instanceof Double && ((Double) value).isNaN()
                 || value instanceof Float && ((Float) value).isNaN();
@@ -180,7 +214,9 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /**
      * The values this filter matches against, normalized so that they may be matched by value equality that holds NaN
-     * equal to itself -- the type's {@code *Comparisons.eq}, or {@link java.util.Objects#equals}, for instance.
+     * equal to itself -- the type's {@code *Comparisons.eq}, or {@link java.util.Objects#equals}, for instance. A
+     * {@link BigDecimal} matches by {@link BigDecimal#compareTo(BigDecimal)} instead, as the query language's
+     * {@code ==} does, so {@code 5.0} matches {@code 5.00}.
      *
      * <p>
      * The filter's own NaN semantics are already applied here, so a consumer does not need to consult
@@ -282,7 +318,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             }
             columnType = column.getDataType();
             if (strValues == null) {
-                values = maybeDropNaN(values);
+                values = dropUnmatchable(maybeDropNaN(values));
                 initialized = true;
                 return;
             }
@@ -293,7 +329,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
-            values = maybeDropNaN(valueList.toArray());
+            values = dropUnmatchable(maybeDropNaN(valueList.toArray()));
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;
@@ -984,6 +1020,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
         if (initialized) {
             copy.initialized = true;
+            // a chunk filter holds no state of its own, so the copy shares ours rather than building another
+            copy.chunkFilter = chunkFilter;
             copy.values = values;
             copy.columnType = columnType;
             // If we failed over, the copy must too, or it would claim to be initialized without any values to match.

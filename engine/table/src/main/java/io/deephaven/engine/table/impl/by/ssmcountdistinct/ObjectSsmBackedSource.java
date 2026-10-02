@@ -7,6 +7,10 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
+import io.deephaven.engine.table.impl.ssms.EqualsConsistentObjectSegmentedSortedMultiset;
+import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
+
 import java.util.Objects;
 
 import io.deephaven.util.compare.ObjectComparisons;
@@ -17,7 +21,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
+import io.deephaven.engine.table.impl.ssms.AbstractObjectSegmentedSortedMultiset;
 import io.deephaven.engine.rowset.RowSet;
 
 /**
@@ -26,24 +30,46 @@ import io.deephaven.engine.rowset.RowSet;
 public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
         implements ColumnSourceGetDefaults.ForObject<ObjectVector>,
         MutableColumnSourceGetDefaults.ForObject<ObjectVector>,
-        SsmBackedColumnSource<ObjectSegmentedSortedMultiset, ObjectVector> {
-    private final ObjectArraySource<ObjectSegmentedSortedMultiset> underlying;
+        SsmBackedColumnSource<AbstractObjectSegmentedSortedMultiset, ObjectVector> {
+    private final ObjectArraySource<AbstractObjectSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     // region Constructor
-    public ObjectSsmBackedSource(Class type) {
+    private final boolean equalsConsistent;
+
+    /**
+     * Create an ObjectSsmBackedSource whose sets hold values of the given type. The underlying source is
+     * declared over {@link AbstractObjectSegmentedSortedMultiset}, and its {@code getType()} is the
+     * concrete class of the sets it holds, so an operator that reads these sets learns from that type which
+     * equality they test.
+     *
+     * @param type the component type of the values
+     * @param equalsConsistent true when values of the type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject sets that test equality with {@code equals}; when false, the sets test equality
+     *        with {@link ObjectComparisons#compareEquals(Object, Object)}
+     */
+    public ObjectSsmBackedSource(Class type, boolean equalsConsistent) {
         super(ObjectVector.class, type);
-        underlying = new ObjectArraySource<>(ObjectSegmentedSortedMultiset.class, type);
+        final Class<? extends AbstractObjectSegmentedSortedMultiset> ssmClass = equalsConsistent
+                ? EqualsConsistentObjectSegmentedSortedMultiset.class
+                : ObjectSegmentedSortedMultiset.class;
+        // noinspection unchecked
+        underlying = new ObjectArraySource<>((Class<AbstractObjectSegmentedSortedMultiset>) ssmClass, type);
+        this.equalsConsistent = equalsConsistent;
     }
     // endregion Constructor
 
     // region SsmBackedColumnSource
     @Override
-    public ObjectSegmentedSortedMultiset getOrCreate(long key) {
-        ObjectSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
+    public AbstractObjectSegmentedSortedMultiset getOrCreate(long key) {
+        AbstractObjectSegmentedSortedMultiset ssm = underlying.getUnsafe(key);
         if (ssm == null) {
             // region CreateNew
-            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType));
+            ssm = equalsConsistent
+                    ? new EqualsConsistentObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType)
+                    : new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType);
+            underlying.set(key, ssm);
             // endregion CreateNew
         }
         ssm.setTrackDeltas(trackingPrevious);
@@ -51,7 +77,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
     }
 
     @Override
-    public ObjectSegmentedSortedMultiset getCurrentSsm(long key) {
+    public AbstractObjectSegmentedSortedMultiset getCurrentSsm(long key) {
         return underlying.getUnsafe(key);
     }
 
@@ -66,7 +92,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
     }
 
     @Override
-    public ObjectArraySource<ObjectSegmentedSortedMultiset> getUnderlyingSource() {
+    public ObjectArraySource<AbstractObjectSegmentedSortedMultiset> getUnderlyingSource() {
         return underlying;
     }
     // endregion
@@ -83,7 +109,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
 
     @Override
     public ObjectVector getPrev(long rowKey) {
-        final ObjectSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
+        final AbstractObjectSegmentedSortedMultiset maybePrev = underlying.getPrev(rowKey);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }
 
@@ -96,7 +122,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
     @Override
     public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
-            final ObjectSegmentedSortedMultiset ssm = getCurrentSsm(key);
+            final AbstractObjectSegmentedSortedMultiset ssm = getCurrentSsm(key);
             if (ssm != null) {
                 ssm.clearDeltas();
             }

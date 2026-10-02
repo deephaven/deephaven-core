@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl.chunkfilter;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import java.math.BigDecimal;
+
 public class ChunkMatchFilterFactory {
     private ChunkMatchFilterFactory() {} // static only
 
@@ -13,6 +15,13 @@ public class ChunkMatchFilterFactory {
             final Class type,
             final MatchOptions matchOptions,
             final Object... keys) {
+        if (type == BigDecimal.class) {
+            // A BigDecimal match is decided by compareTo, not equals, as the query language's == decides it. Sorted
+            // pushdown matches it the same way: SortedColumnPushdownManager and ObjectRegionBinarySearchKernel check
+            // for BigDecimal by type and let ordering alone decide its match. This comes before the empty-keys check
+            // because the factory skips keys that are not BigDecimals, which ColumnSource.match may pass directly.
+            return BigDecimalChunkMatchFilterFactory.makeFilter(matchOptions, keys);
+        }
         if (keys.length == 0) {
             if (matchOptions.inverted()) {
                 return ChunkFilter.TRUE_FILTER_INSTANCE;

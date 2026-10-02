@@ -1,6 +1,5 @@
 ---
 title: Use NumPy in Deephaven queries
-sidebar_label: NumPy
 ---
 
 This guide will cover the intersection of [NumPy](https://numpy.org/) and Deephaven.

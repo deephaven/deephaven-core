@@ -306,7 +306,10 @@ public class ReplicateRegionsAndRegionedSources {
                 "source\\.getPrevObject\\(", "source.getPrev(",
                 "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);",
                 "final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);",
-                "unboxed", "copiedValues");
+                "unboxed", "copiedValues",
+                // The bounds' exact-match checks must agree with the ordering they search by: a BigDecimal match is
+                // decided by ordering, and 1.0 and 1.00 compare equal without being equal.
+                "ObjectComparisons\\.eq\\(", "ObjectComparisons.compareEquals(");
         lines = addImport(lines, "import java.util.Arrays;");
         if (file.getName().contains("Column")) {
             lines = addGeneralMatch(lines, Arrays.asList(
@@ -460,9 +463,13 @@ public class ReplicateRegionsAndRegionedSources {
                     "     * is not applied here; the caller must invert the result itself.",
                     "     *",
                     "     * <p>",
-                    "     * The filter's column type chooses the search: {@link #" + CONSISTENT_MATCH + "} when",
-                    "     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds for it, and",
-                    "     * {@link #" + GENERAL_MATCH + "} otherwise.",
+                    "     * The filter's column type chooses the search: {@link #" + CONSISTENT_MATCH + "}, which lets",
+                    "     * ordering alone decide a match, for {@link java.math.BigDecimal}, whose match filter"
+                            + " matches by compareTo, and for",
+                    "     * a type for which {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}"
+                            + " holds; and",
+                    "     * {@link #" + GENERAL_MATCH + "}, which picks the matches out of each ordering-equal run by",
+                    "     * equality, for any other type.",
                     "     *",
                     "     * @param region The column region to search.",
                     "     * @param firstKey The first key in the column region to consider for the search.",
@@ -481,7 +488,13 @@ public class ReplicateRegionsAndRegionedSources {
                     "            // Nothing to search for, so nothing matches, and the data need not be touched at all.",
                     "            return RowSetFactory.empty();",
                     "        }",
-                    "        return BinarySearchKernelHelper.compareConsistentWithEquality(filter.getColumnType())",
+                    "        final Class<?> columnType = filter.getColumnType();",
+                    "        // BigDecimal's equals is not consistent with its ordering, but its match filter"
+                            + " matches by compareTo, as the",
+                    "        // query language's == does, so ordering alone decides a BigDecimal match.",
+                    "        final boolean matchByOrdering = columnType == java.math.BigDecimal.class",
+                    "                || BinarySearchKernelHelper.compareConsistentWithEquality(columnType);",
+                    "        return matchByOrdering",
                     "                ? " + CONSISTENT_MATCH + "(region, firstKey, lastKey, sortColumn,"
                             + " filter.getValues())",
                     "                : " + GENERAL_MATCH
@@ -518,8 +531,8 @@ public class ReplicateRegionsAndRegionedSources {
                 "     * Ordering alone decides a match: every row that compares equal to a search value is returned."
                         + " This is valid for",
                 "     * types whose values compare equal exactly when they are equal, as",
-                "     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes; for any other"
-                        + " type,",
+                "     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes, and for",
+                "     * {@link java.math.BigDecimal}, whose match filter matches by compareTo; for any other type,",
                 "     * {@link #" + GENERAL_MATCH + "} applies."));
         return newLines;
     }

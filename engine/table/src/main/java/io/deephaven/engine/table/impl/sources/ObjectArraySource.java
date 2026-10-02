@@ -99,7 +99,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
                 if (isFreshBlock(block)) {
                     // the block's previous values are the ones it was allocated with, and are shared
-                    it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
                     continue;
                 }
 
@@ -188,7 +188,8 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     }
 
     @Override
-    final T[] allocateNullFilledBlock(int size) {
+    final T[] allocateBlock(final int size, final boolean nullFilled) {
+        // an object block is null-filled either way
         return takeBlock(size);
     }
 
@@ -196,14 +197,12 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     private static final Object[] FRESH_PREV_BLOCK = new Object[BLOCK_SIZE];
 
     @Override
-    final T[] freshPrevBlock(final boolean nullFilled) {
+    final T[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         // noinspection unchecked
         return (T[]) FRESH_PREV_BLOCK;
-    }
-
-    @Override
-    final T[] allocateBlock(int size) {
-        return takeBlock(size);
     }
 
     /**

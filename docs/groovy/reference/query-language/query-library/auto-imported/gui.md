@@ -1,6 +1,5 @@
 ---
 title: GUI functions
-sidebar_label: GUI functions
 ---
 
 Color utilities and constants for table formatting.

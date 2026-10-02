@@ -101,7 +101,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
                 if (isFreshBlock(block)) {
                     // the block's previous values are the ones it was allocated with, and are shared
-                    it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
                     continue;
                 }
 
@@ -245,9 +245,10 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
     }
 
     @Override
-    final float[] allocateNullFilledBlock(int size) {
+    final float[] allocateBlock(final int size, final boolean nullFilled) {
+        // a recycled block holds arbitrary values, so it is filled either way
         final float[] newBlock = takeBlock(size);
-        Arrays.fill(newBlock, NULL_FLOAT);
+        Arrays.fill(newBlock, nullFilled ? NULL_FLOAT : (float) 0);
         return newBlock;
     }
 
@@ -263,15 +264,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
     }
 
     @Override
-    final float[] freshPrevBlock(final boolean nullFilled) {
+    final float[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final float[] allocateBlock(int size) {
-        final float[] newBlock = takeBlock(size);
-        Arrays.fill(newBlock, (float) 0);
-        return newBlock;
     }
 
     /**

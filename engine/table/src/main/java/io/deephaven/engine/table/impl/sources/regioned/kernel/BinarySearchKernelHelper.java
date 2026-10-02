@@ -56,7 +56,7 @@ public class BinarySearchKernelHelper {
      *
      * <p>
      * The property is not verified; registering a type that lacks it will produce incorrect filter, as-of join, range
-     * join, and sorted first or last results.
+     * join, sorted first or last, minimum, maximum, median, percentile, count distinct, distinct and unique results.
      *
      * <p>
      * Registration is additive and idempotent, and a type cannot be withdrawn. Register types during startup: a search
@@ -97,7 +97,10 @@ public class BinarySearchKernelHelper {
      * a type for which this holds with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}
      * or {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, and a column of any other type
      * with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality} or
-     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}.
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}. {@link java.math.BigDecimal} is the
+     * exception: its match filter matches by {@link java.math.BigDecimal#compareTo(java.math.BigDecimal)}, as the query
+     * language's {@code ==} does, so sorted pushdown matches it by ordering alone too, checking for it by type before
+     * consulting this method.
      *
      * <p>
      * Only this stronger both-ways guarantee is checked, and only where documented, since {@link java.math.BigDecimal}
@@ -107,8 +110,9 @@ public class BinarySearchKernelHelper {
      * identity.
      *
      * <p>
-     * The same answer selects between the EqualsConsistentObject and Object segmented sorted array, SSA stamp, and
-     * duplicate compaction kernels, which test equality with {@code equals} and with
+     * The same answer selects between the EqualsConsistentObject and Object segmented sorted array, SSA stamp,
+     * duplicate compaction, compaction, segmented sorted multiset, and compact modifications classes, which test
+     * equality with {@code equals} and with
      * {@link io.deephaven.util.compare.ObjectComparisons#compareEquals(Object, Object)} respectively.
      *
      * <p>
