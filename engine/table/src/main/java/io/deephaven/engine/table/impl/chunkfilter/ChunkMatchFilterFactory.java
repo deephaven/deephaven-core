@@ -14,10 +14,13 @@ public class ChunkMatchFilterFactory {
     public static ChunkFilter getChunkFilter(
             final Class type,
             final MatchOptions matchOptions,
-            Object... keys) {
+            final Object... keys) {
         if (type == BigDecimal.class) {
-            // MatchFilter drops these too, but ColumnSource.match reaches this factory directly
-            keys = BigDecimalChunkMatchFilterFactory.dropUnmatchable(keys);
+            // A BigDecimal match is decided by compareTo, not equals, as the query language's == decides it. Sorted
+            // pushdown matches it the same way: SortedColumnPushdownManager and ObjectRegionBinarySearchKernel check
+            // for BigDecimal by type and let ordering alone decide its match. This comes before the empty-keys check
+            // because the factory skips keys that are not BigDecimals, which ColumnSource.match may pass directly.
+            return BigDecimalChunkMatchFilterFactory.makeFilter(matchOptions, keys);
         }
         if (keys.length == 0) {
             if (matchOptions.inverted()) {
@@ -56,12 +59,6 @@ public class ChunkMatchFilterFactory {
         }
         if (type == String.class && matchOptions.caseInsensitive()) {
             return StringChunkMatchFilterFactory.makeCaseInsensitiveFilter(matchOptions, keys);
-        }
-        if (type == BigDecimal.class) {
-            // A BigDecimal match is decided by compareTo, not equals, as the query language's == decides it. Sorted
-            // pushdown matches it the same way: SortedColumnPushdownManager and ObjectRegionBinarySearchKernel check
-            // for BigDecimal by type and let ordering alone decide its match.
-            return BigDecimalChunkMatchFilterFactory.makeFilter(matchOptions, keys);
         }
         // TODO: we should do something nicer with booleans
         // TODO: we need to consider symbol tables

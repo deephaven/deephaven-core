@@ -157,13 +157,17 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     }
 
     /**
-     * A {@link BigDecimal} column is matched by its own chunk filter ({@code BigDecimalChunkMatchFilterFactory}), which
-     * compares by {@link BigDecimal#compareTo(BigDecimal)} and so accepts only {@link BigDecimal} values, as the sorted
-     * binary search does. This returns {@code searchValues} without any value that is neither null nor a
-     * {@link BigDecimal}, for such a column, or {@code searchValues} itself when there is nothing to remove. Such a
-     * value can never match the column, so removing it selects what matching it by equality would.
+     * For a {@link BigDecimal} column, returns {@code searchValues} with only its {@link BigDecimal} and null values;
+     * for any other column, returns {@code searchValues} unchanged.
+     *
+     * <p>
+     * A {@link BigDecimal} column is matched by {@link BigDecimal#compareTo(BigDecimal)}, by its chunk filter
+     * ({@code BigDecimalChunkMatchFilterFactory}) and by the sorted binary search alike. The chunk filter skips a value
+     * that is not a {@link BigDecimal}, but the sorted search, which reads {@link #getValues()}, would fail to compare
+     * one. Such a value can never match the column, so removing it selects what matching it by equality would. When
+     * there is nothing to remove, {@code searchValues} itself is returned.
      */
-    private Object[] dropUnmatchable(final Object[] searchValues) {
+    private Object[] retainBigDecimalAndNull(final Object[] searchValues) {
         if (searchValues == null || columnType != BigDecimal.class) {
             return searchValues;
         }
@@ -269,7 +273,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             }
             columnType = column.getDataType();
             if (strValues == null) {
-                values = dropUnmatchable(maybeDropNaN(values));
+                values = retainBigDecimalAndNull(maybeDropNaN(values));
                 initialized = true;
                 return;
             }
@@ -280,7 +284,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
-            values = dropUnmatchable(maybeDropNaN(valueList.toArray()));
+            values = retainBigDecimalAndNull(maybeDropNaN(valueList.toArray()));
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;
@@ -986,6 +990,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
         if (initialized) {
             copy.initialized = true;
+            // a chunk filter holds no state of its own, so the copy shares ours rather than building another
+            copy.chunkFilter = chunkFilter;
             copy.values = values;
             copy.columnType = columnType;
         }

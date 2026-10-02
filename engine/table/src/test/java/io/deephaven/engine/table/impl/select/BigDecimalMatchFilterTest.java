@@ -9,6 +9,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Before;
 import org.junit.Rule;
@@ -21,6 +22,7 @@ import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -104,6 +106,19 @@ public class BigDecimalMatchFilterTest {
             assertEquals(6, unmatched.size());
             assertFalse(unmatched.containsRange(6, 6));
         }
+    }
+
+    /**
+     * A chunk filter holds no state of its own, so a copy of an initialized filter shares the one already built rather
+     * than building, and for more than three values sorting, another.
+     */
+    @Test
+    public void copySharesTheBuiltChunkFilter() {
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "X", new BigDecimal("5.0"),
+                new BigDecimal("6"), new BigDecimal("7.00"), null);
+        filter.init(unsorted.getDefinition());
+        final ChunkFilter built = filter.chunkFilter().orElseThrow();
+        assertSame(built, ((MatchFilter) filter.copy()).chunkFilter().orElseThrow());
     }
 
     @Test

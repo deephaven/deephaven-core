@@ -420,6 +420,8 @@ public class QueryTableWhereSpecialCasesTest {
     public void testMatchOnSortedBigDecimalColumn() {
         assertEquals(4, bigDecimals().where("X = 1.00").size());
         assertEquals(4, bigDecimals().sort("X").where("X = 1.00").size());
+        assertEquals(4, bigDecimals().where("X = 1").size());
+        assertEquals(4, bigDecimals().sort("X").where("X = 1").size());
         for (final String filter : new String[] {"X = 1.0", "X = 1.00", "X = 1", "X = 2.0", "X != 1.0",
                 // Several values from the one ordering-equal run, so the run has to answer for all of them.
                 "X in 1.0, 1.00", "X not in 1.0, 1.00", "X in 1.000, 1.0", "X in 1.0, 1.000",

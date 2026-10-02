@@ -164,6 +164,8 @@ public class ObjectRegionBinarySearchKernelBigDecimalTest {
     public void testMatchFilterDispatchesInconsistentTypeToEqualitySearch() {
         final List<Tagged> data = List.of(new Tagged(1, "a"), new Tagged(1, "b"), new Tagged(2, "a"));
         assertEquals(List.of(0L), binsearchMatchFilter(Tagged.class, data, new Tagged(1, "a")));
+        assertEquals(List.of(1L), binsearchMatchFilter(Tagged.class, data, new Tagged(1, "b")));
+        assertEquals(List.of(2L), binsearchMatchFilter(Tagged.class, data, new Tagged(2, "a")));
     }
 
     /**
@@ -175,6 +177,7 @@ public class ObjectRegionBinarySearchKernelBigDecimalTest {
     public void testMatchFilterDispatchesBigDecimalToOrderingSearch() {
         final List<BigDecimal> data = List.of(new BigDecimal("1.0"), new BigDecimal("1.00"), new BigDecimal("2.0"));
         assertEquals(List.of(0L, 1L), binsearchMatchFilter(BigDecimal.class, data, new BigDecimal("1.0")));
+        assertEquals(List.of(0L, 1L), binsearchMatchFilter(BigDecimal.class, data, new BigDecimal("1.00")));
     }
 
     /**
