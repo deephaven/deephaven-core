@@ -97,7 +97,10 @@ public class BinarySearchKernelHelper {
      * a type for which this holds with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}
      * or {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, and a column of any other type
      * with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality} or
-     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}.
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}. {@link java.math.BigDecimal} is the
+     * exception: its match filter matches by {@link java.math.BigDecimal#compareTo(java.math.BigDecimal)}, as the query
+     * language's {@code ==} does, so sorted pushdown matches it by ordering alone too, checking for it by type before
+     * consulting this method.
      *
      * <p>
      * Only this stronger both-ways guarantee is checked, and only where documented, since {@link java.math.BigDecimal}

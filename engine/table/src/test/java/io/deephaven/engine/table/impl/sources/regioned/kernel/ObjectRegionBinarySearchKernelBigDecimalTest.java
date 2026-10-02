@@ -33,6 +33,11 @@ import static org.junit.Assert.assertEquals;
  * ordering is inconsistent with equals, where the rows that compare equal to a search value must be tested for
  * equality. {@link ObjectRegionBinarySearchKernelTest} covers a type whose ordering is consistent with equals, through
  * {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}.
+ *
+ * <p>
+ * Most of these drive the search directly with {@link BigDecimal} at mixed scales, whose equals is a ready-made
+ * inconsistency. The engine itself matches BigDecimal by ordering, so a {@link MatchFilter} sends it to
+ * {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality} instead; the dispatch tests say so.
  */
 @Category(ParallelTest.class)
 public class ObjectRegionBinarySearchKernelBigDecimalTest {
@@ -103,31 +108,76 @@ public class ObjectRegionBinarySearchKernelBigDecimalTest {
     }
 
     /**
-     * {@link ObjectRegionBinarySearchKernel#binsearchMatchFilter} is the entry point the Parquet regions call. A run
-     * holding values that compare equal while being unequal must yield only the truly equal row through it.
-     *
-     * <p>
-     * The run is built directly here because no Parquet column can carry one: the DECIMAL logical type stores a single
-     * scale for a whole column, so values read back from it are equal whenever they compare equal.
+     * Ordered by {@code value} alone but equal only with the same {@code tag}, so inconsistent with equals; and not
+     * registered with {@link BinarySearchKernelHelper}, so a match on it is decided by equality.
      */
-    @Test
-    public void testMatchFilterEntryPointTestsEquality() {
-        final BigDecimal oneScale1 = new BigDecimal("1.0");
-        final BigDecimal oneScale2 = new BigDecimal("1.00");
-        final BigDecimal two = new BigDecimal("2.0");
-        final List<BigDecimal> data = List.of(oneScale1, oneScale2, two);
+    private static final class Tagged implements Comparable<Tagged> {
+        private final int value;
+        private final String tag;
 
-        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "test", oneScale1);
-        filter.init(TableDefinition.of(ColumnDefinition.fromGenericType("test", BigDecimal.class)));
-        assertEquals(BigDecimal.class, filter.getColumnType());
+        private Tagged(final int value, final String tag) {
+            this.value = value;
+            this.tag = tag;
+        }
+
+        @Override
+        public int compareTo(@NotNull final Tagged other) {
+            return Integer.compare(value, other.value);
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            return other instanceof Tagged && ((Tagged) other).value == value && ((Tagged) other).tag.equals(tag);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * value + tag.hashCode();
+        }
+    }
+
+    private static <T> List<Long> binsearchMatchFilter(
+            final Class<T> type,
+            final List<T> ascending,
+            final T toFind) {
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "test", toFind);
+        filter.init(TableDefinition.of(ColumnDefinition.fromGenericType("test", type)));
+        assertEquals(type, filter.getColumnType());
 
         try (final RowSet matched = ObjectRegionBinarySearchKernel.binsearchMatchFilter(
-                makeBigDecimalRegion(data), 0, data.size() - 1,
+                makeRegion(ascending, PAGE_SIZE), 0, ascending.size() - 1,
                 SortColumn.asc(ColumnName.of("test")), filter)) {
             final List<Long> actual = new ArrayList<>();
             matched.forAllRowKeys(actual::add);
-            assertEquals(List.of(0L), actual);
+            return actual;
         }
+    }
+
+    /**
+     * {@link ObjectRegionBinarySearchKernel#binsearchMatchFilter} is the entry point the Parquet regions call, and the
+     * dispatch it makes on the column's data type is what chooses between answering a match by ordering alone and
+     * picking the matches out of the ordering-equal run by equality. A run holding values that compare equal while
+     * being unequal separates the two: only the truly equal row may come back, where the ordering-only search would
+     * answer with the whole run.
+     */
+    @Test
+    public void testMatchFilterDispatchesInconsistentTypeToEqualitySearch() {
+        final List<Tagged> data = List.of(new Tagged(1, "a"), new Tagged(1, "b"), new Tagged(2, "a"));
+        assertEquals(List.of(0L), binsearchMatchFilter(Tagged.class, data, new Tagged(1, "a")));
+        assertEquals(List.of(1L), binsearchMatchFilter(Tagged.class, data, new Tagged(1, "b")));
+        assertEquals(List.of(2L), binsearchMatchFilter(Tagged.class, data, new Tagged(2, "a")));
+    }
+
+    /**
+     * A {@link BigDecimal} match is decided by ordering, as the query language's {@code ==} decides it, so the whole
+     * ordering-equal run matches whatever the scales. No Parquet column can carry such a run -- the DECIMAL logical
+     * type stores a single scale for a whole column -- so it is built directly here.
+     */
+    @Test
+    public void testMatchFilterDispatchesBigDecimalToOrderingSearch() {
+        final List<BigDecimal> data = List.of(new BigDecimal("1.0"), new BigDecimal("1.00"), new BigDecimal("2.0"));
+        assertEquals(List.of(0L, 1L), binsearchMatchFilter(BigDecimal.class, data, new BigDecimal("1.0")));
+        assertEquals(List.of(0L, 1L), binsearchMatchFilter(BigDecimal.class, data, new BigDecimal("1.00")));
     }
 
     /**
@@ -212,6 +262,12 @@ public class ObjectRegionBinarySearchKernelBigDecimalTest {
 
     private static ColumnRegionObject<BigDecimal, Values> makeBigDecimalRegion(
             @NotNull final List<BigDecimal> values,
+            final int pageSize) {
+        return makeRegion(values, pageSize);
+    }
+
+    private static <T> ColumnRegionObject<T, Values> makeRegion(
+            @NotNull final List<T> values,
             final int pageSize) {
         return new AppendOnlyFixedSizePageRegionObject<>(
                 RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, pageSize, new AppendOnlyRegionAccessor<>() {
