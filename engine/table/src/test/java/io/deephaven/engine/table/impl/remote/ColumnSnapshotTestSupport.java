@@ -31,7 +31,13 @@ final class ColumnSnapshotTestSupport {
 
     private static final int COLUMNS = 4;
     private static final int ROWS = 16;
-    private static final int INTERCEPTED_COLUMN_INDEX = 1;
+    /**
+     * The first column, so that under a parallel snapshot the intercepted fill always runs on a scheduler thread: the
+     * invoking thread takes part in the column jobs, and claims the last of the initial tasks, while the first goes to
+     * the first scheduler thread. The tests that interrupt the invoking thread rely on it being the one waiting, not
+     * the one running the intercepted fill.
+     */
+    private static final int INTERCEPTED_COLUMN_INDEX = 0;
 
     /** The column of {@link #tableWithInterceptedColumn} whose fill runs the test's {@code beforeFill}. */
     static final String INTERCEPTED_COLUMN_NAME = "C" + INTERCEPTED_COLUMN_INDEX;

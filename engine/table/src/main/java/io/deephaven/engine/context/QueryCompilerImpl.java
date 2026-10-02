@@ -60,11 +60,9 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -515,49 +513,34 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 .append(numTasks).append(" tasks, ").append(requestsPerTask).endl();
 
         final JavaFileManager fileManager = acquireFileManager();
-        final AtomicReference<RuntimeException> exception = new AtomicReference<>();
-        final CountDownLatch latch = new CountDownLatch(1);
-        final Runnable cleanup = () -> {
+        final Runnable releaseFileManager = () -> {
             try {
                 releaseFileManager(fileManager);
             } catch (Exception e) {
                 // ignore errors here
-            } finally {
-                latch.countDown();
             }
         };
-
-        final Consumer<Exception> onError = err -> {
-            if (err instanceof RuntimeException) {
-                exception.set((RuntimeException) err);
-            } else {
-                exception.set(new UncheckedDeephavenException("Error during compilation", err));
-            }
-            cleanup.run();
-        };
-
-        jobScheduler.iterateParallel(executionContext, null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                0, numTasks, (context, jobId, nestedErrorConsumer) -> {
-                    final int startInclusive = jobId * requestsPerTask;
-                    final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
-                    doCompileAndDefine(fileManager, requests, startInclusive, endExclusive);
-                },
-                () -> {
-                },
-                cleanup,
-                onError);
 
         try {
-            latch.await();
+            // This thread compiles alongside the scheduler's threads, and comes back here once every task is done
+            jobScheduler.invokeParallel(executionContext, null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0, numTasks, (context, jobId, nestedErrorConsumer) -> {
+                        final int startInclusive = jobId * requestsPerTask;
+                        final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
+                        doCompileAndDefine(fileManager, requests, startInclusive, endExclusive);
+                    },
+                    () -> {
+                    },
+                    releaseFileManager,
+                    // cleanup runs only after a success, so a failure releases the file manager here
+                    err -> releaseFileManager.run());
+        } finally {
             final BasePerformanceEntry perfEntry = jobScheduler.getAccumulatedPerformance();
             if (perfEntry != null) {
                 QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(perfEntry);
             }
-            final RuntimeException err = exception.get();
-            if (err != null) {
-                throw err;
-            }
-        } catch (final InterruptedException e) {
+        }
+        if (Thread.currentThread().isInterrupted()) {
             throw new CancellationException("interrupted while compiling");
         }
     }

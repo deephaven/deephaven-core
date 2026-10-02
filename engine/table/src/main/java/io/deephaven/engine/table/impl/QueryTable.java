@@ -1820,7 +1820,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                             rowSet.copy(), RowSetFactory.empty(), RowSetFactory.empty(),
                             RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
 
-                    final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
                             && ExecutionContext.getContext().getOperationInitializer().canParallelize()
@@ -1837,28 +1836,31 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
 
+                            // One step, which the analyzer completes through resume once its work, parallel and
+                            // asynchronous as it may be, is done; this thread waits here for that, and for the
+                            // analyzer's jobs to be over before the result's sources are published or torn down.
                             try {
-                                analyzer.applyUpdate(
-                                        fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
-                                        () -> waitForResult.complete(null),
-                                        waitForResult::completeExceptionally);
-                            } catch (Exception e) {
-                                waitForResult.completeExceptionally(e);
-                            }
-
-                            try {
-                                waitForResult.get();
-                            } catch (InterruptedException e) {
-                                throw new CancellationException("interrupted while computing select or update");
-                            } catch (ExecutionException e) {
+                                jobScheduler.invokeSerial(ExecutionContext.getContext(),
+                                        logOutput -> logOutput.append(updateDescription),
+                                        JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 1,
+                                        (context, step, nestedErrorConsumer, resume) -> analyzer.applyUpdate(
+                                                fakeUpdate, emptyRowSet, updateHelper, jobScheduler,
+                                                liveResultCapture, resume, nestedErrorConsumer),
+                                        () -> {
+                                        }, () -> {
+                                        }, failure -> {
+                                        });
+                            } catch (RuntimeException e) {
                                 throw new TableInitializationException(updateDescription,
-                                        "an exception occurred while performing the initial select or update",
-                                        e.getCause());
+                                        "an exception occurred while performing the initial select or update", e);
                             } finally {
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
                                     QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
                                 }
+                            }
+                            if (Thread.currentThread().isInterrupted()) {
+                                throw new CancellationException("interrupted while computing select or update");
                             }
                         }
 
