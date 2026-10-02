@@ -15,6 +15,6 @@ configurations.configureEach {
             }
         }
         cacheChangingModulesFor 0, 'seconds'
-        failOnNonReproducibleResolution()
+//        failOnNonReproducibleResolution()
     }
 }

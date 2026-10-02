@@ -77,7 +77,7 @@ public class DictionaryEncodedTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     delayTestFinish(7000);
                     DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
-                    options.columns = table.getColumns();
+                    options.columns = Js.cast(table.getColumns());
                     TableSubscription sub = table.createSubscription(options);
                     return assertUpdateReceived(sub, data -> validateDictValues(table, data), 5000)
                             .then(ignore -> Promise.resolve(table));
@@ -91,7 +91,7 @@ public class DictionaryEncodedTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     delayTestFinish(7000);
                     DataOptions.SnapshotOptions opts = new DataOptions.SnapshotOptions();
-                    opts.columns = table.getColumns();
+                    opts.columns = Js.cast(table.getColumns());
                     opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 5));
                     return table.createSnapshot(opts).then(data -> {
                         validateDictValues(table, data);

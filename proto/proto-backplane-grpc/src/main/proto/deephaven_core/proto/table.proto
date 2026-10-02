@@ -603,7 +603,7 @@ message UpdateByRequest {
           UpdateByWindowScale reverse_window_scale = 1;
           UpdateByWindowScale forward_window_scale = 2;
           string formula = 3;
-          string param_token = 4;
+          string param_token = 4 [deprecated = true];
         }
 
         message UpdateByRollingCountWhere {
@@ -613,14 +613,14 @@ message UpdateByRequest {
           UpdateByWindowScale forward_window_scale = 2;
           // The output column name
           string result_column = 3;
-          // The filters tp apply before counting
+          // The filters to apply before counting
           repeated string filters = 4;
         }
 
         message UpdateByCumulativeCountWhere {
           // The output column name
           string result_column = 1;
-          // The filters tp apply before counting
+          // The filters to apply before counting
           repeated string filters = 2;
         }
 

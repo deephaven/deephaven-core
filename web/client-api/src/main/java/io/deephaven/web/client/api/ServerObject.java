@@ -80,5 +80,17 @@ public interface ServerObject {
         default ServerObject asServerObject() {
             return (ServerObject) this;
         }
+
+        @TsUnionMember
+        @JsOverlay
+        default JsPendingTable asPendingTable() {
+            return (JsPendingTable) this;
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default JsResolvedTable asResolvedTable() {
+            return (JsResolvedTable) this;
+        }
     }
 }
