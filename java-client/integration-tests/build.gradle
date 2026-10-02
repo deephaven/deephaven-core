@@ -1,0 +1,59 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+}
+
+description = 'Integration tests that run the Java client against a Deephaven server in Docker'
+
+configurations {
+    // The installed example distributions; the smoke test runs their launcher scripts as child processes
+    examples
+}
+
+dependencies {
+    examples project(path: ':java-client-session-examples', configuration: 'examplesInstall')
+    examples project(path: ':java-client-flight-examples', configuration: 'examplesInstall')
+    examples project(path: ':java-client-barrage-examples', configuration: 'examplesInstall')
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+}
+
+// The server is the published jetty image: Python console, anonymous and pre-shared-key auth, as py/client uses.
+String randomSuffix = UUID.randomUUID().toString()
+deephavenDocker {
+    envVars.set([
+            'START_OPTS': '-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,'
+                    + 'io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven'
+    ])
+    containerName.set "dh-server-for-java-client-${randomSuffix}"
+    networkName.set "java-client-test-network-${randomSuffix}"
+}
+def serverImage = project(deephavenDocker.deephavenServerProject).tasks.named(deephavenDocker.serverTask, DockerBuildImage)
+
+test {
+    useJUnitPlatform()
+    // The examples share one server and publish fixed variable names, so run them in one fork, in order
+    maxParallelForks = 1
+
+    // What the test exercises, so it reruns only when one of these changes (or with -PforceTest=true)
+    inputs.files(configurations.examples)
+    inputs.property('serverImageId', serverImage.flatMap { it.imageId })
+
+    dependsOn deephavenDocker.portTask
+    finalizedBy deephavenDocker.endTask
+    doFirst {
+        // The host port is only known once the container is up
+        systemProperty 'dh.port', deephavenDocker.port.get()
+        configurations.examples.files.each { File install ->
+            systemProperty "dh.examples.${install.name}.bin", new File(install, 'bin').absolutePath
+        }
+    }
+}
+
+deephavenDocker.shouldLogIfTaskFails tasks.named('test')
