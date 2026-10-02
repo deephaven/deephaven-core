@@ -10,6 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,7 +23,19 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         extends UncoalescedTableImpl<IMPL_TYPE> {
 
     protected RedefinableTable(@NotNull final TableDefinition definition, @NotNull final String description) {
-        super(definition, description);
+        this(definition, description, null);
+    }
+
+    /**
+     * @param definition The definition for this table
+     * @param description A description of this table
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     */
+    protected RedefinableTable(
+            @NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @Nullable final Map<String, Object> attributes) {
+        super(definition, description, attributes);
     }
 
     @Override

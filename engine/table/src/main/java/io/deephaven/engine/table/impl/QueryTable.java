@@ -3202,7 +3202,6 @@ public class QueryTable extends BaseTable<QueryTable> {
      *
      * @return an identical table; but with a new set of attributes
      */
-    @Override
     public QueryTable copy() {
         return copy(StandardOptions.COPY_ALL);
     }
@@ -3211,6 +3210,14 @@ public class QueryTable extends BaseTable<QueryTable> {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return copy(definition, shouldCopy);
+        }
+    }
+
+    @Override
+    protected QueryTable copy(@NotNull final Map<String, Object> attributes) {
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return copyInternal(definition, attributes);
         }
     }
 
@@ -3230,6 +3237,20 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     public QueryTable copy(TableDefinition definition, Predicate<String> shouldCopy) {
+        final Map<String, Object> attributes;
+        if (shouldCopy == StandardOptions.COPY_ALL) {
+            attributes = getAttributes();
+        } else if (shouldCopy == StandardOptions.COPY_NONE) {
+            attributes = null;
+        } else {
+            attributes = getAttributes(shouldCopy);
+        }
+        return copyInternal(definition, attributes);
+    }
+
+    private QueryTable copyInternal(
+            @NotNull final TableDefinition definition,
+            @Nullable final Map<String, Object> attributes) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
@@ -3238,11 +3259,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final OperationSnapshotControl snapshotControl =
                         createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 initializeWithSnapshot("copy", snapshotControl, (usePrev, beforeClockValue) -> {
-                    final QueryTable resultTable = new CopiedTable(definition, this);
+                    final QueryTable resultTable = new CopiedTable(definition, this, attributes);
                     propagateFlatness(resultTable, usePrev);
-                    if (shouldCopy != StandardOptions.COPY_NONE) {
-                        copyAttributes(resultTable, shouldCopy);
-                    }
                     if (snapshotControl != null) {
                         final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                         snapshotControl.setListenerAndResult(listener, resultTable);
@@ -3262,8 +3280,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     static class CopiedTable extends QueryTable {
         private final QueryTable parent;
 
-        private CopiedTable(TableDefinition definition, QueryTable parent) {
-            super(definition, parent.rowSet, parent.columns, null, null);
+        private CopiedTable(
+                TableDefinition definition,
+                QueryTable parent,
+                @Nullable Map<String, Object> attributes) {
+            super(definition, parent.rowSet, parent.columns, null, attributes);
             this.parent = parent;
         }
 
