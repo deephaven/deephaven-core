@@ -194,9 +194,14 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
 
             // consider the modifications only when input or timestamp columns were modified
             if (upstream.modified().isNonempty() && (ctx.timestampsModified || ctx.inputModified)) {
+                // A timestamp modified to or from null inserts or removes the row from the timestamp-valid rows, so
+                // like an add or remove it can cascade to the rows between it and their windows.
+                final long modPrev = ctx.timestampsModified ? Math.max(0, prevUnits) : prevUnits;
+                final long modFwd = ctx.timestampsModified ? Math.max(0, fwdUnits) : fwdUnits;
+
                 // recompute all windows that have the modified rows in their window
                 try (final WritableRowSet modifiedAffected =
-                        computeAffectedRowsTime(ctx, tsContext, upstream.modified(), prevUnits, fwdUnits, false)) {
+                        computeAffectedRowsTime(ctx, tsContext, upstream.modified(), modPrev, modFwd, false)) {
                     tmpAffected.subsume(modifiedAffected);
                 }
 
@@ -204,7 +209,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                     // recompute all windows previously containing the modified rows
                     // after the timestamp modifications
                     try (final WritableRowSet modifiedAffectedPrev =
-                            computeAffectedRowsTime(ctx, tsContext, upstream.getModifiedPreShift(), prevUnits, fwdUnits,
+                            computeAffectedRowsTime(ctx, tsContext, upstream.getModifiedPreShift(), modPrev, modFwd,
                                     true)) {
                         // we used the SSA (post-shift) to get these keys, no need to shift
                         // retain only the rows that still exist in the sourceRowSet
