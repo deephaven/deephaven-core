@@ -27,6 +27,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.*;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
@@ -1589,6 +1590,29 @@ public class SessionStateTest {
         Assert.eqFalse(listener.isComplete, "listener.isComplete");
         session.onExpired();
         Assert.eqTrue(listener.isComplete, "listener.isComplete");
+    }
+
+    @Test
+    public void testThrowingOnCloseCallbackOnExpiryIsFatal() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            session.newServerSideExport(export);
+        }
+        Assert.eq(export.refCount, "export.refCount", 1);
+        session.addOnCloseCallback(() -> {
+            throw new IOException("close failed");
+        });
+
+        boolean fatal = false;
+        try {
+            session.onExpired();
+        } catch (final FakeProcessEnvironment.FakeFatalException expected) {
+            fatal = true;
+        }
+        Assert.eqTrue(fatal, "fatal");
+        // the exports were already torn down; the session is expired either way
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
+        Assert.eq(export.refCount, "export.refCount", 0);
     }
 
     @Test

@@ -49,7 +49,6 @@ import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
-import java.io.IOException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -645,38 +644,43 @@ public class SessionState {
         }
 
         log.debug().append(logPrefix).append("releasing outstanding exports").endl();
-        // Cancel outside the export map's monitor: cancelling notifies listeners, which may create exports from their
-        // callbacks. Nothing is lost by clearing first; the expiration flag set above makes every later lookup or
-        // creation fail, and markExportReleased() is a no-op once expired.
-        final List<ExportObject<?>> toCancel;
-        synchronized (exportMap) {
-            toCancel = List.copyOf(exportMap.values());
-            exportMap.clear();
-            // Safe to release here: the expiration flag is already set above, so any lookup that later takes this
-            // monitor observes expiration and never reads releasedExports.
-            releasedExports.close();
-        }
-        toCancel.forEach(ExportObject::cancel);
-
-        log.debug().append(logPrefix).append("outstanding exports released").endl();
-        synchronized (exportListeners) {
-            exportListeners.forEach(ExportListener::onRemove);
-            exportListeners.clear();
-        }
-
-        final List<Closeable> callbacksToClose;
-        synchronized (onCloseCallbacks) {
-            callbacksToClose = new ArrayList<>(onCloseCallbacks.size());
-            onCloseCallbacks.forEach((ref, callback) -> callbacksToClose.add(callback));
-            onCloseCallbacks.clear();
-        }
-        callbacksToClose.forEach(callback -> {
-            try {
-                callback.close();
-            } catch (final IOException e) {
-                log.error().append(logPrefix).append("error during onClose callback: ").append(e).endl();
+        // Internal exceptions thrown by any callbacks or state transitions are reported as fatal errors - these are
+        // intended to be internal apis and must handle their own exceptions.
+        try {
+            // Cancel outside the export map's monitor: cancelling notifies listeners, which may create exports from
+            // their callbacks. Nothing is lost by clearing first; the expiration flag set above makes every later
+            // lookup or creation fail, and markExportReleased() is a no-op once expired.
+            final List<ExportObject<?>> toCancel;
+            synchronized (exportMap) {
+                toCancel = List.copyOf(exportMap.values());
+                exportMap.clear();
+                // Safe to release here: the expiration flag is already set above, so any lookup that later takes
+                // this monitor observes expiration and never reads releasedExports.
+                releasedExports.close();
             }
-        });
+            toCancel.forEach(ExportObject::cancel);
+
+            log.debug().append(logPrefix).append("outstanding exports released").endl();
+            synchronized (exportListeners) {
+                exportListeners.forEach(ExportListener::onRemove);
+                exportListeners.clear();
+            }
+
+            final List<Closeable> callbacksToClose;
+            synchronized (onCloseCallbacks) {
+                callbacksToClose = new ArrayList<>(onCloseCallbacks.size());
+                onCloseCallbacks.forEach((ref, callback) -> callbacksToClose.add(callback));
+                onCloseCallbacks.clear();
+            }
+            for (final Closeable callback : callbacksToClose) {
+                callback.close();
+            }
+        } catch (final Throwable err) {
+            log.error().append(logPrefix).append("unexpected error while expiring session ").append(sessionId)
+                    .append(": ").append(err).endl();
+            ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
+                    "Unexpected error while expiring session " + sessionId, err);
+        }
     }
 
     /**
