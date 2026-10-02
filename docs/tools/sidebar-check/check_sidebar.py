@@ -31,6 +31,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.dirname(os.path.dirname(HERE))
 LANGUAGES = ["python", "groovy"]
 FRONT_MATTER = re.compile(r"---\n(.*?\n)---\n", re.DOTALL)
+# A top-level sidebar_label key, quoted or not, with optional space before the colon.
+SIDEBAR_LABEL_KEY = re.compile(r"""^(["']?)sidebar_label\1\s*:""", re.MULTILINE)
 
 # Problems that concern a page rather than sidebar.json, mapped to that page for annotations.
 FILE_FOR_ERROR = {}
@@ -135,7 +137,7 @@ def check_front_matter(lang):
             path = os.path.join(dirpath, name)
             with open(path, encoding="utf-8") as f:
                 match = FRONT_MATTER.match(f.read())
-            if match and re.search(r"^sidebar_label:", match.group(1), re.MULTILINE):
+            if match and SIDEBAR_LABEL_KEY.search(match.group(1)):
                 rel = os.path.relpath(path, root)
                 error = (f"{lang}: {rel} sets sidebar_label, which the site ignores. "
                          "Remove it; the sidebar label comes from sidebar.json.")
