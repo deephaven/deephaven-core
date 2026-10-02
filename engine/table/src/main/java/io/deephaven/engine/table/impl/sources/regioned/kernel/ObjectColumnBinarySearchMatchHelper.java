@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.SortSpec;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -24,40 +23,41 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectColumnBinarySearchKernel.lowerBoundAscending;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectColumnBinarySearchKernel.lowerBoundDescending;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectColumnBinarySearchKernel.upperBoundAscending;
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectColumnBinarySearchKernel.upperBoundDescending;
 
 /**
- * Match search over a sorted column source whose data type is not known to order consistently with equals -- see
- * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}. Where {@link ObjectColumnBinarySearchKernel}
- * can answer a match with the run its bounds locate, this kernel must treat that run as a superset and pick the matches
- * out of it by equality, which is the relation the chunk filter it stands in for uses.
- *
- * <p>
- * Each run is read in chunks, as {@link ComparableRegionBinarySearchKernel} reads them. The runs are located in
- * position space here, though, and a column source's selection may be sparse, so a chunk is gathered through a
- * {@link RowSequence} iterator advanced across the runs rather than addressed as a contiguous row-key range -- mapping
- * a position to a row key is far more expensive than the arithmetic a flat region needs, so the iterator is advanced
- * once and reused instead of resolving each run's start independently.
- *
- * <p>
- * Only the match search differs; the bounds it navigates by, and every range search, are
- * {@link ObjectColumnBinarySearchKernel}'s.
+ * The match behind {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}, which is correct for
+ * any {@link Comparable} type.
  */
-public class ComparableColumnBinarySearchKernel {
-
-    /** Rows per slice when scanning a run. Matches the other chunked scans in {@code engine/table}. */
+final class ObjectColumnBinarySearchMatchHelper {
+    /**
+     * Rows per slice when scanning a run of rows that compare equal to a search value. Matches the other chunked scans
+     * in {@code engine/table}.
+     */
     private static final int CHUNK_SIZE = 1 << 12;
 
-    private ComparableColumnBinarySearchKernel() {}
+    private ObjectColumnBinarySearchMatchHelper() {}
 
     /**
      * Performs a binary search on a given sorted {@link ColumnSource} to find the row keys from a provided
-     * {@link RowSet} that are equal to one of {@code searchValues}. The method returns the {@link RowSet} containing
-     * the matched row keys.
+     * {@link RowSet} that hold a value equal to one of {@code searchValues}. The method returns the {@link RowSet}
+     * containing the matched row keys.
+     *
      * <p>
-     * NB: equality is determined by {@link ObjectComparisons#eq(Object, Object)}, which may differ from
-     * {@code compareTo()} for certain types. For example,
-     * {@code new BigDecimal("1.0").compareTo(new BigDecimal("1.00")) == 0} but
-     * {@code new BigDecimal("1.0").equals(new BigDecimal("1.00")) == false}.
+     * The ordering only locates the rows to test: the bounds find the run of positions whose values compare equal to a
+     * search value, and each row of that run is returned exactly when {@link ObjectComparisons#eq(Object, Object)}
+     * holds for it and one of the search values that compare equal to the run. The result is therefore correct even
+     * where values that compare equal are not all equal.
+     *
+     * <p>
+     * The binary search is performed over the positions defined by {@code selection}. {@link RowSet#get(long)} is used
+     * to map positions to row keys, ensuring O(log n) performance even when the row key space is sparse. Each run is
+     * read in chunks, gathered through a {@link RowSequence} iterator advanced across the runs rather than addressed as
+     * a contiguous row key range: mapping a position to a row key is far more expensive than advancing the iterator, so
+     * the iterator is advanced once and reused instead of resolving each run's start independently.
      *
      * @param source The column source in which the search will be performed.
      * @param selection The {@link RowSet} defining which rows are populated and the order in which they are searched.
@@ -67,13 +67,12 @@ public class ComparableColumnBinarySearchKernel {
      *
      * @return A {@link RowSet} containing the row keys that are equal to one of the search values.
      */
-    public static RowSet binarySearchMatch(
+    static RowSet binarySearchMatchWithGeneralEquality(
             @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues,
             final boolean usePrev) {
-        final SortSpec.Order order = sortColumn.order();
         final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);
         if (sortColumn.isAscending()) {
             try (final ObjectTimsortKernel.ObjectSortKernelContext<Any> context =
@@ -89,7 +88,7 @@ public class ComparableColumnBinarySearchKernel {
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final long lastPos = selection.size() - 1;
-        final boolean ascending = order.isAscending();
+        final boolean ascending = sortColumn.isAscending();
         long firstPos = 0;
 
         // Everything a run scan needs is allocated once here and reused across every run: the context and chunks are
@@ -101,32 +100,28 @@ public class ComparableColumnBinarySearchKernel {
                 final WritableLongChunk<OrderedRowKeys> matches = WritableLongChunk.makeWritableChunk(contextSize);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
             for (int idx = 0; idx < copiedValues.length && firstPos <= lastPos;) {
-                // First, we are identifying a set of comparison-equal values.
+                // First, identify the group of search values that compare equal to each other.
                 int groupEnd = idx + 1;
                 while (groupEnd < copiedValues.length
                         && ObjectComparisons.compare(copiedValues[groupEnd], copiedValues[idx]) == 0) {
                     ++groupEnd;
                 }
-                // Second, find the bounds of a run in the column that compares equal to the search value. These
-                // bounds are positions within selection, not row keys, so their difference is a row count
-                // even when selection is sparse.
+                // Second, find the bounds of the run in the column that compares equal to the group. These bounds are
+                // positions within selection, not row keys, so their difference is a row count even when selection is
+                // sparse.
                 final Object toFind = copiedValues[idx];
                 final long lowerResult = ascending
-                        ? ObjectColumnBinarySearchKernel.lowerBoundAscending(
-                                source, selection, firstPos, lastPos, toFind, true, usePrev)
-                        : ObjectColumnBinarySearchKernel.lowerBoundDescending(
-                                source, selection, firstPos, lastPos, toFind, true, usePrev);
+                        ? lowerBoundAscending(source, selection, firstPos, lastPos, toFind, true, usePrev)
+                        : lowerBoundDescending(source, selection, firstPos, lastPos, toFind, true, usePrev);
                 final long runStartPos = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);
                 final long upperResult = ascending
-                        ? ObjectColumnBinarySearchKernel.upperBoundAscending(
-                                source, selection, runStartPos, lastPos, toFind, true, usePrev)
-                        : ObjectColumnBinarySearchKernel.upperBoundDescending(
-                                source, selection, runStartPos, lastPos, toFind, true, usePrev);
+                        ? upperBoundAscending(source, selection, runStartPos, lastPos, toFind, true, usePrev)
+                        : upperBoundDescending(source, selection, runStartPos, lastPos, toFind, true, usePrev);
                 final long runEndPos = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);
                 if (runEndPos > runStartPos) {
-                    // Third, check each value of the run for Object equality with the set of comparison-equal
-                    // search values. Resolving runStartPos is the only place a position becomes a row key; runs
-                    // advance forward, so the one iterator serves them all.
+                    // Third, keep each row of the run that is equal to a member of the group. Resolving runStartPos is
+                    // the only place a position becomes a row key; runs advance forward, so the one iterator serves
+                    // them all.
                     rsIt.advance(selection.get(runStartPos));
                     long remaining = runEndPos - runStartPos;
                     while (remaining > 0 && rsIt.hasMore()) {
@@ -140,8 +135,6 @@ public class ComparableColumnBinarySearchKernel {
                             final Object value = valueChunk.get(ii);
                             for (int valueIdx = idx; valueIdx < groupEnd; ++valueIdx) {
                                 if (ObjectComparisons.eq(value, copiedValues[valueIdx])) {
-                                    // This row matches at least one of the search values, so add it to the
-                                    // matches chunk.
                                     matches.add(keys.get(ii));
                                     break;
                                 }

@@ -96,7 +96,8 @@ public class AsOfStampContextTest {
         final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(LARGE_SIZE);
         try (final WritableRowSet bucket = RowSetFactory.flat(CAPACITY_LIMIT);
                 final AsOfStampContext stampContext =
-                        new AsOfStampContext(SortingOrder.Ascending, false, leftStamps, rightStamps, rightStamps)) {
+                        new AsOfStampContext(SortingOrder.Ascending, false, leftStamps, rightStamps, rightStamps,
+                                false)) {
             stampContext.processEntry(bucket, bucket, rowRedirection);
         }
         for (int ii = 0; ii < CAPACITY_LIMIT; ++ii) {
@@ -126,7 +127,7 @@ public class AsOfStampContextTest {
         final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(2);
         try (final WritableRowSet rows = RowSetFactory.flat(2);
                 final AsOfStampContext stampContext =
-                        new AsOfStampContext(SortingOrder.Ascending, false, stamps, stamps, stamps)) {
+                        new AsOfStampContext(SortingOrder.Ascending, false, stamps, stamps, stamps, false)) {
             stampContext.processEntry(rows, rows, rowRedirection);
             fail("expected the out of order stamps to fail");
         } catch (final AssertionFailure expected) {
@@ -141,7 +142,7 @@ public class AsOfStampContextTest {
         try (final WritableRowSet small = RowSetFactory.flat(1);
                 final WritableRowSet large = RowSetFactory.flat(LARGE_SIZE)) {
             final AsOfStampContext stampContext =
-                    new AsOfStampContext(SortingOrder.Ascending, false, leftStamps, rightStamps, rightStamps);
+                    new AsOfStampContext(SortingOrder.Ascending, false, leftStamps, rightStamps, rightStamps, false);
             try {
                 stampContext.processEntry(small, small, rowRedirection);
                 try {

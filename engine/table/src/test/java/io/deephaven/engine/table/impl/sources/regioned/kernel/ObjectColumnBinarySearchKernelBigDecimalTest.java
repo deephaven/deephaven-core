@@ -23,12 +23,13 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Coverage for the column match search over a type whose natural ordering is inconsistent with equals, which is the
- * case {@link ComparableColumnBinarySearchKernel} exists to serve. {@link ObjectColumnBinarySearchKernelTest} covers
- * the ordering-consistent types that take the fast path instead.
+ * Coverage for {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality} over a type whose natural
+ * ordering is inconsistent with equals, where the rows that compare equal to a search value must be tested for
+ * equality. {@link ObjectColumnBinarySearchKernelTest} covers a type whose ordering is consistent with equals, through
+ * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}.
  */
 @Category(ParallelTest.class)
-public class ComparableColumnBinarySearchKernelTest {
+public class ObjectColumnBinarySearchKernelBigDecimalTest {
 
     /**
      * The search navigates by {@code ObjectComparisons.compare} but a match is decided by {@code ObjectComparisons.eq},
@@ -140,7 +141,7 @@ public class ComparableColumnBinarySearchKernelTest {
                     ? SortColumn.desc(ColumnName.of("test"))
                     : SortColumn.asc(ColumnName.of("test"));
             try (final RowSet selection = RowSetFactory.fromRange(0, data.size() - 1);
-                    final RowSet matched = ComparableColumnBinarySearchKernel.binarySearchMatch(
+                    final RowSet matched = ObjectColumnBinarySearchKernel.binarySearchMatchWithGeneralEquality(
                             source, selection, sortColumn, toFind.toArray(), false)) {
                 final List<Long> actual = new ArrayList<>();
                 matched.forAllRowKeys(actual::add);

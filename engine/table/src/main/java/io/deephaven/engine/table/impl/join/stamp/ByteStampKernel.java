@@ -42,10 +42,11 @@ public class ByteStampKernel implements StampKernel {
 
         for (int li = 0; li < leftSize;) {
             final byte leftValue = leftStamps.get(li);
-            if (lt(leftValue, rightLowValue)) {
+            final int lowComparison = doComparison(leftValue, rightLowValue);
+            if (lowComparison < 0) {
                 leftRedirections.set(li++, RowSequence.NULL_ROW_KEY);
                 continue;
-            } else if (eq(leftValue, rightLowValue)) {
+            } else if (lowComparison == 0) {
                 leftRedirections.set(li++, rightKeyIndices.get(rightLowIdx));
                 continue;
             }
@@ -55,10 +56,11 @@ public class ByteStampKernel implements StampKernel {
             while (rightLowIdx < rightHighIdx) {
                 final int rightMidIdx = ((rightHighIdx - rightLowIdx) / 2) + rightLowIdx;
                 final byte rightMidValue = rightStamps.get(rightMidIdx);
-                if (leq(rightMidValue, leftValue)) {
+                final int midComparison = doComparison(rightMidValue, leftValue);
+                if (midComparison <= 0) {
                     rightLowIdx = rightMidIdx;
                     rightLowValue = rightMidValue;
-                    if (rightLowIdx == rightHighIdx - 1 || eq(rightLowValue, leftValue)) {
+                    if (rightLowIdx == rightHighIdx - 1 || midComparison == 0) {
                         break;
                     }
                 } else {
@@ -88,15 +90,5 @@ public class ByteStampKernel implements StampKernel {
 
     private static boolean lt(byte lhs, byte rhs) {
         return doComparison(lhs, rhs) < 0;
-    }
-
-    private static boolean leq(byte lhs, byte rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
-
-    private static boolean eq(byte lhs, byte rhs) {
-        // region equality function
-        return ByteComparisons.eq(lhs, rhs);
-        // endregion equality function
     }
 }

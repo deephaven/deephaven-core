@@ -1048,17 +1048,30 @@ public class SessionState {
             }
 
             if (isNowExported || isExportStateTerminal(state)) {
-                children.forEach(child -> child.onResolveOne(this));
+                // Detach everything before notifying dependents, so that this export is never terminal but still
+                // holding its handlers, dependents and dependencies. Nothing client-driven reaches the notification
+                // below, so a dependent that throws is an internal error and, like a throwing handler above, fatal.
+                final List<ExportObject<?>> dependents = children;
+                final List<ExportObject<?>> dependencies = parents;
                 children = Collections.emptyList();
-                parents.stream().filter(Objects::nonNull).forEach(this::tryUnmanage);
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
                 successHandler = null;
-            }
-
-            if ((isNowExported && isNonExport()) || isExportStateTerminal(state)) {
-                dropReference();
+                try {
+                    for (final ExportObject<?> dependent : dependents) {
+                        dependent.onResolveOne(this);
+                    }
+                } catch (final Throwable err) {
+                    log.error().append("Unexpected error while notifying ExportObject dependents: ").append(err)
+                            .endl();
+                    ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
+                            "Unexpected error while notifying ExportObject dependents", err);
+                }
+                dependencies.stream().filter(Objects::nonNull).forEach(this::tryUnmanage);
+                if ((isNowExported && isNonExport()) || isExportStateTerminal(state)) {
+                    dropReference();
+                }
             }
         }
 
@@ -1220,6 +1233,10 @@ public class SessionState {
         }
 
         private synchronized void onDependencyFailure(final ExportObject<?> parent) {
+            if (isExportStateTerminal(state)) {
+                // onResolveOne reads our state without the lock; a concurrent cancel or release may have won the race
+                return;
+            }
             errorId = parent.errorId;
             if (parent.caughtException instanceof StatusRuntimeException) {
                 caughtException = parent.caughtException;

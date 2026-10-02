@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.util.datastructures.hash;
+package io.deephaven.engine.table.impl.util.hash;
 
 public abstract class HashMapK4V4 extends HashMapBase {
     HashMapK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
