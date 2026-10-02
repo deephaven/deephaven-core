@@ -23,6 +23,8 @@ import static org.junit.Assert.assertNull;
  */
 public class TestArraySourceFreshBlocks {
     private static final int BLOCK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
+    /** The capacity of two blocks, the most any of these tests allocates. */
+    private static final long TWO_BLOCKS = 2L * BLOCK_SIZE;
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
@@ -55,17 +57,17 @@ public class TestArraySourceFreshBlocks {
 
         updateGraph().runWithinUnitTestCycle(() -> {
             // a second block, allocated during the cycle
-            longs.ensureCapacity(2L * BLOCK_SIZE);
-            defaults.ensureCapacity(2L * BLOCK_SIZE, false);
-            objects.ensureCapacity(2L * BLOCK_SIZE);
-            booleans.ensureCapacity(2L * BLOCK_SIZE);
-            for (long key = 0; key < 2L * BLOCK_SIZE; key += 3) {
+            longs.ensureCapacity(TWO_BLOCKS);
+            defaults.ensureCapacity(TWO_BLOCKS, false);
+            objects.ensureCapacity(TWO_BLOCKS);
+            booleans.ensureCapacity(TWO_BLOCKS);
+            for (long key = 0; key < TWO_BLOCKS; key += 3) {
                 longs.set(key, key);
                 defaults.set(key, key);
                 objects.set(key, "new");
                 booleans.set(key, false);
             }
-            for (long key = 0; key < 2L * BLOCK_SIZE; ++key) {
+            for (long key = 0; key < TWO_BLOCKS; ++key) {
                 final boolean written = key % 3 == 0;
                 final boolean fresh = key >= BLOCK_SIZE;
                 // written rows of the old block record their old values; rows of the new block keep their allocated
@@ -83,7 +85,7 @@ public class TestArraySourceFreshBlocks {
 
         // after the cycle, previous values are current values in both blocks, and the new block records previous values
         // as usual
-        for (long key = 0; key < 2L * BLOCK_SIZE; ++key) {
+        for (long key = 0; key < TWO_BLOCKS; ++key) {
             assertEquals(longs.getLong(key), longs.getPrevLong(key));
             assertEquals(defaults.getLong(key), defaults.getPrevLong(key));
             assertEquals(objects.get(key), objects.getPrev(key));
@@ -122,7 +124,7 @@ public class TestArraySourceFreshBlocks {
         updateGraph().runWithinUnitTestCycle(() -> {
             longs.ensureCapacity(BLOCK_SIZE);
             longs.set(0, 1L);
-            longs.ensureCapacity(2L * BLOCK_SIZE);
+            longs.ensureCapacity(TWO_BLOCKS);
             longs.set(BLOCK_SIZE, 2L);
         });
         // both blocks record previous values in the next cycle
