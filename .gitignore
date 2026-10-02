@@ -65,3 +65,6 @@ node_modules
 skills-lock.json
 .agents/
 .claude/skills/skill-creator
+
+# devenv.sh local state (see devenv.nix)
+.devenv/
