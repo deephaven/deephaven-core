@@ -241,9 +241,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
     }
 
     @Override
-    final char[] allocateNullFilledBlock(int size) {
+    final char[] allocateBlock(final int size, final boolean nullFilled) {
         final char[] newBlock = new char[size];
-        Arrays.fill(newBlock, NULL_CHAR);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_CHAR);
+        }
         return newBlock;
     }
 
@@ -259,13 +261,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
     }
 
     @Override
-    final char[] freshPrevBlock(final boolean nullFilled) {
+    final char[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final char[] allocateBlock(int size) {
-        return new char[size];
     }
 
     @Override

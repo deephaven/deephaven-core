@@ -244,9 +244,11 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
     }
 
     @Override
-    final short[] allocateNullFilledBlock(int size) {
+    final short[] allocateBlock(final int size, final boolean nullFilled) {
         final short[] newBlock = new short[size];
-        Arrays.fill(newBlock, NULL_SHORT);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_SHORT);
+        }
         return newBlock;
     }
 
@@ -262,13 +264,11 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
     }
 
     @Override
-    final short[] freshPrevBlock(final boolean nullFilled) {
+    final short[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final short[] allocateBlock(int size) {
-        return new short[size];
     }
 
     @Override

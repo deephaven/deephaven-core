@@ -244,9 +244,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
     }
 
     @Override
-    final float[] allocateNullFilledBlock(int size) {
+    final float[] allocateBlock(final int size, final boolean nullFilled) {
         final float[] newBlock = new float[size];
-        Arrays.fill(newBlock, NULL_FLOAT);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_FLOAT);
+        }
         return newBlock;
     }
 
@@ -262,13 +264,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
     }
 
     @Override
-    final float[] freshPrevBlock(final boolean nullFilled) {
+    final float[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final float[] allocateBlock(int size) {
-        return new float[size];
     }
 
     @Override

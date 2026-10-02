@@ -244,9 +244,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
     }
 
     @Override
-    final int[] allocateNullFilledBlock(int size) {
+    final int[] allocateBlock(final int size, final boolean nullFilled) {
         final int[] newBlock = new int[size];
-        Arrays.fill(newBlock, NULL_INT);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_INT);
+        }
         return newBlock;
     }
 
@@ -262,13 +264,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
     }
 
     @Override
-    final int[] freshPrevBlock(final boolean nullFilled) {
+    final int[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final int[] allocateBlock(int size) {
-        return new int[size];
     }
 
     @Override

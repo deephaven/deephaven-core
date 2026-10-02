@@ -202,9 +202,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
     }
 
     @Override
-    byte[] allocateNullFilledBlock(int size) {
+    final byte[] allocateBlock(final int size, final boolean nullFilled) {
         final byte[] result = new byte[size];
-        Arrays.fill(result, NULL_BOOLEAN_AS_BYTE);
+        if (nullFilled) {
+            Arrays.fill(result, NULL_BOOLEAN_AS_BYTE);
+        }
         return result;
     }
 
@@ -220,13 +222,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
     }
 
     @Override
-    final byte[] freshPrevBlock(final boolean nullFilled) {
+    final byte[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final byte[] allocateBlock(int size) {
-        return new byte[size];
     }
 
     @Override

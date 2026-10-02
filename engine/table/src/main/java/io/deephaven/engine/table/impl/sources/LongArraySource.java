@@ -267,9 +267,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
 
     @Override
-    final long[] allocateNullFilledBlock(int size) {
+    final long[] allocateBlock(final int size, final boolean nullFilled) {
         final long[] newBlock = new long[size];
-        Arrays.fill(newBlock, NULL_LONG);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_LONG);
+        }
         return newBlock;
     }
 
@@ -285,13 +287,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
 
     @Override
-    final long[] freshPrevBlock(final boolean nullFilled) {
+    final long[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final long[] allocateBlock(int size) {
-        return new long[size];
     }
 
     @Override

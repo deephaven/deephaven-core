@@ -34,8 +34,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
 
     /**
      * The in-use bitset of every block allocated during the current update cycle, with every bit set, so that writes to
-     * the block record no previous values and reads of its previous values see the {@link #freshPrevBlock read-only
-     * block} of the values it was allocated with. It is never written.
+     * the block record no previous values and reads of its previous values see the {@link #sharedFreshPrevBlock
+     * read-only block} of the values it was allocated with. It is never written.
      */
     static final long[] FRESH_IN_USE = makeFreshInUse();
     /** The value of {@link #firstFreshBlock} when no block has been allocated during the current update cycle. */
@@ -148,13 +148,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         final boolean markFresh = prevFlusher != null && allocatedNumBlocks < requestedNumBlocks
                 && updateGraph.clock().currentState() == LogicalClock.State.Updating;
         for (int ii = allocatedNumBlocks; ii < requestedNumBlocks; ++ii) {
-            if (nullFilled) {
-                blocks[ii] = allocateNullFilledBlock(BLOCK_SIZE);
-            } else {
-                blocks[ii] = allocateBlock(BLOCK_SIZE);
-            }
+            blocks[ii] = allocateBlock(BLOCK_SIZE, nullFilled);
             if (markFresh) {
-                prevBlocks[ii] = freshPrevBlock(nullFilled);
+                prevBlocks[ii] = sharedFreshPrevBlock(BLOCK_SIZE, nullFilled);
                 prevInUse[ii] = FRESH_IN_USE;
             }
         }
@@ -300,14 +296,14 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
 
     abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
-    abstract UArray allocateNullFilledBlock(int size);
-
     /**
+     * @param size the size of the block, which must be {@link #BLOCK_SIZE}
      * @param nullFilled whether the block's values were allocated null-filled, rather than the element type's default
      * @return a block, shared and never written, of the values a block is allocated with, as the previous values of a
      *         block allocated during the current update cycle
+     * @throws IllegalArgumentException if {@code size} is not {@link #BLOCK_SIZE}, the only size of shared block
      */
-    abstract UArray freshPrevBlock(boolean nullFilled);
+    abstract UArray sharedFreshPrevBlock(int size, boolean nullFilled);
 
     /**
      * @return whether the block was allocated during the current update cycle, so that its previous values are the ones
@@ -317,7 +313,12 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         return prevInUse[block] == FRESH_IN_USE;
     }
 
-    abstract UArray allocateBlock(int size);
+    /**
+     * @param size the size of the block
+     * @param nullFilled whether to fill the block with the element type's null, rather than its default
+     * @return a newly allocated block
+     */
+    abstract UArray allocateBlock(int size, boolean nullFilled);
 
     abstract void resetBlocks(UArray[] newBlocks, UArray[] newPrev);
 

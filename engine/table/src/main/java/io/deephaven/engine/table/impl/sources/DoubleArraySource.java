@@ -244,9 +244,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
     }
 
     @Override
-    final double[] allocateNullFilledBlock(int size) {
+    final double[] allocateBlock(final int size, final boolean nullFilled) {
         final double[] newBlock = new double[size];
-        Arrays.fill(newBlock, NULL_DOUBLE);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_DOUBLE);
+        }
         return newBlock;
     }
 
@@ -262,13 +264,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
     }
 
     @Override
-    final double[] freshPrevBlock(final boolean nullFilled) {
+    final double[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final double[] allocateBlock(int size) {
-        return new double[size];
     }
 
     @Override

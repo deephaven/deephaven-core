@@ -244,9 +244,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
     }
 
     @Override
-    final byte[] allocateNullFilledBlock(int size) {
+    final byte[] allocateBlock(final int size, final boolean nullFilled) {
         final byte[] newBlock = new byte[size];
-        Arrays.fill(newBlock, NULL_BYTE);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_BYTE);
+        }
         return newBlock;
     }
 
@@ -262,13 +264,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
     }
 
     @Override
-    final byte[] freshPrevBlock(final boolean nullFilled) {
+    final byte[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    @Override
-    final byte[] allocateBlock(int size) {
-        return new byte[size];
     }
 
     @Override
