@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
+import io.deephaven.hash.PrimeFinder;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 import org.junit.Test;
@@ -28,7 +29,7 @@ import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class TestLongLongMap {
-    private static final Factory referenceFactory = new Factory("fastutil", TestLongLongMap::newReferenceMap);
+    private static final Factory referenceFactory = new Factory("fastutil", null, TestLongLongMap::newReferenceMap);
 
     private static NullableLongLongMap newReferenceMap(final int initialCapacity, final float loadFactor) {
         return new TestNullableLongLongMap(initialCapacity, loadFactor);
@@ -43,15 +44,16 @@ public class TestLongLongMap {
     public static Iterable<Object[]> data() {
         List<Object[]> result = new ArrayList<>();
         // K1V1 and K2V2 are the shapes the maps are BORN with. Where the policy says so — capacity 1M at load factor
-        // 0.9 — the map builds the K4V4 shape from its first allocation, so those cells exercise a wide map and the
-        // narrow kernels are covered by the other cells. The bucket-layout tests read the width from the array a map
-        // actually built, never from the cell.
+        // 0.9, the prime finder rounding a million buckets up to 1,070,981 and so past the widening threshold — the
+        // map builds the K4V4 shape from its first allocation, so those cells exercise a wide map and the narrow
+        // kernels are covered by the other cells. bornShapeIsBuiltUnlessDenseAndBig pins that premise; the
+        // bucket-layout tests read the width from the array a map actually built, never from the cell.
         final Factory[] factories = {
                 referenceFactory,
-                new Factory("K1V1", shaped(Shape.K1V1, ReadMode.ADAPTIVE)),
-                new Factory("K2V2", shaped(Shape.K2V2, ReadMode.ADAPTIVE)),
-                new Factory("K4V4", shaped(Shape.K4V4, ReadMode.ADAPTIVE)),
-                new Factory("K4V4/WINDOW", shaped(Shape.K4V4, ReadMode.WINDOW))
+                new Factory("K1V1", Shape.K1V1, ReadMode.ADAPTIVE),
+                new Factory("K2V2", Shape.K2V2, ReadMode.ADAPTIVE),
+                new Factory("K4V4", Shape.K4V4, ReadMode.ADAPTIVE),
+                new Factory("K4V4/WINDOW", Shape.K4V4, ReadMode.WINDOW)
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};
@@ -327,6 +329,36 @@ public class TestLongLongMap {
                 checkLaterBucketTombstoneReuse(filled, deleted);
             }
         }
+    }
+
+    /**
+     * The premise of the note in data(), pinned: a cell builds the shape it was born with, except that the dense, big
+     * cells — capacity 1M at load factor 0.9 — build K4V4 from their first allocation. That rests on the policy AND on
+     * a hidden dependency: the prime finder rounds a request of a million buckets up to 1,070,981 (535,481 two-wide
+     * buckets for K2V2), which is what carries the judged capacity past the widening threshold of 1,048,576. Both are
+     * asserted here, so that a change to either shows up as this failure rather than as the bucket-layout tests quietly
+     * losing their wide coverage.
+     */
+    @Test
+    public void bornShapeIsBuiltUnlessDenseAndBig() {
+        if (factory == referenceFactory) {
+            return;
+        }
+        final int bornWidth = factory.bornShape.bucketWidth();
+        final boolean denseAndBig = initialCapacity == 1_000_000 && loadFactor == 0.9f;
+        final int expectedWidth;
+        if (denseAndBig) {
+            // Judged as widthForArray judges it: the capacity the array would actually have at the born width.
+            final long judgedCapacity = (long) bornWidth
+                    * PrimeFinder.nextPrime(HashMapLockFreeKnVn.desiredBucketCount(initialCapacity, bornWidth));
+            assertTrue("prime rounding must carry a million entries past the widening threshold; judged "
+                    + judgedCapacity, judgedCapacity >= NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES);
+            assertTrue(loadFactor >= NullableLongLongMaps.AMAC_LOAD_FACTOR_FLOOR);
+            expectedWidth = Shape.K4V4.bucketWidth();
+        } else {
+            expectedWidth = bornWidth;
+        }
+        assertEquals(expectedWidth, bucketWidthOfFreshMap(initialCapacity));
     }
 
     /**
@@ -988,11 +1020,19 @@ public class TestLongLongMap {
 
     static class Factory {
         private final String name;
+        // The shape the factory asks for; null for the reference map, which has no shapes. What a cell BUILDS can be
+        // wider: see bornShapeIsBuiltUnlessDenseAndBig.
+        final Shape bornShape;
         private final BiFunction<Integer, Float, NullableLongLongMap> constructor;
 
-        Factory(String name, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
+        Factory(String name, Shape bornShape, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
             this.name = name;
+            this.bornShape = bornShape;
             this.constructor = constructor;
+        }
+
+        Factory(String name, Shape bornShape, ReadMode readMode) {
+            this(name, bornShape, shaped(bornShape, readMode));
         }
 
         @Override
