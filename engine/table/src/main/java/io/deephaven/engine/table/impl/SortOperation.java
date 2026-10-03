@@ -6,8 +6,11 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.SortSpec;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -16,8 +19,6 @@ import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.LongChunkColumnSource;
 import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
-import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.engine.table.impl.util.hash.HashMapK4V4;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
@@ -321,8 +322,10 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                     ? RowSetFactory.empty()
                     : RowSetFactory.fromRange(offset, offset + sortedKeys.length - 1)).toTracking();
 
+            final NullableLongLongMap.ScalarAccess reverseLookupAccess =
+                    new NullableLongLongMap.ScalarAccess(reverseLookup);
             for (int i = 0; i < sortedKeys.length; i++) {
-                reverseLookup.put(sortedKeys[i], i + offset);
+                reverseLookupAccess.put(sortedKeys[i], i + offset);
             }
 
             // fillFromChunk may convert the provided RowSequence to a KeyRanges (or RowKeys) chunk that is owned by
@@ -437,11 +440,19 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         // Size the map so the population below completes without any rehashing.
         final HashMapK4V4 reverseLookup =
                 HashMapLockFreeK4V4.ofExpectedSize(sortResult.intSize(), 0.75, RowSequence.NULL_ROW_KEY);
-        try (final LongColumnIterator innerRowKeys =
-                new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
-                final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {
-            while (outerRowKeys.hasNext()) {
-                reverseLookup.put(innerRowKeys.nextLong(), outerRowKeys.nextLong());
+        // Populate it a chunk at a time: the redirection's inner keys for a run of outer keys, the run's own keys, and
+        // one put of the pairs. The map is new, so there are no previous values to report.
+        final RowSet outerRowSet = sortResult.getRowSet();
+        final int chunkSize = (int) Math.min(REVERSE_LOOKUP_CHUNK_SIZE, Math.max(1, outerRowSet.size()));
+        try (final RowSequence.Iterator outerRuns = outerRowSet.getRowSequenceIterator();
+                final ChunkSource.GetContext innerContext = sortRedirection.makeGetContext(chunkSize);
+                final WritableLongChunk<OrderedRowKeys> outerRowKeys = WritableLongChunk.makeWritableChunk(chunkSize)) {
+            while (outerRuns.hasMore()) {
+                final RowSequence outerRun = outerRuns.getNextRowSequenceWithLength(chunkSize);
+                final LongChunk<? extends RowKeys> innerRowKeys =
+                        sortRedirection.getChunk(innerContext, outerRun).asLongChunk();
+                outerRun.fillRowKeyChunk(outerRowKeys);
+                reverseLookup.put(innerRowKeys, outerRowKeys);
             }
         }
         return (final long innerRowKey) -> getSingle(reverseLookup, innerRowKey);
@@ -452,6 +463,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             @NotNull final LongUnaryOperator reverseLookup) {
         sortResult.setAttribute(SORT_REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
     }
+
+    /** The chunk size for populating a reverse lookup from its sort redirection. */
+    private static final int REVERSE_LOOKUP_CHUNK_SIZE = 4096;
 
     private static final ThreadLocal<NullableLongLongMap.AutoCloseableScalarAccess> REVERSE_LOOKUP_SCALAR_ACCESS =
             ThreadLocal.withInitial(NullableLongLongMap.AutoCloseableScalarAccess::new);

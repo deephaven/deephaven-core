@@ -675,13 +675,24 @@ public class SortListener extends BaseTable.ListenerImpl {
                     sortMapping.fillFromChunk(fillFromContext, valuesChunk, rowSequence);
                 }
 
+                // The sort ordered the chunk by slot, so the vacated slots, those whose inner key is NULL_ROW_KEY, sit
+                // wherever their slots fall among the kept ones. They have nothing to do in the reverse lookup, whose
+                // keys are inner row keys (a removed row's entry went in onUpdate, a moved row's is overwritten by its
+                // new slot here): compact the kept pairs to the front, in place, and put them in one call, previous
+                // values unreported.
+                int kept = 0;
                 for (int jj = 0; jj < thisSize; ++jj) {
                     final long index = valuesChunk.get(jj);
                     if (index != RowSequence.NULL_ROW_KEY) {
-                        reverseLookup.put(index, keysChunk.get(jj));
-                    } else {
-                        reverseLookup.remove(index);
+                        valuesChunk.set(kept, index);
+                        keysChunk.set(kept, keysChunk.get(jj));
+                        ++kept;
                     }
+                }
+                if (kept > 0) {
+                    valuesChunk.setSize(kept);
+                    keysChunk.setSize(kept);
+                    reverseLookup.put(valuesChunk, keysChunk);
                 }
             }
 

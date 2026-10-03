@@ -54,13 +54,14 @@ public class TestKnVn {
                     (double) MINIMUM_HEAP_SIZE_NEEDED_FOR_TEST / (1 << 30), (double) maxMemory / (1 << 30));
             Assume.assumeTrue(skipMessage, false);
         }
+        final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(ht);
         long ii = 0;
         try {
             for (; ii < lowerSizeBound; ++ii) {
                 if ((ii % 10_000_000) == 0) {
                     System.out.printf("made it to %d%n", ii);
                 }
-                ht.put(ii * 11, ii * 17);
+                scalarAccess.put(ii * 11, ii * 17);
             }
         } catch (OutOfMemoryError ooe) {
             throw new RuntimeException(String.format("OOM after %d elements", ii), ooe);
@@ -73,7 +74,7 @@ public class TestKnVn {
                 if ((ii % 10_000_000) == 0) {
                     System.out.printf("Made it to %d, and expecting it to hit max capacity soon%n", ii);
                 }
-                ht.put(ii * 11, ii * 17);
+                scalarAccess.put(ii * 11, ii * 17);
             } catch (UnsupportedOperationException uoe) {
                 putFailed = true;
                 break;
@@ -91,7 +92,9 @@ public class TestKnVn {
         final int capacityAtMax = ht.capacity();
         ht.resetToNullRetainingCapacity();
         assertEquals(0, ht.capacity());
-        ht.put(0, 0);
+        // resetToNullRetainingCapacity() is not a cursor operation: reset the invalidated binding.
+        scalarAccess.reset(ht);
+        scalarAccess.put(0, 0);
         assertEquals(capacityAtMax, ht.capacity());
         assertTrue(
                 String.format("rehashThreshold (%d) > entriesAbsorbed (%d)", base.rehashThreshold, entriesAbsorbed),
