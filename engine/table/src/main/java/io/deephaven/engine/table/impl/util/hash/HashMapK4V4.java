@@ -224,7 +224,9 @@ abstract class HashMapK4V4 extends HashMapBase {
 
     /**
      * Number of in-flight lookups in the batch-get window. Sized to the memory-level parallelism a single core can
-     * sustain (typically 10-16 outstanding L1 misses); raising it past that buys nothing and costs bookkeeping.
+     * sustain (typically 10-16 outstanding L1 misses); raising it past that buys nothing and costs bookkeeping. The
+     * adaptive gate admits only chunks that can fill the window ({@code NullableLongLongMaps.MIN_WINDOWED_CHUNK} is
+     * this width), so retuning it moves the gate with it.
      */
     static final int GET_WINDOW = 16;
 

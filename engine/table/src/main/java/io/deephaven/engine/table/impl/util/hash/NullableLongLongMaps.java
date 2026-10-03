@@ -82,17 +82,19 @@ public final class NullableLongLongMaps {
     public static final int DEFAULT_AMAC_THRESHOLD_ENTRIES = 1 << 20;
 
     /**
-     * Chunk size at and below which a K4V4 map services a chunked get serially even when its footprint says window. The
-     * window only pays when it is full: a chunk narrower than the window cannot overlap a window's worth of misses,
-     * while the window's fixed cost (the per-thread scratch, per-job setup) is paid regardless. Measured at 10M entries
-     * on an i9-13900K (three forks, serial vs forced window, window/serial time ratio): single-key chunks cost 1.6-2.3x
-     * under the window on every load factor and pattern; four-key chunks lose on everything but dense shuffled lookups;
-     * sixteen-key chunks win 10% on sparse shuffled and 2.4x on dense shuffled; sixty-four-key chunks win 23% and 3x
-     * there and tie dense sorted. Sixteen is the window width: the smallest chunk that can fill it. (Sorted sparse
-     * lookups lose under the window at every chunk size on that machine and tie or win on a Ryzen 9 9950X3D2 — a
-     * lookup-pattern question, deliberately left out of this gate.)
+     * The narrowest chunk a K4V4 map services through the AMAC window: the window's own width,
+     * {@code HashMapK4V4.GET_WINDOW}, so that retuning the window moves this gate with it. Below it a chunked get runs
+     * serially even when the footprint says window, because the window only pays when it is full: a chunk narrower than
+     * the window cannot overlap a window's worth of misses, while the window's fixed cost (the per-thread scratch,
+     * per-job setup) is paid regardless. Measured at 10M entries on an i9-13900K (three forks, serial vs forced window,
+     * window/serial time ratio): single-key chunks cost 1.6-2.3x under the window on every load factor and pattern;
+     * four-key chunks lose on everything but dense shuffled lookups; sixteen-key chunks win 10% on sparse shuffled and
+     * 2.4x on dense shuffled; sixty-four-key chunks win 23% and 3x there and tie dense sorted. Sixteen is the window
+     * width: the smallest chunk that can fill it. (Sorted sparse lookups lose under the window at every chunk size on
+     * that machine and tie or win on a Ryzen 9 9950X3D2 — a lookup-pattern question, deliberately left out of this
+     * gate.)
      */
-    public static final int MIN_WINDOWED_CHUNK = 16;
+    public static final int MIN_WINDOWED_CHUNK = HashMapK4V4.GET_WINDOW;
 
     /**
      * The load factor at and above which a map that is big enough is rebuilt in the wide-bucket (K4V4) shape; below it
