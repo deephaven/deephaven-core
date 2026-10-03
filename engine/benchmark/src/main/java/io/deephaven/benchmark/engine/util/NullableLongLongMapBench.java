@@ -40,10 +40,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * <p>
  * These benchmarks are the fixed yardstick for a series of staged changes to the map implementations. To keep
  * comparisons honest across that series, the measured code is written entirely in terms of chunks
- * ({@link LongChunk}&lt;? extends {@link Any}&gt;), even though the current map API is per-element: the small "glue"
- * methods below iterate over each chunk and call the per-element API. When a later change converts the map API itself
- * to chunk-oriented operations, only the glue methods change; every benchmark method, workload generator, and parameter
- * stays byte-identical, so before/after numbers remain comparable.
+ * ({@link LongChunk}&lt;? extends {@link Any}&gt;). When the series began the map API was per-element and small "glue"
+ * methods bridged the gap; the maps now speak chunks natively and the glue is gone. Every benchmark method, workload
+ * generator, and parameter has stayed identical along the way, so numbers remain comparable across the whole series.
  *
  * <p>
  * Workload notes:
@@ -101,11 +100,11 @@ public class NullableLongLongMapBench {
     }
 
     public enum Impl {
-        // The third constructor argument is the noEntryValue; -1 is the maps' default.
+        // The third factory argument is the noEntryValue; -1 is the maps' default.
         // @formatter:off
-        K1V1((desiredEntries, loadFactor) -> new HashMapLockFreeK1V1(desiredEntries, loadFactor, -1)),
-        K2V2((desiredEntries, loadFactor) -> new HashMapLockFreeK2V2(desiredEntries, loadFactor, -1)),
-        K4V4((desiredEntries, loadFactor) -> new HashMapLockFreeK4V4(desiredEntries, loadFactor, -1)),
+        K1V1((desiredEntries, loadFactor) -> HashMapLockFreeK1V1.of(desiredEntries, loadFactor, -1)),
+        K2V2((desiredEntries, loadFactor) -> HashMapLockFreeK2V2.of(desiredEntries, loadFactor, -1)),
+        K4V4((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1)),
         FASTUTIL(FastutilAdapter::new);
         // @formatter:on
 
@@ -405,20 +404,6 @@ public class NullableLongLongMapBench {
         }
     }
 
-    // region glue
-    // Glue between the chunk-oriented benchmark code above/below and the map's current API. remove is the last
-    // per-element map operation; when it becomes chunk-oriented, only this method changes and everything the
-    // benchmarks measure and generate stays identical. oldValues must have capacity >= keys.size(); element ii of the
-    // output corresponds to element ii of keys.
-
-    private static void removeAll(final NullableLongLongMap map, final LongChunk<? extends Any> keys,
-            final WritableLongChunk<? extends Any> oldValues) {
-        for (int ii = 0; ii < keys.size(); ++ii) {
-            oldValues.set(ii, map.remove(keys.get(ii)));
-        }
-    }
-    // endregion glue
-
     /**
      * The one shared call site for lookups, so getHit and getMiss measure identical code.
      */
@@ -462,7 +447,7 @@ public class NullableLongLongMapBench {
     public void removeThenReinsert() {
         final NullableLongLongMap map = filledMap;
         for (final LongChunk<Any> chunk : keyChunks) {
-            removeAll(map, chunk, scratch);
+            map.remove(chunk, scratch);
         }
         fill(map);
     }
@@ -527,8 +512,12 @@ public class NullableLongLongMapBench {
         }
 
         @Override
-        public long remove(final long key) {
-            return map.remove(key);
+        public void remove(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> oldValues) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                oldValues.set(ii, map.remove(keys.get(ii)));
+            }
+            oldValues.setSize(size);
         }
 
         @Override

@@ -167,9 +167,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             forBaseline.reset(baseline);
             updates.forEach((key, value) -> {
                 if (value == BASELINE_KEY_NOT_FOUND) {
-                    baseline.remove(key);
-                    // remove() does not go through the cursor yet, so it invalidates the binding (the writer footnote).
-                    forBaseline.reset(baseline);
+                    forBaseline.remove(key);
                 } else {
                     forBaseline.put(key, value);
                 }
@@ -474,11 +472,11 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             long noEntryValue) {
         switch (hashBucketWidth) {
             case 1:
-                return new HashMapLockFreeK1V1(initialCapacity, loadFactor, noEntryValue);
+                return HashMapLockFreeK1V1.of(initialCapacity, loadFactor, noEntryValue);
             case 2:
-                return new HashMapLockFreeK2V2(initialCapacity, loadFactor, noEntryValue);
+                return HashMapLockFreeK2V2.of(initialCapacity, loadFactor, noEntryValue);
             case 4:
-                return new HashMapLockFreeK4V4(initialCapacity, loadFactor, noEntryValue);
+                return HashMapLockFreeK4V4.of(initialCapacity, loadFactor, noEntryValue);
             default:
                 throw new UnsupportedOperationException("Unsupported hashBucketWidth setting: " + hashBucketWidth);
         }
