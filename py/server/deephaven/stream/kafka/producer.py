@@ -94,7 +94,7 @@ def produce(
         publishing is desired, and once not desired anymore they should invoke it
 
     Raises:
-        DHError
+        DHError: If unable to start producing Kafka messages.
     """
     try:
         if key_spec is KeyValueSpec.IGNORE and value_spec is KeyValueSpec.IGNORE:
@@ -182,7 +182,7 @@ def avro_spec(
         a KeyValueSpec
 
     Raises:
-        DHError
+        DHError: If unable to create a Kafka key/value spec.
     """
     try:
         field_to_col_mapping = j_hashmap(field_to_col_mapping)
@@ -244,7 +244,7 @@ def json_spec(
         a KeyValueSpec
 
     Raises:
-        DHError
+        DHError: If unable to create a Kafka key/value spec.
     """
     try:
         if include_columns is not None and exclude_columns is not None:
@@ -276,7 +276,7 @@ def simple_spec(col_name: str) -> KeyValueSpec:
         a KeyValueSpec
 
     Raises:
-        DHError
+        DHError: If unable to create a Kafka key/value spec.
     """
     try:
         return KeyValueSpec(_JKafkaTools_Produce.simpleSpec(col_name))
