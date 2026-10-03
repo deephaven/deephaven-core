@@ -117,6 +117,11 @@ public class AsOfJoinHelper {
             throw new MismatchedJoinKeyException("Can not " + (order == SortingOrder.Descending ? "raj" : "aj")
                     + "() with different stamp types: left=" + leftStampType + ", right=" + rightStampType);
         }
+        // the stamp kernels and SSAs order by the natural order of the stamp type, as sort does
+        if (!leftStampType.isPrimitive() && !Comparable.class.isAssignableFrom(leftStampType)) {
+            throw new NotSortableColumnException("Can not " + (order == SortingOrder.Descending ? "raj" : "aj")
+                    + "() with stamp " + stampPair + ", " + leftStampType + " is not a sortable type");
+        }
 
         if (!leftTable.isRefreshing() && leftTable.isEmpty()) {
             return makeResult(leftTable, rightTable, new SingleValueRowRedirection(RowSequence.NULL_ROW_KEY),
