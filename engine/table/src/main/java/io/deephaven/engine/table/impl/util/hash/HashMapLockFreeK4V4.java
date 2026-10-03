@@ -8,6 +8,8 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
+import java.util.Objects;
+
 /**
  * The K4V4 implementation of {@link NullableLongLongMap}: each hash bucket holds four keys followed by their four
  * values. The concrete type is an implementation detail — callers construct maps through the static factories and hold
@@ -75,7 +77,7 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
 
     HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue, ReadMode readMode) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
-        this.readMode = readMode;
+        this.readMode = Objects.requireNonNull(readMode, "readMode");
         this.keysAndValues = null;
     }
 
