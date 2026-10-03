@@ -122,14 +122,17 @@ public class ReplicateSortKernel {
 
     @NotNull
     private static List<String> ascendingNameToDescendingName(String sourceFile, List<String> lines) {
+        lines = globalReplacements(
+                lines.stream().dropWhile(line -> line.startsWith("//")).collect(Collectors.toList()),
+                "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel", "LongMegaMergeDescendingKernel");
 
-        // Skip, re-add file header
-        lines = Stream.concat(
-                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(sourceFile)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
-
-        return globalReplacements(lines, "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel",
-                "LongMegaMergeDescendingKernel");
+        // the header names the Char class that every variant is replicated from, and follows the class name
+        // replacements because their patterns also match the source class name
+        final String charClassName = ReplicationUtils.className(sourceFile)
+                .replaceFirst("^(Byte|Short|Int|Long|Float|Double|Object)", "Char")
+                .replace("LongMegaMergeDescendingKernel", "LongMegaMergeKernel");
+        return Stream.concat(ReplicationUtils.fileHeaderStream(TASK, charClassName), lines.stream())
+                .collect(Collectors.toList());
     }
 
     private static void fixupObjectMegaMerge(String objectPath, boolean ascending) throws IOException {

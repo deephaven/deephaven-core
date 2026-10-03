@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ShortReverseSortCheck and run "./gradlew replicateSortCheck" to regenerate
+// ****** Edit CharSortCheck and run "./gradlew replicateSortCheck" to regenerate
 //
 // @formatter:off
 
