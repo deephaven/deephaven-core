@@ -202,7 +202,10 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                         (int) upstream.shifted().getEffectiveSize());
 
                 try (final WritableRowSet previousToShift = source.getRowSet().prev().minus(restampRemovals);
-                        final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
+                        final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size);
+                        final WritableLongChunk<Values> shiftValues = WritableLongChunk.makeWritableChunk(size);
+                        final WritableLongChunk<OrderedRowKeys> shiftKeys =
+                                WritableLongChunk.makeWritableChunk(size)) {
 
                     final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                     while (sit.hasNext()) {
@@ -213,13 +216,28 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                                 continue;
                             }
 
-                            final LongChunk<? extends Values> shiftValues =
+                            final LongChunk<? extends Values> prevValues =
                                     timestampColumnSource.getPrevChunk(getContext, subRowSet).asLongChunk();
+                            subRowSet.fillRowKeyChunk(shiftKeys);
+
+                            // Rows with a null timestamp are not in the SSA, so only the non-null rows are shifted.
+                            // The keys of the non-null rows are compacted in place.
+                            int shiftCount = 0;
+                            for (int ii = 0; ii < prevValues.size(); ii++) {
+                                final long ts = prevValues.get(ii);
+                                if (ts != NULL_LONG) {
+                                    shiftValues.set(shiftCount, ts);
+                                    shiftKeys.set(shiftCount, shiftKeys.get(ii));
+                                    shiftCount++;
+                                }
+                            }
+                            shiftValues.setSize(shiftCount);
+                            shiftKeys.setSize(shiftCount);
+
                             if (sit.polarityReversed()) {
-                                timestampSsa.applyShiftReverse(shiftValues, subRowSet.asRowKeyChunk(),
-                                        sit.shiftDelta());
+                                timestampSsa.applyShiftReverse(shiftValues, shiftKeys, sit.shiftDelta());
                             } else {
-                                timestampSsa.applyShift(shiftValues, subRowSet.asRowKeyChunk(), sit.shiftDelta());
+                                timestampSsa.applyShift(shiftValues, shiftKeys, sit.shiftDelta());
                             }
                         }
                     }

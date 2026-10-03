@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -21,6 +22,8 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Arrays;
+
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * This is the base class of {@link UpdateByWindowRollingTicks} and {@link UpdateByWindowRollingTime}.
@@ -131,10 +134,25 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
         final boolean operatorsRequirePositions = Arrays.stream(opIndices)
                 .anyMatch(opIdx -> operators[opIdx].requiresRowPositions());
 
+        // Affected rows with a null timestamp have no position in bucketRowSet. When the bucket has any such rows, the
+        // positions are computed for the timestamp-valid affected rows and spread into a chunk aligned with the
+        // affected rows, with NULL_LONG at each null-timestamp row (whose window is null, so its position is unused).
+        final boolean alignAffectedPositions =
+                operatorsRequirePositions && bucketRowSet.size() != ctx.sourceRowSet.size();
+
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
+                final RowSet validAffectedRows = alignAffectedPositions
+                        ? ctx.affectedRows.intersect(bucketRowSet)
+                        : null;
+                final RowSequence.Iterator validAffectedRowsIt = alignAffectedPositions
+                        ? validAffectedRows.getRowSequenceIterator()
+                        : null;
+                final WritableLongChunk<OrderedRowKeys> alignedAffectedPosChunk = alignAffectedPositions
+                        ? WritableLongChunk.makeWritableChunk(ctx.workingChunkSize)
+                        : null;
                 final RowSet affectedPosRs = operatorsRequirePositions
-                        ? bucketRowSet.invert(ctx.affectedRows)
+                        ? bucketRowSet.invert(alignAffectedPositions ? validAffectedRows : ctx.affectedRows)
                         : null;
                 final RowSequence.Iterator affectedPosRsIt = operatorsRequirePositions
                         ? affectedPosRs.getRowSequenceIterator()
@@ -170,15 +188,36 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                 // create influencer position chunks when needed
                 final LongChunk<OrderedRowKeys> affectedPosChunk;
                 final LongChunk<OrderedRowKeys> influencePosChunk;
-                if (operatorsRequirePositions) {
+                if (alignAffectedPositions) {
+                    final RowSequence chunkValidAffectedRs =
+                            validAffectedRowsIt.getNextRowSequenceThrough(affectedRs.lastRowKey());
+                    final int validCount = chunkValidAffectedRs.intSize();
+                    final LongChunk<OrderedRowKeys> validKeys = chunkValidAffectedRs.asRowKeyChunk();
+                    final LongChunk<OrderedRowKeys> validPositions =
+                            affectedPosRsIt.getNextRowSequenceWithLength(validCount).asRowKeyChunk();
+                    final LongChunk<OrderedRowKeys> affectedKeys = affectedRs.asRowKeyChunk();
+                    int vi = 0;
+                    for (int ai = 0; ai < affectedChunkSize; ai++) {
+                        if (vi < validCount && validKeys.get(vi) == affectedKeys.get(ai)) {
+                            alignedAffectedPosChunk.set(ai, validPositions.get(vi++));
+                        } else {
+                            alignedAffectedPosChunk.set(ai, NULL_LONG);
+                        }
+                    }
+                    alignedAffectedPosChunk.setSize(affectedChunkSize);
+                    affectedPosChunk = alignedAffectedPosChunk;
+                } else if (operatorsRequirePositions) {
                     final RowSequence chunkAffectedPosRs =
                             affectedPosRsIt.getNextRowSequenceWithLength(affectedChunkSize);
                     affectedPosChunk = chunkAffectedPosRs.asRowKeyChunk();
+                } else {
+                    affectedPosChunk = null;
+                }
+                if (operatorsRequirePositions) {
                     final RowSequence chunkInfluencerPosRs =
                             influencerPosIt.getNextRowSequenceWithLength(influencerCount);
                     influencePosChunk = chunkInfluencerPosRs.asRowKeyChunk();
                 } else {
-                    affectedPosChunk = null;
                     influencePosChunk = null;
                 }
 
