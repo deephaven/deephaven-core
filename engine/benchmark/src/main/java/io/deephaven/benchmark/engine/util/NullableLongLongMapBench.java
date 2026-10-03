@@ -192,6 +192,9 @@ public class NullableLongLongMapBench {
     private long[] valueArray;
     private long[] hitArray;
     private long[] missArray;
+    // One cursor for every scalar-lane invocation, as a genuinely scalar caller keeps one; unbound after each use, so
+    // that this thread-scoped state keeps no map reachable between invocations — the chunked lane holds none, and the
+    // two lanes should differ in nothing but the route through the map.
     private final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(null);
     private NullableLongLongMap filledMap;
 
@@ -433,8 +436,12 @@ public class NullableLongLongMapBench {
     private void fill(final NullableLongLongMap map) {
         if (scalarCursor) {
             cursor.reset(map);
-            for (int ii = 0; ii < keyArray.length; ++ii) {
-                cursor.put(keyArray[ii], valueArray[ii]);
+            try {
+                for (int ii = 0; ii < keyArray.length; ++ii) {
+                    cursor.put(keyArray[ii], valueArray[ii]);
+                }
+            } finally {
+                cursor.reset(null);
             }
             return;
         }
@@ -451,8 +458,12 @@ public class NullableLongLongMapBench {
             final Blackhole bh) {
         if (scalarCursor) {
             cursor.reset(map);
-            for (final long key : keys) {
-                bh.consume(cursor.get(key));
+            try {
+                for (final long key : keys) {
+                    bh.consume(cursor.get(key));
+                }
+            } finally {
+                cursor.reset(null);
             }
             return;
         }
@@ -496,8 +507,12 @@ public class NullableLongLongMapBench {
         final NullableLongLongMap map = filledMap;
         if (scalarCursor) {
             cursor.reset(map);
-            for (final long key : keyArray) {
-                cursor.remove(key);
+            try {
+                for (final long key : keyArray) {
+                    cursor.remove(key);
+                }
+            } finally {
+                cursor.reset(null);
             }
         } else {
             for (final LongChunk<Any> chunk : keyChunks) {
