@@ -63,6 +63,24 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testRemoveAllUnordered() {
+        // ContiguousWritableRowRedirection uses the default removeAllUnordered
+        final WritableRowRedirection rowRedirection = new ContiguousWritableRowRedirection(16);
+        for (int ii = 10; ii < 15; ++ii) {
+            rowRedirection.put(ii, 100 + ii);
+        }
+        try (final WritableLongChunk<RowKeys> outerRowKeys = WritableLongChunk.makeWritableChunk(2)) {
+            outerRowKeys.set(0, 13);
+            outerRowKeys.set(1, 11);
+            rowRedirection.removeAllUnordered(outerRowKeys);
+        }
+        for (int ii = 10; ii < 15; ++ii) {
+            final long expected = ii == 11 || ii == 13 ? RowSet.NULL_ROW_KEY : 100 + ii;
+            assertEquals(expected, rowRedirection.get(ii));
+        }
+    }
+
+    @Test
     public void testContiguous() {
         final WritableRowRedirection rowRedirection = new ContiguousWritableRowRedirection(10);
 
