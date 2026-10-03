@@ -139,7 +139,8 @@ public interface NullableLongLongMap {
         private NullableLongLongMap map;
         // Bound at reset when the map is the engine's own implementation: the operations below then go straight to
         // its scalar entry points, one kernel call per key, with no chunk in between. Any other implementation is
-        // served through the one-element chunks.
+        // served through the one-element chunks — in practice only the tests' reference map and the benchmark's
+        // fastutil adapter, since every engine map comes from the factory and is the direct kind.
         private HashMapLockFreeKnVn direct;
         private final WritableLongChunk<Any> keyChunk = WritableLongChunk.writableChunkWrap(new long[1]);
         private final WritableLongChunk<Any> valueChunk = WritableLongChunk.writableChunkWrap(new long[1]);
