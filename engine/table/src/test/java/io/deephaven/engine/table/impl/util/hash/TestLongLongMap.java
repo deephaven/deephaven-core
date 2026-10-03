@@ -31,6 +31,11 @@ import static org.junit.Assert.*;
 public class TestLongLongMap {
     private static final Factory referenceFactory = new Factory("fastutil", null, TestLongLongMap::newReferenceMap);
 
+    // The one cell that is dense and big enough for the policy to build a narrow-born map wide from the start (see
+    // data() and bornShapeIsBuiltUnlessDenseAndBig); defined here once, so the two agree.
+    private static final int BIG_CAPACITY = 1_000_000;
+    private static final float DENSE_LOAD_FACTOR = 0.9f;
+
     private static NullableLongLongMap newReferenceMap(final int initialCapacity, final float loadFactor) {
         return new TestNullableLongLongMap(initialCapacity, loadFactor);
     }
@@ -55,8 +60,8 @@ public class TestLongLongMap {
                 new Factory("K4V4", Shape.K4V4, ReadMode.ADAPTIVE),
                 new Factory("K4V4/WINDOW", Shape.K4V4, ReadMode.WINDOW)
         };
-        final int[] initialCapacities = {10, 1000, 1000000};
-        final float[] loadFactors = {0.5f, 0.75f, 0.9f};
+        final int[] initialCapacities = {10, 1000, BIG_CAPACITY};
+        final float[] loadFactors = {0.5f, 0.75f, DENSE_LOAD_FACTOR};
         for (Factory factory : factories) {
             for (int ic : initialCapacities) {
                 for (float lf : loadFactors) {
@@ -345,14 +350,16 @@ public class TestLongLongMap {
             return;
         }
         final int bornWidth = factory.bornShape.bucketWidth();
-        final boolean denseAndBig = initialCapacity == 1_000_000 && loadFactor == 0.9f;
+        final boolean denseAndBig = initialCapacity == BIG_CAPACITY && loadFactor == DENSE_LOAD_FACTOR;
         final int expectedWidth;
         if (denseAndBig) {
             // Judged as widthForArray judges it: the capacity the array would actually have at the born width.
             final long judgedCapacity = (long) bornWidth
                     * PrimeFinder.nextPrime(HashMapLockFreeKnVn.desiredBucketCount(initialCapacity, bornWidth));
-            assertTrue("prime rounding must carry a million entries past the widening threshold; judged "
-                    + judgedCapacity, judgedCapacity >= NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES);
+            assertTrue("prime rounding must carry " + initialCapacity + " entries at width " + bornWidth
+                    + " past the widening threshold " + NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES
+                    + "; judged " + judgedCapacity,
+                    judgedCapacity >= NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES);
             assertTrue(loadFactor >= NullableLongLongMaps.AMAC_LOAD_FACTOR_FLOOR);
             expectedWidth = Shape.K4V4.bucketWidth();
         } else {
