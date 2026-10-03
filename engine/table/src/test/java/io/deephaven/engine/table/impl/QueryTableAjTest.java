@@ -180,6 +180,51 @@ public class QueryTableAjTest {
                 stampMismatch.getMessage());
     }
 
+    @Test
+    public void testNonComparableStampTypeIsRejected() {
+        for (final Class<?> stampType : List.of(Object.class, int[].class)) {
+            for (final boolean refreshing : new boolean[] {false, true}) {
+                final QueryTable left = nonComparableStampTable(refreshing, "LStamp", stampType, "LId");
+                final QueryTable right = nonComparableStampTable(refreshing, "RStamp", stampType, "RId");
+                final String context = stampType + ", refreshing=" + refreshing;
+
+                final NotSortableColumnException ajLeftOnRight = assertThrows(context,
+                        NotSortableColumnException.class, () -> left.aj(right, "Key,LStamp>=RStamp", "RId"));
+                assertEquals("Can not aj() with stamp LStamp=RStamp, " + stampType + " is not a sortable type",
+                        ajLeftOnRight.getMessage());
+                final NotSortableColumnException ajRightOnLeft = assertThrows(context,
+                        NotSortableColumnException.class, () -> right.aj(left, "RStamp>LStamp", "LId"));
+                assertEquals("Can not aj() with stamp RStamp=LStamp, " + stampType + " is not a sortable type",
+                        ajRightOnLeft.getMessage());
+
+                final NotSortableColumnException rajLeftOnRight = assertThrows(context,
+                        NotSortableColumnException.class, () -> left.raj(right, "Key,LStamp<RStamp", "RId"));
+                assertEquals("Can not raj() with stamp LStamp=RStamp, " + stampType + " is not a sortable type",
+                        rajLeftOnRight.getMessage());
+                final NotSortableColumnException rajRightOnLeft = assertThrows(context,
+                        NotSortableColumnException.class, () -> right.raj(left, "Key,RStamp<=LStamp", "LId"));
+                assertEquals("Can not raj() with stamp RStamp=LStamp, " + stampType + " is not a sortable type",
+                        rajRightOnLeft.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Builds a table with an int Key column, a stamp column of the given type (Object or int[]), and an int id column;
+     * a refreshing table is initially empty, and a static table has two rows in one bucket.
+     */
+    private static QueryTable nonComparableStampTable(final boolean refreshing, final String stampName,
+            final Class<?> stampType, final String idName) {
+        if (refreshing) {
+            return testRefreshingTable(RowSetFactory.empty().toTracking(), intCol("Key"),
+                    new ColumnHolder<>(stampName, stampType, null, false), intCol(idName));
+        }
+        final ColumnHolder<?> stampHolder = stampType == Object.class
+                ? new ColumnHolder<>(stampName, Object.class, null, false, 1, 2)
+                : new ColumnHolder<>(stampName, int[].class, null, false, new int[] {1}, new int[] {2});
+        return (QueryTable) TableTools.newTable(intCol("Key", 1, 1), stampHolder, intCol(idName, 1, 2));
+    }
+
     /**
      * Builds a one-row table whose ZonedDateTime column is backed by a nanosecond source, which can be reinterpreted to
      * long, alongside an int column.
