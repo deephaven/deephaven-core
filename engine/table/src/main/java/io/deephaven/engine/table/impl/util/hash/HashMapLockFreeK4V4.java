@@ -6,79 +6,24 @@ package io.deephaven.engine.table.impl.util.hash;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 import java.util.Objects;
 
 /**
  * The K4V4 implementation of {@link NullableLongLongMap}: each hash bucket holds four keys followed by their four
- * values. The concrete type is an implementation detail — callers construct maps through the static factories and hold
- * the interface. The factory is the seam where implementation choice lives (and where, in a future change, a map may
- * choose or change its own shape).
+ * values. The concrete type is an implementation detail — callers construct maps through {@link NullableLongLongMaps}
+ * (naming {@link NullableLongLongMaps.Shape#K4V4}) and hold the interface.
  */
-public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongMapTestAccessors {
+final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
     private final ReadMode readMode;
-
-    /**
-     * Creates a map presized so that {@code expectedSize} entries at {@code loadFactor} fit without a rehash.
-     */
-    public static NullableLongLongMap ofExpectedSize(int expectedSize, double loadFactor, long noEntryValue) {
-        final int desiredInitialCapacity = capacityForExpectedEntries(expectedSize, loadFactor);
-        return of(desiredInitialCapacity, loadFactor, noEntryValue);
-    }
-
-    /**
-     * Creates a map with the given initial capacity, load factor, and noEntryValue (the value returned by reads that
-     * find no mapping).
-     */
-    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
-    }
-
-    /**
-     * How chunked gets choose between the serial probe loop and the AMAC window. Production code uses
-     * {@link #ADAPTIVE}; the pinned modes exist so the yardstick can price the adaptive gate against each pure
-     * strategy, and so tests can exercise the window kernel at sizes where the gate would choose serial.
-     */
-    public enum ReadMode {
-        /** The footprint gate decides per chunk (see NullableLongLongMaps#wantWindowedReads). */
-        ADAPTIVE,
-        /** Always the AMAC window, regardless of footprint. */
-        WINDOW,
-        /** Always the serial probe loop, regardless of footprint. */
-        SERIAL
-    }
-
-    /**
-     * As {@link #of(int, double, long)}, with the read strategy pinned. For pricing and tests; production code should
-     * let the map adapt.
-     */
-    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue,
-            ReadMode readMode) {
-        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, readMode);
-    }
-
-    HashMapLockFreeK4V4() {
-        this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK4V4(int desiredInitialCapacity) {
-        this(desiredInitialCapacity, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor) {
-        this(desiredInitialCapacity, loadFactor, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        this(desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
-    }
 
     HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue, ReadMode readMode) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
         this.readMode = Objects.requireNonNull(readMode, "readMode");
-        this.keysAndValues = null;
+        this.keysAndValues = EMPTY_KEYS_AND_VALUES;
     }
 
     @Override
@@ -95,10 +40,10 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         // from the new array's own header whenever the array changes (a load, not a divide: every array carries
         // its reciprocal).
         long[] kvs = keysAndValues;
-        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
+        long numBucketsReciprocal = reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), false));
-            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            // Hot reads: cheap, and free of a stale-check branch (the array is never null).
             kvs = keysAndValues;
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -111,10 +56,10 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         final int size = keys.size();
         // Same volatile-read and reciprocal-memo discipline as put.
         long[] kvs = keysAndValues;
-        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
+        long numBucketsReciprocal = reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), true));
-            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            // Hot reads: cheap, and free of a stale-check branch (the array is never null).
             kvs = keysAndValues;
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -152,7 +97,8 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         // array, whose header carries its reciprocal.
         final long[] localKvs = keysAndValues;
         final int n = keys.size();
-        if (localKvs == null) {
+        if (isEmptyArray(localKvs)) {
+            // The empty sentinel: never populated, or reset. Every key is a miss, and we need not probe to know it.
             result.fillWithValue(0, n, defaultReturnValue());
             result.setSize(n);
             return;
@@ -162,11 +108,13 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         // resident in the near caches simply does not have — service the chunk through the AMAC window; otherwise use
         // the serial loop, which ties or wins when the table fits those caches. Footprint is a function of the
         // snapshot's own length, so the choice is stable between rehashes and flips exactly when the array grows past
-        // the crossover. (Occupancy is deliberately not consulted; see wantWindowedReads.) A pinned
-        // ReadMode overrides the gate, for pricing and tests only. Reads are
-        // pure, so the windowed path may resolve lookups out of index order, invisibly to the caller.
+        // the crossover. (Occupancy is deliberately not consulted; see wantWindowedReads.) The chunk must also be
+        // wide enough to fill the window: its fixed cost is paid per call, and a single-key chunk — the scalar
+        // cursor's case — has nothing to overlap, measured at 1.6-2.3x slower under the window. A pinned ReadMode
+        // overrides the gate, for pricing and tests only. Reads are pure, so the windowed path may resolve lookups
+        // out of index order, invisibly to the caller.
         final boolean windowed = readMode == ReadMode.ADAPTIVE
-                ? NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2)
+                ? NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2, n)
                 : readMode == ReadMode.WINDOW;
         if (windowed) {
             getBatchImpl(localKvs, reciprocalOf(localKvs), keys, result);
@@ -185,7 +133,7 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         // rehashes, so no element can replace the array a later element must see.
         final long[] localKvs = keysAndValues;
         // Same header-borne reciprocal as get.
-        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
         final int size = keys.size();
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, removeImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
@@ -204,13 +152,18 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
 
     public void resetToNull() {
         resetToNullImpl();
-        keysAndValues = null;
+        keysAndValues = EMPTY_KEYS_AND_VALUES;
     }
 
     @Override
     public void resetToNullRetainingCapacity() {
         resetToNullRetainingCapacityImpl(keysAndValues);
-        keysAndValues = null;
+        keysAndValues = EMPTY_KEYS_AND_VALUES;
+    }
+
+    @Override
+    public long[] keysAndValuesSnapshot() {
+        return keysAndValues;
     }
 
     @Override

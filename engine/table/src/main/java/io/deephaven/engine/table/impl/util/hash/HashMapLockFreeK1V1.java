@@ -10,44 +10,15 @@ import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 /**
  * The K1V1 implementation of {@link NullableLongLongMap}: each hash bucket holds one key and its value. The concrete
- * type is an implementation detail — callers construct maps through the static factories and hold the interface. The
- * factory is the seam where implementation choice lives (and where, in a future change, a map may choose or change its
- * own shape).
+ * type is an implementation detail — callers construct maps through {@link NullableLongLongMaps} (naming
+ * {@link NullableLongLongMaps.Shape#K1V1}) and hold the interface.
  */
-public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLongLongMapTestAccessors {
+final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
-
-    /**
-     * Creates a map presized so that {@code expectedSize} entries at {@code loadFactor} fit without a rehash.
-     */
-    public static NullableLongLongMap ofExpectedSize(int expectedSize, double loadFactor, long noEntryValue) {
-        final int desiredInitialCapacity = capacityForExpectedEntries(expectedSize, loadFactor);
-        return of(desiredInitialCapacity, loadFactor, noEntryValue);
-    }
-
-    /**
-     * Creates a map with the given initial capacity, load factor, and noEntryValue (the value returned by reads that
-     * find no mapping).
-     */
-    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        return new HashMapLockFreeK1V1(desiredInitialCapacity, loadFactor, noEntryValue);
-    }
-
-    HashMapLockFreeK1V1() {
-        this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK1V1(int desiredInitialCapacity) {
-        this(desiredInitialCapacity, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
-    }
-
-    HashMapLockFreeK1V1(int desiredInitialCapacity, double loadFactor) {
-        this(desiredInitialCapacity, loadFactor, DEFAULT_NO_ENTRY_VALUE);
-    }
 
     HashMapLockFreeK1V1(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
-        this.keysAndValues = null;
+        this.keysAndValues = EMPTY_KEYS_AND_VALUES;
     }
 
     @Override
@@ -64,10 +35,10 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
         // from the new array's own header whenever the array changes (a load, not a divide: every array carries
         // its reciprocal).
         long[] kvs = keysAndValues;
-        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
+        long numBucketsReciprocal = reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), false));
-            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            // Hot reads: cheap, and free of a stale-check branch (the array is never null).
             kvs = keysAndValues;
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -80,10 +51,10 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
         final int size = keys.size();
         // Same volatile-read and reciprocal-memo discipline as put.
         long[] kvs = keysAndValues;
-        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
+        long numBucketsReciprocal = reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), true));
-            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            // Hot reads: cheap, and free of a stale-check branch (the array is never null).
             kvs = keysAndValues;
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -120,16 +91,16 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
         // array.
         final long[] localKvs = keysAndValues;
-        // The reciprocal comes from the snapshot's own header — published with the array and immutable
-        // thereafter, so it cannot tear against it.
-        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
         final int size = keys.size();
-        if (localKvs == null) {
-            // Never populated, or reset: every key is a miss, and we need not probe to know it.
+        if (isEmptyArray(localKvs)) {
+            // The empty sentinel: never populated, or reset. Every key is a miss, and we need not probe to know it.
             result.fillWithValue(0, size, defaultReturnValue());
             result.setSize(size);
             return;
         }
+        // The reciprocal comes from the snapshot's own header — published with the array and immutable
+        // thereafter, so it cannot tear against it.
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
         for (int ii = 0; ii < size; ++ii) {
             result.set(ii, getImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
         }
@@ -142,7 +113,7 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
         // rehashes, so no element can replace the array a later element must see.
         final long[] localKvs = keysAndValues;
         // Same header-borne reciprocal as get.
-        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
         final int size = keys.size();
         for (int ii = 0; ii < size; ++ii) {
             oldValues.set(ii, removeImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
@@ -162,13 +133,18 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
     @Override
     public void resetToNull() {
         resetToNullImpl();
-        keysAndValues = null;
+        keysAndValues = EMPTY_KEYS_AND_VALUES;
     }
 
     @Override
     public void resetToNullRetainingCapacity() {
         resetToNullRetainingCapacityImpl(keysAndValues);
-        keysAndValues = null;
+        keysAndValues = EMPTY_KEYS_AND_VALUES;
+    }
+
+    @Override
+    public long[] keysAndValuesSnapshot() {
+        return keysAndValues;
     }
 
     @Override

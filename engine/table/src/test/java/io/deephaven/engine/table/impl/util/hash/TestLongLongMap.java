@@ -7,6 +7,8 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 import org.junit.Test;
@@ -32,16 +34,20 @@ public class TestLongLongMap {
         return new TestNullableLongLongMap(initialCapacity, loadFactor);
     }
 
+    private static BiFunction<Integer, Float, NullableLongLongMap> shaped(final Shape shape, final ReadMode readMode) {
+        return (capacity, loadFactor) -> NullableLongLongMaps.of(shape, capacity, loadFactor,
+                HashMapBase.DEFAULT_NO_ENTRY_VALUE, readMode);
+    }
+
     @Parameterized.Parameters(name = "map={0}, cap={1}, load={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> result = new ArrayList<>();
         final Factory[] factories = {
                 referenceFactory,
-                new Factory("K1V1", 1, HashMapLockFreeK1V1::new),
-                new Factory("K2V2", 2, HashMapLockFreeK2V2::new),
-                new Factory("K4V4", 4, HashMapLockFreeK4V4::new),
-                new Factory("K4V4/WINDOW", 4, (capacity, loadFactor) -> HashMapLockFreeK4V4.of(capacity, loadFactor,
-                        HashMapBase.DEFAULT_NO_ENTRY_VALUE, HashMapLockFreeK4V4.ReadMode.WINDOW))
+                new Factory("K1V1", 1, shaped(Shape.K1V1, ReadMode.ADAPTIVE)),
+                new Factory("K2V2", 2, shaped(Shape.K2V2, ReadMode.ADAPTIVE)),
+                new Factory("K4V4", 4, shaped(Shape.K4V4, ReadMode.ADAPTIVE)),
+                new Factory("K4V4/WINDOW", 4, shaped(Shape.K4V4, ReadMode.WINDOW))
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};
@@ -911,6 +917,53 @@ public class TestLongLongMap {
         assertEquals(0, count.get());
     }
 
+    @Test
+    public void emptyMapReadsAreMisses() {
+        // The reference fastutil implementation doesn't have resetToNull
+        if (factory == referenceFactory) {
+            return;
+        }
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final long noEntryValue = map.defaultReturnValue();
+        final long[] probes = {Long.MIN_VALUE, -1, 0, 1, 12345, Long.MAX_VALUE};
+        final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
+        for (int round = 0; round < 3; ++round) {
+            // Round 0 sees a fresh map; rounds 1 and 2 see it emptied by resetToNull and resetToNullRetainingCapacity.
+            // Every read of an empty map is a miss, through every entry point — the chunked get by its sentinel fast
+            // path, the rest by probing the sentinel — with no storage allocated.
+            assertTrue(map.isEmpty());
+            assertEquals(0, map.size());
+            assertEquals(0, map.capacity());
+            checkChunkedGet(map, probes, probes.length, key -> noEntryValue);
+            final WritableLongChunk<Any> removed = WritableLongChunk.writableChunkWrap(new long[probes.length]);
+            map.remove(LongChunk.chunkWrap(probes), removed);
+            assertEquals(probes.length, removed.size());
+            for (int ii = 0; ii < probes.length; ++ii) {
+                assertEquals(noEntryValue, removed.get(ii));
+            }
+            map.forEach((key, value) -> fail("an empty map produced " + key));
+            assertEquals(0, ((NullableLongLongMapTestAccessors) map).keyArray().length);
+            assertEquals(0, ((NullableLongLongMapTestAccessors) map).valueArray().length);
+            map.clear();
+            assertEquals(0, map.capacity());
+            // The first put allocates real storage, and the map works normally from there.
+            scalarAccess.reset(map);
+            for (final long key : probes) {
+                scalarAccess.put(key, key ^ 0x5555);
+            }
+            assertEquals(probes.length, map.size());
+            assertTrue(map.capacity() > 0);
+            for (final long key : probes) {
+                assertEquals(key ^ 0x5555, scalarAccess.get(key));
+            }
+            if (round == 0) {
+                map.resetToNull();
+            } else {
+                map.resetToNullRetainingCapacity();
+            }
+        }
+    }
+
     static class Factory {
         private final String name;
         private final int entriesPerBucket;
@@ -1021,6 +1074,11 @@ public class TestLongLongMap {
 
         @Override
         public int capacity() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long[] keysAndValuesSnapshot() {
             throw new UnsupportedOperationException();
         }
 

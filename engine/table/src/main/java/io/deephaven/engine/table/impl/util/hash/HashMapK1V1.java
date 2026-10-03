@@ -3,13 +3,13 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
-public abstract class HashMapK1V1 extends HashMapBase {
+abstract class HashMapK1V1 extends HashMapBase {
     HashMapK1V1(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
     }
 
     final long putImpl(long[] kvs, long numBucketsReciprocal, long key, long value, boolean insertOnly) {
-        if (kvs == null) {
+        if (isEmptyArray(kvs)) {
             kvs = allocateKeysAndValuesArray(1);
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -55,9 +55,6 @@ public abstract class HashMapK1V1 extends HashMapBase {
     }
 
     final long getImpl(long[] kvs, long numBucketsReciprocal, long key) {
-        if (kvs == null) {
-            return defaultReturnValue();
-        }
         key = fixKey(key);
         final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
@@ -67,9 +64,6 @@ public abstract class HashMapK1V1 extends HashMapBase {
     }
 
     final long removeImpl(long[] kvs, long numBucketsReciprocal, long key) {
-        if (kvs == null) {
-            return defaultReturnValue();
-        }
         key = fixKey(key);
         final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {

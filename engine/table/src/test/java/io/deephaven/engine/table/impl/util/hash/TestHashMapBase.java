@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
 import org.junit.Test;
 
 import java.util.Random;
@@ -60,12 +61,10 @@ public class TestHashMapBase {
         final int[] expectedCounts = {1, 2, 10, 1000, 12345};
         for (final double loadFactor : LOAD_FACTORS) {
             for (final int expected : expectedCounts) {
-                checkPresizedMapDoesNotRehash("K1V1", HashMapLockFreeK1V1.ofExpectedSize(expected, loadFactor, -1),
-                        expected, loadFactor);
-                checkPresizedMapDoesNotRehash("K2V2", HashMapLockFreeK2V2.ofExpectedSize(expected, loadFactor, -1),
-                        expected, loadFactor);
-                checkPresizedMapDoesNotRehash("K4V4", HashMapLockFreeK4V4.ofExpectedSize(expected, loadFactor, -1),
-                        expected, loadFactor);
+                for (final Shape shape : Shape.values()) {
+                    checkPresizedMapDoesNotRehash(shape.name(),
+                            NullableLongLongMaps.ofExpectedSize(shape, expected, loadFactor, -1), expected, loadFactor);
+                }
             }
         }
     }
@@ -124,5 +123,40 @@ public class TestHashMapBase {
             assertEquals(max, HashMapBase.grownBucketCount(max - 1, entriesPerBucket));
             assertEquals(max, HashMapBase.grownBucketCount(max, entriesPerBucket));
         }
+    }
+
+    /**
+     * Every array carries its own shape: the header's tag is the bucket width, or SHAPE_TAG_EMPTY for the sentinel,
+     * through allocation, growth, and reset — and the reciprocal keeps its place at the very end.
+     */
+    @Test
+    public void headerCarriesTheShapeTag() {
+        for (final Shape shape : Shape.values()) {
+            final NullableLongLongMap map = NullableLongLongMaps.of(shape, 16, 0.5, -1);
+            final NullableLongLongMapTestAccessors accessors = (NullableLongLongMapTestAccessors) map;
+            assertTrue(shape.name(), HashMapBase.isEmptyArray(accessors.keysAndValuesSnapshot()));
+            assertEquals(HashMapBase.SHAPE_TAG_EMPTY,
+                    HashMapBase.shapeTagOf(accessors.keysAndValuesSnapshot()));
+            final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
+            cursor.put(1, 1);
+            long[] kvs = accessors.keysAndValuesSnapshot();
+            checkHeader(shape, kvs);
+            // Grow through several rehashes: every new array carries the tag too.
+            for (long key = 2; key <= 10_000; ++key) {
+                cursor.put(key, key);
+            }
+            assertNotSame(kvs, accessors.keysAndValuesSnapshot());
+            kvs = accessors.keysAndValuesSnapshot();
+            checkHeader(shape, kvs);
+            map.resetToNull();
+            assertTrue(shape.name(), HashMapBase.isEmptyArray(accessors.keysAndValuesSnapshot()));
+        }
+    }
+
+    private static void checkHeader(final Shape shape, final long[] kvs) {
+        assertEquals(shape.name(), shape.bucketWidth(), HashMapBase.shapeTagOf(kvs));
+        assertFalse(shape.name(), HashMapBase.isEmptyArray(kvs));
+        final int numBuckets = (kvs.length - HashMapBase.HEADER_LONGS) / (shape.bucketWidth() * 2);
+        assertEquals(shape.name(), HashMapBase.reciprocalFor(numBuckets), HashMapBase.reciprocalOf(kvs));
     }
 }

@@ -12,7 +12,7 @@ import java.util.HashSet;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class HashMapBase implements NullableLongLongMap {
+abstract class HashMapBase implements NullableLongLongMap {
     static final int DEFAULT_INITIAL_CAPACITY = 10;
     static final long DEFAULT_NO_ENTRY_VALUE = -1;
     static final double DEFAULT_LOAD_FACTOR = 0.5;
@@ -112,19 +112,45 @@ public abstract class HashMapBase implements NullableLongLongMap {
         return (int) (((long) desiredEntryCapacity + entriesPerBucket - 1) / entriesPerBucket);
     }
 
-    // After the bucket data, the keys-and-values array carries a one-long header: the fastmod reciprocal of
-    // the bucket count. It is written while the array is being built and is published by the same volatile
-    // store that publishes the buckets; it is never mutated afterwards. Whoever holds an array therefore holds
-    // its reciprocal — this state cannot tear against a snapshot, which is the invariant all reader-visible
-    // probing state must satisfy: be a pure function of the array snapshot, or travel inside it.
+    // After the bucket data, the keys-and-values array carries a two-long header, [ data | shapeTag | reciprocal ]:
+    // the array's shape tag (its bucket width — 1, 2 or 4 — or SHAPE_TAG_EMPTY for the empty sentinel) and the
+    // fastmod reciprocal of its bucket count. Both are written while the array is being built and are published
+    // by the same volatile store that publishes the buckets; neither is ever mutated afterwards. Whoever holds an
+    // array therefore holds its width and its reciprocal — this state cannot tear against a snapshot, which is
+    // the invariant all reader-visible probing state must satisfy: be a pure function of the array snapshot, or
+    // travel inside it. The reciprocal sits at the very end (length - 1) and the tag just before it (length - 2):
+    // an array describes itself, and a snapshot's own header says how to probe it.
     //
-    // The header slot may share a cache line with the last buckets, or with the neighboring heap object.
+    // The header slots may share a cache line with the last buckets, or with the neighboring heap object.
     // Accepted: an invalidation requires someone else to write the sharing partner while a reader holds the
     // line — rare in both cases — and costs one line re-fetch. The rule is to pad against certainties, not
     // possibilities: if this header ever gains writer-hot state (e.g. size, written on every put), that is
     // guaranteed sharing, and a no-man's-land margin between the read-mostly and writer-hot regions becomes
     // mandatory at that point.
-    static final int HEADER_LONGS = 1;
+    static final int HEADER_LONGS = 2;
+
+    /**
+     * The shape tag of an array that holds no buckets — the empty sentinel. Every real array's tag is its bucket width.
+     */
+    static final int SHAPE_TAG_EMPTY = 0;
+
+    // The array is never null. An empty map — fresh, or after resetToNull* — holds this shared, immutable sentinel:
+    // one bucket of the widest shape (every slot SPECIAL_KEY_FOR_EMPTY_SLOT, which is 0) behind a header whose
+    // reciprocal is 0, so probe1 sends every key to bucket 0 (fastRange(0, n) == 0 for any n) and finds it empty —
+    // whatever a map's width makes of the data length (four K1V1 buckets, two K2V2, one K4V4: all empty). Probing
+    // the sentinel is therefore an ordinary miss, so no read path needs an empty-map branch to be correct; the
+    // chunked gets keep one anyway, as a fast path (every key is a miss, so they fill the result without probing).
+    // Writes must never touch it: put swaps in a real array before probing (where the null check used to live);
+    // clear and resetToNullRetainingCapacity skip it. Both tell it apart by its shape tag, SHAPE_TAG_EMPTY (see
+    // isEmptyArray).
+    static final long[] EMPTY_KEYS_AND_VALUES = newEmptyKeysAndValues();
+
+    private static long[] newEmptyKeysAndValues() {
+        final long[] kvs = new long[4 * 2 + HEADER_LONGS];
+        writeShapeTag(kvs, SHAPE_TAG_EMPTY);
+        writeReciprocal(kvs, 0);
+        return kvs;
+    }
 
     /**
      * The fastmod reciprocal of {@code kvs}'s bucket count, read from the array's own header — published with the array
@@ -138,10 +164,32 @@ public abstract class HashMapBase implements NullableLongLongMap {
         kvs[kvs.length - 1] = reciprocal;
     }
 
+    /**
+     * The shape tag of {@code kvs}, read from the array's own header: its bucket width (1, 2 or 4), or
+     * {@link #SHAPE_TAG_EMPTY} for the empty sentinel. Published with the array and immutable thereafter, like the
+     * reciprocal.
+     */
+    static int shapeTagOf(long[] kvs) {
+        return (int) kvs[kvs.length - 2];
+    }
+
+    private static void writeShapeTag(long[] kvs, int shapeTag) {
+        kvs[kvs.length - 2] = shapeTag;
+    }
+
+    /**
+     * Is {@code kvs} the empty sentinel — no buckets at all, the state of a map that has never been written or has been
+     * reset? The array answers for itself, through its tag; writes ask before touching an array.
+     */
+    static boolean isEmptyArray(long[] kvs) {
+        return shapeTagOf(kvs) == SHAPE_TAG_EMPTY;
+    }
+
     long[] allocateKeysAndValuesArray(int entriesPerBucket) {
         final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
         final int dataLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         final long[] keysAndValues = new long[dataLongs + HEADER_LONGS];
+        writeShapeTag(keysAndValues, entriesPerBucket);
         writeReciprocal(keysAndValues, reciprocalFor(dataLongs / (entriesPerBucket * 2)));
         setKeysAndValues(keysAndValues);
         return keysAndValues;
@@ -161,6 +209,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
         size = 0;
         nonEmptySlots = 0;
         long[] newKvs = new long[newDataLongs + HEADER_LONGS];
+        writeShapeTag(newKvs, entriesPerBucket);
         final long newReciprocal = reciprocalFor(newDataLongs / (entriesPerBucket * 2));
         writeReciprocal(newKvs, newReciprocal);
 
@@ -228,14 +277,14 @@ public abstract class HashMapBase implements NullableLongLongMap {
     }
 
     final int capacityImpl(long[] keysAndValues) {
-        return keysAndValues == null ? 0 : (keysAndValues.length - HEADER_LONGS) / 2;
+        return isEmptyArray(keysAndValues) ? 0 : (keysAndValues.length - HEADER_LONGS) / 2;
     }
 
     final void clearImpl(long[] keysAndValues) {
         size = 0;
         nonEmptySlots = 0;
-        if (keysAndValues == null) {
-            // Never populated, or reset: there is no array to clear, and clearing an empty map is a no-op.
+        if (isEmptyArray(keysAndValues)) {
+            // Already empty; the shared sentinel is never written.
             return;
         }
         // We leave rehashThreshold alone because the array size (and therefore the hashtable capacity) isn't changing.
@@ -249,7 +298,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
     }
 
     final void resetToNullRetainingCapacityImpl(long[] keysAndValues) {
-        if (keysAndValues != null) {
+        if (!isEmptyArray(keysAndValues)) {
             // Remember the capacity, in entries, so that the next allocation lands back at this size directly rather
             // than regrowing from the construction-time capacity through successive rehashes. We remember the size
             // rather than holding the array itself so that the storage is reclaimable while the map sits empty.
@@ -304,8 +353,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
         // In a single-threaded case, we would not need the 'nextIndex < sz' part of the conjunction. But in the
         // unsynchronized concurrent case, we might encounter more keys than would fit in the array. To avoid an index
         // range exception, we do the 'nextIndex < sz' test here.
-        // A never-populated (or reset) map has no array; its keys and values are simply none.
-        final int dataLongs = kv == null ? 0 : kv.length - HEADER_LONGS;
+        final int dataLongs = kv.length - HEADER_LONGS;
         for (int ii = 0; ii < dataLongs && nextIndex < sz; ii += 2) {
             final long key = kv[ii];
             if (key == SPECIAL_KEY_FOR_EMPTY_SLOT || key == SPECIAL_KEY_FOR_DELETED_SLOT) {
@@ -323,9 +371,6 @@ public abstract class HashMapBase implements NullableLongLongMap {
     }
 
     final void forEachImpl(final long[] kv, LongLongBiConsumer consumer) {
-        if (kv == null) {
-            return;
-        }
         final int dataLongs = kv.length - HEADER_LONGS;
         for (int nextIndex = findOccupiedSlot(kv, 0); nextIndex < dataLongs; nextIndex =
                 findOccupiedSlot(kv, nextIndex + 2)) {

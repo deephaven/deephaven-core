@@ -7,13 +7,13 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 
-public abstract class HashMapK4V4 extends HashMapBase {
+abstract class HashMapK4V4 extends HashMapBase {
     HashMapK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
     }
 
     final long putImpl(long[] kvs, long numBucketsReciprocal, long key, long value, boolean insertOnly) {
-        if (kvs == null) {
+        if (isEmptyArray(kvs)) {
             kvs = allocateKeysAndValuesArray(4);
             numBucketsReciprocal = reciprocalOf(kvs);
         }
@@ -58,9 +58,6 @@ public abstract class HashMapK4V4 extends HashMapBase {
     }
 
     final long getImpl(long[] kvs, long numBucketsReciprocal, long key) {
-        if (kvs == null) {
-            return defaultReturnValue();
-        }
         key = fixKey(key);
         final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
@@ -70,9 +67,6 @@ public abstract class HashMapK4V4 extends HashMapBase {
     }
 
     final long removeImpl(long[] kvs, long numBucketsReciprocal, long key) {
-        if (kvs == null) {
-            return defaultReturnValue();
-        }
         key = fixKey(key);
         final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
@@ -230,7 +224,9 @@ public abstract class HashMapK4V4 extends HashMapBase {
 
     /**
      * Number of in-flight lookups in the batch-get window. Sized to the memory-level parallelism a single core can
-     * sustain (typically 10-16 outstanding L1 misses); raising it past that buys nothing and costs bookkeeping.
+     * sustain (typically 10-16 outstanding L1 misses); raising it past that buys nothing and costs bookkeeping. The
+     * adaptive gate admits only chunks that can fill the window ({@code NullableLongLongMaps.MIN_WINDOWED_CHUNK} is
+     * this width), so retuning it moves the gate with it.
      */
     static final int GET_WINDOW = 16;
 
