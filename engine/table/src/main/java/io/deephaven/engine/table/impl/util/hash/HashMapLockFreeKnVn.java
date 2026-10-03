@@ -114,9 +114,9 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     // in for "no buckets". Every operation takes one volatile read of this field and works on that snapshot; put
     // re-reads it per element, because a put may rehash.
     private volatile long[] keysAndValues;
-    // The shape the next allocation starts from: the shape requested at construction, raised by
-    // resetToNullRetainingCapacityImpl() to the width the map had reached (widening is a one-way door, across resets
-    // too) and widened further by the policy if the allocation is dense and big. While the map is empty the
+    // The shape the next allocation starts from: the shape requested at construction, raised by either reset to the
+    // width the map had reached (widening is a one-way door, across resets too: see rememberShapeOf) and widened
+    // further by the policy if the allocation is dense and big. While the map is empty the
     // sentinel's tag says EMPTY, so this is the only place the width lives; afterwards the array's own tag is
     // authoritative.
     private Shape nextShape;
@@ -399,14 +399,24 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         if (!isEmptyArray(keysAndValues)) {
             // Remember the capacity, in entries, so that the next allocation lands back at this size directly rather
             // than regrowing from the construction-time capacity through successive rehashes. We remember the size
-            // rather than holding the array itself so that the storage is reclaimable while the map sits empty. The
-            // shape comes back too: a map that widened stays wide, so the same entries refill into the same array
-            // (a narrower array of the same entry count would be a different bucket count, and a different capacity
-            // after prime rounding).
+            // rather than holding the array itself so that the storage is reclaimable while the map sits empty.
             desiredInitialCapacity = Math.max(desiredInitialCapacity, (keysAndValues.length - HEADER_LONGS) / 2);
+        }
+        rememberShapeOf(keysAndValues);
+        resetToNullImpl();
+    }
+
+    /**
+     * Records the shape of {@code keysAndValues}, if it is a real array, as the shape the next allocation starts from.
+     * Widening is a one-way door across a reset of either kind. After a capacity-retaining reset the same entries must
+     * refill into the same array (a narrower array of the same entry count would be a different bucket count, and a
+     * different capacity after prime rounding); after a plain reset the map starts small again, but in the shape it had
+     * earned, rather than rebuilding wide all over again on the way back up.
+     */
+    private void rememberShapeOf(final long[] keysAndValues) {
+        if (!isEmptyArray(keysAndValues)) {
             nextShape = Shape.forBucketWidth(shapeTagOf(keysAndValues));
         }
-        resetToNullImpl();
     }
 
     /**
@@ -932,6 +942,7 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
 
     @Override
     public void resetToNull() {
+        rememberShapeOf(keysAndValues);
         resetToNullImpl();
         keysAndValues = EMPTY_KEYS_AND_VALUES;
     }

@@ -115,30 +115,43 @@ public class TestNullableLongLongMaps {
     }
 
     /**
-     * Widening is a one-way door across resets too: a map that has widened comes back wide from a capacity-retaining
-     * reset (the same entries must refill into the same array) and stays wide after a plain reset as well.
+     * Widening is a one-way door across resets too, and across each kind of reset on its own: a map that has widened
+     * comes back wide from a capacity-retaining reset (the same entries must refill into the same array) and from a
+     * plain reset, which forgets the capacity but not the shape. Each reset gets its own freshly widened map, so that
+     * neither can do the other's remembering.
      */
     @Test
     public void widenedMapsComeBackWideFromResets() {
-        final int n = 1_200_000;
+        final NullableLongLongMap retaining = newWidenedMap();
+        final HashMapLockFreeKnVn retainingKnVn = (HashMapLockFreeKnVn) retaining;
+        final int capacityWhenWide = retaining.capacity();
+        retaining.resetToNullRetainingCapacity();
+        assertEquals(Shape.K4V4, retainingKnVn.shape());
+        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(retaining);
+        cursor.put(1, 2);
+        assertEquals(Shape.K4V4, retainingKnVn.shape());
+        assertEquals(capacityWhenWide, retaining.capacity());
+        assertEquals(2, cursor.get(1));
+
+        final NullableLongLongMap plain = newWidenedMap();
+        final HashMapLockFreeKnVn plainKnVn = (HashMapLockFreeKnVn) plain;
+        plain.resetToNull();
+        assertEquals(Shape.K4V4, plainKnVn.shape());
+        cursor.reset(plain);
+        cursor.put(1, 2);
+        assertEquals(Shape.K4V4, plainKnVn.shape());
+        assertTrue(plain.capacity() < capacityWhenWide);
+        assertEquals(2, cursor.get(1));
+    }
+
+    private static NullableLongLongMap newWidenedMap() {
         final NullableLongLongMap map = NullableLongLongMaps.of(Shape.K1V1, 16, DENSE, NO_ENTRY_VALUE);
-        final HashMapLockFreeKnVn knVn = (HashMapLockFreeKnVn) map;
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
-        for (long key = 0; key < n; ++key) {
+        for (long key = 0; key < 1_200_000; ++key) {
             cursor.put(key, valueFor(key));
         }
-        assertEquals(Shape.K4V4, knVn.shape());
-        final int capacityWhenWide = map.capacity();
-        map.resetToNullRetainingCapacity();
-        assertEquals(Shape.K4V4, knVn.shape());
-        cursor.reset(map);
-        cursor.put(1, 2);
-        assertEquals(Shape.K4V4, knVn.shape());
-        assertEquals(capacityWhenWide, map.capacity());
-        map.resetToNull();
-        cursor.reset(map);
-        cursor.put(1, 2);
-        assertEquals(Shape.K4V4, knVn.shape());
+        assertEquals(Shape.K4V4, ((HashMapLockFreeKnVn) map).shape());
+        return map;
     }
 
     /**
