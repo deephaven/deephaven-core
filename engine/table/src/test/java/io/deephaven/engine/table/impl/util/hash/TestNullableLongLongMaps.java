@@ -283,6 +283,11 @@ public class TestNullableLongLongMaps {
         assertTrue(NullableLongLongMaps.isLocalWalk(7, 7, 1));
         assertTrue(NullableLongLongMaps.isLocalWalk(7, 9, 2));
         assertFalse(NullableLongLongMaps.isLocalWalk(Long.MIN_VALUE + 1, Long.MAX_VALUE - 1, 4096));
+        // The threshold is exact, not rounded down: one key more than the threshold's total span is not local.
+        assertFalse(NullableLongLongMaps.isLocalWalk(0, (long) step * 4095 + 1, 4096));
+        // A span of exactly Long.MIN_VALUE does not overflow, but its absolute value does: not local, either way round.
+        assertFalse(NullableLongLongMaps.isLocalWalk(0, Long.MIN_VALUE, 4096));
+        assertFalse(NullableLongLongMaps.isLocalWalk(Long.MIN_VALUE, 0, 4096));
     }
 
     @Test

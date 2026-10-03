@@ -757,14 +757,15 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         // (isLocalWalk: a sorted sample of far-apart keys is a random walk in disguise, where the window wins 19%
         // at 500M entries), and a sampled scan finds the keys monotone (isMonotone: about 64 compares whatever the
         // chunk width, so a shuffled chunk pays almost nothing), the chunk takes the serial loop. The occupancy read
-        // uses the map's entry count, which a concurrent writer may be changing: a stale value can only choose a
-        // strategy, never an answer, because reads are pure either way. A pinned ReadMode overrides both stages, for
+        // uses the map's occupied slot count — tombstones included, since a probe chain runs past them exactly as it
+        // runs past entries — which a concurrent writer may be changing: a stale value can only choose a strategy,
+        // never an answer, because reads are pure either way. A pinned ReadMode overrides both stages, for
         // pricing and tests only. The windowed path may resolve lookups out of index order, invisibly to the caller.
         final boolean windowed;
         if (readMode == ReadMode.ADAPTIVE) {
             final int entryCapacity = (localKvs.length - HEADER_LONGS) / 2;
             windowed = NullableLongLongMaps.wantWindowedReads(entryCapacity, n)
-                    && !(NullableLongLongMaps.wantSerialForMonotoneKeys(size, entryCapacity)
+                    && !(NullableLongLongMaps.wantSerialForMonotoneKeys(nonEmptySlots, entryCapacity)
                             && NullableLongLongMaps.isLocalWalk(keys.get(0), keys.get(n - 1), n)
                             && isMonotone(keys));
         } else {

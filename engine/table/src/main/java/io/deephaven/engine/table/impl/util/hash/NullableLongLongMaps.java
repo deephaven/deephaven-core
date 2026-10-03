@@ -98,16 +98,17 @@ public final class NullableLongLongMaps {
 
     /**
      * Second stage of the read-strategy gate, for a chunk whose keys walk memory in order: below this occupancy
-     * (entries over entry capacity) such a chunk takes the serial loop even though the footprint gate would open the
-     * window. The maps' first probe is deliberately weak — consecutive keys land in consecutive buckets — so monotone
-     * keys into a sparse table are a straight walk through memory that almost always ends at the first bucket; the
-     * hardware prefetcher already hides that walk, and the window's bookkeeping then costs 16 to 38% on an i9-13900K
-     * and 4 to 8% on a Ryzen 9 9950X3D2 at 30 to 38% occupancy (measured at 1M to 10M entries). At 61% occupancy and
-     * above the probe chains wander and the window wins by 8 to 19% even on monotone keys, so the threshold sits
-     * between the two, at one half. A map's occupancy sawtooths within [loadFactor/2, loadFactor] as rehash doubles
-     * overshoot: a load-factor-0.5 map never rises above it, so its monotone reads are always serial, and a
-     * load-factor-0.9 map dips below it only in the first ninth of each doubling cycle, where the window's gain is
-     * smallest. Shuffled keys never consult this: their misses are what the window exists to overlap.
+     * (occupied slots over entry capacity, tombstones counting as occupied, since a probe chain runs past them exactly
+     * as it runs past entries) such a chunk takes the serial loop even though the footprint gate would open the window.
+     * The maps' first probe is deliberately weak — consecutive keys land in consecutive buckets — so monotone keys into
+     * a sparse table are a straight walk through memory that almost always ends at the first bucket; the hardware
+     * prefetcher already hides that walk, and the window's bookkeeping then costs 16 to 38% on an i9-13900K and 4 to 8%
+     * on a Ryzen 9 9950X3D2 at 30 to 38% occupancy (measured at 1M to 10M entries). At 61% occupancy and above the
+     * probe chains wander and the window wins by 8 to 19% even on monotone keys, so the threshold sits between the two,
+     * at one half. A map's occupancy sawtooths within [loadFactor/2, loadFactor] as rehash doubles overshoot: a
+     * load-factor-0.5 map never rises above it, so its monotone reads are always serial, and a load-factor-0.9 map dips
+     * below it only in the first ninth of each doubling cycle, where the window's gain is smallest. Shuffled keys never
+     * consult this: their misses are what the window exists to overlap.
      */
     public static final double MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY = 0.5;
 
@@ -187,16 +188,18 @@ public final class NullableLongLongMaps {
     /**
      * Second stage of the read-strategy gate, consulted only after {@link #wantWindowedReads} has said yes: is this map
      * sparse enough that a chunk of monotone, local keys is better served by the serial loop? The map answers with its
-     * entry count and entry capacity; whether the chunk's keys are in fact a local monotone walk is the map's own
-     * check, made only when this says yes. See {@link #MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY} for the evidence.
+     * occupied slot count — entries and tombstones alike, since a probe chain runs past both — and its entry capacity;
+     * whether the chunk's keys are in fact a local monotone walk is the map's own check, made only when this says yes.
+     * See {@link #MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY} for the evidence.
      */
-    public static boolean wantSerialForMonotoneKeys(final int size, final int entryCapacity) {
-        return size < entryCapacity * MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY;
+    public static boolean wantSerialForMonotoneKeys(final int occupiedSlots, final int entryCapacity) {
+        return occupiedSlots < entryCapacity * MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY;
     }
 
     /**
      * Is a monotone chunk running from {@code first} to {@code last} over {@code n} keys a local walk, at most
-     * {@link #MONOTONE_KEYS_MAX_LOCAL_STEP} keys per step on average? A span that overflows a long is not local.
+     * {@link #MONOTONE_KEYS_MAX_LOCAL_STEP} keys per step on average? A span a long cannot hold, or whose absolute
+     * value it cannot, is not local.
      */
     public static boolean isLocalWalk(final long first, final long last, final int n) {
         if (n < 2) {
@@ -207,7 +210,13 @@ public final class NullableLongLongMaps {
         if (((first ^ last) & (last ^ span)) < 0) {
             return false;
         }
-        return Math.abs(span) / (n - 1) <= MONOTONE_KEYS_MAX_LOCAL_STEP;
+        // A span of exactly Long.MIN_VALUE does not overflow, but Math.abs of it stays negative: also huge.
+        if (span == Long.MIN_VALUE) {
+            return false;
+        }
+        // Compare the whole span against the threshold scaled to the chunk, rather than dividing: an average step just
+        // over the limit must not round down into "local". The product fits a long: the step is small and n is an int.
+        return Math.abs(span) <= (long) MONOTONE_KEYS_MAX_LOCAL_STEP * (n - 1);
     }
 
     /**
