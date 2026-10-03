@@ -13,6 +13,11 @@ from deephaven.jcompat import j_list_to_list
 from tests.testbase import BaseTestCase
 
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
+_JExpressions = jpy.get_type("org.apache.iceberg.expressions.Expressions")
+_JLiteral = jpy.get_type("org.apache.iceberg.expressions.Literal")
+_JExpressionOperation = jpy.get_type(
+    "org.apache.iceberg.expressions.Expression$Operation"
+)
 
 
 class IcebergTestCase(BaseTestCase):
@@ -42,6 +47,51 @@ class IcebergTestCase(BaseTestCase):
         self.assertTrue(
             iceberg_read_instructions.j_object.snapshotId().getAsLong() == 12345
         )
+
+    def test_instruction_create_with_pruning_expression(self):
+        expression = _JExpressions.equal("Foo", "bar")
+        iceberg_read_instructions = iceberg.IcebergReadInstructions(
+            pruning_expression=expression
+        )
+        # Iceberg Expressions do not implement equals, so this compares Java object identity
+        self.assertEqual(
+            iceberg_read_instructions.j_object.pruningExpression(), expression
+        )
+
+    def test_instruction_create_with_numeric_pruning_expression(self):
+        """jpy narrows a Python int to a Java Byte, which Iceberg rejects as a literal, so numeric predicates have to
+        go through a typed Literal. This pins the idiom the docstring recommends."""
+        expression = _JExpressions.predicate(
+            _JExpressionOperation.EQ, "IntCol", _JLiteral.of(100)
+        )
+        iceberg_read_instructions = iceberg.IcebergReadInstructions(
+            pruning_expression=expression
+        )
+        self.assertEqual(
+            iceberg_read_instructions.j_object.pruningExpression(), expression
+        )
+
+    def test_instruction_pruning_expression_defaults_to_always_true(self):
+        iceberg_read_instructions = iceberg.IcebergReadInstructions()
+        self.assertTrue(
+            iceberg_read_instructions.j_object.pruningExpression()
+            == _JExpressions.alwaysTrue()
+        )
+
+    def test_table_pruning_expression_is_not_dropped(self):
+        """`table` rebuilds the instructions from its keyword arguments; a pruning expression passed on its own must
+        survive that."""
+        expression = _JExpressions.equal("Foo", "bar")
+        mock_j = Mock()
+        adapter = iceberg.IcebergTableAdapter(mock_j)
+        try:
+            adapter.table(pruning_expression=expression)
+        except ValueError:
+            # Wrapping the Mock as an IcebergTable fails ("cast: argument 1 (obj) must be a Java object"), but the
+            # instructions are handed to the Java adapter before that point, which is what matters here.
+            pass
+        passed_instructions = mock_j.table.call_args[0][0]
+        self.assertEqual(passed_instructions.pruningExpression(), expression)
 
     def test_writer_options_create_default(self):
         writer_options = iceberg.TableParquetWriterOptions(
