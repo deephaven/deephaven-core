@@ -755,7 +755,9 @@ public class AsOfJoinHelper {
                         final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                 ResettableWritableLongChunk.makeResettableChunk();
                         final ResettableWritableChunk<Values> leftValuesChunk =
-                                stampChunkType.makeResettableWritableChunk()) {
+                                stampChunkType.makeResettableWritableChunk();
+                        final ChunkSsaStamp.RestampContext restampContext =
+                                new ChunkSsaStamp.RestampContext(rowRedirection)) {
                     // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
                     final int removedSlotCount =
                             asOfJoinStateManager.markForRemoval(restampRemovals, rightSources, slots,
@@ -792,8 +794,8 @@ public class AsOfJoinHelper {
                                                 priorRedirections);
 
                                         chunkSsaStamp.processRemovals(leftValuesChunk, leftKeyChunk, rightStampChunk,
-                                                rightKeyIndices, priorRedirections, rowRedirection, modifiedBuilder,
-                                                disallowExactMatch);
+                                                rightKeyIndices, priorRedirections, rowRedirection, restampContext,
+                                                modifiedBuilder, disallowExactMatch);
                                     }
                                 }
                             }
@@ -953,7 +955,8 @@ public class AsOfJoinHelper {
 
                                             chunkSsaStamp.processInsertion(leftValuesChunk, leftKeyChunk,
                                                     rightStampChunk, rightKeyIndices, nextRightValue, rowRedirection,
-                                                    modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                                                    restampContext, modifiedBuilder, endsWithLastValue,
+                                                    disallowExactMatch);
                                         }
                                     }
                                 }
@@ -1417,7 +1420,9 @@ public class AsOfJoinHelper {
                         try (final ColumnSource.FillContext fillContext =
                                 rightStampSource.makeFillContext(cycleChunkSize);
                                 final LongSortKernel<Values, RowKeys> sortKernel =
-                                        LongSortKernel.makeContext(stampChunkType, order, cycleChunkSize, true)) {
+                                        LongSortKernel.makeContext(stampChunkType, order, cycleChunkSize, true);
+                                final ChunkSsaStamp.RestampContext restampContext =
+                                        new ChunkSsaStamp.RestampContext(rowRedirection)) {
 
                             final RowSet restampRemovals;
                             final RowSet restampAdditions;
@@ -1451,8 +1456,8 @@ public class AsOfJoinHelper {
 
                                         ssa.removeAndGetPrior(rightStampChunk, rightKeyIndices, priorRedirections);
                                         chunkSsaStamp.processRemovals(leftStampValues, leftStampKeys, rightStampChunk,
-                                                rightKeyIndices, priorRedirections, rowRedirection, modifiedBuilder,
-                                                disallowExactMatch);
+                                                rightKeyIndices, priorRedirections, rowRedirection, restampContext,
+                                                modifiedBuilder, disallowExactMatch);
                                     }
                                 }
 
@@ -1512,8 +1517,8 @@ public class AsOfJoinHelper {
                                             stampCompact.compact(stampChunk, retainStamps);
 
                                             chunkSsaStamp.processInsertion(leftStampValues, leftStampKeys, stampChunk,
-                                                    insertedIndices, nextRightValue, rowRedirection, modifiedBuilder,
-                                                    endsWithLastValue, disallowExactMatch);
+                                                    insertedIndices, nextRightValue, rowRedirection, restampContext,
+                                                    modifiedBuilder, endsWithLastValue, disallowExactMatch);
                                         }
                                     }
                                 }

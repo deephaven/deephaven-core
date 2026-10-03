@@ -75,15 +75,15 @@ public class FloatChunkSsaStamp implements ChunkSsaStamp {
     public void processRemovals(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys,
             WritableLongChunk<RowKeys> priorRedirections, WritableRowRedirection rowRedirection,
-            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+            RestampContext restampContext, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals(leftStampValues.asFloatChunk(), leftStampKeys, rightStampChunk.asFloatChunk(), rightKeys,
-                priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
+                priorRedirections, rowRedirection, restampContext, modifiedBuilder, disallowExactMatch);
     }
 
     private static void processRemovals(FloatChunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             FloatChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys,
             WritableLongChunk<RowKeys> nextRedirections, WritableRowRedirection rowRedirection,
-            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+            RestampContext restampContext, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key. Binary search
         // in the left for the removed key to find the smallest value geq the removed right. Update all rows
         // with the removed redirection to the previous key.
@@ -103,7 +103,7 @@ public class FloatChunkSsaStamp implements ChunkSsaStamp {
                     && rowRedirection.get(leftStampKeys.get(leftHighIdx)) == rightStampKey) {
                 leftHighIdx++;
             }
-            ChunkSsaStampRuns.restamp(leftStampKeys, leftLowIdx, leftHighIdx, newRightStampKey, rowRedirection,
+            restampContext.restamp(rowRedirection, leftStampKeys, leftLowIdx, leftHighIdx, newRightStampKey,
                     modifiedBuilder);
             leftLowIdx = leftHighIdx;
         }
@@ -112,16 +112,17 @@ public class FloatChunkSsaStamp implements ChunkSsaStamp {
     @Override
     public void processInsertion(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
-            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
-            boolean disallowExactMatch) {
+            WritableRowRedirection rowRedirection, RestampContext restampContext, RowSetBuilderRandom modifiedBuilder,
+            boolean endsWithLastValue, boolean disallowExactMatch) {
         processInsertion(leftStampValues.asFloatChunk(), leftStampKeys, rightStampChunk.asFloatChunk(), rightKeys,
-                nextRightValue.asFloatChunk(), rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                nextRightValue.asFloatChunk(), rowRedirection, restampContext, modifiedBuilder, endsWithLastValue,
+                disallowExactMatch);
     }
 
     private static void processInsertion(FloatChunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             FloatChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, FloatChunk<Values> nextRightValue,
-            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
-            boolean disallowExactMatch) {
+            WritableRowRedirection rowRedirection, RestampContext restampContext, RowSetBuilderRandom modifiedBuilder,
+            boolean endsWithLastValue, boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the
         // rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
@@ -151,7 +152,7 @@ public class FloatChunkSsaStamp implements ChunkSsaStamp {
                     leftHighIdx++;
                 }
             }
-            ChunkSsaStampRuns.restamp(leftStampKeys, leftLowIdx, leftHighIdx, rightStampKey, rowRedirection,
+            restampContext.restamp(rowRedirection, leftStampKeys, leftLowIdx, leftHighIdx, rightStampKey,
                     modifiedBuilder);
             leftLowIdx = leftHighIdx;
         }
