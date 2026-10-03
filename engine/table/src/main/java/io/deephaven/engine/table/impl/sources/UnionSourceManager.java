@@ -794,6 +794,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
         final MutableLong minCost = new MutableLong(PushdownResult.UNSUPPORTED_ACTION_COST);
+        // The per constituent selections must outlive their estimates, which may complete asynchronously. The
+        // iteration's cleanup runs only after onComplete returns, so onError must close them on failure.
+        final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
+        final Runnable closeLocalSelections = () -> SafeCloseableArray.close(localSelections);
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -805,30 +809,31 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
                     final long firstRowKey = ctx.firstRowKeys.getLong(idx);
                     final long lastRowKey = ctx.lastRowKeys.getLong(idx);
-                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
-                        if (localSelection.isEmpty()) {
-                            // No rows remain for this constituent, so we can skip it.
-                            resume.run();
-                            return;
-                        }
-                        // Shift to local space and delegate to the constituent matcher.
-                        localSelection.shiftInPlace(-firstRowKey);
-                        final RowSet localSelectionCopy = localSelection.copy();
-                        matcher.estimatePushdownFilterCost(
-                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), jobScheduler,
-                                cost -> {
-                                    synchronized (minCost) {
-                                        minCost.set(Math.min(minCost.get(), cost));
-                                    }
-                                    localSelectionCopy.close();
-                                    resume.run();
-                                }, nec);
+                    final WritableRowSet localSelection =
+                            localSelections[idx] = selection.subSetByKeyRange(firstRowKey, lastRowKey);
+                    if (localSelection.isEmpty()) {
+                        // No rows remain for this constituent, so we can skip it.
+                        resume.run();
+                        return;
                     }
+                    // Shift to local space and delegate to the constituent matcher.
+                    localSelection.shiftInPlace(-firstRowKey);
+                    matcher.estimatePushdownFilterCost(
+                            filter, localSelection, usePrev, ctx.contexts.get(idx), jobScheduler,
+                            cost -> {
+                                synchronized (minCost) {
+                                    minCost.set(Math.min(minCost.get(), cost));
+                                }
+                                resume.run();
+                            }, nec);
                 },
                 () -> onComplete.accept(minCost.get()),
-                () -> {
-                }, // no cleanup needed
-                onError);
+                closeLocalSelections,
+                e -> {
+                    try (final SafeCloseable ignored = closeLocalSelections::run) {
+                        onError.accept(e);
+                    }
+                });
     }
 
     @Override
@@ -847,6 +852,14 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final WritableRowSet[] matches = new WritableRowSet[ctx.matchers.size()];
         final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.matchers.size()];
+        // The per constituent selections must outlive their pushdowns, which may complete asynchronously. The
+        // iteration's cleanup runs only after onComplete returns, so onError must close these on failure.
+        final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
+        final Runnable closeConstituentRowSets = () -> {
+            SafeCloseableArray.close(localSelections);
+            SafeCloseableArray.close(matches);
+            SafeCloseableArray.close(maybeMatches);
+        };
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -858,28 +871,26 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
                     final long firstRowKey = ctx.firstRowKeys.getLong(idx);
                     final long lastRowKey = ctx.lastRowKeys.getLong(idx);
-                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
-                        if (localSelection.isEmpty()) {
-                            matches[idx] = RowSetFactory.empty();
-                            maybeMatches[idx] = RowSetFactory.empty();
-                            resume.run();
-                            return;
-                        }
-                        localSelection.shiftInPlace(-firstRowKey);
-                        final RowSet localSelectionCopy = localSelection.copy();
-                        matcher.pushdownFilter(
-                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
-                                result -> {
-                                    result.match().shiftInPlace(firstRowKey);
-                                    result.maybeMatch().shiftInPlace(firstRowKey);
-
-                                    matches[idx] = result.match();
-                                    maybeMatches[idx] = result.maybeMatch();
-
-                                    localSelectionCopy.close();
-                                    resume.run();
-                                }, nec);
+                    final WritableRowSet localSelection =
+                            localSelections[idx] = selection.subSetByKeyRange(firstRowKey, lastRowKey);
+                    if (localSelection.isEmpty()) {
+                        matches[idx] = RowSetFactory.empty();
+                        maybeMatches[idx] = RowSetFactory.empty();
+                        resume.run();
+                        return;
                     }
+                    localSelection.shiftInPlace(-firstRowKey);
+                    matcher.pushdownFilter(
+                            filter, localSelection, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
+                            result -> {
+                                result.match().shiftInPlace(firstRowKey);
+                                result.maybeMatch().shiftInPlace(firstRowKey);
+
+                                matches[idx] = result.match();
+                                maybeMatches[idx] = result.maybeMatch();
+
+                                resume.run();
+                            }, nec);
                 },
                 () -> {
                     // The per constituent results are ordered and non-overlapping, which RowSetFactory.union merges
@@ -894,11 +905,12 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
                     }
                 },
-                () -> {
-                    SafeCloseableArray.close(matches);
-                    SafeCloseableArray.close(maybeMatches);
-                },
-                onError);
+                closeConstituentRowSets,
+                e -> {
+                    try (final SafeCloseable ignored = closeConstituentRowSets::run) {
+                        onError.accept(e);
+                    }
+                });
     }
 
     /**

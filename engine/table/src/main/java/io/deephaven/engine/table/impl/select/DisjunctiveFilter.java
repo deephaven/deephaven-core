@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.rowset.RowSet;
@@ -71,8 +72,12 @@ public class DisjunctiveFilter extends ComposedFilter {
                     break;
                 }
             }
+        } catch (final Throwable t) {
+            SafeCloseable.closeAllDuringFailure(t, matched);
+            throw t;
         }
-        return matched == null ? selection.copy() : matched.copy();
+        // A disjunction of no filters matches nothing
+        return matched == null ? RowSetFactory.empty() : matched;
     }
 
     @NotNull

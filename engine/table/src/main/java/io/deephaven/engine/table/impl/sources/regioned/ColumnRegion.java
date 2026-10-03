@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Releasable;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.WritableChunk;
@@ -99,6 +98,9 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                     break;
                 }
             }
+        } catch (final Exception e) {
+            onError.accept(e);
+            return;
         } finally {
             SafeCloseable.closeAll(regionEstimateCtx, locationEstimateCtx);
         }
@@ -160,10 +162,14 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                     break;
                 }
             }
-            onComplete.accept(result);
+        } catch (final Exception e) {
+            // A failed action has closed the result it was given, the only one outstanding.
+            onError.accept(e);
+            return;
         } finally {
             SafeCloseable.closeAll(regionCtx, locationCtx);
         }
+        onComplete.accept(result);
     }
 
     abstract class Null<ATTR extends Any>
@@ -228,11 +234,11 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
             if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {
                 // Promote all maybe rows to match.
                 try (final RowSet allMatch = input.match().union(input.maybeMatch())) {
-                    return PushdownResult.of(selection, allMatch, RowSetFactory.empty());
+                    return PushdownResult.exactMatch(selection, allMatch);
                 }
             }
             // None of these rows match, return the original match rows.
-            return PushdownResult.of(selection, input.match(), RowSetFactory.empty());
+            return PushdownResult.exactMatch(selection, input.match());
         }
     }
 }
