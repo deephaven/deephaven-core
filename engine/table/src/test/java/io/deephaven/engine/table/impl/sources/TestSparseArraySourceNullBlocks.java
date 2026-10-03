@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -99,6 +100,46 @@ public class TestSparseArraySourceNullBlocks {
         for (long key = firstKey; key <= lastKey; ++key) {
             final long expected = delta == NULL_LONG ? RowSet.NULL_ROW_KEY : (key - delta) * 10;
             assertEquals(expected, prev ? fixture.redirection.getPrev(key) : fixture.redirection.get(key));
+        }
+    }
+
+    @Test
+    public void testIntRedirectionReleasesRemovedAndShiftedBlocks() {
+        final IntegerSparseArraySource source = new IntegerSparseArraySource();
+        final IntColumnSourceWritableRowRedirection redirection = new IntColumnSourceWritableRowRedirection(source);
+        final TrackingWritableRowSet rowSet = ir(0, 3 * BLOCK_SIZE - 1).toTracking();
+        rowSet.forAllRowKeys(key -> redirection.put(key, key * 10));
+        redirection.startTrackingPrevValues();
+        final long intBlockBytes = (long) BLOCK_SIZE * Integer.BYTES;
+        final long sizeBefore = source.estimateSize();
+
+        // remove the first block, and shift the third block up by one block, vacating it
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(2L * BLOCK_SIZE, 3L * BLOCK_SIZE - 1, BLOCK_SIZE);
+        final RowSetShiftData shifted = shiftBuilder.build();
+        updateGraph().runWithinUnitTestCycle(() -> {
+            try (final RowSet removed = ir(0, BLOCK_SIZE - 1);
+                    final RowSet prevRowSet = rowSet.copyPrev()) {
+                redirection.removeAll(removed);
+                rowSet.remove(removed);
+                try (final RowSet prevLessRemoved = prevRowSet.minus(removed)) {
+                    redirection.applyShift(prevLessRemoved, shifted);
+                }
+                shifted.apply(rowSet);
+                redirection.releaseVacatedStorage(removed, shifted, rowSet);
+            }
+            for (long key = 0; key < 3L * BLOCK_SIZE; ++key) {
+                assertEquals(key * 10, redirection.getPrev(key));
+            }
+        });
+
+        // the removed and vacated blocks are released, and the shifted block is allocated at its new position
+        assertEquals(sizeBefore - intBlockBytes, source.estimateSize());
+        for (long key = 0; key < BLOCK_SIZE; ++key) {
+            assertEquals(RowSet.NULL_ROW_KEY, redirection.get(key));
+            assertEquals(RowSet.NULL_ROW_KEY, redirection.get(key + 2L * BLOCK_SIZE));
+            assertEquals((key + BLOCK_SIZE) * 10, redirection.get(key + BLOCK_SIZE));
+            assertEquals((key + 2L * BLOCK_SIZE) * 10, redirection.get(key + 3L * BLOCK_SIZE));
         }
     }
 

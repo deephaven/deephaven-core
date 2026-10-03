@@ -8,7 +8,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -99,25 +98,9 @@ public final class LongColumnSourceWritableRowRedirection
             @NotNull final RowSet removed,
             @NotNull final RowSetShiftData shifted,
             @NotNull final TrackingRowSet outerRowSet) {
-        if (!(columnSource instanceof SparseArrayColumnSource)) {
-            return;
-        }
-        final SparseArrayColumnSource<?> sparseSource = (SparseArrayColumnSource<?>) columnSource;
-        if (shifted.empty()) {
-            SparseArrayColumnSource.clearBlocksWithoutLiveRows(removed, outerRowSet, sparseSource);
-            return;
-        }
-        // a shift may vacate any previous row key within its range; those that are still live keep their blocks
-        final RowSet prevRowSet = outerRowSet.prev();
-        try (final WritableRowSet candidates = removed.copy()) {
-            final int shiftCount = shifted.size();
-            for (int ii = 0; ii < shiftCount; ++ii) {
-                try (final RowSet shiftedRows =
-                        prevRowSet.subSetByKeyRange(shifted.getBeginRange(ii), shifted.getEndRange(ii))) {
-                    candidates.insert(shiftedRows);
-                }
-            }
-            SparseArrayColumnSource.clearBlocksWithoutLiveRows(candidates, outerRowSet, sparseSource);
+        if (columnSource instanceof SparseArrayColumnSource) {
+            SparseArrayColumnSource.clearVacatedBlocks(removed, shifted, outerRowSet,
+                    (SparseArrayColumnSource<?>) columnSource);
         }
     }
 }

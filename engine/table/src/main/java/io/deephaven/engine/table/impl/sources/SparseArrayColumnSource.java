@@ -21,6 +21,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -272,6 +275,40 @@ public abstract class SparseArrayColumnSource<T>
             for (final SparseArrayColumnSource<?> source : sources) {
                 source.clearBlocks(removeBlocks, removeBlocks2, removeBlocks1, liveRowSet.isEmpty());
             }
+        }
+    }
+
+    /**
+     * At the end of this cycle, release each block, block2 and block1 structure of {@code source} that holds a row key
+     * vacated this cycle and no row key of {@code outerRowSet}. The vacated row keys are those removed and those within
+     * the range of a shift, as {@link #clearBlocksWithoutLiveRows(RowSet, RowSet, SparseArrayColumnSource[])} requires;
+     * the shifted row keys that are still live keep their blocks.
+     *
+     * @param removed the row keys removed from {@code outerRowSet} this cycle, in the pre-shift key space
+     * @param shifted the shifts applied to {@code outerRowSet} this cycle
+     * @param outerRowSet the row keys whose values {@code source} holds, whose previous value is the row set at the
+     *        start of this cycle
+     * @param source the source to release blocks from
+     */
+    public static void clearVacatedBlocks(
+            @NotNull final RowSet removed,
+            @NotNull final RowSetShiftData shifted,
+            @NotNull final TrackingRowSet outerRowSet,
+            @NotNull final SparseArrayColumnSource<?> source) {
+        if (shifted.empty()) {
+            clearBlocksWithoutLiveRows(removed, outerRowSet, source);
+            return;
+        }
+        final RowSet prevRowSet = outerRowSet.prev();
+        try (final WritableRowSet candidates = removed.copy()) {
+            final int shiftCount = shifted.size();
+            for (int ii = 0; ii < shiftCount; ++ii) {
+                try (final RowSet shiftedRows =
+                        prevRowSet.subSetByKeyRange(shifted.getBeginRange(ii), shifted.getEndRange(ii))) {
+                    candidates.insert(shiftedRows);
+                }
+            }
+            clearBlocksWithoutLiveRows(candidates, outerRowSet, source);
         }
     }
 
