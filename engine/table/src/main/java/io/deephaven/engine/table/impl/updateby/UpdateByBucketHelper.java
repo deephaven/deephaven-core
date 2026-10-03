@@ -218,18 +218,21 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
                             final LongChunk<? extends Values> prevValues =
                                     timestampColumnSource.getPrevChunk(getContext, subRowSet).asLongChunk();
-                            final LongChunk<OrderedRowKeys> prevKeys = subRowSet.asRowKeyChunk();
+                            subRowSet.fillRowKeyChunk(shiftKeys);
 
                             // Rows with a null timestamp are not in the SSA, so only the non-null rows are shifted.
-                            shiftValues.setSize(0);
-                            shiftKeys.setSize(0);
+                            // The keys of the non-null rows are compacted in place.
+                            int shiftCount = 0;
                             for (int ii = 0; ii < prevValues.size(); ii++) {
                                 final long ts = prevValues.get(ii);
                                 if (ts != NULL_LONG) {
-                                    shiftValues.add(ts);
-                                    shiftKeys.add(prevKeys.get(ii));
+                                    shiftValues.set(shiftCount, ts);
+                                    shiftKeys.set(shiftCount, shiftKeys.get(ii));
+                                    shiftCount++;
                                 }
                             }
+                            shiftValues.setSize(shiftCount);
+                            shiftKeys.setSize(shiftCount);
 
                             if (sit.polarityReversed()) {
                                 timestampSsa.applyShiftReverse(shiftValues, shiftKeys, sit.shiftDelta());
