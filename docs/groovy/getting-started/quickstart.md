@@ -72,7 +72,7 @@ You're ready to go. The Deephaven IDE is a full scripting environment. Here's a 
 
    Save your work in the active notebook. Do this often!
 
-To learn more about the Deephaven IDE, check out the guide to [navigating the GUI](../how-to-guides/user-interface/navigating-the-ui.md) for a tour of the available menus and tools, and the accompanying guides on [graphical column manipulation](../how-to-guides/user-interface/formatting-tables.md), the [IDE chart-builder](../how-to-guides/user-interface/chart-builder.md), and more.
+To learn more about the Deephaven IDE, check out the guide to [navigating the GUI](../how-to-guides/user-interface/navigating-the-ui.md) for a tour of the menus and tools. Then, take a look at the accompanying guides on [graphical column manipulation](../how-to-guides/user-interface/formatting-tables.md), the [IDE chart-builder](../how-to-guides/user-interface/chart-builder.md), and more.
 
 Now that you have Deephaven installed and open, the rest of this guide briefly highlights some key features of Deephaven.
 
