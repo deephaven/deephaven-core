@@ -23,7 +23,14 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
+import io.deephaven.engine.table.impl.sources.InstantSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
+import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.ZonedDateTimeSparseArraySource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -56,6 +63,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1480,6 +1490,152 @@ public class QueryTableTest extends QueryTableTestBase {
                 final long reverseRow = reverseRows.nextLong();
                 assertEquals(tableSource.get(tableRow), reversedSource.get(reverseRow));
             }
+        }
+    }
+
+    /**
+     * A reversed column reinterprets and converts between time types exactly as the column it wraps, for current and
+     * previous values, and a reversed ZonedDateTime column keeps its zone.
+     */
+    @Test
+    public void testReverseReinterpret() {
+        final ZoneId newYork = ZoneId.of("America/New_York");
+        final long day = DateTimeUtils.SECOND * 86_400;
+        final LongSparseArraySource nanos = new LongSparseArraySource();
+        final InstantSparseArraySource instants = new InstantSparseArraySource();
+        final ZonedDateTimeSparseArraySource zoned = new ZonedDateTimeSparseArraySource(newYork);
+        final ObjectSparseArraySource<ZonedDateTime> objectZoned = new ObjectSparseArraySource<>(ZonedDateTime.class);
+        final BooleanSparseArraySource booleans = new BooleanSparseArraySource();
+        final WritableColumnSource<?>[] writableSources = {nanos, instants, zoned, objectZoned, booleans};
+        final LongConsumer setRow = rowKey -> {
+            final long epochNanos = (rowKey % 1000) * day + (rowKey % 24) * DateTimeUtils.HOUR;
+            nanos.set(rowKey, epochNanos);
+            instants.set(rowKey, DateTimeUtils.epochNanosToInstant(epochNanos));
+            zoned.set(rowKey, DateTimeUtils.epochNanosToZonedDateTime(epochNanos, newYork));
+            objectZoned.set(rowKey, DateTimeUtils.epochNanosToZonedDateTime(epochNanos, newYork));
+            booleans.set(rowKey, rowKey % 3 == 0 ? null : rowKey % 3 == 1);
+        };
+        LongStream.of(1, 2, 3).forEach(setRow);
+
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        columns.put("Nanos", nanos);
+        columns.put("Instant", instants);
+        columns.put("Zoned", zoned);
+        columns.put("ObjectZoned", objectZoned);
+        columns.put("Boolean", booleans);
+        columns.put("LocalDate", nanos.toLocalDate(newYork));
+        final QueryTable table = new QueryTable(i(1, 2, 3).toTracking(), columns);
+        table.setRefreshing(true);
+        for (final WritableColumnSource<?> source : writableSources) {
+            source.startTrackingPrevValues();
+        }
+        final Table reversed = table.reverse();
+
+        checkReverseReinterpret(table, reversed);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
+        try {
+            final long addedKey = 1L << 20;
+            for (final WritableColumnSource<?> source : writableSources) {
+                source.ensureCapacity(addedKey + 1);
+            }
+            setRow.accept(addedKey);
+            setRow.accept(5);
+            nanos.set(2, 7 * day);
+            instants.set(2, DateTimeUtils.epochNanosToInstant(7 * day));
+            zoned.set(2, DateTimeUtils.epochNanosToZonedDateTime(7 * day, newYork));
+            objectZoned.set(2, DateTimeUtils.epochNanosToZonedDateTime(7 * day, newYork));
+            booleans.set(2, true);
+            table.getRowSet().writableCast().update(i(5, addedKey), i(1));
+            table.notifyListeners(new TableUpdateImpl(i(5, addedKey), i(1), i(2), RowSetShiftData.EMPTY,
+                    table.newModifiedColumnSet(columns.keySet().toArray(String[]::new))));
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+
+            checkReverseReinterpret(table, reversed);
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+
+        checkReverseReinterpret(table, reversed);
+    }
+
+    private static void checkReverseReinterpret(final QueryTable table, final Table reversed) {
+        final ZoneId tokyo = ZoneId.of("Asia/Tokyo");
+        for (final String name : table.getDefinition().getColumnNames()) {
+            final ColumnSource<?> original = table.getColumnSource(name);
+            final ColumnSource<?> reversedSource = reversed.getColumnSource(name);
+            checkReversedValues(name, table, original, reversed, reversedSource);
+
+            for (final Class<?> alternateType : new Class<?>[] {long.class, byte.class, Boolean.class, Instant.class,
+                    ZonedDateTime.class, LocalDate.class}) {
+                final String context = name + " reinterpret " + alternateType;
+                assertEquals(context, original.allowsReinterpret(alternateType),
+                        reversedSource.allowsReinterpret(alternateType));
+                if (original.allowsReinterpret(alternateType)) {
+                    checkReversedValues(context, table, original.reinterpret(alternateType), reversed,
+                            reversedSource.reinterpret(alternateType));
+                }
+            }
+
+            assertEquals(name, original instanceof ConvertibleTimeSource.Zoned,
+                    reversedSource instanceof ConvertibleTimeSource.Zoned);
+            if (original instanceof ConvertibleTimeSource.Zoned) {
+                assertEquals(name, ((ConvertibleTimeSource.Zoned) original).getZone(),
+                        ((ConvertibleTimeSource.Zoned) reversedSource).getZone());
+            }
+
+            final ColumnSource<?> originalPrimitive = ReinterpretUtils.maybeConvertToPrimitive(original);
+            final ColumnSource<?> reversedPrimitive = ReinterpretUtils.maybeConvertToPrimitive(reversedSource);
+            assertEquals(name, originalPrimitive == original, reversedPrimitive == reversedSource);
+            assertEquals(name, originalPrimitive.getType(), reversedPrimitive.getType());
+            checkReversedValues(name + " primitive", table, originalPrimitive, reversed, reversedPrimitive);
+            if (originalPrimitive != original) {
+                checkReversedValues(name + " original type", table, original, reversed,
+                        ReinterpretUtils.convertToOriginalType(reversedSource, reversedPrimitive));
+            }
+
+            final boolean convertible = original instanceof ConvertibleTimeSource
+                    && ((ConvertibleTimeSource) original).supportsTimeConversion();
+            assertEquals(name, convertible, reversedSource instanceof ConvertibleTimeSource
+                    && ((ConvertibleTimeSource) reversedSource).supportsTimeConversion());
+            if (convertible) {
+                final ConvertibleTimeSource originalTime = (ConvertibleTimeSource) original;
+                final ConvertibleTimeSource reversedTime = (ConvertibleTimeSource) reversedSource;
+                checkReversedValues(name + " toEpochNano", table, originalTime.toEpochNano(), reversed,
+                        reversedTime.toEpochNano());
+                checkReversedValues(name + " toInstant", table, originalTime.toInstant(), reversed,
+                        reversedTime.toInstant());
+                checkReversedValues(name + " toZonedDateTime", table, originalTime.toZonedDateTime(tokyo), reversed,
+                        reversedTime.toZonedDateTime(tokyo));
+                checkReversedValues(name + " toLocalDate", table, originalTime.toLocalDate(tokyo), reversed,
+                        reversedTime.toLocalDate(tokyo));
+                checkReversedValues(name + " toLocalTime", table, originalTime.toLocalTime(tokyo), reversed,
+                        reversedTime.toLocalTime(tokyo));
+                assertTrue(name, reversedTime.toZonedDateTime(tokyo) instanceof ConvertibleTimeSource.Zoned);
+            }
+        }
+    }
+
+    private static void checkReversedValues(final String context, final Table table, final ColumnSource<?> expected,
+            final Table reversed, final ColumnSource<?> actual) {
+        assertEquals(context, expected.getType(), actual.getType());
+        for (final boolean usePrev : new boolean[] {false, true}) {
+            final RowSet tableRowSet = usePrev ? table.getRowSet().prev() : table.getRowSet();
+            final RowSet reversedRowSet = usePrev ? reversed.getRowSet().prev() : reversed.getRowSet();
+            assertEquals(context, tableRowSet.size(), reversedRowSet.size());
+            final Object[] expectedValues = new Object[tableRowSet.intSize()];
+            final Object[] actualValues = new Object[reversedRowSet.intSize()];
+            try (final RowSet.Iterator tableRows = tableRowSet.iterator();
+                    final RowSet.Iterator reversedRows = reversedRowSet.reverseIterator()) {
+                for (int ii = 0; ii < expectedValues.length; ++ii) {
+                    final long tableRow = tableRows.nextLong();
+                    final long reversedRow = reversedRows.nextLong();
+                    expectedValues[ii] = usePrev ? expected.getPrev(tableRow) : expected.get(tableRow);
+                    actualValues[ii] = usePrev ? actual.getPrev(reversedRow) : actual.get(reversedRow);
+                }
+            }
+            assertArrayEquals(context + (usePrev ? " prev" : ""), expectedValues, actualValues);
         }
     }
 

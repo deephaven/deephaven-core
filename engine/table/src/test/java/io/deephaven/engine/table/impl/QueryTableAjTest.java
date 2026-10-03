@@ -231,10 +231,19 @@ public class QueryTableAjTest {
      */
     private static QueryTable convertibleZonedTable(final String zonedName, final long epochNanos,
             final String intName, final int intValue) {
+        return convertibleZonedTable(zonedName, epochNanos, ZoneId.of("UTC"), intName, intValue);
+    }
+
+    /**
+     * Builds a one-row table whose ZonedDateTime column, in {@code zone}, is backed by a nanosecond source, which can
+     * be reinterpreted to long, alongside an int column.
+     */
+    private static QueryTable convertibleZonedTable(final String zonedName, final long epochNanos,
+            final ZoneId zone, final String intName, final int intValue) {
         final Table instants = TableTools.newTable(instantCol("Ts", DateTimeUtils.epochNanosToInstant(epochNanos)),
                 intCol(intName, intValue));
         final ColumnSource<ZonedDateTime> zoned =
-                ((ConvertibleTimeSource) instants.getColumnSource("Ts")).toZonedDateTime(ZoneId.of("UTC"));
+                ((ConvertibleTimeSource) instants.getColumnSource("Ts")).toZonedDateTime(zone);
         final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
         sources.put(zonedName, zoned);
         sources.put(intName, instants.getColumnSource(intName));
@@ -266,6 +275,31 @@ public class QueryTableAjTest {
         final QueryTable convertibleLeft = convertibleZonedTable("Key", 1_000L, "LeftStamp", 5);
         final Table result = convertibleLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
         assertTableEquals(expected.view("LeftStamp", "Sentinel"), result.view("LeftStamp", "Sentinel"));
+    }
+
+    /**
+     * Equal instants in different zones are equal ZonedDateTime stamps for both aj and raj, so an exact match is found
+     * by {@code >=} and {@code <=} and rejected by {@code >} and {@code <}.
+     */
+    @Test
+    public void testAjRajZonedDateTimeStampsInDifferentZones() {
+        final Table left = convertibleZonedTable("LStamp", 0L, ZoneId.of("America/New_York"), "Key", 1);
+        final Table right = convertibleZonedTable("RStamp", 0L, ZoneId.of("UTC"), "Key", 1).updateView("RId = 7");
+        assertEquals(7, left.aj(right, "Key,LStamp>=RStamp", "RId").getColumnSource("RId").get(0));
+        assertEquals(7, left.raj(right, "Key,LStamp<=RStamp", "RId").getColumnSource("RId").get(0));
+        assertNull(left.aj(right, "Key,LStamp>RStamp", "RId").getColumnSource("RId").get(0));
+        assertNull(left.raj(right, "Key,LStamp<RStamp", "RId").getColumnSource("RId").get(0));
+    }
+
+    /**
+     * Equal instants in different zones are equal ZonedDateTime exact match keys for both aj and raj.
+     */
+    @Test
+    public void testAjRajZonedDateTimeKeysInDifferentZones() {
+        final Table left = convertibleZonedTable("ZKey", 0L, ZoneId.of("America/New_York"), "LStamp", 0);
+        final Table right = convertibleZonedTable("ZKey", 0L, ZoneId.of("UTC"), "RStamp", 0).updateView("RId = 7");
+        assertEquals(7, left.aj(right, "ZKey,LStamp>=RStamp", "RId").getColumnSource("RId").get(0));
+        assertEquals(7, left.raj(right, "ZKey,LStamp<=RStamp", "RId").getColumnSource("RId").get(0));
     }
 
     /**
