@@ -146,8 +146,9 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
 
     /**
      * The fill context the lock-free redirection makes carries its own scratch for chunks split between 'updates' and
-     * 'baseline'; one context must serve fill after fill, of differing mixes and sizes, and the stateless default
-     * context must still work.
+     * 'baseline'; one context must serve fill after fill, of differing mixes and sizes. A foreign context — the
+     * stateless default, say — is a caller's error, refused on the first fill rather than served with scratch allocated
+     * per call.
      */
     @Test
     public void testFillContextIsReusable() {
@@ -180,13 +181,13 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
                         for (int ii = 0; ii < size; ++ii) {
                             assertEquals("key " + (start + ii), redirection.get(start + ii), actual.get(ii));
                         }
-                        // The stateless default context takes the allocating path and must agree.
-                        redirection.fillChunkUnordered(ChunkSource.DEFAULT_FILL_INSTANCE, actual, keys);
-                        for (int ii = 0; ii < size; ++ii) {
-                            assertEquals("key " + (start + ii), redirection.get(start + ii), actual.get(ii));
-                        }
                     }
                 }
+                // Not ours: refused at once, whatever the chunk holds.
+                keys.setSize(1);
+                keys.set(0, 1);
+                assertThrows(ClassCastException.class,
+                        () -> redirection.fillChunkUnordered(ChunkSource.DEFAULT_FILL_INSTANCE, actual, keys));
             }
         });
     }

@@ -252,10 +252,11 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
      * no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass answers every key and the baseline pass is empty.)
      */
     /**
-     * A fill context that owns the scratch the mixed path of {@link #fillChunk} needs: the keys a chunk did not find in
-     * 'updates', where they sat in the chunk, and what 'baseline' says about them. A caller that fills many chunks
-     * through one context, as RedirectedColumnSource does, allocates them once instead of once per chunk; the fill only
-     * reaches for them when a chunk is split between the two maps.
+     * The fill context every chunked fill of this redirection requires, made by {@link #makeFillContext}. It owns the
+     * scratch the mixed path of {@link #fillChunk} needs: the keys a chunk did not find in 'updates', where they sat in
+     * the chunk, and what 'baseline' says about them. A caller that fills many chunks through one context, as
+     * RedirectedColumnSource does, allocates them once instead of once per chunk; the fill only reaches for them when a
+     * chunk is split between the two maps. Any other context is a caller's error, and the fill refuses it.
      */
     private static final class FillContext implements ChunkSource.FillContext {
         private final WritableLongChunk<RowKeys> missingKeys;
@@ -319,6 +320,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final NullableLongLongMap baseline,
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
             @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys) {
+        // The context must be ours (see FillContext): the cast fails on the first fill through a foreign one, mixed
+        // chunk or not, rather than on whichever later chunk first needs the scratch.
+        final FillContext ctx = (FillContext) fillContext;
         if (updates == baseline) {
             // Prev tracking has not started (a static table's redirection, for one): one map under both names, and it
             // answers every key.
@@ -348,22 +352,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             return;
         }
         // Keys not present in 'updates' get their result from 'baseline': gather them into a dense chunk, do one
-        // chunked lookup, and scatter the results back. The scratch comes from the fill context when the caller made
-        // one of ours (RedirectedColumnSource makes one per fill context and reuses it across chunks); a caller
-        // holding the default context, which has no state, gets scratch allocated for this call.
-        if (fillContext instanceof FillContext) {
-            final FillContext ctx = (FillContext) fillContext;
-            gatherFromBaseline(baseline, outerRowKeys, innerRowKeys, missingCount,
-                    ctx.missingKeys, ctx.missingValues, ctx.missingPositions);
-            return;
-        }
-        try (final WritableLongChunk<RowKeys> missingKeys = WritableLongChunk.makeWritableChunk(missingCount);
-                final WritableLongChunk<RowKeys> missingValues = WritableLongChunk.makeWritableChunk(missingCount);
-                final WritableIntChunk<ChunkPositions> missingPositions =
-                        WritableIntChunk.makeWritableChunk(missingCount)) {
-            gatherFromBaseline(baseline, outerRowKeys, innerRowKeys, missingCount,
-                    missingKeys, missingValues, missingPositions);
-        }
+        // chunked lookup, and scatter the results back, all in the context's scratch.
+        gatherFromBaseline(baseline, outerRowKeys, innerRowKeys, missingCount,
+                ctx.missingKeys, ctx.missingValues, ctx.missingPositions);
     }
 
     /**
