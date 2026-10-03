@@ -32,7 +32,6 @@ import java.time.ZonedDateTime;
 public class ReversedColumnSource<T> extends AbstractColumnSource<T> implements ConvertibleTimeSource {
     private final ColumnSource<T> innerSource;
     private final ReverseOperation indexReverser;
-    private long maxInnerIndex = 0;
 
     @Override
     public Class<?> getComponentType() {
