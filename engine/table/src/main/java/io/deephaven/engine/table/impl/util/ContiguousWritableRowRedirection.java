@@ -7,6 +7,8 @@ import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.context.ExecutionContext;
@@ -48,12 +50,7 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
     public long put(long outerRowKey, long innerRowKey) {
         Require.requirement(outerRowKey <= Integer.MAX_VALUE && outerRowKey >= 0,
                 "key <= Integer.MAX_VALUE && key >= 0", outerRowKey, "key");
-        if (outerRowKey >= redirections.length) {
-            final long[] newRedirections = new long[Math.max((int) outerRowKey + 100, redirections.length * 2)];
-            System.arraycopy(redirections, 0, newRedirections, 0, redirections.length);
-            Arrays.fill(newRedirections, redirections.length, newRedirections.length, RowSequence.NULL_ROW_KEY);
-            redirections = newRedirections;
-        }
+        ensureCapacity(outerRowKey);
         final long previous = redirections[(int) outerRowKey];
         if (previous == RowSequence.NULL_ROW_KEY) {
             size++;
@@ -65,6 +62,66 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
             onRemove(outerRowKey, previous);
         }
         return previous;
+    }
+
+    private void ensureCapacity(final long maxOuterRowKey) {
+        if (maxOuterRowKey >= redirections.length) {
+            final long[] newRedirections = new long[Math.max((int) maxOuterRowKey + 100, redirections.length * 2)];
+            System.arraycopy(redirections, 0, newRedirections, 0, redirections.length);
+            Arrays.fill(newRedirections, redirections.length, newRedirections.length, RowSequence.NULL_ROW_KEY);
+            redirections = newRedirections;
+        }
+    }
+
+    @Override
+    public void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends RowKeys> innerRowKeys,
+            @NotNull final LongChunk<RowKeys> outerRowKeys) {
+        final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
+        final int count = outerRowKeys.size();
+        if (count == 0) {
+            return;
+        }
+        long minOuterRowKey = Long.MAX_VALUE;
+        long maxOuterRowKey = Long.MIN_VALUE;
+        for (int ii = 0; ii < count; ++ii) {
+            final long outerRowKey = outerRowKeys.get(ii);
+            minOuterRowKey = Math.min(minOuterRowKey, outerRowKey);
+            maxOuterRowKey = Math.max(maxOuterRowKey, outerRowKey);
+        }
+        Require.requirement(maxOuterRowKey <= Integer.MAX_VALUE && minOuterRowKey >= 0,
+                "maxOuterRowKey <= Integer.MAX_VALUE && minOuterRowKey >= 0");
+        ensureCapacity(maxOuterRowKey);
+
+        // a NULL_ROW_KEY inner row key removes the mapping, and size counts the mapped outer row keys
+        int sizeDelta = 0;
+        if (updateCommitter == null) {
+            for (int ii = 0; ii < count; ++ii) {
+                final int outerRowKey = (int) outerRowKeys.get(ii);
+                final long innerRowKey = innerRowKeysTyped.get(ii);
+                final long previous = redirections[outerRowKey];
+                redirections[outerRowKey] = innerRowKey;
+                sizeDelta += (previous == RowSequence.NULL_ROW_KEY ? 1 : 0)
+                        - (innerRowKey == RowSequence.NULL_ROW_KEY ? 1 : 0);
+            }
+        } else {
+            synchronized (this) {
+                updateCommitter.maybeActivate();
+                for (int ii = 0; ii < count; ++ii) {
+                    final int outerRowKey = (int) outerRowKeys.get(ii);
+                    final long innerRowKey = innerRowKeysTyped.get(ii);
+                    final long previous = redirections[outerRowKey];
+                    redirections[outerRowKey] = innerRowKey;
+                    sizeDelta += (previous == RowSequence.NULL_ROW_KEY ? 1 : 0)
+                            - (innerRowKey == RowSequence.NULL_ROW_KEY ? 1 : 0);
+                    if (previous != innerRowKey) {
+                        checkpoint.putIfAbsent(outerRowKey, previous);
+                    }
+                }
+            }
+        }
+        size += sizeDelta;
     }
 
     private synchronized void onRemove(long key, long previous) {

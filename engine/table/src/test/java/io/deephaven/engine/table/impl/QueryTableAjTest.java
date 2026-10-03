@@ -2126,6 +2126,71 @@ public class QueryTableAjTest {
     }
 
     /**
+     * A left static join against a refreshing right table restamps and reports runs of left rows. Each row redirection
+     * type records them, for zero-key and bucketed joins.
+     */
+    @Test
+    public void testAjLeftStaticRightIncrementalEachRedirectionType() {
+        final int leftSize = 400;
+        final int rightSize = 1000;
+        final int updateSize = 200;
+        final int maxSteps = 10;
+
+        for (final JoinControl.RedirectionType redirectionType : JoinControl.RedirectionType.values()) {
+            final JoinControl control = new JoinControl() {
+                @Override
+                RedirectionType getRedirectionType(final Table leftTable) {
+                    return redirectionType;
+                }
+
+                @Override
+                public int rightChunkSize() {
+                    return 16;
+                }
+            };
+            for (int seed = 0; seed < 2; ++seed) {
+                try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                    final Random random = new Random(seed);
+                    final QueryTable leftTable = getTable(false, leftSize, random,
+                            initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                                    new SetGenerator<>("A", "B"),
+                                    new IntGenerator(0, 1000),
+                                    new IntGenerator(10_000_000, 10_010_000)));
+                    final ColumnInfo<?, ?>[] rightColumnInfo;
+                    final QueryTable rightTable = getTable(true, rightSize, random,
+                            rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                                    new SetGenerator<>("A", "B"),
+                                    new IntGenerator(0, 1000),
+                                    new IntGenerator(20_000_000, 20_010_000)));
+
+                    final EvalNuggetInterface[] en = Stream.of(false, true)
+                            .flatMap(disallowExactMatch -> Stream.of(
+                                    EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightTable,
+                                            MatchPairFactory.getExpressions("LeftStamp=RightStamp"),
+                                            MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                            SortingOrder.Ascending, disallowExactMatch)),
+                                    EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightTable,
+                                            MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                            MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                            SortingOrder.Ascending, disallowExactMatch)),
+                                    EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable,
+                                            (QueryTable) rightTable.reverse(),
+                                            MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                            MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                            SortingOrder.Descending, disallowExactMatch))))
+                            .toArray(EvalNuggetInterface[]::new);
+
+                    for (int step = 0; step < maxSteps; ++step) {
+                        RefreshingTableTestCase.simulateShiftAwareStep(
+                                redirectionType + ", seed=" + seed + ", step=" + step, updateSize, random, rightTable,
+                                rightColumnInfo, en);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * A bucketed join over two refreshing tables builds a bucket for a right key it has not seen before, so the
      * per-slot output arrays must be sized for the added rows rather than for the buckets that already exist. A cycle
      * whose only change is right additions in new buckets reaches the build with no earlier operation having grown
