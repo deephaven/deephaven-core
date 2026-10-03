@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
@@ -32,6 +33,7 @@ import java.util.function.Function;
 import java.util.function.ToLongFunction;
 import java.util.stream.LongStream;
 
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK1_SHIFT;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
@@ -44,6 +46,7 @@ import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -110,6 +113,7 @@ public class TestSparseArraySourceNullBlocks {
         final TrackingWritableRowSet rowSet = ir(0, 3 * BLOCK_SIZE - 1).toTracking();
         rowSet.forAllRowKeys(key -> redirection.put(key, key * 10));
         redirection.startTrackingPrevValues();
+        assertSame(source, redirection.getColumnSource());
         final long intBlockBytes = (long) BLOCK_SIZE * Integer.BYTES;
         final long sizeBefore = source.estimateSize();
 
@@ -140,6 +144,87 @@ public class TestSparseArraySourceNullBlocks {
             assertEquals(RowSet.NULL_ROW_KEY, redirection.get(key + 2L * BLOCK_SIZE));
             assertEquals((key + BLOCK_SIZE) * 10, redirection.get(key + BLOCK_SIZE));
             assertEquals((key + 2L * BLOCK_SIZE) * 10, redirection.get(key + 3L * BLOCK_SIZE));
+        }
+    }
+
+    @Test
+    public void testNeverWrittenStructuresToleratedForEachType() {
+        final List<Object[]> typesAndValues = List.of(
+                new Object[] {Boolean.class, true},
+                new Object[] {Byte.class, (byte) 1},
+                new Object[] {Character.class, 'a'},
+                new Object[] {Double.class, 1.0},
+                new Object[] {Float.class, 1.0f},
+                new Object[] {Integer.class, 1},
+                new Object[] {Long.class, 1L},
+                new Object[] {Short.class, (short) 1},
+                new Object[] {String.class, "a"});
+        // a block, a block2 structure and a block1 structure that were never allocated
+        final long unwrittenBlockKey = BLOCK_SIZE;
+        final long unwrittenBlock2Key = 1L << BLOCK1_SHIFT;
+        final long unwrittenBlock1Key = 1L << BLOCK0_SHIFT;
+        for (final Object[] typeAndValue : typesAndValues) {
+            // noinspection unchecked
+            final WritableColumnSource<Object> source = (WritableColumnSource<Object>) SparseArrayColumnSource
+                    .getSparseMemoryColumnSource(1, (Class<?>) typeAndValue[0]);
+            source.set(0, typeAndValue[1]);
+            source.startTrackingPrevValues();
+            final SparseArrayColumnSource<?> sparseSource = (SparseArrayColumnSource<?>) source;
+            final long sizeBefore = sparseSource.estimateSize();
+
+            updateGraph().runWithinUnitTestCycle(() -> {
+                try (final RowSet candidates = i(unwrittenBlockKey, unwrittenBlock2Key, unwrittenBlock1Key);
+                        final RowSet live = i(0)) {
+                    SparseArrayColumnSource.clearBlocksWithoutLiveRows(candidates, live, sparseSource);
+                }
+            });
+
+            final String type = ((Class<?>) typeAndValue[0]).getSimpleName();
+            assertEquals(type, sizeBefore, sparseSource.estimateSize());
+            assertEquals(type, typeAndValue[1], source.get(0));
+            assertEquals(type, typeAndValue[1], source.getPrev(0));
+        }
+    }
+
+    @Test
+    public void testNonSparseRedirectionsIgnoreRelease() {
+        final LongArraySource longSource = new LongArraySource();
+        final LongColumnSourceWritableRowRedirection longRedirection =
+                new LongColumnSourceWritableRowRedirection(longSource);
+        final IntegerArraySource intSource = new IntegerArraySource();
+        final IntColumnSourceWritableRowRedirection intRedirection =
+                new IntColumnSourceWritableRowRedirection(intSource);
+        final TrackingWritableRowSet rowSet = ir(0, 2 * BLOCK_SIZE - 1).toTracking();
+        longSource.ensureCapacity(rowSet.size());
+        intSource.ensureCapacity(rowSet.size());
+        rowSet.forAllRowKeys(key -> {
+            longRedirection.put(key, key * 10);
+            intRedirection.put(key, key * 10);
+        });
+        longRedirection.startTrackingPrevValues();
+        intRedirection.startTrackingPrevValues();
+
+        updateGraph().runWithinUnitTestCycle(() -> {
+            try (final RowSet removed = ir(0, BLOCK_SIZE - 1)) {
+                longRedirection.removeAll(removed);
+                intRedirection.removeAll(removed);
+                rowSet.remove(removed);
+                longRedirection.releaseVacatedStorage(removed, RowSetShiftData.EMPTY, rowSet);
+                intRedirection.releaseVacatedStorage(removed, RowSetShiftData.EMPTY, rowSet);
+            }
+        });
+
+        // the hook leaves storage that is not sparse untouched, so removed rows stay null and live rows keep their
+        // values
+        for (long key = 0; key < BLOCK_SIZE; ++key) {
+            assertEquals(RowSet.NULL_ROW_KEY, longRedirection.get(key));
+            assertEquals(RowSet.NULL_ROW_KEY, intRedirection.get(key));
+        }
+        for (long key = BLOCK_SIZE; key < 2L * BLOCK_SIZE; ++key) {
+            assertEquals(key * 10, longRedirection.get(key));
+            assertEquals(key * 10, intRedirection.get(key));
+            assertEquals(key * 10, longRedirection.getPrev(key));
+            assertEquals(key * 10, intRedirection.getPrev(key));
         }
     }
 
@@ -516,13 +601,17 @@ public class TestSparseArraySourceNullBlocks {
         // per cycle, and the output stays correct
         final List<UpdateByOperation> operations = List.of(
                 UpdateByOperation.EmStd(10, "Std=Stamp"),
+                UpdateByOperation.EmStd(10, "BigStd=Big"),
                 UpdateByOperation.RollingGroup("Ts", Duration.ofSeconds(3), "Group=Stamp"),
                 UpdateByOperation.CumSum("Summed=Stamp"));
         for (final String[] byColumns : List.of(new String[0], new String[] {"Key"})) {
             final QueryTable left = marchingLeft();
-            final Table result = checkMarchingBounded(left, table -> table.updateBy(operations, byColumns),
+            final Table result = checkMarchingBounded(left,
+                    table -> table.updateView("Big = java.math.BigDecimal.valueOf(Stamp)")
+                            .updateBy(operations, byColumns),
                     table -> sparseSize(table, "Summed"));
-            TstUtils.assertTableEquals(left.snapshot().updateBy(operations, byColumns), result);
+            TstUtils.assertTableEquals(left.snapshot().updateView("Big = java.math.BigDecimal.valueOf(Stamp)")
+                    .updateBy(operations, byColumns), result);
         }
     }
 
