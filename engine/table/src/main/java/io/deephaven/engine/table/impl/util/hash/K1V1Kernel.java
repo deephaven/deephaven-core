@@ -12,9 +12,10 @@ import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.probe
 import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.probe2;
 
 /**
- * The probe loops for arrays whose buckets hold one key and one value ({@link NullableLongLongMaps.Shape#K1V1}).
- * Static, and pure in the array plus the owning map's counters: {@link HashMapLockFreeKnVn} dispatches here on a
- * snapshot's shape tag, so nothing in this class knows or cares which shape a map was born with.
+ * The probe loops for arrays whose buckets hold one key/value pair, the key at offset 0 of the bucket and the value in
+ * the slot after it ({@link NullableLongLongMaps.Shape#K1V1}). Static, and pure in the array plus the owning map's
+ * counters: {@link HashMapLockFreeKnVn} dispatches here on a snapshot's shape tag, so nothing in this class knows or
+ * cares which shape a map was born with.
  */
 final class K1V1Kernel {
     private K1V1Kernel() {}

@@ -103,13 +103,13 @@ public class NullableLongLongMapBench {
     public enum Impl {
         // The -1 is the noEntryValue, the maps' default.
         // K4V4's reads adapt by footprint (array size vs cache); K4V4_WINDOW and K4V4_SERIAL pin each strategy (the
-        // pricing controls). K1V1 and K2V2 are the shapes a map is BORN with: grown (presize=false) at a load factor
-        // of 0.8 or more they widen themselves to K4V4 once big enough, so those cells price the transition (in fill)
-        // and the post-morph read path; presized (presize=true) at such a load factor they are built wide from the
-        // start; at lower load factors they stay narrow either way.
+        // pricing controls). K1V1 is the shape a default map is BORN with: grown (presize=false) at a load factor of
+        // 0.8 or more it widens itself to K4V4 once big enough, so those cells price the transition (in fill) and the
+        // post-morph read path; presized (presize=true) at such a load factor it is built wide from the start; at
+        // lower load factors it stays narrow either way. (A two-key shape, K2V2, was retired: two campaigns found no
+        // scenario in which it was fastest.)
         // @formatter:off
         K1V1((desiredEntries, loadFactor) -> NullableLongLongMaps.of(Shape.K1V1, desiredEntries, loadFactor, -1)),
-        K2V2((desiredEntries, loadFactor) -> NullableLongLongMaps.of(Shape.K2V2, desiredEntries, loadFactor, -1)),
         K4V4((desiredEntries, loadFactor) -> NullableLongLongMaps.of(Shape.K4V4, desiredEntries, loadFactor, -1)),
         K4V4_WINDOW((desiredEntries, loadFactor) ->
                 NullableLongLongMaps.of(Shape.K4V4, desiredEntries, loadFactor, -1, ReadMode.WINDOW)),
@@ -125,7 +125,7 @@ public class NullableLongLongMapBench {
         }
     }
 
-    @Param({"K1V1", "K2V2", "K4V4", "K4V4_WINDOW", "K4V4_SERIAL", "FASTUTIL"})
+    @Param({"K1V1", "K4V4", "K4V4_WINDOW", "K4V4_SERIAL", "FASTUTIL"})
     public Impl impl;
 
     /**
@@ -573,12 +573,20 @@ public class NullableLongLongMapBench {
         }
 
         @Override
-        public void get(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> result) {
+        public int get(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> result) {
             final int size = keys.size();
+            final long noEntry = map.defaultReturnValue();
+            int found = 0;
             for (int ii = 0; ii < size; ++ii) {
-                result.set(ii, map.get(keys.get(ii)));
+                // One compare per key, as the maps under test pay for their count.
+                final long value = map.get(keys.get(ii));
+                result.set(ii, value);
+                if (value != noEntry) {
+                    ++found;
+                }
             }
             result.setSize(size);
+            return found;
         }
 
         @Override

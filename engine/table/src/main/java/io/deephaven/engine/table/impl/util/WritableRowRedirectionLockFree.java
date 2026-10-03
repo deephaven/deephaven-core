@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
@@ -245,17 +246,42 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     }
 
     /**
-     * The chunked read path. Per key, semantically identical to {@link #get(long)}: consult 'updates' first, and
-     * 'baseline' only for keys absent from 'updates' — the same per-key ordering the lock-free protocol described in
-     * the class comment depends on. (Before prev tracking starts, 'updates' and 'baseline' are the same map, whose
-     * no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass answers every key and the baseline pass is empty.)
+     * The fill context every chunked fill of this redirection requires, made by {@link #makeFillContext}. It owns the
+     * scratch the mixed path of {@link #fillChunk} needs: the keys a chunk did not find in 'updates', where they sat in
+     * the chunk, and what 'baseline' says about them. A caller that fills many chunks through one context, as
+     * RedirectedColumnSource does, allocates them once instead of once per chunk; the fill only reaches for them when a
+     * chunk is split between the two maps. Any other context is a caller's error, and the fill refuses it.
      */
+    private static final class FillContext implements ChunkSource.FillContext {
+        private final WritableLongChunk<RowKeys> missingKeys;
+        private final WritableLongChunk<RowKeys> missingValues;
+        private final WritableIntChunk<ChunkPositions> missingPositions;
+
+        private FillContext(final int chunkCapacity) {
+            missingKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+            missingValues = WritableLongChunk.makeWritableChunk(chunkCapacity);
+            missingPositions = WritableIntChunk.makeWritableChunk(chunkCapacity);
+        }
+
+        @Override
+        public void close() {
+            missingKeys.close();
+            missingValues.close();
+            missingPositions.close();
+        }
+    }
+
+    @Override
+    public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+        return new FillContext(chunkCapacity);
+    }
+
     @Override
     public void fillChunk(
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        fillFromMaps(outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
+        fillFromMaps(fillContext, updates, baseline, outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
     }
 
     @Override
@@ -263,7 +289,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys) {
-        fillFromMaps(outerRowKeys, innerRowKeys.asWritableLongChunk());
+        fillFromMaps(fillContext, updates, baseline, outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
     @Override
@@ -282,31 +308,35 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         baseline.get(outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
-    private void fillFromMaps(
+    /**
+     * The chunked read path, behind {@link #fillChunk} and {@link #fillChunkUnordered}. Per key, semantically identical
+     * to {@link #get(long)}: consult 'updates' first, and 'baseline' only for keys absent from 'updates' — the same
+     * per-key ordering the lock-free protocol described in the class comment depends on. (Before prev tracking starts,
+     * 'updates' and 'baseline' are the same map, whose no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass
+     * answers every key and the baseline pass is empty.)
+     */
+    private static void fillFromMaps(
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final NullableLongLongMap updates,
+            @NotNull final NullableLongLongMap baseline,
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
             @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys) {
-        // Probe 'updates' first: its volatile array read is the acquire that the class comment's argument #1 rests
-        // on, and it is what makes the entries the writer's commit copied into 'baseline' visible to a reader whose
-        // probe saw the post-commit 'updates' array. The keys the probe does not answer are then read from 'baseline'.
-        final NullableLongLongMap localUpdates = this.updates;
-        localUpdates.get(outerRowKeys, innerRowKeys);
-        final NullableLongLongMap localBaseline = this.baseline;
-        if (localUpdates == localBaseline) {
-            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and
-            // the probe above answered every key.
+        // The context must be ours (see FillContext): the cast fails on the first fill through a foreign one, mixed
+        // chunk or not, rather than on whichever later chunk first needs the scratch.
+        final FillContext ctx = (FillContext) fillContext;
+        if (updates == baseline) {
+            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and it
+            // answers every key.
+            baseline.get(outerRowKeys, innerRowKeys);
             return;
         }
         final int size = outerRowKeys.size();
-        int missingCount = 0;
-        for (int ii = 0; ii < size; ++ii) {
-            if (innerRowKeys.get(ii) == UPDATES_KEY_NOT_FOUND) {
-                ++missingCount;
-            }
-        }
-        if (missingCount == 0) {
+        final int found = updates.get(outerRowKeys, innerRowKeys);
+        if (found == size) {
             return;
         }
-        if (missingCount == size) {
+        final int missingCount = size - found;
+        if (found == 0) {
             // Nothing in 'updates' for any of these keys, which is every read of a ticking table between its update
             // cycles, once the terminal commit has folded 'updates' into 'baseline': answer them all from 'baseline'
             // in one pass, with no gathering.
@@ -319,27 +349,43 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             // the commit had not finished publishing, and return a stale value for a key updated that cycle. Probing
             // first and acting on the probe's result keeps the acquire where the protocol puts it; the fast path only
             // spares the gather.
-            localBaseline.get(outerRowKeys, innerRowKeys);
+            baseline.get(outerRowKeys, innerRowKeys);
             return;
         }
         // Keys not present in 'updates' get their result from 'baseline': gather them into a dense chunk, do one
-        // chunked lookup, and scatter the results back.
-        try (final WritableLongChunk<RowKeys> missingKeys = WritableLongChunk.makeWritableChunk(missingCount);
-                final WritableLongChunk<RowKeys> missingValues = WritableLongChunk.makeWritableChunk(missingCount);
-                final WritableIntChunk<ChunkPositions> missingPositions =
-                        WritableIntChunk.makeWritableChunk(missingCount)) {
-            int mi = 0;
-            for (int ii = 0; ii < size; ++ii) {
-                if (innerRowKeys.get(ii) == UPDATES_KEY_NOT_FOUND) {
-                    missingPositions.set(mi, ii);
-                    missingKeys.set(mi, outerRowKeys.get(ii));
-                    ++mi;
-                }
+        // chunked lookup, and scatter the results back, all in the context's scratch.
+        gatherFromBaseline(baseline, outerRowKeys, innerRowKeys, missingCount,
+                ctx.missingKeys, ctx.missingValues, ctx.missingPositions);
+    }
+
+    /**
+     * The mixed path's second half: the keys 'updates' did not have, gathered into {@code missingKeys} with their
+     * positions, looked up in 'baseline' in one call, and scattered back into {@code innerRowKeys}. The scratch chunks
+     * need capacity for {@code missingCount}; their sizes are set here.
+     */
+    private static void gatherFromBaseline(
+            @NotNull final NullableLongLongMap baseline,
+            @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
+            @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys,
+            final int missingCount,
+            @NotNull final WritableLongChunk<RowKeys> missingKeys,
+            @NotNull final WritableLongChunk<RowKeys> missingValues,
+            @NotNull final WritableIntChunk<ChunkPositions> missingPositions) {
+        final int size = outerRowKeys.size();
+        missingKeys.setSize(missingCount);
+        missingValues.setSize(missingCount);
+        missingPositions.setSize(missingCount);
+        int mi = 0;
+        for (int ii = 0; ii < size; ++ii) {
+            if (innerRowKeys.get(ii) == UPDATES_KEY_NOT_FOUND) {
+                missingPositions.set(mi, ii);
+                missingKeys.set(mi, outerRowKeys.get(ii));
+                ++mi;
             }
-            localBaseline.get(missingKeys, missingValues);
-            for (int ii = 0; ii < missingCount; ++ii) {
-                innerRowKeys.set(missingPositions.get(ii), missingValues.get(ii));
-            }
+        }
+        baseline.get(missingKeys, missingValues);
+        for (int ii = 0; ii < missingCount; ++ii) {
+            innerRowKeys.set(missingPositions.get(ii), missingValues.get(ii));
         }
     }
 
@@ -456,7 +502,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     private static final int REMOVAL_CHUNK_SIZE = 4096;
 
     /**
-     * The shape the maps this redirection builds are BORN with, configured as a bucket width (1, 2 or 4; see
+     * The shape the maps this redirection builds are BORN with, configured as a bucket width (1 or 4; see
      * {@link Shape#forBucketWidth}). A map widens itself to the K4V4 shape as it grows dense (load factor at or above
      * the policy's floor — never at the default 0.5) or near the capacity ceiling; see
      * {@link NullableLongLongMaps#shapeForRebuild}.

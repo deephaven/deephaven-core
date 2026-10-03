@@ -265,8 +265,9 @@ final class K4V4Kernel {
      * are serviced concurrently instead of serially. Tombstones need no bookkeeping here: a lookup just probes past
      * them, and only insertion cares where they are.
      */
-    static void getBatch(long[] kvs, long numBucketsReciprocal, LongChunk<? extends Any> keys,
+    static int getBatch(long[] kvs, long numBucketsReciprocal, LongChunk<? extends Any> keys,
             WritableLongChunk<? extends Any> result, long noEntry) {
+        int found = 0;
         final int n = keys.size();
         final int dataLength = kvs.length - HEADER_LONGS;
         final int numBuckets = dataLength / (4 * 2);
@@ -338,6 +339,9 @@ final class K4V4Kernel {
                 continue;
             }
             result.set(slot, value);
+            if (value != noEntry) {
+                ++found;
+            }
             if (next < n) {
                 final long newTarget = fixKey(keys.get(next));
                 final int newProbe = probe1(newTarget, numBuckets, numBucketsReciprocal) * (4 * 2);
@@ -354,5 +358,6 @@ final class K4V4Kernel {
                 --active;
             }
         }
+        return found;
     }
 }

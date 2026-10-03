@@ -27,18 +27,12 @@ public class TestKnVn {
      */
     private static final long MINIMUM_HEAP_SIZE_NEEDED_FOR_TEST = 40L << 30;
     private static final int HASHTABLE_SIZE_LOWER_BOUND_1 = 900_000_000;
-    private static final int HASHTABLE_SIZE_LOWER_BOUND_2 = 800_000_000;
     private static final int HASHTABLE_SIZE_LOWER_BOUND_4 = 900_000_000;
     private static final int HASHTABLE_SIZE_UPPER_BOUND = 1_000_000_000;
 
     @Test
     public void fillK1V1ToTheMax() {
         fillToCapacity(withDefaults(Shape.K1V1), HASHTABLE_SIZE_LOWER_BOUND_1);
-    }
-
-    @Test
-    public void fillK2V2ToTheMax() {
-        fillToCapacity(withDefaults(Shape.K2V2), HASHTABLE_SIZE_LOWER_BOUND_2);
     }
 
     @Test

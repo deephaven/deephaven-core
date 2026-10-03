@@ -22,11 +22,11 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * The one {@link NullableLongLongMap} implementation: a lock-free open-addressing hash map whose buckets live in a
  * single {@code long[]} that describes itself — its header carries the shape tag (bucket width) and the fastmod
  * reciprocal (see {@link #HEADER_LONGS}). The probe loops live in the width kernels ({@link K1V1Kernel},
- * {@link K2V2Kernel}, {@link K4V4Kernel}), static and pure in the array plus this map's counters. Every read and remove
- * takes one volatile read of the array and dispatches on that snapshot's own tag; a chunked put re-reads the array and
- * dispatches per element, because any element may rehash and so replace it (see {@link #firstArrayForPuts}). So no code
- * path needs to know which shape the map was born with. Callers construct maps through {@link NullableLongLongMaps} and
- * hold the interface.
+ * {@link K4V4Kernel}), static and pure in the array plus this map's counters. Every read and remove takes one volatile
+ * read of the array and dispatches on that snapshot's own tag; a chunked put re-reads the array and dispatches per
+ * element, because any element may rehash and so replace it (see {@link #firstArrayForPuts}). So no code path needs to
+ * know which shape the map was born with. Callers construct maps through {@link NullableLongLongMaps} and hold the
+ * interface.
  *
  * <p>
  * One writer, any number of unsynchronized readers: readers work on a snapshot of the array, the writer publishes a
@@ -67,19 +67,16 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     /**
      * This is the fraction of the maximum possible size at which we just give up and throw an exception. It is kept
      * slightly smaller than the NEARLY_FULL_LOAD_FACTOR (otherwise, we might end up in a situation where every put
-     * caused a rehash). Additionally, for some reason K2V2 is much less tolerant of getting full than the other two (it
-     * gets very slow as it approaches the max). For this reason, until we figure it out, we maintain individual size
-     * factors for each KnVn.
+     * caused a rehash). The two shapes keep separate factors so that one can be tuned without the other; today both are
+     * 0.85. (The retired K2V2 needed 0.75: it grew very slow as it approached the maximum.)
      */
     private static final double SIZE_LIMIT_FACTOR1 = 0.85;
-    private static final double SIZE_LIMIT_FACTOR2 = 0.75;
     private static final double SIZE_LIMIT_FACTOR4 = 0.85;
     /**
      * This is the size at which we just give up and throw an exception rather than do a new put. It is number of
      * entries (aka number of longs / 2) * SIZE_LIMIT_FACTORn.
      */
     static final int SIZE_LIMIT1 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR1);
-    static final int SIZE_LIMIT2 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR2);
     static final int SIZE_LIMIT4 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR4);
 
     static {
@@ -176,7 +173,7 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     // The array is never null. An empty map — fresh, or after resetToNull* — holds this shared, immutable sentinel:
     // one bucket of the widest shape (every slot SPECIAL_KEY_FOR_EMPTY_SLOT, which is 0) behind a header whose
     // reciprocal is 0, so probe1 sends every key to bucket 0 (fastRange(0, n) == 0 for any n) and finds it empty —
-    // whatever a map's width makes of the data length (four K1V1 buckets, two K2V2, one K4V4: all empty). Probing
+    // whatever a map's width makes of the data length (four K1V1 buckets or one K4V4: all empty). Probing
     // the sentinel is therefore an ordinary miss, so no read path needs an empty-map branch to be correct; the
     // chunked gets keep one anyway, as a fast path (every key is a miss, so they fill the result without probing).
     // Writes must never touch it: put swaps in a real array before probing (where the null check used to live);
@@ -311,9 +308,6 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         switch (entriesPerBucket) {
             case 1:
                 K1V1Kernel.putNoTranslate(this, kvs, numBucketsReciprocal, key, value, true);
-                return;
-            case 2:
-                K2V2Kernel.putNoTranslate(this, kvs, numBucketsReciprocal, key, value, true);
                 return;
             case 4:
                 K4V4Kernel.putNoTranslate(this, kvs, numBucketsReciprocal, key, value, true);
@@ -499,7 +493,8 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
      * Find next occupied slot starting at {@code beginSlot}.
      *
      * @param beginSlot The inclusive position from where to start looking.
-     * @return The slot containing the next occupied key, or keysAndValues.length if none.
+     * @return The slot containing the next occupied key, or the end of the buckets (the array's length less its header)
+     *         if none.
      */
     private int findOccupiedSlot(long[] keysAndValues, int beginSlot) {
         final int dataLongs = keysAndValues.length - HEADER_LONGS;
@@ -517,7 +512,7 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     // (It would be nice to also confirm that they are prime, but there's no easy way to do that)
     static {
         final int longsPerEntry = 2;
-        for (int entriesPerBucket : new int[] {1, 2, 4}) {
+        for (int entriesPerBucket : new int[] {1, 4}) {
             final long mbc = getMaxBucketCapacity(entriesPerBucket);
             // Assert.isPrime(mbc);
             Assert.leq(mbc * entriesPerBucket * longsPerEntry + HEADER_LONGS,
@@ -534,8 +529,6 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         switch (entriesPerBucket) {
             case 1:
                 return 1073741789;
-            case 2:
-                return 536870909;
             case 4:
                 return 268435399;
             default:
@@ -688,8 +681,6 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         switch (shapeTagOf(kvs)) {
             case 1:
                 return K1V1Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
-            case 2:
-                return K2V2Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
             case 4:
                 return K4V4Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
             default:
@@ -698,59 +689,52 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     }
 
     @Override
-    public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+    public int get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
         // array, whose header carries its shape and its reciprocal. Each shape's loop lives in a method of its own,
         // so that this dispatcher stays small enough to be inlined at the scalar cursor's call site with its kernel
         // calls inlined in turn: one method holding every loop measured as a real call per key on single-key chunks.
+        // Each loop counts the keys it found, on the value it has in hand, so a caller that treats misses differently
+        // (the redirection consults a second map for them) learns from the return whether a chunk had none, or only.
         final long[] localKvs = keysAndValues;
         switch (shapeTagOf(localKvs)) {
             case 1:
-                getK1V1(localKvs, keys, result);
-                break;
-            case 2:
-                getK2V2(localKvs, keys, result);
-                break;
+                return getK1V1(localKvs, keys, result);
             case 4:
-                getK4V4(localKvs, keys, result);
-                break;
+                return getK4V4(localKvs, keys, result);
             case SHAPE_TAG_EMPTY:
-                getEmpty(keys, result);
-                break;
+                return getEmpty(keys, result);
             default:
                 throw new IllegalStateException("Unexpected shape tag " + shapeTagOf(localKvs));
         }
     }
 
-    private void getK1V1(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+    private int getK1V1(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         final int n = keys.size();
         final long numBucketsReciprocal = reciprocalOf(localKvs);
         final long noEntry = noEntryValue;
+        int found = 0;
         for (int ii = 0; ii < n; ++ii) {
-            result.set(ii, K1V1Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry));
+            final long value = K1V1Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry);
+            result.set(ii, value);
+            if (value != noEntry) {
+                ++found;
+            }
         }
         result.setSize(n);
+        return found;
     }
 
-    private void getK2V2(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+    private int getK4V4(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         final int n = keys.size();
         final long numBucketsReciprocal = reciprocalOf(localKvs);
         final long noEntry = noEntryValue;
-        for (int ii = 0; ii < n; ++ii) {
-            result.set(ii, K2V2Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry));
-        }
-        result.setSize(n);
-    }
-
-    private void getK4V4(long[] localKvs, LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
-        final int n = keys.size();
-        final long numBucketsReciprocal = reciprocalOf(localKvs);
-        final long noEntry = noEntryValue;
-        // Adaptive read strategy, two stages. First, footprint: when the map's array is beyond the last-level cache —
-        // the window's whole job is overlapping the misses that a cache-resident table simply does not have — the
-        // chunk goes through the AMAC window; otherwise the serial loop, which ties or wins when the table is
-        // cache-resident. Footprint is a function of the snapshot's own length, so that answer is stable between
-        // rehashes and flips exactly when the array grows past the cache. The chunk must also be wide enough to fill
+        // Adaptive read strategy, two stages. First, footprint: when the map's array is past the measured crossover
+        // (near L2, see NullableLongLongMaps.wantWindowedReads) — the window's whole job is overlapping the misses
+        // that a table resident in the near caches simply does not have — the chunk goes through the AMAC window;
+        // otherwise the serial loop, which ties or wins when the table fits those caches. Footprint is a function of
+        // the snapshot's own length, so that answer is stable between rehashes and flips exactly when the array grows
+        // past the crossover. The chunk must also be wide enough to fill
         // the window: its fixed cost is paid per call, and a single-key chunk — the scalar cursor's case — has nothing
         // to overlap, measured at 1.6-2.3x slower under the window. Second, and only when the first stage opened the
         // window: a chunk of monotone keys, ascending or descending, whose consecutive keys are close together is a
@@ -774,14 +758,22 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         } else {
             windowed = readMode == ReadMode.WINDOW;
         }
+        final int found;
         if (windowed) {
-            K4V4Kernel.getBatch(localKvs, numBucketsReciprocal, keys, result, noEntry);
+            found = K4V4Kernel.getBatch(localKvs, numBucketsReciprocal, keys, result, noEntry);
         } else {
+            int serialFound = 0;
             for (int ii = 0; ii < n; ++ii) {
-                result.set(ii, K4V4Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry));
+                final long value = K4V4Kernel.get(localKvs, numBucketsReciprocal, keys.get(ii), noEntry);
+                result.set(ii, value);
+                if (value != noEntry) {
+                    ++serialFound;
+                }
             }
+            found = serialFound;
         }
         result.setSize(n);
+        return found;
     }
 
     /**
@@ -801,8 +793,10 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         final boolean ascending = keys.get(n - 1) >= keys.get(0);
         final int step = n <= 64 ? 1 : n / 64;
         long previous = keys.get(0);
-        for (int ii = step; ii < n; ii += step) {
-            final long key = keys.get(ii);
+        // A long index: for a chunk within a factor of 65/64 of Integer.MAX_VALUE, the increment past the 64th sample
+        // would wrap an int negative, pass the bound and read a negative position. The cast is safe wherever ii < n.
+        for (long ii = step; ii < n; ii += step) {
+            final long key = keys.get((int) ii);
             if (ascending ? key < previous : key > previous) {
                 return false;
             }
@@ -812,13 +806,11 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
     }
 
     // No buckets: every key is a miss.
-    private void getEmpty(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+    private int getEmpty(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         final int n = keys.size();
-        final long noEntry = noEntryValue;
-        for (int ii = 0; ii < n; ++ii) {
-            result.set(ii, noEntry);
-        }
+        result.fillWithValue(0, n, noEntryValue);
         result.setSize(n);
+        return 0;
     }
 
     @Override
@@ -830,9 +822,6 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         switch (shapeTagOf(localKvs)) {
             case 1:
                 removeK1V1(localKvs, keys, oldValues);
-                break;
-            case 2:
-                removeK2V2(localKvs, keys, oldValues);
                 break;
             case 4:
                 removeK4V4(localKvs, keys, oldValues);
@@ -852,16 +841,6 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         final long numBucketsReciprocal = reciprocalOf(localKvs);
         for (int ii = 0; ii < n; ++ii) {
             oldValues.set(ii, K1V1Kernel.remove(this, localKvs, numBucketsReciprocal, keys.get(ii)));
-        }
-        oldValues.setSize(n);
-    }
-
-    private void removeK2V2(long[] localKvs, LongChunk<? extends Any> keys,
-            WritableLongChunk<? extends Any> oldValues) {
-        final int n = keys.size();
-        final long numBucketsReciprocal = reciprocalOf(localKvs);
-        for (int ii = 0; ii < n; ++ii) {
-            oldValues.set(ii, K2V2Kernel.remove(this, localKvs, numBucketsReciprocal, keys.get(ii)));
         }
         oldValues.setSize(n);
     }
@@ -889,8 +868,6 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         switch (shapeTagOf(localKvs)) {
             case 1:
                 return K1V1Kernel.get(localKvs, reciprocalOf(localKvs), key, noEntryValue);
-            case 2:
-                return K2V2Kernel.get(localKvs, reciprocalOf(localKvs), key, noEntryValue);
             case 4:
                 return K4V4Kernel.get(localKvs, reciprocalOf(localKvs), key, noEntryValue);
             case SHAPE_TAG_EMPTY:
@@ -909,8 +886,6 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         switch (shapeTagOf(kvs)) {
             case 1:
                 return K1V1Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
-            case 2:
-                return K2V2Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
             case 4:
                 return K4V4Kernel.put(this, kvs, numBucketsReciprocal, key, value, insertOnly);
             default:
@@ -923,8 +898,6 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         switch (shapeTagOf(localKvs)) {
             case 1:
                 return K1V1Kernel.remove(this, localKvs, reciprocalOf(localKvs), key);
-            case 2:
-                return K2V2Kernel.remove(this, localKvs, reciprocalOf(localKvs), key);
             case 4:
                 return K4V4Kernel.remove(this, localKvs, reciprocalOf(localKvs), key);
             case SHAPE_TAG_EMPTY:

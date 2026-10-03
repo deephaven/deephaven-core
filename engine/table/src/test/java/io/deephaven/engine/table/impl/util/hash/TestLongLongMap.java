@@ -48,15 +48,14 @@ public class TestLongLongMap {
     @Parameterized.Parameters(name = "map={0}, cap={1}, load={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> result = new ArrayList<>();
-        // K1V1 and K2V2 are the shapes the maps are BORN with. Where the policy says so — capacity 1M at load factor
-        // 0.9, the prime finder rounding a million buckets up to 1,070,981 and so past the widening threshold — the
-        // map builds the K4V4 shape from its first allocation, so those cells exercise a wide map and the narrow
-        // kernels are covered by the other cells. bornShapeIsBuiltUnlessDenseAndBig pins that premise; the
-        // bucket-layout tests read the width from the array a map actually built, never from the cell.
+        // K1V1 is the shape a default map is born with. Where the policy says so — capacity 1M at load factor 0.9,
+        // the prime finder rounding a million buckets up to 1,070,981 and so past the widening threshold — the map
+        // builds the K4V4 shape from its first allocation, so those cells exercise a wide map and the narrow kernel is
+        // covered by the other cells. bornShapeIsBuiltUnlessDenseAndBig pins that premise; the bucket-layout tests
+        // read the width from the array a map actually built, never from the cell.
         final Factory[] factories = {
                 referenceFactory,
                 new Factory("K1V1", Shape.K1V1, ReadMode.ADAPTIVE),
-                new Factory("K2V2", Shape.K2V2, ReadMode.ADAPTIVE),
                 new Factory("K4V4", Shape.K4V4, ReadMode.ADAPTIVE),
                 new Factory("K4V4/WINDOW", Shape.K4V4, ReadMode.WINDOW)
         };
@@ -240,7 +239,7 @@ public class TestLongLongMap {
      * An insert whose probe starts in a bucket holding a deleted slot ahead of an empty one takes the deleted slot — in
      * the first bucket of the probe as in every later one — so putting removed keys back does not consume empty slots
      * and walk the map toward a needless rehash. (K1V1 has one slot per bucket and was always right; the unrolled first
-     * bucket of K2V2 and K4V4 used to take the empty slot instead.)
+     * bucket of K4V4, and of the since-retired K2V2, used to take the empty slot instead.)
      */
     @Test
     public void firstBucketReusesTombstones() {
@@ -339,10 +338,9 @@ public class TestLongLongMap {
     /**
      * The premise of the note in data(), pinned: a cell builds the shape it was born with, except that the dense, big
      * cells — capacity 1M at load factor 0.9 — build K4V4 from their first allocation. That rests on the policy AND on
-     * a hidden dependency: the prime finder rounds a request of a million buckets up to 1,070,981 (535,481 two-wide
-     * buckets for K2V2), which is what carries the judged capacity past the widening threshold of 1,048,576. Both are
-     * asserted here, so that a change to either shows up as this failure rather than as the bucket-layout tests quietly
-     * losing their wide coverage.
+     * a hidden dependency: the prime finder rounds a request of a million buckets up to 1,070,981, which is what
+     * carries the judged capacity past the widening threshold of 1,048,576. Both are asserted here, so that a change to
+     * either shows up as this failure rather than as the bucket-layout tests quietly losing their wide coverage.
      */
     @Test
     public void bornShapeIsBuiltUnlessDenseAndBig() {
@@ -615,7 +613,7 @@ public class TestLongLongMap {
 
         // An empty keys chunk yields an empty result (the result-size contract).
         final WritableLongChunk<Any> emptyResult = WritableLongChunk.writableChunkWrap(new long[1]);
-        map.get(LongChunk.chunkWrap(new long[0]), emptyResult);
+        assertEquals(0, map.get(LongChunk.chunkWrap(new long[0]), emptyResult));
         assertEquals(0, emptyResult.size());
     }
 
@@ -650,11 +648,18 @@ public class TestLongLongMap {
         final WritableLongChunk<Any> resultChunk = WritableLongChunk.writableChunkWrap(new long[chunkSize]);
         for (int begin = 0; begin < probes.length; begin += chunkSize) {
             final int thisSize = Math.min(chunkSize, probes.length - begin);
-            map.get(LongChunk.chunkWrap(probes, begin, thisSize), resultChunk);
+            final int found = map.get(LongChunk.chunkWrap(probes, begin, thisSize), resultChunk);
             assertEquals(thisSize, resultChunk.size());
+            int expectedFound = 0;
             for (int ii = 0; ii < thisSize; ++ii) {
-                assertEquals(expected.applyAsLong(probes[begin + ii]), resultChunk.get(ii));
+                final long expectedValue = expected.applyAsLong(probes[begin + ii]);
+                assertEquals(expectedValue, resultChunk.get(ii));
+                if (expectedValue != map.defaultReturnValue()) {
+                    ++expectedFound;
+                }
             }
+            // The count of keys found is reported, so that callers can skip over all-hit and all-miss chunks.
+            assertEquals(expectedFound, found);
         }
     }
 
@@ -1217,12 +1222,19 @@ public class TestLongLongMap {
         }
 
         @Override
-        public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+        public int get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
             final int size = keys.size();
+            final long noEntry = map.defaultReturnValue();
+            int found = 0;
             for (int ii = 0; ii < size; ++ii) {
-                result.set(ii, map.get(keys.get(ii)));
+                final long value = map.get(keys.get(ii));
+                result.set(ii, value);
+                if (value != noEntry) {
+                    ++found;
+                }
             }
             result.setSize(size);
+            return found;
         }
 
         @Override

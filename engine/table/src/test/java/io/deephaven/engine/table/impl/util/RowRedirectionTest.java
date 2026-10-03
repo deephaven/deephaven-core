@@ -144,6 +144,54 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
         checkFillsMatchScalars(redirection, probes);
     }
 
+    /**
+     * The fill context the lock-free redirection makes carries its own scratch for chunks split between 'updates' and
+     * 'baseline'; one context must serve fill after fill, of differing mixes and sizes. A foreign context — the
+     * stateless default, say — is a caller's error, refused on the first fill rather than served with scratch allocated
+     * per call.
+     */
+    @Test
+    public void testFillContextIsReusable() {
+        final WritableRowRedirection redirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
+        assertTrue(redirection instanceof WritableRowRedirectionLockFree);
+        for (int ii = 0; ii < 1000; ++ii) {
+            redirection.put(ii, 10_000 + ii);
+        }
+        redirection.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Every third key is updated this cycle, every seventh removed: the chunks below are all mixed.
+            for (int ii = 0; ii < 1000; ii += 3) {
+                redirection.put(ii, 20_000 + ii);
+            }
+            for (int ii = 0; ii < 1000; ii += 7) {
+                redirection.remove(ii);
+            }
+            try (final ChunkSource.FillContext ours = redirection.makeFillContext(256, null);
+                    final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(256);
+                    final WritableLongChunk<RowKeys> actual = WritableLongChunk.makeWritableChunk(256)) {
+                for (final int size : new int[] {256, 1, 100, 256, 7}) {
+                    for (int start = 0; start + size <= 1000; start += 173) {
+                        keys.setSize(size);
+                        for (int ii = 0; ii < size; ++ii) {
+                            keys.set(ii, start + ii);
+                        }
+                        redirection.fillChunkUnordered(ours, actual, keys);
+                        assertEquals(size, actual.size());
+                        for (int ii = 0; ii < size; ++ii) {
+                            assertEquals("key " + (start + ii), redirection.get(start + ii), actual.get(ii));
+                        }
+                    }
+                }
+                // Not ours: refused at once, whatever the chunk holds.
+                keys.setSize(1);
+                keys.set(0, 1);
+                assertThrows(ClassCastException.class,
+                        () -> redirection.fillChunkUnordered(ChunkSource.DEFAULT_FILL_INSTANCE, actual, keys));
+            }
+        });
+    }
+
     private static void checkFillsMatchScalars(final RowRedirection redirection, final long[] probes) {
         final int size = probes.length;
         try (final ChunkSource.FillContext fillContext = redirection.makeFillContext(size, null);

@@ -144,7 +144,7 @@ public class TestHashMapLockFreeKnVn {
      */
     @Test
     public void desiredBucketCountDoesNotOverflow() {
-        for (final int entriesPerBucket : new int[] {1, 2, 4}) {
+        for (final int entriesPerBucket : new int[] {1, 4}) {
             final int buckets = HashMapLockFreeKnVn.desiredBucketCount(Integer.MAX_VALUE, entriesPerBucket);
             final int expected = (int) (((long) Integer.MAX_VALUE + entriesPerBucket - 1) / entriesPerBucket);
             assertTrue("buckets > 0 for width " + entriesPerBucket, buckets > 0);
@@ -162,7 +162,7 @@ public class TestHashMapLockFreeKnVn {
         assertEquals(2000, HashMapLockFreeKnVn.grownEntryCapacity(1000));
         assertEquals(Integer.MAX_VALUE, HashMapLockFreeKnVn.grownEntryCapacity(Integer.MAX_VALUE / 2 + 1));
         assertEquals(Integer.MAX_VALUE, HashMapLockFreeKnVn.grownEntryCapacity(Integer.MAX_VALUE));
-        for (final int entriesPerBucket : new int[] {1, 2, 4}) {
+        for (final int entriesPerBucket : new int[] {1, 4}) {
             final int maxBuckets = HashMapLockFreeKnVn.getMaxBucketCapacity(entriesPerBucket);
             final int maxEntries = maxBuckets * entriesPerBucket;
             final int grown = HashMapLockFreeKnVn.grownEntryCapacity(maxEntries);

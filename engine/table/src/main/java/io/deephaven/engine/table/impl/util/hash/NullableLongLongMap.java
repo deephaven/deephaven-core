@@ -97,8 +97,11 @@ public interface NullableLongLongMap {
      *
      * @param keys the keys to get
      * @param result output: the value of each key (or {@link #defaultReturnValue()})
+     * @return the number of keys whose result is not {@link #defaultReturnValue()}, so that a caller which must do
+     *         something else about the misses can tell at once whether there were none, or nothing but. (A key mapped
+     *         to the no-entry value reads as absent, here as in every read.)
      */
-    void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result);
+    int get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result);
 
     /**
      * For each element ii of {@code keys}: removes the mapping for {@code keys.get(ii)}, writing the removed value (or
