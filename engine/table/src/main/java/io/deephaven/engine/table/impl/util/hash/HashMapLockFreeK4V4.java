@@ -157,11 +157,12 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
             result.setSize(n);
             return;
         }
-        // Adaptive read strategy: when the map's footprint is beyond the last-level cache — its whole job is
-        // overlapping the misses that a cache-resident table simply does not have — service the chunk through the
-        // AMAC window; otherwise use the serial loop, which ties or wins when the table is cache-resident. Footprint
-        // is a function of the snapshot's own length, so the choice is stable between rehashes and flips exactly when
-        // the array grows past the cache. (Occupancy is deliberately not consulted; see wantWindowedReads.) A pinned
+        // Adaptive read strategy: when the map's footprint is past the measured crossover (near L2; see
+        // NullableLongLongMaps.wantWindowedReads) — the window's whole job is overlapping the misses that a table
+        // resident in the near caches simply does not have — service the chunk through the AMAC window; otherwise use
+        // the serial loop, which ties or wins when the table fits those caches. Footprint is a function of the
+        // snapshot's own length, so the choice is stable between rehashes and flips exactly when the array grows past
+        // the crossover. (Occupancy is deliberately not consulted; see wantWindowedReads.) A pinned
         // ReadMode overrides the gate, for pricing and tests only. Reads are
         // pure, so the windowed path may resolve lookups out of index order, invisibly to the caller.
         final boolean windowed = readMode == ReadMode.ADAPTIVE

@@ -23,11 +23,13 @@ public final class NullableLongLongMaps {
     public static final int DEFAULT_AMAC_THRESHOLD_ENTRIES = 1 << 20;
 
     /**
-     * Load factor at and below which the windowed shape does not pay, regardless of size. Measured at 10M entries: at
-     * load factor 0.5 the windowed shape loses (~30-40% slower — probe chains barely exist, so the window has nothing
-     * to hide and wider buckets just cost more bytes per probe); at 0.75 it is a wash (sorted lookups trend against it,
-     * shuffled trend for it, error bars overlapping); at 0.9 it wins 20% on sorted and 2.5x on shuffled. The floor sits
-     * above the measured wash and below the measured win.
+     * The load factor at and above which a map that is big enough is rebuilt in the wide-bucket (K4V4) shape; below it
+     * the shape does not pay, regardless of size. This gates the LAYOUT only: whether the wide map's reads then go
+     * through the AMAC window is decided separately, by footprint ({@link #wantWindowedReads}). Measured at 10M
+     * entries: at load factor 0.5 the wide shape loses (~30-40% slower — probe chains barely exist, so the window has
+     * nothing to hide and wider buckets just cost more bytes per probe); at 0.75 it is a wash (sorted lookups trend
+     * against it, shuffled trend for it, error bars overlapping); at 0.9 it wins 20% on sorted and 2.5x on shuffled.
+     * The floor sits above the measured wash and below the measured win.
      */
     public static final double AMAC_LOAD_FACTOR_FLOOR = 0.8;
 
@@ -45,9 +47,10 @@ public final class NullableLongLongMaps {
 
     /**
      * Should a K4V4-shaped map service chunked gets through the AMAC window right now? Yes exactly when its FOOTPRINT
-     * is beyond the last-level cache — entry capacity at or above {@link #DEFAULT_AMAC_THRESHOLD_ENTRIES} — because the
-     * window's whole job is overlapping cache misses, and a cache-resident table has none to overlap (there the window
-     * is pure bookkeeping, measured as a tax). Footprint is the first-order predictor. Occupancy turned out to be
+     * is past the measured crossover — entry capacity at or above {@link #DEFAULT_AMAC_THRESHOLD_ENTRIES}, which the
+     * footprint sweep above puts near L2, well inside the last-level cache — because the window's whole job is
+     * overlapping cache misses, and a table that fits the near caches has none worth overlapping (there the window is
+     * pure bookkeeping, measured as a tax). Footprint is the first-order predictor. Occupancy turned out to be
      * second-order and is deliberately NOT an input: at a fixed large footprint the window ties or wins at every
      * occupancy measured, and open-addressing occupancy sawtooths in [loadFactor/2, loadFactor] as rehash doubles
      * overshoot, so it never sits where a threshold calibrated on load factor expects it (a lesson learned the hard
