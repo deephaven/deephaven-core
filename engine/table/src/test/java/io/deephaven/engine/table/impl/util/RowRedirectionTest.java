@@ -10,11 +10,15 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
 import org.junit.Test;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 
 import static org.junit.Assert.*;
 
@@ -186,6 +190,58 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
                 for (final RowSet.Iterator it = orderedProbes.iterator(); it.hasNext(); ++oi) {
                     assertEquals(redirection.getPrev(it.nextLong()), actual.get(oi));
                 }
+            }
+        }
+    }
+
+    /**
+     * The chunked read must take its 'baseline' only after probing 'updates'. commitUpdates() may replace the baseline
+     * map, and a reader whose probe of 'updates' sees the post-commit (empty) array must then consult the post-commit
+     * baseline; one that read the field before the probe would hold the abandoned pre-commit map and answer every key
+     * that changed this cycle with its stale value. The interleaving is reproduced deterministically: the 'updates' map
+     * is wrapped so that the probe itself performs the commit (swap the baseline, empty 'updates') before answering.
+     */
+    @Test
+    public void testLockFreeChunkedFillReadsBaselineAfterProbingUpdates() throws ReflectiveOperationException {
+        final int n = 10;
+        final WritableRowRedirectionLockFree redirection =
+                new WritableRowRedirectionLockFree(WritableRowRedirectionLockFree.createMapWithCapacity(64));
+        for (long k = 0; k < n; ++k) {
+            redirection.put(k, 1);
+        }
+        redirection.startTrackingPrevValues();
+        for (long k = 0; k < n; ++k) {
+            redirection.put(k, 101 + k);
+        }
+        // What the commit will leave behind: a baseline holding this cycle's values, and an emptied 'updates'.
+        final NullableLongLongMap postCommitBaseline = WritableRowRedirectionLockFree.createMapWithCapacity(64);
+        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(postCommitBaseline);
+        for (long k = 0; k < n; ++k) {
+            cursor.put(k, 101 + k);
+        }
+        final Field baselineField = WritableRowRedirectionLockFree.class.getDeclaredField("baseline");
+        final Field updatesField = WritableRowRedirectionLockFree.class.getDeclaredField("updates");
+        baselineField.setAccessible(true);
+        updatesField.setAccessible(true);
+        final NullableLongLongMap realUpdates = (NullableLongLongMap) updatesField.get(redirection);
+        final NullableLongLongMap committingUpdates = (NullableLongLongMap) Proxy.newProxyInstance(
+                NullableLongLongMap.class.getClassLoader(), new Class<?>[] {NullableLongLongMap.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("get") && args != null && args.length == 2) {
+                        // The commit lands between the reader's entry and its probe of 'updates'.
+                        baselineField.set(redirection, postCommitBaseline);
+                        realUpdates.resetToNullRetainingCapacity();
+                    }
+                    return method.invoke(realUpdates, args);
+                });
+        updatesField.set(redirection, committingUpdates);
+
+        try (final ChunkSource.FillContext fc = redirection.makeFillContext(n, null);
+                final WritableLongChunk<RowKeys> dest = WritableLongChunk.makeWritableChunk(n)) {
+            redirection.fillChunk(fc, dest, RowSetFactory.flat(n));
+            assertEquals(n, dest.size());
+            for (int k = 0; k < n; ++k) {
+                assertEquals("key " + k + " must come from the post-commit baseline", 101 + k, dest.get(k));
             }
         }
     }

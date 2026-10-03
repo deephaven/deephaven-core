@@ -8,6 +8,8 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
+import java.util.Objects;
+
 /**
  * The K4V4 implementation of {@link NullableLongLongMap}: each hash bucket holds four keys followed by their four
  * values. The concrete type is an implementation detail — callers construct maps through the static factories and hold
@@ -16,6 +18,7 @@ import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
  */
 public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
+    private final ReadMode readMode;
 
     /**
      * Creates a map presized so that {@code expectedSize} entries at {@code loadFactor} fit without a rehash.
@@ -30,7 +33,30 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
      * find no mapping).
      */
     public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue);
+        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
+    }
+
+    /**
+     * How chunked gets choose between the serial probe loop and the AMAC window. Production code uses
+     * {@link #ADAPTIVE}; the pinned modes exist so the yardstick can price the adaptive gate against each pure
+     * strategy, and so tests can exercise the window kernel at sizes where the gate would choose serial.
+     */
+    public enum ReadMode {
+        /** The footprint gate decides per chunk (see NullableLongLongMaps#wantWindowedReads). */
+        ADAPTIVE,
+        /** Always the AMAC window, regardless of footprint. */
+        WINDOW,
+        /** Always the serial probe loop, regardless of footprint. */
+        SERIAL
+    }
+
+    /**
+     * As {@link #of(int, double, long)}, with the read strategy pinned. For pricing and tests; production code should
+     * let the map adapt.
+     */
+    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue,
+            ReadMode readMode) {
+        return new HashMapLockFreeK4V4(desiredInitialCapacity, loadFactor, noEntryValue, readMode);
     }
 
     HashMapLockFreeK4V4() {
@@ -46,7 +72,12 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     }
 
     HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
+        this(desiredInitialCapacity, loadFactor, noEntryValue, ReadMode.ADAPTIVE);
+    }
+
+    HashMapLockFreeK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue, ReadMode readMode) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
+        this.readMode = Objects.requireNonNull(readMode, "readMode");
         this.keysAndValues = null;
     }
 
@@ -59,10 +90,17 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
             WritableLongChunk<? extends Any> oldValues) {
         final int size = keys.size();
+        // Unlike get, the volatile read is NOT hoisted: any put may rehash, so each element must see the array
+        // that the previous element may have replaced. The reciprocal rides in a register-local memo, refreshed
+        // from the new array's own header whenever the array changes (a load, not a divide: every array carries
+        // its reciprocal).
+        long[] kvs = keysAndValues;
+        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
-            // Unlike get, the volatile read is NOT hoisted: any put may rehash, so each element must see the array
-            // that the previous element may have replaced.
-            oldValues.set(ii, putImpl(keysAndValues, keys.get(ii), values.get(ii), false));
+            oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), false));
+            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
         oldValues.setSize(size);
     }
@@ -71,8 +109,14 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     public void putIfAbsent(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
             WritableLongChunk<? extends Any> oldValues) {
         final int size = keys.size();
+        // Same volatile-read and reciprocal-memo discipline as put.
+        long[] kvs = keysAndValues;
+        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
-            oldValues.set(ii, putImpl(keysAndValues, keys.get(ii), values.get(ii), true));
+            oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), true));
+            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
         oldValues.setSize(size);
     }
@@ -80,36 +124,59 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     @Override
     public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values) {
         final int size = keys.size();
+        // As above: the array is re-read per element, because any put may rehash; the reciprocal rides along.
+        long[] kvs = keysAndValues;
+        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
-            // As above: the volatile read is not hoisted, because any put may rehash.
-            putImpl(keysAndValues, keys.get(ii), values.get(ii), false);
+            putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), false);
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
     }
 
     @Override
     public void put(LongChunk<? extends Any> keys, long value) {
         final int size = keys.size();
+        long[] kvs = keysAndValues;
+        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
-            putImpl(keysAndValues, keys.get(ii), value, false);
+            putImpl(kvs, numBucketsReciprocal, keys.get(ii), value, false);
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
     }
 
     @Override
     public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
-        // array.
+        // array, whose header carries its reciprocal.
         final long[] localKvs = keysAndValues;
-        final int size = keys.size();
+        final int n = keys.size();
         if (localKvs == null) {
-            // Never populated, or reset: every key is a miss, and we need not probe to know it.
-            result.fillWithValue(0, size, defaultReturnValue());
-            result.setSize(size);
+            result.fillWithValue(0, n, defaultReturnValue());
+            result.setSize(n);
             return;
         }
-        for (int ii = 0; ii < size; ++ii) {
-            result.set(ii, getImpl(localKvs, keys.get(ii)));
+        // Adaptive read strategy: when the map's footprint is past the measured crossover (near L2; see
+        // NullableLongLongMaps.wantWindowedReads) — the window's whole job is overlapping the misses that a table
+        // resident in the near caches simply does not have — service the chunk through the AMAC window; otherwise use
+        // the serial loop, which ties or wins when the table fits those caches. Footprint is a function of the
+        // snapshot's own length, so the choice is stable between rehashes and flips exactly when the array grows past
+        // the crossover. (Occupancy is deliberately not consulted; see wantWindowedReads.) A pinned
+        // ReadMode overrides the gate, for pricing and tests only. Reads are
+        // pure, so the windowed path may resolve lookups out of index order, invisibly to the caller.
+        final boolean windowed = readMode == ReadMode.ADAPTIVE
+                ? NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2)
+                : readMode == ReadMode.WINDOW;
+        if (windowed) {
+            getBatchImpl(localKvs, reciprocalOf(localKvs), keys, result);
+        } else {
+            final long numBucketsReciprocal = reciprocalOf(localKvs);
+            for (int ii = 0; ii < n; ++ii) {
+                result.set(ii, getImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
+            }
         }
-        result.setSize(size);
+        result.setSize(n);
     }
 
     @Override
@@ -117,9 +184,11 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         // Like get (and unlike put), the volatile read is hoisted: removeImpl tombstones slots in place and never
         // rehashes, so no element can replace the array a later element must see.
         final long[] localKvs = keysAndValues;
+        // Same header-borne reciprocal as get.
+        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
         final int size = keys.size();
         for (int ii = 0; ii < size; ++ii) {
-            oldValues.set(ii, removeImpl(localKvs, keys.get(ii)));
+            oldValues.set(ii, removeImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
         }
         oldValues.setSize(size);
     }

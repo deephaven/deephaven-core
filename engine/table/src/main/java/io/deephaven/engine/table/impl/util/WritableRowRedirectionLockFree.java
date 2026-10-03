@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK1V1;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK2V2;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -131,9 +132,16 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     private static final long UPDATES_KEY_NOT_FOUND = -2L;
 
     /**
-     * How things looked at the beginning of the most recent idle cycle.
+     * How things looked at the beginning of the most recent idle cycle. Not final: commitUpdates() may replace a
+     * baseline that has grown past AMAC_THRESHOLD_ENTRIES with an upgraded (windowed) map. The swap rides the same
+     * release/acquire chains that publish the commit itself (arguments #1 and #2 in the class comment); a Reader that
+     * has not yet synchronized sees the old map, which is never mutated again after the swap and so remains a
+     * consistent pre-commit snapshot.
      */
-    private final NullableLongLongMap baseline;
+    // Volatile because commitUpdates() may replace the map (an upgrade to the wide-bucket shape): the replacement is
+    // populated first and the reference stored afterwards, so a Reader that sees the new reference also sees every
+    // entry copied into it. A plain field would let the reference become visible ahead of the copy.
+    private volatile NullableLongLongMap baseline;
     /**
      * Updates that have happened since the start of the most recent idle cycle.
      */
@@ -159,7 +167,16 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         // in turn can only happen once prev tracking has been turned on). We copy updates to baseline and reset the
         // updates map.
         final NullableLongLongMap updates = instance.updates;
-        final NullableLongLongMap baseline = instance.baseline;
+        // A baseline that has become big and dense — deliberately (grown past the AMAC threshold while LOAD_FACTOR
+        // is at or above the policy's density floor; never at the default 0.5) or forcibly (creeping toward the
+        // absolute capacity ceiling, where rehash clamps and occupancy climbs regardless of LOAD_FACTOR) — is
+        // rebuilt into the wide-bucket K4V4 shape before the merge, so the merge's own puts also run against the
+        // upgraded map; that map's reads then adapt to the AMAC window by footprint on their own. The swap is a
+        // volatile store after the copy, so a Reader that sees the new map sees everything copied into it; a Reader
+        // still holding the old map sees a consistent pre-commit snapshot, which the commit boundary permits.
+        final NullableLongLongMap baseline =
+                NullableLongLongMaps.maybeUpgrade(instance.baseline, LOAD_FACTOR, AMAC_THRESHOLD_ENTRIES);
+        instance.baseline = baseline;
         Assert.neq(baseline, "baseline", updates, "updates");
 
         try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
@@ -256,7 +273,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        fillFromMaps(updates, baseline, outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
+        fillFromMaps(outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
     }
 
     @Override
@@ -264,7 +281,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys) {
-        fillFromMaps(updates, baseline, outerRowKeys, innerRowKeys.asWritableLongChunk());
+        fillFromMaps(outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
     @Override
@@ -283,18 +300,22 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         baseline.get(outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
-    private static void fillFromMaps(
-            @NotNull final NullableLongLongMap updates,
-            @NotNull final NullableLongLongMap baseline,
+    private void fillFromMaps(
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
             @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys) {
-        if (updates == baseline) {
-            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and it
-            // answers every key.
-            baseline.get(outerRowKeys, innerRowKeys);
+        // Probe 'updates' FIRST: its volatile array read is the acquire that the class comment's argument #1 rests
+        // on. Only then read 'baseline'. commitUpdates() may replace that map, and a reader whose probe saw the
+        // post-commit (null) array must consult the post-commit baseline, which that acquire makes visible; a
+        // baseline read before the probe could be the abandoned pre-commit map, which never received this cycle's
+        // changes, and the reader would answer changed keys from it.
+        final NullableLongLongMap localUpdates = this.updates;
+        localUpdates.get(outerRowKeys, innerRowKeys);
+        final NullableLongLongMap localBaseline = this.baseline;
+        if (localUpdates == localBaseline) {
+            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and
+            // the probe above answered every key.
             return;
         }
-        updates.get(outerRowKeys, innerRowKeys);
         final int size = outerRowKeys.size();
         int missingCount = 0;
         for (int ii = 0; ii < size; ++ii) {
@@ -318,7 +339,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             // the commit had not finished publishing, and return a stale value for a key updated that cycle. Probing
             // first and acting on the probe's result keeps the acquire where the protocol puts it; the fast path only
             // spares the gather.
-            baseline.get(outerRowKeys, innerRowKeys);
+            localBaseline.get(outerRowKeys, innerRowKeys);
             return;
         }
         // Keys not present in 'updates' get their result from 'baseline': gather them into a dense chunk, do one
@@ -335,7 +356,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
                     ++mi;
                 }
             }
-            baseline.get(missingKeys, missingValues);
+            localBaseline.get(missingKeys, missingValues);
             for (int ii = 0; ii < missingCount; ++ii) {
                 innerRowKeys.set(missingPositions.get(ii), missingValues.get(ii));
             }
@@ -456,6 +477,13 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
 
     private static final int hashBucketWidth = Configuration.getInstance()
             .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "hashBucketWidth", 1);
+
+    /**
+     * Entry count at which commitUpdates() upgrades the baseline map to the windowed (AMAC) shape.
+     */
+    private static final int AMAC_THRESHOLD_ENTRIES = Configuration.getInstance()
+            .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "amacThresholdEntries",
+                    NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES);
 
     @NotNull
     private static NullableLongLongMap createUpdateMap() {

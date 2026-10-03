@@ -310,9 +310,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            // Size the map so the initial population completes without any rehashing.
-            final NullableLongLongMap reverseLookup =
-                    HashMapLockFreeK4V4.ofExpectedSize(sortedKeys.length, 0.75, -3);
+            // Size the map so the initial population completes without any rehashing. No shape decision is needed:
+            // K4V4's reads switch to the windowed (AMAC) strategy by footprint on their own (see
+            // NullableLongLongMaps.wantWindowedReads). Nor is any dynamic layout upgrade wanted here — getSingle's
+            // operator captures the map reference, and swapping a field under a captured alias would leave the alias
+            // serving the abandoned map.
+            final NullableLongLongMap reverseLookup = HashMapLockFreeK4V4.ofExpectedSize(sortedKeys.length, 0.75, -3);
 
             sortMapping = SortHelpers.createSortRowRedirection();
 
@@ -437,7 +440,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortRedirection == null) {
             return null;
         }
-        // Size the map so the population below completes without any rehashing.
+        // Size the map so the population below completes without any rehashing. (Reads adapt by footprint on their
+        // own; see the comment at the other call site.)
         final NullableLongLongMap reverseLookup =
                 HashMapLockFreeK4V4.ofExpectedSize(sortResult.intSize(), 0.75, RowSequence.NULL_ROW_KEY);
         // Populate it a chunk at a time: the redirection's inner keys for a run of outer keys, the run's own keys, and

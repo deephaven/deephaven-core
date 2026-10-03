@@ -101,10 +101,16 @@ public class NullableLongLongMapBench {
 
     public enum Impl {
         // The third factory argument is the noEntryValue; -1 is the maps' default.
+        // K4V4's reads adapt by footprint (array size vs cache); K4V4_WINDOW and K4V4_SERIAL pin each strategy (the
+        // pricing controls).
         // @formatter:off
         K1V1((desiredEntries, loadFactor) -> HashMapLockFreeK1V1.of(desiredEntries, loadFactor, -1)),
         K2V2((desiredEntries, loadFactor) -> HashMapLockFreeK2V2.of(desiredEntries, loadFactor, -1)),
         K4V4((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1)),
+        K4V4_WINDOW((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1,
+                HashMapLockFreeK4V4.ReadMode.WINDOW)),
+        K4V4_SERIAL((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1,
+                HashMapLockFreeK4V4.ReadMode.SERIAL)),
         FASTUTIL(FastutilAdapter::new);
         // @formatter:on
 
@@ -115,7 +121,7 @@ public class NullableLongLongMapBench {
         }
     }
 
-    @Param({"K1V1", "K2V2", "K4V4", "FASTUTIL"})
+    @Param({"K1V1", "K2V2", "K4V4", "K4V4_WINDOW", "K4V4_SERIAL", "FASTUTIL"})
     public Impl impl;
 
     /**

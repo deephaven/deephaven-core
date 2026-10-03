@@ -3,11 +3,21 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import io.deephaven.test.types.SerialTest;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import static org.junit.Assert.*;
 
+/**
+ * Fills each shape to its capacity ceiling. Serial, because of its appetite: the final array is a long[] near
+ * Integer.MAX_VALUE and the last rehash holds the previous one beside it, so the three cases need a 40 GB heap
+ * (measured: 51 GB resident at the peak with a 48 GB heap) and run for about five and a half minutes in all on an
+ * i9-13900K, each case roughly two minutes for its 900 million puts and the rehashes on the way. Where the heap is
+ * smaller the cases skip themselves.
+ */
+@Category(SerialTest.class)
 public class TestKnVn {
     /**
      * Rationale: at its maximum capacity, the hashtable will have an long[Integer.MAX_VALUE] array. When it rehashes,
@@ -20,28 +30,16 @@ public class TestKnVn {
     private static final int HASHTABLE_SIZE_LOWER_BOUND_4 = 900_000_000;
     private static final int HASHTABLE_SIZE_UPPER_BOUND = 1_000_000_000;
 
-    /**
-     * This is a very long-running test which also needs a big heap. We should figure out how to configure things so
-     * this runs off to the side without disrupting other developers.
-     */
     @Test
     public void fillK1V1ToTheMax() {
         fillToCapacity(new HashMapLockFreeK1V1(), HASHTABLE_SIZE_LOWER_BOUND_1);
     }
 
-    /**
-     * This is a very long-running test which also needs a big heap. We should figure out how to configure things so
-     * this runs off to the side without disrupting other developers.
-     */
     @Test
     public void fillK2V2ToTheMax() {
         fillToCapacity(new HashMapLockFreeK2V2(), HASHTABLE_SIZE_LOWER_BOUND_2);
     }
 
-    /**
-     * This is a very long-running test which also needs a big heap. We should figure out how to configure things so
-     * this runs off to the side without disrupting other developers.
-     */
     @Test
     public void fillK4V4ToTheMax() {
         fillToCapacity(new HashMapLockFreeK4V4(), HASHTABLE_SIZE_LOWER_BOUND_4);

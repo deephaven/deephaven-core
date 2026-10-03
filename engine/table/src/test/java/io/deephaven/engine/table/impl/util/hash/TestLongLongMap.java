@@ -39,7 +39,9 @@ public class TestLongLongMap {
                 referenceFactory,
                 new Factory("K1V1", 1, HashMapLockFreeK1V1::new),
                 new Factory("K2V2", 2, HashMapLockFreeK2V2::new),
-                new Factory("K4V4", 4, HashMapLockFreeK4V4::new)
+                new Factory("K4V4", 4, HashMapLockFreeK4V4::new),
+                new Factory("K4V4/WINDOW", 4, (capacity, loadFactor) -> HashMapLockFreeK4V4.of(capacity, loadFactor,
+                        HashMapBase.DEFAULT_NO_ENTRY_VALUE, HashMapLockFreeK4V4.ReadMode.WINDOW))
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};
@@ -258,7 +260,8 @@ public class TestLongLongMap {
         final long first = 1;
         cursor.put(first, 10);
         final int numBuckets = map.capacity() / factory.getEntriesPerBucket();
-        final int bucket = HashMapBase.probe1(first, numBuckets);
+        final long reciprocal = HashMapBase.reciprocalFor(numBuckets);
+        final int bucket = HashMapBase.probe1(first, numBuckets, reciprocal);
         // occupied + 1 keys whose probes all start in that bucket, in the order they will be inserted
         final long[] colliding = new long[occupied + 1];
         colliding[0] = first;
@@ -266,7 +269,7 @@ public class TestLongLongMap {
         for (int ci = 1; ci < colliding.length; ++ci) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
             colliding[ci] = candidate;
         }
         for (int ki = 1; ki < occupied; ++ki) {
@@ -280,8 +283,6 @@ public class TestLongLongMap {
         // Tombstones still count as non-empty.
         assertEquals(where, occupied, base.nonEmptySlots);
         final long fresh = colliding[occupied];
-        // remove() does not go through the cursor yet: reset the invalidated binding.
-        cursor.reset(map);
         cursor.put(fresh, 99);
         assertEquals(where, occupied, base.nonEmptySlots);
         // The keys in slot order: the fresh key stands where the earliest deleted key stood.
@@ -330,18 +331,19 @@ public class TestLongLongMap {
         final long first = 1;
         cursor.put(first, 10);
         final int numBuckets = map.capacity() / entriesPerBucket;
-        final int bucket = HashMapBase.probe1(first, numBuckets);
+        final long reciprocal = HashMapBase.reciprocalFor(numBuckets);
+        final int bucket = HashMapBase.probe1(first, numBuckets, reciprocal);
         // Fill the first bucket: entriesPerBucket keys whose probes start there, then one more, the key under test.
         long candidate = first;
         for (int ki = 1; ki < entriesPerBucket; ++ki) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
             cursor.put(candidate, 10 + ki);
         }
         do {
             ++candidate;
-        } while (HashMapBase.probe1(candidate, numBuckets) != bucket);
+        } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
         final long key = candidate;
         // Its second bucket, as the probe loop computes it: one plus the second hash, in buckets, past the first.
         final int secondBucket = (bucket + 1 + HashMapBase.probe2(key, numBuckets - 2)) % numBuckets;
@@ -351,15 +353,13 @@ public class TestLongLongMap {
         for (int ki = 0; ki < filled; ++ki) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets) != secondBucket);
+            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != secondBucket);
             others[ki] = candidate;
             cursor.put(candidate, 100 + ki);
         }
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
         cursor.remove(others[deleted]);
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
-        // remove() does not go through the cursor yet: reset the invalidated binding.
-        cursor.reset(map);
         cursor.put(key, 99);
         // The tombstone was reused: the count of non-empty slots did not grow, and the map holds what it should.
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
