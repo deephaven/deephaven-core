@@ -245,8 +245,17 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
      * request that is dense and big from the start.
      */
     private long[] allocateKeysAndValuesArray() {
-        final int entriesPerBucket = widthForArray(nextShape.bucketWidth(), desiredInitialCapacity);
-        final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
+        return allocateKeysAndValuesArray(desiredInitialCapacity);
+    }
+
+    /**
+     * Allocates and installs the array of an empty map, sized for {@code entryCapacity} entries (before bucket rounding
+     * and prime selection, which only ever add) in the shape the policy picks for that size starting from
+     * {@link #nextShape}.
+     */
+    private long[] allocateKeysAndValuesArray(final int entryCapacity) {
+        final int entriesPerBucket = widthForArray(nextShape.bucketWidth(), entryCapacity);
+        final int desiredNumBuckets = desiredBucketCount(entryCapacity, entriesPerBucket);
         final int dataLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         final long[] keysAndValues = new long[dataLongs + HEADER_LONGS];
         writeShapeTag(keysAndValues, entriesPerBucket);
@@ -647,7 +656,13 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
      */
     private long[] firstArrayForPuts(final int n) {
         final long[] kvs = keysAndValues;
-        return n > 0 && isEmptyArray(kvs) ? allocateKeysAndValuesArray() : kvs;
+        if (n == 0 || !isEmptyArray(kvs)) {
+            return kvs;
+        }
+        // The batch is the map's first write: size the array for it, at the map's load factor, so that the batch
+        // itself never rehashes — but never below the remembered capacity, so that a capacity-retaining reset still
+        // lands back where it was. Duplicate keys within the batch make this an over-estimate, never a shortfall.
+        return allocateKeysAndValuesArray(Math.max(desiredInitialCapacity, capacityForExpectedEntries(n, loadFactor)));
     }
 
     /**

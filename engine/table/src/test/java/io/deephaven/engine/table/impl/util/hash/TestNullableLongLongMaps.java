@@ -220,6 +220,43 @@ public class TestNullableLongLongMaps {
         assertEquals(0.5, NullableLongLongMaps.MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY, 0.0);
     }
 
+    /**
+     * A batch of puts that is a map's first write allocates for the batch: the map lands at the capacity a map presized
+     * for that many entries would have, rather than rehashing its way up through the batch. The remembered capacity
+     * wins when it is larger, so a small first batch after a capacity-retaining reset still comes back at full size.
+     */
+    @Test
+    public void firstBatchOfPutsAllocatesForItsSize() {
+        final int n = 100_000;
+        final long[] keys = new long[n];
+        final long[] values = new long[n];
+        for (int ii = 0; ii < n; ++ii) {
+            keys[ii] = 3L * ii + 1;
+            values[ii] = valueFor(keys[ii]);
+        }
+        for (final Shape shape : Shape.values()) {
+            final NullableLongLongMap presized = NullableLongLongMaps.ofExpectedSize(shape, n, DENSE, NO_ENTRY_VALUE);
+            new NullableLongLongMap.ScalarAccess(presized).put(keys[0], values[0]);
+            final int presizedCapacity = presized.capacity();
+
+            final NullableLongLongMap map = NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE);
+            map.put(LongChunk.chunkWrap(keys), LongChunk.chunkWrap(values));
+            assertEquals(shape.name(), presizedCapacity, map.capacity());
+            assertEquals(shape.name(), n, map.size());
+            checkContents(map, 3 * n, key -> key % 3 == 1 ? valueFor(key) : NO_ENTRY_VALUE);
+
+            // The remembered capacity is the floor: a three-key batch after a capacity-retaining reset lands back at
+            // full size, while the same batch after a plain reset gets a small array.
+            map.resetToNullRetainingCapacity();
+            map.put(LongChunk.chunkWrap(keys, 0, 3), LongChunk.chunkWrap(values, 0, 3));
+            assertEquals(shape.name(), presizedCapacity, map.capacity());
+            final NullableLongLongMap fresh = NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE);
+            fresh.put(LongChunk.chunkWrap(keys, 0, 3), LongChunk.chunkWrap(values, 0, 3));
+            assertTrue(shape.name(), fresh.capacity() < presizedCapacity);
+            assertEquals(shape.name(), 3, fresh.size());
+        }
+    }
+
     @Test
     public void isLocalWalkIsAnAverageStepThreshold() {
         final int step = NullableLongLongMaps.MONOTONE_KEYS_MAX_LOCAL_STEP;
