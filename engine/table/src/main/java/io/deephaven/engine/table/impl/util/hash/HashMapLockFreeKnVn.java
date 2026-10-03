@@ -22,9 +22,11 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * The one {@link NullableLongLongMap} implementation: a lock-free open-addressing hash map whose buckets live in a
  * single {@code long[]} that describes itself — its header carries the shape tag (bucket width) and the fastmod
  * reciprocal (see {@link #HEADER_LONGS}). The probe loops live in the width kernels ({@link K1V1Kernel},
- * {@link K2V2Kernel}, {@link K4V4Kernel}), static and pure in the array plus this map's counters; every operation takes
- * one volatile read of the array and dispatches on that snapshot's own tag, so no code path needs to know which shape
- * the map was born with. Callers construct maps through {@link NullableLongLongMaps} and hold the interface.
+ * {@link K2V2Kernel}, {@link K4V4Kernel}), static and pure in the array plus this map's counters. Every read and remove
+ * takes one volatile read of the array and dispatches on that snapshot's own tag; a chunked put re-reads the array and
+ * dispatches per element, because any element may rehash and so replace it (see {@link #firstArrayForPuts}). So no code
+ * path needs to know which shape the map was born with. Callers construct maps through {@link NullableLongLongMaps} and
+ * hold the interface.
  *
  * <p>
  * One writer, any number of unsynchronized readers: readers work on a snapshot of the array, the writer publishes a
@@ -660,9 +662,10 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
      * The array the first element of a batch of {@code n} puts probes. Unlike get, the volatile read is NOT hoisted
      * across the batch: any put may rehash, so each element must see the array that the previous element may have
      * replaced; the reciprocal rides in a register-local memo, refreshed from the new array's own header whenever the
-     * array changes (a load, not a divide: every array carries its reciprocal). The first write allocates, at the
-     * requested initial shape. From there on the array is never the sentinel (rehash only ever builds real arrays), so
-     * the loops dispatch on real widths only.
+     * array changes (a load, not a divide: every array carries its reciprocal). The first write allocates, sized for
+     * the batch and in the shape the widening policy picks starting from the requested one (a request that is dense and
+     * big is born K4V4; see {@link #allocateKeysAndValuesArray(int)}). From there on the array is never the sentinel
+     * (rehash only ever builds real arrays), so the loops dispatch on real widths only.
      */
     private long[] firstArrayForPuts(final int n) {
         final long[] kvs = keysAndValues;
