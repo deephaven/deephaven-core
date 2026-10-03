@@ -98,7 +98,7 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
      */
     default void removeAllUnordered(final LongChunk<RowKeys> outerRowKeys) {
         for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
-            removeVoid(get(ii));
+            removeVoid(outerRowKeys.get(ii));
         }
     }
 
