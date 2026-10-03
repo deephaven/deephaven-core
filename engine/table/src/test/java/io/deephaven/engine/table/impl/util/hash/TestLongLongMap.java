@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class TestLongLongMap {
-    private static final Factory referenceFactory = new Factory("fastutil", 1, TestLongLongMap::newReferenceMap);
+    private static final Factory referenceFactory = new Factory("fastutil", TestLongLongMap::newReferenceMap);
 
     private static NullableLongLongMap newReferenceMap(final int initialCapacity, final float loadFactor) {
         return new TestNullableLongLongMap(initialCapacity, loadFactor);
@@ -44,13 +44,14 @@ public class TestLongLongMap {
         List<Object[]> result = new ArrayList<>();
         // K1V1 and K2V2 are the shapes the maps are BORN with. Where the policy says so — capacity 1M at load factor
         // 0.9 — the map builds the K4V4 shape from its first allocation, so those cells exercise a wide map and the
-        // narrow kernels are covered by the other cells.
+        // narrow kernels are covered by the other cells. The bucket-layout tests read the width from the array a map
+        // actually built, never from the cell.
         final Factory[] factories = {
                 referenceFactory,
-                new Factory("K1V1", 1, shaped(Shape.K1V1, ReadMode.ADAPTIVE)),
-                new Factory("K2V2", 2, shaped(Shape.K2V2, ReadMode.ADAPTIVE)),
-                new Factory("K4V4", 4, shaped(Shape.K4V4, ReadMode.ADAPTIVE)),
-                new Factory("K4V4/WINDOW", 4, shaped(Shape.K4V4, ReadMode.WINDOW))
+                new Factory("K1V1", shaped(Shape.K1V1, ReadMode.ADAPTIVE)),
+                new Factory("K2V2", shaped(Shape.K2V2, ReadMode.ADAPTIVE)),
+                new Factory("K4V4", shaped(Shape.K4V4, ReadMode.ADAPTIVE)),
+                new Factory("K4V4/WINDOW", shaped(Shape.K4V4, ReadMode.WINDOW))
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};
@@ -243,7 +244,8 @@ public class TestLongLongMap {
         // Every arrangement of the first bucket an insert can meet: keys in slots 0..occupied-1, one or two of them
         // deleted, and either an empty slot after them or, when the bucket is full, the probe moving on to the next
         // bucket. The insert must take the earliest deleted slot, never the empty one.
-        final int entriesPerBucket = factory.getEntriesPerBucket();
+        // The width of the array these maps are BUILT with: a cell born narrow may build wide (see data()).
+        final int entriesPerBucket = bucketWidthOfFreshMap(initialCapacity);
         for (int occupied = 1; occupied <= entriesPerBucket; ++occupied) {
             for (int deleted = 0; deleted < occupied; ++deleted) {
                 checkTombstoneReuse(occupied, deleted, -1);
@@ -268,7 +270,7 @@ public class TestLongLongMap {
         // The first key goes in before anything is measured: a never-populated map has no array, hence no capacity.
         final long first = 1;
         cursor.put(first, 10);
-        final int numBuckets = map.capacity() / factory.getEntriesPerBucket();
+        final int numBuckets = map.capacity() / bucketWidthOf(map);
         final long reciprocal = HashMapLockFreeKnVn.reciprocalFor(numBuckets);
         final int bucket = HashMapLockFreeKnVn.probe1(first, numBuckets, reciprocal);
         // occupied + 1 keys whose probes all start in that bucket, in the order they will be inserted
@@ -318,7 +320,8 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        final int entriesPerBucket = factory.getEntriesPerBucket();
+        // The width of the array the maps below are built with, at the capacity they are built at.
+        final int entriesPerBucket = bucketWidthOfFreshMap(1000);
         for (int filled = 1; filled < entriesPerBucket; ++filled) {
             for (int deleted = 0; deleted < filled; ++deleted) {
                 checkLaterBucketTombstoneReuse(filled, deleted);
@@ -327,18 +330,34 @@ public class TestLongLongMap {
     }
 
     /**
+     * The bucket width of {@code map}'s array, read from the array's own tag: the width the map was BUILT with, which
+     * for a cell that is born narrow but builds wide (see data()) is not the cell's width. The map must hold an entry:
+     * an empty map has no array of its own, only the shared sentinel.
+     */
+    private static int bucketWidthOf(final NullableLongLongMap map) {
+        return HashMapLockFreeKnVn.shapeTagOf(((NullableLongLongMapTestAccessors) map).keysAndValuesSnapshot());
+    }
+
+    /** The width a map this cell builds at {@code capacity} has, measured on a throwaway map holding one entry. */
+    private int bucketWidthOfFreshMap(final int capacity) {
+        final NullableLongLongMap map = factory.create(capacity, loadFactor);
+        new NullableLongLongMap.ScalarAccess(map).put(1, 10);
+        return bucketWidthOf(map);
+    }
+
+    /**
      * Fill a key's first bucket with other keys so its probe moves on, put {@code filled} keys whose first bucket is
      * that key's second bucket, delete the one at {@code deleted}, then insert the key: it must take the tombstone.
      */
     private void checkLaterBucketTombstoneReuse(final int filled, final int deleted) {
         final String where = "filled=" + filled + " deleted=" + deleted;
-        final int entriesPerBucket = factory.getEntriesPerBucket();
         // Room for every key of the test without a rehash, whatever the parameterized capacity.
         final NullableLongLongMap map = factory.create(1000, loadFactor);
         final HashMapLockFreeKnVn base = (HashMapLockFreeKnVn) map;
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         final long first = 1;
         cursor.put(first, 10);
+        final int entriesPerBucket = bucketWidthOf(map);
         final int numBuckets = map.capacity() / entriesPerBucket;
         final long reciprocal = HashMapLockFreeKnVn.reciprocalFor(numBuckets);
         final int bucket = HashMapLockFreeKnVn.probe1(first, numBuckets, reciprocal);
@@ -969,22 +988,16 @@ public class TestLongLongMap {
 
     static class Factory {
         private final String name;
-        private final int entriesPerBucket;
         private final BiFunction<Integer, Float, NullableLongLongMap> constructor;
 
-        Factory(String name, int entriesPerBucket, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
+        Factory(String name, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
             this.name = name;
-            this.entriesPerBucket = entriesPerBucket;
             this.constructor = constructor;
         }
 
         @Override
         public String toString() {
             return name;
-        }
-
-        public int getEntriesPerBucket() {
-            return entriesPerBucket;
         }
 
         public NullableLongLongMap create(int initialCapacity, float loadFactor) {
