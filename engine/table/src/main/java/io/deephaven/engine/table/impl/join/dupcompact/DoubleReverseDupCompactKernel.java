@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit DoubleReverseDupCompactKernel and run "./gradlew replicateDupCompactKernel" to regenerate
+// ****** Edit CharDupCompactKernel and run "./gradlew replicateDupCompactKernel" to regenerate
 //
 // @formatter:off
 
