@@ -127,12 +127,10 @@ public class TestNullableLongLongMaps {
     @Test
     public void windowModeRequiresK4V4() {
         for (final Shape shape : new Shape[] {Shape.K1V1, Shape.K2V2}) {
-            try {
-                NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE, ReadMode.WINDOW);
-                fail("expected IllegalArgumentException for " + shape);
-            } catch (final IllegalArgumentException expected) {
-                // The narrow shapes have no window kernel.
-            }
+            // The narrow shapes have no window kernel.
+            final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
+                    () -> NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE, ReadMode.WINDOW));
+            assertTrue(iae.getMessage(), iae.getMessage().contains(shape.name()));
             // SERIAL is truthful for every shape.
             assertNotNull(NullableLongLongMaps.of(shape, 16, DENSE, NO_ENTRY_VALUE, ReadMode.SERIAL));
         }
@@ -142,12 +140,10 @@ public class TestNullableLongLongMaps {
     @Test
     public void forBucketWidthRejectsUnsupportedWidths() {
         for (final int width : new int[] {0, 3, 8, -1}) {
-            try {
-                Shape.forBucketWidth(width);
-                fail("expected IllegalArgumentException for width " + width);
-            } catch (final IllegalArgumentException expected) {
-                // Only 1, 2 and 4 are shapes.
-            }
+            // Only 1, 2 and 4 are shapes.
+            final IllegalArgumentException iae =
+                    assertThrows(IllegalArgumentException.class, () -> Shape.forBucketWidth(width));
+            assertTrue(iae.getMessage(), iae.getMessage().contains(Integer.toString(width)));
         }
     }
 }
