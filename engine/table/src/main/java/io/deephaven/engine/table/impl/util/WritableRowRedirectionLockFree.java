@@ -285,11 +285,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     private void fillFromMaps(
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
             @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys) {
-        // Probe 'updates' FIRST: its volatile array read is the acquire that the class comment's argument #1 rests
-        // on. Only then read 'baseline'. commitUpdates() may replace that map, and a reader whose probe saw the
-        // post-commit (null) array must consult the post-commit baseline, which that acquire makes visible; a
-        // baseline read before the probe could be the abandoned pre-commit map, which never received this cycle's
-        // changes, and the reader would answer changed keys from it.
+        // Probe 'updates' first: its volatile array read is the acquire that the class comment's argument #1 rests
+        // on, and it is what makes the entries the writer's commit copied into 'baseline' visible to a reader whose
+        // probe saw the post-commit 'updates' array. The keys the probe does not answer are then read from 'baseline'.
         final NullableLongLongMap localUpdates = this.updates;
         localUpdates.get(outerRowKeys, innerRowKeys);
         final NullableLongLongMap localBaseline = this.baseline;
