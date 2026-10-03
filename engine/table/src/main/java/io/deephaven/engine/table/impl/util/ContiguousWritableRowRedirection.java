@@ -57,7 +57,8 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
         }
         redirections[(int) outerRowKey] = innerRowKey;
 
-        if (previous != innerRowKey) {
+        // without prev tracking there is no checkpoint to record the previous value in
+        if (previous != innerRowKey && updateCommitter != null) {
             onRemove(outerRowKey, previous);
         }
         return previous;
