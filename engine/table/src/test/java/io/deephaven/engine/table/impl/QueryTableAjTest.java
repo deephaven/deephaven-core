@@ -2126,6 +2126,94 @@ public class QueryTableAjTest {
     }
 
     /**
+     * A static left table joined against a refreshing right table processes each bucket's right removals, shifts,
+     * additions and modifications in chunks of at most the control's right chunk size. With two buckets and a chunk
+     * size of eight, every cycle presents each bucket with many chunks of each kind. The right table is presented with
+     * its stamps both ascending and descending in row key order, and each is joined with aj and raj, with and without
+     * exact matches.
+     */
+    @Test
+    public void testAjLeftStaticRightIncrementalBucketSpansManyChunks() {
+        final JoinControl control = new JoinControl() {
+            @Override
+            int rightSsaNodeSize() {
+                return 16;
+            }
+
+            @Override
+            public int rightChunkSize() {
+                return 8;
+            }
+        };
+        final int leftSize = 400;
+        final int rightSize = 1000;
+        final int updateSize = 500;
+        final int maxSteps = 8;
+
+        for (int seed = 0; seed < 3; ++seed) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+                final Random random = new Random(seed);
+                final QueryTable leftTable = getTable(false, leftSize, random,
+                        initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                                new SetGenerator<>("A", "B"),
+                                new IntGenerator(0, 10000),
+                                new IntGenerator(10_000_000, 10_010_000)));
+                final ColumnInfo<?, ?>[] rightColumnInfo;
+                final QueryTable rightTable = getTable(true, rightSize, random,
+                        rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                                new SetGenerator<>("A", "B"),
+                                new IntGenerator(0, 10000),
+                                new IntGenerator(20_000_000, 20_010_000)));
+
+                final QueryTable ascending = (QueryTable) rightTable.sort("RightStamp");
+                final QueryTable descending = (QueryTable) rightTable.sortDescending("RightStamp");
+
+                final EvalNuggetInterface[] en = Stream.of(ascending, descending)
+                        .flatMap(right -> Stream.of(
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, right,
+                                        MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Ascending, false)),
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, right,
+                                        MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Ascending, true)),
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, right,
+                                        MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Descending, false)),
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, right,
+                                        MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Descending, true))))
+                        .toArray(EvalNuggetInterface[]::new);
+
+                for (int step = 0; step < maxSteps; ++step) {
+                    RefreshingTableTestCase.simulateShiftAwareStep("seed=" + seed + ", step=" + step, updateSize,
+                            random, rightTable, rightColumnInfo, en);
+                }
+
+                // a cycle that modifies only the sentinel of every right row reaches the modification pass alone
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final String[] buckets = ColumnVectors.ofObject(rightTable, "Bucket", String.class).toArray();
+                    final int[] stamps = ColumnVectors.ofInt(rightTable, "RightStamp").toArray();
+                    final int[] sentinels = ColumnVectors.ofInt(rightTable, "RightSentinel").toArray();
+                    for (int ii = 0; ii < sentinels.length; ++ii) {
+                        sentinels[ii] += 1;
+                    }
+                    final RowSet modified = rightTable.getRowSet().copy();
+                    addToTable(rightTable, modified, col("Bucket", buckets), intCol("RightStamp", stamps),
+                            intCol("RightSentinel", sentinels));
+                    rightTable.notifyListeners(new TableUpdateImpl(i(), i(), modified, RowSetShiftData.EMPTY,
+                            rightTable.newModifiedColumnSet("RightSentinel")));
+                });
+                validate("seed=" + seed + ", sentinel modification", en);
+            }
+        }
+    }
+
+    /**
      * A bucketed join over two refreshing tables builds a bucket for a right key it has not seen before, so the
      * per-slot output arrays must be sized for the added rows rather than for the buckets that already exist. A cycle
      * whose only change is right additions in new buckets reaches the build with no earlier operation having grown
