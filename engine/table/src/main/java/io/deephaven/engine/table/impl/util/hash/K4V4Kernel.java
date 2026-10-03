@@ -3,25 +3,36 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.HEADER_LONGS;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.SIZE_LIMIT4;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.SPECIAL_KEY_FOR_DELETED_SLOT;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.SPECIAL_KEY_FOR_EMPTY_SLOT;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.fixKey;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.probe1;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.probe2;
+
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 
-abstract class HashMapK4V4 extends HashMapBase {
-    HashMapK4V4(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        super(desiredInitialCapacity, loadFactor, noEntryValue);
-    }
+/**
+ * The probe loops for arrays whose buckets hold four key/value pairs, interleaved: the keys at offsets 0, 2, 4 and 6 of
+ * the bucket, each value in the slot after its key, eight longs or one cache line in all
+ * ({@link NullableLongLongMaps.Shape#K4V4}). Static, and pure in the array plus the owning map's counters:
+ * {@link HashMapLockFreeKnVn} dispatches here on a snapshot's shape tag, so nothing in this class knows or cares which
+ * shape a map was born with.
+ */
+final class K4V4Kernel {
+    private K4V4Kernel() {}
 
-    final long putImpl(long[] kvs, long numBucketsReciprocal, long key, long value, boolean insertOnly) {
-        if (isEmptyArray(kvs)) {
-            kvs = allocateKeysAndValuesArray(4);
-            numBucketsReciprocal = reciprocalOf(kvs);
-        }
+    static long put(HashMapLockFreeKnVn map, long[] kvs, long numBucketsReciprocal, long key, long value,
+            boolean insertOnly) {
         final long fixedKey = fixKey(key);
-        return putImplNoTranslate(kvs, numBucketsReciprocal, fixedKey, value, insertOnly);
+        return putNoTranslate(map, kvs, numBucketsReciprocal, fixedKey, value, insertOnly);
     }
 
-    final long putImplNoTranslate(long[] kvs, long numBucketsReciprocal, long key, long value, boolean insertOnly) {
+    static long putNoTranslate(HashMapLockFreeKnVn map, long[] kvs, long numBucketsReciprocal, long key, long value,
+            boolean insertOnly) {
         int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location >= 0) {
             // Item found, so replace it (unless 'insertOnly' is set).
@@ -34,45 +45,45 @@ abstract class HashMapK4V4 extends HashMapBase {
 
         // Item not found, so insert it.
         location = -location - 1;
-        ++size;
-        checkSize(SIZE_LIMIT4);
+        ++map.size;
+        map.checkSize(SIZE_LIMIT4);
         // The slot is either empty or removed. If we're about to consume an empty slot, then update our counter.
         if (kvs[location] == SPECIAL_KEY_FOR_EMPTY_SLOT) {
-            ++nonEmptySlots;
+            ++map.nonEmptySlots;
         }
         kvs[location] = key;
         kvs[location + 1] = value;
 
         // Did we run out of empty slots?
-        if (nonEmptySlots >= rehashThreshold) {
+        if (map.nonEmptySlots >= map.rehashThreshold) {
             // This means we're low on empty slots. We might be low on empty slots because we've done a lot of
             // deletions of previous items (in this case 'size' could be small), or because we've done a lot of
             // insertions (in this case 'size' would be close to 'nonEmptySlots'). In the former case we would rather
             // rehash to the same size. In the latter case we would like to grow the hash table. The heuristic we use to
             // make this decision is if size exceeds 2/3 of the nonEmptySlots.
-            boolean wantResize = size >= nonEmptySlots * 2 / 3;
-            rehash(kvs, wantResize, 4);
+            boolean wantResize = map.size >= map.nonEmptySlots * 2 / 3;
+            map.rehash(kvs, wantResize);
         }
 
-        return defaultReturnValue();
+        return map.defaultReturnValue();
     }
 
-    final long getImpl(long[] kvs, long numBucketsReciprocal, long key) {
+    static long get(long[] kvs, long numBucketsReciprocal, long key, long noEntry) {
         key = fixKey(key);
         final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
-            return defaultReturnValue();
+            return noEntry;
         }
         return kvs[location + 1];
     }
 
-    final long removeImpl(long[] kvs, long numBucketsReciprocal, long key) {
+    static long remove(HashMapLockFreeKnVn map, long[] kvs, long numBucketsReciprocal, long key) {
         key = fixKey(key);
         final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
-            return defaultReturnValue();
+            return map.defaultReturnValue();
         }
-        --size;
+        --map.size;
         kvs[location] = SPECIAL_KEY_FOR_DELETED_SLOT;
         return kvs[location + 1];
     }
@@ -231,8 +242,8 @@ abstract class HashMapK4V4 extends HashMapBase {
     static final int GET_WINDOW = 16;
 
     /**
-     * Reusable per-thread scratch for {@link #getBatchImpl}: the rolling window's per-job state. One static instance
-     * per thread for the whole class (not per map): the state is fixed-size and map-independent, so this is O(threads)
+     * Reusable per-thread scratch for {@link #getBatch}: the rolling window's per-job state. One static instance per
+     * thread for the whole class (not per map): the state is fixed-size and map-independent, so this is O(threads)
      * storage that any map of this shape may share.
      */
     private static final class GetWindow {
@@ -248,18 +259,17 @@ abstract class HashMapK4V4 extends HashMapBase {
     private static final ThreadLocal<GetWindow> GET_WINDOW_STATE = ThreadLocal.withInitial(GetWindow::new);
 
     /**
-     * Batch get via a rolling window of {@link HashMapK4V4#GET_WINDOW} in-flight lookups (AMAC style). Each job's turn
-     * ends by loading the first and last keys of its next bucket into the stash; the values are consumed one full
+     * Batch get via a rolling window of {@link #GET_WINDOW} in-flight lookups (AMAC style). Each job's turn ends by
+     * loading the first and last keys of its next bucket into the stash; the values are consumed one full
      * window-rotation later, by which time the cache lines have typically arrived — so up to a window's worth of misses
      * are serviced concurrently instead of serially. Tombstones need no bookkeeping here: a lookup just probes past
      * them, and only insertion cares where they are.
      */
-    final void getBatchImpl(long[] kvs, long numBucketsReciprocal, LongChunk<? extends Any> keys,
-            WritableLongChunk<? extends Any> result) {
+    static void getBatch(long[] kvs, long numBucketsReciprocal, LongChunk<? extends Any> keys,
+            WritableLongChunk<? extends Any> result, long noEntry) {
         final int n = keys.size();
         final int dataLength = kvs.length - HEADER_LONGS;
         final int numBuckets = dataLength / (4 * 2);
-        final long noEntry = defaultReturnValue();
         final int window = Math.min(GET_WINDOW, n);
         final GetWindow state = GET_WINDOW_STATE.get();
         final int[] jobSlot = state.jobSlot;

@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
+import io.deephaven.hash.PrimeFinder;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 import org.junit.Test;
@@ -28,7 +29,12 @@ import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class TestLongLongMap {
-    private static final Factory referenceFactory = new Factory("fastutil", 1, TestLongLongMap::newReferenceMap);
+    private static final Factory referenceFactory = new Factory("fastutil", null, TestLongLongMap::newReferenceMap);
+
+    // The one cell that is dense and big enough for the policy to build a narrow-born map wide from the start (see
+    // data() and bornShapeIsBuiltUnlessDenseAndBig); defined here once, so the two agree.
+    private static final int BIG_CAPACITY = 1_000_000;
+    private static final float DENSE_LOAD_FACTOR = 0.9f;
 
     private static NullableLongLongMap newReferenceMap(final int initialCapacity, final float loadFactor) {
         return new TestNullableLongLongMap(initialCapacity, loadFactor);
@@ -36,21 +42,26 @@ public class TestLongLongMap {
 
     private static BiFunction<Integer, Float, NullableLongLongMap> shaped(final Shape shape, final ReadMode readMode) {
         return (capacity, loadFactor) -> NullableLongLongMaps.of(shape, capacity, loadFactor,
-                HashMapBase.DEFAULT_NO_ENTRY_VALUE, readMode);
+                HashMapLockFreeKnVn.DEFAULT_NO_ENTRY_VALUE, readMode);
     }
 
     @Parameterized.Parameters(name = "map={0}, cap={1}, load={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> result = new ArrayList<>();
+        // K1V1 and K2V2 are the shapes the maps are BORN with. Where the policy says so — capacity 1M at load factor
+        // 0.9, the prime finder rounding a million buckets up to 1,070,981 and so past the widening threshold — the
+        // map builds the K4V4 shape from its first allocation, so those cells exercise a wide map and the narrow
+        // kernels are covered by the other cells. bornShapeIsBuiltUnlessDenseAndBig pins that premise; the
+        // bucket-layout tests read the width from the array a map actually built, never from the cell.
         final Factory[] factories = {
                 referenceFactory,
-                new Factory("K1V1", 1, shaped(Shape.K1V1, ReadMode.ADAPTIVE)),
-                new Factory("K2V2", 2, shaped(Shape.K2V2, ReadMode.ADAPTIVE)),
-                new Factory("K4V4", 4, shaped(Shape.K4V4, ReadMode.ADAPTIVE)),
-                new Factory("K4V4/WINDOW", 4, shaped(Shape.K4V4, ReadMode.WINDOW))
+                new Factory("K1V1", Shape.K1V1, ReadMode.ADAPTIVE),
+                new Factory("K2V2", Shape.K2V2, ReadMode.ADAPTIVE),
+                new Factory("K4V4", Shape.K4V4, ReadMode.ADAPTIVE),
+                new Factory("K4V4/WINDOW", Shape.K4V4, ReadMode.WINDOW)
         };
-        final int[] initialCapacities = {10, 1000, 1000000};
-        final float[] loadFactors = {0.5f, 0.75f, 0.9f};
+        final int[] initialCapacities = {10, 1000, BIG_CAPACITY};
+        final float[] loadFactors = {0.5f, 0.75f, DENSE_LOAD_FACTOR};
         for (Factory factory : factories) {
             for (int ic : initialCapacities) {
                 for (float lf : loadFactors) {
@@ -89,13 +100,13 @@ public class TestLongLongMap {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
         try {
-            scalarAccess.put(HashMapBase.SPECIAL_KEY_FOR_DELETED_SLOT, 12345);
+            scalarAccess.put(HashMapLockFreeKnVn.SPECIAL_KEY_FOR_DELETED_SLOT, 12345);
             fail("SPECIAL_KEY_FOR_DELETED_SLOT should not be accepted");
         } catch (io.deephaven.base.verify.AssertionFailure e) {
             // do nothing
         }
         try {
-            scalarAccess.put(HashMapBase.REDIRECTED_KEY_FOR_EMPTY_SLOT, 12345);
+            scalarAccess.put(HashMapLockFreeKnVn.REDIRECTED_KEY_FOR_EMPTY_SLOT, 12345);
             fail("REDIRECTED_KEY_FOR_EMPTY_SLOT should not be accepted");
         } catch (io.deephaven.base.verify.AssertionFailure e) {
             // do nothing
@@ -240,7 +251,8 @@ public class TestLongLongMap {
         // Every arrangement of the first bucket an insert can meet: keys in slots 0..occupied-1, one or two of them
         // deleted, and either an empty slot after them or, when the bucket is full, the probe moving on to the next
         // bucket. The insert must take the earliest deleted slot, never the empty one.
-        final int entriesPerBucket = factory.getEntriesPerBucket();
+        // The width of the array these maps are BUILT with: a cell born narrow may build wide (see data()).
+        final int entriesPerBucket = bucketWidthOfFreshMap(initialCapacity);
         for (int occupied = 1; occupied <= entriesPerBucket; ++occupied) {
             for (int deleted = 0; deleted < occupied; ++deleted) {
                 checkTombstoneReuse(occupied, deleted, -1);
@@ -260,14 +272,14 @@ public class TestLongLongMap {
     private void checkTombstoneReuse(final int occupied, final int deleted, final int alsoDeleted) {
         final String where = "occupied=" + occupied + " deleted=" + deleted + " alsoDeleted=" + alsoDeleted;
         final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
-        final HashMapBase base = (HashMapBase) map;
+        final HashMapLockFreeKnVn base = (HashMapLockFreeKnVn) map;
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         // The first key goes in before anything is measured: a never-populated map has no array, hence no capacity.
         final long first = 1;
         cursor.put(first, 10);
-        final int numBuckets = map.capacity() / factory.getEntriesPerBucket();
-        final long reciprocal = HashMapBase.reciprocalFor(numBuckets);
-        final int bucket = HashMapBase.probe1(first, numBuckets, reciprocal);
+        final int numBuckets = map.capacity() / bucketWidthOf(map);
+        final long reciprocal = HashMapLockFreeKnVn.reciprocalFor(numBuckets);
+        final int bucket = HashMapLockFreeKnVn.probe1(first, numBuckets, reciprocal);
         // occupied + 1 keys whose probes all start in that bucket, in the order they will be inserted
         final long[] colliding = new long[occupied + 1];
         colliding[0] = first;
@@ -275,7 +287,7 @@ public class TestLongLongMap {
         for (int ci = 1; ci < colliding.length; ++ci) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
+            } while (HashMapLockFreeKnVn.probe1(candidate, numBuckets, reciprocal) != bucket);
             colliding[ci] = candidate;
         }
         for (int ki = 1; ki < occupied; ++ki) {
@@ -315,7 +327,8 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        final int entriesPerBucket = factory.getEntriesPerBucket();
+        // The width of the array the maps below are built with, at the capacity they are built at.
+        final int entriesPerBucket = bucketWidthOfFreshMap(1000);
         for (int filled = 1; filled < entriesPerBucket; ++filled) {
             for (int deleted = 0; deleted < filled; ++deleted) {
                 checkLaterBucketTombstoneReuse(filled, deleted);
@@ -324,42 +337,90 @@ public class TestLongLongMap {
     }
 
     /**
+     * The premise of the note in data(), pinned: a cell builds the shape it was born with, except that the dense, big
+     * cells — capacity 1M at load factor 0.9 — build K4V4 from their first allocation. That rests on the policy AND on
+     * a hidden dependency: the prime finder rounds a request of a million buckets up to 1,070,981 (535,481 two-wide
+     * buckets for K2V2), which is what carries the judged capacity past the widening threshold of 1,048,576. Both are
+     * asserted here, so that a change to either shows up as this failure rather than as the bucket-layout tests quietly
+     * losing their wide coverage.
+     */
+    @Test
+    public void bornShapeIsBuiltUnlessDenseAndBig() {
+        if (factory == referenceFactory) {
+            return;
+        }
+        final int bornWidth = factory.bornShape.bucketWidth();
+        final boolean denseAndBig = initialCapacity == BIG_CAPACITY && loadFactor == DENSE_LOAD_FACTOR;
+        final int expectedWidth;
+        if (denseAndBig) {
+            // Judged as widthForArray judges it: the capacity the array would actually have at the born width.
+            final long judgedCapacity = (long) bornWidth
+                    * PrimeFinder.nextPrime(HashMapLockFreeKnVn.desiredBucketCount(initialCapacity, bornWidth));
+            assertTrue("prime rounding must carry " + initialCapacity + " entries at width " + bornWidth
+                    + " past the widening threshold " + NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES
+                    + "; judged " + judgedCapacity,
+                    judgedCapacity >= NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES);
+            assertTrue(loadFactor >= NullableLongLongMaps.AMAC_LOAD_FACTOR_FLOOR);
+            expectedWidth = Shape.K4V4.bucketWidth();
+        } else {
+            expectedWidth = bornWidth;
+        }
+        assertEquals(expectedWidth, bucketWidthOfFreshMap(initialCapacity));
+    }
+
+    /**
+     * The bucket width of {@code map}'s array, read from the array's own tag: the width the map was BUILT with, which
+     * for a cell that is born narrow but builds wide (see data()) is not the cell's width. The map must hold an entry:
+     * an empty map has no array of its own, only the shared sentinel.
+     */
+    private static int bucketWidthOf(final NullableLongLongMap map) {
+        return HashMapLockFreeKnVn.shapeTagOf(((NullableLongLongMapTestAccessors) map).keysAndValuesSnapshot());
+    }
+
+    /** The width a map this cell builds at {@code capacity} has, measured on a throwaway map holding one entry. */
+    private int bucketWidthOfFreshMap(final int capacity) {
+        final NullableLongLongMap map = factory.create(capacity, loadFactor);
+        new NullableLongLongMap.ScalarAccess(map).put(1, 10);
+        return bucketWidthOf(map);
+    }
+
+    /**
      * Fill a key's first bucket with other keys so its probe moves on, put {@code filled} keys whose first bucket is
      * that key's second bucket, delete the one at {@code deleted}, then insert the key: it must take the tombstone.
      */
     private void checkLaterBucketTombstoneReuse(final int filled, final int deleted) {
         final String where = "filled=" + filled + " deleted=" + deleted;
-        final int entriesPerBucket = factory.getEntriesPerBucket();
         // Room for every key of the test without a rehash, whatever the parameterized capacity.
         final NullableLongLongMap map = factory.create(1000, loadFactor);
-        final HashMapBase base = (HashMapBase) map;
+        final HashMapLockFreeKnVn base = (HashMapLockFreeKnVn) map;
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         final long first = 1;
         cursor.put(first, 10);
+        final int entriesPerBucket = bucketWidthOf(map);
         final int numBuckets = map.capacity() / entriesPerBucket;
-        final long reciprocal = HashMapBase.reciprocalFor(numBuckets);
-        final int bucket = HashMapBase.probe1(first, numBuckets, reciprocal);
+        final long reciprocal = HashMapLockFreeKnVn.reciprocalFor(numBuckets);
+        final int bucket = HashMapLockFreeKnVn.probe1(first, numBuckets, reciprocal);
         // Fill the first bucket: entriesPerBucket keys whose probes start there, then one more, the key under test.
         long candidate = first;
         for (int ki = 1; ki < entriesPerBucket; ++ki) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
+            } while (HashMapLockFreeKnVn.probe1(candidate, numBuckets, reciprocal) != bucket);
             cursor.put(candidate, 10 + ki);
         }
         do {
             ++candidate;
-        } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != bucket);
+        } while (HashMapLockFreeKnVn.probe1(candidate, numBuckets, reciprocal) != bucket);
         final long key = candidate;
         // Its second bucket, as the probe loop computes it: one plus the second hash, in buckets, past the first.
-        final int secondBucket = (bucket + 1 + HashMapBase.probe2(key, numBuckets - 2)) % numBuckets;
+        final int secondBucket = (bucket + 1 + HashMapLockFreeKnVn.probe2(key, numBuckets - 2)) % numBuckets;
         // filled keys whose first bucket is that second bucket; they take its slots 0..filled-1 in order.
         final long[] others = new long[filled];
         candidate = 1_000_000;
         for (int ki = 0; ki < filled; ++ki) {
             do {
                 ++candidate;
-            } while (HashMapBase.probe1(candidate, numBuckets, reciprocal) != secondBucket);
+            } while (HashMapLockFreeKnVn.probe1(candidate, numBuckets, reciprocal) != secondBucket);
             others[ki] = candidate;
             cursor.put(candidate, 100 + ki);
         }
@@ -416,7 +477,7 @@ public class TestLongLongMap {
     @Test
     public void zeroComesBackThroughKeys() {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
-        final long specialKey = HashMapBase.SPECIAL_KEY_FOR_EMPTY_SLOT;
+        final long specialKey = HashMapLockFreeKnVn.SPECIAL_KEY_FOR_EMPTY_SLOT;
         final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
         scalarAccess.put(specialKey, 12345);
         final long[] keys = ((NullableLongLongMapTestAccessors) map).keyArray();
@@ -456,7 +517,7 @@ public class TestLongLongMap {
         assertArrayEquals(expectedKeys, actualKeys);
         assertArrayEquals(expectedValues, actualValues);
 
-        if (test instanceof HashMapBase) {
+        if (test instanceof HashMapLockFreeKnVn) {
             // Also exercise the caller-provided-space overloads.
             final long[] keySpace = new long[reference.size()];
             final long[] valueSpace = new long[reference.size()];
@@ -966,22 +1027,24 @@ public class TestLongLongMap {
 
     static class Factory {
         private final String name;
-        private final int entriesPerBucket;
+        // The shape the factory asks for; null for the reference map, which has no shapes. What a cell BUILDS can be
+        // wider: see bornShapeIsBuiltUnlessDenseAndBig.
+        final Shape bornShape;
         private final BiFunction<Integer, Float, NullableLongLongMap> constructor;
 
-        Factory(String name, int entriesPerBucket, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
+        Factory(String name, Shape bornShape, BiFunction<Integer, Float, NullableLongLongMap> constructor) {
             this.name = name;
-            this.entriesPerBucket = entriesPerBucket;
+            this.bornShape = bornShape;
             this.constructor = constructor;
+        }
+
+        Factory(String name, Shape bornShape, ReadMode readMode) {
+            this(name, bornShape, shaped(bornShape, readMode));
         }
 
         @Override
         public String toString() {
             return name;
-        }
-
-        public int getEntriesPerBucket() {
-            return entriesPerBucket;
         }
 
         public NullableLongLongMap create(int initialCapacity, float loadFactor) {
