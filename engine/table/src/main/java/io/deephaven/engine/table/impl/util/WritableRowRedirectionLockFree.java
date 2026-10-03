@@ -246,12 +246,6 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     }
 
     /**
-     * The chunked read path. Per key, semantically identical to {@link #get(long)}: consult 'updates' first, and
-     * 'baseline' only for keys absent from 'updates' — the same per-key ordering the lock-free protocol described in
-     * the class comment depends on. (Before prev tracking starts, 'updates' and 'baseline' are the same map, whose
-     * no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass answers every key and the baseline pass is empty.)
-     */
-    /**
      * The fill context every chunked fill of this redirection requires, made by {@link #makeFillContext}. It owns the
      * scratch the mixed path of {@link #fillChunk} needs: the keys a chunk did not find in 'updates', where they sat in
      * the chunk, and what 'baseline' says about them. A caller that fills many chunks through one context, as
@@ -314,6 +308,13 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         baseline.get(outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
+    /**
+     * The chunked read path, behind {@link #fillChunk} and {@link #fillChunkUnordered}. Per key, semantically identical
+     * to {@link #get(long)}: consult 'updates' first, and 'baseline' only for keys absent from 'updates' — the same
+     * per-key ordering the lock-free protocol described in the class comment depends on. (Before prev tracking starts,
+     * 'updates' and 'baseline' are the same map, whose no-entry value is BASELINE_KEY_NOT_FOUND, so the first pass
+     * answers every key and the baseline pass is empty.)
+     */
     private static void fillFromMaps(
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final NullableLongLongMap updates,
