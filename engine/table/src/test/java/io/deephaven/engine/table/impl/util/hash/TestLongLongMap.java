@@ -918,7 +918,7 @@ public class TestLongLongMap {
     }
 
     @Test
-    public void emptyMapReadsAreOrdinaryMisses() {
+    public void emptyMapReadsAreMisses() {
         // The reference fastutil implementation doesn't have resetToNull
         if (factory == referenceFactory) {
             return;
@@ -929,7 +929,8 @@ public class TestLongLongMap {
         final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
         for (int round = 0; round < 3; ++round) {
             // Round 0 sees a fresh map; rounds 1 and 2 see it emptied by resetToNull and resetToNullRetainingCapacity.
-            // Every read of an empty map is an ordinary miss, through every entry point, with no storage allocated.
+            // Every read of an empty map is a miss, through every entry point — the chunked get by its sentinel fast
+            // path, the rest by probing the sentinel — with no storage allocated.
             assertTrue(map.isEmpty());
             assertEquals(0, map.size());
             assertEquals(0, map.capacity());

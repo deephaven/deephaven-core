@@ -97,6 +97,12 @@ final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLongLongM
         // array, whose header carries its reciprocal.
         final long[] localKvs = keysAndValues;
         final int n = keys.size();
+        if (isEmptyArray(localKvs)) {
+            // The empty sentinel: never populated, or reset. Every key is a miss, and we need not probe to know it.
+            result.fillWithValue(0, n, defaultReturnValue());
+            result.setSize(n);
+            return;
+        }
         // Adaptive read strategy: when the map's footprint is past the measured crossover (near L2; see
         // NullableLongLongMaps.wantWindowedReads) — the window's whole job is overlapping the misses that a table
         // resident in the near caches simply does not have — service the chunk through the AMAC window; otherwise use

@@ -91,16 +91,16 @@ final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLongLongM
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
         // array.
         final long[] localKvs = keysAndValues;
-        // The reciprocal comes from the snapshot's own header — published with the array and immutable
-        // thereafter, so it cannot tear against it.
-        final long numBucketsReciprocal = reciprocalOf(localKvs);
         final int size = keys.size();
-        if (localKvs == null) {
-            // Never populated, or reset: every key is a miss, and we need not probe to know it.
+        if (isEmptyArray(localKvs)) {
+            // The empty sentinel: never populated, or reset. Every key is a miss, and we need not probe to know it.
             result.fillWithValue(0, size, defaultReturnValue());
             result.setSize(size);
             return;
         }
+        // The reciprocal comes from the snapshot's own header — published with the array and immutable
+        // thereafter, so it cannot tear against it.
+        final long numBucketsReciprocal = reciprocalOf(localKvs);
         for (int ii = 0; ii < size; ++ii) {
             result.set(ii, getImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
         }

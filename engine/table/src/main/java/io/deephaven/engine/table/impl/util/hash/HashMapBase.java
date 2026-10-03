@@ -138,10 +138,11 @@ abstract class HashMapBase implements NullableLongLongMap {
     // one bucket of the widest shape (every slot SPECIAL_KEY_FOR_EMPTY_SLOT, which is 0) behind a header whose
     // reciprocal is 0, so probe1 sends every key to bucket 0 (fastRange(0, n) == 0 for any n) and finds it empty —
     // whatever a map's width makes of the data length (four K1V1 buckets, two K2V2, one K4V4: all empty). Probing
-    // the sentinel is therefore an ordinary miss, and no read path needs an empty-map branch. Writes must never
-    // touch it, and they are the only code that tells it apart — by its shape tag, SHAPE_TAG_EMPTY (see
-    // isEmptyArray): put swaps in a real array before probing (where the null check used to live); clear and
-    // resetToNullRetainingCapacity skip it.
+    // the sentinel is therefore an ordinary miss, so no read path needs an empty-map branch to be correct; the
+    // chunked gets keep one anyway, as a fast path (every key is a miss, so they fill the result without probing).
+    // Writes must never touch it: put swaps in a real array before probing (where the null check used to live);
+    // clear and resetToNullRetainingCapacity skip it. Both tell it apart by its shape tag, SHAPE_TAG_EMPTY (see
+    // isEmptyArray).
     static final long[] EMPTY_KEYS_AND_VALUES = newEmptyKeysAndValues();
 
     private static long[] newEmptyKeysAndValues() {
