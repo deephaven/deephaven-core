@@ -493,7 +493,8 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
      * Find next occupied slot starting at {@code beginSlot}.
      *
      * @param beginSlot The inclusive position from where to start looking.
-     * @return The slot containing the next occupied key, or keysAndValues.length if none.
+     * @return The slot containing the next occupied key, or the end of the buckets (the array's length less its header)
+     *         if none.
      */
     private int findOccupiedSlot(long[] keysAndValues, int beginSlot) {
         final int dataLongs = keysAndValues.length - HEADER_LONGS;
@@ -728,11 +729,12 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         final int n = keys.size();
         final long numBucketsReciprocal = reciprocalOf(localKvs);
         final long noEntry = noEntryValue;
-        // Adaptive read strategy, two stages. First, footprint: when the map's array is beyond the last-level cache —
-        // the window's whole job is overlapping the misses that a cache-resident table simply does not have — the
-        // chunk goes through the AMAC window; otherwise the serial loop, which ties or wins when the table is
-        // cache-resident. Footprint is a function of the snapshot's own length, so that answer is stable between
-        // rehashes and flips exactly when the array grows past the cache. The chunk must also be wide enough to fill
+        // Adaptive read strategy, two stages. First, footprint: when the map's array is past the measured crossover
+        // (near L2, see NullableLongLongMaps.wantWindowedReads) — the window's whole job is overlapping the misses
+        // that a table resident in the near caches simply does not have — the chunk goes through the AMAC window;
+        // otherwise the serial loop, which ties or wins when the table fits those caches. Footprint is a function of
+        // the snapshot's own length, so that answer is stable between rehashes and flips exactly when the array grows
+        // past the crossover. The chunk must also be wide enough to fill
         // the window: its fixed cost is paid per call, and a single-key chunk — the scalar cursor's case — has nothing
         // to overlap, measured at 1.6-2.3x slower under the window. Second, and only when the first stage opened the
         // window: a chunk of monotone keys, ascending or descending, whose consecutive keys are close together is a
