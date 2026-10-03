@@ -12,6 +12,8 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -2633,6 +2635,121 @@ public abstract class SqliteCatalogBase {
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
+    }
+
+    /**
+     * Sortedness from the Iceberg sort order belongs to the Deephaven column bound to the sorted field's id, not to
+     * whichever Deephaven column happens to share the field's name.
+     */
+    @Test
+    void testSortedColumnsFollowFieldIds() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("A", 1, 2, 3, 4, 5, 6, 7, 8),
+                intCol("B", 50, 10, 70, 30, 80, 20, 60, 40));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.icebergTable().replaceSortOrder().asc("A").commit();
+        tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+
+        // Deephaven A reads Iceberg field B, and Deephaven B reads Iceberg field A
+        final Schema schema = tableAdapter.icebergTable().schema();
+        final IcebergTableAdapter swappedAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(Resolver.builder()
+                        .definition(source.getDefinition())
+                        .schema(schema)
+                        .putColumnInstructions("A", schemaField(schema.findField("B").fieldId()))
+                        .putColumnInstructions("B", schemaField(schema.findField("A").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg = swappedAdapter.table();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A")).isEmpty();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "B"))
+                .contains(SortingOrder.Ascending);
+        assertTableEquals(fromIceberg.select().where("A >= 50"), fromIceberg.where("A >= 50"));
+    }
+
+    /**
+     * When two Deephaven columns read the sorted Iceberg field, neither can be identified as the one the sort order
+     * describes, so the sortedness is dropped rather than guessed.
+     */
+    @Test
+    void testSortedColumnsFieldReadTwice() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("A", 1, 2, 3, 4, 5, 6, 7, 8),
+                intCol("B", 50, 10, 70, 30, 80, 20, 60, 40));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.icebergTable().replaceSortOrder().asc("A").commit();
+        tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+
+        final Schema schema = tableAdapter.icebergTable().schema();
+        final IcebergTableAdapter twiceAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(Resolver.builder()
+                        .definition(TableDefinition.of(ColumnDefinition.ofInt("A"), ColumnDefinition.ofInt("A2")))
+                        .schema(schema)
+                        .putColumnInstructions("A", schemaField(schema.findField("A").fieldId()))
+                        .putColumnInstructions("A2", schemaField(schema.findField("A").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg = twiceAdapter.table();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A")).isEmpty();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A2")).isEmpty();
+        assertTableEquals(fromIceberg.select().where("A >= 5"), fromIceberg.where("A >= 5"));
+    }
+
+    @Test
+    void testIgnoreSortedColumns() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                stringCol("S", "b", "a", "b", "a"),
+                intCol("I", 4, 1, 3, 2));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.icebergTable().replaceSortOrder().asc("S").asc("I").commit();
+        tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+
+        final Function<String[], Table> readIgnoring = ignored -> tableAdapter
+                .table(IcebergReadInstructions.builder().addIgnoreSortedColumns(ignored).build())
+                .coalesce();
+
+        final Table trustAll = readIgnoring.apply(new String[0]);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(trustAll, "S")).contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(trustAll, "I")).contains(SortingOrder.Ascending);
+
+        // Ignoring the second sort column keeps the first
+        final Table ignoreI = readIgnoring.apply(new String[] {"I"});
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreI, "S")).contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreI, "I")).isEmpty();
+
+        // Ignoring the first also ignores the second, which is sorted only within runs of the first
+        final Table ignoreS = readIgnoring.apply(new String[] {"S"});
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreS, "S")).isEmpty();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreS, "I")).isEmpty();
+        assertTableEquals(ignoreS.select().where("S = `b`"), ignoreS.where("S = `b`"));
+
+        // A name that is not a sorted column has no effect
+        final Table ignoreOther = readIgnoring.apply(new String[] {"NotAColumn"});
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreOther, "S")).contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreOther, "I")).contains(SortingOrder.Ascending);
     }
 
     @Test
