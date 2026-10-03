@@ -138,7 +138,10 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
      * has not yet synchronized sees the old map, which is never mutated again after the swap and so remains a
      * consistent pre-commit snapshot.
      */
-    private NullableLongLongMap baseline;
+    // Volatile because commitUpdates() may replace the map (an upgrade to the wide-bucket shape): the replacement is
+    // populated first and the reference stored afterwards, so a Reader that sees the new reference also sees every
+    // entry copied into it. A plain field would let the reference become visible ahead of the copy.
+    private volatile NullableLongLongMap baseline;
     /**
      * Updates that have happened since the start of the most recent idle cycle.
      */
@@ -168,9 +171,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         // is at or above the policy's density floor; never at the default 0.5) or forcibly (creeping toward the
         // absolute capacity ceiling, where rehash clamps and occupancy climbs regardless of LOAD_FACTOR) — is
         // rebuilt into the wide-bucket K4V4 shape before the merge, so the merge's own puts also run against the
-        // upgraded map; that map's reads then adapt to the AMAC window by footprint on their own. Readers
-        // pick up the swap through the usual publication chains; one still holding the old map sees a consistent
-        // pre-commit snapshot, which the commit boundary permits.
+        // upgraded map; that map's reads then adapt to the AMAC window by footprint on their own. The swap is a
+        // volatile store after the copy, so a Reader that sees the new map sees everything copied into it; a Reader
+        // still holding the old map sees a consistent pre-commit snapshot, which the commit boundary permits.
         final NullableLongLongMap baseline =
                 NullableLongLongMaps.maybeUpgrade(instance.baseline, LOAD_FACTOR, AMAC_THRESHOLD_ENTRIES);
         instance.baseline = baseline;
