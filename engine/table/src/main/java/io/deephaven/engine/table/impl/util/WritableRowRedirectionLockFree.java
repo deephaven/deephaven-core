@@ -273,7 +273,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        fillFromMaps(updates, baseline, outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
+        fillFromMaps(outerRowKeys.asRowKeyChunk(), innerRowKeys.asWritableLongChunk());
     }
 
     @Override
@@ -281,7 +281,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys) {
-        fillFromMaps(updates, baseline, outerRowKeys, innerRowKeys.asWritableLongChunk());
+        fillFromMaps(outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
     @Override
@@ -300,18 +300,22 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         baseline.get(outerRowKeys, innerRowKeys.asWritableLongChunk());
     }
 
-    private static void fillFromMaps(
-            @NotNull final NullableLongLongMap updates,
-            @NotNull final NullableLongLongMap baseline,
+    private void fillFromMaps(
             @NotNull final LongChunk<? extends RowKeys> outerRowKeys,
             @NotNull final WritableLongChunk<? super RowKeys> innerRowKeys) {
-        if (updates == baseline) {
-            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and it
-            // answers every key.
-            baseline.get(outerRowKeys, innerRowKeys);
+        // Probe 'updates' FIRST: its volatile array read is the acquire that the class comment's argument #1 rests
+        // on. Only then read 'baseline'. commitUpdates() may replace that map, and a reader whose probe saw the
+        // post-commit (null) array must consult the post-commit baseline, which that acquire makes visible; a
+        // baseline read before the probe could be the abandoned pre-commit map, which never received this cycle's
+        // changes, and the reader would answer changed keys from it.
+        final NullableLongLongMap localUpdates = this.updates;
+        localUpdates.get(outerRowKeys, innerRowKeys);
+        final NullableLongLongMap localBaseline = this.baseline;
+        if (localUpdates == localBaseline) {
+            // Prev tracking has not started (a static table's redirection, for one): one map under both names, and
+            // the probe above answered every key.
             return;
         }
-        updates.get(outerRowKeys, innerRowKeys);
         final int size = outerRowKeys.size();
         int missingCount = 0;
         for (int ii = 0; ii < size; ++ii) {
@@ -335,7 +339,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             // the commit had not finished publishing, and return a stale value for a key updated that cycle. Probing
             // first and acting on the probe's result keeps the acquire where the protocol puts it; the fast path only
             // spares the gather.
-            baseline.get(outerRowKeys, innerRowKeys);
+            localBaseline.get(outerRowKeys, innerRowKeys);
             return;
         }
         // Keys not present in 'updates' get their result from 'baseline': gather them into a dense chunk, do one
@@ -352,7 +356,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
                     ++mi;
                 }
             }
-            baseline.get(missingKeys, missingValues);
+            localBaseline.get(missingKeys, missingValues);
             for (int ii = 0; ii < missingCount; ++ii) {
                 innerRowKeys.set(missingPositions.get(ii), missingValues.get(ii));
             }
