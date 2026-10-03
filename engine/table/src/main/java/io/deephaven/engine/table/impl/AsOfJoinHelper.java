@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
@@ -231,9 +232,18 @@ public class AsOfJoinHelper {
         }
         // endregion This block is mostly copied to other entry points
 
+        // the build reserves room for a whole chunk of new entries before each chunk, so the table starts large enough
+        // to hold the first build chunk at the maximum load factor
+        final boolean buildFromLeft = buildParameters.firstBuildFrom() == JoinControl.BuildParameters.From.LeftInput
+                || buildParameters.firstBuildFrom() == JoinControl.BuildParameters.From.LeftDataIndex;
+        final long firstBuildChunkSize =
+                Math.min(JoinControl.CHUNK_SIZE, (buildFromLeft ? leftRowSetToUse : rightRowSetToUse).size());
+        final int hashTableSize = (int) Math.min(JoinControl.MAX_TABLE_SIZE,
+                Math.max(buildParameters.hashTableSize(), MathUtil.roundUpPowerOf2(
+                        (long) Math.ceil(firstBuildChunkSize / control.getMaximumLoadFactor()))));
         final StaticHashedAsOfJoinStateManager asOfJoinStateManager = TypedHasherFactory.make(
                 StaticAsOfJoinStateManagerTypedBase.class, leftSources, originalLeftSources,
-                buildParameters.hashTableSize(), control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+                hashTableSize, control.getMaximumLoadFactor(), control.getTargetLoadFactor());
         final IntegerArraySource slots = new IntegerArraySource();
 
         final int slotCount;
