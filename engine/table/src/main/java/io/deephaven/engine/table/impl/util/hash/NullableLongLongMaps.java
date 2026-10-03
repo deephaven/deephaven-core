@@ -11,16 +11,17 @@ package io.deephaven.engine.table.impl.util.hash;
  */
 public final class NullableLongLongMaps {
     /**
-     * The bucket width of a map: how many keys (followed by that many values) each hash bucket holds. Wider buckets
-     * mean fewer cache lines per probe chain at density and more bytes per bucket when sparse. K4V4 is one 64-byte
-     * cache line per bucket, and the only shape with an AMAC window kernel (see {@link ReadMode}).
+     * The bucket width of a map: how many key/value pairs each hash bucket holds. Within a bucket the pairs are
+     * interleaved, each key at an even offset with its value in the slot after it, so a bucket of width w spans 2w
+     * longs. Wider buckets mean fewer cache lines per probe chain at density and more bytes per bucket when sparse.
+     * K4V4 is one 64-byte cache line per bucket, and the only shape with an AMAC window kernel (see {@link ReadMode}).
      */
     public enum Shape {
-        /** One key and one value per bucket. */
+        /** One key/value pair per bucket. */
         K1V1(1),
-        /** Two keys followed by two values per bucket. */
+        /** Two key/value pairs per bucket, interleaved. */
         K2V2(2),
-        /** Four keys followed by four values per bucket: one cache line. */
+        /** Four key/value pairs per bucket, interleaved: one cache line. */
         K4V4(4);
 
         private final int bucketWidth;
@@ -91,8 +92,8 @@ public final class NullableLongLongMaps {
      * four-key chunks lose on everything but dense shuffled lookups; sixteen-key chunks win 10% on sparse shuffled and
      * 2.4x on dense shuffled; sixty-four-key chunks win 23% and 3x there and tie dense sorted. Sixteen is the window
      * width: the smallest chunk that can fill it. (Sorted sparse lookups lose under the window at every chunk size on
-     * that machine and tie or win on a Ryzen 9 9950X3D2 — a lookup-pattern question, deliberately left out of this
-     * gate.)
+     * that machine and tie or win on a Ryzen 9 9950X3D2 — a lookup-pattern question, which the gate's second stage
+     * answers: see {@link #wantSerialForMonotoneKeys}.)
      */
     public static final int MIN_WINDOWED_CHUNK = K4V4Kernel.GET_WINDOW;
 
@@ -177,8 +178,8 @@ public final class NullableLongLongMaps {
      * nothing to overlap at all). Footprint is the first-order predictor, and this gate is the first stage: it looks
      * only at the array and the chunk width, so its answer is stable between rehashes and flips exactly when the array
      * grows past the crossover. Occupancy on its own is second-order — at a fixed large footprint the window ties or
-     * wins at every occupancy measured when keys arrive in any order but ascending — and is not an input here. It
-     * matters in one combination, monotone local keys into a sparse table, which the second stage handles: see
+     * wins at every occupancy measured when keys arrive shuffled — and is not an input here. It matters in one
+     * combination, monotone local keys into a sparse table, which the second stage handles: see
      * {@link #wantSerialForMonotoneKeys}, {@link #MONOTONE_KEYS_SERIAL_BELOW_OCCUPANCY} and {@link #isLocalWalk}.
      */
     public static boolean wantWindowedReads(final int entryCapacity, final int chunkSize) {

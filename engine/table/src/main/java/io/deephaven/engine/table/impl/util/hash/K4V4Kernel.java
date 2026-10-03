@@ -16,7 +16,8 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 
 /**
- * The probe loops for arrays whose buckets hold four keys followed by four values (one cache line)
+ * The probe loops for arrays whose buckets hold four key/value pairs, interleaved: the keys at offsets 0, 2, 4 and 6 of
+ * the bucket, each value in the slot after its key, eight longs or one cache line in all
  * ({@link NullableLongLongMaps.Shape#K4V4}). Static, and pure in the array plus the owning map's counters:
  * {@link HashMapLockFreeKnVn} dispatches here on a snapshot's shape tag, so nothing in this class knows or cares which
  * shape a map was born with.

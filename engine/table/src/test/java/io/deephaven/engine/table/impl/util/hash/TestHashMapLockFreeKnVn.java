@@ -15,9 +15,8 @@ public class TestHashMapLockFreeKnVn {
     private static final double[] LOAD_FACTORS = {0.5, 0.75, 0.9};
 
     /**
-     * A put rehashes when the slot count reaches the threshold {@code (int) (entryCapacity * loadFactor)}. Verify that
-     * {@link HashMapLockFreeKnVn#capacityForExpectedEntries(int, double)} always produces a capacity whose threshold
-     * strictly clears the expected count, and that it is the smallest such capacity (so we are not over-allocating).
+     * The monotone check behind the read gate's second stage: ascending or descending both count, repeats do not break
+     * the run, up to 64 keys the check is exact, and wider chunks are sampled every n/64th key.
      */
     @Test
     public void isMonotoneAcceptsEitherDirectionAndSamplesWideChunks() {
@@ -58,6 +57,11 @@ public class TestHashMapLockFreeKnVn {
         assertTrue(HashMapLockFreeKnVn.isMonotone(LongChunk.chunkWrap(wobbly)));
     }
 
+    /**
+     * A put rehashes when the slot count reaches the threshold {@code (int) (entryCapacity * loadFactor)}. Verify that
+     * {@link HashMapLockFreeKnVn#capacityForExpectedEntries(int, double)} always produces a capacity whose threshold
+     * strictly clears the expected count, and that it is the smallest such capacity (so we are not over-allocating).
+     */
     @Test
     public void capacityForExpectedEntriesClearsThreshold() {
         final int[] expectedCounts = {
