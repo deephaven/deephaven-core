@@ -19,6 +19,7 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -107,6 +108,14 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      * This method supports the 'ensureCapacity' method for all of this class' inheritors.
      */
     final void ensureCapacity(final long capacity, UArray[] blocks, UArray[] prevBlocks, boolean nullFilled) {
+        ensureCapacity(capacity, blocks, prevBlocks, nullFilled, null);
+    }
+
+    /**
+     * Allocate blocks up to {@code capacity}, but where {@code onlyAllocated} is given, only those it holds.
+     */
+    private void ensureCapacity(final long capacity, UArray[] blocks, UArray[] prevBlocks, boolean nullFilled,
+            @Nullable final Object[] onlyAllocated) {
         // Convert requested capacity to requestedMaxIndex and requestedNumBlocks, but leave early if the requested
         // maxIndex is <= the current maxIndex.
         //
@@ -148,6 +157,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         final boolean markFresh = prevFlusher != null && allocatedNumBlocks < requestedNumBlocks
                 && updateGraph.clock().currentState() == LogicalClock.State.Updating;
         for (int ii = allocatedNumBlocks; ii < requestedNumBlocks; ++ii) {
+            if (onlyAllocated != null && onlyAllocated[ii] == null) {
+                continue;
+            }
             blocks[ii] = allocateBlock(BLOCK_SIZE, nullFilled);
             if (markFresh) {
                 prevBlocks[ii] = sharedFreshPrevBlock(BLOCK_SIZE, nullFilled);
@@ -165,6 +177,46 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     /**
+     * Allocate storage for exactly the blocks that {@code template} has allocated, with the same capacity, rather than
+     * for every block up to that capacity as {@link #ensureCapacity(long, boolean)} would. A source created after its
+     * siblings have released blocks thereby holds no storage for positions that hold no values. This source must not
+     * have any capacity yet.
+     *
+     * @param template an array-backed source with the block size of this one, whose allocated blocks to copy
+     * @param nullFilled whether the blocks allocated are filled with nulls, rather than the element type's default
+     */
+    public final void ensureCapacityLike(@NotNull final ArrayBackedColumnSource<?> template, final boolean nullFilled) {
+        Assert.eq(maxIndex, "maxIndex", INITIAL_MAX_INDEX, "INITIAL_MAX_INDEX");
+        final Object[] templateBlocks =
+                template instanceof ArraySourceHelper ? ((ArraySourceHelper<?, ?>) template).getBlocks() : null;
+        ensureCapacity(template.maxIndex + 1, getBlocks(), getPrevBlocks(), nullFilled, templateBlocks);
+    }
+
+    /**
+     * Get the in-use bitset for {@code block}'s previous values, allocating the block's previous-value storage if this
+     * is its first write this cycle: bit {@code i} is set once position {@code i}'s previous value has been recorded.
+     * Previous values must be tracked.
+     *
+     * @param block the block about to be written
+     * @param prevBlocks this source's previous-value blocks
+     * @param recycler the recycler for previous-value blocks
+     * @return the block's in-use bitset
+     */
+    final long[] prevInUseFor(final int block, final UArray[] prevBlocks, final SoftRecycler<UArray> recycler) {
+        // If we want to track previous values, we make sure we are registered with the PeriodicUpdateGraph.
+        prevFlusher.maybeActivate();
+        if (prevBlocks[block] == null) {
+            prevBlocks[block] = recycler.borrowItem();
+            prevInUse[block] = inUseRecycler.borrowItem();
+            if (prevAllocated == null) {
+                prevAllocated = new IntArrayList();
+            }
+            prevAllocated.add(block);
+        }
+        return prevInUse[block];
+    }
+
+    /**
      * This method supports the 'set' method for its inheritors, doing some of the 'inUse' housekeeping that is common
      * to all inheritors.
      *
@@ -176,9 +228,6 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         if (prevFlusher == null) {
             return false;
         }
-        // If we want to track previous values, we make sure we are registered with the PeriodicUpdateGraph.
-        prevFlusher.maybeActivate();
-
         final int block = (int) (key >> LOG_BLOCK_SIZE);
         final int indexWithinBlock = (int) (key & INDEX_MASK);
         final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
@@ -186,18 +235,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
 
         boolean shouldRecordPrev = false;
 
-        // prevFlusher != null means we are tracking previous values.
-        final long[] inUse;
-        if (prevBlocks[block] == null) {
-            prevBlocks[block] = recycler.borrowItem();
-            prevInUse[block] = inUse = inUseRecycler.borrowItem();
-            if (prevAllocated == null) {
-                prevAllocated = new IntArrayList();
-            }
-            prevAllocated.add(block);
-        } else {
-            inUse = prevInUse[block];
-        }
+        final long[] inUse = prevInUseFor(block, prevBlocks, recycler);
         // Set value only if not already in use
         if ((inUse[indexWithinInUse] & maskWithinInUse) == 0) {
             shouldRecordPrev = true;
@@ -323,6 +361,33 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     abstract void resetBlocks(UArray[] newBlocks, UArray[] newPrev);
 
     abstract UArray[] getPrevBlocks();
+
+    /**
+     * @return the array of current-value blocks
+     */
+    abstract UArray[] getBlocks();
+
+    /**
+     * Drop the current-value storage for a block, returning it to the recycler for a later block. Previous-value
+     * storage is left for {@link #commitBlocks()}.
+     *
+     * @param blockIndex the block to release
+     */
+    abstract void releaseBlock(int blockIndex);
+
+    @Override
+    public void releaseBlocks(final long firstKey, final long lastKey) {
+        if (firstKey > maxIndex || lastKey < firstKey) {
+            return;
+        }
+        final long firstBlock = (firstKey + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
+        final long allocatedBlocks = (maxIndex + 1) >> LOG_BLOCK_SIZE;
+        // lastKey may be Long.MAX_VALUE, so it is only incremented when it lies within the capacity
+        final long endBlock = lastKey >= maxIndex ? allocatedBlocks : (lastKey + 1) >> LOG_BLOCK_SIZE;
+        for (long bi = firstBlock; bi < endBlock; ++bi) {
+            releaseBlock((int) bi);
+        }
+    }
 
     abstract SoftRecycler<UArray> getRecycler();
 

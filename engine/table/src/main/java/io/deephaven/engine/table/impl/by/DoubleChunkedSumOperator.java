@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -17,6 +18,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
@@ -315,6 +317,11 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter
     }
 
     @Override
+    ArrayBackedColumnSource<?> blockTemplate() {
+        return resultColumn;
+    }
+
+    @Override
     public void ensureCapacity(long tableSize) {
         resultColumn.ensureCapacity(tableSize);
         nonNullCount.ensureCapacity(tableSize);
@@ -369,5 +376,21 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter
     @Override
     public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
         return resultColumn.makeGetContext(chunkCapacity, sharedContext);
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        super.shift(shiftData);
+        resultColumn.shift(shiftData);
+        runningSum.shift(shiftData);
+        nonNullCount.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        super.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        runningSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 }
