@@ -793,8 +793,10 @@ final class HashMapLockFreeKnVn implements NullableLongLongMapTestAccessors {
         final boolean ascending = keys.get(n - 1) >= keys.get(0);
         final int step = n <= 64 ? 1 : n / 64;
         long previous = keys.get(0);
-        for (int ii = step; ii < n; ii += step) {
-            final long key = keys.get(ii);
+        // A long index: for a chunk within a factor of 65/64 of Integer.MAX_VALUE, the increment past the 64th sample
+        // would wrap an int negative, pass the bound and read a negative position. The cast is safe wherever ii < n.
+        for (long ii = step; ii < n; ii += step) {
+            final long key = keys.get((int) ii);
             if (ascending ? key < previous : key > previous) {
                 return false;
             }
