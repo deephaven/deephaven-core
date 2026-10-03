@@ -7,9 +7,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -22,6 +19,7 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGeneratorWithNulls;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -1174,31 +1172,6 @@ public class TestRollingGroup extends BaseUpdateByTest {
             } else {
                 assertArrayEquals("row " + ii, expected[ii], actual[ii].toArray());
             }
-        }
-    }
-
-    /**
-     * Sorted instants with a random fraction replaced by null; the non-null values remain sorted.
-     */
-    private static class SortedInstantGeneratorWithNulls extends SortedInstantGenerator {
-        final double nullFrac;
-
-        SortedInstantGeneratorWithNulls(Instant minTime, Instant maxTime, double nullFrac) {
-            super(minTime, maxTime);
-            this.nullFrac = nullFrac;
-        }
-
-        @Override
-        public Chunk<Values> populateChunk(RowSet toAdd, Random random) {
-            final ObjectChunk<Instant, Values> srcChunk = super.populateChunk(toAdd, random).asObjectChunk();
-            final Object[] dateArr = new Object[srcChunk.size()];
-            srcChunk.copyToArray(0, dateArr, 0, dateArr.length);
-            for (int ii = 0; ii < dateArr.length; ii++) {
-                if (random.nextDouble() < nullFrac) {
-                    dateArr[ii] = null;
-                }
-            }
-            return ObjectChunk.chunkWrap(dateArr);
         }
     }
 
