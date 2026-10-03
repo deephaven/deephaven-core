@@ -23,12 +23,11 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperat
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.Consumer;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.function.Consumer;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
