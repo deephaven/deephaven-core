@@ -1,4 +1,11 @@
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerLogsContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.github.dockerjava.api.command.InspectContainerResponse
+import io.deephaven.tools.docker.WaitForHealthyContainer
 
 plugins {
     id 'java-library'
@@ -24,12 +31,21 @@ dependencies {
     testImplementation project(':java-client-session')
     testImplementation project(':java-client-flight')
     testImplementation project(':java-client-barrage')
+    testImplementation project(':ssl-config')
+    // DoExchangeTest builds Barrage flatbuffer messages by hand
+    testImplementation libs.deephaven.barrage.format
+    testImplementation libs.flatbuffers.java
+    testImplementation project(':proto:proto-backplane-grpc-flight')
     testImplementation platform(libs.grpc.bom)
     testRuntimeOnly libs.grpc.netty
+    // TransportTest inspects netty directly: the native SSL provider and the buffer leak detector
+    testImplementation platform(libs.netty.bom)
+    testImplementation 'io.netty:netty-handler'
     // The barrage layer runs a client-side engine, which needs its configuration and logging on the classpath
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':log-to-slf4j')
-    testRuntimeOnly libs.logback.classic
+    // Compile scope because NettyLeakRecorder is a logback appender
+    testImplementation libs.logback.classic
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
@@ -54,6 +70,9 @@ test {
     // The examples share one server and publish fixed variable names, so run them in one fork, in order
     maxParallelForks = 1
 
+    // The TLS tests need the TLS server, which testTls below provides
+    exclude '**/*TlsTest*'
+
     // What the test exercises, so it reruns only when one of these changes (or with -PforceTest=true)
     inputs.files(configurations.examples)
     inputs.property('serverImageId', serverImage.flatMap { it.imageId })
@@ -62,6 +81,9 @@ test {
     // default configuration a user's process would, rather than the test conventions' dh-tests.prop (which, among
     // other things, forbids starting the update graph's refresh thread).
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+
+    // Make netty track every buffer and report leaks; TransportTest fails if any are reported
+    systemProperty 'io.netty.leakDetection.level', 'paranoid'
 
     dependsOn deephavenDocker.portTask
     finalizedBy deephavenDocker.endTask
@@ -75,3 +97,85 @@ test {
 }
 
 deephavenDocker.shouldLogIfTaskFails tasks.named('test')
+
+// A second server, serving TLS with the development certificates and accepting (but not requiring) client
+// certificates, for the TLS tests. The deephavenDocker extension manages one container per project, so these tasks
+// mirror it by hand: create, start, wait for healthy, read the published port, run the tests, log on failure, remove.
+def devCerts = rootProject.file('server/dev-certs')
+def tlsContainerName = "dh-server-tls-for-java-client-${randomSuffix}"
+def tlsPort = project.objects.property(Integer)
+
+def createTlsServer = tasks.register('createTlsServer', DockerCreateContainer) { t ->
+    t.dependsOn serverImage
+    t.targetImageId serverImage.flatMap { it.imageId }
+    t.containerName.set tlsContainerName
+    t.envVars.set([
+            // http.port is explicit because the server defaults to 443 once an SSL identity is configured
+            'START_OPTS': '-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,'
+                    + 'io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven '
+                    + '-Dhttp.port=10000 '
+                    + '-Dssl.identity.type=privatekey -Dssl.identity.certChainPath=/dev-certs/server.chain.crt '
+                    + '-Dssl.identity.privateKeyPath=/dev-certs/server.key '
+                    + '-Dssl.trust.type=certs -Dssl.trust.path=/dev-certs/ca.crt -Dssl.clientAuthentication=WANTED'
+    ])
+    t.hostConfig.binds.set([(devCerts.absolutePath): '/dev-certs'])
+    t.exposePorts('tcp', [10000])
+    t.hostConfig.portBindings.set(['10000'])
+    // The image's health check probes in plaintext; this server only speaks TLS
+    t.healthCheck.cmd.set(['/opt/grpc_health_probe/grpc_health_probe -addr=localhost:10000 -tls -tls-no-verify '
+            + '-connect-timeout=10s || exit 1'])
+}
+def startTlsServer = tasks.register('startTlsServer', DockerStartContainer) { t ->
+    t.dependsOn createTlsServer
+    t.containerId.set tlsContainerName
+}
+def waitForTlsHealthy = tasks.register('waitForTlsHealthy', WaitForHealthyContainer) { t ->
+    t.dependsOn startTlsServer
+    t.awaitStatusTimeout.set 60
+    t.checkInterval.set 100
+    t.containerId.set tlsContainerName
+}
+def waitForTlsPort = tasks.register('waitForTlsPort', DockerInspectContainer) { t ->
+    t.dependsOn waitForTlsHealthy
+    t.containerId.set tlsContainerName
+    t.onNext { Object obj ->
+        def inspect = (InspectContainerResponse) obj
+        tlsPort.set(Integer.parseInt(inspect.networkSettings.ports.bindings.values().first()[0].hostPortSpec))
+    }
+}
+def writeTlsServerLogs = tasks.register('writeTlsServerLogs', DockerLogsContainer) { t ->
+    t.targetContainerId tlsContainerName
+}
+def stopTlsServer = tasks.register('stopTlsServer', DockerRemoveContainer) { t ->
+    t.dependsOn createTlsServer
+    t.mustRunAfter writeTlsServerLogs
+    t.targetContainerId tlsContainerName
+    t.force.set true
+    t.removeVolumes.set true
+}
+// Whatever happens after the container exists, remove it
+createTlsServer.configure { finalizedBy stopTlsServer }
+
+def testTls = tasks.register('testTls', Test) { t ->
+    t.group = 'verification'
+    t.description = 'Runs the TLS tests against a second server started with the development certificates'
+    t.useJUnitPlatform()
+    t.include '**/*TlsTest*'
+    t.maxParallelForks = 1
+
+    t.inputs.property('serverImageId', serverImage.flatMap { it.imageId })
+    t.inputs.dir(devCerts)
+    t.systemProperty 'dh.devCerts', devCerts.absolutePath
+    t.systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    t.systemProperty 'io.netty.leakDetection.level', 'paranoid'
+
+    t.dependsOn waitForTlsPort
+    t.finalizedBy writeTlsServerLogs, stopTlsServer
+    t.doFirst {
+        t.systemProperty 'dh.tls.port', tlsPort.get()
+    }
+}
+writeTlsServerLogs.configure { t ->
+    t.onlyIf { testTls.get().state.failure != null }
+}
+tasks.named('check') { dependsOn testTls }

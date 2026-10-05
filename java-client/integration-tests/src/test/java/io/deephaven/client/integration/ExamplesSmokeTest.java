@@ -33,9 +33,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the variables that the ticket-taking examples reference.
  *
  * <p>
- * Not covered: {@code message-stream-send-receive} needs the echo plugin, {@code fetch-object} and
- * {@code convert-to-table} need a plugin object, none of which the server image has; {@code do-put-spray} copies
- * between two servers.
+ * Not covered: {@code message-stream-send-receive} needs a bidirectional plugin such as the echo plugin, and
+ * {@code convert-to-table} needs an object type whose fetch carries exports but no payload bytes (a Figure carries its
+ * descriptor); the server image has neither.
  */
 class ExamplesSmokeTest {
 
@@ -44,6 +44,7 @@ class ExamplesSmokeTest {
 
     private static final String STATIC_TABLE = "smoke_static";
     private static final String TICKING_TABLE = "smoke_ticking";
+    private static final String FIGURE = "smoke_figure";
 
     private static final Path OUTPUT_DIR = Paths.get("build", "example-output");
 
@@ -89,6 +90,7 @@ class ExamplesSmokeTest {
                 example(SESSION, "subscribe-fields", "Created: ", "-c", "1"),
                 example(SESSION, "subscribe-to-logs", "", "-q", "-c", "1", "--timeout", "PT30S"),
                 example(SESSION, "create-shared-id", "shared id: 0x", "--duration", "PT1S"),
+                example(SESSION, "fetch-object", "", "--type", "Figure", "--variable", FIGURE),
                 example(SESSION, "unreferenceable", "^Expected$"),
                 // flight
                 example(FLIGHT, "get-tsv", "duration"),
@@ -110,6 +112,9 @@ class ExamplesSmokeTest {
                 example(FLIGHT, "kv-input-table", "", "smoke_key", "smoke_value"),
                 example(FLIGHT, "get-table", "Table received: 10 rows", "--variable", STATIC_TABLE),
                 example(FLIGHT, "get-schema", "I", "--variable", STATIC_TABLE),
+                // The same server given twice: copies the table to itself under a new name
+                example(FLIGHT, "do-put-spray", "", "-t", ExampleRunner.target(), "s/" + STATIC_TABLE,
+                        "smoke_sprayed"),
                 // barrage
                 example(BARRAGE, "snapshot-table", "Table info", "--variable", STATIC_TABLE),
                 example(BARRAGE, "subscribe-table", "Received table update", "--variable", TICKING_TABLE, "--updates",
@@ -123,8 +128,11 @@ class ExamplesSmokeTest {
         runner = new ExampleRunner(OUTPUT_DIR);
         final Result result = runner.run(SESSION, "execute-code", TIMEOUT, "--python", String.join("\n",
                 "from deephaven import empty_table, time_table",
+                "from deephaven.plot.figure import Figure",
                 STATIC_TABLE + " = empty_table(10).update('I = ii')",
-                TICKING_TABLE + " = time_table('PT0.2S')"));
+                TICKING_TABLE + " = time_table('PT0.2S')",
+                // A plugin object the server image supports, which exports exactly one table
+                FIGURE + " = Figure().plot_xy(series_name='smoke', t=" + STATIC_TABLE + ", x='I', y='I').show()"));
         assertThat(result.exitCode).as("fixture setup: " + result.describe()).isZero();
     }
 

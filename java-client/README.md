@@ -255,9 +255,11 @@ the host under Gradle and spawns each launcher script as a child process with
 - The child JVM is the test JVM unless `-Ddh.examples.javaHome=<path>` is passed through to the
   test; the launcher scripts honor `JAVA_HOME`.
 
-Not covered, and why: `message-stream-send-receive` needs the echo plugin; `fetch-object` and
-`convert-to-table` need a plugin object; the server image has neither. `do-put-spray` copies between
-two servers.
+The setup also builds a Figure from the static table, a plugin object the image supports, so
+`fetch-object` has a row. `do-put-spray` runs with the same server given twice. Not covered, and
+why: `message-stream-send-receive` needs a bidirectional plugin such as the echo plugin, and
+`convert-to-table` needs an object type whose fetch carries exports but no payload bytes (a
+Figure's fetch carries its descriptor, which the example rejects); the server image has neither.
 
 ### The API-level tests
 
@@ -279,6 +281,39 @@ the same real netty channel, with assertions on what comes back rather than on e
 `TestServer` is the one place that knows the server's port and key. Tests open their own sessions
 and close them in try-with-resources; one factory per class is shut down in `@AfterAll`. Server
 variables they publish use an `api_` prefix.
+
+### The transport tests
+
+Nothing else in the repo runs grpc-netty against a real server, so `TransportTest` exists to catch
+what a netty or gRPC bump breaks rather than what the client API does. It is the test to run after
+such a bump, with `-PforceTest=true`:
+
+- A DoGet of about 80MB in many record batches, checked for completeness and order, and the same
+  table DoPut back: HTTP/2 flow control and both allocators on both sides.
+- `maxInboundMessageSize` set too small fails the stream with RESOURCE_EXHAUSTED; the default
+  carries the same table.
+- Thirty-two concurrent DoGets and three hundred concurrent unary calls over one channel while a
+  log subscription stays open on it.
+- A cancelled stream and a DEADLINE_EXCEEDED call, each followed by proof the channel still works.
+- The SSL provider matches the classpath: BoringSSL loaded if and only if a platform-classified
+  `netty-tcnative-boringssl-static` jar is present. Today none is (Arrow's flight-core brings the
+  classifier-less one, which has no natives), so the client's TLS runs on the JDK provider; a bump
+  that changes either side of that shows up here. The netty artifact versions in use are printed
+  into the report.
+- The test JVM runs with `io.netty.leakDetection.level=paranoid`; `logback-test.xml` routes netty's
+  leak reports into `NettyLeakRecorder`, and the class fails in `@AfterAll` if any were recorded or
+  if the Arrow allocator still holds memory.
+
+### The TLS tests
+
+`TlsTest` runs under its own task, `testTls`, against a second container started with the
+development certificates from `server/dev-certs` bind-mounted in, serving TLS on its port with
+client certificates wanted but not required. The `deephavenDocker` extension manages one container
+per project, so `build.gradle` registers that container's tasks by hand, mirroring the extension,
+with the image's plaintext health check replaced by a TLS one. The tests cover a trusted-CA
+connection, mutual TLS with the client certificate, Flight data over TLS, and two failures: the
+JDK's default trust rejecting the self-signed server, and plaintext against the TLS port. The
+`test` task excludes `*TlsTest*`; `check` runs both tasks.
 
 ### Things that have bitten
 

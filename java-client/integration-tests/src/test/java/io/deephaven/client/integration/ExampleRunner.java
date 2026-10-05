@@ -104,10 +104,11 @@ final class ExampleRunner {
         if (!exited) {
             process.destroyForcibly().waitFor(10, TimeUnit.SECONDS);
         }
+        // Some examples write raw bytes to stdout (fetch-object), so decode leniently rather than strictly
         return new Result(
                 exited ? process.exitValue() : -1,
                 !exited,
-                Files.readString(stdout, StandardCharsets.UTF_8),
-                Files.readString(stderr, StandardCharsets.UTF_8));
+                new String(Files.readAllBytes(stdout), StandardCharsets.UTF_8),
+                new String(Files.readAllBytes(stderr), StandardCharsets.UTF_8));
     }
 }
