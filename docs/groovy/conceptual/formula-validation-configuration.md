@@ -164,8 +164,8 @@ A pointcut expression has three parts:
 
 ### Pattern matching symbols
 
-- `*` = Match any single item (one method name, one parameter type, one package or class name, etc.).
-- `..` = In a parameter list, match any number of parameters of any type. In a class name, match any number of packages — `java.util..*` matches every class in `java.util` and its sub-packages, while `java.util.*` does not include sub-packages.
+- `*` = Match any single item (one method name, one parameter type, one package or class name, etc.). In a class name, this includes the binary name of a nested class, so `java.util.*` also matches `java.util.Map$Entry`. A method name of only `*` matches constructors as well as methods.
+- `..` = In a parameter list, match any number of parameters of any type. In a class name, match any number of package or enclosing class names — `java.util..*` matches every class in `java.util` and its sub-packages, and `java.util..Entry` matches `java.util.Map.Entry`, while `java.util.*` does not include sub-packages.
 - `;` = Separate multiple patterns in one property.
 
 ### Inherited methods
@@ -175,7 +175,7 @@ A pattern also matches every instance method that overrides a matching method. F
 ### Common examples
 
 ```properties
-# Allow any method on String class with any parameters
+# Allow any method or constructor of String, with any parameters
 ColumnExpressionValidator.allowedMethods.strings=java.lang.String *(..)
 
 # Allow only the length() method on String (no parameters)
@@ -184,7 +184,7 @@ ColumnExpressionValidator.allowedMethods.string_length=java.lang.String length()
 # Allow specific methods on Integer class
 ColumnExpressionValidator.allowedMethods.integers=java.lang.Integer valueOf(int);java.lang.Integer parseInt(java.lang.String)
 
-# Allow all methods on multiple number classes
+# Allow all methods and constructors of multiple number classes
 ColumnExpressionValidator.allowedMethods.numbers=java.lang.Integer *(..);java.lang.Double *(..);java.math.BigDecimal *(..)
 ```
 
@@ -193,16 +193,16 @@ ColumnExpressionValidator.allowedMethods.numbers=java.lang.Integer *(..);java.la
 Deephaven comes pre-configured with safe methods from common Java classes:
 
 ```properties
-# All methods on primitive wrapper classes (Integer, Double, etc.)
+# All methods and constructors of primitive wrapper classes (Integer, Double, etc.)
 ColumnExpressionValidator.allowedMethods.primitives=java.lang.Character *(..);java.lang.Byte *(..);java.lang.Short *(..);java.lang.Integer *(..);java.lang.Long *(..);java.lang.Float *(..);java.lang.Double *(..);java.lang.Boolean *(..)
 
-# String methods (safe because strings are immutable)
+# String methods and constructors (safe because strings are immutable)
 ColumnExpressionValidator.allowedMethods.basic=java.lang.String *(..)
 
-# Number and math classes
+# Methods and constructors of number and math classes, and overrides of their methods in subclasses
 ColumnExpressionValidator.allowedMethods.numbers=java.math.BigInteger *(..);java.math.BigDecimal *(..);java.lang.Number *(..)
 
-# Date and time classes
+# Methods and constructors of date and time classes
 ColumnExpressionValidator.allowedMethods.time=java.time.Instant *(..);java.time.LocalTime *(..);java.time.LocalDate *(..);java.time.ZonedDateTime *(..)
 
 # Common Object methods that are permitted

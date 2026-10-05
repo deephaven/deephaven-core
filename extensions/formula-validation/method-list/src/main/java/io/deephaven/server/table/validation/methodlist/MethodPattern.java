@@ -352,9 +352,9 @@ final class MethodPattern {
 
     /**
      * Translate a type pattern to a regular expression over canonical or binary class names. A {@code *} alone matches
-     * any argument type; otherwise it matches within one segment of a name. {@code ..} matches any number of
-     * intermediate packages, and an unqualified name that is not a primitive matches only the class of that name in
-     * {@code java.lang}.
+     * any argument type; otherwise it matches within one segment of a name, which may be the binary name of a nested
+     * class. {@code ..} matches any number of intermediate package or enclosing class names, and an unqualified name
+     * that is not a primitive matches only the class of that name in {@code java.lang}.
      */
     private static Pattern typePattern(final String text, final boolean argument) {
         String element = text.trim();

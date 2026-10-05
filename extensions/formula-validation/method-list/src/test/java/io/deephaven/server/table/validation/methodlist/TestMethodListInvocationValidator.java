@@ -57,6 +57,10 @@ public class TestMethodListInvocationValidator {
         assertPermitted("java.util.Map.Entry getKey()", Map.Entry.class.getMethod("getKey"));
         assertPermitted("java.util.Map$Entry getKey()", Map.Entry.class.getMethod("getKey"));
         assertNotPermitted("java.util.Entry getKey()", Map.Entry.class.getMethod("getKey"));
+        // "*" matches the binary name of a nested class, and ".." crosses enclosing class names
+        assertPermitted("java.util.* getKey()", Map.Entry.class.getMethod("getKey"));
+        assertPermitted("java.util..Entry getKey()", Map.Entry.class.getMethod("getKey"));
+        assertNotPermitted("java.util.*.Entry getKey()", ConcurrentHashMap.class.getMethod("mappingCount"));
     }
 
     @Test

@@ -23,8 +23,10 @@ import java.util.*;
  * <li>The declaring class must be fully qualified, except that a class in the {@code java.lang} package may be
  * unqualified. A nested class may be written as {@code java.util.Map.Entry} or {@code java.util.Map$Entry}.</li>
  * <li>A wildcard character, "*", may be used in the declaring class or method name. In the declaring class it matches
- * within a single package or class name; "..", as in {@code java..*}, matches any number of intermediate packages, and
- * {@code *..*} matches every class. A declaring class of only "*" is rejected.</li>
+ * within a single package or class name, which includes the binary name of a nested class, so {@code java.util.*}
+ * matches {@code java.util.Map$Entry}. "..", as in {@code java..*}, matches any number of intermediate package or
+ * enclosing class names, so {@code java.util..Entry} matches {@code java.util.Map.Entry}, and {@code *..*} matches
+ * every class. A declaring class of only "*" is rejected.</li>
  * <li>The argument list is expressed as a comma-separated list of the argument types. A type in the {@code java.lang}
  * package may be unqualified, "*" matches any single argument, and the last argument may be written as either
  * {@code T[]} or {@code T...}.</li>
