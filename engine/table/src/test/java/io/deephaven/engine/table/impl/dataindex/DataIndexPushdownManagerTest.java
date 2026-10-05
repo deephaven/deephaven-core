@@ -4,24 +4,31 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.RawString;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BasePushdownFilterContextImpl;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterMatcher;
+import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -164,6 +171,87 @@ public class DataIndexPushdownManagerTest {
         try (final PushdownFilterContext context = matcher.makePushdownFilterContext(filter, sources)) {
             context.updateExecutedFilterCost(1234L);
             assertThat(context.executedFilterCost()).isEqualTo(1234L);
+        }
+    }
+
+    /**
+     * The estimate advertises the data index cost exactly when the pushdown will use the index. At the threshold, a
+     * supported estimate followed by a pushdown that declines to use the index is a scheduled round that resolves
+     * nothing.
+     */
+    @Test
+    public void estimateAgreesWithPushdownAtThreshold() {
+        checkEstimateAgreesWithPushdownAtThreshold(null);
+    }
+
+    /**
+     * As {@link #estimateAgreesWithPushdownAtThreshold()}, through the branch that runs a wrapped matcher before the
+     * index. The wrapped matcher resolves nothing, so the index sees the whole selection.
+     */
+    @Test
+    public void estimateAgreesWithPushdownAtThresholdWithWrappedMatcher() {
+        checkEstimateAgreesWithPushdownAtThreshold(new RecordingMatcher());
+    }
+
+    /**
+     * Building the manager happens during filter setup on every {@code where()}, before anyone knows whether the index
+     * will be used. It needs only the index table's row count, so it must not force a lazily merged index to read and
+     * merge every location's row sets.
+     */
+    @Test
+    public void constructionDoesNotRequestFullIndexTable() {
+        final Table table = indexedTable();
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final List<DataIndexOptions> requests = new ArrayList<>();
+        final DataIndex recording = (DataIndex) Proxy.newProxyInstance(
+                DataIndex.class.getClassLoader(),
+                new Class<?>[] {DataIndex.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("table")) {
+                        final DataIndexOptions options = args == null ? DataIndexOptions.DEFAULT
+                                : (DataIndexOptions) args[0];
+                        requests.add(options);
+                        return dataIndex.table(options);
+                    }
+                    return method.invoke(dataIndex, args);
+                });
+
+        assertThat(DataIndexPushdownManager.wrap(recording, null)).isInstanceOf(DataIndexPushdownManager.class);
+        assertThat(requests).allMatch(DataIndexOptions::operationUsesPartialTable);
+    }
+
+    private static void checkEstimateAgreesWithPushdownAtThreshold(final PushdownFilterMatcher wrapped) {
+        final Table table = indexedTable();
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final WhereFilter filter = initializedFilter(table, "A == 5");
+        final List<ColumnSource<?>> sources = List.of(table.getColumnSource("A"));
+        final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+        assertThat(threshold).isBetween(2L, table.size() - 1);
+
+        final PushdownFilterMatcher matcher = DataIndexPushdownManager.wrap(dataIndex, wrapped);
+        for (final long size : new long[] {threshold - 1, threshold, threshold + 1}) {
+            try (final PushdownFilterContext context = matcher.makePushdownFilterContext(filter, sources);
+                    final RowSet selection = RowSetFactory.flat(size)) {
+                final AtomicLong cost = new AtomicLong(-1);
+                matcher.estimatePushdownFilterCost(filter, selection, false, context, new ImmediateJobScheduler(),
+                        cost::set, e -> {
+                            throw new AssertionError(e);
+                        });
+
+                final AtomicReference<PushdownResult> result = new AtomicReference<>();
+                matcher.pushdownFilter(filter, selection, false, context, cost.get(), new ImmediateJobScheduler(),
+                        result::set, e -> {
+                            throw new AssertionError(e);
+                        });
+                try (final PushdownResult pushed = result.get()) {
+                    assertNotNull(pushed);
+                    final boolean supported = cost.get() == PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST;
+                    final boolean usedIndex = pushed.maybeMatch().size() < selection.size();
+                    assertThat(usedIndex)
+                            .as("selection size %d, threshold %d, estimated cost %d", size, threshold, cost.get())
+                            .isEqualTo(supported);
+                }
+            }
         }
     }
 }
