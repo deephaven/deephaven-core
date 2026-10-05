@@ -27,8 +27,10 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.*;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.ref.Reference;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -1599,9 +1601,13 @@ public class SessionStateTest {
             session.newServerSideExport(export);
         }
         Assert.eq(export.refCount, "export.refCount", 1);
-        session.addOnCloseCallback(() -> {
+        // the session holds close callbacks weakly; keep ours reachable, and collect now so a dropped reference fails
+        // here rather than only under GC pressure
+        final Closeable onClose = () -> {
             throw new IOException("close failed");
-        });
+        };
+        session.addOnCloseCallback(onClose);
+        System.gc();
 
         boolean fatal = false;
         try {
@@ -1613,6 +1619,7 @@ public class SessionStateTest {
         // the exports were already torn down; the session is expired either way
         Assert.eqTrue(session.isExpired(), "session.isExpired()");
         Assert.eq(export.refCount, "export.refCount", 0);
+        Reference.reachabilityFence(onClose);
     }
 
     @Test
@@ -2324,7 +2331,11 @@ public class SessionStateTest {
         }
         Assert.eq(unrelatedResult.refCount, "unrelatedResult.refCount", 1);
         final MutableBoolean onCloseInvoked = new MutableBoolean();
-        session.addOnCloseCallback(onCloseInvoked::setTrue);
+        // the session holds close callbacks weakly; keep ours reachable, and collect now so a dropped reference fails
+        // here rather than only under GC pressure
+        final Closeable onClose = onCloseInvoked::setTrue;
+        session.addOnCloseCallback(onClose);
+        System.gc();
         final QueueingExportListener listener = new QueueingExportListener();
         session.addExportListener(listener);
 
@@ -2343,6 +2354,7 @@ public class SessionStateTest {
         Assert.eqTrue(onCloseInvoked.booleanValue(), "onCloseInvoked.booleanValue()");
         Assert.eqTrue(listener.isComplete, "listener.isComplete");
         Assert.eq(session.numExportListeners(), "session.numExportListeners()", 0);
+        Reference.reachabilityFence(onClose);
     }
 
     // endregion
