@@ -6,8 +6,13 @@ package io.deephaven.engine.table.impl.perf;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 public class QueryPerformanceRecorderNestingTest {
 
@@ -265,6 +270,100 @@ public class QueryPerformanceRecorderNestingTest {
             recorder.endQuery();
         }
         assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    /**
+     * While a query is resumed on top of another, the outer query is not running, so its time must not include the
+     * inner query's: the catch-all that was accruing uninstrumented time for the outer pauses for the duration.
+     */
+    @Test
+    public void testNestedQueryTimeIsNotChargedToTheOuterCatchAll() throws InterruptedException {
+        final CapturingFactory factory = new CapturingFactory();
+        final QueryPerformanceRecorder outer = QueryPerformanceRecorder.newQuery("outer", null, factory);
+        final QueryPerformanceRecorder inner = suspendedQuery("inner");
+
+        try (final SafeCloseable ignored = outer.startQuery()) {
+            try (final SafeCloseable ignored2 = inner.resumeQuery()) {
+                Thread.sleep(INNER_SLEEP_MILLIS);
+                inner.endQuery();
+            }
+            outer.endQuery();
+        }
+
+        Assert.eq(factory.catchAlls.size(), "factory.catchAlls.size()", 1);
+        assertExcludesInnerTime(factory.catchAlls.get(0), "outer catch-all");
+    }
+
+    /** As above, for an outer query whose time is going to an open operation nugget rather than the catch-all. */
+    @Test
+    public void testNestedQueryTimeIsNotChargedToTheOuterOperationNugget() throws InterruptedException {
+        final QueryPerformanceRecorder outer = newQuery("outer");
+        final QueryPerformanceRecorder inner = suspendedQuery("inner");
+
+        try (final SafeCloseable ignored = outer.startQuery()) {
+            final QueryPerformanceNugget operation = outer.getNugget("operation", 0);
+            try (final SafeCloseable ignored2 = inner.resumeQuery()) {
+                Thread.sleep(INNER_SLEEP_MILLIS);
+                inner.endQuery();
+            }
+            operation.close();
+            assertExcludesInnerTime(operation, "outer operation nugget");
+            outer.endQuery();
+        }
+    }
+
+    /**
+     * Aborting the outer query while another is nested on top of it must terminate and leave the outer interrupted,
+     * whether its time was going to the catch-all or to an open operation nugget, and the thread is still handed back.
+     */
+    @Test
+    public void testAbortingTheOuterQueryWhileNestedTerminates() throws InterruptedException {
+        for (final boolean withOperation : new boolean[] {false, true}) {
+            final QueryPerformanceRecorder outer = newQuery("outer");
+            final QueryPerformanceRecorder inner = suspendedQuery("inner");
+            try (final SafeCloseable ignored = outer.startQuery()) {
+                final QueryPerformanceNugget operation = withOperation ? outer.getNugget("operation", 0) : null;
+                try (final SafeCloseable ignored2 = inner.resumeQuery()) {
+                    final Thread aborter = new Thread(outer::abortQuery, "aborter");
+                    aborter.start();
+                    aborter.join(5_000);
+                    Assert.eqFalse(aborter.isAlive(), "aborter.isAlive() (withOperation=" + withOperation + ")");
+                    Assert.eq(outer.getState(), "outer.getState()", QueryState.INTERRUPTED);
+                    assertCurrentRecorder(inner);
+                    inner.endQuery();
+                }
+                assertCurrentRecorder(outer);
+                if (operation != null) {
+                    operation.close();
+                }
+                Assert.eqFalse(outer.endQuery(), "outer.endQuery()");
+            }
+            assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+        }
+    }
+
+    private static final long INNER_SLEEP_MILLIS = 100;
+
+    private static void assertExcludesInnerTime(final QueryPerformanceNugget nugget, final String what) {
+        final long usageMillis = nugget.getUsageNanos() / 1_000_000;
+        Assert.lt(usageMillis, what + " usage millis", INNER_SLEEP_MILLIS / 2, "half the inner query's sleep");
+    }
+
+    /** Records the catch-all nuggets it creates, so a test can read what the outer query charged to them. */
+    private static final class CapturingFactory implements QueryPerformanceNugget.Factory {
+        final List<QueryPerformanceNugget> catchAlls = new ArrayList<>();
+
+        @Override
+        public QueryPerformanceNugget createForCatchAll(
+                @NotNull final QueryPerformanceNugget parentQuery,
+                final int operationNumber,
+                @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
+            final QueryPerformanceNugget nugget =
+                    QueryPerformanceNugget.Factory.super.createForCatchAll(parentQuery, operationNumber,
+                            onCloseCallback);
+            catchAlls.add(nugget);
+            return nugget;
+        }
     }
 
     private static QueryPerformanceRecorder newQuery(final String description) {
