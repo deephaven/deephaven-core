@@ -9,7 +9,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
@@ -24,7 +23,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
-import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -793,10 +791,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
-        final MutableLong minCost = new MutableLong(PushdownResult.UNSUPPORTED_ACTION_COST);
-        // The per constituent selections must outlive their estimates, which may complete asynchronously. The
-        // iteration's cleanup runs only after onComplete returns, so onError must close them on failure.
+        if (ctx.matchers.isEmpty()) {
+            // No constituent that overlaps the selection can push the filter down.
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
+            return;
+        }
+
+        final long[] costs = new long[ctx.matchers.size()];
+        Arrays.fill(costs, PushdownResult.UNSUPPORTED_ACTION_COST);
         final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
+        // Close on success and failure to ensure no resource leaks.
         final Runnable closeLocalSelections = () -> SafeCloseableArray.close(localSelections);
 
         jobScheduler.iterateParallel(
@@ -821,13 +825,11 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     matcher.estimatePushdownFilterCost(
                             filter, localSelection, usePrev, ctx.contexts.get(idx), jobScheduler,
                             cost -> {
-                                synchronized (minCost) {
-                                    minCost.set(Math.min(minCost.get(), cost));
-                                }
+                                costs[idx] = cost;
                                 resume.run();
                             }, nec);
                 },
-                () -> onComplete.accept(minCost.get()),
+                () -> onComplete.accept(Arrays.stream(costs).min().getAsLong()),
                 closeLocalSelections,
                 e -> {
                     try (final SafeCloseable ignored = closeLocalSelections::run) {
@@ -849,12 +851,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
+        if (ctx.matchers.isEmpty()) {
+            // No constituent that overlaps the selection can push the filter down, so every row is a maybe.
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
+        }
 
         final WritableRowSet[] matches = new WritableRowSet[ctx.matchers.size()];
         final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.matchers.size()];
-        // The per constituent selections must outlive their pushdowns, which may complete asynchronously. The
-        // iteration's cleanup runs only after onComplete returns, so onError must close these on failure.
         final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
+        // Close on success and failure to ensure no resource leaks.
         final Runnable closeConstituentRowSets = () -> {
             SafeCloseableArray.close(localSelections);
             SafeCloseableArray.close(matches);

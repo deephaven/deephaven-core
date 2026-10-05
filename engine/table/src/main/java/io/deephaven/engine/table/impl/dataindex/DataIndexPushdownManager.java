@@ -20,10 +20,10 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
@@ -124,10 +124,11 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
                         // Skipping the data index filter, continue the wrapped filter up to the cost ceiling. The
                         // first result is released once, when its matches are combined or when the second round
-                        // fails; a consumer that throws may be reported to onError after the combination.
-                        final AtomicBoolean resultReleased = new AtomicBoolean();
+                        // fails.
+                        final MutableBoolean resultReleased = new MutableBoolean();
                         final Runnable releaseResult = () -> {
-                            if (resultReleased.compareAndSet(false, true)) {
+                            if (resultReleased.isFalse()) {
+                                resultReleased.setTrue();
                                 result.close();
                             }
                         };
@@ -140,14 +141,18 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                                 jobScheduler,
                                 nextResult -> {
                                     // Combine the match results from earlier pushdown
-                                    try (final SafeCloseable ignored = releaseResult::run) {
+                                    try {
                                         nextResult.match().insert(result.match());
+                                    } finally {
+                                        releaseResult.run();
                                     }
                                     onComplete.accept(nextResult);
                                 },
                                 e -> {
-                                    try (final SafeCloseable ignored = releaseResult::run) {
+                                    try {
                                         onError.accept(e);
+                                    } finally {
+                                        releaseResult.run();
                                     }
                                 });
                     },

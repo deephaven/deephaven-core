@@ -1841,9 +1841,17 @@ public abstract class QueryTableWhereTest {
     }
 
     /**
-     * A filter that records the row sets it returns.
+     * A filter that records the row sets it returns, so that a test can check the engine released them.
+     * <p>
+     * A filter's result belongs to its caller, here the filter driver, which must close it or move its contents into
+     * another row set. The leak tests below use this filter to check that every result was released. It extends
+     * {@link RowSetCapturingFilter} only to reuse its delegation to the wrapped filter; the captured input copies are
+     * unused, and are closed with the filter.
      */
     private static class OutputRecordingFilter extends RowSetCapturingFilter {
+        // References to the returned row sets themselves, not copies: a copy is never closed by the engine, so it could
+        // not show whether the original was released. They are owned by the engine and not safe to read, so this
+        // filter never closes or inspects their contents.
         private final List<RowSet> outputs = new ArrayList<>();
 
         private OutputRecordingFilter(final Filter filter) {
@@ -1861,11 +1869,18 @@ public abstract class QueryTableWhereTest {
             return output;
         }
 
+        /**
+         * Returns this filter, rather than a copy wrapping a copied inner filter as the base does, so that a result
+         * produced by any copy the engine makes is recorded in {@link #outputs}.
+         */
         @Override
         public WhereFilter copy() {
             return this;
         }
 
+        /**
+         * Asserts that the filter ran, and that the engine released every row set it returned.
+         */
         private void assertAllClosed() {
             assertFalse("sanity: the filter must have run", outputs.isEmpty());
             for (final RowSet output : outputs) {

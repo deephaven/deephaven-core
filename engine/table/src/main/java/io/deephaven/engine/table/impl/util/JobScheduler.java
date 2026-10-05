@@ -216,9 +216,16 @@ public interface JobScheduler {
                                 IterationManager::onUnexpectedJobError);
                     } catch (Exception e) {
                         if (!taskInvoker.failIfNotStarted(e)) {
-                            // The scheduler ran the task inline, and the task has released its own resources.
+                            // The TaskInvoker started before submit threw, so the scheduler runs jobs inline and this
+                            // exception did not refuse the task. A started TaskInvoker owns its own lifecycle: it has
+                            // closed itself, or will when its work completes, so failing it here would close it twice.
+                            // Any task failure was already delivered through its own error path, so this exception
+                            // belongs to the caller, as it did before the submit was guarded.
                             throw e;
                         }
+                        // The scheduler refused the task, so nothing else will ever run or close the TaskInvoker. It
+                        // has been failed and closed; stop submitting. The finally releases the initial reference, and
+                        // the iteration ends through onError once any accepted tasks have seen the failure.
                         break;
                     } catch (Error e) {
                         // Deliver before rethrowing, as TaskInvoker.execute does.

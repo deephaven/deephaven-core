@@ -394,7 +394,8 @@ public abstract class AbstractTableLocation
             // Initialize the pushdown result with the selection rowset as "maybe" rows
             result = PushdownResult.allMaybeMatch(selection);
             for (final RegionedPushdownAction action : sorted) {
-                // Each action's input is closed whether or not the action succeeds.
+                // Each action's input is closed whether or not the action succeeds. Set result to null so it isn't
+                // closed twice on an exception.
                 final PushdownResult input = result;
                 result = null;
                 try (input) {
