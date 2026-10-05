@@ -3,37 +3,40 @@
 //
 package io.deephaven.server.session;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.TestExecutionContext;
-import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
-import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.hash.KeyedIntObjectHashMap;
-import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.server.util.TestControlledScheduler;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.auth.AuthContext;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.lang.ref.Reference;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,15 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.DEPENDENCY_FAILED;
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.EXPORTED;
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.FAILED;
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.PENDING;
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.QUEUED;
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.RELEASED;
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.RUNNING;
-import static io.deephaven.proto.backplane.grpc.ExportNotification.State.UNKNOWN;
+import static io.deephaven.proto.backplane.grpc.ExportNotification.State.*;
 import static io.deephaven.proto.util.ExportTicketHelper.ticketToExportId;
 import static org.junit.Assert.assertThrows;
 
