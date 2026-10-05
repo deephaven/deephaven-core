@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
@@ -21,6 +22,8 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
@@ -182,6 +185,14 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
         }
     }
     // endregion Shifts
+
+    @Override
+    protected void collectSparseSources(@NotNull final Consumer<SparseArrayColumnSource<?>> consumer) {
+        super.collectSparseSources(consumer);
+        if (emaSource instanceof SparseArrayColumnSource) {
+            consumer.accept((SparseArrayColumnSource<?>) emaSource);
+        }
+    }
 
     @Override
     public void prepareForParallelPopulation(final RowSet changedRows) {

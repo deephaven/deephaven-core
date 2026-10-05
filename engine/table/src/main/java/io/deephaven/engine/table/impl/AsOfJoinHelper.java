@@ -329,6 +329,7 @@ public class AsOfJoinHelper {
             @Override
             public void onUpdate(TableUpdate upstream) {
                 rowRedirection.removeAll(upstream.removed());
+                rowRedirection.releaseVacatedStorage(upstream.removed(), upstream.shifted(), leftTable.getRowSet());
 
                 final boolean keysModified = upstream.modifiedColumnSet().containsAny(leftKeysOrStamps);
 
@@ -1695,6 +1696,8 @@ public class AsOfJoinHelper {
                                 @Override
                                 public void onUpdate(TableUpdate upstream) {
                                     rowRedirection.removeAll(upstream.removed());
+                                    rowRedirection.releaseVacatedStorage(upstream.removed(), upstream.shifted(),
+                                            leftTable.getRowSet());
 
                                     final boolean stampModified = upstream.modified().isNonempty()
                                             && upstream.modifiedColumnSet().containsAny(leftStampColumn);
