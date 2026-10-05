@@ -3,8 +3,10 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseablePair;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -340,6 +342,7 @@ public class RowSetShiftDataApplyTest {
      * the first of which also warms up both paths.
      */
     @Test
+    @Category(OutOfBandTest.class)
     public void testTinyRowSetsNearEndOfManyRangesAreBounded() {
         final int numRanges = 1_000_000;
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
