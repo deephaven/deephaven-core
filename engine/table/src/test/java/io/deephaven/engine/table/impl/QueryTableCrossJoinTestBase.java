@@ -263,6 +263,41 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         listener.reset();
     }
 
+    @Test
+    public void testLeftTickingModifiedColumnsPerCycle() {
+        for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+            final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), intCol("K", 1, 2), intCol("A", 1, 2),
+                    intCol("B", 1, 2));
+            final QueryTable right = testTable(i(0, 1).toTracking(), intCol("K", 1, 2), intCol("Y", 3, 4));
+            final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+            final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+            final QueryTable joined = (QueryTable) (leftOuterJoin
+                    ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, numRightBitsToReserve)
+                    : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, numRightBitsToReserve));
+            final SimpleListener listener = new SimpleListener(joined);
+            joined.addUpdateListener(listener);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            // the key column is written with its existing value, so the row keeps its slot
+            final int[] aValues = {11, 11, 11};
+            final int[] bValues = {1, 1, 12};
+            final String[] columns = {"A", "K", "B"};
+            for (int step = 0; step < columns.length; ++step) {
+                final String column = columns[step];
+                final int aValue = aValues[step];
+                final int bValue = bValues[step];
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(left, i(0), intCol("K", 1), intCol("A", aValue), intCol("B", bValue));
+                    left.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                            left.newModifiedColumnSet(column)));
+                });
+                assertEquals("leftOuterJoin=" + leftOuterJoin + ", column=" + column,
+                        joined.newModifiedColumnSet(column), listener.update.modifiedColumnSet());
+                listener.reset();
+            }
+        }
+    }
+
     private ErrorListener makeAndListenToValidator(QueryTable joined) {
         final TableUpdateValidator validator = TableUpdateValidator.make("joined", joined);
         final QueryTable validatorResult = validator.getResultTable();

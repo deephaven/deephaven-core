@@ -239,7 +239,8 @@ public class CrossJoinHelper {
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                             } else {
                                 downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
-                                leftTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+                                leftTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                        downstream.modifiedColumnSet);
                             }
                         } else if (upstream.modified().isNonempty()) {
                             final RowSetBuilderSequential modBuilder = RowSetFactory.builderSequential();
@@ -254,7 +255,8 @@ public class CrossJoinHelper {
                             });
                             downstream.modified = modBuilder.build();
                             downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
-                            leftTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+                            leftTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                    downstream.modifiedColumnSet);
                         } else {
                             downstream.modified = RowSetFactory.empty();
                             downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
