@@ -42,8 +42,9 @@ import java.util.Optional;
  * <p>
  * A query-scope parameter is converted to the column's type as {@link MatchFilter} converts it, so that the filter
  * selects the rows a {@link ConditionFilter} would. Where the converted value would select other rows -- a value the
- * conversion rejects, or {@code -0.0} against a byte, short, int or char column (the query language orders it below
- * {@code 0}, which the converted value {@code 0} is not) -- the filter fails over to a {@link ConditionFilter}.
+ * conversion rejects, a value of another type that the conversion leaves as it is (an {@link Integer} against a
+ * {@link String} column, say), or {@code -0.0} against a byte, short, int or char column (the query language orders it
+ * below {@code 0}, which the converted value {@code 0} is not) -- the filter fails over to a {@link ConditionFilter}.
  *
  * <p>
  * Two differences remain. Float and double columns' range filters treat {@code -0.0} and {@code 0.0} as equal, where
@@ -261,11 +262,9 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
             try {
                 final Map<String, Object> queryScopeVariables =
                         compilationProcessor.getFormulaImports().getQueryScopeVariables();
-                if (!MatchFilter.ColumnTypeConvertor.isColumnReference(tableDefinition, value)) {
-                    // a column of the same name takes precedence over the variable
-                    queryScopeValue =
-                            MatchFilter.ColumnTypeConvertor.maybeUnwrapPyObject(queryScopeVariables.get(value));
-                }
+                // consulted only if convertValue succeeds, which it does not when a column of this name takes
+                // precedence
+                queryScopeValue = MatchFilter.ColumnTypeConvertor.maybeUnwrapPyObject(queryScopeVariables.get(value));
                 boolean wasAnArrayType = convertor.convertValue(
                         def, tableDefinition, value, queryScopeVariables, realValue::setValue);
                 if (wasAnArrayType) {
@@ -277,6 +276,11 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     // Double.compare, ordering -0.0 below 0: X <= -0.0 excludes 0 there, though -0.0 converts to 0.
                     potentialConversionError = new IllegalArgumentException("RangeFilter cannot compare column "
                             + columnName + " with -0.0 as the query language does");
+                } else if (realValue.getValue() != null
+                        && !TypeUtils.getBoxedType(colClass).isInstance(realValue.getValue())) {
+                    // a value the convertor passed through unconverted, which the range filters below would cast
+                    potentialConversionError = MatchFilter.ColumnTypeConvertor.cannotConvert(realValue.getValue(),
+                            TypeUtils.getBoxedType(colClass), "it is not of the column's type", null);
                 }
             } catch (final RuntimeException err) {
                 potentialConversionError = err;

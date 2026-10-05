@@ -142,8 +142,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /**
      * Returns {@code convertedValues} without the values that can never match the column, or {@code convertedValues}
-     * itself when there is nothing to remove: NaN if {@code dropNaN}, and, on a {@link BigDecimal} column, any value
-     * that is neither null nor a {@link BigDecimal}. The values are always post-conversion.
+     * itself when there is nothing to remove: NaN if {@code dropNaN}, and any value that is neither null nor an
+     * instance of the column type (boxed, for a primitive column). The values are always post-conversion.
      *
      * <p>
      * Without {@link MatchOptions#nanMatch()} a match on a primitive column follows IEEE 754, where NaN is equal to
@@ -153,19 +153,20 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
      * {@link #getValues()} contract for primitive floating-point columns.
      *
      * <p>
-     * A {@link BigDecimal} column is matched by {@link BigDecimal#compareTo(BigDecimal)}, as the query language's
-     * {@code ==} matches it, and only a {@link BigDecimal} can be compared that way. The convertor passes a value that
-     * is not a number through as it is, and no row of the column can match it. Null is kept: it matches a null cell.
-     * Dropping the value does not change which rows the filter selects, but it protects the consumers of
-     * {@link #getValues()}: the column's chunk filter ({@code BigDecimalChunkMatchFilterFactory}) skips a value of
-     * another type itself, but the sorted-column pushdown ({@code SortedColumnPushdownManager} and the region binary
-     * search kernels) locates every value by ordering, and {@code compareTo} between a {@link BigDecimal} and a value
-     * of another type throws {@link ClassCastException}.
+     * The convertors pass a value they do not convert through as it is: a {@link String} for a {@link BigInteger}
+     * column, or an {@link Integer} for a {@link String} column. No row can match such a value, as the column's chunk
+     * filter matches by {@code equals}, or for a {@link BigDecimal} column by {@link BigDecimal#compareTo(BigDecimal)},
+     * and neither holds between a value and a cell of an unrelated class. Dropping it therefore does not change which
+     * rows the filter selects, but it protects the consumers of {@link #getValues()} that assume the column type: the
+     * sorted-column pushdown ({@code SortedColumnPushdownManager} and the region binary search kernels) locates every
+     * value by ordering, where {@code compareTo} between the column type and a value of another class throws
+     * {@link ClassCastException}, and the case-insensitive {@link String} chunk filter casts every value to
+     * {@link String}. Null is kept: it matches a null cell. An {@link Object} column keeps every value.
      */
     private Object[] dropUnmatchable(final Object[] convertedValues, final boolean dropNaN) {
+        final Class<?> valueType = TypeUtils.getBoxedType(columnType);
         final Object[] retained = Arrays.stream(convertedValues)
-                .filter(value -> !(dropNaN && isNaN(value))
-                        && !(columnType == BigDecimal.class && value != null && !(value instanceof BigDecimal)))
+                .filter(value -> !(dropNaN && isNaN(value)) && (value == null || valueType.isInstance(value)))
                 .toArray();
         return retained.length == convertedValues.length ? convertedValues : retained;
     }
@@ -288,12 +289,16 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             // Converts query-scope variables and direct values; a literal is parsed by convertStringLiteral instead.
             final UnaryOperator<Object> convertParam = value -> {
                 final Object unwrapped = ColumnTypeConvertor.maybeUnwrapPyObject(value);
-                if (!nanMatch && isNaN(unwrapped)) {
-                    // passed through unconverted, to be dropped later; converting it to an integral type would throw,
-                    // although NaN simply matches nothing
+                if (!nanMatch && columnType.isPrimitive() && isNaN(unwrapped)) {
+                    // Passed through unconverted, to be dropped below: converting it to an integral type would throw,
+                    // although NaN simply matches nothing. Only a primitive column's NaN is dropped, so any other
+                    // column's convertor sees it. The BigDecimal and BigInteger convertors reject it, so the filter
+                    // fails over to the query language, where NaN equals no big number. The others pass it through:
+                    // dropUnmatchable removes it as a value of another type, unless the column can hold it, as an
+                    // Object column can, which matches it by equals.
                     return unwrapped;
                 }
-                return convertor.convertParamValue(value);
+                return convertor.convertParamValue(unwrapped);
             };
             final Object[] converted;
             if (strValues == null) {
@@ -533,18 +538,6 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
          */
         static BigDecimal toBigDecimal(final Number number) {
             return isFloatingPoint(number) ? BigDecimal.valueOf(number.doubleValue()) : exactValue(number);
-        }
-
-        /**
-         * Whether {@code strValue} names a column, or a column array ({@code X_} for column {@code X}), of
-         * {@code tableDefinition}; a column takes precedence over a query-scope variable of the same name.
-         */
-        static boolean isColumnReference(
-                @NotNull final TableDefinition tableDefinition,
-                @NotNull final String strValue) {
-            return tableDefinition.getColumn(strValue) != null
-                    || (strValue.endsWith("_")
-                            && tableDefinition.getColumn(strValue.substring(0, strValue.length() - 1)) != null);
         }
 
         /**
@@ -887,7 +880,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                             return BigDecimal.valueOf((Character) paramValue);
                         }
                         if (!(paramValue instanceof Number)) {
-                            // it can never match, and dropUnmatchable removes it
+                            // it can never match: MatchFilter drops it, and RangeFilter fails over
                             return paramValue;
                         }
                         try {
@@ -927,7 +920,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                             return BigInteger.valueOf((Character) paramValue);
                         }
                         if (!(paramValue instanceof Number)) {
-                            // it can never equal a BigInteger, so it matches nothing
+                            // it can never match: MatchFilter drops it, and RangeFilter fails over
                             return paramValue;
                         }
                         try {

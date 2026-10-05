@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -568,6 +569,71 @@ public class MatchFilterCoercionTest {
         assertTableEquals(newTable(intCol("X", 1)), t.where("X in coercionNanArray"));
         assertTableEquals(newTable(intCol("X", 1)), t.where("X in coercionNanList"));
         assertTableEquals(newTable(intCol("X", 0)), t.where("X not in coercionNanArray"));
+    }
+
+    @Test
+    public void nanAgainstABigNumberColumnSelectsWhatTheFailoverSelects() {
+        // NaN equals no BigInteger or BigDecimal in the query language. The convertors reject it, so == fails over and
+        // in is rejected. It used to be kept among the match values, where a sorted column's pushdown, ordering it
+        // against the column's values, threw ClassCastException.
+        QueryScope.addParam("coercionNan", Double.NaN);
+        QueryScope.addParam("coercionNanF", Float.NaN);
+        final Table bigIntegers = newTable(col("X", BigInteger.ONE, null, BigInteger.ZERO)).sort("X");
+        final Table bigDecimals = newTable(col("X", BigDecimal.ONE, null, BigDecimal.ZERO)).sort("X");
+
+        for (final Table t : new Table[] {bigIntegers, bigDecimals}) {
+            assertSameRowsAsFailover(t, "X == coercionNan", "X != coercionNan", "X == coercionNanF");
+            assertTrue(failsOver(t, "X == coercionNan"));
+            assertEquals(0, t.where("X == coercionNan").size());
+            assertRejected(() -> t.where("X in coercionNan"));
+            assertRejected(() -> t.where(new MatchFilter(MatchOptions.REGULAR, "X", Double.NaN)));
+        }
+    }
+
+    @Test
+    public void matchValueOfAnotherTypeMatchesNothing() {
+        // A value the convertor leaves as it is can never match, so it is dropped from the match values. That spares
+        // the consumers that assume the column type: the sorted-column pushdown, which orders each value against the
+        // column's values, and the case-insensitive String filter, which casts each value to String. Both threw
+        // ClassCastException for it.
+        QueryScope.addParam("coercionStr", "abc");
+        QueryScope.addParam("coercionInt", 5);
+        final Table strings = newTable(stringCol("X", "a", null, "b")).sort("X");
+        final Table bigIntegers = newTable(col("X", BigInteger.ONE, null, BigInteger.ZERO)).sort("X");
+        final Table bigDecimals = newTable(col("X", BigDecimal.ONE, null, BigDecimal.ZERO)).sort("X");
+        final Table instants = newTable(col("X", Instant.EPOCH, null, Instant.EPOCH.plusSeconds(1))).sort("X");
+
+        for (final Table t : new Table[] {bigIntegers, bigDecimals, instants}) {
+            assertEquals(0, t.where("X in coercionStr").size());
+            assertEquals(3, t.where("X not in coercionStr").size());
+            assertEquals(0, t.where(new MatchFilter(MatchOptions.REGULAR, "X", "abc")).size());
+        }
+        assertEquals(0, strings.where("X in coercionInt").size());
+        assertEquals(3, strings.where("X not in coercionInt").size());
+        assertEquals(0, strings.where("X icase in coercionInt").size());
+        assertTableEquals(newTable(stringCol("X", "a")), strings.where("X icase in coercionInt, `A`"));
+
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "X", "a", 5, null);
+        filter.init(strings.getDefinition());
+        assertArrayEquals(new Object[] {"a", null}, filter.getValues());
+
+        // an Object column can hold any value, so it keeps them all
+        final Table objects = newTable(col("X", new Object[] {5, "a", BigInteger.ONE}));
+        assertEquals(2, objects.where(new MatchFilter(MatchOptions.REGULAR, "X", 5, "a")).size());
+    }
+
+    @Test
+    public void rangeBoundOfAnotherTypeFailsOver() {
+        // RangeFilter used to cast a value the convertor left as it is, throwing ClassCastException at init. It now
+        // fails over, and the result is whatever the query language makes of the comparison: it compares a String with
+        // an Integer by casting one to the other's type, so that one still throws ClassCastException, from the
+        // failover rather than from RangeFilter.
+        QueryScope.addParam("coercionStr", "abc");
+        QueryScope.addParam("coercionInt", 5);
+        assertTrue(failsOver(newTable(stringCol("X", "a", "b")), "X < coercionInt"));
+        assertTrue(failsOver(newTable(col("X", BigDecimal.ONE, BigDecimal.ZERO)), "X < coercionStr"));
+        assertTrue(failsOver(newTable(col("X", BigInteger.ONE, BigInteger.ZERO)), "X <= coercionStr"));
+        assertTrue(failsOver(newTable(col("X", Instant.EPOCH)), "X >= coercionInt"));
     }
 
     @Test
