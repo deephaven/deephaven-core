@@ -538,7 +538,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     throw new IllegalStateException(String.format(
                             "%s: used %s after close", description, this.getClass()));
                 }
-                if (leftChunkCapacity >= leftGroupSize) {
+                final int requiredLeftChunkCapacity = (int) Math.min(MAX_LEFT_CHUNK_CAPACITY, leftGroupSize);
+                if (leftChunkCapacity >= requiredLeftChunkCapacity) {
                     return;
                 }
                 if (leftChunkCapacity > 0) {
@@ -581,7 +582,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     SafeCloseable.closeAll(toClose);
                 }
 
-                leftChunkCapacity = (int) Math.min(MAX_LEFT_CHUNK_CAPACITY, leftGroupSize);
+                leftChunkCapacity =
+                        Math.min(MAX_LEFT_CHUNK_CAPACITY, 1 << MathUtil.ceilLog2(requiredLeftChunkCapacity));
 
                 if (leftSharedContext == null) { // We can re-use a SharedContext after close(), no need to re-allocate
                     leftSharedContext = SharedContext.makeSharedContext();
