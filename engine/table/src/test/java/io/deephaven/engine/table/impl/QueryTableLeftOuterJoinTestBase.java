@@ -394,6 +394,33 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
     }
 
     @Test
+    public void testZeroKeyLeftOuterJoinUngroupEmptyRight() {
+        final QueryTable left = TstUtils.testTable(intCol("LS", 1, 2));
+        final QueryTable right = TstUtils.testRefreshingTable(intCol("K"), intCol("RS"));
+        final QueryTable grouped = (QueryTable) right.groupBy("K").view("RS");
+
+        final Table joined = CrossJoinHelper.leftOuterJoin(left, grouped, MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                MatchPairFactory.getExpressions("RS"), numRightBitsToReserve);
+        // an empty right table gives each left row a null group, which ungroups to no rows
+        assertTableEquals(joined.select().ungroup("RS"), joined.ungroup("RS"));
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> joined.ungroup("RS")),
+        };
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0, 1), intCol("K", 1, 1), intCol("RS", 10, 11));
+            right.notifyListeners(i(0, 1), i(), i());
+        });
+        TstUtils.validate(en);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(right, i(0, 1));
+            right.notifyListeners(i(), i(0, 1), i());
+        });
+        TstUtils.validate(en);
+    }
+
+    @Test
     public void testFailureNamesOperation() {
         for (final boolean leftOuterJoin : new boolean[] {false, true}) {
             final QueryTable left = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("K", 1));
