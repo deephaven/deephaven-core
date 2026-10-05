@@ -124,10 +124,10 @@ public class MatchFilterParamConversionTest {
     }
 
     /**
-     * A value that is not a number cannot convert to a primitive column's type, so the filter fails over, as on main. A
-     * char does not convert to a BigDecimal or BigInteger column either, so the filter fails over to the query
-     * language, which compares the two by code point. Any other value can never equal a BigInteger, so it is left as it
-     * is.
+     * A value that is neither a number nor a char cannot convert to a primitive column's type, so the filter fails
+     * over, as on main. (A char converts by its code point; see {@link #charsConvertByCodePoint()}.) The BigDecimal and
+     * BigInteger convertors leave such a value as it is: it can never equal a big number, so MatchFilter drops it and
+     * RangeFilter fails over.
      */
     @Test
     public void nonNumbersAreNotConverted() {
