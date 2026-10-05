@@ -32,9 +32,15 @@
 let
   # Gradle 9.x (this repo's wrapper version, see
   # gradle/wrapper/gradle-wrapper.properties) requires Java 17+ just to
-  # launch. 21 is what .devcontainer/project.Dockerfile installs today --
-  # keep them in sync if that ever changes.
+  # launch.
   bootstrapJdk = pkgs.temurin-bin-21;
+
+  # bootstrapJdk's real, toolchain-detectable home -- see the comment above
+  # env.JAVA_HOME below for why Darwin needs the nested bundle path.
+  bootstrapJdkHome =
+    if bootstrapJdk ? bundle
+    then "${bootstrapJdk.bundle}/Contents/Home"
+    else bootstrapJdk.home;
 
   gradleWrapper = import "${inputs.nix-gradle-wrapper}/gradle-wrapper.nix" {
     inherit pkgs;
@@ -46,6 +52,10 @@ let
     # engine/table/build.gradle's test maxHeapSize (3500m), the largest in
     # the build -- keep in sync if that ever changes.
     perWorkerMemBytes = 3500 * 1024 * 1024;
+    # Pin the JVM that runs the Gradle daemon (org.gradle.java.home) to the
+    # same JDK as JAVA_HOME, rather than whatever JAVA_HOME/PATH happen to
+    # resolve to when ./gradlew starts.
+    javaHome = bootstrapJdkHome;
   };
 
   # Auto-detects a rootless Podman API socket so Docker-API-consuming
@@ -119,11 +129,7 @@ in
   # builder has no `bundle` attribute at all), so its presence is what to
   # branch on. mkForce is needed because languages.java already sets this
   # option (a plain conflicting assignment would otherwise error).
-  env.JAVA_HOME = pkgs.lib.mkForce (
-    if bootstrapJdk ? bundle
-    then "${bootstrapJdk.bundle}/Contents/Home"
-    else bootstrapJdk.home
-  );
+  env.JAVA_HOME = pkgs.lib.mkForce bootstrapJdkHome;
 
   languages.javascript = {
     enable = true;

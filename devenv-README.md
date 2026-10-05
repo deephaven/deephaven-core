@@ -13,9 +13,8 @@ repo, built on [devenv.sh](https://devenv.sh).
   below.
 - **`devenv.nix`** — the actual environment. Read its header comment first;
   it explains scope/rationale inline. In short:
-  - `languages.java` — Temurin 21 (`pkgs.temurin-bin-21`), matches
-    `.devcontainer/project.Dockerfile`'s JDK and what Gradle 9.x (this
-    repo's wrapper version) needs to launch. `JAVA_HOME` is set
+  - `languages.java` — Temurin 21 (`pkgs.temurin-bin-21`), which Gradle
+    9.x (this repo's wrapper version) needs to launch. `JAVA_HOME` is set
     automatically by the module — except on Darwin, where `devenv.nix`
     overrides it (`env.JAVA_HOME`, `mkForce`) to point at the JDK's real
     nested `Contents/Home` bundle path instead of the module's default
@@ -66,7 +65,10 @@ repo, built on [devenv.sh](https://devenv.sh).
     `engine/table/build.gradle`'s test `maxHeapSize`. The wrapper also
     sets `org.gradle.welcome=never` and manages a persistent
     `GRADLE_ENCRYPTION_KEY`, since the isolated home's symlinked `caches/`
-    otherwise breaks the Configuration Cache keystore.
+    otherwise breaks the Configuration Cache keystore. `devenv.nix` passes
+    the same resolved JDK home it uses for `JAVA_HOME` as `javaHome`, so
+    `org.gradle.java.home` pins the JVM that runs the Gradle daemon
+    itself.
   - `DOCKER_HOST` auto-detection: on shell entry, if `DOCKER_HOST` isn't
     already set and `podman` is on `PATH`, queries
     `podman info --format '{{.Host.RemoteSocket.Path}}'` (Podman's own
@@ -172,7 +174,6 @@ changes, update `devenv.nix` to match:
 
 | Pinned here | Source of truth |
 |---|---|
-| `bootstrapJdk` (Temurin 21) | `.devcontainer/project.Dockerfile`'s JDK install |
 | Gradle distribution (via `nix-gradle-wrapper`) | `gradle/wrapper/gradle-wrapper.properties` (read automatically, not hand-copied) |
 | `perWorkerMemBytes` (3500 MiB) | `engine/table/build.gradle`'s test `maxHeapSize` |
 | `languages.javascript.package` (Node 24) | `web/client-api/types/.nvmrc` |
