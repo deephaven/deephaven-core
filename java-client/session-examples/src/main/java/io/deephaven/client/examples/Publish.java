@@ -4,15 +4,29 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.Session;
+import io.deephaven.client.impl.SessionFactoryConfig;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * Publishes the table behind one ticket under another, for example {@code --variable source --variable copy} to bind a
+ * second scope variable to the same table.
+ */
 @Command(name = "publish", mixinStandardHelpOptions = true,
         description = "Publish", version = "0.1.0")
-class Publish extends SingleSessionExampleBase {
+class Publish implements Callable<Void> {
+
+    @ArgGroup(exclusive = false)
+    ConnectOptions connectOptions;
+
+    @ArgGroup(exclusive = true)
+    AuthenticationOptions authenticationOptions;
 
     // Note: this is not perfect, and will need to look into picocli usage to better support this in the future.
     // Right now, the two ticket types need to be the same, even though that's not a technical requirement.
@@ -20,16 +34,32 @@ class Publish extends SingleSessionExampleBase {
     List<Ticket> tickets;
 
     @Override
-    protected void execute(Session session) throws Exception {
+    public Void call() throws Exception {
         // picocli fills a repeated group list with the last occurrence first, so the source given first on the
         // command line is the last element.
         final Ticket source = tickets.get(1);
         final Ticket destination = tickets.get(0);
-        session.publish(source, destination).get();
+
+        // The scheduler runs the client's background work, such as refreshing the session token
+        final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
+        // The factory holds the connection; each session it opens is one authenticated login on that connection
+        final SessionFactoryConfig.Factory factory = SessionFactoryConfig.builder()
+                .clientConfig(ConnectOptions.options(connectOptions).config())
+                .sessionConfig(AuthenticationOptions.sessionConfig(authenticationOptions))
+                .scheduler(scheduler)
+                .build()
+                .factory();
+        try (final Session session = factory.newSession()) {
+            // Publishing binds the table behind one ticket to another name; both then refer to the same table
+            session.publish(source, destination).get();
+        } finally {
+            factory.managedChannel().shutdownNow();
+            scheduler.shutdownNow();
+        }
+        return null;
     }
 
     public static void main(String[] args) {
-        int execute = new CommandLine(new Publish()).execute(args);
-        System.exit(execute);
+        System.exit(new CommandLine(new Publish()).execute(args));
     }
 }
