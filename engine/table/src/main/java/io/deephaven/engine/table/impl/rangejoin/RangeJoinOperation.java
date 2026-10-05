@@ -16,7 +16,6 @@ import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
@@ -521,7 +520,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             private ChunkSource.FillContext rightRangeValuesFillContext;
             private WritableChunk<Values> rightRangeValuesChunk;
             private WritableIntChunk<ChunkPositions> rightStartOffsets;
-            private WritableIntChunk<ChunkLengths> rightLengths;
 
             // Output resources, size bounded by leftChunkCapacity
             private ChunkSink.FillFromContext outputSlotsFillFromContext;
@@ -640,8 +638,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     final SafeCloseable[] toClose = new SafeCloseable[] {
                             rightRangeValuesFillContext,
                             rightRangeValuesChunk,
-                            rightStartOffsets,
-                            rightLengths
+                            rightStartOffsets
                     };
 
                     rightChunkCapacity = 0; // Record that we don't want to re-close
@@ -649,7 +646,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     rightRangeValuesFillContext = null;
                     rightRangeValuesChunk = null;
                     rightStartOffsets = null;
-                    rightLengths = null;
 
                     SafeCloseable.closeAll(toClose);
                 }
@@ -659,7 +655,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 rightRangeValuesFillContext = rightRangeValues.makeFillContext(rightChunkCapacity);
                 rightRangeValuesChunk = valueChunkType.makeWritableChunk(rightChunkCapacity);
                 rightStartOffsets = WritableIntChunk.makeWritableChunk(rightChunkCapacity);
-                rightLengths = WritableIntChunk.makeWritableChunk(rightChunkCapacity);
             }
 
             @Override
@@ -683,7 +678,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         rightRangeValuesFillContext,
                         rightRangeValuesChunk,
                         rightStartOffsets,
-                        rightLengths,
                         // Output resources
                         outputSlotsFillFromContext,
                         outputSlotsChunk,
