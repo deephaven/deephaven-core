@@ -999,6 +999,69 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     @Test
+    public void testConfiguredReserveBitsValidated() {
+        for (final int invalid : new int[] {Integer.MIN_VALUE, -1, 0, 63, Integer.MAX_VALUE}) {
+            final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> CrossJoinHelper.validateConfiguredNumRightBitsToReserve(invalid));
+            assertTrue(thrown.getMessage(), thrown.getMessage().contains("CrossJoinHelper.numRightBitsToReserve"));
+            assertTrue(thrown.getMessage(), thrown.getMessage().endsWith("but was " + invalid));
+        }
+        for (final int valid : new int[] {1, 10, 62}) {
+            assertEquals(valid, CrossJoinHelper.validateConfiguredNumRightBitsToReserve(valid));
+        }
+    }
+
+    @Test
+    public void testReserveBitsOutOfRange() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean rightRefreshing : new boolean[] {false, true}) {
+                final QueryTable lTable = leftRefreshing
+                        ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 2))
+                        : testTable(i(0, 1).toTracking(), intCol("Key", 1, 2));
+                final QueryTable rTable = rightRefreshing
+                        ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 2), intCol("RVal", 3, 4))
+                        : testTable(i(0, 1).toTracking(), intCol("Key", 1, 2), intCol("RVal", 3, 4));
+                for (final int reserveBits : new int[] {Integer.MIN_VALUE, -1, 0, 63, 64, Integer.MAX_VALUE}) {
+                    final String description = "leftRefreshing=" + leftRefreshing + ", rightRefreshing="
+                            + rightRefreshing + ", reserveBits=" + reserveBits;
+                    final String expectedMessage =
+                            "reserveBits must be between 1 and 62 (inclusive), but was " + reserveBits;
+                    for (final String columnsToMatch : new String[] {"Key", ""}) {
+                        final IllegalArgumentException joinException = assertThrows(description,
+                                IllegalArgumentException.class,
+                                () -> lTable.join(rTable, columnsToMatch, "RVal", reserveBits));
+                        assertEquals(description, expectedMessage, joinException.getMessage());
+
+                        final IllegalArgumentException leftOuterException = assertThrows(description,
+                                IllegalArgumentException.class,
+                                () -> OuterJoinTools.leftOuterJoin(lTable, rTable, columnsToMatch, "RVal",
+                                        reserveBits));
+                        assertEquals(description, expectedMessage, leftOuterException.getMessage());
+                    }
+
+                    final IllegalArgumentException fullOuterException = assertThrows(description,
+                            IllegalArgumentException.class,
+                            () -> OuterJoinTools.fullOuterJoin(lTable, rTable,
+                                    MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RVal"),
+                                    reserveBits));
+                    assertEquals(description, expectedMessage, fullOuterException.getMessage());
+                }
+
+                for (final int reserveBits : new int[] {1, 62}) {
+                    final String description = "leftRefreshing=" + leftRefreshing + ", rightRefreshing="
+                            + rightRefreshing + ", reserveBits=" + reserveBits;
+                    assertTableEquals(description, testTable(intCol("Key", 1, 2), intCol("RVal", 3, 4)),
+                            lTable.join(rTable, "Key", "RVal", reserveBits));
+                    assertTableEquals(description, testTable(intCol("Key", 1, 1, 2, 2), intCol("RVal", 3, 4, 3, 4)),
+                            lTable.join(rTable, "", "RVal", reserveBits));
+                    assertTableEquals(description, testTable(intCol("Key", 1, 2), intCol("RVal", 3, 4)),
+                            OuterJoinTools.leftOuterJoin(lTable, rTable, "Key", "RVal", reserveBits));
+                }
+            }
+        }
+    }
+
+    @Test
     public void testAddOnlyAndAppendOnlyLeftWithStaticRight() {
         for (final String leftAttribute : new String[] {Table.ADD_ONLY_TABLE_ATTRIBUTE,
                 Table.APPEND_ONLY_TABLE_ATTRIBUTE}) {

@@ -76,7 +76,7 @@ public class OuterJoinTools {
      * @param table2 input table
      * @param columnsToMatch match criteria
      * @param columnsToAdd columns to add
-     * @param numRightBitsToReserve The number of bits to reserve for table2 groups.
+     * @param numRightBitsToReserve The number of bits to reserve for table2 groups, between 1 and 62 (inclusive).
      * @return the resulting full-outer-joined table
      */
     @ScriptApi
@@ -201,7 +201,7 @@ public class OuterJoinTools {
      * @param rightTable input table
      * @param columnsToMatch match criteria
      * @param columnsToAdd columns to add
-     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
+     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups, between 1 and 62 (inclusive).
      * @return the resulting left-outer-joined table
      */
     @ScriptApi
@@ -308,7 +308,7 @@ public class OuterJoinTools {
      * @param rightTable input table
      * @param columnsToMatch match criteria
      * @param columnsToAdd columns to add
-     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
+     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups, between 1 and 62 (inclusive).
      * @return the resulting left-outer-joined table
      */
     @ScriptApi
@@ -435,7 +435,7 @@ public class OuterJoinTools {
      * @param table2 input table
      * @param columnsToMatch match criteria
      * @param columnsToAdd columns to add
-     * @param numRightBitsToReserve The number of bits to reserve for table2 groups.
+     * @param numRightBitsToReserve The number of bits to reserve for table2 groups, between 1 and 62 (inclusive).
      * @return the resulting full-outer-joined table
      */
     @ScriptApi

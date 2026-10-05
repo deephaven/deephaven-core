@@ -1940,8 +1940,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
-                meaning the configured value is used, which is 10 bits by default.
+            reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+                (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
         Returns:
             a new table
@@ -4081,8 +4081,8 @@ class PartitionedTableProxy(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the join; default is None, meaning the
-                configured value is used, which is 10 by default
+            reserve_bits (Optional[int]): the number of bits to reserve for the join, between 1 and 62 (inclusive);
+                default is None, meaning the configured value is used, which is 10 by default
 
         Returns:
             a new PartitionedTableProxy

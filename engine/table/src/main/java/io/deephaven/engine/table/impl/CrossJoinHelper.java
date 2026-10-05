@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.sources.BitShiftingColumnSource;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -71,15 +72,53 @@ import static io.deephaven.engine.table.impl.MatchPair.matchString;
  * </p>
  */
 public class CrossJoinHelper {
+    /**
+     * The smallest number of right bits a join may reserve.
+     */
+    public static final int MIN_NUM_RIGHT_BITS_TO_RESERVE = 1;
+
+    /**
+     * The largest number of right bits a join may reserve, leaving at least one of the 63 bits of a non-negative row
+     * key for the left row.
+     */
+    public static final int MAX_NUM_RIGHT_BITS_TO_RESERVE = 62;
+
+    /**
+     * The configuration property, {@code CrossJoinHelper.numRightBitsToReserve}, that sets
+     * {@link #DEFAULT_NUM_RIGHT_BITS_TO_RESERVE}.
+     */
+    private static final String NUM_RIGHT_BITS_TO_RESERVE_PROPERTY = "numRightBitsToReserve";
+
     // Note: This would be >= 16 to get efficient performance from WritableRowSet#insert and
     // WritableRowSet#shiftInPlace. However, it is too costly for joins of many small groups when the default is high.
-    public static final int DEFAULT_NUM_RIGHT_BITS_TO_RESERVE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(CrossJoinHelper.class, "numRightBitsToReserve", 10);
+    public static final int DEFAULT_NUM_RIGHT_BITS_TO_RESERVE = validateConfiguredNumRightBitsToReserve(
+            Configuration.getInstance().getIntegerForClassWithDefault(CrossJoinHelper.class,
+                    NUM_RIGHT_BITS_TO_RESERVE_PROPERTY, 10));
 
     /**
      * Static-use only.
      */
     private CrossJoinHelper() {}
+
+    /**
+     * Check the configured default number of right bits to reserve, so that a misconfiguration is reported against the
+     * configuration property rather than against every join that relies on the default.
+     *
+     * @param numRightBitsToReserve the configured value
+     * @return {@code numRightBitsToReserve}
+     * @throws IllegalArgumentException if the value is outside {@link #MIN_NUM_RIGHT_BITS_TO_RESERVE} to
+     *         {@link #MAX_NUM_RIGHT_BITS_TO_RESERVE}
+     */
+    @VisibleForTesting
+    static int validateConfiguredNumRightBitsToReserve(final int numRightBitsToReserve) {
+        if (numRightBitsToReserve < MIN_NUM_RIGHT_BITS_TO_RESERVE
+                || numRightBitsToReserve > MAX_NUM_RIGHT_BITS_TO_RESERVE) {
+            throw new IllegalArgumentException("Configuration property " + CrossJoinHelper.class.getSimpleName() + "."
+                    + NUM_RIGHT_BITS_TO_RESERVE_PROPERTY + " must be between " + MIN_NUM_RIGHT_BITS_TO_RESERVE
+                    + " and " + MAX_NUM_RIGHT_BITS_TO_RESERVE + " (inclusive), but was " + numRightBitsToReserve);
+        }
+        return numRightBitsToReserve;
+    }
 
     static Table join(
             final QueryTable leftTable,
@@ -154,6 +193,11 @@ public class CrossJoinHelper {
             int numRightBitsToReserve,
             final JoinControl control,
             final boolean leftOuterJoin) {
+        if (numRightBitsToReserve < MIN_NUM_RIGHT_BITS_TO_RESERVE
+                || numRightBitsToReserve > MAX_NUM_RIGHT_BITS_TO_RESERVE) {
+            throw new IllegalArgumentException("reserveBits must be between " + MIN_NUM_RIGHT_BITS_TO_RESERVE
+                    + " and " + MAX_NUM_RIGHT_BITS_TO_RESERVE + " (inclusive), but was " + numRightBitsToReserve);
+        }
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         try (final BucketingContext bucketingContext = new BucketingContext(leftOuterJoin ? "leftOuterJoin" : "join",
