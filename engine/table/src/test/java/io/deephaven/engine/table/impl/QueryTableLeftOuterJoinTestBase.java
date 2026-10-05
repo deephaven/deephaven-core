@@ -370,6 +370,29 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
     }
 
     @Test
+    public void testZeroKeyLeftOuterJoinStaticEmptyRight() {
+        final QueryTable left = TstUtils.testRefreshingTable(i(0, 1).toTracking(), intCol("LS", 1, 2));
+        final QueryTable right = TstUtils.testTable(intCol("RS"));
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> CrossJoinHelper.leftOuterJoin(left, right,
+                        MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, MatchPairFactory.getExpressions("RS"),
+                        numRightBitsToReserve)),
+        };
+        assertTrue(en[0].originalValue.isRefreshing());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(left, i(0));
+            addToTable(left, i(1, 5), intCol("LS", 3, 4));
+            left.notifyListeners(i(5), i(0), i(1));
+        });
+        TstUtils.validate(en);
+        assertTableEquals(TableTools.newTable(intCol("LS", 3, 4), intCol("RS", NULL_INT, NULL_INT)),
+                en[0].originalValue);
+    }
+
+    @Test
     public void testZeroKeyLeftOuterJoinSimple() {
         final QueryTable left = TstUtils.testRefreshingTable(intCol("LS", 1, 2, 3, 4, 5));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RS", 10, 20));

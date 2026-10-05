@@ -1343,7 +1343,8 @@ public class CrossJoinHelper {
             leftTable.addUpdateListener(leftRecorder);
             rightTable.addUpdateListener(rightRecorder);
             result.addParentReference(mergedListener);
-        } else if (leftTable.isRefreshing() && !rightTable.isEmpty()) {
+        } else if (leftTable.isRefreshing() && (leftOuterJoin || !rightTable.isEmpty())) {
+            // an outer join has a row for every left row, even when the static right table is empty
             leftTable.addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
