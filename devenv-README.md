@@ -7,11 +7,14 @@ repo, built on [devenv.sh](https://devenv.sh).
 
 - **`devenv.yaml`** — inputs only. Uses devenv's own default nixpkgs input
   (`github:cachix/devenv-nixpkgs/rolling`) rather than an arbitrary
-  `nixos-unstable` pin — the branch devenv itself is tested against.
+  `nixos-unstable` pin — the branch devenv itself is tested against. Also
+  pulls in [`nix-gradle-wrapper`](https://github.com/devinrsmith/nix-gradle-wrapper)
+  as a non-flake input (`flake: false`) for the Gradle setup described
+  below.
 - **`devenv.nix`** — the actual environment. Read its header comment first;
   it explains scope/rationale inline. In short:
   - `languages.java` — Temurin 21 (`pkgs.temurin-bin-21`), matches
-    `.devcontainer/project.Dockerfile`'s JDK and what Gradle 9.7.1 (this
+    `.devcontainer/project.Dockerfile`'s JDK and what Gradle 9.x (this
     repo's wrapper version) needs to launch. `JAVA_HOME` is set
     automatically by the module — except on Darwin, where `devenv.nix`
     overrides it (`env.JAVA_HOME`, `mkForce`) to point at the JDK's real
@@ -34,8 +37,10 @@ repo, built on [devenv.sh](https://devenv.sh).
     `gcc`/`gnumake` are also there for `py-server`'s `jpy` JNI bridge,
     which compiles a native extension against the Python above.
   - Gradle wrapper vendoring + toolchain isolation, via
-    **`nix/gradle-wrapper.nix`** (a plain `{ pkgs, wrapperPropertiesFile }`
-    function, no devenv-specific coupling). Reads `gradle-wrapper.properties`
+    **[`nix-gradle-wrapper`](https://github.com/devinrsmith/nix-gradle-wrapper)**
+    (a plain `{ pkgs, wrapperPropertiesFile, name, ... }` function, no
+    devenv-specific coupling; see its README for every parameter and the
+    full list of what it writes). Reads `gradle-wrapper.properties`
     as the single source of truth, fetches+unpacks that exact Gradle
     distribution into the Nix store, and pre-seeds
     `$GRADLE_USER_HOME/wrapper/dists/...` so `./gradlew` never needs
@@ -56,7 +61,12 @@ repo, built on [devenv.sh](https://devenv.sh).
     cores but modest memory) — computed from total system memory at shell
     entry, portable across Linux (`/proc/meminfo`) and macOS (`sysctl
     hw.memsize`), and best-effort: if memory can't be determined, it's left
-    unset and Gradle's own default applies.
+    unset and Gradle's own default applies. `devenv.nix` sizes it against
+    a 3500 MiB per-worker heap (`perWorkerMemBytes`), matching
+    `engine/table/build.gradle`'s test `maxHeapSize`. The wrapper also
+    sets `org.gradle.welcome=never` and manages a persistent
+    `GRADLE_ENCRYPTION_KEY`, since the isolated home's symlinked `caches/`
+    otherwise breaks the Configuration Cache keystore.
   - `DOCKER_HOST` auto-detection: on shell entry, if `DOCKER_HOST` isn't
     already set and `podman` is on `PATH`, queries
     `podman info --format '{{.Host.RemoteSocket.Path}}'` (Podman's own
@@ -149,8 +159,8 @@ clobbering a real, already-set `DOCKER_HOST` pointing at a live Podman
 socket in a container where it was set externally.
 
 If any of these regress, that's the first thing to check before assuming
-the `languages.*`/`nix/gradle-wrapper.nix` config itself is wrong — could
-just as easily be a devenv/nixpkgs upstream change (re-run
+the `languages.*`/`nix-gradle-wrapper` config itself is wrong — could
+just as easily be a devenv/nixpkgs/`nix-gradle-wrapper` upstream change (re-run
 `devenv update` and compare `devenv.lock`) or a real drift between the
 sources of truth listed above (`gradle-wrapper.properties`, `.nvmrc`,
 `quick-ci.yml`, `cpp-client/README.md`) and what's pinned in `devenv.nix`.
@@ -163,7 +173,8 @@ changes, update `devenv.nix` to match:
 | Pinned here | Source of truth |
 |---|---|
 | `bootstrapJdk` (Temurin 21) | `.devcontainer/project.Dockerfile`'s JDK install |
-| Gradle distribution (via `nix/gradle-wrapper.nix`) | `gradle/wrapper/gradle-wrapper.properties` (read automatically, not hand-copied) |
+| Gradle distribution (via `nix-gradle-wrapper`) | `gradle/wrapper/gradle-wrapper.properties` (read automatically, not hand-copied) |
+| `perWorkerMemBytes` (3500 MiB) | `engine/table/build.gradle`'s test `maxHeapSize` |
 | `languages.javascript.package` (Node 24) | `web/client-api/types/.nvmrc` |
 | `languages.python.package` (3.12) | `.github/workflows/quick-ci.yml`'s `python-version` |
 | C++ toolchain packages | `cpp-client/README.md`'s `apt install` line |

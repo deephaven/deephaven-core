@@ -24,20 +24,28 @@
 # Every shell entry also vendors the exact Gradle distribution
 # gradle-wrapper.properties pins into the Nix store, pre-seeds
 # `./gradlew`'s cache with it, and isolates toolchain resolution to just
-# the JDK this file provides -- see nix/gradle-wrapper.nix for all of
-# that. devenv has no built-in equivalent for either (confirmed against
+# the JDK this file provides -- see the nix-gradle-wrapper input
+# (github:devinrsmith/nix-gradle-wrapper, declared in devenv.yaml) for all
+# of that. devenv has no built-in equivalent for either (confirmed against
 # its current source/docs).
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 let
-  # Gradle 9.7.1 (this repo's wrapper version, see
+  # Gradle 9.x (this repo's wrapper version, see
   # gradle/wrapper/gradle-wrapper.properties) requires Java 17+ just to
   # launch. 21 is what .devcontainer/project.Dockerfile installs today --
   # keep them in sync if that ever changes.
   bootstrapJdk = pkgs.temurin-bin-21;
 
-  gradleWrapper = import ./nix/gradle-wrapper.nix {
+  gradleWrapper = import "${inputs.nix-gradle-wrapper}/gradle-wrapper.nix" {
     inherit pkgs;
     wrapperPropertiesFile = ./gradle/wrapper/gradle-wrapper.properties;
+    # Namespaces the isolated GRADLE_USER_HOME
+    # ($XDG_CACHE_HOME/deephaven-core-nix-gradle-home).
+    name = "deephaven-core";
+    # Worst-case per-worker heap for org.gradle.workers.max sizing:
+    # engine/table/build.gradle's test maxHeapSize (3500m), the largest in
+    # the build -- keep in sync if that ever changes.
+    perWorkerMemBytes = 3500 * 1024 * 1024;
   };
 
   # Auto-detects a rootless Podman API socket so Docker-API-consuming

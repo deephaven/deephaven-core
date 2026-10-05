@@ -9,3 +9,8 @@
 inputs:
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling
+  # Gradle wrapper vendoring + toolchain isolation, imported by devenv.nix.
+  # A plain Nix function file, not a flake -- hence `flake: false`.
+  nix-gradle-wrapper:
+    url: github:devinrsmith/nix-gradle-wrapper
+    flake: false

@@ -20,7 +20,6 @@ on:
       - 'devenv.lock'
       - '.envrc'
       - '.devenv.flake.nix'
-      - 'nix/**'
       - 'gradle/wrapper/gradle-wrapper.properties'
       - '.github/workflows/devenv-ci.yml'
   push:
@@ -31,7 +30,6 @@ on:
       - 'devenv.lock'
       - '.envrc'
       - '.devenv.flake.nix'
-      - 'nix/**'
       - 'gradle/wrapper/gradle-wrapper.properties'
       - '.github/workflows/devenv-ci.yml'
   workflow_dispatch:
@@ -84,8 +82,8 @@ jobs:
           echo "== pkg-config ==="; pkg-config --version
 
       # gradle-wrapper.properties' distribution is vendored into the Nix
-      # store and pre-seeded into $GRADLE_USER_HOME/wrapper/dists by
-      # nix/gradle-wrapper.nix, so this uses that vendored copy rather than
+      # store and pre-seeded into $GRADLE_USER_HOME/wrapper/dists by the
+      # nix-gradle-wrapper input, so this uses that vendored copy rather than
       # downloading it. (Not passing --offline: the develocity plugin still
       # needs to fetch itself at configuration time regardless, so this
       # isn't a true zero-network check -- just confirming Gradle itself

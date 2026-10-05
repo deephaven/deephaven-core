@@ -17,6 +17,22 @@
         "type": "github"
       }
     },
+    "nix-gradle-wrapper": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1790095744,
+        "narHash": "sha256-hzVOn9BrB1fbjQ32bbNIPal0yiTb6C46ZZaz4FsFgOU=",
+        "owner": "devinrsmith",
+        "repo": "nix-gradle-wrapper",
+        "rev": "bdaa336f22df5501834ab4e4d359a2c0dca63167",
+        "type": "github"
+      },
+      "original": {
+        "owner": "devinrsmith",
+        "repo": "nix-gradle-wrapper",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "inputs": {
         "nixpkgs-src": "nixpkgs-src"
@@ -56,6 +72,7 @@
     "root": {
       "inputs": {
         "devenv": "devenv",
+        "nix-gradle-wrapper": "nix-gradle-wrapper",
         "nixpkgs": "nixpkgs"
       }
     }
