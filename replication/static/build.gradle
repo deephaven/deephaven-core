@@ -51,7 +51,7 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedMultiset', 'io.deephaven.replicators.ReplicateSegmentedSortedMultiset')
     dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedMultisetTests', 'io.deephaven.replicators.ReplicateSegmentedSortedMultisetTests')
 
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSetInclusionKernel', 'io.deephaven.replicators.ReplicateSetInclusionKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSetKernel', 'io.deephaven.replicators.ReplicateSetKernel')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateVectorColumnWrappers', 'io.deephaven.replicators.ReplicateVectorColumnWrappers')
 
