@@ -3,22 +3,32 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
-public abstract class HashMapK1V1 extends HashMapBase {
-    HashMapK1V1(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
-        super(desiredInitialCapacity, loadFactor, noEntryValue);
-    }
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.HEADER_LONGS;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.SIZE_LIMIT1;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.SPECIAL_KEY_FOR_DELETED_SLOT;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.SPECIAL_KEY_FOR_EMPTY_SLOT;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.fixKey;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.probe1;
+import static io.deephaven.engine.table.impl.util.hash.HashMapLockFreeKnVn.probe2;
 
-    final long putImpl(long[] kvs, long key, long value, boolean insertOnly) {
-        if (kvs == null) {
-            kvs = allocateKeysAndValuesArray(1);
-        }
+/**
+ * The probe loops for arrays whose buckets hold one key/value pair, the key at offset 0 of the bucket and the value in
+ * the slot after it ({@link NullableLongLongMaps.Shape#K1V1}). Static, and pure in the array plus the owning map's
+ * counters: {@link HashMapLockFreeKnVn} dispatches here on a snapshot's shape tag, so nothing in this class knows or
+ * cares which shape a map was born with.
+ */
+final class K1V1Kernel {
+    private K1V1Kernel() {}
+
+    static long put(HashMapLockFreeKnVn map, long[] kvs, long numBucketsReciprocal, long key, long value,
+            boolean insertOnly) {
         final long fixedKey = fixKey(key);
-        return putImplNoTranslate(kvs, fixedKey, value, insertOnly);
+        return putNoTranslate(map, kvs, numBucketsReciprocal, fixedKey, value, insertOnly);
     }
 
-    @Override
-    final long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly) {
-        int location = getLocationFor(kvs, key);
+    static long putNoTranslate(HashMapLockFreeKnVn map, long[] kvs, long numBucketsReciprocal, long key, long value,
+            boolean insertOnly) {
+        int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location >= 0) {
             // Item found, so replace it (unless 'insertOnly' is set).
             final long oldValue = kvs[location + 1];
@@ -30,62 +40,56 @@ public abstract class HashMapK1V1 extends HashMapBase {
 
         // Item not found, so insert it.
         location = -location - 1;
-        ++size;
-        checkSize(SIZE_LIMIT1);
+        ++map.size;
+        map.checkSize(SIZE_LIMIT1);
         // The slot is either empty or removed. If we're about to consume an empty slot, then update our counter.
         if (kvs[location] == SPECIAL_KEY_FOR_EMPTY_SLOT) {
-            ++nonEmptySlots;
+            ++map.nonEmptySlots;
         }
         kvs[location] = key;
         kvs[location + 1] = value;
 
         // Did we run out of empty slots?
-        if (nonEmptySlots >= rehashThreshold) {
+        if (map.nonEmptySlots >= map.rehashThreshold) {
             // This means we're low on empty slots. We might be low on empty slots because we've done a lot of
             // deletions of previous items (in this case 'size' could be small), or because we've done a lot of
             // insertions (in this case 'size' would be close to 'nonEmptySlots'). In the former case we would rather
             // rehash to the same size. In the latter case we would like to grow the hash table. The heuristic we use to
             // make this decision is if size exceeds 2/3 of the nonEmptySlots.
-            boolean wantResize = size >= nonEmptySlots * 2 / 3;
-            rehash(kvs, wantResize, 1);
+            boolean wantResize = map.size >= map.nonEmptySlots * 2 / 3;
+            map.rehash(kvs, wantResize);
         }
 
-        return defaultReturnValue();
+        return map.defaultReturnValue();
     }
 
-    final long getImpl(long[] kvs, long key) {
-        if (kvs == null) {
-            return defaultReturnValue();
-        }
+    static long get(long[] kvs, long numBucketsReciprocal, long key, long noEntry) {
         key = fixKey(key);
-        final int location = getLocationFor(kvs, key);
+        final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
-            return defaultReturnValue();
+            return noEntry;
         }
         return kvs[location + 1];
     }
 
-    final long removeImpl(long[] kvs, long key) {
-        if (kvs == null) {
-            return defaultReturnValue();
-        }
+    static long remove(HashMapLockFreeKnVn map, long[] kvs, long numBucketsReciprocal, long key) {
         key = fixKey(key);
-        final int location = getLocationFor(kvs, key);
+        final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
-            return defaultReturnValue();
+            return map.defaultReturnValue();
         }
-        --size;
+        --map.size;
         kvs[location] = SPECIAL_KEY_FOR_DELETED_SLOT;
         return kvs[location + 1];
     }
 
-    private static int getLocationFor(long[] kvs, long target) {
-        // In units of longs
-        final int length = kvs.length;
+    private static int getLocationFor(long[] kvs, long target, long numBucketsReciprocal) {
+        // In units of longs, excluding the header
+        final int dataLength = kvs.length - HEADER_LONGS;
         // In units of buckets
-        final int numBuckets = length / (1 * 2);
+        final int numBuckets = dataLength / (1 * 2);
 
-        final int bucketProbe = probe1(target, numBuckets);
+        final int bucketProbe = probe1(target, numBuckets, numBucketsReciprocal);
         // In units of longs again
         int probe = bucketProbe * (1 * 2);
 
@@ -113,7 +117,9 @@ public abstract class HashMapK1V1 extends HashMapBase {
         final int offset = (1 + probe2(target, numBuckets - 2)) * (1 * 2);
         final int probeStart = probe;
         while (true) {
-            probe = (int) (((long) probe + offset) % length);
+            // offset < dataLength and probe < dataLength, so one conditional subtraction replaces the modulo.
+            final long advanced = (long) probe + offset;
+            probe = (int) (advanced >= dataLength ? advanced - dataLength : advanced);
             if (probe == probeStart) {
                 throw new IllegalStateException("Wrapped around? Impossible.");
             }

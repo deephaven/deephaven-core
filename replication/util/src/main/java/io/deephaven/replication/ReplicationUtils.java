@@ -451,6 +451,25 @@ public class ReplicationUtils {
                 "").flatMap(ReplicationUtils::linewrap);
     }
 
+    /**
+     * Replace the file header of a file that was replicated from another generated file, so that the header names the
+     * hand-written class at the start of the replication chain.
+     *
+     * @param gradleTask the task that generates the file
+     * @param generatedJavaPath the path of the generated file
+     * @param sourceClassName the name of the hand-written class the file is ultimately replicated from
+     */
+    public static void fixupChainedFileHeader(String gradleTask, String generatedJavaPath, String sourceClassName)
+            throws IOException {
+        final File file = new File(generatedJavaPath);
+        String body = FileUtils.readFileToString(file, Charset.defaultCharset());
+        while (body.startsWith("//")) {
+            body = body.substring(body.indexOf("\n", 2) + 1);
+        }
+        FileUtils.writeStringToFile(file, fileHeaderString(gradleTask, sourceClassName) + body,
+                Charset.defaultCharset());
+    }
+
     public static Stream<String> linewrap(final String line) {
         if (line.length() < 120) {
             return Stream.of(line);

@@ -27,6 +27,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.*;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
@@ -624,6 +625,48 @@ public class SessionStateTest {
         Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
         Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
+    }
+
+    /**
+     * A released export may still be retained by something else (an earlier dependent that has not run yet, or an
+     * export listener inside its callback), so its reference count does not tell a late dependent that it is gone. The
+     * dependency must be rejected by state, not by whether the export can still be managed.
+     */
+    @Test
+    public void testLateDependencyOnReleasedExportStillRetainedElsewhereFails() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+
+        final SessionState.ExportObject<CountingLivenessReferent> e1;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            e1 = session.<CountingLivenessReferent>newExport(nextExportId++)
+                    .submit(() -> export);
+        }
+
+        scheduler.runOne();
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.EXPORTED);
+
+        // another holder keeps the released export alive, as a lookup racing the release could observe it
+        Assert.eqTrue(e1.tryRetainReference(), "e1.tryRetainReference()");
+        try {
+            e1.release();
+            Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
+
+            final MutableBoolean errored = new MutableBoolean();
+            final MutableBoolean ran = new MutableBoolean();
+            final SessionState.ExportObject<?> e2 = session.newExport(nextExportId++)
+                    .require(e1)
+                    .onErrorHandler(err -> errored.setTrue())
+                    .submit(() -> {
+                        ran.setTrue();
+                        return null;
+                    });
+            scheduler.runUntilQueueEmpty();
+            Assert.eqFalse(ran.booleanValue(), "ran.booleanValue()");
+            Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+            Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
+        } finally {
+            e1.dropReference();
+        }
     }
 
     @Test
@@ -1547,6 +1590,29 @@ public class SessionStateTest {
         Assert.eqFalse(listener.isComplete, "listener.isComplete");
         session.onExpired();
         Assert.eqTrue(listener.isComplete, "listener.isComplete");
+    }
+
+    @Test
+    public void testThrowingOnCloseCallbackOnExpiryIsFatal() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            session.newServerSideExport(export);
+        }
+        Assert.eq(export.refCount, "export.refCount", 1);
+        session.addOnCloseCallback(() -> {
+            throw new IOException("close failed");
+        });
+
+        boolean fatal = false;
+        try {
+            session.onExpired();
+        } catch (final FakeProcessEnvironment.FakeFatalException expected) {
+            fatal = true;
+        }
+        Assert.eqTrue(fatal, "fatal");
+        // the exports were already torn down; the session is expired either way
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
+        Assert.eq(export.refCount, "export.refCount", 0);
     }
 
     @Test
