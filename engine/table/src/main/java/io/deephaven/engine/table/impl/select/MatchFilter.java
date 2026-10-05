@@ -511,6 +511,14 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
 
         /**
+         * Whether {@code str} is a single-quoted char literal, such as {@code '5'}, which a numeric column reads as its
+         * code point, as the query language and Java compare a char with a number.
+         */
+        static boolean isCharLiteral(final String str) {
+            return str.length() == 3 && str.charAt(0) == '\'' && str.charAt(2) == '\'';
+        }
+
+        /**
          * Whether {@code value} is its own type's null value, {@code NULL_INT} for an {@link Integer} for instance.
          */
         static boolean isNullValue(final Object value) {
@@ -629,6 +637,17 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         /** Casts {@code value} to the column type, boxed. */
         abstract Number narrow(Number value);
 
+        /** Parses a literal of the column type, or its null. */
+        abstract Object parseLiteral(String str);
+
+        @Override
+        final Object convertStringLiteral(final String str) {
+            if (isCharLiteral(str)) {
+                return convertParamValue(str.charAt(1));
+            }
+            return parseLiteral(str);
+        }
+
         @Override
         Object convertParamValue(Object paramValue) {
             paramValue = super.convertParamValue(paramValue);
@@ -671,7 +690,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (cls == byte.class) {
                 return new NumericColumnTypeConvertor(Byte.class, QueryConstants.NULL_BYTE_BOXED) {
                     @Override
-                    Object convertStringLiteral(String str) {
+                    Object parseLiteral(String str) {
                         if ("null".equals(str) || "NULL_BYTE".equals(str)) {
                             return QueryConstants.NULL_BYTE_BOXED;
                         }
@@ -687,7 +706,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (cls == short.class) {
                 return new NumericColumnTypeConvertor(Short.class, QueryConstants.NULL_SHORT_BOXED) {
                     @Override
-                    Object convertStringLiteral(String str) {
+                    Object parseLiteral(String str) {
                         if ("null".equals(str) || "NULL_SHORT".equals(str)) {
                             return QueryConstants.NULL_SHORT_BOXED;
                         }
@@ -703,7 +722,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (cls == int.class) {
                 return new NumericColumnTypeConvertor(Integer.class, QueryConstants.NULL_INT_BOXED) {
                     @Override
-                    Object convertStringLiteral(String str) {
+                    Object parseLiteral(String str) {
                         if ("null".equals(str) || "NULL_INT".equals(str)) {
                             return QueryConstants.NULL_INT_BOXED;
                         }
@@ -719,7 +738,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (cls == long.class) {
                 return new NumericColumnTypeConvertor(Long.class, QueryConstants.NULL_LONG_BOXED) {
                     @Override
-                    Object convertStringLiteral(String str) {
+                    Object parseLiteral(String str) {
                         if ("null".equals(str) || "NULL_LONG".equals(str)) {
                             return QueryConstants.NULL_LONG_BOXED;
                         }
@@ -735,7 +754,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (cls == float.class) {
                 return new NumericColumnTypeConvertor(Float.class, QueryConstants.NULL_FLOAT_BOXED) {
                     @Override
-                    Object convertStringLiteral(String str) {
+                    Object parseLiteral(String str) {
                         if ("null".equals(str) || "NULL_FLOAT".equals(str)) {
                             return QueryConstants.NULL_FLOAT_BOXED;
                         }
@@ -751,7 +770,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (cls == double.class) {
                 return new NumericColumnTypeConvertor(Double.class, QueryConstants.NULL_DOUBLE_BOXED) {
                     @Override
-                    Object convertStringLiteral(String str) {
+                    Object parseLiteral(String str) {
                         if ("null".equals(str) || "NULL_DOUBLE".equals(str)) {
                             return QueryConstants.NULL_DOUBLE_BOXED;
                         }
@@ -847,6 +866,9 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if ("null".equals(str)) {
                             return null;
                         }
+                        if (isCharLiteral(str)) {
+                            return convertParamValue(str.charAt(1));
+                        }
                         return new BigDecimal(str);
                     }
 
@@ -883,6 +905,9 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     Object convertStringLiteral(String str) {
                         if ("null".equals(str)) {
                             return null;
+                        }
+                        if (isCharLiteral(str)) {
+                            return convertParamValue(str.charAt(1));
                         }
                         return new BigInteger(str);
                     }

@@ -329,7 +329,9 @@ public class MatchFilterCoercionTest {
         QueryScope.addParam("cMax", '￾');
         QueryScope.addParam("cNull", NULL_CHAR_BOXED);
         final String[] filters = {"X == c5", "X != c5", "X < c5", "X >= c5", "X == cE", "X < cE", "X == cHigh",
-                "X > cHigh", "X == cMax", "X <= cMax", "X == cNull", "X != cNull"};
+                "X > cHigh", "X == cMax", "X <= cMax", "X == cNull", "X != cNull",
+                // and a char literal
+                "X == '5'", "X != '5'", "X < '5'", "X >= '5'", "X == '\u00e9'", "X > '\u00e9'"};
 
         final Table bytes = newTable(byteCol("X", (byte) 0, (byte) 53, (byte) 127, (byte) 233, NULL_BYTE));
         final Table shorts = newTable(shortCol("X", (short) 0, (short) 53, Short.MAX_VALUE, (short) -1, NULL_SHORT));
@@ -344,8 +346,11 @@ public class MatchFilterCoercionTest {
             assertSameRowsAsFailover(t, filters);
             assertFalse(failsOver(t, "X == c5"));
             assertFalse(failsOver(t, "X < c5"));
+            assertFalse(failsOver(t, "X == '5'"));
+            assertFalse(failsOver(t, "X < '5'"));
         }
         assertTrue(failsOver(bytes, "X == cE"));
+        assertTrue(failsOver(bytes, "X > '\u00e9'"));
         assertTrue(failsOver(shorts, "X == cHigh"));
         assertFalse(failsOver(ints, "X == cHigh"));
 
@@ -355,6 +360,10 @@ public class MatchFilterCoercionTest {
                 ints.where(FilterComparison.eq(ColumnName.of("X"), Literal.of('5'))));
         assertTableEquals(newTable(col("X", new BigDecimal("53"), new BigDecimal("53.0"))),
                 bigDecimals.where(new MatchFilter(MatchOptions.REGULAR, "X", '5')));
+        // null orders below every value, in the query language as here
+        assertTableEquals(newTable(intCol("X", 0, NULL_INT)),
+                ints.where(FilterComparison.lt(ColumnName.of("X"), Literal.of('5'))));
+        assertTableEquals(newTable(intCol("X", 53)), ints.where("X in '5'"));
         assertRejected(() -> bytes.where("X in cE"));
         assertRejected(() -> shorts.where(new MatchFilter(MatchOptions.REGULAR, "X", '耀')));
     }
