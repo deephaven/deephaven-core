@@ -58,12 +58,27 @@ final class PlainBinaryStringValuesReader extends ValuesReader {
     }
 
     /**
-     * Unsupported: Deephaven materializes whole pages, and nulls consume no page bytes, so nothing skips. Every other
-     * {@link ValuesReader} accessor is left to the base class, which throws for the same reason.
+     * Unsupported: use {@link #skip(int)}. Every other {@link ValuesReader} accessor is left to the base class, which
+     * throws.
      */
     @Override
     public void skip() {
-        throw new UnsupportedOperationException("PlainBinaryStringValuesReader supports only readStrings");
+        throw new UnsupportedOperationException(
+                "PlainBinaryStringValuesReader supports only readStrings and skip(int)");
+    }
+
+    @Override
+    public void skip(final int n) {
+        int pos = position;
+        for (int ii = 0; ii < n; ++ii) {
+            final int length = readLength(array, pos, limit);
+            pos += Integer.BYTES;
+            if (length > limit - pos) {
+                throw overrun(length, limit - pos);
+            }
+            pos += length;
+        }
+        position = pos;
     }
 
     /**
