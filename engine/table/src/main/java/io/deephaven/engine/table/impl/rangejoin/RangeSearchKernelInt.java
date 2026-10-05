@@ -973,12 +973,15 @@ enum RangeSearchKernelInt implements RangeSearchKernel {
                 }
             } else {
                 outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
-                // We can re-use rightPosition until we reach rightValue
-                while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
+                // We can re-use rightPosition until we pass the exactly matched right value; greater left values
+                // have no exact match, and must include the following right position
+                final int matchedRightValue = rightValues.get(searchResult);
+                while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), matchedRightValue)) {
                     outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
                 }
             }
-            // We've processed all left values that can exclude rightValue, so begin searching at rightIndex
+            // All remaining left values are greater than every right value before rightIndex, so begin searching at
+            // rightIndex
             rightLowIndexInclusive = rightIndex;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 

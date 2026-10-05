@@ -139,6 +139,44 @@ public class QueryTableRangeJoinTest {
 
     // endregion compare-equal object tests
 
+    // region allow following tests
+
+    /**
+     * With GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING, a left end value that exactly matches a right value ends its range at
+     * that right value, and a greater left end value with no exact match includes the immediately following right
+     * value, whatever the other left rows in the bucket.
+     */
+    @Test
+    public void testAllowFollowingAfterExactMatch() {
+        final Table rightInts = TableTools.newTable(
+                TableTools.intCol("RRV", 1, 2, 4, 6),
+                TableTools.intCol("Sentinel", 0, 1, 2, 3));
+        final Table leftInts = TableTools.newTable(
+                TableTools.intCol("LSV", 0, 0, 0, 0, 0),
+                TableTools.intCol("LEV", 2, 2, 3, 4, 5));
+        checkAllowFollowingAfterExactMatch(leftInts, rightInts);
+
+        final Table rightStrings = TableTools.newTable(
+                TableTools.stringCol("RRV", "b", "c", "e", "g"),
+                TableTools.intCol("Sentinel", 0, 1, 2, 3));
+        final Table leftStrings = TableTools.newTable(
+                TableTools.stringCol("LSV", "a", "a", "a", "a", "a"),
+                TableTools.stringCol("LEV", "c", "c", "d", "e", "f"));
+        checkAllowFollowingAfterExactMatch(leftStrings, rightStrings);
+    }
+
+    private static void checkAllowFollowingAfterExactMatch(final Table left, final Table right) {
+        final String match = "LSV <= RRV <= LEV ->";
+        final Table result = left.rangeJoin(right, List.of(match), List.of(AggGroup("Sentinel")));
+        checkSentinels(match + ", left row 0", List.of(0, 1), result, 0);
+        checkSentinels(match + ", left row 1", List.of(0, 1), result, 1);
+        checkSentinels(match + ", left row 2", List.of(0, 1, 2), result, 2);
+        checkSentinels(match + ", left row 3", List.of(0, 1, 2), result, 3);
+        checkSentinels(match + ", left row 4", List.of(0, 1, 2, 3), result, 4);
+    }
+
+    // endregion allow following tests
+
     // region validation tests
 
     @Test
