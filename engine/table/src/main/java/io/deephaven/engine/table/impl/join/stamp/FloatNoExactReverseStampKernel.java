@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit FloatNoExactReverseStampKernel and run "./gradlew replicateStampKernel" to regenerate
+// ****** Edit CharNoExactStampKernel and run "./gradlew replicateStampKernel" to regenerate
 //
 // @formatter:off
 
