@@ -534,7 +534,7 @@ class KafkaToolsIntegrationTest {
                     KafkaTools.Consume.IGNORE,
                     KafkaTools.Consume.protobufSpec(ProtobufConsumeOptions.builder()
                             .descriptorProvider(DescriptorSchemaRegistry.builder()
-                                    .subject("%s-value".formatted(topic))
+                                    .subject(String.format("%s-value", topic))
                                     .build())
                             .build()),
                     TableType.append());
