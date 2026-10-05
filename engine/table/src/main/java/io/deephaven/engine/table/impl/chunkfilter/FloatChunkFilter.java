@@ -7,60 +7,14 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-
+/**
+ * A {@link ChunkFilter} for float values that tests each value with {@link #matches(float)}.
+ * <p>
+ * This class deliberately does not implement the {@code filter} and {@code filterAnd} loops. Loops shared by every
+ * subclass would see many receivers at the {@code matches} call once a few filter types have run through them, and the
+ * JIT would leave it as a virtual call per value. Each subclass instead carries its own identical copy of the loops, so
+ * that its {@code matches} call has only one receiver and can be inlined.
+ */
 public abstract class FloatChunkFilter implements ChunkFilter {
     public abstract boolean matches(float value);
-
-    @Override
-    public final void filter(
-            final Chunk<? extends Values> values,
-            final LongChunk<OrderedRowKeys> keys,
-            final WritableLongChunk<OrderedRowKeys> results) {
-        final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
-        final int len = floatChunk.size();
-
-        results.setSize(0);
-        for (int ii = 0; ii < len; ++ii) {
-            if (matches(floatChunk.get(ii))) {
-                results.add(keys.get(ii));
-            }
-        }
-    }
-
-    @Override
-    public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-        final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
-        final int len = values.size();
-        int count = 0;
-        for (int ii = 0; ii < len; ++ii) {
-            final boolean newResult = matches(floatChunk.get(ii));
-            results.set(ii, newResult);
-            // count every true value
-            count += newResult ? 1 : 0;
-        }
-        return count;
-    }
-
-    @Override
-    public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-        final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
-        final int len = values.size();
-        int count = 0;
-        // Count the values that remain true
-        for (int ii = 0; ii < len; ++ii) {
-            final boolean result = results.get(ii);
-            if (!result) {
-                // already false, no need to compute or increment the count
-                continue;
-            }
-            boolean newResult = matches(floatChunk.get(ii));
-            results.set(ii, newResult);
-            // increment the count if the new result is TRUE
-            count += newResult ? 1 : 0;
-        }
-        return count;
-    }
 }
