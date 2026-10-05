@@ -5,13 +5,13 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -20,6 +20,7 @@ import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
@@ -732,6 +733,164 @@ public class QueryTableWhereInTest {
     }
 
     @Test
+    public void testSetKeyLeavesAndReturns() {
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), stringCol("FV", "A", "B", "C"),
+                intCol("Sentinel", 10, 20, 30));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final QueryTable setTable = testRefreshingTable(i(10, 30).toTracking(), stringCol("FV", "A", "C"));
+
+        final Table inResult = source.whereIn(setTable, "FV");
+        final Table notInResult = source.whereNotIn(setTable, "FV");
+        final SimpleListener inListener = new SimpleListener(inResult);
+        inResult.addUpdateListener(inListener);
+        final SimpleListener notInListener = new SimpleListener(notInResult);
+        notInResult.addUpdateListener(notInListener);
+
+        // The row holding A goes away, and another row holding A arrives, so the set's keys are unchanged.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(setTable, i(10));
+            TstUtils.addToTable(setTable, i(40), stringCol("FV", "A"));
+            setTable.notifyListeners(i(40), i(10), i());
+        });
+        assertEquals(0, inListener.getCount());
+        assertEquals(0, notInListener.getCount());
+        assertTableEquals(source.where("FV in `A`, `C`"), inResult);
+        assertTableEquals(source.where("FV not in `A`, `C`"), notInResult);
+
+        // The last row holding A goes away, while a second row holding C arrives.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(setTable, i(40));
+            TstUtils.addToTable(setTable, i(50), stringCol("FV", "C"));
+            setTable.notifyListeners(i(50), i(40), i());
+        });
+        assertEquals(1, inListener.getCount());
+        assertEquals(i(), inListener.getUpdate().added());
+        assertEquals(i(10), inListener.getUpdate().removed());
+        assertEquals(1, notInListener.getCount());
+        assertEquals(i(10), notInListener.getUpdate().added());
+        assertEquals(i(), notInListener.getUpdate().removed());
+        assertTableEquals(source.where("FV in `C`"), inResult);
+        assertTableEquals(source.where("FV not in `C`"), notInResult);
+
+        // A modification that rewrites a set row's key with the same value leaves the keys unchanged.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(setTable, i(30), stringCol("FV", "C"));
+            setTable.notifyListeners(i(), i(), i(30));
+        });
+        assertEquals(1, inListener.getCount());
+        assertEquals(1, notInListener.getCount());
+
+        // A modification that changes a set row's key from C to B, with C still held by row 50.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(setTable, i(30), stringCol("FV", "B"));
+            setTable.notifyListeners(i(), i(), i(30));
+        });
+        assertTableEquals(source.where("FV in `B`, `C`"), inResult);
+        assertTableEquals(source.where("FV not in `B`, `C`"), notInResult);
+    }
+
+    @Test
+    public void testSetKeyChurn() {
+        // The set holds a window of ids that slides far past the source's ids, so the set's hash table must replace
+        // departed keys with tombstones, reuse them, and rehash, many times over.
+        final int sourceIds = 20_000;
+        final int windowSize = 3_000;
+        final int slide = 700;
+        final QueryTable source = (QueryTable) TableTools.emptyTable(sourceIds)
+                .update("Id = (int) ii", "Key1 = (long) (Id / 7)", "Key2 = Id % 7", "KeyS = `S` + (int) (Id / 3)",
+                        "KeyL = (long) (Id % 3)");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Set row key r holds id r, so the window [first, first + windowSize) is also its row set.
+        final QueryTable setTable = testRefreshingTable(RowSetFactory.empty().toTracking(),
+                intCol("Id"), longCol("Key1"), intCol("Key2"), stringCol("KeyS"), longCol("KeyL"));
+        final MutableLong first = new MutableLong(0);
+        addSetIds(setTable, 0, windowSize);
+
+        final Table singleIn = source.whereIn(setTable, "Id");
+        final Table singleNotIn = source.whereNotIn(setTable, "Id");
+        final Table multiIn = source.whereIn(setTable, "Key1", "Key2");
+        final Table multiNotIn = source.whereNotIn(setTable, "Key1", "Key2");
+        final Table objectIn = source.whereIn(setTable, "KeyS", "KeyL");
+        final Table objectNotIn = source.whereNotIn(setTable, "KeyS", "KeyL");
+
+        for (int cycle = 0; cycle < 60; ++cycle) {
+            final long oldFirst = first.get();
+            final long newFirst = oldFirst + slide;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final WritableRowSet removed = RowSetFactory.fromRange(oldFirst, newFirst - 1);
+                final WritableRowSet added =
+                        RowSetFactory.fromRange(oldFirst + windowSize, newFirst + windowSize - 1);
+                TstUtils.removeRows(setTable, removed);
+                addSetIds(setTable, oldFirst + windowSize, slide);
+                setTable.notifyListeners(added, removed, i());
+            });
+            first.set(newFirst);
+
+            final String inWindow = "Id >= " + newFirst + " && Id < " + (newFirst + windowSize);
+            final Table expectedIn = source.where(inWindow);
+            final Table expectedNotIn = source.where("!(" + inWindow + ")");
+            assertTableEquals(expectedIn, singleIn);
+            assertTableEquals(expectedNotIn, singleNotIn);
+            assertTableEquals(expectedIn, multiIn);
+            assertTableEquals(expectedNotIn, multiNotIn);
+            assertTableEquals(expectedIn, objectIn);
+            assertTableEquals(expectedNotIn, objectNotIn);
+        }
+    }
+
+    private static void addSetIds(final QueryTable setTable, final long firstId, final int count) {
+        final int[] ids = new int[count];
+        final long[] key1 = new long[count];
+        final int[] key2 = new int[count];
+        final String[] keyS = new String[count];
+        final long[] keyL = new long[count];
+        for (int ii = 0; ii < count; ++ii) {
+            final int id = Math.toIntExact(firstId + ii);
+            ids[ii] = id;
+            key1[ii] = id / 7;
+            key2[ii] = id % 7;
+            keyS[ii] = "S" + (id / 3);
+            keyL[ii] = id % 3;
+        }
+        TstUtils.addToTable(setTable, RowSetFactory.fromRange(firstId, firstId + count - 1),
+                intCol("Id", ids), longCol("Key1", key1), intCol("Key2", key2), stringCol("KeyS", keyS),
+                longCol("KeyL", keyL));
+    }
+
+    @Test
+    public void testBlinkSetAccumulates() {
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), stringCol("FV", "A", "B", "C"),
+                intCol("Sentinel", 10, 20, 30));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final QueryTable setTable = testRefreshingTable(i(10).toTracking(), stringCol("FV", "A"));
+        setTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+
+        // A blink set holds every key it has ever held, as a selectDistinct of it does.
+        final Table inResult = source.whereIn(setTable, "FV");
+        final Table notInResult = source.whereNotIn(setTable, "FV");
+        assertTableEquals(source.where("FV in `A`"), inResult);
+        assertTableEquals(source.where("FV not in `A`"), notInResult);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(setTable, i(10));
+            TstUtils.addToTable(setTable, i(20), stringCol("FV", "C"));
+            setTable.notifyListeners(i(20), i(10), i());
+        });
+        assertTableEquals(source.where("FV in `A`, `C`"), inResult);
+        assertTableEquals(source.where("FV not in `A`, `C`"), notInResult);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(setTable, i(20));
+            setTable.notifyListeners(i(), i(20), i());
+        });
+        assertTableEquals(source.where("FV in `A`, `C`"), inResult);
+        assertTableEquals(source.where("FV not in `A`, `C`"), notInResult);
+    }
+
+    @Test
     public void testNanNegZero() {
         final Table table = TableTools.newTable(
                 floatCol("floatCol",
@@ -812,57 +971,5 @@ public class QueryTableWhereInTest {
                 doubleCol("doubleCol", -0.0, 0.0),
                 floatCol("floatCol", 0.0f, -0.0f));
         assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
-    }
-
-    @Test
-    public void testFloatSetInclusionKernel() {
-        // Create a valid collection with a null object
-        final List<Object> list = new ArrayList<>();
-        list.add(null);
-        list.add(Float.NEGATIVE_INFINITY);
-        list.add(-1.0f);
-        list.add(-0.0f);
-        list.add(0.0f);
-        list.add(1.0f);
-        list.add(Float.POSITIVE_INFINITY);
-        list.add(Float.NaN);
-
-        final SetInclusionKernel floatKernel = SetInclusionKernel.makeKernel(ChunkType.Float, list, true);
-
-        // should all return false because all values are already present
-        assertFalse(floatKernel.add(null));
-        assertFalse(floatKernel.add(Float.NEGATIVE_INFINITY));
-        assertFalse(floatKernel.add(-1.0f));
-        assertFalse(floatKernel.add(-0.0f));
-        assertFalse(floatKernel.add(0.0f));
-        assertFalse(floatKernel.add(1.0f));
-        assertFalse(floatKernel.add(Float.POSITIVE_INFINITY));
-        assertFalse(floatKernel.add(Float.NaN));
-    }
-
-    @Test
-    public void testDoubleSetInclusionKernel() {
-        // Create a valid collection with a null object
-        final List<Object> list = new ArrayList<>();
-        list.add(null);
-        list.add(Double.NEGATIVE_INFINITY);
-        list.add(-1.0);
-        list.add(-0.0);
-        list.add(0.0);
-        list.add(1.0);
-        list.add(Double.POSITIVE_INFINITY);
-        list.add(Double.NaN);
-
-        final SetInclusionKernel doubleKernel = SetInclusionKernel.makeKernel(ChunkType.Double, list, true);
-
-        // should all return false because all values are already present
-        assertFalse(doubleKernel.add(null));
-        assertFalse(doubleKernel.add(Double.NEGATIVE_INFINITY));
-        assertFalse(doubleKernel.add(-1.0));
-        assertFalse(doubleKernel.add(-0.0));
-        assertFalse(doubleKernel.add(0.0));
-        assertFalse(doubleKernel.add(1.0));
-        assertFalse(doubleKernel.add(Double.POSITIVE_INFINITY));
-        assertFalse(doubleKernel.add(Double.NaN));
     }
 }

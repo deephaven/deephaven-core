@@ -7,6 +7,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.TableAlreadyFailedException;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -32,6 +33,8 @@ import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.tuple.ArrayTuple;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -59,8 +62,11 @@ import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -1865,4 +1871,101 @@ public class TestDynamicWhereFilter {
     }
 
     // endregion Attempts that cannot commit over the set they read (DH-23666)
+
+    /**
+     * A key of four columns makes {@code ArrayTuple}s of boxed values, unboxed to be matched: a null element must match
+     * the type's null value, and doubles must match as they do for {@code ==}, so the set holds -0.0 where the source
+     * holds 0.0. The four values identify each id, so matching keys selects the ids in the set's window.
+     */
+    @Test
+    public void testFourColumnKeysMatchArrayTuples() {
+        final int sourceIds = 6_000;
+        final int windowSize = 1_500;
+        final int slide = 400;
+        final int[] ids = new int[sourceIds];
+        final long[] key1 = new long[sourceIds];
+        final int[] key2 = new int[sourceIds];
+        final String[] key3 = new String[sourceIds];
+        final double[] key4 = new double[sourceIds];
+        for (int id = 0; id < sourceIds; ++id) {
+            ids[id] = id;
+            key1[id] = fourColumnKey1(id);
+            key2[id] = fourColumnKey2(id);
+            key3[id] = fourColumnKey3(id);
+            key4[id] = fourColumnKey4(id, false);
+        }
+        final Table source = newTable(intCol("Id", ids), longCol("K1", key1), intCol("K2", key2),
+                stringCol("K3", key3), doubleCol("K4", key4));
+
+        // Set row key r holds id r, so the window [first, first + windowSize) is also its row set.
+        final QueryTable setTable = TstUtils.testRefreshingTable(RowSetFactory.empty().toTracking(),
+                intCol("Id"), longCol("K1"), intCol("K2"), stringCol("K3"), doubleCol("K4"));
+        addFourColumnIds(setTable, 0, windowSize);
+
+        final MatchPair[] keyPairs = MatchPairFactory.getExpressions("K1", "K2", "K3", "K4");
+        final DynamicWhereFilter inFilter = new DynamicWhereFilter(setTable, true, keyPairs);
+        final Table in = source.where(inFilter);
+        final Table notIn = source.where(new DynamicWhereFilter(setTable, false, keyPairs));
+        try (final CloseableIterator<Object> setKeys = inFilter.sharedSet().kernel().iterator()) {
+            assertTrue(setKeys.next() instanceof ArrayTuple);
+        }
+
+        for (int cycle = 0; cycle <= 20; ++cycle) {
+            final long first = (long) cycle * slide;
+            if (cycle > 0) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final RowSet removed = RowSetFactory.fromRange(first - slide, first - 1);
+                    final RowSet added = RowSetFactory.fromRange(first - slide + windowSize, first + windowSize - 1);
+                    TstUtils.removeRows(setTable, removed);
+                    addFourColumnIds(setTable, first - slide + windowSize, slide);
+                    setTable.notifyListeners(added, removed, i());
+                });
+            }
+            final String inWindow = "Id >= " + first + " && Id < " + (first + windowSize);
+            assertTableEquals(source.where(inWindow), in);
+            assertTableEquals(source.where("!(" + inWindow + ")"), notIn);
+        }
+    }
+
+    private static long fourColumnKey1(final int id) {
+        return id % 11 == 0 ? QueryConstants.NULL_LONG : id / 7;
+    }
+
+    private static int fourColumnKey2(final int id) {
+        return id % 7;
+    }
+
+    private static String fourColumnKey3(final int id) {
+        // Never null where K1 is, so that K3 and K4 identify the ids K1 and K2 cannot.
+        return id % 13 == 0 && id % 11 != 0 ? null : "S" + id / 5;
+    }
+
+    private static double fourColumnKey4(final int id, final boolean negativeZero) {
+        if (id % 17 == 0) {
+            return Double.NaN;
+        }
+        if (id % 19 == 0) {
+            return QueryConstants.NULL_DOUBLE;
+        }
+        final int remainder = id % 5;
+        return remainder == 0 && negativeZero ? -0.0 : remainder * 0.5;
+    }
+
+    private static void addFourColumnIds(final QueryTable setTable, final long firstId, final int count) {
+        final int[] ids = new int[count];
+        final long[] key1 = new long[count];
+        final int[] key2 = new int[count];
+        final String[] key3 = new String[count];
+        final double[] key4 = new double[count];
+        for (int ii = 0; ii < count; ++ii) {
+            final int id = Math.toIntExact(firstId + ii);
+            ids[ii] = id;
+            key1[ii] = fourColumnKey1(id);
+            key2[ii] = fourColumnKey2(id);
+            key3[ii] = fourColumnKey3(id);
+            key4[ii] = fourColumnKey4(id, true);
+        }
+        TstUtils.addToTable(setTable, RowSetFactory.fromRange(firstId, firstId + count - 1), intCol("Id", ids),
+                longCol("K1", key1), intCol("K2", key2), stringCol("K3", key3), doubleCol("K4", key4));
+    }
 }
