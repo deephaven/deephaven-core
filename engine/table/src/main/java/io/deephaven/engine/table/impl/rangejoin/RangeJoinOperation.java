@@ -176,7 +176,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
         if (leftEndColumnDefinition == null) {
             (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
-                    "left start column %s is missing", Strings.of(rangeMatch.leftEndColumn())));
+                    "left end column %s is missing", Strings.of(rangeMatch.leftEndColumn())));
         }
         if (leftStartColumnDefinition != null && rightRangeColumnDefinition != null) {
             issues = validateMatchCompatibility(issues, rangeMatch.leftStartColumn(), rangeMatch.rightRangeColumn(),

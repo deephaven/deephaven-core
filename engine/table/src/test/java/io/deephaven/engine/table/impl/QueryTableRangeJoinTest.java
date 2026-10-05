@@ -524,6 +524,22 @@ public class QueryTableRangeJoinTest {
         }
     }
 
+    @Test
+    public void testMissingRangeMatchColumnsNamed() {
+        final Table lt = emptyTable(100).updateView("II=ii", "LSV=ii / 0.7", "LEV=ii / 0.1");
+        final Table rt = emptyTable(100).updateView("II=ii", "RRV=ii / 0.3");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("WRONG < RRV < LEV"), List.of(AggGroup("II"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("left start column WRONG is missing");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("LSV < WRONG < LEV"), List.of(AggGroup("II"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("right range column WRONG is missing");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("LSV < RRV < WRONG"), List.of(AggGroup("II"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("left end column WRONG is missing")
+                .hasMessageNotContaining("left start column");
+    }
+
     private static void expectException(
             @NotNull final Runnable test,
             @NotNull final Class<? extends Exception> exceptionClass) {
