@@ -57,6 +57,7 @@ application.applicationDistribution.into('bin') {
     from(createApplication('publish', 'io.deephaven.client.examples.Publish'))
     from(createApplication('message-stream-send-receive',
             'io.deephaven.client.examples.tools.MessageStreamSendReceive'))
+    from(createApplication('unreferenceable', 'io.deephaven.client.examples.tools.UnreferenceableTableExample'))
     from(createApplication('filter-table', 'io.deephaven.client.examples.FilterTable'))
     from(createApplication('create-shared-id', 'io.deephaven.client.examples.CreateSharedId'))
     from(createApplication('print-configuration-constants', 'io.deephaven.client.examples.PrintConfigurationConstants'))

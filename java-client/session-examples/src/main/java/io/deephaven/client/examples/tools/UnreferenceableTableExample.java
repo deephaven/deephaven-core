@@ -25,7 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * parent. The parent {@code R=random()} was already evaluated for the first child, so the second cannot share it, and
  * the client rejects the request before sending it.
  */
-@Command(name = "tainted", mixinStandardHelpOptions = true,
+@Command(name = "unreferenceable", mixinStandardHelpOptions = true,
         description = "Try to execute an unreferenceable table", version = "0.1.0")
 class UnreferenceableTableExample implements Callable<Void> {
 

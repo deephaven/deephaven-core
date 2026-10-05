@@ -89,6 +89,7 @@ class ExamplesSmokeTest {
                 example(SESSION, "subscribe-fields", "Created: ", "-c", "1"),
                 example(SESSION, "subscribe-to-logs", "", "-q", "-c", "1", "--timeout", "PT30S"),
                 example(SESSION, "create-shared-id", "shared id: 0x", "--duration", "PT1S"),
+                example(SESSION, "unreferenceable", "^Expected$"),
                 // flight
                 example(FLIGHT, "get-tsv", "duration"),
                 example(FLIGHT, "structured-filter", "^93$", "--filter", "OR"),

@@ -141,7 +141,7 @@ test, but their javadoc starts with what kind of tool they are rather than what 
 | tool | project | what it is |
 |---|---|---|
 | `table-manager` | session | protocol: how many messages batch versus serial mode sends for a staged query |
-| `tainted` | session | protocol: a stateful table service refusing a second child of a non-deterministic parent (no launcher) |
+| `unreferenceable` | session | protocol: a stateful table service refusing a second child of a non-deterministic parent |
 | `message-stream-send-receive` | session | plugin: drive a bidirectional object stream such as the echo plugin |
 | `deep-query` | flight | stress: a chain of hundreds of head and tail operations |
 | `sum-benchmark` | flight | benchmark: one aggregation over a large empty table |
@@ -257,7 +257,7 @@ the host under Gradle and spawns each launcher script as a child process with
 
 Not covered, and why: `message-stream-send-receive` needs the echo plugin; `fetch-object` and
 `convert-to-table` need a plugin object; the server image has neither. `do-put-spray` copies between
-two servers. `tainted` has no launcher.
+two servers.
 
 ### The API-level tests
 
