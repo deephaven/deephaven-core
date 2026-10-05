@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Aggregations;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -458,6 +459,23 @@ public class QueryTableRangeJoinTest {
                     () -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"), List.of(agg)),
                     UnsupportedOperationException.class);
         }
+    }
+
+    @Test
+    public void testUnsupportedAggregationsMessage() {
+        final Table lt = emptyTable(100).updateView("II=ii", "BB=II % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
+        final Table rt = emptyTable(100).updateView("II=ii", "BB=II % 5", "RRV=ii / 0.3");
+        final List<Aggregation> aggs = List.of(
+                AggGroup("G1=II"),
+                AggCount("Cnt"),
+                AggGroup("G2=II"),
+                AggSum("S=II"),
+                Aggregations.builder().addAggregations(AggGroup("G3=II"), AggMax("M=II")).build(),
+                Aggregations.builder().addAggregations(AggGroup("G4=II"), AggGroup("G5=II")).build());
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"), aggs))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageEndingWith("unsupported aggregations were requested: " + Strings.ofAggregations(List.of(
+                        aggs.get(1), aggs.get(3), aggs.get(4))));
     }
 
     @Test
