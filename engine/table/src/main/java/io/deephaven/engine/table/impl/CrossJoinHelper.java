@@ -34,8 +34,8 @@ import static io.deephaven.engine.table.impl.MatchPair.matchString;
 
 /**
  * Implementation for chunk-oriented joins that produce multiple RHS rows per-LHS row, including {@link Table#join}
- * (referred to as simply join or "cross join") and a left outer join. The left outer join does not currently have any
- * user visible API.
+ * (referred to as simply join or "cross join") and a left outer join. The left outer join is exposed through
+ * {@link io.deephaven.engine.util.OuterJoinTools}, which also builds its full outer join on it.
  *
  * <p>
  * When there are zero keys, the result table uses {@link BitShiftingColumnSource}s for the columns derived from the

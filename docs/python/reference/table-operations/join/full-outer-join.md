@@ -15,8 +15,9 @@ The resultant table contains all rows from both tables that exist in the key ide
 full_outer_join(
     l_table: Table,
     r_table: Table,
-    on: Union[str, Sequence[str]],
+    on: Union[str, Sequence[str]] = None,
     joins: Union[str, Sequence[str]] = None,
+    reserve_bits: int = None,
 ) -> Table
 ```
 
@@ -33,7 +34,7 @@ The left table from which data is joined.
 The right table from which data is joined.
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]">
+<Param name="on" type="Union[str, Sequence[str]]" optional>
 
 Columns from the left and right tables used to join on.
 
@@ -46,16 +47,21 @@ Columns from the left and right tables used to join on.
 
 The columns from the right table to add to the left table based on key. The default value is `None`.
 
-- `None` will add all columns from the right table to the left table.
+- `None` will add all columns from the right table to the left table, except right table columns whose names match a left table column in `on`.
 - `"X"` will add column `X` from the right table to the left table as column `X`.
 - `Y = X` will add column `X` from right table to left table and rename it to be `Y`.
+
+</Param>
+<Param name="reserve_bits" type="int" optional>
+
+The number of bits of each result row key to reserve for the right table rows that match a left table row. The default value is `None`, which uses the configured value (10 bits unless configured otherwise).
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-A new table containing all rows from the left and right table. Rows that do not have matching criteria are included in the result as null cells. If there are multiple matches between a row from the left table and rows from the right table, all matching combinations will be included. If no match columns are specified, every combination of left and right table rows is included.
+A new table containing all rows from the left and right table. A row that has no match in the other table is included once, with null values in the columns from the other table. If there are multiple matches between a row from the left table and rows from the right table, all matching combinations will be included. If no match columns are specified, every combination of left and right table rows is included; if one table is empty, each row of the other table is included once with null values in the columns from the empty table.
 
 ## Examples
 

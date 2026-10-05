@@ -28,7 +28,7 @@ One or more columns will be used as keys to match data between the left and righ
 The basic syntax for [`join`](../reference/table-operations/join/join.md), [`exactJoin`](../reference/table-operations/join/exact-join.md), and [`naturalJoin`](../reference/table-operations/join/natural-join.md) is as follows:
 
 ```groovy syntax
-// Include all non-key columns
+// Include all right table columns except those sharing a name with a left match column
 result = leftTable.joinMethod(rightTable, columnsToMatch)
 
 // Include only some non-key columns (ColumnsToAdd)
@@ -40,7 +40,7 @@ Where `rightTable` is the table to join with, and `columnsToMatch` and `columnsT
 The basic syntax for [`leftOuterJoin`](../reference/table-operations/join/left-outer-join.md) and [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md) are as follows:
 
 ```groovy syntax
-// Port all non-key columns
+// Port all right table columns except those sharing a name with a left match column
 result = outerJoinMethod(leftTable, rightTable, columnsToMatch)
 
 // Port only some non-key columns (ColumnsToAdd)
@@ -53,7 +53,7 @@ result = outerJoinMethod(leftTable, rightTable, columnsToMatch, columnsToAdd)
 Outside of the left and right tables, exact and relational joins take up to two more arguments. The first is required, while the second is optional:
 
 - `columnsToMatch`: The key column(s) on which to look for exact matches. Columns of any data type can be used as key columns, but corresponding match columns in the left and right table _must_ be of the same data type.
-- `columnsToAdd` (Optional): The column(s) in the right table to join to the left table. If not specified, all columns are joined.
+- `columnsToAdd` (Optional): The column(s) in the right table to join to the left table. If not specified, all right table columns are joined except those whose names match a left table column in `columnsToMatch`. A right table match column with a different name from its left table match column, such as `DeptID` in `"DeptNumber = DeptID"`, is joined.
 
 ### Match columns with different names
 
@@ -68,12 +68,12 @@ result = leftTable.joinMethod(rightTable, "columnToMatchLeft = columnToMatchRigh
 Tables can be joined on more than one match column. The syntax below joins tables on two or more match columns:
 
 ```groovy syntax
-result = leftTable.joinMethod(rightTable, "Column1", "Column2", "Column3Left = Column3Right")
+result = leftTable.joinMethod(rightTable, "Column1, Column2, Column3Left = Column3Right")
 ```
 
 ### Rename joined columns
 
-Columns being joined from the right table that have the same name as existing columns in the left table will cause a name conflict error. To avoid this, the `joins` argument can be renamed as a column from the right table. The following example renames the right table's `OldColumnName` column to `NewColumnName`:
+Columns being joined from the right table that have the same name as existing columns in the left table will cause a name conflict error. To avoid this, the `columnsToAdd` argument can rename a column from the right table. The following example renames the right table's `OldColumnName` column to `NewColumnName`:
 
 ```groovy syntax
 result = leftTable.joinMethod(rightTable, "ColumnToMatchLeft=ColumnToMatchRight", "NewColumnName=OldColumnName")
@@ -157,7 +157,7 @@ result = left.join(right, "DeptID")
 ```
 
 > [!TIP]
-> [`join`](../reference/table-operations/join/join.md) computes the cross product of the left and right tables and subsets the rows based on the arguments. This means it is slow relative to [`naturalJoin`](../reference/table-operations/join/natural-join.md), so [`naturalJoin`](../reference/table-operations/join/natural-join.md) should be preferred in most places.
+> [`join`](../reference/table-operations/join/join.md) produces a result row for every matching pair of left and right table rows and reserves space in each result row key for the matching right table rows. This makes it slow relative to [`naturalJoin`](../reference/table-operations/join/natural-join.md), so [`naturalJoin`](../reference/table-operations/join/natural-join.md) should be preferred in most places.
 
 ### `leftOuterJoin`
 
