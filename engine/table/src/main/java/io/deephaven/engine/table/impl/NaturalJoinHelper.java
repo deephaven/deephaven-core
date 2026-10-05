@@ -148,8 +148,7 @@ class NaturalJoinHelper {
                 leftRecorder.setMergedListener(mergedJoinListener);
                 rightRecorder.setMergedListener(mergedJoinListener);
 
-                leftTable.addUpdateListener(leftRecorder);
-                rightTable.addUpdateListener(rightRecorder);
+                mergedJoinListener.addRecordersToParents();
 
                 result.addParentReference(mergedJoinListener);
 
@@ -376,8 +375,7 @@ class NaturalJoinHelper {
 
                 leftRecorder.setMergedListener(mergedListener);
                 rightRecorder.setMergedListener(mergedListener);
-                leftTable.addUpdateListener(leftRecorder);
-                rightTable.addUpdateListener(rightRecorder);
+                mergedListener.addRecordersToParents();
                 result.addParentReference(mergedListener);
 
             } else {

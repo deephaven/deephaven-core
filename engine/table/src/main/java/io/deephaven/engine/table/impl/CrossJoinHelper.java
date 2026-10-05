@@ -873,8 +873,7 @@ public class CrossJoinHelper {
 
                 leftRecorder.setMergedListener(mergedListener);
                 rightRecorder.setMergedListener(mergedListener);
-                leftTable.addUpdateListener(leftRecorder);
-                rightTable.addUpdateListener(rightRecorder);
+                mergedListener.addRecordersToParents();
                 resultTable.addParentReference(mergedListener);
             } else {
                 rightTable.addUpdateListener(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
@@ -1431,8 +1430,7 @@ public class CrossJoinHelper {
 
             leftRecorder.setMergedListener(mergedListener);
             rightRecorder.setMergedListener(mergedListener);
-            leftTable.addUpdateListener(leftRecorder);
-            rightTable.addUpdateListener(rightRecorder);
+            mergedListener.addRecordersToParents();
             result.addParentReference(mergedListener);
         } else if (leftTable.isRefreshing() && (leftOuterJoin || !rightTable.isEmpty())) {
             // an outer join has a row for every left row, even when the static right table is empty

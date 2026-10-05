@@ -23,6 +23,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -1683,7 +1684,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                     // the result reaches through its WhereListener, so no parent reference is needed here. Note that
                     // a reference to rightTable would in any case be the wrong table to retain, since the set table
                     // actually used may be a data index table or a selectDistinct of it.
-                    return whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch));
+                    // The filter listens to its set table before the where begins; an enclosed scope releases the
+                    // filter, and that listener, when the where fails.
+                    return LivenessScopeStack.computeEnclosed(
+                            () -> whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch)),
+                            rightTable.isRefreshing(),
+                            Table::isRefreshing);
                 });
     }
 
@@ -2415,9 +2421,12 @@ public class QueryTable extends BaseTable<QueryTable> {
             return QueryPerformanceRecorder.withNugget(
                     "raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + joinRule + ", "
                             + matchString(columnsToAdd) + ")",
-                    () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
-                            SortingOrder.Descending,
-                            joinRule));
+                    // an enclosed scope releases the reversed right table, and its listener, when the join fails
+                    () -> LivenessScopeStack.computeEnclosed(
+                            () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
+                                    SortingOrder.Descending, joinRule),
+                            rightTableCoalesced.isRefreshing(),
+                            Table::isRefreshing));
         }
     }
 

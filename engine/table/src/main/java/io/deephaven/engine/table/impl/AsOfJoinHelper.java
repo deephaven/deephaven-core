@@ -1206,8 +1206,7 @@ public class AsOfJoinHelper {
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
 
-        leftTable.addUpdateListener(leftRecorder);
-        rightTable.addUpdateListener(rightRecorder);
+        mergedJoinListener.addRecordersToParents();
 
         result.addParentReference(mergedJoinListener);
 
@@ -1255,8 +1254,7 @@ public class AsOfJoinHelper {
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
 
-        leftTable.addUpdateListener(leftRecorder);
-        rightTable.addUpdateListener(rightRecorder);
+        mergedJoinListener.addRecordersToParents();
 
         result.addParentReference(mergedJoinListener);
 
