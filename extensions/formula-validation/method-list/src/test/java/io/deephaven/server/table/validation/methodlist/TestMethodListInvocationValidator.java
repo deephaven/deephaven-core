@@ -154,6 +154,10 @@ public class TestMethodListInvocationValidator {
         final Method charSequenceToString = CharSequence.class.getMethod("toString");
         Assert.assertEquals(CharSequence.class, charSequenceToString.getDeclaringClass());
         assertPermitted("java.lang.Object toString()", charSequenceToString);
+        // but it declares only the public methods of Object, so it does not override a protected one
+        final Method interfaceClone = CloneableInterface.class.getMethod("clone");
+        assertNotPermitted("java.lang.Object clone()", interfaceClone);
+        assertPermitted(CloneableInterface.class.getName() + " clone()", interfaceClone);
         // static methods do not override
         assertNotPermitted("java.lang.Object hashCode()", Integer.class.getMethod("hashCode", int.class));
         assertNotPermitted("java.lang.Object toString(..)", Integer.class.getMethod("toString", int.class));
@@ -351,6 +355,9 @@ public class TestMethodListInvocationValidator {
         // but a static nested class of a generic class is not
         assertPermitted(root + " accept(java.lang.Object)",
                 StaticNestedSub.class.getMethod("accept", String.class));
+        // the type parameters of the class around a local class do not make the local class raw
+        final Class<?> localRootSub = GenericOuter.localRootSub();
+        assertPermitted(root + " accept(java.lang.Object)", localRootSub.getMethod("accept", String.class));
         // while a parameterized supertype binds them
         assertPermitted(root + " accept(..)", LongRootSub.class.getMethod("accept", Long.class));
         assertNotPermitted(root + " accept(..)", LongRootSub.class.getMethod("accept", Number.class));
@@ -621,6 +628,23 @@ public class TestMethodListInvocationValidator {
 
         public static class StaticNested extends Root<String> {
         }
+
+        /**
+         * A local subclass of a local class, both declared in a static method of this generic class.
+         */
+        static Class<?> localRootSub() {
+            class LocalRoot extends Root<String> {
+            }
+            class LocalRootSub extends LocalRoot {
+                @Override
+                public void accept(final String value) {}
+            }
+            return LocalRootSub.class;
+        }
+    }
+
+    public interface CloneableInterface {
+        Object clone();
     }
 
     @SuppressWarnings("rawtypes")

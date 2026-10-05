@@ -152,6 +152,10 @@ final class MethodPattern {
                 || Modifier.isStatic(modifiers) || Modifier.isPrivate(modifiers) || candidate.isBridge()) {
             return false;
         }
+        if (method.getDeclaringClass().isInterface() && !Modifier.isPublic(modifiers)) {
+            // an interface overrides only public methods, as it implicitly declares only the public methods of Object
+            return false;
+        }
         if (!Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers)
                 && !samePackage(candidate.getDeclaringClass(), method.getDeclaringClass())
                 && !overriddenThroughSuperclass(candidate, method)) {
@@ -266,12 +270,13 @@ final class MethodPattern {
     }
 
     /**
-     * Is {@code type} generic, so that a reference to it without type arguments is raw? An inner class is generic when
-     * a class enclosing it, up to the first static class, declares type parameters.
+     * Is {@code type} generic, so that a reference to it without type arguments is raw? An inner member class is
+     * generic when a class declaring it, up to the first static class, declares type parameters. A local or anonymous
+     * class has no declaring class, so the type parameters of the class around it do not make it raw.
      */
     private static boolean isGeneric(final Class<?> type) {
         for (Class<?> enclosing = type; enclosing != null; enclosing =
-                Modifier.isStatic(enclosing.getModifiers()) ? null : enclosing.getEnclosingClass()) {
+                Modifier.isStatic(enclosing.getModifiers()) ? null : enclosing.getDeclaringClass()) {
             if (enclosing.getTypeParameters().length > 0) {
                 return true;
             }
