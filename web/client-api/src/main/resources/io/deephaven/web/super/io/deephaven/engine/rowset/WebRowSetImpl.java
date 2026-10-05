@@ -32,6 +32,11 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
     }
 
     @Override
+    public long firstRowKey() {
+        return rangeSet.getFirstRow();
+    }
+
+    @Override
     public long lastRowKey() {
         return rangeSet.getLastRow();
     }
