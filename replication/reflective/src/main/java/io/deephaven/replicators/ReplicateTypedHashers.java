@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.select.DistinctKeySet;
 import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTypedBase;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,6 +44,7 @@ public class ReplicateTypedHashers {
         generatePackage(UpdateByStateManagerTypedBase.class, true);
         generatePackage(StaticMultiJoinStateManagerTypedBase.class, false);
         generatePackage(IncrementalMultiJoinStateManagerTypedBase.class, false);
+        generatePackage(DistinctKeySet.class, true);
     }
 
     private static void generatePackage(Class<?> baseClass, boolean doDouble) throws IOException {

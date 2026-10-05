@@ -15,14 +15,12 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Iterator;
 
 /**
  * The distinct keys of a set table, each with the number of set rows holding it, maintained as the set table ticks and
  * matched against chunks of a filtered table's key columns.
  * <p>
- * A single key column is held in a fastutil open hash map from key to count, whose lookups read only its key array. A
- * compound key is held as tuples in a {@link TupleMapSetKernel}, which is matched one chunk per column, so that no
+ * Keys of one or more columns are held in a {@link DistinctKeySet}, which is matched one chunk per column, so that no
  * tuple is assembled per row. A key of no columns is held by a {@link ZeroColumnSetKernel}.
  * <p>
  * An update removes, then adds, then calls {@link #finishRemove(RowSequence)}: a key whose count falls to zero stays
@@ -49,14 +47,7 @@ abstract class SetKernel {
             kernel.add(initialRows);
             return kernel;
         }
-        if (keySources.length == 1) {
-            final SingleColumnSetKernel kernel = SingleColumnSetKernel.make(keySources[0]);
-            kernel.add(initialRows, usePrev);
-            return kernel;
-        }
-        final TupleMapSetKernel kernel = TupleSetKernelFactory.make(keySources);
-        kernel.add(initialRows, usePrev);
-        return kernel;
+        return DistinctKeySet.create(keySources, initialRows, usePrev);
     }
 
     /**
@@ -144,21 +135,4 @@ abstract class SetKernel {
      * @return An iterator of the keys in the set; the caller must close it
      */
     abstract CloseableIterator<Object> iterator();
-
-    /**
-     * @return {@code keys} as an iterator that has nothing to close
-     */
-    static CloseableIterator<Object> closeable(@NotNull final Iterator<?> keys) {
-        return new CloseableIterator<>() {
-            @Override
-            public boolean hasNext() {
-                return keys.hasNext();
-            }
-
-            @Override
-            public Object next() {
-                return keys.next();
-            }
-        };
-    }
 }

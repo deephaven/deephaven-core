@@ -63,8 +63,8 @@ public class TestSetKernel {
     /**
      * Build sets from {@code setTable}'s column X, alone and in compound keys of up to four columns at each position,
      * the other columns holding one value, and check that each holds {@code expectedSize} keys, that the first
-     * {@code presentCount} rows of {@code probeTable} match, and that the rest do not. Two columns use a pregenerated
-     * kernel, three a kernel compiled when needed, and four one over {@code ArrayTuple}s.
+     * {@code presentCount} rows of {@code probeTable} match, and that the rest do not. One and two columns use a
+     * pregenerated hash table, and three and four one compiled when needed.
      */
     private static void checkKeys(
             final Table setTable,

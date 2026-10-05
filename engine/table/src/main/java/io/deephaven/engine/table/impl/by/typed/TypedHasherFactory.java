@@ -32,6 +32,8 @@ import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateMan
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.TypedNaturalJoinFactory;
+import io.deephaven.engine.table.impl.select.DistinctKeySet;
+import io.deephaven.engine.table.impl.select.TypedDistinctSetFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.engine.table.impl.updateby.hashing.TypedUpdateByFactory;
@@ -411,6 +413,34 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("probeHashTable", "rowState",
                     true, TypedUpdateByFactory::incrementalProbeFound, TypedUpdateByFactory::incrementalProbeMissing,
                     outputPositions));
+        } else if (baseClass.equals(DistinctKeySet.class)) {
+            builder.classPrefix("DistinctSetHasher").packageGroup("select").packageMiddle("distinctset")
+                    .openAddressedAlternate(true)
+                    .supportTombstones(true)
+                    .stateType(long.class).mainStateName("mainCount")
+                    .overflowOrAlternateStateName("alternateCount")
+                    .emptyStateName("EMPTY_STATE")
+                    .tombstoneStateName("TOMBSTONE_STATE")
+                    .includeOriginalSources(false)
+                    .supportRehash(true)
+                    .rehashSlotsPerEntry(DistinctKeySet.class, "REHASH_SLOTS_PER_ENTRY")
+                    .moveMainFull(TypedDistinctSetFactory::moveMain)
+                    .moveMainAlternate(TypedDistinctSetFactory::moveMain)
+                    .alwaysMoveMain(true);
+
+            builder.addBuild(new HasherConfig.BuildSpec("addKeys", "count", false, true, true,
+                    TypedDistinctSetFactory::addFound, TypedDistinctSetFactory::addInsert));
+            builder.addProbe(new HasherConfig.ProbeSpec("removeKeys", "count", false,
+                    TypedDistinctSetFactory::removeFound, TypedDistinctSetFactory::removeMissing));
+            builder.addProbe(new HasherConfig.ProbeSpec("tombstoneEmptied", "count", false,
+                    TypedDistinctSetFactory::tombstoneFound, TypedDistinctSetFactory::tombstoneMissing));
+            builder.addProbe(new HasherConfig.ProbeSpec("match", "count", false,
+                    TypedDistinctSetFactory::matchFound, TypedDistinctSetFactory::matchMissing,
+                    ParameterSpec.builder(ParameterizedTypeName.get(LongChunk.class, OrderedRowKeys.class), "rowKeys")
+                            .build(),
+                    ParameterSpec.builder(ParameterizedTypeName.get(WritableLongChunk.class, OrderedRowKeys.class),
+                            "results").build(),
+                    ParameterSpec.builder(boolean.class, "inclusion").build()));
         } else if (baseClass.equals(StaticMultiJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticMultiJoinHasher").packageGroup("multijoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -528,6 +558,15 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenagg.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass.equals(DistinctKeySet.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.select.typed.distinctset.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }

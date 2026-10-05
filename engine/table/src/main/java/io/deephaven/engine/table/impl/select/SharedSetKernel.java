@@ -208,18 +208,15 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationQueu
      * it on the update graph thread at the same time; they capture {@link #generation()} first and call
      * {@link #failIfChangedSince(long)} as they go, so that a read overtaken by a mutation is abandoned early.
      * <p>
-     * Reading without synchronization is safe because a concurrent read of the fastutil open hash map behind every
+     * Reading without synchronization is safe because a concurrent read of the open addressed hash table behind the
      * kernel can return a wrong answer or throw, but cannot hang. A wrong answer is rejected by the snapshot control,
      * which compares {@link #lastStateChangeStep()} against its step, or by the snapshot clock, and the attempt is
      * retried; the snapshot machinery retries on an exception, so neither reaches a caller. Termination follows from
-     * the map's shape: {@code containsKey} reads the {@code key} array once and {@code mask} on each probe, and
-     * {@code rehash} assigns {@code key} last, so a reader can see a torn pair, but every such pair either indexes out
-     * of bounds (an exception) or probes a region that still holds a free slot, because a doubled table is at most
-     * three quarters full and a table is only ever halved when under a fifth full; in-place mutation never fills the
-     * table; and the iterator's position only decreases. A compound kernel's {@code Hash.Strategy} only reads the probe
-     * and the stored tuples, which are immutable. This depends on every kernel that holds keys being fastutil-backed,
-     * including the Object kernel, which is why that one uses {@code Object2LongOpenHashMap} rather than
-     * {@code HashMap}; the kernel for a key of no columns holds only a row count.
+     * the table's shape: a probe stops at the first empty slot, or at a tombstone holding its key, and throws if it
+     * steps back around to the slot it began at. A table grows into new arrays, never in place, and its occupied slots,
+     * tombstones included, never exceed its maximum load factor, so a reader that pairs a size with the arrays of
+     * another size either indexes out of bounds (an exception) or probes a region that still holds an empty slot.
+     * Iterating the keys reads each slot once, in order. The kernel for a key of no columns holds only a row count.
      */
     SetKernel kernel() {
         return kernel;

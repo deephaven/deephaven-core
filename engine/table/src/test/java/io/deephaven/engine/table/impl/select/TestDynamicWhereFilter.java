@@ -1873,12 +1873,13 @@ public class TestDynamicWhereFilter {
     // endregion Attempts that cannot commit over the set they read (DH-23666)
 
     /**
-     * A key of four columns makes {@code ArrayTuple}s of boxed values, unboxed to be matched: a null element must match
-     * the type's null value, and doubles must match as they do for {@code ==}, so the set holds -0.0 where the source
-     * holds 0.0. The four values identify each id, so matching keys selects the ids in the set's window.
+     * A key of four columns has its hash table compiled when first needed, and iterates its keys as the
+     * {@code ArrayTuple}s of boxed values that the data index paths expect. A null element must match the type's null
+     * value, and doubles must match as they do for {@code ==}, so the set holds -0.0 where the source holds 0.0. The
+     * four values identify each id, so matching keys selects the ids in the set's window.
      */
     @Test
-    public void testFourColumnKeysMatchArrayTuples() {
+    public void testFourColumnKeys() {
         final int sourceIds = 6_000;
         final int windowSize = 1_500;
         final int slide = 400;
