@@ -17,8 +17,8 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
@@ -34,6 +34,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 /**
  * A where filter that extracts a set of inclusion or exclusion keys from a set table.
@@ -56,6 +59,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private List<Object> staticSetLookupKeys;
 
     private ColumnSource<?>[] sourceKeyColumns;
+    /** The source key columns, reinterpreted to primitives as the set's keys are. */
+    private ColumnSource<?>[] reinterpretedSourceKeyColumns;
+    /** Converts the set's keys to the data index's lookup keys. */
     private TupleSource<Object> sourceKeySource;
     /**
      * The optimal data index for this filter.
@@ -123,7 +129,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             }
         }
 
-        final ColumnSource<?>[] reinterpretedSourceKeyColumns = Arrays.stream(sourceKeyColumns)
+        reinterpretedSourceKeyColumns = Arrays.stream(sourceKeyColumns)
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .toArray(ColumnSource[]::new);
         final Class<?>[] setKeyTypes = sharedSet.setKeyTypes();
@@ -143,22 +149,26 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 && sourceKeyColumns.length > 1 // Making a lookup key is more complicated than boxing a primitive
         ) {
             // Convert the tuples in liveValues to be lookup keys in the sourceDataIndex.
-            staticSetLookupKeys = new ArrayList<>(sharedSet.kernel().size());
+            staticSetLookupKeys = new ArrayList<>(Math.toIntExact(sharedSet.kernel().size()));
             final int indexKeySize = sourceDataIndex.keyColumnNames().size();
             if (indexKeySize > 1) {
                 final Function<Object, Object> keyMappingFunction = indexKeySize == keyColumnNames.length
                         ? tupleToFullKeyMappingFunction()
                         : tupleToPartialKeyMappingFunction();
 
-                sharedSet.kernel().iterator().forEachRemaining(key -> {
-                    final Object[] lookupKey = (Object[]) keyMappingFunction.apply(key);
-                    // Store a copy because the mapping function returns the same array each invocation.
-                    staticSetLookupKeys.add(Arrays.copyOf(lookupKey, indexKeySize));
-                });
+                try (final CloseableIterator<Object> setKeys = sharedSet.kernel().iterator()) {
+                    setKeys.forEachRemaining(key -> {
+                        final Object[] lookupKey = (Object[]) keyMappingFunction.apply(key);
+                        // Store a copy because the mapping function returns the same array each invocation.
+                        staticSetLookupKeys.add(Arrays.copyOf(lookupKey, indexKeySize));
+                    });
+                }
             } else {
                 final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                sharedSet.kernel().iterator().forEachRemaining(
-                        key -> staticSetLookupKeys.add(sourceKeySource.exportElement(key, keyOffset)));
+                try (final CloseableIterator<Object> setKeys = sharedSet.kernel().iterator()) {
+                    setKeys.forEachRemaining(
+                            key -> staticSetLookupKeys.add(sourceKeySource.exportElement(key, keyOffset)));
+                }
             }
         }
 
@@ -420,16 +430,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
 
         final long kernelGeneration = sharedSet.beginRead();
-        final Iterator<Object> values;
         final Function<Object, Object> keyMappingFunction;
-        if (staticSetLookupKeys != null) {
-            values = staticSetLookupKeys.iterator();
-            keyMappingFunction = Function.identity();
-        } else if (sourceKeyColumns.length == 1) {
-            values = sharedSet.kernel().iterator();
+        if (staticSetLookupKeys != null || sourceKeyColumns.length == 1) {
             keyMappingFunction = Function.identity();
         } else {
-            values = sharedSet.kernel().iterator();
             keyMappingFunction = tupleToFullKeyMappingFunction();
         }
 
@@ -437,8 +441,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         // snapshot attempt; that triggers the normal retry path and is not an error. The batcher owns everything it
         // has gathered until it is built, so an abandoned attempt releases it; what is built is closed here.
         WritableRowSet matching = null;
-        try (final RowSet indexRowKeys =
-                lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
+        try (final CloseableIterator<Object> setKeys =
+                staticSetLookupKeys == null ? sharedSet.kernel().iterator() : null;
+                final RowSet indexRowKeys = lookupIndexRowKeys(
+                        setKeys == null ? staticSetLookupKeys.iterator() : setKeys,
+                        kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
             // Abandon an attempt the set has already invalidated before paying for any row sets.
             sharedSet.failIfChangedSince(kernelGeneration);
             // One row set per index row, and the lookup has already reduced the values to distinct row keys.
@@ -475,14 +482,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
 
         final long kernelGeneration = sharedSet.beginRead();
-        final Iterator<Object> values;
         final Function<Object, Object> keyMappingFunction;
 
         if (staticSetLookupKeys != null) {
-            values = staticSetLookupKeys.iterator();
             keyMappingFunction = Function.identity();
         } else {
-            values = sharedSet.kernel().iterator();
             if (sourceDataIndex.keyColumnNames().size() == 1) {
                 final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
                 keyMappingFunction = (final Object key) -> sourceKeySource.exportElement(key, keyOffset);
@@ -492,8 +496,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
 
         final WritableRowSet matching;
-        try (final RowSet indexRowKeys =
-                lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
+        try (final CloseableIterator<Object> setKeys =
+                staticSetLookupKeys == null ? sharedSet.kernel().iterator() : null;
+                final RowSet indexRowKeys = lookupIndexRowKeys(
+                        setKeys == null ? staticSetLookupKeys.iterator() : setKeys,
+                        kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
             // Abandon an attempt the set has already invalidated before paying for any row sets.
             sharedSet.failIfChangedSince(kernelGeneration);
             // Set values project onto a subset of their columns here, so many of them can land on the same index row.
@@ -524,13 +531,16 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
 
         final long kernelGeneration = sharedSet.beginRead();
-        final SetInclusionKernel setKernel = sharedSet.kernel();
+        final SetKernel setKernel = sharedSet.kernel();
 
         final RowSetBuilderSequential filteredRowSetBuilder = RowSetFactory.builderSequential();
 
         final int maxChunkSize = getChunkSize(selection);
+        // noinspection unchecked
+        final Chunk<Values>[] keyChunks = new Chunk[reinterpretedSourceKeyColumns.length];
         // @formatter:off
-        try (final ColumnSource.GetContext keyGetContext = sourceKeySource.makeGetContext(maxChunkSize);
+        try (final ProbeContext keyContext = new ProbeContext(reinterpretedSourceKeyColumns, maxChunkSize);
+             final SetKernel.MatchContext matchContext = setKernel.makeMatchContext();
              final RowSequence.Iterator selectionIterator = selection.getRowSequenceIterator();
              final WritableLongChunk<OrderedRowKeys> matchingKeys = WritableLongChunk.makeWritableChunk(maxChunkSize)) {
             // @formatter:on
@@ -538,11 +548,13 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             while (selectionIterator.hasMore()) {
                 final RowSequence selectionChunk = selectionIterator.getNextRowSequenceWithLength(maxChunkSize);
                 final LongChunk<OrderedRowKeys> selectionRowKeyChunk = selectionChunk.asRowKeyChunk();
-                final Chunk<? extends Values> sourceChunk = usePrev
-                        ? sourceKeySource.getPrevChunk(keyGetContext, selectionChunk)
-                        : sourceKeySource.getChunk(keyGetContext, selectionChunk);
-                final Chunk<Values> keyChunk = Chunk.downcast(sourceChunk);
-                setKernel.matchValues(keyChunk, selectionRowKeyChunk, matchingKeys, filterInclusion);
+                if (usePrev) {
+                    getPrevKeyChunks(reinterpretedSourceKeyColumns, keyContext.getContexts, keyChunks, selectionChunk);
+                } else {
+                    getKeyChunks(reinterpretedSourceKeyColumns, keyContext.getContexts, keyChunks, selectionChunk);
+                }
+                setKernel.matchValues(matchContext, keyChunks, selectionRowKeyChunk, matchingKeys, filterInclusion);
+                keyContext.resetSharedContexts();
                 // A set change makes this attempt's results junk; abandon it rather than finish them.
                 sharedSet.failIfChangedSince(kernelGeneration);
                 filteredRowSetBuilder.appendOrderedRowKeysChunk(matchingKeys);

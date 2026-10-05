@@ -53,7 +53,7 @@ task replicateAllSafe {
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateStaticPercentile', 'io.deephaven.replicators.ReplicateStaticPercentile')
 
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSetInclusionKernel', 'io.deephaven.replicators.ReplicateSetInclusionKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSetKernel', 'io.deephaven.replicators.ReplicateSetKernel')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateVectorColumnWrappers', 'io.deephaven.replicators.ReplicateVectorColumnWrappers')
 
