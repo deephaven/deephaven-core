@@ -159,9 +159,20 @@ public class MatchFilterParamConversionTest {
         assertRejected(new BigDecimal("5.7"), int.class);
         assertRejected(BigInteger.ONE.shiftLeft(64), long.class);
         assertRejected(BigInteger.valueOf(300), byte.class);
-        // the query language compares these with a float or double column as decimal strings, not exactly
-        assertRejected(new BigDecimal("0.5"), double.class);
-        assertRejected(BigInteger.valueOf(5), float.class);
+        // the query language compares these with a float or double column through BigDecimal.valueOf, the column
+        // value's shortest decimal, so a value converts when it is the shortest decimal of the converted value
+        assertEquals(0.5, convert(new BigDecimal("0.5"), double.class));
+        assertEquals(0.1, convert(new BigDecimal("0.1"), double.class));
+        assertEquals(5.0f, convert(BigInteger.valueOf(5), float.class));
+        // exactly 0.1 as a double, but no double's shortest decimal
+        assertRejected(new BigDecimal(0.1), double.class);
+        // 0.1f widens to the double 0.10000000149011612, the decimal the query language compares
+        assertRejected(new BigDecimal("0.1"), float.class);
+        assertEquals(0.10000000149011612f, convert(new BigDecimal("0.10000000149011612"), float.class));
+        // exactly a double, but BigDecimal.valueOf(0x1p60) is 1152921504606846980
+        assertRejected(BigInteger.ONE.shiftLeft(60), double.class);
+        assertRejected(new BigDecimal("1e400"), double.class);
+        assertRejected(new BigDecimal("1e39"), float.class);
     }
 
     @Test

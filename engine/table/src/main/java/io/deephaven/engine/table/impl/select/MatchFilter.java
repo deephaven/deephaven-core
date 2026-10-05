@@ -439,6 +439,14 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
          * value: only a value of the column's own type is null there, in the query language as here.
          *
          * <p>
+         * A {@link BigDecimal} or {@link BigInteger} against a float or double column is the one case where "equal" is
+         * not exact equality. The query language compares the two through {@link BigDecimal#valueOf(double)}, the
+         * column value's shortest decimal rather than its exact binary value, so the value must equal the converted
+         * value's shortest decimal: {@code BigDecimal("0.1")} converts to {@code 0.1}, but {@code new BigDecimal(0.1)},
+         * though exactly a double, equals no double's shortest decimal. As that comparison is monotonic, it then also
+         * orders every column value as the converted value would, so a range bound converts the same way.
+         *
+         * <p>
          * A large floating-point value against an int or long column is an accepted difference: the query language
          * compares the two in floating point, where more than one integer can round to the value ({@code 2^53 + 1 ==
          * (double) 2^53}), but the exact equivalent matches only itself.
@@ -447,19 +455,17 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
          *        an {@link Integer} for a {@link Character} column
          */
         static void checkRoundTrip(final Number value, final Number converted, final Class<?> columnType) {
-            final String problem;
-            if (!exactlyEqual(value, converted)) {
-                problem = "the column type cannot represent it exactly";
-            } else if (isFloatingPoint(converted) && (value instanceof BigInteger || value instanceof BigDecimal)) {
-                // The value converted exactly, but is rejected anyway: the query language compares a float or double
-                // column with a BigDecimal or BigInteger through BigDecimal.valueOf(double), the column value's
-                // shortest decimal rather than its exact value, so it can select rows other than those equal to the
-                // converted value.
-                problem = "the query language compares it with the column as a decimal";
-            } else {
+            if (isFloatingPoint(converted) && (value instanceof BigInteger || value instanceof BigDecimal)) {
+                if (!Double.isFinite(converted.doubleValue())
+                        || toBigDecimal(converted).compareTo(exactValue(value)) != 0) {
+                    throw cannotConvert(value, columnType, "no " + columnType.getSimpleName()
+                            + " equals it as the query language compares the two, through BigDecimal.valueOf", null);
+                }
                 return;
             }
-            throw cannotConvert(value, columnType, problem, null);
+            if (!exactlyEqual(value, converted)) {
+                throw cannotConvert(value, columnType, "the column type cannot represent it exactly", null);
+            }
         }
 
         static IllegalArgumentException cannotConvert(

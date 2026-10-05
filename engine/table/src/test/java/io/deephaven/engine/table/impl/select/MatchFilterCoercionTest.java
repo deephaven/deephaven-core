@@ -325,11 +325,33 @@ public class MatchFilterCoercionTest {
         QueryScope.addParam("bd01", new BigDecimal("0.1"));
         QueryScope.addParam("bdExact", new BigDecimal(0.1)); // the exact binary value of 0.1
         QueryScope.addParam("bdExactF", new BigDecimal(0.1f)); // the exact binary value of 0.1f
+        QueryScope.addParam("bd05", new BigDecimal("0.5"));
+        QueryScope.addParam("bd0", BigDecimal.ZERO);
+        QueryScope.addParam("bi5", BigInteger.valueOf(5));
 
-        assertSameRowsAsFailover(newTable(doubleCol("X", 0x1p60, 0.1, 0.2)),
-                "X == bi60", "X == bd01", "X == bdExact", "X < bdExact");
-        assertSameRowsAsFailover(newTable(floatCol("X", 0.1f, 0.2f)),
-                "X == bd01", "X == bdExactF", "X <= bdExactF");
+        final Table doubles = newTable(doubleCol("X", 0x1p60, 0.1, 0.2, 5.0, -0.0, 0.0, Double.NaN, NULL_DOUBLE));
+        final String[] doubleFilters = {"X == bi60", "X == bd01", "X != bd01", "X < bd01", "X >= bd01",
+                "X == bdExact", "X < bdExact", "X == bi5", "X <= bi5", "X == bd0", "X < bd0", "X <= bd0", "X > bd0"};
+        assertSameRowsAsFailover(doubles, doubleFilters);
+        final Table floats = newTable(floatCol("X", 0.1f, 0.2f, 0.5f, 5.0f, -0.0f, 0.0f, Float.NaN, NULL_FLOAT));
+        final String[] floatFilters = {"X == bd01", "X < bd01", "X == bdExactF", "X <= bdExactF", "X == bd05",
+                "X > bd05", "X == bi5", "X < bi5", "X == bd0", "X <= bd0"};
+        assertSameRowsAsFailover(floats, floatFilters);
+
+        // a value that is the shortest decimal of the converted value keeps the typed filter, and in accepts it
+        for (final String filter : new String[] {"X == bd01", "X >= bd01", "X == bi5", "X == bd0", "X < bd0"}) {
+            assertFalse(filter, failsOver(doubles, filter));
+        }
+        for (final String filter : new String[] {"X == bi60", "X == bdExact", "X < bdExact"}) {
+            assertTrue(filter, failsOver(doubles, filter));
+        }
+        assertFalse(failsOver(floats, "X == bd05"));
+        assertTrue(failsOver(floats, "X == bd01"));
+        assertTableEquals(newTable(doubleCol("X", 0.1)), doubles.where("X in bd01"));
+        assertTableEquals(newTable(doubleCol("X", -0.0, 0.0)), doubles.where("X in bd0"));
+        assertTableEquals(newTable(floatCol("X", 0.5f)), floats.where("X in bd05"));
+        assertRejected(() -> doubles.where("X in bdExact"));
+        assertRejected(() -> floats.where("X in bd01"));
     }
 
     @Test

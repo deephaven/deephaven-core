@@ -63,8 +63,9 @@ public class FailedOverFilterConsumersTest {
 
     @Test
     public void pushdownChunkFilteringSeesARangeFilterFailover() {
-        // the query language compares a double with a BigDecimal through BigDecimal.valueOf, so the filter fails over
-        QueryScope.addParam("failoverVal", new BigDecimal("1.5"));
+        // the query language compares a double with a BigDecimal through BigDecimal.valueOf, the double's shortest
+        // decimal, and no double's shortest decimal is the exact binary value of 1.1, so the filter fails over
+        QueryScope.addParam("failoverVal", new BigDecimal(1.1));
         final Table t = newTable(doubleCol("D", 1.0, 2.0));
         final WhereFilter filter = initialized(t, "D < failoverVal");
         assertTrue(((RangeFilter) filter).getRealFilter() instanceof ConditionFilter);
@@ -78,7 +79,7 @@ public class FailedOverFilterConsumersTest {
     @Test
     public void pushdownRefusesAFailoverThatDoesNotPermitParallelization() {
         QueryScope.addParam("failoverLong", 0x1p63);
-        QueryScope.addParam("failoverDecimal", new BigDecimal("1.5"));
+        QueryScope.addParam("failoverDecimal", new BigDecimal(1.1));
         final Table longs = newTable(longCol("X", 1L, Long.MAX_VALUE));
         final Table doubles = newTable(doubleCol("X", 1.0, 2.0));
         final boolean statelessByDefault = QueryTable.STATELESS_FILTERS_BY_DEFAULT;
