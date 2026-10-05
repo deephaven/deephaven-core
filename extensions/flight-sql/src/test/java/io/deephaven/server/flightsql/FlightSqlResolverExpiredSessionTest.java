@@ -24,6 +24,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -95,13 +96,16 @@ public class FlightSqlResolverExpiredSessionTest {
             final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
             final long currentThreadId = Thread.currentThread().getId();
             final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-            while (expirer.isAlive() && System.nanoTime() < deadlineNanos) {
+            while (expirer.isAlive()) {
                 final ThreadInfo info = threads.getThreadInfo(expirer.getId());
                 if (info != null && info.getThreadState() == Thread.State.BLOCKED
                         && info.getLockOwnerId() == currentThreadId) {
                     return;
                 }
-                Thread.onSpinWait();
+                if (System.nanoTime() > deadlineNanos) {
+                    throw new IllegalStateException("expiry neither finished nor blocked on the registering thread");
+                }
+                LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(100));
             }
         }
     }
