@@ -101,7 +101,8 @@ public class TestSetKernel {
         final int probeSize = probeTable.intSize();
         // noinspection unchecked
         final WritableChunk<Values>[] keyChunks = new WritableChunk[probeSources.length];
-        try (final WritableLongChunk<OrderedRowKeys> rowKeys = WritableLongChunk.makeWritableChunk(probeSize);
+        try (final SetKernel.MatchContext matchContext = keySet.makeMatchContext();
+                final WritableLongChunk<OrderedRowKeys> rowKeys = WritableLongChunk.makeWritableChunk(probeSize);
                 final WritableLongChunk<OrderedRowKeys> results = WritableLongChunk.makeWritableChunk(probeSize)) {
             for (int ci = 0; ci < probeSources.length; ++ci) {
                 keyChunks[ci] = probeSources[ci].getChunkType().makeWritableChunk(probeSize);
@@ -111,13 +112,13 @@ public class TestSetKernel {
             }
             probeTable.getRowSet().fillRowKeyChunk(rowKeys);
 
-            keySet.matchValues(keyChunks, rowKeys, results, true);
+            keySet.matchValues(matchContext, keyChunks, rowKeys, results, true);
             assertEquals(description, presentCount, results.size());
             for (int ii = 0; ii < presentCount; ++ii) {
                 assertEquals(description + ", present row " + ii, ii, results.get(ii));
             }
 
-            keySet.matchValues(keyChunks, rowKeys, results, false);
+            keySet.matchValues(matchContext, keyChunks, rowKeys, results, false);
             assertEquals(description, probeSize - presentCount, results.size());
             for (int ii = presentCount; ii < probeSize; ++ii) {
                 assertEquals(description + ", absent row " + ii, ii, results.get(ii - presentCount));

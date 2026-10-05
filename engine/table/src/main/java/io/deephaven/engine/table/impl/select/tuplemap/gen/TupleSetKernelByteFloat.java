@@ -35,11 +35,17 @@ public final class TupleSetKernelByteFloat extends TupleMapSetKernel {
     }
 
     @Override
-    protected void match(Chunk<Values>[] keyChunks, LongChunk<OrderedRowKeys> rowKeys,
-            WritableLongChunk<OrderedRowKeys> results, boolean inclusion) {
+    protected Object makeProbe() {
+        return new Probe();
+    }
+
+    @Override
+    protected void match(Object probeObject, Chunk<Values>[] keyChunks,
+            LongChunk<OrderedRowKeys> rowKeys, WritableLongChunk<OrderedRowKeys> results,
+            boolean inclusion) {
         final ByteChunk<Values> keys0 = keyChunks[0].asByteChunk();
         final FloatChunk<Values> keys1 = keyChunks[1].asFloatChunk();
-        final Probe probe = new Probe();
+        final Probe probe = (Probe) probeObject;
         final int size = rowKeys.size();
         for (int ii = 0; ii < size; ++ii) {
             probe.k0 = keys0.get(ii);

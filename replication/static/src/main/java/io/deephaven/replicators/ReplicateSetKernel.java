@@ -25,7 +25,7 @@ public class ReplicateSetKernel {
         final File doubleFile = new File(DIRECTORY + "DoubleSetKernel.java");
         List<String> lines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
         lines = ReplicationUtils.globalReplacements(lines,
-                "Int2IntOpenHashMap", "Long2IntOpenHashMap",
+                "Int2LongOpenHashMap", "Long2LongOpenHashMap",
                 "IntIterator", "LongIterator",
                 "nextInt\\(", "nextLong(",
                 "intBitsToDouble", "longBitsToDouble",

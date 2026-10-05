@@ -18,7 +18,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkMatchFilterFactory;
 import io.deephaven.util.type.TypeUtils;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,7 +32,7 @@ final class DoubleSetKernel extends SingleColumnSetKernel {
      * The number of set rows holding each key's bits. Must be a fastutil open hash map: see
      * {@link SharedSetKernel#kernel()} for the behavior we rely on when it is concurrently modified.
      */
-    private final Long2IntOpenHashMap counts = new Long2IntOpenHashMap();
+    private final Long2LongOpenHashMap counts = new Long2LongOpenHashMap();
 
     DoubleSetKernel(@NotNull final ColumnSource<?> keySource) {
         super(keySource);
@@ -49,7 +49,7 @@ final class DoubleSetKernel extends SingleColumnSetKernel {
         final int keysSize = typedKeys.size();
         for (int ii = 0; ii < keysSize; ++ii) {
             final int sizeBefore = counts.size();
-            final int oldCount = counts.addTo(DoubleChunkMatchFilterFactory.getBits(typedKeys.get(ii)), 1);
+            final long oldCount = counts.addTo(DoubleChunkMatchFilterFactory.getBits(typedKeys.get(ii)), 1);
             if (oldCount == 0) {
                 // A key at zero is still in the map until finishRemove, so only an insertion grows it.
                 if (counts.size() == sizeBefore) {
@@ -57,8 +57,6 @@ final class DoubleSetKernel extends SingleColumnSetKernel {
                 } else {
                     ++insertedKeys;
                 }
-            } else if (oldCount == Integer.MAX_VALUE) {
-                throw new UnsupportedOperationException("More than Integer.MAX_VALUE set rows hold one key");
             }
         }
     }
@@ -68,7 +66,7 @@ final class DoubleSetKernel extends SingleColumnSetKernel {
         final DoubleChunk<? extends Values> typedKeys = keys.asDoubleChunk();
         final int keysSize = typedKeys.size();
         for (int ii = 0; ii < keysSize; ++ii) {
-            final int oldCount = counts.addTo(DoubleChunkMatchFilterFactory.getBits(typedKeys.get(ii)), -1);
+            final long oldCount = counts.addTo(DoubleChunkMatchFilterFactory.getBits(typedKeys.get(ii)), -1);
             Assert.gtZero(oldCount, "oldCount");
             if (oldCount == 1) {
                 ++emptiedKeys;
@@ -81,7 +79,7 @@ final class DoubleSetKernel extends SingleColumnSetKernel {
         final DoubleChunk<? extends Values> typedKeys = keys.asDoubleChunk();
         final int keysSize = typedKeys.size();
         for (int ii = 0; ii < keysSize; ++ii) {
-            counts.remove(DoubleChunkMatchFilterFactory.getBits(typedKeys.get(ii)), 0);
+            counts.remove(DoubleChunkMatchFilterFactory.getBits(typedKeys.get(ii)), 0L);
         }
     }
 

@@ -539,6 +539,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final Chunk<Values>[] keyChunks = new Chunk[reinterpretedSourceKeyColumns.length];
         // @formatter:off
         try (final ProbeContext keyContext = new ProbeContext(reinterpretedSourceKeyColumns, maxChunkSize);
+             final SetKernel.MatchContext matchContext = setKernel.makeMatchContext();
              final RowSequence.Iterator selectionIterator = selection.getRowSequenceIterator();
              final WritableLongChunk<OrderedRowKeys> matchingKeys = WritableLongChunk.makeWritableChunk(maxChunkSize)) {
             // @formatter:on
@@ -551,7 +552,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 } else {
                     getKeyChunks(reinterpretedSourceKeyColumns, keyContext.getContexts, keyChunks, selectionChunk);
                 }
-                setKernel.matchValues(keyChunks, selectionRowKeyChunk, matchingKeys, filterInclusion);
+                setKernel.matchValues(matchContext, keyChunks, selectionRowKeyChunk, matchingKeys, filterInclusion);
                 keyContext.resetSharedContexts();
                 // A set change makes this attempt's results junk; abandon it rather than finish them.
                 sharedSet.failIfChangedSince(kernelGeneration);

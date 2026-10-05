@@ -211,8 +211,14 @@ public class TupleSetKernelFactory {
                 .addStatement("super(keySources, $T.INSTANCE)", strategyClass)
                 .build();
 
+        final MethodSpec makeProbe = MethodSpec.methodBuilder("makeProbe")
+                .addAnnotation(Override.class).addModifiers(Modifier.PROTECTED).returns(Object.class)
+                .addStatement("return new $T()", probeClass)
+                .build();
+
         final MethodSpec.Builder match = MethodSpec.methodBuilder("match")
                 .addAnnotation(Override.class).addModifiers(Modifier.PROTECTED)
+                .addParameter(Object.class, "probeObject")
                 .addParameter(chunkArrayTypeName(), "keyChunks")
                 .addParameter(ParameterizedTypeName.get(LongChunk.class, OrderedRowKeys.class), "rowKeys")
                 .addParameter(ParameterizedTypeName.get(WritableLongChunk.class, OrderedRowKeys.class), "results")
@@ -221,7 +227,7 @@ public class TupleSetKernelFactory {
             match.addStatement("final $T keys$L = keyChunks[$L].as$LChunk()", chunkTypeName(chunkTypes[ii]), ii, ii,
                     chunkTypes[ii].name());
         }
-        match.addStatement("final $T probe = new $T()", probeClass, probeClass);
+        match.addStatement("final $T probe = ($T) probeObject", probeClass, probeClass);
         match.addStatement("final int size = rowKeys.size()");
         match.beginControlFlow("for (int ii = 0; ii < size; ++ii)");
         for (int ii = 0; ii < columns; ++ii) {
@@ -239,6 +245,7 @@ public class TupleSetKernelFactory {
                 .addType(strategy)
                 .addMethod(constructor)
                 .addMethod(hash.build())
+                .addMethod(makeProbe)
                 .addMethod(match.build())
                 .build();
 

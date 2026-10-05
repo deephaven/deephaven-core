@@ -16,7 +16,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import it.unimi.dsi.fastutil.Hash;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenCustomHashMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
@@ -39,7 +39,7 @@ public abstract class TupleMapSetKernel extends SetKernel {
      * The number of set rows holding each key. Must be a fastutil open hash map: see {@link SharedSetKernel#kernel()}
      * for the behavior we rely on when it is concurrently modified.
      */
-    private final Object2IntOpenCustomHashMap<Object> counts;
+    private final Object2LongOpenCustomHashMap<Object> counts;
 
     /** The keys inserted during this update, which were not in the set before it. */
     private long insertedKeys;
@@ -56,11 +56,11 @@ public abstract class TupleMapSetKernel extends SetKernel {
             @NotNull final ColumnSource<?>[] keySources,
             @NotNull final Hash.Strategy<Object> strategy) {
         tupleSource = TupleSourceFactory.makeTupleSource(keySources);
-        counts = new Object2IntOpenCustomHashMap<>(strategy);
+        counts = new Object2LongOpenCustomHashMap<>(strategy);
     }
 
     /**
-     * @param probe A probe whose fields hold a key
+     * @param probe A probe from {@link #makeProbe()}, whose fields hold a key
      * @return Whether the key is in the set
      */
     protected final boolean contains(@NotNull final Object probe) {
@@ -68,10 +68,18 @@ public abstract class TupleMapSetKernel extends SetKernel {
     }
 
     /**
+     * @return A new probe, for one caller to reuse across its {@link #match} calls
+     */
+    protected abstract Object makeProbe();
+
+    /**
      * Select the row keys whose key is in the set, or, if {@code inclusion} is false, not in the set; {@code results}
      * is empty to begin with.
+     *
+     * @param probe A probe from {@link #makeProbe()}, which this call overwrites
      */
     protected abstract void match(
+            @NotNull Object probe,
             @NotNull Chunk<Values>[] keyChunks,
             @NotNull LongChunk<OrderedRowKeys> rowKeys,
             @NotNull WritableLongChunk<OrderedRowKeys> results,
@@ -122,14 +130,28 @@ public abstract class TupleMapSetKernel extends SetKernel {
         return emptiedKeys > revivedKeys;
     }
 
+    private static final class ProbeContext extends MatchContext {
+        private final Object probe;
+
+        private ProbeContext(@NotNull final Object probe) {
+            this.probe = probe;
+        }
+    }
+
+    @Override
+    final MatchContext makeMatchContext() {
+        return new ProbeContext(makeProbe());
+    }
+
     @Override
     final void matchValues(
+            @NotNull final MatchContext context,
             @NotNull final Chunk<Values>[] keyChunks,
             @NotNull final LongChunk<OrderedRowKeys> rowKeys,
             @NotNull final WritableLongChunk<OrderedRowKeys> results,
             final boolean inclusion) {
         results.setSize(0);
-        match(keyChunks, rowKeys, results, inclusion);
+        match(((ProbeContext) context).probe, keyChunks, rowKeys, results, inclusion);
     }
 
     @Override
@@ -141,7 +163,7 @@ public abstract class TupleMapSetKernel extends SetKernel {
         final int tuplesSize = tuples.size();
         for (int ii = 0; ii < tuplesSize; ++ii) {
             final int sizeBefore = counts.size();
-            final int oldCount = counts.addTo(tuples.get(ii), 1);
+            final long oldCount = counts.addTo(tuples.get(ii), 1);
             if (oldCount == 0) {
                 // A key at zero is still in the map until finishRemove, so only an insertion grows it.
                 if (counts.size() == sizeBefore) {
@@ -149,8 +171,6 @@ public abstract class TupleMapSetKernel extends SetKernel {
                 } else {
                     ++insertedKeys;
                 }
-            } else if (oldCount == Integer.MAX_VALUE) {
-                throw new UnsupportedOperationException("More than Integer.MAX_VALUE set rows hold one key");
             }
         }
     }
@@ -158,7 +178,7 @@ public abstract class TupleMapSetKernel extends SetKernel {
     private void removeTuples(@NotNull final ObjectChunk<Object, ? extends Values> tuples) {
         final int tuplesSize = tuples.size();
         for (int ii = 0; ii < tuplesSize; ++ii) {
-            final int oldCount = counts.addTo(tuples.get(ii), -1);
+            final long oldCount = counts.addTo(tuples.get(ii), -1);
             Assert.gtZero(oldCount, "oldCount");
             if (oldCount == 1) {
                 ++emptiedKeys;
@@ -169,7 +189,7 @@ public abstract class TupleMapSetKernel extends SetKernel {
     private void dropEmptied(@NotNull final ObjectChunk<Object, ? extends Values> tuples) {
         final int tuplesSize = tuples.size();
         for (int ii = 0; ii < tuplesSize; ++ii) {
-            counts.remove(tuples.get(ii), 0);
+            counts.remove(tuples.get(ii), 0L);
         }
     }
 

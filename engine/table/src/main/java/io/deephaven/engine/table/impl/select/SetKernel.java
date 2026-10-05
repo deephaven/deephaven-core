@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
@@ -97,15 +98,36 @@ abstract class SetKernel {
     abstract boolean keysRemoved();
 
     /**
-     * Select the row keys whose key is in the set, or, if {@code inclusion} is false, not in the set. This keeps no
-     * state between calls, so that any number of readers may match at once.
+     * The scratch state one caller of {@link #matchValues} reuses across its calls, so that matching each chunk
+     * allocates nothing; each concurrent caller needs its own.
+     */
+    static class MatchContext implements SafeCloseable {
+        @Override
+        public void close() {}
+    }
+
+    /** The context of a kernel that matches without scratch state. */
+    static final MatchContext EMPTY_MATCH_CONTEXT = new MatchContext();
+
+    /**
+     * @return A context for {@link #matchValues}
+     */
+    MatchContext makeMatchContext() {
+        return EMPTY_MATCH_CONTEXT;
+    }
+
+    /**
+     * Select the row keys whose key is in the set, or, if {@code inclusion} is false, not in the set. The kernel keeps
+     * no state between calls, so that any number of readers, each with its own context, may match at once.
      *
+     * @param context A context from {@link #makeMatchContext()}
      * @param keyChunks The key of each row, one chunk per key column, reinterpreted as the set's keys are
      * @param rowKeys The row key of each row
      * @param results Receives the selected row keys
      * @param inclusion Whether to select the rows whose key is in the set rather than those whose key is not
      */
     abstract void matchValues(
+            @NotNull MatchContext context,
             @NotNull Chunk<Values>[] keyChunks,
             @NotNull LongChunk<OrderedRowKeys> rowKeys,
             @NotNull WritableLongChunk<OrderedRowKeys> results,

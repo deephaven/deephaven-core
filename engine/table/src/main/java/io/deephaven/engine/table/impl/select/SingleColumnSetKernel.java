@@ -126,6 +126,7 @@ abstract class SingleColumnSetKernel extends SetKernel {
 
     @Override
     final void matchValues(
+            @NotNull final MatchContext context,
             @NotNull final Chunk<Values>[] keyChunks,
             @NotNull final LongChunk<OrderedRowKeys> rowKeys,
             @NotNull final WritableLongChunk<OrderedRowKeys> results,

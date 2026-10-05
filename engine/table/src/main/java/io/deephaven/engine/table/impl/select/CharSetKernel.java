@@ -13,7 +13,7 @@ import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.type.TypeUtils;
-import it.unimi.dsi.fastutil.chars.Char2IntOpenHashMap;
+import it.unimi.dsi.fastutil.chars.Char2LongOpenHashMap;
 import it.unimi.dsi.fastutil.chars.CharIterator;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +26,7 @@ final class CharSetKernel extends SingleColumnSetKernel {
      * The number of set rows holding each key. Must be a fastutil open hash map: see {@link SharedSetKernel#kernel()}
      * for the behavior we rely on when it is concurrently modified.
      */
-    private final Char2IntOpenHashMap counts = new Char2IntOpenHashMap();
+    private final Char2LongOpenHashMap counts = new Char2LongOpenHashMap();
 
     CharSetKernel(@NotNull final ColumnSource<?> keySource) {
         super(keySource);
@@ -43,7 +43,7 @@ final class CharSetKernel extends SingleColumnSetKernel {
         final int keysSize = typedKeys.size();
         for (int ii = 0; ii < keysSize; ++ii) {
             final int sizeBefore = counts.size();
-            final int oldCount = counts.addTo(typedKeys.get(ii), 1);
+            final long oldCount = counts.addTo(typedKeys.get(ii), 1);
             if (oldCount == 0) {
                 // A key at zero is still in the map until finishRemove, so only an insertion grows it.
                 if (counts.size() == sizeBefore) {
@@ -51,8 +51,6 @@ final class CharSetKernel extends SingleColumnSetKernel {
                 } else {
                     ++insertedKeys;
                 }
-            } else if (oldCount == Integer.MAX_VALUE) {
-                throw new UnsupportedOperationException("More than Integer.MAX_VALUE set rows hold one key");
             }
         }
     }
@@ -62,7 +60,7 @@ final class CharSetKernel extends SingleColumnSetKernel {
         final CharChunk<? extends Values> typedKeys = keys.asCharChunk();
         final int keysSize = typedKeys.size();
         for (int ii = 0; ii < keysSize; ++ii) {
-            final int oldCount = counts.addTo(typedKeys.get(ii), -1);
+            final long oldCount = counts.addTo(typedKeys.get(ii), -1);
             Assert.gtZero(oldCount, "oldCount");
             if (oldCount == 1) {
                 ++emptiedKeys;
@@ -75,7 +73,7 @@ final class CharSetKernel extends SingleColumnSetKernel {
         final CharChunk<? extends Values> typedKeys = keys.asCharChunk();
         final int keysSize = typedKeys.size();
         for (int ii = 0; ii < keysSize; ++ii) {
-            counts.remove(typedKeys.get(ii), 0);
+            counts.remove(typedKeys.get(ii), 0L);
         }
     }
 
