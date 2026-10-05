@@ -3,6 +3,8 @@
 //
 package io.deephaven.kafka;
 
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -24,7 +26,10 @@ import io.deephaven.json.ShortValue;
 import io.deephaven.json.StringValue;
 import io.deephaven.json.jackson.JacksonProvider;
 import io.deephaven.kafka.KafkaTools.TableType;
+import io.deephaven.kafka.protobuf.DescriptorSchemaRegistry;
+import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.testcontainers.KafkaService;
+import io.deephaven.protobuf.test.FooBar;
 import io.deephaven.qst.type.Type;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -485,6 +490,72 @@ class KafkaToolsIntegrationTest {
         final Table elementTable = taa.table()
                 .view("Foo = Biz_Foo[0]", "Bar = Biz_Bar[0]", "Zip = Biz_Zip[0]", "Zap = Biz_Zap[0]");
         TstUtils.assertTableEquals(expectedTable, elementTable);
+    }
+
+    @ParameterizedTest(name = "protobufSchemaRegistryTest {0}")
+    @EnumSource
+    @Timeout(TIMEOUT_SECONDS)
+    void protobufSchemaRegistryTest(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
+        Assumptions.assumeTrue(kafkaService.isEnabled());
+        Assumptions.assumeTrue(kafkaService.schemaRegistryAddress().isPresent());
+        kafkaService.init();
+        final String topic = sanitizedTopicName(testInfo);
+
+        createTopic(kafkaService, topic);
+
+        // Unlike some other tests, we are doing the producer _first_ to ensure the schema registry is primed, otherwise
+        // we can't initialize the consumer properly. (We _could_ initialize the schema registry directly, but it's much
+        // easier to let the producer do that.)
+        {
+            final FooBar record1 = FooBar.newBuilder()
+                    .setFoo(15)
+                    .setBar("hello, world!")
+                    .build();
+            final FooBar record2 = FooBar.newBuilder()
+                    .setFoo(16)
+                    .setBar("goodbye, moon")
+                    .build();
+            final KafkaProtobufSerializer<FooBar> valueSerializer = new KafkaProtobufSerializer<>();
+            valueSerializer.configure(Map.of(AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG,
+                    kafkaService.schemaRegistryAddress().orElseThrow()), false);
+            try (final KafkaProducer<Void, FooBar> producer =
+                    kafkaService.producer(new VoidSerializer(), valueSerializer)) {
+                producer.send(new ProducerRecord<>(topic, null, 42L, null, record1)).get();
+                producer.send(new ProducerRecord<>(topic, null, 43L, null, record2)).get();
+                producer.flush();
+            }
+        }
+        {
+            final KafkaTools.TableAndAdapter taa = KafkaTools.consumeToTableAndAdapter(
+                    kafkaService.properties(),
+                    topic,
+                    ALL_PARTITIONS,
+                    ALL_PARTITIONS_SEEK_TO_BEGINNING,
+                    KafkaTools.Consume.IGNORE,
+                    KafkaTools.Consume.protobufSpec(ProtobufConsumeOptions.builder()
+                            .descriptorProvider(DescriptorSchemaRegistry.builder()
+                                    .subject(String.format("%s-value", topic))
+                                    .build())
+                            .build()),
+                    TableType.append());
+            final TableDefinition td;
+            final Table e2;
+            {
+                td = TableDefinition.of(
+                        PARTITION_COLUMN,
+                        OFFSET_COLUMN,
+                        TIMESTAMP_COLUMN,
+                        ColumnDefinition.ofInt("foo"),
+                        ColumnDefinition.ofString("bar"));
+                e2 = TableTools.newTable(td,
+                        intCol(PARTITION_COLUMN.getName(), 0, 0),
+                        longCol(OFFSET_COLUMN.getName(), 0, 1),
+                        instantCol(TIMESTAMP_COLUMN.getName(), Instant.ofEpochMilli(42L), Instant.ofEpochMilli(43L)),
+                        intCol("foo", 15, 16),
+                        stringCol("bar", "hello, world!", "goodbye, moon"));
+            }
+            awaitEquals(e2, taa);
+        }
     }
 
     private static String sanitizedTopicName(TestInfo testInfo) {
