@@ -1751,9 +1751,12 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             this.handleId = randomHandleId();
             this.queries = new HashSet<>();
             // Register before publishing: if the session has expired this throws, and nothing published before it
-            // would ever be cleaned up.
-            this.session.addOnCloseCallback(onSessionClosedCallback = this::onSessionClosed);
-            preparedStatements.put(handleId, this);
+            // would ever be cleaned up. Under our monitor, so that an expiry landing in between waits in closeImpl()
+            // for the publication rather than finding nothing to remove.
+            synchronized (this) {
+                this.session.addOnCloseCallback(onSessionClosedCallback = this::onSessionClosed);
+                preparedStatements.put(handleId, this);
+            }
         }
 
         public ByteString handleId() {
