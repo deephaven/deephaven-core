@@ -184,6 +184,19 @@ public class TestMethodListInvocationValidator {
     }
 
     @Test
+    public void testNonFinalDefaultClasses() throws NoSuchMethodException {
+        // the default allowlist names non-final classes, whose patterns also match overrides in subclasses
+        final String pattern = "java.math.BigInteger *(..)";
+        assertPermitted(pattern, CustomBigInteger.class.getMethod("add", BigInteger.class));
+        assertPermitted(pattern, CustomBigInteger.class.getMethod("toString"));
+        // but not the subclass's other methods, nor its constructors
+        assertNotPermitted(pattern, CustomBigInteger.class.getMethod("extra"));
+        assertNotPermitted(pattern, CustomBigInteger.class.getConstructor());
+        assertPermitted("java.math.BigDecimal *(..)", CustomBigDecimal.class.getMethod("scale"));
+        assertNotPermitted("java.math.BigDecimal *(..)", CustomBigDecimal.class.getMethod("extra"));
+    }
+
+    @Test
     public void testGenericOverrides() throws NoSuchMethodException {
         final Method compareTo = Integer.class.getMethod("compareTo", Integer.class);
         assertPermitted("java.lang.Comparable compareTo(..)", compareTo);
@@ -200,6 +213,15 @@ public class TestMethodListInvocationValidator {
         assertPermitted("java.lang.Comparable compareTo(java.lang.Object)", bridge);
         assertPermitted("java.lang.Integer compareTo(java.lang.Object)", bridge);
         assertNotPermitted("java.lang.Integer compareTo(java.lang.Integer)", bridge);
+        // including a bridge for an override that narrows a generic return type
+        final Method narrowingBridge = UpperCase.class.getMethod("apply", Object.class);
+        Assert.assertTrue(narrowingBridge.isBridge());
+        Assert.assertEquals(Object.class, narrowingBridge.getReturnType());
+        final String transform = Transform.class.getName();
+        assertPermitted(transform + " apply(..)", narrowingBridge);
+        assertPermitted(transform + " apply(java.lang.Object)", narrowingBridge);
+        assertPermitted(transform + " apply(..)", UpperCase.class.getMethod("apply", String.class));
+        assertNotPermitted(transform + " apply(..)", UpperCase.class.getMethod("apply", Integer.class));
     }
 
     @Test
@@ -686,6 +708,56 @@ public class TestMethodListInvocationValidator {
     public static class StaticNestedSub extends GenericOuter.StaticNested {
         @Override
         public void accept(final String value) {}
+    }
+
+    public interface Transform<T> {
+        T apply(T value);
+    }
+
+    public static class UpperCase implements Transform<String> {
+        @Override
+        public String apply(final String value) {
+            return value.toUpperCase();
+        }
+
+        public Integer apply(final Integer value) {
+            return value;
+        }
+    }
+
+    public static class CustomBigInteger extends BigInteger {
+        public CustomBigInteger() {
+            super("1");
+        }
+
+        @Override
+        public BigInteger add(final BigInteger value) {
+            return value;
+        }
+
+        @Override
+        public String toString() {
+            return "custom";
+        }
+
+        public int extra() {
+            return 1;
+        }
+    }
+
+    public static class CustomBigDecimal extends BigDecimal {
+        public CustomBigDecimal() {
+            super(1);
+        }
+
+        @Override
+        public int scale() {
+            return 0;
+        }
+
+        public int extra() {
+            return 1;
+        }
     }
 
     public static class ProtectedBase {

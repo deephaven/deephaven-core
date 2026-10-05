@@ -163,10 +163,16 @@ final class MethodPattern {
             // override declared there
             return false;
         }
-        // the implicit Object supertype of an interface is not among its generic supertypes, and binds nothing
-        final Map<TypeVariable<?>, Class<?>> found = supertypeBindings(candidate.getDeclaringClass(),
-                method.getDeclaringClass(), Map.of(), false, new HashSet<>());
-        final Map<TypeVariable<?>, Class<?>> bindings = found == null ? Map.of() : found;
+        final Map<TypeVariable<?>, Class<?>> bindings;
+        if (method.isBridge()) {
+            // a bridge has the erased signature of the method it overrides, so compare it with the candidate's erasure
+            bindings = Map.of();
+        } else {
+            // the implicit Object supertype of an interface is not among its generic supertypes, and binds nothing
+            final Map<TypeVariable<?>, Class<?>> found = supertypeBindings(candidate.getDeclaringClass(),
+                    method.getDeclaringClass(), Map.of(), false, new HashSet<>());
+            bindings = found == null ? Map.of() : found;
+        }
         if (!Arrays.equals(candidate.getParameterTypes(), method.getParameterTypes())) {
             final Type[] candidateParameters = candidate.getGenericParameterTypes();
             final Class<?>[] methodParameters = method.getParameterTypes();
