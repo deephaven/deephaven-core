@@ -42,6 +42,7 @@ import org.junit.experimental.categories.Category;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -226,6 +227,44 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             rTable.notifyListeners(rUpdate);
         });
         TstUtils.validate(en);
+    }
+
+    @Test
+    public void testZeroKeyRightModifyReportsOnlyModifiedRows() {
+        final QueryTable lTable = testRefreshingTable(i(1, 5, 9).toTracking(), intCol("LVal", 1, 5, 9));
+        final QueryTable rTable = testRefreshingTable(i(0, 2, 4, 6).toTracking(), intCol("RVal", 10, 12, 14, 16));
+        final QueryTable jt = (QueryTable) lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve);
+        final SimpleListener listener = new SimpleListener(jt);
+        jt.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(4), intCol("RVal", -14));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(4), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RVal")));
+        });
+
+        assertEquals(1, listener.getCount());
+        assertEquals(i(), listener.update.added());
+        assertEquals(i(), listener.update.removed());
+        assertTrue(listener.update.shifted().empty());
+        assertEquals(jt.newModifiedColumnSet("RVal"), listener.update.modifiedColumnSet());
+        assertEquals(lTable.size(), listener.update.modified().size());
+        final ColumnSource<Integer> rVal = jt.getColumnSource("RVal", int.class);
+        listener.update.modified().forAllRowKeys(rowKey -> assertEquals(-14, rVal.getInt(rowKey)));
+        assertTableEquals(lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve), jt);
+        listener.reset();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(3), intCol("RVal", 13));
+            removeRows(rTable, i(0));
+            rTable.notifyListeners(i(3), i(0), i());
+        });
+        assertEquals(1, listener.getCount());
+        assertEquals(2 * lTable.size(), listener.update.added().size() + listener.update.removed().size());
+        assertEquals(i(), listener.update.modified());
+        assertTrue(listener.update.shifted().empty());
+        assertTableEquals(lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve), jt);
     }
 
     @Test

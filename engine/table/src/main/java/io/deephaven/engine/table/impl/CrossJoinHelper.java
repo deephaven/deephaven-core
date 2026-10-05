@@ -1193,9 +1193,13 @@ public class CrossJoinHelper {
                     boolean moreLeftPrev = advanceIterator(leftPrevIter);
                     boolean moreLeftCurr = advanceIterator(leftCurrIter);
 
-                    // It is more efficient to completely rebuild this RowSet, than to modify each row to right mapping.
-                    resultRowSet.clear();
-                    final RowSetBuilderSequential newResultBuilder = RowSetFactory.builderSequential();
+                    // A shift moves whole blocks of result rows, and rebuilding the result row set from the shifted
+                    // right row set is cheaper than shifting it in place. Without a shift, the result row set is
+                    // maintained from the downstream removes and adds, so the cycle costs only what the update touches.
+                    final boolean rebuildResult = currRightBits != prevRightBits || rightUpdate.shifted().nonempty()
+                            || (leftChanged && leftUpdate.shifted().nonempty());
+                    final RowSetBuilderSequential newResultBuilder =
+                            rebuildResult ? RowSetFactory.builderSequential() : null;
                     final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
                     final RowSetBuilderSequential removedBuilder = RowSetFactory.builderSequential();
                     final RowSetBuilderSequential modifiedBuilder = RowSetFactory.builderSequential();
@@ -1235,10 +1239,14 @@ public class CrossJoinHelper {
                             if (currRight.isNonempty()) {
                                 currRightShift = furtherShiftIndex(currRight, currRightShift, currResultOffset);
                                 addedBuilder.appendRowSequence(currRight);
-                                newResultBuilder.appendRowSequence(currRight);
+                                if (rebuildResult) {
+                                    newResultBuilder.appendRowSequence(currRight);
+                                }
                             } else if (leftOuterJoin) {
                                 addedBuilder.appendKey(currResultOffset);
-                                newResultBuilder.appendKey(currResultOffset);
+                                if (rebuildResult) {
+                                    newResultBuilder.appendKey(currResultOffset);
+                                }
                             }
 
                             // Advance left current iterator.
@@ -1254,7 +1262,9 @@ public class CrossJoinHelper {
                             // we need to replace the result with a null row
                             if (leftOuterJoin && currRight.isEmpty()) {
                                 addedBuilder.appendKey(currResultOffset);
-                                newResultBuilder.appendKey(currResultOffset);
+                                if (rebuildResult) {
+                                    newResultBuilder.appendKey(currResultOffset);
+                                }
                             }
                         }
 
@@ -1281,7 +1291,7 @@ public class CrossJoinHelper {
                             modifiedBuilder.appendRowSequence(modRight);
                         }
 
-                        if (currRight.isNonempty()) {
+                        if (rebuildResult && currRight.isNonempty()) {
                             currRightShift = furtherShiftIndex(currRight, currRightShift, currResultOffset);
                             newResultBuilder.appendRowSequence(currRight);
                         }
@@ -1310,19 +1320,28 @@ public class CrossJoinHelper {
                         if (currRight.isNonempty()) {
                             currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
                             addedBuilder.appendRowSequence(currRight);
-                            newResultBuilder.appendRowSequence(currRight);
+                            if (rebuildResult) {
+                                newResultBuilder.appendRowSequence(currRight);
+                            }
                         } else if (leftOuterJoin) {
                             addedBuilder.appendKey(currResultIdx);
-                            newResultBuilder.appendKey(currResultIdx);
+                            if (rebuildResult) {
+                                newResultBuilder.appendKey(currResultIdx);
+                            }
                         }
                     }
 
-                    try (final WritableRowSet newResult = newResultBuilder.build()) {
-                        resultRowSet.subsume(newResult);
-                    }
                     downstream.added = addedBuilder.build();
                     downstream.removed = removedBuilder.build();
                     downstream.modified = modifiedBuilder.build();
+                    if (rebuildResult) {
+                        try (final WritableRowSet newResult = newResultBuilder.build()) {
+                            resultRowSet.resetTo(newResult);
+                        }
+                    } else {
+                        resultRowSet.remove(downstream.removed);
+                        resultRowSet.insert(downstream.added);
+                    }
 
                     downstream.shifted = shiftBuilder.build();
 

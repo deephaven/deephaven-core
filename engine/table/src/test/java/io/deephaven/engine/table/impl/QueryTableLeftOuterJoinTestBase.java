@@ -541,6 +541,65 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
     }
 
     @Test
+    public void testZeroKeyRightChangesAcrossEmptyTransitions() {
+        final QueryTable lTable = testRefreshingTable(i(1, 5, 9).toTracking(), intCol("LVal", 1, 5, 9));
+        final QueryTable rTable = testRefreshingTable(i(0, 2).toTracking(), intCol("RVal", 10, 12));
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> doLeftOuterJoin(lTable, rTable)),
+        };
+        final QueryTable joined = (QueryTable) doLeftOuterJoin(lTable, rTable);
+        final SimpleListener listener = new SimpleListener(joined);
+        joined.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(2), intCol("RVal", -12));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RVal")));
+        });
+        TstUtils.validate(en);
+        assertEquals(1, listener.getCount());
+        assertEquals(i(), listener.update.added());
+        assertEquals(i(), listener.update.removed());
+        assertTrue(listener.update.shifted().empty());
+        assertEquals(lTable.size(), listener.update.modified().size());
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+
+        // the right table empties, leaving one null row per left row
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(rTable, i(0, 2));
+            rTable.notifyListeners(i(), i(0, 2), i());
+        });
+        TstUtils.validate(en);
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(lTable, i(12), intCol("LVal", 12));
+            lTable.notifyListeners(i(12), i(), i());
+        });
+        TstUtils.validate(en);
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+
+        // the right table refills, replacing every null row
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(4), intCol("RVal", 14));
+            rTable.notifyListeners(i(4), i(), i());
+        });
+        TstUtils.validate(en);
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(4), intCol("RVal", -14));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(4), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RVal")));
+            removeRows(lTable, i(5));
+            lTable.notifyListeners(i(), i(5), i());
+        });
+        TstUtils.validate(en);
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+    }
+
+    @Test
     public void testZeroKeyTransitions() {
         final QueryTable left = TstUtils.testRefreshingTable(i(10).toTracking(), intCol("LS", 1), intCol("LS2", 100));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RS"));
