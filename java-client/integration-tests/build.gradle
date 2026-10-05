@@ -55,11 +55,10 @@ dependencies {
 
 // The server is the published jetty image: Python console, anonymous and pre-shared-key auth, as py/client uses.
 String randomSuffix = UUID.randomUUID().toString()
+def serverStartOpts = '-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,' +
+        'io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven'
 deephavenDocker {
-    envVars.set([
-            'START_OPTS': '-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,'
-                    + 'io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven'
-    ])
+    envVars.set(['START_OPTS': serverStartOpts])
     containerName.set "dh-server-for-java-client-${randomSuffix}"
     networkName.set "java-client-test-network-${randomSuffix}"
 }
@@ -73,9 +72,10 @@ test {
     // The TLS tests need the TLS server, which testTls below provides
     exclude '**/*TlsTest*'
 
-    // What the test exercises, so it reruns only when one of these changes (or with -PforceTest=true)
+    // What the test exercises, so it reruns only when one of these changes
     inputs.files(configurations.examples)
     inputs.property('serverImageId', serverImage.flatMap { it.imageId })
+    inputs.property('serverStartOpts', serverStartOpts)
 
     // These tests are a real client, not an engine test: the client-side engine the barrage tests run uses the same
     // default configuration a user's process would, rather than the test conventions' dh-tests.prop (which, among
@@ -104,26 +104,24 @@ deephavenDocker.shouldLogIfTaskFails tasks.named('test')
 def devCerts = rootProject.file('server/dev-certs')
 def tlsContainerName = "dh-server-tls-for-java-client-${randomSuffix}"
 def tlsPort = project.objects.property(Integer)
+// http.port is explicit because the server defaults to 443 once an SSL identity is configured
+def tlsStartOpts = serverStartOpts + ' -Dhttp.port=10000 ' +
+        '-Dssl.identity.type=privatekey -Dssl.identity.certChainPath=/dev-certs/server.chain.crt ' +
+        '-Dssl.identity.privateKeyPath=/dev-certs/server.key ' +
+        '-Dssl.trust.type=certs -Dssl.trust.path=/dev-certs/ca.crt -Dssl.clientAuthentication=WANTED'
+// The image's health check probes in plaintext; this server only speaks TLS
+def tlsHealthCheck = '/opt/grpc_health_probe/grpc_health_probe -addr=localhost:10000 -tls -tls-no-verify ' +
+        '-connect-timeout=10s || exit 1'
 
 def createTlsServer = tasks.register('createTlsServer', DockerCreateContainer) { t ->
     t.dependsOn serverImage
     t.targetImageId serverImage.flatMap { it.imageId }
     t.containerName.set tlsContainerName
-    t.envVars.set([
-            // http.port is explicit because the server defaults to 443 once an SSL identity is configured
-            'START_OPTS': '-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,'
-                    + 'io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven '
-                    + '-Dhttp.port=10000 '
-                    + '-Dssl.identity.type=privatekey -Dssl.identity.certChainPath=/dev-certs/server.chain.crt '
-                    + '-Dssl.identity.privateKeyPath=/dev-certs/server.key '
-                    + '-Dssl.trust.type=certs -Dssl.trust.path=/dev-certs/ca.crt -Dssl.clientAuthentication=WANTED'
-    ])
+    t.envVars.set(['START_OPTS': tlsStartOpts])
     t.hostConfig.binds.set([(devCerts.absolutePath): '/dev-certs'])
     t.exposePorts('tcp', [10000])
     t.hostConfig.portBindings.set(['10000'])
-    // The image's health check probes in plaintext; this server only speaks TLS
-    t.healthCheck.cmd.set(['/opt/grpc_health_probe/grpc_health_probe -addr=localhost:10000 -tls -tls-no-verify '
-            + '-connect-timeout=10s || exit 1'])
+    t.healthCheck.cmd.set([tlsHealthCheck])
 }
 def startTlsServer = tasks.register('startTlsServer', DockerStartContainer) { t ->
     t.dependsOn createTlsServer
@@ -164,6 +162,8 @@ def testTls = tasks.register('testTls', Test) { t ->
     t.maxParallelForks = 1
 
     t.inputs.property('serverImageId', serverImage.flatMap { it.imageId })
+    t.inputs.property('tlsStartOpts', tlsStartOpts)
+    t.inputs.property('tlsHealthCheck', tlsHealthCheck)
     t.inputs.dir(devCerts)
     t.systemProperty 'dh.devCerts', devCerts.absolutePath
     t.systemProperty 'Configuration.rootFile', 'dh-defaults.prop'

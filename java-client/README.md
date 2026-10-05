@@ -246,9 +246,10 @@ the host under Gradle and spawns each launcher script as a child process with
 - `./gradlew :java-client-integration-tests:test` runs it; it is also part of `check`, so CI runs it
   on every pull request. About 40 seconds when the image is cached, a few minutes when the server
   has to be rebuilt.
-- Gradle considers the task up to date unless the example distributions, the server image, or the
-  test sources changed. `-PforceTest=true` reruns it anyway. The container still starts and stops on
-  an up-to-date run; that is how the docker extension works.
+- Gradle considers the task up to date unless something it exercises changed: the example
+  distributions, the server image (by content hash), the server's start options, the test classes,
+  or the test runtime classpath, so a dependency bump reruns it on its own. The container still
+  starts and stops on an up-to-date run; that is how the docker extension works.
 - Each child's stdout and stderr land in `integration-tests/build/example-output/<script>.out` and
   `.err`. On failure the assertion message includes both, and Gradle prints the server log and a
   server thread dump.
@@ -291,8 +292,8 @@ variables they publish use an `api_` prefix.
 ### The transport tests
 
 Nothing else in the repo runs grpc-netty against a real server, so `TransportTest` exists to catch
-what a netty or gRPC bump breaks rather than what the client API does. It is the test to run after
-such a bump, with `-PforceTest=true`:
+what a netty or gRPC bump breaks rather than what the client API does. A bump changes the test
+classpath, so `check` reruns it without being asked:
 
 - A DoGet of about 80MB in many record batches, checked for completeness and order, and the same
   table DoPut back: HTTP/2 flow control and both allocators on both sides.
