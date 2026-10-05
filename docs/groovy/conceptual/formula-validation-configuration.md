@@ -172,10 +172,12 @@ A pointcut expression has three parts:
 
 A pattern also matches every instance method that overrides a matching method. For example, `java.lang.Object toString()` permits `toString()` on any class, and `java.lang.Number intValue()` permits `intValue()` on `Integer`, `BigDecimal`, and every other subclass of `Number`. Static methods match only the class that declares them.
 
+A class pattern matches only the methods and constructors the class itself declares, plus overrides of those methods in subclasses. It does not match methods the class inherits without overriding: `java.lang.String *(..)` does not permit `getClass()` on a `String`, because `Object` declares it and `String` does not override it.
+
 ### Common examples
 
 ```properties
-# Allow any method or constructor of String, with any parameters
+# Allow any method or constructor declared by String, with any parameters
 ColumnExpressionValidator.allowedMethods.strings=java.lang.String *(..)
 
 # Allow only the length() method on String (no parameters)
@@ -184,7 +186,7 @@ ColumnExpressionValidator.allowedMethods.string_length=java.lang.String length()
 # Allow specific methods on Integer class
 ColumnExpressionValidator.allowedMethods.integers=java.lang.Integer valueOf(int);java.lang.Integer parseInt(java.lang.String)
 
-# Allow all methods and constructors of multiple number classes
+# Allow the methods and constructors declared by several number classes, and overrides of those methods
 ColumnExpressionValidator.allowedMethods.numbers=java.lang.Integer *(..);java.lang.Double *(..);java.math.BigDecimal *(..)
 ```
 
@@ -193,16 +195,16 @@ ColumnExpressionValidator.allowedMethods.numbers=java.lang.Integer *(..);java.la
 Deephaven comes pre-configured with safe methods from common Java classes:
 
 ```properties
-# All methods and constructors of primitive wrapper classes (Integer, Double, etc.)
+# Methods and constructors declared by the primitive wrapper classes (Integer, Double, etc.)
 ColumnExpressionValidator.allowedMethods.primitives=java.lang.Character *(..);java.lang.Byte *(..);java.lang.Short *(..);java.lang.Integer *(..);java.lang.Long *(..);java.lang.Float *(..);java.lang.Double *(..);java.lang.Boolean *(..)
 
-# String methods and constructors (safe because strings are immutable)
+# Methods and constructors declared by String (safe because strings are immutable)
 ColumnExpressionValidator.allowedMethods.basic=java.lang.String *(..)
 
-# Methods and constructors of number and math classes, and overrides of their methods in subclasses
+# Methods and constructors declared by the number and math classes, and overrides of those methods in subclasses
 ColumnExpressionValidator.allowedMethods.numbers=java.math.BigInteger *(..);java.math.BigDecimal *(..);java.lang.Number *(..)
 
-# Methods and constructors of date and time classes
+# Methods and constructors declared by the date and time classes
 ColumnExpressionValidator.allowedMethods.time=java.time.Instant *(..);java.time.LocalTime *(..);java.time.LocalDate *(..);java.time.ZonedDateTime *(..)
 
 # Common Object methods that are permitted

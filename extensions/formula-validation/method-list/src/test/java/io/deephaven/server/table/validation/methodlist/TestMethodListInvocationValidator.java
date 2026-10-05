@@ -36,6 +36,8 @@ public class TestMethodListInvocationValidator {
         assertNotPermitted("java.lang.Integer *(int)", Integer.class.getMethod("valueOf", String.class));
         assertNotPermitted("java.lang.Long *(..)", Integer.class.getMethod("valueOf", int.class));
         assertPermitted("java.lang.String to*Case()", String.class.getMethod("toUpperCase"));
+        // a class pattern does not match a method the class inherits without overriding
+        assertNotPermitted("java.lang.String *(..)", String.class.getMethod("getClass"));
         assertNotPermitted("java.lang.String to*Case()", String.class.getMethod("toString"));
         assertPermitted("java.lang.Ma* max(..)", Math.class.getMethod("max", int.class, int.class));
     }
