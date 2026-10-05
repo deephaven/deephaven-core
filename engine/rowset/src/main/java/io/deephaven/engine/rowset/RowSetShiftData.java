@@ -341,30 +341,31 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     public WritableRowSet apply(final WritableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
+        // The shift ranges and the row set are walked together. The walk ends at the first shift range that begins
+        // after the row set's last key, and a run of shift ranges that ends before the row set's next key (including
+        // the run before its first key) is galloped past, so the work is driven by the shift ranges that hold row keys
+        // rather than by the total number of shift ranges.
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             final int size = size();
-            for (int idx = 0; idx < size; ++idx) {
+            int idx = 0;
+            while (idx < size) {
                 final long beginRange = getBeginRange(idx);
-                final long endRange = getEndRange(idx);
-                final long shiftDelta = getShiftDelta(idx);
-
                 if (!rsIt.advance(beginRange)) {
                     break;
                 }
 
-                // TODO #3341: This loop is unfortunate, we will iterate the entire RowSetShiftData; even if we have an
-                // input rowSet that is only a small subset. For the ending condition we solve that with the advance
-                // breaking out of the loop, but for the starting condition, we can do better by binary searching the
-                // shift data for the beginning of the index if the end of that range is less than the data. We can
-                // binary search for the next relevant shifted range anytime we attempt a shift that does not effect the
-                // rowSet.
-                if (endRange < rsIt.peekNextKey()) {
+                final long endRange = getEndRange(idx);
+                final long nextKey = rsIt.peekNextKey();
+                if (endRange < nextKey) {
+                    idx = firstWindowEndAtOrAfter(idx, size, nextKey, false, 0);
                     continue;
                 }
 
+                final long shiftDelta = getShiftDelta(idx);
                 toRemove.appendRange(beginRange, endRange);
                 rsIt.getNextRowSequenceThrough(endRange)
                         .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s + shiftDelta, e + shiftDelta));
+                ++idx;
             }
         }
 
@@ -435,20 +436,29 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     public WritableRowSet unapply(final WritableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
+        // The post-shift windows are ordered and disjoint (see validate()), so they are walked together with the row
+        // set as in apply(WritableRowSet), galloping past any run of windows that ends before the row set's next key.
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             final int size = size();
-            for (int idx = 0; idx < size; ++idx) {
+            int idx = 0;
+            while (idx < size) {
                 final long shiftDelta = getShiftDelta(idx);
                 final long beginRange = getBeginRange(idx) + shiftDelta;
-                final long endRange = getEndRange(idx) + shiftDelta;
-
                 if (!rsIt.advance(beginRange)) {
                     break;
+                }
+
+                final long endRange = getEndRange(idx) + shiftDelta;
+                final long nextKey = rsIt.peekNextKey();
+                if (endRange < nextKey) {
+                    idx = firstWindowEndAtOrAfter(idx, size, nextKey, true, 0);
+                    continue;
                 }
 
                 toRemove.appendRange(beginRange, endRange);
                 rsIt.getNextRowSequenceThrough(endRange)
                         .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
+                ++idx;
             }
         }
 
@@ -483,23 +493,27 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
-            for (int idx = 0; idx < size; ++idx) {
+            int idx = 0;
+            while (idx < size) {
                 final long shiftDelta = getShiftDelta(idx);
                 // The window sits in the caller's key space, offset from the one the shifts were built in; what it
                 // holds moves back by the delta, which the offset does not touch.
                 final long beginRange = getBeginRange(idx) + offset + shiftDelta;
-                final long endRange = getEndRange(idx) + offset + shiftDelta;
-
                 if (!rsIt.advance(beginRange)) {
                     break;
                 }
-                if (endRange < rsIt.peekNextKey()) {
+
+                final long endRange = getEndRange(idx) + offset + shiftDelta;
+                final long nextKey = rsIt.peekNextKey();
+                if (endRange < nextKey) {
+                    idx = firstWindowEndAtOrAfter(idx, size, nextKey, true, offset);
                     continue;
                 }
 
                 toRemove.appendRange(beginRange, endRange);
                 rsIt.getNextRowSequenceThrough(endRange)
                         .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
+                ++idx;
             }
         }
 
@@ -548,9 +562,23 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     }
 
     public void forAllInRowSet(final RowSet filterRowSet, final SingleElementShiftCallback callback) {
+        final int size = size();
+        if (size == 0 || filterRowSet.isEmpty()) {
+            return;
+        }
+
+        // Only the shift ranges from the first that ends at or after the row set's first key, through the first that
+        // ends at or after its last key, can hold row keys: those before end before the row set begins, and those
+        // after begin after it ends. Both passes are confined to them.
+        final int firstRelevant = firstWindowEndAtOrAfter(0, size, filterRowSet.firstRowKey(), false, 0);
+        if (firstRelevant == size) {
+            return;
+        }
+        final int lastRelevant =
+                Math.min(size - 1, firstWindowEndAtOrAfter(firstRelevant, size, filterRowSet.lastRowKey(), false, 0));
         boolean hasReverseShift = false;
         try (final RowSet.SearchIterator it = filterRowSet.reverseIterator()) {
-            FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
+            FORWARD_SHIFT: for (int ii = lastRelevant; ii >= firstRelevant; --ii) {
                 final long delta = getShiftDelta(ii);
                 if (delta < 0) {
                     hasReverseShift = true;
@@ -576,10 +604,12 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         try (final RowSet.SearchIterator it = filterRowSet.searchIterator()) {
-            final int size = size();
-            REVERSE_SHIFT: for (int ii = 0; ii < size; ++ii) {
+            // The ascending pass gallops past any run of shift ranges that ends before the row set's next key.
+            int ii = firstRelevant;
+            REVERSE_SHIFT: while (ii <= lastRelevant) {
                 final long delta = getShiftDelta(ii);
                 if (delta > 0) {
+                    ++ii;
                     continue;
                 }
                 final long start = getBeginRange(ii);
@@ -587,6 +617,11 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 if (!it.advance(start)) {
                     break;
                 }
+                if (it.currentValue() > end) {
+                    ii = firstWindowEndAtOrAfter(ii, size, it.currentValue(), false, 0);
+                    continue;
+                }
+                ++ii;
                 while (it.currentValue() <= end) {
                     callback.shift(it.currentValue(), delta);
                     if (!it.hasNext()) {
@@ -735,7 +770,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 }
                 // the first row key at or after the start of shift range idx
                 final long firstKey = rangeIterator.currentRangeStart();
-                idx = firstEndAtOrAfter(idx, size, firstKey);
+                idx = firstWindowEndAtOrAfter(idx, size, firstKey, false, 0);
                 if (idx == size) {
                     break;
                 }
@@ -753,21 +788,33 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     }
 
     /**
+     * The inclusive end of the {@code idx}th shift window: the shift range's end plus {@code offset}, and plus its
+     * delta when {@code postShift} is set. The windows are ordered by their ends in either key space (see
+     * {@link #validate()}).
+     */
+    private long windowEnd(final int idx, final boolean postShift, final long offset) {
+        return getEndRange(idx) + (postShift ? getShiftDelta(idx) : 0) + offset;
+    }
+
+    /**
      * Gallops forward from {@code fromIdx} and then bisects the bracketed interval, so a result near {@code fromIdx}
      * costs a constant number of probes and one {@code d} positions away costs O(log d).
      *
-     * @return the first shift range index in {@code [fromIdx, size)} whose end is at or after {@code key}, or
-     *         {@code size} if there is none
+     * @param postShift whether the windows are taken in post-shift key space rather than pre-shift key space
+     * @param offset an offset added to every window's end
+     * @return the first shift range index in {@code [fromIdx, size)} whose window, as given by
+     *         {@link #windowEnd(int, boolean, long)}, ends at or after {@code key}, or {@code size} if there is none
      */
-    private int firstEndAtOrAfter(final int fromIdx, final int size, final long key) {
-        if (getEndRange(fromIdx) >= key) {
+    private int firstWindowEndAtOrAfter(final int fromIdx, final int size, final long key, final boolean postShift,
+            final long offset) {
+        if (windowEnd(fromIdx, postShift, offset) >= key) {
             return fromIdx;
         }
-        // getEndRange(lo) < key holds throughout; hi is either size or an index whose end is at or after key
+        // windowEnd(lo) < key holds throughout; hi is either size or an index whose window ends at or after key
         int lo = fromIdx;
         int step = 1;
         int hi = fromIdx + step;
-        while (hi < size && getEndRange(hi) < key) {
+        while (hi < size && windowEnd(hi, postShift, offset) < key) {
             lo = hi;
             // the step saturates at size, so doubling it can never overflow
             step = step <= (size >>> 1) ? step << 1 : size;
@@ -776,7 +823,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         ++lo;
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            if (getEndRange(mid) < key) {
+            if (windowEnd(mid, postShift, offset) < key) {
                 lo = mid + 1;
             } else {
                 hi = mid;
@@ -1352,21 +1399,29 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
 
+        // The post-shift windows are ordered and disjoint (see validate()), so they are walked together with the row
+        // set as in apply(WritableRowSet), galloping past any run of windows that ends before the row set's next key.
         try (final RowSequence.Iterator rsIt = postShiftRowSet.getRowSequenceIterator()) {
             final int size = size();
-            for (int idx = 0; idx < size; ++idx) {
-                final long beginRange = getBeginRange(idx);
-                final long endRange = getEndRange(idx);
+            int idx = 0;
+            while (idx < size) {
                 final long shiftDelta = getShiftDelta(idx);
-
-                if (!rsIt.advance(beginRange + shiftDelta)) {
+                if (!rsIt.advance(getBeginRange(idx) + shiftDelta)) {
                     break;
                 }
 
-                rsIt.getNextRowSequenceThrough(endRange + shiftDelta).forAllRowKeyRanges((s, e) -> {
+                final long endRange = getEndRange(idx) + shiftDelta;
+                final long nextKey = rsIt.peekNextKey();
+                if (endRange < nextKey) {
+                    idx = firstWindowEndAtOrAfter(idx, size, nextKey, true, 0);
+                    continue;
+                }
+
+                rsIt.getNextRowSequenceThrough(endRange).forAllRowKeyRanges((s, e) -> {
                     preShiftBuilder.appendRange(s - shiftDelta, e - shiftDelta);
                     postShiftBuilder.appendRange(s, e);
                 });
+                ++idx;
             }
         }
 
