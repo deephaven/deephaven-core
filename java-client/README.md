@@ -277,6 +277,12 @@ the same real netty channel, with assertions on what comes back rather than on e
   update graph and an execution context, and the test task runs with `dh-defaults.prop` rather than
   the test conventions' `dh-tests.prop`, because that file forbids starting the refresh thread.
 - `AuthenticationTest`: anonymous accepted, the pre-shared key accepted, a wrong key rejected.
+- `PluginObjectTest`: the object service with a Figure built in the console. Fetching it by typed
+  ticket returns its descriptor bytes, decoded as a `FigureDescriptor`, and the table it plots as
+  an export, read back over Flight; fetching a plain table as a Figure fails with NOT_FOUND. This
+  is the API under `fetch-object` and `convert-to-table`.
+- `DoExchangeTest`: a Barrage snapshot request built by hand and sent over a raw DoExchange, to
+  pin the wire format independently of the `BarrageSession` wrapper.
 
 `TestServer` is the one place that knows the server's port and key. Tests open their own sessions
 and close them in try-with-resources; one factory per class is shut down in `@AfterAll`. Server
