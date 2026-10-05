@@ -5,6 +5,11 @@
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.MatchOptions;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.FloatRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -739,5 +744,104 @@ public class FloatRegionBinarySearchKernelTest {
                         return values.size();
                     }
                 });
+    }
+
+    /** Ascending in engine order: null sentinel first, then finite values, then +Inf, with NaN last. */
+    private static final List<Float> DISPATCH_DATA =
+            List.of(NULL_FLOAT, (float) 1.0, (float) 2.0, (float) 5.0, (float) 5.0, Float.POSITIVE_INFINITY, Float.NaN);
+
+    /**
+     * The two {@code binsearch*Filter} entry points are the region kernel's front door, and the Parquet regions are
+     * their only production callers -- nothing else in this class reaches them, so the dispatch they perform goes
+     * unchecked here even though the searches it selects are covered thoroughly.
+     *
+     * <p>
+     * Each shape is asserted to agree with the search it should dispatch to, rather than against hand-computed row
+     * keys. The upper-bound shortcut is keyed on NaN rather than a maximum value, because Deephaven ordering sorts
+     * NaN above {@link Float#POSITIVE_INFINITY}: only an inclusive NaN bound is genuinely unbounded, so an inclusive
+     * {@code +Inf} bound must fall through to the two-sided search and exclude the trailing NaN.
+     */
+    @Test
+    public void testRangeFilterEntryPointDispatch() {
+        for (final boolean descending : new boolean[] {false, true}) {
+            final List<Float> data;
+            final SortColumn sortColumn;
+            if (descending) {
+                data = new ArrayList<>(DISPATCH_DATA);
+                Collections.reverse(data);
+                sortColumn = SortColumn.desc(ColumnName.of("test"));
+            } else {
+                data = DISPATCH_DATA;
+                sortColumn = SortColumn.asc(ColumnName.of("test"));
+            }
+            final ColumnRegionFloat<Values> region = makeColumnRegionFloat(data);
+            final long lastKey = data.size() - 1;
+
+            // Two-sided: neither bound covers everything beyond it, so both are searched.
+            for (final boolean lowerInc : new boolean[] {false, true}) {
+                for (final boolean upperInc : new boolean[] {false, true}) {
+                    try (final RowSet viaFilter = FloatRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                            sortColumn, new FloatRangeFilter("test", (float) 2.0, (float) 5.0, lowerInc, upperInc));
+                            final RowSet viaSearch = FloatRegionBinarySearchKernel.binarySearchMinMax(region, 0,
+                                    lastKey, sortColumn, (float) 2.0, (float) 5.0, lowerInc, upperInc)) {
+                        assertEquals("descending=" + descending + " lowerInc=" + lowerInc + " upperInc=" + upperInc,
+                                viaSearch, viaFilter);
+                    }
+                }
+            }
+
+            // An inclusive +Inf upper bound is NOT unbounded, so it takes the two-sided search and drops NaN.
+            try (final RowSet viaFilter = FloatRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                    sortColumn, new FloatRangeFilter("test", (float) 2.0, Float.POSITIVE_INFINITY, true, true));
+                    final RowSet viaSearch = FloatRegionBinarySearchKernel.binarySearchMinMax(region, 0, lastKey,
+                            sortColumn, (float) 2.0, Float.POSITIVE_INFINITY, true, true)) {
+                assertEquals("descending=" + descending, viaSearch, viaFilter);
+            }
+
+            // An inclusive null lower bound covers everything below the upper bound, so only the upper is searched.
+            try (final RowSet viaFilter = FloatRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                    sortColumn, new FloatRangeFilter("test", NULL_FLOAT, (float) 5.0, true, true));
+                    final RowSet viaSearch = FloatRegionBinarySearchKernel.binarySearchMax(region, 0, lastKey,
+                            sortColumn, (float) 5.0, true)) {
+                assertEquals("descending=" + descending, viaSearch, viaFilter);
+            }
+
+            // An inclusive NaN upper bound is the unbounded one, so only the lower bound is searched.
+            try (final RowSet viaFilter = FloatRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                    sortColumn, new FloatRangeFilter("test", (float) 2.0, Float.NaN, true, true));
+                    final RowSet viaSearch = FloatRegionBinarySearchKernel.binarySearchMin(region, 0, lastKey,
+                            sortColumn, (float) 2.0, true)) {
+                assertEquals("descending=" + descending, viaSearch, viaFilter);
+            }
+        }
+    }
+
+    /**
+     * The match entry point hands a {@link MatchFilter}'s values to the match search, except for an empty value list,
+     * which matches nothing and must not touch the region at all.
+     */
+    @Test
+    public void testMatchFilterEntryPointDispatch() {
+        final ColumnRegionFloat<Values> region = makeColumnRegionFloat(DISPATCH_DATA);
+        final long lastKey = DISPATCH_DATA.size() - 1;
+        final SortColumn sortColumn = SortColumn.asc(ColumnName.of("test"));
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofFloat("test"));
+
+        final MatchFilter matchFilter = new MatchFilter(MatchOptions.REGULAR, "test", (float) 5.0, NULL_FLOAT);
+        matchFilter.init(tableDefinition);
+        try (final RowSet viaFilter = FloatRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey,
+                sortColumn, matchFilter);
+                final RowSet viaSearch = FloatRegionBinarySearchKernel.binarySearchMatch(region, 0, lastKey,
+                        sortColumn, new Object[] {(float) 5.0, NULL_FLOAT})) {
+            assertEquals(viaSearch, viaFilter);
+        }
+
+        // No values to look for, so nothing matches and the search is skipped outright.
+        final MatchFilter emptyFilter = new MatchFilter(MatchOptions.REGULAR, "test");
+        emptyFilter.init(tableDefinition);
+        try (final RowSet viaFilter = FloatRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey,
+                sortColumn, emptyFilter)) {
+            assertTrue(viaFilter.isEmpty());
+        }
     }
 }

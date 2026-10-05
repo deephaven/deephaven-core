@@ -38,7 +38,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
-import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,9 +58,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link TableTools}.
@@ -142,31 +139,31 @@ public class TestTableTools {
     public void testMergeOfMismatchedTables() {
         try {
             TableTools.merge(table1, table2);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table1);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, emptyTable);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table2.updateView("S2=StringKeys1"));
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
 
         try {
             TableTools.merge(table2, table2.dropColumns("StringKeys1"));
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
         }
     }
@@ -654,7 +651,7 @@ public class TestTableTools {
                 TstUtils.validate(en);
             }
         } catch (Exception e) {
-            TestCase.fail(e.getMessage());
+            fail(e.getMessage());
         }
     }
 
@@ -910,7 +907,7 @@ public class TestTableTools {
         result = TableTools.merge(TableTools.newTable(table1.getDefinition()), table1);
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result = TableTools.merge(TableTools.newTable(table1.getDefinition()), emptyLikeTable1, emptyLikeTable1);
-        TestCase.assertEquals(0, result.size());
+        assertEquals(0, result.size());
     }
 
     @Test
@@ -1045,23 +1042,23 @@ public class TestTableTools {
     @Test
     public void testEmptyTable() {
         Table emptyTable = TableTools.emptyTable(2);
-        TestCase.assertEquals(2, emptyTable.size());
+        assertEquals(2, emptyTable.size());
 
         Table emptyTable2 = TableTools.emptyTable(2).update("col=1");
-        TestCase.assertEquals(2, emptyTable2.size());
+        assertEquals(2, emptyTable2.size());
         IntVector columnVector = ColumnVectors.ofInt(emptyTable2, "col");
-        TestCase.assertEquals(2, columnVector.size());
-        TestCase.assertEquals(1, columnVector.get(0));
-        TestCase.assertEquals(1, columnVector.get(1));
+        assertEquals(2, columnVector.size());
+        assertEquals(1, columnVector.get(0));
+        assertEquals(1, columnVector.get(1));
 
         TableTools.show(emptyTable2);
 
         Table emptyTable3 = TableTools.emptyTable(2).updateView("col=1");
-        TestCase.assertEquals(2, emptyTable3.size());
+        assertEquals(2, emptyTable3.size());
         columnVector = ColumnVectors.ofInt(emptyTable3, "col");
-        TestCase.assertEquals(2, columnVector.size());
-        TestCase.assertEquals(1, columnVector.get(0));
-        TestCase.assertEquals(1, columnVector.get(1));
+        assertEquals(2, columnVector.size());
+        assertEquals(1, columnVector.get(0));
+        assertEquals(1, columnVector.get(1));
 
         TableTools.show(emptyTable3);
     }
@@ -1104,7 +1101,7 @@ public class TestTableTools {
             stepStart = end;
             System.out.println("Step=" + step + ", duration=" + duration + "ms, stepDuration=" + stepDuration + "ms");
             if (duration > 30_000) {
-                TestCase.fail(
+                fail(
                         "This test is expected to take around 5 seconds on a Mac with the new shift behavior, something is not right.");
             }
         }

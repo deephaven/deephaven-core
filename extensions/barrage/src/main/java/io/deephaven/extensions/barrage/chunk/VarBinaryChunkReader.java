@@ -78,9 +78,7 @@ public class VarBinaryChunkReader<T> extends BaseChunkReader<WritableObjectChunk
             if (offsetsBuffer < offBufRead) {
                 throw new IllegalStateException("offset buffer is too short for the expected number of elements");
             }
-            for (int i = 0; i < numElements + 1; ++i) {
-                offsets.set(i, is.readInt());
-            }
+            readIntBuffer(is, offsets, numElements + 1);
             if (offBufRead < offsetsBuffer) {
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer - offBufRead));
             }

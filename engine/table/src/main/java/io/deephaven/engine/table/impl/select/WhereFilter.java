@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -19,6 +20,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -76,9 +78,24 @@ public interface WhereFilter extends Filter {
         void requestRecompute(RowSet rowSet);
 
         /**
-         * Get the table underlying this listener.
+         * Notify that the filter's inputs have failed, so that the result must fail too.
+         * <p>
+         * Route the failure through whatever notifies {@link #getTable() the result}, rather than failing that table
+         * directly, so that it fails exactly once and from inside that notification, where the failure cannot collide
+         * with an update the same notifier might otherwise deliver for this step. Drop a request that arrives before
+         * there is anything to notify: there is no result to fail yet.
          *
-         * @return the underlying table
+         * @param error The error that the filter's inputs failed with
+         * @param sourceEntry The entry that the error is attributed to, if any
+         */
+        void requestFailure(@NotNull Throwable error, @Nullable TableListener.Entry sourceEntry);
+
+        /**
+         * Get the result table of the operation that installed this listener, which is the table that
+         * {@link #requestRecompute() recompute} and {@link #requestFailure failure} requests act on. It is never one of
+         * the filter's inputs; a filter reaches those through its own state.
+         *
+         * @return The operation's result table
          */
         @NotNull
         QueryTable getTable();
@@ -265,6 +282,10 @@ public interface WhereFilter extends Filter {
 
     /**
      * Is this filter refreshing?
+     * <p>
+     * Callers may ask this any time after {@link #init(TableDefinition)}, and before {@link #beginOperation(Table)}; an
+     * implementation that cannot yet know must answer {@code true}, because every caller uses a {@code true} answer to
+     * take the conservative and provably correct path.
      *
      * @return if this filter is refreshing
      */
@@ -286,6 +307,30 @@ public interface WhereFilter extends Filter {
      * @return if this filter can be applied in parallel
      */
     default boolean permitParallelization() {
+        return true;
+    }
+
+    /**
+     * Returns true if this filter may be satisfied by pushdown rather than by its own
+     * {@link #filter(RowSet, RowSet, Table, boolean) filter()} call.
+     *
+     * <p>
+     * Pushdown treats a filter as a pure predicate over its columns, which lets a column source or data index answer it
+     * without ever calling {@code filter()}. A filter must return false when that assumption does not hold: when its
+     * {@code filter()} call carries state or side effects that later evaluation depends on, or when it performs its own
+     * index-based optimization that an external pushdown would duplicate or bypass.
+     * </p>
+     *
+     * <p>
+     * Wrappers and composed filters need not consult the filters they contain:
+     * {@link io.deephaven.engine.table.impl.PushdownFilterMatcher#canPushdownFilter(WhereFilter)} asks every filter in
+     * the tree for itself. A filter that delegates to an inner filter the tree does not expose, as {@link MatchFilter}
+     * and {@link RangeFilter} do, must answer for that inner filter.
+     * </p>
+     *
+     * @return if this filter may be pushed down
+     */
+    default boolean canPushdown() {
         return true;
     }
 

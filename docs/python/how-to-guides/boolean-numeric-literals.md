@@ -1,6 +1,5 @@
 ---
 title: Boolean and numeric literals in query strings
-sidebar_label: Boolean & numeric
 ---
 
 A literal value is one that is explicitly defined in code rather than computed or derived from other values. In the query language, literals are commonly used to define constant values in expressions. This guide covers boolean and numeric literals in query strings. Since query strings use Java syntax for literals, they follow Java conventions, which differ from Python syntax.

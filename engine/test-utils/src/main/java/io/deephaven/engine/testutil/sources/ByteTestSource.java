@@ -31,16 +31,19 @@ import java.util.function.LongConsumer;
  * The ByteTestSource is a ColumnSource used only for testing; not in live code.
  * <p>
  * It uses a fastutil open addressed hash map from long RowSet keys to byte values. Previous data is stored in a
- * completely separate map, which is copied from the primary map on the first change in a given cycle. If an
- * uninitialized key is accessed; then an IllegalStateException is thrown. The previous value map is discarded in an
- * {@link UpdateCommitter} using a {@link TerminalNotification} after the live table monitor cycle is complete.
+ * completely separate map: on the first change in a given cycle, the current map is copied into a fresh map that
+ * receives the cycle's mutations, and the prior map is retained as the previous values. A map is never mutated once it
+ * has been retained as previous, so readers access the volatile map references without locking while mutators
+ * synchronize on this source. If an uninitialized key is accessed; then an IllegalStateException is thrown. The
+ * previous value map reference is reset to the current map in an {@link UpdateCommitter} using a
+ * {@link TerminalNotification} after the live table monitor cycle is complete.
  */
 public class ByteTestSource extends AbstractColumnSource<Byte>
         implements MutableColumnSourceGetDefaults.ForByte, TestColumnSource<Byte> {
 
     private long lastAdditionTime;
-    protected final Long2ByteOpenHashMap data = new Long2ByteOpenHashMap();
-    protected Long2ByteOpenHashMap prevData;
+    protected volatile Long2ByteOpenHashMap data = new Long2ByteOpenHashMap();
+    protected volatile Long2ByteOpenHashMap prevData;
 
     private final UpdateCommitter<ByteTestSource> prevFlusher =
             new UpdateCommitter<>(this, updateGraph, ByteTestSource::flushPrevious);
@@ -116,8 +119,9 @@ public class ByteTestSource extends AbstractColumnSource<Byte>
             return;
         }
         prevFlusher.maybeActivate();
-        prevData = new Long2ByteOpenHashMap(this.data);
-        setDefaultReturnValue(prevData);
+        final Long2ByteOpenHashMap newData = this.data.clone();
+        prevData = data;
+        data = newData;
         lastAdditionTime = currentStep;
     }
 
@@ -149,13 +153,14 @@ public class ByteTestSource extends AbstractColumnSource<Byte>
     // endregion boxed get
 
     @Override
-    public synchronized byte getByte(long index) {
+    public byte getByte(long index) {
         if (index == RowSet.NULL_ROW_KEY) {
             return QueryConstants.NULL_BYTE;
         }
         // If a test asks for a non-existent positive index something is wrong.
         // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
         // has an empty redirection index entry that just gets passed through to the inner column source as -1.
+        final Long2ByteOpenHashMap data = this.data;
         final byte retVal = data.get(index);
         if (retVal == QueryConstants.NULL_BYTE && !data.containsKey(index)) {
             throw new IllegalStateException("Asking for a non-existent key: " + index);
@@ -176,15 +181,12 @@ public class ByteTestSource extends AbstractColumnSource<Byte>
     // endregion boxed getPrev
 
     @Override
-    public synchronized byte getPrevByte(long index) {
+    public byte getPrevByte(long index) {
         if (index == RowSet.NULL_ROW_KEY) {
             return QueryConstants.NULL_BYTE;
         }
 
-        if (prevData == null) {
-            return getByte(index);
-        }
-
+        final Long2ByteOpenHashMap prevData = this.prevData;
         final byte retVal = prevData.get(index);
         if (retVal == QueryConstants.NULL_BYTE && !prevData.containsKey(index)) {
             throw new IllegalStateException("Asking for a non-existent previous key: " + index);
@@ -193,7 +195,7 @@ public class ByteTestSource extends AbstractColumnSource<Byte>
     }
 
     public static void flushPrevious(ByteTestSource source) {
-        source.prevData = null;
+        source.prevData = source.data;
     }
 
     @Override

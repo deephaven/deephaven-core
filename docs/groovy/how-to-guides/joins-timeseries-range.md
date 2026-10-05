@@ -19,10 +19,7 @@ result = leftTable.joinMethod(rightTable, "ExactColumnsToMatch", "InexactColumnT
 result = leftTable.joinMethod(rightTable, "ExactColumnsToMatch, InexactColumnToMatch", "ColumnsToJoin")
 ```
 
-When using an as-of join, it's important to remember:
-
-1. Though there can be many exact match columns, the list of join keys _must_ end in a single inexact match column.
-2. In the right table, the `InexactColumnToMatch` (e.g. the timestamp join key) must be sorted.
+When using an as-of join, it's important to remember that though there can be many exact match columns, the list of join keys _must_ end in a single inexact match column.
 
 The syntax for performing a range join is as follows:
 
@@ -86,9 +83,6 @@ As-of (time series) joins combine data from a pair of tables - a left and right 
 These joins are _inexact_ joins. Instead of looking for a precise match in the right table, the operation looks for 1) the exact match if it exists, then 2) if no exact match exists, the best candidate before the exact match for [`aj`](../reference/table-operations/join/aj.md) (and the opposite for [`raj`](../reference/table-operations/join/raj.md)). These are commonly used in cases where no exact match between key column row values is guaranteed, such as when joining two tables based on the timestamp of events.
 
 The output table contains all of the rows and columns of the left table plus additional columns containing data from the right table. If no matching key exists in the right table, appended row values are `NULL`.
-
-> [!IMPORTANT]
-> The right table _must_ be sorted in respect to the column of the last (inexact) join key.
 
 ### `aj`
 

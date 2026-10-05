@@ -24,8 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.*;
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 
 public class TestCharacterDeltaAwareColumnSource {
 

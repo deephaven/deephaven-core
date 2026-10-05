@@ -7,12 +7,15 @@
 // @formatter:off
 package io.deephaven.base.ringbuffer;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class TestAggregatingIntRingBuffer extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestAggregatingIntRingBuffer {
 
     private void assertEmpty(AggregatingIntRingBuffer rb) {
         assertTrue(rb.isEmpty());
@@ -33,6 +36,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testLargeAmounts() {
         final AggregatingIntRingBuffer rb = new AggregatingIntRingBuffer(3, (int) 0, (a, b) -> (int) (a + b));
 
@@ -55,6 +59,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMinLargeAmounts() {
         final AggregatingIntRingBuffer rb =
                 new AggregatingIntRingBuffer(3, Integer.MAX_VALUE, (a, b) -> (int) Math.min(a, b));
@@ -71,6 +76,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMaxLargeAmounts() {
         final AggregatingIntRingBuffer rb =
                 new AggregatingIntRingBuffer(3, Integer.MIN_VALUE, (a, b) -> (int) Math.max(a, b));
@@ -89,6 +95,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
 
     // region non-byte-tests
 
+    @Test
     public void testEvaluateSumLargeAmounts() {
         final AggregatingIntRingBuffer rb = new AggregatingIntRingBuffer(3, (int) 0, (a, b) -> (int) (a + b));
         int runningSum = (int) 0;
@@ -123,6 +130,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
         return (int) (n * (n - 1) / 2);
     }
 
+    @Test
     public void testEvaluationEdgeCase() {
         AggregatingIntRingBuffer rb = new AggregatingIntRingBuffer(512, (int) 0, (a, b) -> (int) (a + b));
 
@@ -201,7 +209,6 @@ public class TestAggregatingIntRingBuffer extends TestCase {
             assertEquals((int) 0, rb.evaluate());
         }
 
-
         rb = new AggregatingIntRingBuffer(512, (int) 0, (a, b) -> (int) (a + b));
         // need to get the buffer to state where we have clean pushes and a wrapped pop
 
@@ -232,6 +239,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
     }
     // endregion non-byte-tests
 
+    @Test
     public void testPushPopUnsafe() {
         final AggregatingIntRingBuffer rb =
                 new AggregatingIntRingBuffer(3, (int) -Integer.MAX_VALUE, (a, b) -> (int) Math.max(a, b));
@@ -264,6 +272,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
         assertEquals((int) 99, rb.evaluate()); // last value added is max
     }
 
+    @Test
     public void testPopMultiple() {
         final AggregatingIntRingBuffer rb = new AggregatingIntRingBuffer(3, (int) 0, (a, b) -> (int) (a + b));
 
@@ -292,6 +301,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingIntRingBuffer rb = new AggregatingIntRingBuffer(4, (int) 0, (a, b) -> (int) (a + b));
@@ -302,6 +312,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
         assertEquals((int) 5, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseB() {
         // push the full capacity while wrapped
         final AggregatingIntRingBuffer rb = new AggregatingIntRingBuffer(64, (int) 0, (a, b) -> (int) (a + b));
@@ -314,6 +325,7 @@ public class TestAggregatingIntRingBuffer extends TestCase {
         assertEquals((int) 64, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseC() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingIntRingBuffer rb = new AggregatingIntRingBuffer(16, (int) 0, (a, b) -> (int) (a + b));

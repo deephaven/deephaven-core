@@ -1,6 +1,5 @@
 ---
 title: Use the ternary conditional operator in query strings
-sidebar_label: Ternary-if
 ---
 
 This guide will show you how to use the ternary conditional operator, also known as ternary-if, in query strings. The operator evaluates a boolean expression and returns the result of one of two expressions, depending on whether the boolean expression evaluates to true or false. It is similar to an inline `if-then-else` code block.

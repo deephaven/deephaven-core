@@ -1,6 +1,5 @@
 ---
 title: Use jpy
-sidebar_label: jpy
 ---
 
 [`jpy`](/core/pydoc/code/jpy.html) is a bi-directional Java-Python bridge that facilitates calling Java from Python and vice versa.

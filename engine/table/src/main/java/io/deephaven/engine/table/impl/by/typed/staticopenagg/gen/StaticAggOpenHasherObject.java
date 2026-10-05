@@ -16,6 +16,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import java.lang.Object;
@@ -50,7 +51,7 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
                 if (isStateEmpty(outputPosition)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = ChunkedOperatorAggregationHelper.allocateOutputPosition(nextOutputPosition);
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, tableLocation);
@@ -60,7 +61,9 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -103,7 +106,9 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
-                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+                if (destinationTableLocation == firstDestinationTableLocation) {
+                    throw Assert.statementNeverExecuted("destinationTableLocation wraps around to firstDestinationTableLocation");
+                }
             }
         }
     }
@@ -123,7 +128,9 @@ final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationSt
                 return positionValue;
             }
             tableLocation = nextTableLocation(tableLocation);
-            Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+            if (tableLocation == firstTableLocation) {
+                throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+            }
         }
     }
 }

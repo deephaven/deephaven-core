@@ -7,85 +7,45 @@
 // @formatter:off
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 
 public class ByteBarrageCopyKernel {
     /**
-     * Context for the ByteBarrageCopyKernel that holds the add / mod chunks as WritableByteChunk and the delta chunk
-     * size.
+     * The chunks of one side of one delta, selected by a run's encoded origin.
      */
-    private static class ByteBarrageCopyKernelContext implements BarrageCopyKernel.BarrageCopyKernelContext {
-        private final WritableByteChunk<Values>[][] addChunks;
-        private final WritableByteChunk<Values>[][] modChunks;
-        private final int deltaChunkSize;
-
-        private ByteBarrageCopyKernelContext(
-                final WritableChunk<Values>[][] addChunks,
-                final WritableChunk<Values>[][] modChunks,
-                final int deltaChunkSize) {
-            // Clone and cast the add / mod chunk arrays to WritableByteChunk.
-            // noinspection unchecked
-            this.addChunks = new WritableByteChunk[addChunks.length][];
-            for (int i = 0; i < addChunks.length; i++) {
-                if (addChunks[i] == null) {
-                    continue;
-                }
-                // noinspection unchecked
-                this.addChunks[i] = new WritableByteChunk[addChunks[i].length];
-                for (int j = 0; j < addChunks[i].length; j++) {
-                    this.addChunks[i][j] = addChunks[i][j].asWritableByteChunk();
-                }
-            }
-            // noinspection unchecked
-            this.modChunks = new WritableByteChunk[modChunks.length][];
-            for (int i = 0; i < modChunks.length; i++) {
-                if (modChunks[i] == null) {
-                    continue;
-                }
-                // noinspection unchecked
-                this.modChunks[i] = new WritableByteChunk[modChunks[i].length];
-                for (int j = 0; j < modChunks[i].length; j++) {
-                    this.modChunks[i][j] = modChunks[i][j].asWritableByteChunk();
-                }
-            }
-            this.deltaChunkSize = deltaChunkSize;
-        }
-
-        @Override
-        public int deltaChunkSize() {
-            return deltaChunkSize;
-        }
+    private static WritableByteChunk<Values>[] originChunks(
+            final long encoded,
+            final WritableByteChunk<Values>[][] addChunks,
+            final WritableByteChunk<Values>[][] modChunks) {
+        final int deltaIdx =
+                (int) ((encoded >>> BarrageCopyKernel.DELTA_INDEX_SHIFT) & BarrageCopyKernel.DELTA_INDEX_MASK);
+        return (encoded & (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT)) != 0
+                ? modChunks[deltaIdx]
+                : addChunks[deltaIdx];
     }
 
     /**
-     * Copy values from the delta chunks into the destination chunk according to the mapping. Each mapping entry encodes
-     * the source delta chunk and position, and whether it comes from an add or mod chunk. This method decodes the
-     * mapping and performs the copy for each position in the mapping.
+     * One side's chunks as the concrete chunk type, so that the copy loop makes no cast of its own and its copy call
+     * stays monomorphic. A null entry is a delta that recorded nothing on this side for this column, which the runs
+     * then never name.
      */
-    private static void copyFromDeltaChunks(
-            final long[] mapping,
-            final WritableByteChunk<Values> dest,
-            final BarrageCopyKernel.BarrageCopyKernelContext context) {
-
-        final ByteBarrageCopyKernelContext byteContext = (ByteBarrageCopyKernelContext) context;
-        final int deltaChunkSize = byteContext.deltaChunkSize();
-        final WritableByteChunk<Values>[][] addChunks = byteContext.addChunks;
-        final WritableByteChunk<Values>[][] modChunks = byteContext.modChunks;
-
-        for (int pos = 0; pos < mapping.length; ++pos) {
-            final long encoded = mapping[pos];
-            final boolean fromMods = (encoded & (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT)) != 0;
-            final int deltaIdx =
-                    (int) ((encoded >>> BarrageCopyKernel.DELTA_INDEX_SHIFT) & BarrageCopyKernel.DELTA_INDEX_MASK);
-            final long srcPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
-
-            final WritableByteChunk<Values>[] srcChunks = fromMods ? modChunks[deltaIdx] : addChunks[deltaIdx];
-            final int srcChunkIdx = (int) (srcPos / deltaChunkSize);
-            final int srcOff = (int) (srcPos % deltaChunkSize);
-            dest.set(pos, srcChunks[srcChunkIdx].get(srcOff));
+    private static WritableByteChunk<Values>[][] asTypedChunks(final WritableChunk<Values>[][] chunks) {
+        // noinspection unchecked
+        final WritableByteChunk<Values>[][] typed = new WritableByteChunk[chunks.length][];
+        for (int di = 0; di < chunks.length; ++di) {
+            if (chunks[di] == null) {
+                continue;
+            }
+            // noinspection unchecked
+            typed[di] = new WritableByteChunk[chunks[di].length];
+            for (int ci = 0; ci < chunks[di].length; ++ci) {
+                typed[di][ci] = chunks[di][ci].asWritableByteChunk();
+            }
         }
+        return typed;
     }
 
     /**
@@ -93,14 +53,49 @@ public class ByteBarrageCopyKernel {
      */
     private static class ByteBarrageCopyKernelImpl implements BarrageCopyKernel {
         @Override
-        public BarrageCopyKernelContext makeContext(WritableChunk<Values>[][] addChunks,
-                WritableChunk<Values>[][] modChunks, int deltaChunkSize) {
-            return new ByteBarrageCopyKernelContext(addChunks, modChunks, deltaChunkSize);
-        }
+        public void copy(
+                final Runs runs,
+                final WritableChunk<Values>[] dest,
+                final WritableChunk<Values>[][] addChunks,
+                final WritableChunk<Values>[][] modChunks,
+                final int deltaChunkSize) {
+            Assert.eqTrue(Integer.bitCount(deltaChunkSize) == 1, "deltaChunkSize is a power of two");
 
-        @Override
-        public void copyFromDeltaChunks(long[] mapping, WritableChunk<Values> dest, BarrageCopyKernelContext context) {
-            ByteBarrageCopyKernel.copyFromDeltaChunks(mapping, dest.asWritableByteChunk(), context);
+            // Cast every chunk once, here, rather than per run: the loop below then sees only the concrete chunk type
+            // and its copy inlines.
+            // noinspection unchecked
+            final WritableByteChunk<Values>[] typedDest = new WritableByteChunk[dest.length];
+            for (int ii = 0; ii < dest.length; ++ii) {
+                typedDest[ii] = dest[ii].asWritableByteChunk();
+            }
+            final WritableByteChunk<Values>[][] typedAddChunks = asTypedChunks(addChunks);
+            final WritableByteChunk<Values>[][] typedModChunks = asTypedChunks(modChunks);
+
+            // Every chunk holds deltaChunkSize rows but the last of a column, so a position's chunk and its offset
+            // within that chunk are a shift and a mask.
+            final int chunkShift = Integer.numberOfTrailingZeros(deltaChunkSize);
+            final long offsetMask = deltaChunkSize - 1;
+
+            for (int ri = 0; ri < runs.count; ++ri) {
+                final long encoded = runs.encoded[ri];
+                final WritableByteChunk<Values>[] originChunks =
+                        originChunks(encoded, typedAddChunks, typedModChunks);
+
+                long originPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
+                long destPos = runs.dest[ri];
+                long remaining = runs.len[ri];
+                while (remaining > 0) {
+                    final int originOff = (int) (originPos & offsetMask);
+                    final int destOff = (int) (destPos & offsetMask);
+                    final int length = (int) Math.min(remaining,
+                            Math.min(deltaChunkSize - originOff, deltaChunkSize - destOff));
+                    typedDest[(int) (destPos >>> chunkShift)].copyFromTypedChunk(
+                            originChunks[(int) (originPos >>> chunkShift)], originOff, destOff, length);
+                    originPos += length;
+                    destPos += length;
+                    remaining -= length;
+                }
+            }
         }
     }
 

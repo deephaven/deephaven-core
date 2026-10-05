@@ -36,11 +36,11 @@ Both utilities require:
 
 ## `SyncTableFilter`
 
-`SyncTableFilter` synchronizes multiple peer tables by showing only rows where all tables have the same minimum ID for each key.
+`SyncTableFilter` synchronizes multiple peer tables by showing, for each key, only the rows at the highest ID that all tables currently share.
 
 ### How it works
 
-For each key, the filter identifies the minimum ID value across all input tables. Only rows with that minimum ID are passed through. When all tables advance to the next ID, the filter removes the old ID's rows and adds the new ID's rows.
+For each key, the filter finds the highest ID for which every input table has a matching row, and passes through only the rows at that ID. When the tables receive new data and reach a higher commonly available ID, the filter removes the previous ID's rows and adds the new ID's rows.
 
 ### Example
 
@@ -82,10 +82,9 @@ syncedBidAsk = result.get("bidAsk")
 
 In this example:
 
-- For `AAPL`, all three tables have `SeqNum` 1 and 2, so those rows appear in the synchronized results.
-- For `AAPL`, only `priceData` has `SeqNum` 3, so that row is filtered out.
-- For `GOOGL`, only `bidAskData` is missing `SeqNum` 2, so only rows with `SeqNum` 1 appear.
-- When `bidAskData` receives `SeqNum` 2 for `GOOGL`, the filter will advance to show those rows.
+- For `AAPL`, `priceData` has `SeqNum` 1, 2, and 3, but `volumeData` and `bidAskData` only go up to `SeqNum` 2. The highest ID common to all three is 2, so only the `SeqNum` 2 rows appear in the synchronized results.
+- For `GOOGL`, `priceData` and `volumeData` have `SeqNum` 1 and 2, but `bidAskData` only has `SeqNum` 1. The highest common ID is 1, so only the `SeqNum` 1 rows appear.
+- When `bidAskData` receives `SeqNum` 2 for `GOOGL`, the filter advances to show those rows instead, replacing the `SeqNum` 1 rows.
 
 ### API
 
@@ -114,7 +113,7 @@ syncedTable = result.get(tableName)
 
 ### How it works
 
-The leader table contains one ID column for each follower table. When the leader table has a row with specific ID values, the filter shows the corresponding rows from each follower table that match those IDs.
+The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key, once every follower's ID is satisfied. An ID is satisfied either by a matching row in that follower table, or by a null, which is always treated as satisfied but yields no rows for that follower. An earlier leader row for that key is superseded once a later one is fully satisfied.
 
 ### Example
 
@@ -158,8 +157,8 @@ filteredMessages = result.get("messages")
 
 In this example:
 
-- The `syncLog` leader table controls which trades and messages appear.
-- For `ClientA/S1`, the leader shows `TradeId` 100 and 101, and `MessageId` 1 and 2.
+- The `syncLog` leader table controls which trades and messages appear. Only the most recent leader row per key is shown once its IDs are matched in every follower table.
+- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `tradeLog` and `messageLog`. However, only the most recent match — `TradeId` 101 and `MessageId` 2 — appears in the synchronized results.
 - Even though `tradeLog` has `Id` 102 and `messageLog` has `MsgId` 3, they don't appear because the leader hasn't referenced them yet.
 - For `ClientB/S2`, only trade 200 and message 5 appear.
 
@@ -195,9 +194,12 @@ filteredFollower = result.get(tableName)
 `LeaderTableFilter.PartitionedTableBuilder` works with partitioned tables:
 
 ```groovy syntax
-builder = new LeaderTableFilter.PartitionedTableBuilder(leaderPartitionedTable)
-builder.addTable(name, followerPartitionedTable, "leaderIdCol=followerIdCol")
+builder = new LeaderTableFilter.PartitionedTableBuilder(leaderPartitionedTable, keyColumn1, keyColumn2, ...)
+builder.addPartitionedTable(name, followerPartitionedTable, "leaderIdCol=followerIdCol")
 result = builder.build()
+
+filteredLeader = result.getLeader()
+filteredFollower = result.get(name)
 ```
 
 Requirements:

@@ -3,9 +3,11 @@
 //
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
-public class TestReadOptimizedConcurrentCache extends BaseArrayTestCase {
+import static org.junit.Assert.*;
+
+public class TestReadOptimizedConcurrentCache {
 
     private static class Value extends ReadOptimizedConcurrentCache.Pair<String> {
         Value(int key, String value) {
@@ -23,6 +25,7 @@ public class TestReadOptimizedConcurrentCache extends BaseArrayTestCase {
         return new Value(key, c.toString().toUpperCase());
     }
 
+    @Test
     public void testCache() {
         final ReadOptimizedConcurrentCache<Value> cache =
                 new ReadOptimizedConcurrentCache<>(10, TestReadOptimizedConcurrentCache::makeVal);

@@ -62,19 +62,12 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final ChunkWriter.Context context,
-            @NotNull final RowSequence subset) {
-        // The REE parent array never contains nulls; nullability lives in the values child.
-        return 0;
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final ChunkWriter.Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
-        // REE parent has no validity buffer.
+            @NotNull final ValidityBuffer validity) {
+        // The REE parent array never contains nulls (so it has no validity buffer); nullability lives in the values
+        // child. Leaving the bitmap empty reports a null count of zero, which suppresses the buffer.
     }
 
     @Override

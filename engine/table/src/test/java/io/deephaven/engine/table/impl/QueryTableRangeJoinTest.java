@@ -24,9 +24,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import junit.framework.AssertionFailedError;
 
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.vector.IntVector;
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
@@ -61,6 +63,81 @@ public class QueryTableRangeJoinTest {
     public void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
     }
+
+    // region compare-equal object tests
+
+    /**
+     * BigDecimal range values that differ only in scale compare equal, so right rows with 1.0, 1.00, 1.000 and 1 are
+     * one run of equal range values: each range includes all of the run or none of it, whatever the scale of the left
+     * start and end values.
+     */
+    @Test
+    public void testBigDecimalCompareEqualRightRangeValues() {
+        final BigDecimal[] rightValues = {new BigDecimal("0.5"), new BigDecimal("1.0"), new BigDecimal("1.00"),
+                new BigDecimal("1.000"), new BigDecimal("1"), new BigDecimal("2")};
+        final BigDecimal[] leftStarts = {new BigDecimal("1"), new BigDecimal("0.5"), new BigDecimal("1.0"),
+                new BigDecimal("0"), new BigDecimal("1.00"), new BigDecimal("0.7"), new BigDecimal("1.5")};
+        final BigDecimal[] leftEnds = {new BigDecimal("2"), new BigDecimal("1.00"), new BigDecimal("1.000"),
+                new BigDecimal("3"), new BigDecimal("1"), new BigDecimal("1.5"), new BigDecimal("1.7")};
+        final Table right = TableTools.newTable(
+                TableTools.col("RRV", rightValues),
+                TableTools.intCol("Sentinel", 0, 1, 2, 3, 4, 5));
+        final Table left = TableTools.newTable(
+                TableTools.col("LSV", leftStarts),
+                TableTools.col("LEV", leftEnds));
+
+        for (final boolean startInclusive : new boolean[] {false, true}) {
+            for (final boolean endInclusive : new boolean[] {false, true}) {
+                final String match = "LSV " + (startInclusive ? "<=" : "<") + " RRV " + (endInclusive ? "<=" : "<")
+                        + " LEV";
+                final Table result = left.rangeJoin(right, List.of(match), List.of(AggGroup("Sentinel")));
+                for (int li = 0; li < leftStarts.length; ++li) {
+                    final List<Integer> expected = new ArrayList<>();
+                    for (int ri = 0; ri < rightValues.length; ++ri) {
+                        final int startComparison = leftStarts[li].compareTo(rightValues[ri]);
+                        final int endComparison = rightValues[ri].compareTo(leftEnds[li]);
+                        if ((startInclusive ? startComparison <= 0 : startComparison < 0)
+                                && (endInclusive ? endComparison <= 0 : endComparison < 0)) {
+                            expected.add(ri);
+                        }
+                    }
+                    checkSentinels(match + ", left row " + li, expected, result, li);
+                }
+            }
+        }
+
+        final String allowMatch = "<- LSV <= RRV <= LEV";
+        final Table allowResult = left.rangeJoin(right, List.of(allowMatch), List.of(AggGroup("Sentinel")));
+        for (int li = 0; li < leftStarts.length; ++li) {
+            int first = 0;
+            while (first < rightValues.length && rightValues[first].compareTo(leftStarts[li]) < 0) {
+                ++first;
+            }
+            if (first > 0 && (first == rightValues.length || rightValues[first].compareTo(leftStarts[li]) != 0)) {
+                --first;
+            }
+            final List<Integer> expected = new ArrayList<>();
+            for (int ri = first; ri < rightValues.length && rightValues[ri].compareTo(leftEnds[li]) <= 0; ++ri) {
+                expected.add(ri);
+            }
+            checkSentinels(allowMatch + ", left row " + li, expected, allowResult, li);
+        }
+    }
+
+    private static void checkSentinels(final String context, final List<Integer> expected, final Table result,
+            final int rowPosition) {
+        final IntVector actual = (IntVector) result.getColumnSource("Sentinel")
+                .get(result.getRowSet().get(rowPosition));
+        final List<Integer> actualList = new ArrayList<>();
+        if (actual != null) {
+            for (int ii = 0; ii < actual.size(); ++ii) {
+                actualList.add(actual.get(ii));
+            }
+        }
+        assertThat(actualList).as(context).isEqualTo(expected);
+    }
+
+    // endregion compare-equal object tests
 
     // region validation tests
 
@@ -503,7 +580,7 @@ public class QueryTableRangeJoinTest {
                             final long expectedRangeSize = adjustment + (indexRangeSize - adjustment) * multiplier;
                             assertThat(actualRangeSize).isEqualTo(expectedRangeSize);
                         }
-                    } catch (AssertionFailedError e) {
+                    } catch (AssertionError e) {
                         throw new AssertionError(String.format("Failure for type %s at row position %s",
                                 type, rowPosition), e);
                     }

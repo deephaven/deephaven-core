@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ByteChunkSsaStamp and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+// ****** Edit CharChunkSsaStamp and run "./gradlew replicateSegmentedSortedArray" to regenerate
 //
 // @formatter:off
 
@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.util.compare.ByteComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -35,10 +36,10 @@ public class ByteReverseChunkSsaStamp implements ChunkSsaStamp {
     private static void processEntry(ByteChunk<Values> leftStampValues, Chunk<RowKeys> leftStampKeys,
             ByteReverseSegmentedSortedArray ssa, WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
         final int leftSize = leftStampKeys.size();
+        rightKeysForLeft.setSize(leftSize);
         final long rightSize = ssa.size();
         if (rightSize == 0) {
             rightKeysForLeft.fillWithValue(0, leftSize, RowSequence.NULL_ROW_KEY);
-            rightKeysForLeft.setSize(leftSize);
             return;
         }
 
@@ -249,7 +250,7 @@ public class ByteReverseChunkSsaStamp implements ChunkSsaStamp {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(byte lhs, byte rhs) {
-        return -1 * Byte.compare(lhs, rhs);
+        return -1 * ByteComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

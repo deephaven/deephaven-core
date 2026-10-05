@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.util.datastructures.hash.NullableLongLongMap;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 
 class RowRedirectionLockFreeFactory implements WritableRowRedirection.Factory {
     @Override

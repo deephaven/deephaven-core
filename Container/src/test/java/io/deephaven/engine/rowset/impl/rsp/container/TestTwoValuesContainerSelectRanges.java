@@ -48,7 +48,7 @@ public class TestTwoValuesContainerSelectRanges {
         final List<Integer> expected = List.of(a, a + 1, b, b + 1);
         for (final Container c : new Container[] {
                 Container.twoValues((short) a, (short) b),
-                new ArrayContainer(new short[] {(short) a, (short) b}, 2),
+                new ArrayContainer(new short[] {(short) a, (short) b}),
                 new RunContainer(a, a + 1, b, b + 1),
                 new BitmapContainer().iset((short) a).iset((short) b),
         }) {

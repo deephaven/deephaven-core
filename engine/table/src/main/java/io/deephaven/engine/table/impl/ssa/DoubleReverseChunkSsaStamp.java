@@ -2,14 +2,12 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit DoubleChunkSsaStamp and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+// ****** Edit CharChunkSsaStamp and run "./gradlew replicateSegmentedSortedArray" to regenerate
 //
 // @formatter:off
 
 
 package io.deephaven.engine.table.impl.ssa;
-
-import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -18,6 +16,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.util.compare.DoubleComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -37,10 +36,10 @@ public class DoubleReverseChunkSsaStamp implements ChunkSsaStamp {
     private static void processEntry(DoubleChunk<Values> leftStampValues, Chunk<RowKeys> leftStampKeys,
             DoubleReverseSegmentedSortedArray ssa, WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
         final int leftSize = leftStampKeys.size();
+        rightKeysForLeft.setSize(leftSize);
         final long rightSize = ssa.size();
         if (rightSize == 0) {
             rightKeysForLeft.fillWithValue(0, leftSize, RowSequence.NULL_ROW_KEY);
-            rightKeysForLeft.setSize(leftSize);
             return;
         }
 
@@ -249,6 +248,7 @@ public class DoubleReverseChunkSsaStamp implements ChunkSsaStamp {
     }
 
     // region comparison functions
+    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(double lhs, double rhs) {
         return -1 * DoubleComparisons.compare(lhs, rhs);
     }

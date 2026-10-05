@@ -16,6 +16,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ByteChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
 import io.deephaven.util.type.TypeUtils;
@@ -67,12 +68,14 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = ChunkedOperatorAggregationHelper.allocateOutputPosition(nextOutputPosition);
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
@@ -82,7 +85,9 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -105,7 +110,9 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
@@ -119,7 +126,9 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
                             break;
                         }
                         alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        if (alternateTableLocation == firstAlternateTableLocation) {
+                            throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                        }
                     }
                 }
                 if (!alternateFound) {
@@ -211,7 +220,9 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
-                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+                if (destinationTableLocation == firstDestinationTableLocation) {
+                    throw Assert.statementNeverExecuted("destinationTableLocation wraps around to firstDestinationTableLocation");
+                }
             }
         }
     }
@@ -239,14 +250,18 @@ final class IncrementalAggOpenHasherByte extends IncrementalChunkedOperatorAggre
                         return alternatePositionValue;
                     }
                     alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                    Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                    if (alternateTableLocation == firstAlternateTableLocation) {
+                        throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                    }
                 }
             }
             if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                 return positionValue;
             }
             tableLocation = nextTableLocation(tableLocation);
-            Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+            if (tableLocation == firstTableLocation) {
+                throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+            }
         }
     }
 }

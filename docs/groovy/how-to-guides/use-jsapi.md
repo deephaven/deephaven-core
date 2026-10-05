@@ -1,6 +1,5 @@
 ---
 title: Use the JS API
-sidebar_label: JS API
 ---
 
 In this guide, you'll learn how to create a basic web page and use the JS API to create a table in Deephaven and display it. The Deephaven JS API is used to connect to a Deephaven Community Core instance from a browser or `node.js` application. It manages all your server connections, table tracking, and server communications. The Deephaven Console experience is created using our JS API.

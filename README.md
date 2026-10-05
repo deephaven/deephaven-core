@@ -44,7 +44,7 @@ The following list contains documentation links for installation instructions an
 - [Java client](https://deephaven.io/core/docs/how-to-guides/java-client/)
 - [JS client](https://deephaven.io/core/client-api/javascript/modules/dh.html)
 - [Go client](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
-- [R client](https://github.com/deephaven/deephaven-core/blob/main/R/rdeephaven/README.md)
+- [R client](https://github.com/deephaven/deephaven-core/blob/main/R/README.md)
 
 ## Install and run Deephaven
 

@@ -35,16 +35,12 @@ public class NullChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     }
 
     @Override
-    protected int computeNullCount(@NotNull final Context context, @NotNull final RowSequence subset) {
-        return subset.intSize("NullChunkWriter");
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
-        // nothing to do; this is a null column
+            @NotNull final ValidityBuffer validity) {
+        // every element of a null column is null
+        validity.setNextAreNull(subset.intSize(DEBUG_NAME));
     }
 
     public static class NullDrainableColumn extends DrainableColumn {

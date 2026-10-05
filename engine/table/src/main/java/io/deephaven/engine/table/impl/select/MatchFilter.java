@@ -9,6 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
@@ -51,12 +52,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /** A fail-over WhereFilter supplier should the match filter initialization fail. */
     private final CachingSupplier<ConditionFilter> failoverFilter;
+    /**
+     * Whether init failed over, so that this filter delegates to the (initialized) failover. That the supplier has
+     * cached a failover is no substitute: copies, renames and a failover whose own init failed all fill its cache
+     * without this filter failing over.
+     */
+    private boolean failedOver;
 
     @NotNull
     private String columnName;
     private Class<?> columnType;
     private Object[] values;
-    private final String[] strValues;
+    private String[] strValues;
     private final MatchOptions matchOptions;
 
     private boolean initialized;
@@ -66,18 +73,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
      *
      * @param matchOptions options controlling how the match is performed
      * @param columnName the column name to match against
-     * @param values the values to match
+     * @param values the values to match, any of which may be null
      */
     public MatchFilter(
             @NotNull final MatchOptions matchOptions,
             @NotNull final String columnName,
-            @Nullable final Object... values) {
+            @NotNull final Object... values) {
         this(null, matchOptions, columnName, null, values);
     }
 
     /**
      * Create a new MatchFilter with either string values (which may be converted to actual values) or a list of values
-     * to match.
+     * to match. Exactly one of {@code strValues} and {@code values} must be non-null.
      *
      * @param failoverFilter a fail-over WhereFilter supplier should the match filter initialization fail
      * @param matchOptions options controlling how the match is performed
@@ -95,20 +102,30 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         this.failoverFilter = failoverFilter;
         this.matchOptions = matchOptions;
         this.columnName = columnName;
-        if (strValues != null && values != null) {
-            throw new IllegalArgumentException("Only one of `strValues` or `values` should be specified");
+        if ((strValues == null) == (values == null)) {
+            throw new IllegalArgumentException("Exactly one of `strValues` or `values` must be specified");
         }
         this.strValues = strValues;
         this.values = values;
     }
 
+    /**
+     * @return the {@link ConditionFilter} this filter delegates to because init failed over, or null if it did not
+     */
     @InternalUseOnly
     @Nullable
-    public ConditionFilter getFailoverFilterIfCached() {
-        return failoverFilter != null ? failoverFilter.getIfCached() : null;
+    public ConditionFilter getFailoverFilter() {
+        return failedOver ? failoverFilter.get() : null;
     }
 
     public WhereFilter renameFilter(Map<String, String> renames) {
+        final ConditionFilter failover = getFailoverFilter();
+        if (failover != null) {
+            // The failover defines this filter, and uses columns that the renames may cover without covering ours. A
+            // renamed MatchFilter would re-convert its values against the renamed table, where a column this filter
+            // compares with may instead resolve as a query-scope variable.
+            return failover.renameFilter(renames);
+        }
         final String newName = renames.get(columnName);
         Assert.neqNull(newName, "newName");
         if (strValues == null) {
@@ -122,6 +139,91 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
     }
 
+    /**
+     * Returns {@code searchValues} with any NaN removed, or {@code searchValues} itself when there is nothing to
+     * remove. This is what upholds the {@link #getValues()} contract for primitive floating-point columns.
+     *
+     * <p>
+     * Without {@link MatchOptions#nanMatch()} a match follows IEEE 754, where NaN is equal to nothing at all -- itself
+     * included -- so a NaN among the values can never match a row. Removing it therefore does not change what this
+     * filter selects, and it leaves a value set that means the same thing to a consumer matching with NaN equal to
+     * itself, which is what consumers are permitted to do.
+     */
+    private Object[] maybeDropNaN(final Object[] searchValues) {
+        if (searchValues == null || matchOptions.nanMatch()
+                || (columnType != double.class && columnType != float.class)) {
+            return searchValues;
+        }
+        int nanCount = 0;
+        for (final Object value : searchValues) {
+            if (isNaN(value)) {
+                ++nanCount;
+            }
+        }
+        if (nanCount == 0) {
+            return searchValues;
+        }
+        final Object[] retained = new Object[searchValues.length - nanCount];
+        int nextIndex = 0;
+        for (final Object value : searchValues) {
+            if (!isNaN(value)) {
+                retained[nextIndex++] = value;
+            }
+        }
+        return retained;
+    }
+
+    /**
+     * Removes from {@code searchValues} the values that can never match a row of this column, so that {@link #values}
+     * holds only values a consumer can match by the column's own comparison. This is the last step of {@link #init}:
+     * call it on the final, converted value array, after {@link #maybeDropNaN}, on every path that assigns
+     * {@link #values}. {@link #maybeDropNaN} handles the one other unmatchable value, NaN on a primitive floating-point
+     * column; between them they uphold the {@link #getValues()} contract.
+     *
+     * <p>
+     * Only a {@link BigDecimal} column has anything to drop here. It is matched by
+     * {@link BigDecimal#compareTo(BigDecimal)}, as the query language's {@code ==} matches it, and only a
+     * {@link BigDecimal} can be compared that way. The convertor passes a query-scope variable or a direct value of
+     * another type through as it is -- an {@link Integer} {@code 5} for a {@code BigDecimal} column, say -- and no row
+     * of the column can match such a value. Null is kept: it matches a null cell.
+     *
+     * <p>
+     * Dropping the value does not change which rows the filter selects, but it protects the consumers of
+     * {@link #getValues()}. The column's chunk filter ({@code BigDecimalChunkMatchFilterFactory}) skips a value of
+     * another type itself, but the sorted-column pushdown ({@code SortedColumnPushdownManager} and the region binary
+     * search kernels) locates every value by ordering, and {@code compareTo} between a {@link BigDecimal} and a value
+     * of another type throws {@link ClassCastException}.
+     *
+     * @param searchValues the converted values
+     * @return {@code searchValues} without the values that can never match, or {@code searchValues} itself when there
+     *         is nothing to remove, which is always the case for a column of any other type
+     */
+    private Object[] dropUnmatchable(final Object[] searchValues) {
+        if (searchValues == null || columnType != BigDecimal.class) {
+            return searchValues;
+        }
+        final Object[] retained =
+                Arrays.stream(searchValues).filter(value -> value == null || value instanceof BigDecimal).toArray();
+        return retained.length == searchValues.length ? searchValues : retained;
+    }
+
+    private static boolean isNaN(final Object value) {
+        return value instanceof Double && ((Double) value).isNaN()
+                || value instanceof Float && ((Float) value).isNaN();
+    }
+
+    /**
+     * The values this filter matches against, normalized so that they may be matched by value equality that holds NaN
+     * equal to itself -- the type's {@code *Comparisons.eq}, or {@link java.util.Objects#equals}, for instance. A
+     * {@link BigDecimal} matches by {@link BigDecimal#compareTo(BigDecimal)} instead, as the query language's
+     * {@code ==} does, so {@code 5.0} matches {@code 5.00}.
+     *
+     * <p>
+     * The filter's own NaN semantics are already applied here, so a consumer does not need to consult
+     * {@link MatchOptions#nanMatch()} to match correctly. On a primitive floating-point column without that option a
+     * match follows IEEE 754, under which NaN matches nothing, and any NaN has been removed accordingly; anywhere NaN
+     * remains, matching it is what this filter intends.
+     */
     public Object[] getValues() {
         return values;
     }
@@ -139,7 +241,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         if (!initialized) {
             throw new IllegalStateException("Filter must be initialized to invoke getColumnName");
         }
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.getColumns();
         }
@@ -151,11 +253,41 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         if (!initialized) {
             throw new IllegalStateException("Filter must be initialized to invoke getColumnArrays");
         }
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.getColumnArrays();
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public boolean hasVirtualRowVariables() {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke hasVirtualRowVariables");
+        }
+        final WhereFilter failover = getFailoverFilter();
+        return failover != null && failover.hasVirtualRowVariables();
+    }
+
+    @Override
+    public boolean canPushdown() {
+        // The failover is not visible to a walk of the filter tree, so answer for it here.
+        final WhereFilter failover = getFailoverFilter();
+        return failover == null || failover.canPushdown();
+    }
+
+    @Override
+    public void validateSafeForRefresh(final BaseTable<?> sourceTable) {
+        final WhereFilter failover = getFailoverFilter();
+        if (failover != null) {
+            failover.validateSafeForRefresh(sourceTable);
+        }
+    }
+
+    @Override
+    public boolean permitParallelization() {
+        final WhereFilter failover = getFailoverFilter();
+        return failover == null || failover.permitParallelization();
     }
 
     @Override
@@ -178,7 +310,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     // fix up for the case where column name and variable name were swapped
                     String tmp = columnName;
                     columnName = strValues[0];
-                    strValues[0] = tmp;
+                    strValues = new String[] {tmp};
                 } else {
                     throw new RuntimeException("Column \"" + columnName
                             + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
@@ -186,6 +318,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             }
             columnType = column.getDataType();
             if (strValues == null) {
+                values = dropUnmatchable(maybeDropNaN(values));
                 initialized = true;
                 return;
             }
@@ -196,7 +329,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
-            values = valueList.toArray();
+            values = dropUnmatchable(maybeDropNaN(valueList.toArray()));
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;
@@ -206,6 +339,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             } catch (final RuntimeException ignored) {
                 throw err;
             }
+            failedOver = true;
         }
         initialized = true;
     }
@@ -214,7 +348,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     @Override
     public WritableRowSet filter(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.filter(selection, fullSet, table, usePrev);
         }
@@ -230,7 +364,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             @NotNull final RowSet fullSet,
             @NotNull final Table table,
             final boolean usePrev) {
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.filterInverse(selection, fullSet, table, usePrev);
         }
@@ -245,7 +379,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     @Override
     public Optional<ChunkFilter> chunkFilter() {
         if (chunkFilter == null) {
-            final WhereFilter failover = getFailoverFilterIfCached();
+            final WhereFilter failover = getFailoverFilter();
             if (failover != null) {
                 if (failover instanceof ExposesChunkFilter) {
                     return ((ExposesChunkFilter) failover).chunkFilter();
@@ -262,7 +396,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     @Override
     public boolean isSimpleFilter() {
-        final WhereFilter failover = getFailoverFilterIfCached();
+        final WhereFilter failover = getFailoverFilter();
         if (failover != null) {
             return failover.isSimpleFilter();
         }
@@ -272,11 +406,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /**
      * Return an {@link Optional} containing the {@link MatchFilter} if the provided filter is a match filter that can
-     * be pushed down (i.e. is not implemented by a ConditionFilter). Otherwise returns {@code Optional.empty()}.
+     * be pushed down (i.e. is not implemented by a ConditionFilter, and has values to match). Otherwise returns
+     * {@code Optional.empty()}.
      */
     public static Optional<MatchFilter> extractMatchFilter(WhereFilter filter) {
-        if (filter instanceof MatchFilter &&
-                ((MatchFilter) filter).getFailoverFilterIfCached() == null) {
+        if (filter instanceof MatchFilter
+                && ((MatchFilter) filter).getFailoverFilter() == null
+                && ((MatchFilter) filter).getValues() != null) {
             return Optional.of((MatchFilter) filter);
         }
         return Optional.empty();
@@ -666,7 +802,6 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     @Override
                     Object convertParamValue(Object paramValue) {
                         if (paramValue instanceof String) {
-                            System.out.println("MatchFilter debug: Converting " + paramValue + " to CompressedString");
                             return new CompressedString((String) paramValue);
                         }
                         if (paramValue instanceof PyObject && ((PyObject) paramValue).isString()) {
@@ -849,7 +984,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             return false;
         }
 
-        return Objects.equals(getFailoverFilterIfCached(), that.getFailoverFilterIfCached());
+        return Objects.equals(getFailoverFilter(), that.getFailoverFilter());
     }
 
     @Override
@@ -867,13 +1002,15 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     @Override
     public boolean canMemoize() {
         // we can be memoized once our values have been initialized; but not before
-        return initialized && (getFailoverFilterIfCached() == null || getFailoverFilterIfCached().canMemoize());
+        return initialized && (getFailoverFilter() == null || getFailoverFilter().canMemoize());
     }
 
     @Override
     public WhereFilter copy() {
         final MatchFilter copy;
         if (strValues != null) {
+            // The supplier copies our failover lazily: a copy that fails over (below) gets a copy of our initialized
+            // failover, and one that does not still needs it so that a renameFilter() of the copy can fail over.
             copy = new MatchFilter(
                     failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
                     matchOptions, columnName, strValues, null);
@@ -883,8 +1020,12 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
         if (initialized) {
             copy.initialized = true;
+            // a chunk filter holds no state of its own, so the copy shares ours rather than building another
+            copy.chunkFilter = chunkFilter;
             copy.values = values;
             copy.columnType = columnType;
+            // If we failed over, the copy must too, or it would claim to be initialized without any values to match.
+            copy.failedOver = failedOver;
         }
         return copy;
     }

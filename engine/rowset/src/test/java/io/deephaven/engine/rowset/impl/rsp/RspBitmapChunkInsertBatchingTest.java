@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rangesOf;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rangesOfSortedKeys;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.render;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.unionRanges;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
@@ -271,5 +275,107 @@ public class RspBitmapChunkInsertBatchingTest {
             }
             assertKeysAre(expected, addValues(rb, arr));
         }
+    }
+
+    private static void checkAddValues(final RspBitmap rb, final long... values) {
+        // Compared as ranges: the fixtures hold whole blocks, far too many keys to enumerate.
+        final String expected = render(unionRanges(rangesOf(rb), rangesOfSortedKeys(values)));
+        assertEquals(expected, render(rangesOf(addValues(rb, values))));
+    }
+
+    private static RspBitmap fullBlocks(final RspBitmap rb, final long firstBlock, final long lastBlock) {
+        return rb.appendRangeUnsafe(firstBlock * BS, (lastBlock + 1) * BS - 1);
+    }
+
+    private static RspBitmap allButLastKey(final RspBitmap rb, final long block) {
+        return rb.appendRangeUnsafe(block * BS, (block + 1) * BS - 2);
+    }
+
+    /**
+     * Completing a block next to a full block span, then opening a new block, over and over. Each completion used to
+     * settle every pending insert before it could merge, which made the chunk quadratic in the number of groups.
+     */
+    @Test
+    public void testRepeatedCompletionsNextToFullBlocksWithNewBlocksBetween() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        final int groups = 24;
+        for (int j = 0; j < groups; ++j) {
+            rb = fullBlocks(rb, 3L * j, 3L * j);
+            rb = allButLastKey(rb, 3L * j + 1);
+        }
+        rb.finishMutations();
+        final long[] values = new long[2 * groups];
+        for (int j = 0; j < groups; ++j) {
+            values[2 * j] = (3L * j + 2) * BS - 1; // completes block 3j+1, adjacent to the full block 3j
+            values[2 * j + 1] = (3L * j + 2) * BS + 5; // a new block
+        }
+        checkAddValues(rb, values);
+    }
+
+    /** A pending full block span, extended by two later completions: a new block, then an existing one. */
+    @Test
+    public void testPendingFullBlockSpanExtendedByLaterCompletions() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.appendRangeUnsafe(5, 40);
+        rb = allButLastKey(rb, 4);
+        rb = rb.appendRangeUnsafe(6 * BS + 5, 6 * BS + 40);
+        rb.finishMutations();
+        final List<Long> values = new ArrayList<>();
+        for (long k = 2 * BS; k < 4 * BS; ++k) {
+            values.add(k); // blocks 2 and 3 in full: two new blocks, the second extending the first's pending span
+        }
+        values.add(5 * BS - 1); // completes block 4, which exists, adjacent to the pending span
+        values.add(6 * BS + 41); // an existing block that stays a container
+        checkAddValues(rb, values.stream().mapToLong(Long::longValue).toArray());
+    }
+
+    /** A completion absorbs the full block span to its right; later values fall inside the merged span. */
+    @Test
+    public void testRightNeighbourAbsorbedThenValuesInsideIt() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = allButLastKey(rb, 1);
+        rb = fullBlocks(rb, 2, 4);
+        rb = rb.appendRangeUnsafe(6 * BS + 5, 6 * BS + 40);
+        rb.finishMutations();
+        checkAddValues(rb,
+                2 * BS - 1, // completes block 1, absorbing blocks 2..4
+                2 * BS + 7, 3 * BS + 7, 4 * BS + 7, // inside the merged span
+                5 * BS + 9, // a new block right after it, not full
+                6 * BS + 41);
+    }
+
+    /** A new block filled in one go between two full block spans of ours joins the three into one. */
+    @Test
+    public void testNewBlockBridgingTwoFullBlockSpans() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = fullBlocks(rb, 0, 1);
+        rb = fullBlocks(rb, 3, 4);
+        rb = rb.appendRangeUnsafe(7 * BS + 5, 7 * BS + 40);
+        rb.finishMutations();
+        final List<Long> values = new ArrayList<>();
+        for (long k = 2 * BS; k < 3 * BS; ++k) {
+            values.add(k);
+        }
+        for (long k = 5 * BS; k < 6 * BS; ++k) {
+            values.add(k); // a new block adjacent to the span just merged, extending it again
+        }
+        values.add(7 * BS + 41);
+        checkAddValues(rb, values.stream().mapToLong(Long::longValue).toArray());
+    }
+
+    /** After a completion folds our slot into the span on its left, the next block's left neighbour is that mark. */
+    @Test
+    public void testConsecutiveCompletionsFoldingLeft() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = fullBlocks(rb, 0, 0);
+        rb = allButLastKey(rb, 1);
+        rb = allButLastKey(rb, 2);
+        rb = rb.appendRangeUnsafe(4 * BS + 5, 4 * BS + 40);
+        rb.finishMutations();
+        checkAddValues(rb,
+                2 * BS - 1, // completes block 1: folds into block 0's span
+                3 * BS - 1, // completes block 2: its left slot is the mark, the span to extend is block 0's
+                3 * BS + 9, // a new block adjacent to the merged span, not full
+                4 * BS + 41);
     }
 }

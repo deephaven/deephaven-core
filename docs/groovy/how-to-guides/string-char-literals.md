@@ -1,7 +1,6 @@
 ---
 id: string-char-literals
 title: String and char literals in query strings
-sidebar_label: String & char
 ---
 
 A literal value is one that is explicitly defined in the code rather than computed or derived from other values. In the query language, literals are commonly used to define constant values in expressions. This guide covers string and char literals in query strings. Since query strings use Java syntax for literals, they follow Java conventions.

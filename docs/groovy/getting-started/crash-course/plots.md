@@ -1,6 +1,5 @@
 ---
 title: Real-time Plots
-sidebar_label: Real-time Plots
 ---
 
 Whether your data is static or updating in real time, Deephaven supports plotting in Groovy via multiple its built-in [plot package](/core/javadoc/io/deephaven/plot/package-summary.html).

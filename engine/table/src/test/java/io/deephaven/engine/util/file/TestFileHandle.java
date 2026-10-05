@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.util.file;
 
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,6 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.StandardOpenOption;
+
+import static org.junit.Assert.*;
 
 /**
  * Test case for {@link FileHandle}.
@@ -33,30 +34,30 @@ public class TestFileHandle {
 
     @After
     public void tearDown() throws IOException {
-        TestCase.assertTrue(FHUT.isOpen());
+        assertTrue(FHUT.isOpen());
         FHUT.close();
-        TestCase.assertFalse(FHUT.isOpen());
+        assertFalse(FHUT.isOpen());
         tryToDelete(file);
     }
 
     @Test
     public void testFileHandle() throws IOException {
-        TestCase.assertEquals(0, FHUT.size());
-        TestCase.assertEquals(0, FHUT.position());
+        assertEquals(0, FHUT.size());
+        assertEquals(0, FHUT.position());
 
         final ByteBuffer readBuffer = ByteBuffer.allocate(DATA.length);
         final ByteBuffer writeBuffer = ByteBuffer.wrap(DATA);
 
         FHUT.write(writeBuffer, 10);
-        TestCase.assertEquals(10 + DATA.length, FHUT.size());
-        TestCase.assertEquals(0, FHUT.position());
+        assertEquals(10 + DATA.length, FHUT.size());
+        assertEquals(0, FHUT.position());
 
-        TestCase.assertEquals(DATA.length, FHUT.read(readBuffer, 10));
-        TestCase.assertEquals(10 + DATA.length, FHUT.size());
-        TestCase.assertEquals(0, FHUT.position());
-        TestCase.assertEquals(DATA.length, readBuffer.position());
+        assertEquals(DATA.length, FHUT.read(readBuffer, 10));
+        assertEquals(10 + DATA.length, FHUT.size());
+        assertEquals(0, FHUT.position());
+        assertEquals(DATA.length, readBuffer.position());
         for (int bi = 0; bi < DATA.length; ++bi) {
-            TestCase.assertEquals(DATA[bi], readBuffer.get(bi));
+            assertEquals(DATA[bi], readBuffer.get(bi));
         }
 
         readBuffer.clear();
@@ -64,21 +65,21 @@ public class TestFileHandle {
 
         FHUT.position(5);
         FHUT.write(writeBuffer);
-        TestCase.assertEquals(10 + DATA.length, FHUT.size());
-        TestCase.assertEquals(5 + DATA.length, FHUT.position());
+        assertEquals(10 + DATA.length, FHUT.size());
+        assertEquals(5 + DATA.length, FHUT.position());
 
         FHUT.position(5);
-        TestCase.assertEquals(DATA.length, FHUT.read(readBuffer));
-        TestCase.assertEquals(10 + DATA.length, FHUT.size());
-        TestCase.assertEquals(5 + DATA.length, FHUT.position());
-        TestCase.assertEquals(DATA.length, readBuffer.position());
+        assertEquals(DATA.length, FHUT.read(readBuffer));
+        assertEquals(10 + DATA.length, FHUT.size());
+        assertEquals(5 + DATA.length, FHUT.position());
+        assertEquals(DATA.length, readBuffer.position());
         for (int bi = 0; bi < DATA.length; ++bi) {
-            TestCase.assertEquals(DATA[bi], readBuffer.get(bi));
+            assertEquals(DATA[bi], readBuffer.get(bi));
         }
 
         FHUT.truncate(5);
-        TestCase.assertEquals(5, FHUT.size());
-        TestCase.assertEquals(5, FHUT.position());
+        assertEquals(5, FHUT.size());
+        assertEquals(5, FHUT.position());
 
         FHUT.force();
     }
@@ -95,7 +96,7 @@ public class TestFileHandle {
         for (int attempts = 0; !(deleted = file.delete()) && attempts < maxRetries; ++attempts) {
             System.gc();
         }
-        TestCase.assertTrue(deleted);
+        assertTrue(deleted);
     }
 
     private static final int DEFAULT_DELETE_RETRIES = 10;

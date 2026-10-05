@@ -3,12 +3,14 @@
 //
 package io.deephaven.util.codec;
 
-import junit.framework.TestCase;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.math.BigDecimal;
 
-public class BigDecimalCodecTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class BigDecimalCodecTest {
 
     private void roundTrip(final String args, final double value) {
         final BigDecimal v = BigDecimal.valueOf(value);
@@ -87,6 +89,7 @@ public class BigDecimalCodecTest extends TestCase {
         assertEquals(v1, null);
     }
 
+    @Test
     public void testVariableEncoding() {
         roundTrip("", 9.99999);
         roundTrip("", 1.1);
@@ -106,6 +109,7 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip("", 0.0);
     }
 
+    @Test
     public void testVariableEncodingNeg() {
         roundTrip("", -9.99999);
         roundTrip("", -1.1);
@@ -124,10 +128,12 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip("", -0.0);
     }
 
+    @Test
     public void testVariableNull() {
         expectNull("");
     }
 
+    @Test
     public void testFixedEncodeExact() {
         roundTrip("10,3", 9999999.999);
 
@@ -158,10 +164,12 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip("15,8", 5.0 / 256.0);
     }
 
+    @Test
     public void testFixedEncodeWhitspaceArg() {
         roundTrip(" 10 , 5 ", 0.00001);
     }
 
+    @Test
     public void testFixedEncodeExactNeg() {
         roundTrip("10,5", -0.00001);
         roundTrip("10,5", -1.1);
@@ -188,7 +196,7 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip("15,8", -5.0 / 256.0);
     }
 
-
+    @Test
     public void testFixedNull() {
         expectNull("10,5");
         expectNull("10,0");
@@ -196,6 +204,7 @@ public class BigDecimalCodecTest extends TestCase {
         expectNull("1,0");
     }
 
+    @Test
     public void testFixedEncodeRounding() {
         roundTrip("10,5,allowRounding", 1.111111, 1.11111);
         roundTrip("10,5,allowRounding", 9.999999, 10);
@@ -203,6 +212,7 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip("10,5,allowRounding", 1.000001, 1);
     }
 
+    @Test
     public void testFixedEncodeNoRounding() {
         roundTrip("10,5,noRounding", 1.11111);
         roundTrip("10,5,noRounding", 9.99999);
@@ -210,6 +220,7 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip("10,5,noRounding", 1.00001);
     }
 
+    @Test
     public void testFixedOverflow() {
         // we should get overflow exceptions if the value is too large, regardless if we allow rounding
         expectIllegalArgumentException("5,5,allowRounding", 1111111);
@@ -217,10 +228,12 @@ public class BigDecimalCodecTest extends TestCase {
         expectIllegalArgumentException("10,3,noRounding", 9999999999L); // just one over
     }
 
+    @Test
     public void testIllegalRoundingMode() {
         expectIllegalArgumentException("5,5,joIsCrazy", 1);
     }
 
+    @Test
     public void testFixedPrecisionLimit() {
 
         final int maxPrec = BigDecimalCodec.MAX_FIXED_PRECISION;
@@ -247,6 +260,7 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip(maxPrec + "," + maxPrec, teenyNumber.negate());
     }
 
+    @Test
     public void testFixedStrict() {
         expectIllegalArgumentException("5,5,noRounding", 9.999999);
         expectIllegalArgumentException("5,5,noRounding", 0.000001);
@@ -258,6 +272,7 @@ public class BigDecimalCodecTest extends TestCase {
         expectIllegalArgumentException("5,5", 1.000001);
     }
 
+    @Test
     public void testVariableEncodingWithOffset() {
         expectNullWithOffset("", 3);
 
@@ -279,6 +294,7 @@ public class BigDecimalCodecTest extends TestCase {
         roundTripWithOffset("", 0.0, 3);
     }
 
+    @Test
     public void testFixedEncodingWithOffset() {
 
         expectNullWithOffset("10,3", 3);

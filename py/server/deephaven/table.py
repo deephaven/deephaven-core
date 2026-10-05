@@ -1545,8 +1545,7 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            with auto_locking_ctx(self, filter_table):
-                return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
+            return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
 
@@ -1568,10 +1567,7 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            with auto_locking_ctx(self, filter_table):
-                return Table(
-                    j_table=self.j_table.whereNotIn(filter_table.j_table, *cols)
-                )
+            return Table(j_table=self.j_table.whereNotIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
 

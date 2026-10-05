@@ -1,6 +1,5 @@
 ---
 title: Export Deephaven Tables to Parquet Files
-sidebar_label: Export to Parquet
 ---
 
 The [Deephaven Parquet module](/core/javadoc/io/deephaven/parquet/table/package-summary.html) provides tools to integrate Deephaven with the Parquet file format. This module makes it easy to write Deephaven tables to Parquet files and directories. This document covers writing Deephaven tables to single Parquet files, flat partitioned Parquet directories, and key-value partitioned Parquet directories.

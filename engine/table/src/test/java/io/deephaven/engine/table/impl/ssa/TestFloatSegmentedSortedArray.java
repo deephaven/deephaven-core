@@ -26,17 +26,19 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static org.junit.Assert.*;
 
 @Category(ParallelTest.class)
 public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
 
+    @Test
     public void testInsertion() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
@@ -48,6 +50,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 20; ++seed) {
@@ -59,6 +62,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testInsertAndRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
@@ -70,6 +74,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testShifts() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         final int nSeeds;
@@ -284,7 +289,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
             ssa.validate();
             FloatSsaChecker.checkSsa(ssa, valueChunk, tableIndexChunk);
         } catch (AssertionFailure | SsaChecker.SsaCheckException e) {
-            TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
+            fail("Check failed at " + desc + ": " + e.getMessage());
         }
     }
 }

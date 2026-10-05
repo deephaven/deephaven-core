@@ -65,3 +65,8 @@ node_modules
 .devenv/
 .direnv/
 devenv.local.nix
+
+# Devin/Claude plugin artifacts
+skills-lock.json
+.agents/
+.claude/skills/skill-creator

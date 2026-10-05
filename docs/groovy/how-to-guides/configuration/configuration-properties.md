@@ -1,6 +1,5 @@
 ---
 title: Configuration properties reference
-sidebar_label: Configuration properties
 ---
 
 This document covers the most frequently used Deephaven Community configuration properties. You can set properties in several ways depending on your deployment method.

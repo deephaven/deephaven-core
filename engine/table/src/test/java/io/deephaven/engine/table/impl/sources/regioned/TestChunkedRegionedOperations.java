@@ -26,7 +26,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.codec.BigIntegerCodec;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -46,8 +45,7 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * High-level unit tests for {@link RegionedColumnSource} implementations of
@@ -295,7 +293,7 @@ public class TestChunkedRegionedOperations {
                     tries++;
                 }
             } while (!success && tries < 10);
-            TestCase.assertTrue(success);
+            assertTrue(success);
         }
     }
 

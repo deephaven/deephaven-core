@@ -38,8 +38,14 @@ public class ReplicateColumnIterators {
             charToFloat(TASK, CHAR_IFACE_PATH, Collections.emptyMap());
         }
         {
-            fixupChunkSize(intToLong(TASK, INT_IFACE_PATH, Collections.emptyMap(), "interface"), "long");
-            fixupChunkSize(intToDouble(TASK, INT_IFACE_PATH, Collections.emptyMap(), "interface"), "double");
+            // the Integer iterator is itself generated from the Character iterator
+            final String charClassName = ReplicationUtils.className(CHAR_IFACE_PATH);
+            final String longPath = intToLong(TASK, INT_IFACE_PATH, Collections.emptyMap(), "interface");
+            ReplicationUtils.fixupChainedFileHeader(TASK, longPath, charClassName);
+            fixupChunkSize(longPath, "long");
+            final String doublePath = intToDouble(TASK, INT_IFACE_PATH, Collections.emptyMap(), "interface");
+            ReplicationUtils.fixupChainedFileHeader(TASK, doublePath, charClassName);
+            fixupChunkSize(doublePath, "double");
         }
         {
             fixupPrimitiveConsumer(charToAllButBoolean(TASK, CHAR_CHUNKED_PATH));
