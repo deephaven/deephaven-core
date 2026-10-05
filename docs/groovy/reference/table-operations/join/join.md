@@ -131,7 +131,7 @@ right = newTable(
 result = left.join(right, "DeptNumber = DeptID", "DeptName")
 ```
 
-This example is identical to the previous one, but sets the `reserveBits` parameter and passes `columnsToMatch` and `columnsToAdd` as collections of `JoinMatch` and `JoinAddition`. Each `DeptID` appears at most once in the right table, so a single bit is enough to represent the matching right table rows for each left table row.
+This example is identical to the previous one, but sets the `reserveBits` parameter and passes `columnsToMatch` and `columnsToAdd` as collections of `JoinMatch` and `JoinAddition`. Because both tables in this example are static, the engine sizes the result from the actual right table groups, and `reserveBits` does not change the result. The setting matters when either table is refreshing.
 
 ```groovy order=left,right,result
 left = newTable(

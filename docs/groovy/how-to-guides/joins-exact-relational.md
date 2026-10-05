@@ -50,9 +50,9 @@ result = outerJoinMethod(leftTable, rightTable, columnsToMatch, columnsToAdd)
 > [!NOTE]
 > [`leftOuterJoin`](../reference/table-operations/join/left-outer-join.md) and [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md) are currently experimental. The API may change in the future.
 
-Outside of the left and right tables, exact and relational joins take up to two more arguments. The first is required, while the second is optional:
+Outside of the left and right tables, exact and relational joins take up to two more arguments:
 
-- `columnsToMatch`: The key column(s) on which to look for exact matches. Columns of any data type can be used as key columns, but corresponding match columns in the left and right table _must_ be of the same data type.
+- `columnsToMatch`: The key column(s) on which to look for exact matches. Columns of any data type can be used as key columns, but corresponding match columns in the left and right table _must_ be of the same data type. [`join`](../reference/table-operations/join/join.md) can omit it, as in `leftTable.join(rightTable)`, in which case every left table row matches every right table row. The other methods require it; an empty string (`""`) has the same effect for [`leftOuterJoin`](../reference/table-operations/join/left-outer-join.md) and [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md).
 - `columnsToAdd` (Optional): The column(s) in the right table to join to the left table. If not specified, all right table columns are joined except those whose names match a left table column in `columnsToMatch`. A right table match column with a different name from its left table match column, such as `DeptID` in `"DeptNumber = DeptID"`, is joined.
 
 ### Match columns with different names
