@@ -104,6 +104,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 Strings.ofJoinMatches(exactMatches),
                 Strings.of(rangeMatch),
                 Strings.ofAggregations(aggregations));
+        if (aggregations.isEmpty()) {
+            throw new IllegalArgumentException(String.format("%s: Aggregations must not be empty", description));
+        }
         memoizedOperationKey = MemoizedOperationKey.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
 
         if (leftTable.isRefreshing() || rightTable.isRefreshing()) {

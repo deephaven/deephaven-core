@@ -462,6 +462,15 @@ public class QueryTableRangeJoinTest {
     }
 
     @Test
+    public void testEmptyAggregations() {
+        final Table lt = emptyTable(100).updateView("II=ii", "BB=II % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
+        final Table rt = emptyTable(100).updateView("II=ii", "BB=II % 5", "RRV=ii / 0.3");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"), List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageEndingWith(": Aggregations must not be empty");
+    }
+
+    @Test
     public void testUnsupportedAggregationsMessage() {
         final Table lt = emptyTable(100).updateView("II=ii", "BB=II % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
         final Table rt = emptyTable(100).updateView("II=ii", "BB=II % 5", "RRV=ii / 0.3");
