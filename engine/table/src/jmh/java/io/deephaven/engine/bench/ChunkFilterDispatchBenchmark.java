@@ -34,8 +34,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 /**
- * The cost per cell of an int {@link ChunkFilter} whose {@code matches} is a compare or two, when the filter kernels
- * have or have not already run other filter classes.
+ * The cost per cell of an int {@link ChunkFilter}, when the filter kernels have or have not already run other filter
+ * classes.
  *
  * <p>
  * Every filter is called through the same helper methods, standing in for the engine's callers (for example
@@ -64,7 +64,9 @@ public class ChunkFilterDispatchBenchmark {
         /** An inclusive range covering half of [0, 1024). */
         RANGE,
         /** A one value match against values drawn from {0, 1}. */
-        MATCH
+        MATCH,
+        /** A four value (set-based) match against values drawn from [0, 8). */
+        SET
     }
 
     @Param
@@ -82,7 +84,7 @@ public class ChunkFilterDispatchBenchmark {
     @Setup(Level.Trial)
     public void setup() {
         final Random random = new Random(0);
-        final int bound = kind == Kind.RANGE ? 1024 : 2;
+        final int bound = kind == Kind.RANGE ? 1024 : kind == Kind.MATCH ? 2 : 8;
         // noinspection unchecked
         values = new WritableIntChunk[CHUNKS];
         for (int cc = 0; cc < CHUNKS; ++cc) {
@@ -98,9 +100,19 @@ public class ChunkFilterDispatchBenchmark {
         keyResults = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
         results = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
 
-        filter = kind == Kind.RANGE
-                ? IntRangeComparator.makeIntFilter(0, 511, true, true)
-                : IntChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR, 1);
+        switch (kind) {
+            case RANGE:
+                filter = IntRangeComparator.makeIntFilter(0, 511, true, true);
+                break;
+            case MATCH:
+                filter = IntChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR, 1);
+                break;
+            case SET:
+                filter = IntChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR, 0, 2, 4, 6);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected kind " + kind);
+        }
 
         if (pollute) {
             final List<ChunkFilter> others = List.of(
@@ -110,6 +122,7 @@ public class ChunkFilterDispatchBenchmark {
                     IntChunkMatchFilterFactory.makeFilter(MatchOptions.INVERTED, 1),
                     IntChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR, 1, 2),
                     IntChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR, 1, 2, 3),
+                    IntChunkMatchFilterFactory.makeFilter(MatchOptions.INVERTED, 1, 2, 3, 4),
                     IntChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR,
                             IntStream.range(0, 512).toArray()));
             for (int rep = 0; rep < 200; ++rep) {

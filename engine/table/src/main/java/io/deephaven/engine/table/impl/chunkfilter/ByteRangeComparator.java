@@ -15,8 +15,8 @@ import io.deephaven.util.compare.ByteComparisons;
 /**
  * Creates range filters for byte values.
  * <p>
- * Each filter carries its own copy of the {@link ByteChunkFilter} loops (the {@code filterLoops} regions, filled in by
- * {@code ReplicateChunkFilters}), so that its {@code matches} call is never a virtual call shared with other filters.
+ * Each filter carries its own copy of the {@link ByteChunkFilter} loops, so that its {@code matches} call is never a
+ * virtual call shared with other filters.
  */
 public class ByteRangeComparator {
     private ByteRangeComparator() {} // static use only
@@ -41,7 +41,7 @@ public class ByteRangeComparator {
             return ByteComparisons.geq(value, lower) && ByteComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all ByteChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -91,7 +91,6 @@ public class ByteRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class ByteByteInclusiveExclusiveFilter extends ByteByteFilter {
@@ -104,7 +103,7 @@ public class ByteRangeComparator {
             return ByteComparisons.geq(value, lower) && ByteComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all ByteChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -154,7 +153,6 @@ public class ByteRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class ByteByteExclusiveInclusiveFilter extends ByteByteFilter {
@@ -167,7 +165,7 @@ public class ByteRangeComparator {
             return ByteComparisons.gt(value, lower) && ByteComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all ByteChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -217,7 +215,6 @@ public class ByteRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class ByteByteExclusiveExclusiveFilter extends ByteByteFilter {
@@ -230,7 +227,7 @@ public class ByteRangeComparator {
             return ByteComparisons.gt(value, lower) && ByteComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all ByteChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -280,7 +277,6 @@ public class ByteRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     public static ByteChunkFilter makeByteFilter(byte lower, byte upper, boolean lowerInclusive,

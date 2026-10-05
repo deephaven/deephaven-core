@@ -11,8 +11,8 @@ import io.deephaven.util.compare.CharComparisons;
 /**
  * Creates range filters for char values.
  * <p>
- * Each filter carries its own copy of the {@link CharChunkFilter} loops (the {@code filterLoops} regions, filled in by
- * {@code ReplicateChunkFilters}), so that its {@code matches} call is never a virtual call shared with other filters.
+ * Each filter carries its own copy of the {@link CharChunkFilter} loops, so that its {@code matches} call is never a
+ * virtual call shared with other filters.
  */
 public class CharRangeComparator {
     private CharRangeComparator() {} // static use only
@@ -37,7 +37,7 @@ public class CharRangeComparator {
             return CharComparisons.geq(value, lower) && CharComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all CharChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -87,7 +87,6 @@ public class CharRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class CharCharInclusiveExclusiveFilter extends CharCharFilter {
@@ -100,7 +99,7 @@ public class CharRangeComparator {
             return CharComparisons.geq(value, lower) && CharComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all CharChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -150,7 +149,6 @@ public class CharRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class CharCharExclusiveInclusiveFilter extends CharCharFilter {
@@ -163,7 +161,7 @@ public class CharRangeComparator {
             return CharComparisons.gt(value, lower) && CharComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all CharChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -213,7 +211,6 @@ public class CharRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class CharCharExclusiveExclusiveFilter extends CharCharFilter {
@@ -226,7 +223,7 @@ public class CharRangeComparator {
             return CharComparisons.gt(value, lower) && CharComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all CharChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -276,7 +273,6 @@ public class CharRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     public static CharChunkFilter makeCharFilter(char lower, char upper, boolean lowerInclusive,

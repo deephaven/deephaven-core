@@ -15,8 +15,8 @@ import io.deephaven.util.compare.ShortComparisons;
 /**
  * Creates range filters for short values.
  * <p>
- * Each filter carries its own copy of the {@link ShortChunkFilter} loops (the {@code filterLoops} regions, filled in by
- * {@code ReplicateChunkFilters}), so that its {@code matches} call is never a virtual call shared with other filters.
+ * Each filter carries its own copy of the {@link ShortChunkFilter} loops, so that its {@code matches} call is never a
+ * virtual call shared with other filters.
  */
 public class ShortRangeComparator {
     private ShortRangeComparator() {} // static use only
@@ -41,7 +41,7 @@ public class ShortRangeComparator {
             return ShortComparisons.geq(value, lower) && ShortComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -91,7 +91,6 @@ public class ShortRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class ShortShortInclusiveExclusiveFilter extends ShortShortFilter {
@@ -104,7 +103,7 @@ public class ShortRangeComparator {
             return ShortComparisons.geq(value, lower) && ShortComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -154,7 +153,6 @@ public class ShortRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class ShortShortExclusiveInclusiveFilter extends ShortShortFilter {
@@ -167,7 +165,7 @@ public class ShortRangeComparator {
             return ShortComparisons.gt(value, lower) && ShortComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -217,7 +215,6 @@ public class ShortRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class ShortShortExclusiveExclusiveFilter extends ShortShortFilter {
@@ -230,7 +227,7 @@ public class ShortRangeComparator {
             return ShortComparisons.gt(value, lower) && ShortComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -280,7 +277,6 @@ public class ShortRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     public static ShortChunkFilter makeShortFilter(short lower, short upper, boolean lowerInclusive,

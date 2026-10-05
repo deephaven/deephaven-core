@@ -15,8 +15,8 @@ import io.deephaven.util.compare.FloatComparisons;
 /**
  * Creates range filters for float values.
  * <p>
- * Each filter carries its own copy of the {@link FloatChunkFilter} loops (the {@code filterLoops} regions, filled in by
- * {@code ReplicateChunkFilters}), so that its {@code matches} call is never a virtual call shared with other filters.
+ * Each filter carries its own copy of the {@link FloatChunkFilter} loops, so that its {@code matches} call is never a
+ * virtual call shared with other filters.
  */
 public class FloatRangeComparator {
     private FloatRangeComparator() {} // static use only
@@ -41,7 +41,7 @@ public class FloatRangeComparator {
             return FloatComparisons.geq(value, lower) && FloatComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all FloatChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -91,7 +91,6 @@ public class FloatRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class FloatFloatInclusiveExclusiveFilter extends FloatFloatFilter {
@@ -104,7 +103,7 @@ public class FloatRangeComparator {
             return FloatComparisons.geq(value, lower) && FloatComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all FloatChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -154,7 +153,6 @@ public class FloatRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class FloatFloatExclusiveInclusiveFilter extends FloatFloatFilter {
@@ -167,7 +165,7 @@ public class FloatRangeComparator {
             return FloatComparisons.gt(value, lower) && FloatComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all FloatChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -217,7 +215,6 @@ public class FloatRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class FloatFloatExclusiveExclusiveFilter extends FloatFloatFilter {
@@ -230,7 +227,7 @@ public class FloatRangeComparator {
             return FloatComparisons.gt(value, lower) && FloatComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all FloatChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -280,7 +277,6 @@ public class FloatRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     public static FloatChunkFilter makeFloatFilter(float lower, float upper, boolean lowerInclusive,

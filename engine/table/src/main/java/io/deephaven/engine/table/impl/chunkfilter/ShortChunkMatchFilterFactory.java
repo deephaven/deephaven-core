@@ -22,10 +22,8 @@ import it.unimi.dsi.fastutil.shorts.ShortSet;
  * <p>
  * For more values, we use a trove set and check contains for each value in the chunk.
  * <p>
- * The one, two, and three value filters each carry their own copy of the {@link ShortChunkFilter} loops (the
- * {@code filterLoops} regions, filled in by {@code ReplicateChunkFilters}), so that their cheap {@code matches} call is
- * never a virtual call shared with other filters. The set-based filters use the shared loops, where the set lookup
- * outweighs the call.
+ * Each filter carries its own copy of the {@link ShortChunkFilter} loops, so that its {@code matches} call is never a
+ * virtual call shared with other filters.
  */
 public class ShortChunkMatchFilterFactory {
     private ShortChunkMatchFilterFactory() {} // static use only
@@ -68,7 +66,7 @@ public class ShortChunkMatchFilterFactory {
             return value == this.value;
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -118,7 +116,6 @@ public class ShortChunkMatchFilterFactory {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class InverseSingleValueShortChunkFilter extends ShortChunkFilter {
@@ -133,7 +130,7 @@ public class ShortChunkMatchFilterFactory {
             return value != this.value;
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -183,7 +180,6 @@ public class ShortChunkMatchFilterFactory {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class TwoValueShortChunkFilter extends ShortChunkFilter {
@@ -200,7 +196,7 @@ public class ShortChunkMatchFilterFactory {
             return value == value1 || value == value2;
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -250,7 +246,6 @@ public class ShortChunkMatchFilterFactory {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class InverseTwoValueShortChunkFilter extends ShortChunkFilter {
@@ -267,7 +262,7 @@ public class ShortChunkMatchFilterFactory {
             return value != value1 && value != value2;
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -317,7 +312,6 @@ public class ShortChunkMatchFilterFactory {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class ThreeValueShortChunkFilter extends ShortChunkFilter {
@@ -336,7 +330,7 @@ public class ShortChunkMatchFilterFactory {
             return value == value1 || value == value2 || value == value3;
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -386,7 +380,6 @@ public class ShortChunkMatchFilterFactory {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class InverseThreeValueShortChunkFilter extends ShortChunkFilter {
@@ -405,7 +398,7 @@ public class ShortChunkMatchFilterFactory {
             return value != value1 && value != value2 && value != value3;
         }
 
-        // region filterLoops
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -455,7 +448,6 @@ public class ShortChunkMatchFilterFactory {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class MultiValueShortChunkFilter extends ShortChunkFilter {
@@ -469,6 +461,57 @@ public class ShortChunkMatchFilterFactory {
         public boolean matches(short value) {
             return this.values.contains(value);
         }
+
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = shortChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(shortChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(shortChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that remain true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(shortChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
     private final static class InverseMultiValueShortChunkFilter extends ShortChunkFilter {
@@ -481,6 +524,57 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public boolean matches(short value) {
             return !this.values.contains(value);
+        }
+
+        // Identical code for all ShortChunkFilter classes, replicated here to prevent megamorphism in the JVM
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = shortChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(shortChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(shortChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that remain true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(shortChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
         }
     }
 }

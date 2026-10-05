@@ -33,9 +33,8 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
 import static org.junit.Assert.assertEquals;
 
 /**
- * The range comparators and the one, two, and three value match filters each carry their own copy of the
- * {@code *ChunkFilter} loops. Every such filter must declare its own {@code filter} and {@code filterAnd}, and those
- * loops must agree with the filter's {@code matches} on every value; the set-based filters keep the shared loops.
+ * Every range comparator and match filter carries its own copy of the {@code filter} and {@code filterAnd} loops. Each
+ * must declare those loops itself, and they must agree with the filter's {@code matches} on every value.
  */
 public class ChunkFilterLeafLoopsTest {
 
@@ -92,9 +91,7 @@ public class ChunkFilterLeafLoopsTest {
                 own.add(CharChunkMatchFilterFactory.makeFilter(options, 'b'));
                 own.add(CharChunkMatchFilterFactory.makeFilter(options, 'b', NULL_CHAR));
                 own.add(CharChunkMatchFilterFactory.makeFilter(options, 'b', 'd', 'f'));
-                checkSharedLoops(CharChunkFilter.class,
-                        CharChunkMatchFilterFactory.makeFilter(options, 'b', 'd', 'f', 'h'), values,
-                        f -> ii -> ((CharChunkFilter) f).matches(values.get(ii)));
+                own.add(CharChunkMatchFilterFactory.makeFilter(options, 'b', 'd', 'f', 'h'));
             }
             for (final CharChunkFilter filter : own) {
                 checkOwnLoops(filter, values, ii -> filter.matches(values.get(ii)));
@@ -119,9 +116,7 @@ public class ChunkFilterLeafLoopsTest {
                 own.add(ByteChunkMatchFilterFactory.makeFilter(options, (byte) 1));
                 own.add(ByteChunkMatchFilterFactory.makeFilter(options, (byte) 1, NULL_BYTE));
                 own.add(ByteChunkMatchFilterFactory.makeFilter(options, (byte) 1, (byte) 3, (byte) 5));
-                checkSharedLoops(ByteChunkFilter.class,
-                        ByteChunkMatchFilterFactory.makeFilter(options, (byte) 1, (byte) 3, (byte) 5, (byte) 7),
-                        values, f -> ii -> ((ByteChunkFilter) f).matches(values.get(ii)));
+                own.add(ByteChunkMatchFilterFactory.makeFilter(options, (byte) 1, (byte) 3, (byte) 5, (byte) 7));
             }
             for (final ByteChunkFilter filter : own) {
                 checkOwnLoops(filter, values, ii -> filter.matches(values.get(ii)));
@@ -147,9 +142,7 @@ public class ChunkFilterLeafLoopsTest {
                 own.add(ShortChunkMatchFilterFactory.makeFilter(options, (short) 1));
                 own.add(ShortChunkMatchFilterFactory.makeFilter(options, (short) 1, NULL_SHORT));
                 own.add(ShortChunkMatchFilterFactory.makeFilter(options, (short) 1, (short) 3, (short) 5));
-                checkSharedLoops(ShortChunkFilter.class,
-                        ShortChunkMatchFilterFactory.makeFilter(options, (short) 1, (short) 3, (short) 5, (short) 7),
-                        values, f -> ii -> ((ShortChunkFilter) f).matches(values.get(ii)));
+                own.add(ShortChunkMatchFilterFactory.makeFilter(options, (short) 1, (short) 3, (short) 5, (short) 7));
             }
             for (final ShortChunkFilter filter : own) {
                 checkOwnLoops(filter, values, ii -> filter.matches(values.get(ii)));
@@ -174,8 +167,7 @@ public class ChunkFilterLeafLoopsTest {
                 own.add(IntChunkMatchFilterFactory.makeFilter(options, 1));
                 own.add(IntChunkMatchFilterFactory.makeFilter(options, 1, NULL_INT));
                 own.add(IntChunkMatchFilterFactory.makeFilter(options, 1, 3, 5));
-                checkSharedLoops(IntChunkFilter.class, IntChunkMatchFilterFactory.makeFilter(options, 1, 3, 5, 7),
-                        values, f -> ii -> ((IntChunkFilter) f).matches(values.get(ii)));
+                own.add(IntChunkMatchFilterFactory.makeFilter(options, 1, 3, 5, 7));
             }
             for (final IntChunkFilter filter : own) {
                 checkOwnLoops(filter, values, ii -> filter.matches(values.get(ii)));
@@ -200,8 +192,7 @@ public class ChunkFilterLeafLoopsTest {
                 own.add(LongChunkMatchFilterFactory.makeFilter(options, 1));
                 own.add(LongChunkMatchFilterFactory.makeFilter(options, 1, NULL_LONG));
                 own.add(LongChunkMatchFilterFactory.makeFilter(options, 1, 3, 5));
-                checkSharedLoops(LongChunkFilter.class, LongChunkMatchFilterFactory.makeFilter(options, 1, 3, 5, 7),
-                        values, f -> ii -> ((LongChunkFilter) f).matches(values.get(ii)));
+                own.add(LongChunkMatchFilterFactory.makeFilter(options, 1, 3, 5, 7));
             }
             for (final LongChunkFilter filter : own) {
                 checkOwnLoops(filter, values, ii -> filter.matches(values.get(ii)));
@@ -229,9 +220,7 @@ public class ChunkFilterLeafLoopsTest {
                 own.add(FloatChunkMatchFilterFactory.makeFilter(options, first));
                 own.add(FloatChunkMatchFilterFactory.makeFilter(options, first, NULL_FLOAT));
                 own.add(FloatChunkMatchFilterFactory.makeFilter(options, first, 0.0f, 5));
-                checkSharedLoops(FloatChunkFilter.class,
-                        FloatChunkMatchFilterFactory.makeFilter(options, first, 0.0f, 5, 7), values,
-                        f -> ii -> ((FloatChunkFilter) f).matches(values.get(ii)));
+                own.add(FloatChunkMatchFilterFactory.makeFilter(options, first, 0.0f, 5, 7));
             }
             for (final FloatChunkFilter filter : own) {
                 checkOwnLoops(filter, values, ii -> filter.matches(values.get(ii)));
@@ -259,18 +248,12 @@ public class ChunkFilterLeafLoopsTest {
                 own.add(DoubleChunkMatchFilterFactory.makeFilter(options, first));
                 own.add(DoubleChunkMatchFilterFactory.makeFilter(options, first, NULL_DOUBLE));
                 own.add(DoubleChunkMatchFilterFactory.makeFilter(options, first, 0.0, 5));
-                checkSharedLoops(DoubleChunkFilter.class,
-                        DoubleChunkMatchFilterFactory.makeFilter(options, first, 0.0, 5, 7), values,
-                        f -> ii -> ((DoubleChunkFilter) f).matches(values.get(ii)));
+                own.add(DoubleChunkMatchFilterFactory.makeFilter(options, first, 0.0, 5, 7));
             }
             for (final DoubleChunkFilter filter : own) {
                 checkOwnLoops(filter, values, ii -> filter.matches(values.get(ii)));
             }
         }
-    }
-
-    private interface Matcher {
-        IntPredicate forFilter(ChunkFilter filter);
     }
 
     /** The filter must declare its own loops, and they must agree with {@code expectedMatch}. */
@@ -280,16 +263,6 @@ public class ChunkFilterLeafLoopsTest {
             final IntPredicate expectedMatch) {
         assertLoopsDeclaredBy(filter.getClass(), filter);
         checkLoops(filter, values, expectedMatch);
-    }
-
-    /** The filter must use the shared loops of {@code baseClass}, and they must agree with its {@code matches}. */
-    private static void checkSharedLoops(
-            final Class<? extends ChunkFilter> baseClass,
-            final ChunkFilter filter,
-            final Chunk<? extends Values> values,
-            final Matcher matcher) {
-        assertLoopsDeclaredBy(baseClass, filter);
-        checkLoops(filter, values, matcher.forFilter(filter));
     }
 
     private static void assertLoopsDeclaredBy(final Class<?> expected, final ChunkFilter filter) {

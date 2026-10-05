@@ -15,8 +15,8 @@ import io.deephaven.util.compare.IntComparisons;
 /**
  * Creates range filters for int values.
  * <p>
- * Each filter carries its own copy of the {@link IntChunkFilter} loops (the {@code filterLoops} regions, filled in by
- * {@code ReplicateChunkFilters}), so that its {@code matches} call is never a virtual call shared with other filters.
+ * Each filter carries its own copy of the {@link IntChunkFilter} loops, so that its {@code matches} call is never a
+ * virtual call shared with other filters.
  */
 public class IntRangeComparator {
     private IntRangeComparator() {} // static use only
@@ -41,7 +41,7 @@ public class IntRangeComparator {
             return IntComparisons.geq(value, lower) && IntComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all IntChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -91,7 +91,6 @@ public class IntRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class IntIntInclusiveExclusiveFilter extends IntIntFilter {
@@ -104,7 +103,7 @@ public class IntRangeComparator {
             return IntComparisons.geq(value, lower) && IntComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all IntChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -154,7 +153,6 @@ public class IntRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class IntIntExclusiveInclusiveFilter extends IntIntFilter {
@@ -167,7 +165,7 @@ public class IntRangeComparator {
             return IntComparisons.gt(value, lower) && IntComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all IntChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -217,7 +215,6 @@ public class IntRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class IntIntExclusiveExclusiveFilter extends IntIntFilter {
@@ -230,7 +227,7 @@ public class IntRangeComparator {
             return IntComparisons.gt(value, lower) && IntComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all IntChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -280,7 +277,6 @@ public class IntRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     public static IntChunkFilter makeIntFilter(int lower, int upper, boolean lowerInclusive,

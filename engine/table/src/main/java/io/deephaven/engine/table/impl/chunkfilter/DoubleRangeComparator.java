@@ -15,8 +15,8 @@ import io.deephaven.util.compare.DoubleComparisons;
 /**
  * Creates range filters for double values.
  * <p>
- * Each filter carries its own copy of the {@link DoubleChunkFilter} loops (the {@code filterLoops} regions, filled in by
- * {@code ReplicateChunkFilters}), so that its {@code matches} call is never a virtual call shared with other filters.
+ * Each filter carries its own copy of the {@link DoubleChunkFilter} loops, so that its {@code matches} call is never a
+ * virtual call shared with other filters.
  */
 public class DoubleRangeComparator {
     private DoubleRangeComparator() {} // static use only
@@ -41,7 +41,7 @@ public class DoubleRangeComparator {
             return DoubleComparisons.geq(value, lower) && DoubleComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all DoubleChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -91,7 +91,6 @@ public class DoubleRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class DoubleDoubleInclusiveExclusiveFilter extends DoubleDoubleFilter {
@@ -104,7 +103,7 @@ public class DoubleRangeComparator {
             return DoubleComparisons.geq(value, lower) && DoubleComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all DoubleChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -154,7 +153,6 @@ public class DoubleRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class DoubleDoubleExclusiveInclusiveFilter extends DoubleDoubleFilter {
@@ -167,7 +165,7 @@ public class DoubleRangeComparator {
             return DoubleComparisons.gt(value, lower) && DoubleComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all DoubleChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -217,7 +215,6 @@ public class DoubleRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class DoubleDoubleExclusiveExclusiveFilter extends DoubleDoubleFilter {
@@ -230,7 +227,7 @@ public class DoubleRangeComparator {
             return DoubleComparisons.gt(value, lower) && DoubleComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all DoubleChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -280,7 +277,6 @@ public class DoubleRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     public static DoubleChunkFilter makeDoubleFilter(double lower, double upper, boolean lowerInclusive,

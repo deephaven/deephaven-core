@@ -15,8 +15,8 @@ import io.deephaven.util.compare.LongComparisons;
 /**
  * Creates range filters for long values.
  * <p>
- * Each filter carries its own copy of the {@link LongChunkFilter} loops (the {@code filterLoops} regions, filled in by
- * {@code ReplicateChunkFilters}), so that its {@code matches} call is never a virtual call shared with other filters.
+ * Each filter carries its own copy of the {@link LongChunkFilter} loops, so that its {@code matches} call is never a
+ * virtual call shared with other filters.
  */
 public class LongRangeComparator {
     private LongRangeComparator() {} // static use only
@@ -41,7 +41,7 @@ public class LongRangeComparator {
             return LongComparisons.geq(value, lower) && LongComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all LongChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -91,7 +91,6 @@ public class LongRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class LongLongInclusiveExclusiveFilter extends LongLongFilter {
@@ -104,7 +103,7 @@ public class LongRangeComparator {
             return LongComparisons.geq(value, lower) && LongComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all LongChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -154,7 +153,6 @@ public class LongRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class LongLongExclusiveInclusiveFilter extends LongLongFilter {
@@ -167,7 +165,7 @@ public class LongRangeComparator {
             return LongComparisons.gt(value, lower) && LongComparisons.leq(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all LongChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -217,7 +215,6 @@ public class LongRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     private final static class LongLongExclusiveExclusiveFilter extends LongLongFilter {
@@ -230,7 +227,7 @@ public class LongRangeComparator {
             return LongComparisons.gt(value, lower) && LongComparisons.lt(value, upper);
         }
 
-        // region filterLoops
+        // Identical code for all LongChunkFilter classes, replicated here to prevent megamorphism in the JVM
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
@@ -280,7 +277,6 @@ public class LongRangeComparator {
             }
             return count;
         }
-        // endregion filterLoops
     }
 
     public static LongChunkFilter makeLongFilter(long lower, long upper, boolean lowerInclusive,
