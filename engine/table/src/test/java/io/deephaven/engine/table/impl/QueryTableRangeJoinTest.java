@@ -177,6 +177,77 @@ public class QueryTableRangeJoinTest {
 
     // endregion allow following tests
 
+    // region negative zero tests
+
+    /**
+     * Double range values follow Deephaven ordering, where -0.0 and 0.0 are equal, for every range rule.
+     */
+    @Test
+    public void testNegativeZeroDouble() {
+        checkDoubleRange("LSV < RRV < LEV", new double[] {-1.0, 0.0, 1.0}, -0.0, 5.0, List.of(2));
+        checkDoubleRange("LSV <= RRV < LEV", new double[] {-1.0, -0.0, 1.0}, 0.0, 5.0, List.of(1, 2));
+        checkDoubleRange("<- LSV <= RRV < LEV", new double[] {-1.0, -0.0, -0.0, 1.0}, 0.0, 5.0, List.of(1, 2, 3));
+        checkDoubleRange("LSV < RRV < LEV", new double[] {-1.0, -0.0, 1.0}, -5.0, 0.0, List.of(0));
+        checkDoubleRange("LSV < RRV <= LEV", new double[] {-1.0, 0.0, 1.0}, -5.0, -0.0, List.of(0, 1));
+        checkDoubleRange("LSV < RRV <= LEV ->", new double[] {-1.0, 0.0, 1.0}, -5.0, -0.0, List.of(0, 1));
+    }
+
+    /**
+     * Float range values follow Deephaven ordering, where -0.0 and 0.0 are equal.
+     */
+    @Test
+    public void testNegativeZeroFloat() {
+        final Table right = TableTools.newTable(
+                TableTools.floatCol("RRV", -1.0f, 0.0f, 1.0f),
+                TableTools.intCol("Sentinel", 0, 1, 2));
+        final Table left = TableTools.newTable(
+                TableTools.floatCol("LSV", -0.0f),
+                TableTools.floatCol("LEV", 5.0f));
+        final String match = "LSV < RRV < LEV";
+        checkSentinels(match, List.of(2), left.rangeJoin(right, List.of(match), List.of(AggGroup("Sentinel"))), 0);
+    }
+
+    /**
+     * A -0.0 left start or end value gets the same range whatever the position of the equal 0.0 in the right values.
+     */
+    @Test
+    public void testNegativeZeroConsistentAcrossRightPositions() {
+        final double[] smallerValues = {-3.0, -2.0, -1.0};
+        for (int smallerCount = 0; smallerCount <= smallerValues.length; ++smallerCount) {
+            final double[] rightValues = new double[smallerCount + 2];
+            System.arraycopy(smallerValues, smallerValues.length - smallerCount, rightValues, 0, smallerCount);
+            rightValues[smallerCount] = 0.0;
+            rightValues[smallerCount + 1] = 1.0;
+            final List<Integer> throughZero = new ArrayList<>();
+            for (int ri = 0; ri <= smallerCount; ++ri) {
+                throughZero.add(ri);
+            }
+            checkDoubleRange("LSV < RRV < LEV", rightValues, -0.0, 5.0, List.of(smallerCount + 1));
+            checkDoubleRange("LSV <= RRV < LEV", rightValues, -0.0, 5.0, List.of(smallerCount, smallerCount + 1));
+            checkDoubleRange("LSV < RRV < LEV", rightValues, -5.0, -0.0, throughZero.subList(0, smallerCount));
+            checkDoubleRange("LSV < RRV <= LEV", rightValues, -5.0, -0.0, throughZero);
+        }
+    }
+
+    private static void checkDoubleRange(final String match, final double[] rightValues,
+            final double leftStart, final double leftEnd, final List<Integer> expected) {
+        final int[] sentinels = new int[rightValues.length];
+        for (int ri = 0; ri < rightValues.length; ++ri) {
+            sentinels[ri] = ri;
+        }
+        final Table right = TableTools.newTable(
+                TableTools.doubleCol("RRV", rightValues),
+                TableTools.intCol("Sentinel", sentinels));
+        final Table left = TableTools.newTable(
+                TableTools.doubleCol("LSV", leftStart),
+                TableTools.doubleCol("LEV", leftEnd));
+        final Table result = left.rangeJoin(right, List.of(match), List.of(AggGroup("Sentinel")));
+        checkSentinels(String.format("%s, right %s, left (%s, %s)", match, Arrays.toString(rightValues),
+                leftStart, leftEnd), expected, result, 0);
+    }
+
+    // endregion negative zero tests
+
     // region validation tests
 
     @Test

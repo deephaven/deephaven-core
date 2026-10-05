@@ -661,7 +661,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         do {
             final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
                     ? rightLowIndexInclusive
-                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+                    : RangeSearchBinarySearch.binarySearch(rightValues, rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to include, so
             // take the insertion point (when not found) or one past the insertion point (when found)
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
@@ -715,7 +715,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         do {
             final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
                     ? rightLowIndexInclusive
-                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+                    : RangeSearchBinarySearch.binarySearch(rightValues, rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to include, so
             // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
@@ -769,7 +769,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         do {
             final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
                     ? rightLowIndexInclusive
-                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+                    : RangeSearchBinarySearch.binarySearch(rightValues, rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to include, so
             // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
@@ -835,7 +835,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         do {
             final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
                     ? rightLowIndexInclusive
-                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+                    : RangeSearchBinarySearch.binarySearch(rightValues, rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to exclude, so
             // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
@@ -889,7 +889,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         do {
             final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
                     ? rightLowIndexInclusive
-                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+                    : RangeSearchBinarySearch.binarySearch(rightValues, rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to exclude, so
             // take the insertion point (when not found) or one past the insertion point (when found)
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
@@ -943,7 +943,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         do {
             final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
                     ? rightLowIndexInclusive
-                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+                    : RangeSearchBinarySearch.binarySearch(rightValues, rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to exclude, so
             // take the insertion point (when not found) or one past the insertion point (when found)
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
