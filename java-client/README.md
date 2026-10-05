@@ -259,6 +259,27 @@ Not covered, and why: `message-stream-send-receive` needs the echo plugin; `fetc
 `convert-to-table` need a plugin object; the server image has neither. `do-put-spray` copies between
 two servers. `tainted` has no launcher.
 
+### The API-level tests
+
+The same project holds JUnit tests that use the client libraries directly, over the same server and
+the same real netty channel, with assertions on what comes back rather than on example output:
+
+- `SessionApiTest`: configuration constants, the Python console reporting created tables and
+  errors, executing a spec and checking its size, publishing and resolving from a second session,
+  shared ids, the field subscription, and the log subscription seeing console output.
+- `FlightApiTest`: DoGet values, schema by path, listing, DoPut round trip, and the append-only,
+  key-backed, and blink input tables. Input table changes land on the next update cycle, so the
+  assertions poll DoGet with a deadline.
+- `BarrageApiTest`: snapshots of a whole table, a viewport, and a reverse viewport into client-side
+  engine tables, and a subscription that keeps ticking. The client-side engine needs the DEFAULT
+  update graph and an execution context, and the test task runs with `dh-defaults.prop` rather than
+  the test conventions' `dh-tests.prop`, because that file forbids starting the refresh thread.
+- `AuthenticationTest`: anonymous accepted, the pre-shared key accepted, a wrong key rejected.
+
+`TestServer` is the one place that knows the server's port and key. Tests open their own sessions
+and close them in try-with-resources; one factory per class is shut down in `@AfterAll`. Server
+variables they publish use an `api_` prefix.
+
 ### Things that have bitten
 
 - A repeated `@ArgGroup` list is filled last-first by picocli. `Publish` relies on this and says so.
