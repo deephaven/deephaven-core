@@ -43,7 +43,7 @@ This parameter must include zero-or-more [exact match expressions](#exact-match-
 </Param>
 <Param name="aggs" type="Union[Aggregation, list[Aggregation]]">
 
-The aggregation(s) to perform over the responsive ranges from the right table for each row from this table.
+The aggregation(s) to perform over the responsive ranges from the right table for each row from this table. Only [`group`](../group-and-aggregate/AggGroup.md) aggregations are supported.
 
 </Param>
 </ParamTable>
@@ -54,7 +54,7 @@ Join key ranges, specified by the `on` argument, are defined by zero-or-more [ex
 
 #### Exact Match Expressions
 
-Exact match expressions are parsed like other [join operations](../../../how-to-guides/joins-timeseries-range.md). That is, they are either a column name common to both tables or a column name from the left table followed by an equals sign followed by a column name from the right table.
+Exact match expressions are parsed like other [join operations](../../../how-to-guides/joins-exact-relational.md). That is, they are either a column name common to both tables or a column name from the left table followed by an equals sign followed by a column name from the right table.
 
 For example:
 
@@ -90,7 +90,7 @@ To produce aggregated output, [range match expressions](#range-match-expression)
 
 ##### Empty Range
 
-An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right rows were found using the exact join matches, or none were in range according to the `range_join` match.
+An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right rows were found using the exact join matches, or none were in range according to the `range_join` match. For an empty range, the aggregation output is an empty vector.
 
 ##### Single-Value Ranges
 
@@ -113,7 +113,7 @@ An undefined range occurs when either the left start column or the left end colu
 
 A partially or fully unbounded range occurs when either the left start column or the left end column is `null`.
 
-- If the left start column value is `null` and the left end column value is non-null, the range is unbounded at the beginning, and only the left end column subexpression will be - used for the match.
+- If the left start column value is `null` and the left end column value is non-null, the range is unbounded at the beginning, and only the left end column subexpression will be used for the match.
 - If the left start column value is non-null and the left end column value is `null`, the range is unbounded at the end, and only the left start column subexpression will be used for the match.
 - If the left start column _and_ left end column values are `null`, the range is unbounded, and all rows will be included.
 
@@ -123,7 +123,7 @@ A new Table.
 
 ## Examples
 
-The following example creates a left table (`lt`) and right table (`rt`), then calls `range_join`. The right table is joined to the left table on the `Y` column, and the [range match expression](#range-match-expression) specifies that matching rows should contain a value in the `RValue` column that is greater than the corresponding `LStartValue` row and less than the corresponding `LEndValue` row. The last argument calls the [`group`](../group-and-aggregate/AggGroup.md) aggregation to group results by `X`.
+The following example creates a left table (`lt`) and right table (`rt`), then calls `range_join`. The right table is joined to the left table on the `Y` column, and the [range match expression](#range-match-expression) specifies that matching rows should contain a value in the `RValue` column that is greater than the corresponding `LStartValue` row and less than the corresponding `LEndValue` row. The last argument calls the [`group`](../group-and-aggregate/AggGroup.md) aggregation to group the responsive `X` values from `rt` into a new `GroupedX` column. Naming the output `GroupedX` keeps it from replacing the left table's `X` column.
 
 ```python order=lt,rt,result
 from deephaven import empty_table
@@ -136,14 +136,14 @@ lt = empty_table(20).update_view(
 rt = empty_table(20).update_view(["X=ii", "Y=X % 5", "RValue=ii / 0.3"])
 
 result = lt.range_join(
-    table=rt, on=["Y", "LStartValue < RValue < LEndValue"], aggs=group("X")
+    table=rt, on=["Y", "LStartValue < RValue < LEndValue"], aggs=group("GroupedX = X")
 )
 ```
 
-Let's break down the output to understand why `X` is grouped as it is.
+Let's break down the output to understand why `X` values are grouped as they are.
 
 - `X` = `0` in `lt`
-  - When `Y` is `0`, the range expression creates a [single value range](#single-value-ranges). The range expression uses `<`, which results in a `null` cell for the grouped X column.
+  - `LStartValue` and `LEndValue` are both `0`. The range expression uses `<`, so this is an [invalid range](#invalid-ranges), which results in a `null` cell in the `GroupedX` column.
 - `X` = `1` in `lt`
   - When `X` is `1`, `Y` is `1`. The range expression specifies that `RValue` must be greater than `1.4286` and less than `10`. The range join searches rows where `Y` = `1`, and checks if the corresponding `RValue` cell satisfies the criteria. In this case, it's true only when `X` is `1`.
 - `X` = `3` in `lt`

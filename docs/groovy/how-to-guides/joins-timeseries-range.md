@@ -25,6 +25,7 @@ The syntax for performing a range join is as follows:
 
 ```groovy syntax
 result = leftTable.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations)
+result = leftTable.rangeJoin(rightTable, columnsToMatch, aggregations)
 ```
 
 Where:
@@ -32,6 +33,7 @@ Where:
 - `rightTable` is the table to join with.
 - `exactMatches` is a collection of [`JoinMatch`](/core/javadoc/io/deephaven/api/JoinMatch.html) objects that dictate exact-match criteria.
 - `rangeMatch` specifies the range match criteria for determining the responsive rows from `rightTable` for each row from the left table.
+- `columnsToMatch` is a collection of strings holding zero-or-more exact match expressions followed by a single range match expression, such as `List.of("Key", "LeftStart < RightValue < LeftEnd")`. It replaces `exactMatches` and `rangeMatch`.
 - `aggregations` are the aggregations to perform over the responsive ranges from `rightTable` for each row from the left table.
 
 > [!NOTE]
@@ -46,9 +48,9 @@ For [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/ta
 
 - `columnsToAdd`: The column(s) in the right table to join to the left table. If not specified, all columns are joined.
 
-For [`rangeJoin`](../reference/table-operations/join/rangeJoin.md), the third argument is also optional:
+For [`rangeJoin`](../reference/table-operations/join/rangeJoin.md), the `aggregations` argument is required:
 
-- `aggregations`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. If not specified, no aggregations are performed. Currently, only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
+- `aggregations`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. Currently, only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
 
 ### Multiple match columns
 
@@ -204,7 +206,7 @@ For columns appended to the left table (joins), cell values equal aggregations o
 > [!NOTE]
 > Reminders: (i) [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) currently only supports static tables, not yet live, real-time data; and (ii) the only aggregation currently supported is the `group` operation.
 
-The following example joins two tables with [`rangeJoin`](../reference/table-operations/join/rangeJoin.md). The `right` table is joined to `left` on the `Y` column. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `result` table's `X` column.
+The following example joins two tables with [`rangeJoin`](../reference/table-operations/join/rangeJoin.md). The example uses no exact match columns, so every `right` row is a candidate for every `left` row. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `Y` values of the matching `right` rows into the `result` table's `Y` column.
 
 ```groovy test-set=1 order=result,left,right
 left = emptyTable(20).updateView("X = ii", "LeftStartValue = ii / 0.7", "LeftEndValue = ii / 0.1")
@@ -213,7 +215,7 @@ right = emptyTable(20).updateView("X = ii", "RightValue = ii / 0.3", "Y = X % 5"
 result = left.rangeJoin(right, List.of("LeftStartValue < RightValue < LeftEndValue"), List.of(AggGroup("Y")))
 ```
 
-For a detailed explanation of this example, see [`rangeJoin`](../reference/table-operations/join/rangeJoin.md#examples).
+For a detailed explanation of a similar example that also uses an exact match column, see [`rangeJoin`](../reference/table-operations/join/rangeJoin.md#examples).
 
 Queries often follow up a [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that calls a Groovy closure that operates on the result. The following code block updates the `result` table from the previous example with a [user-defined function](./groovy-closures.md).
 
@@ -229,7 +231,7 @@ sumGroup = { arr ->
 resultSummed = result.update("SumY = sumGroup(Y)")
 ```
 
-The following example uses [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed.
+The following example uses [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed. The grouped output is named `RightY` so that it does not replace the left table's `Y` column.
 
 ```groovy order=resultSummed,result,left,right
 left = emptyTable(20).update(
@@ -241,7 +243,7 @@ left = emptyTable(20).update(
 
 right = emptyTable(20).update("Timestamp = '2024-01-01T08:00:03 ET' + i * SECOND", "X = ii", "Y = X % 6")
 
-result = left.rangeJoin(right, List.of("StartTime < Timestamp < EndTime"), List.of(AggGroup("Y")))
+result = left.rangeJoin(right, List.of("StartTime < Timestamp < EndTime"), List.of(AggGroup("RightY = Y")))
 
 sumArr = { arr ->
     if (!arr) {
@@ -251,7 +253,7 @@ sumArr = { arr ->
     }
 }
 
-resultSummed = result.update("SumY = sumArr(Y)")
+resultSummed = result.update("SumRightY = sumArr(RightY)")
 ```
 
 ## Which method should you use?

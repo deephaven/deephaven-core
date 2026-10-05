@@ -16,6 +16,7 @@ For columns appended to the left table (joins), cell values equal aggregations o
 
 ```groovy syntax
 table.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations)
+table.rangeJoin(rightTable, columnsToMatch, aggregations)
 ```
 
 ## Parameters
@@ -51,9 +52,19 @@ For example:
 `"<- leftStartColumn <= rightRangeColumn <= leftEndColumn ->"`
 
 </Param>
+<Param name="columnsToMatch" type="Collection<String>">
+
+Match expressions, parsed as zero-or-more [exact match expressions](#exact-match-expressions) followed by a single [range match expression](#range-match-expressions). Use this parameter in place of `exactMatches` and `rangeMatch`.
+
+For example:
+
+- `List.of("LeftStartColumn < RightRangeColumn < LeftEndColumn")`
+- `List.of("CommonColumn", "LeftStartColumn <= RightRangeColumn <= LeftEndColumn")`
+
+</Param>
 <Param name="aggregations" type="Collection<? extends Aggregation>">
 
-The aggregations to perform over the responsive ranges from `rightTable` for each row from this Table.
+The aggregations to perform over the responsive ranges from `rightTable` for each row from this Table. Only [`group`](../group-and-aggregate/AggGroup.md) aggregations are supported.
 
 </Param>
 </ParamTable>
@@ -100,7 +111,7 @@ To produce aggregated output, [range match expressions](#range-match-expressions
 
 ##### Empty Range
 
-An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right rows were found using the exact join matches, or none were in range according to the `rangeMatch`.
+An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right rows were found using the exact join matches, or none were in range according to the `rangeMatch`. For an empty range, the aggregation output is an empty vector.
 
 ##### Single-Value Ranges
 
@@ -133,19 +144,19 @@ A Table.
 
 ## Examples
 
-The following example creates a left table (`lt`) and right table (`rt`), then calls `rangeJoin`. The right table is joined to the left table on the `Y` column, and the [range match expression](#range-match-expressions) specifies that matching rows should contain a value in the `RValue` column that is greater than the corresponding `LStartValue` row and less than the corresponding `LEndValue` row. The last argument calls the [`group`](../group-and-aggregate/AggGroup.md) aggregation to group results by `X`.
+The following example creates a left table (`lt`) and right table (`rt`), then calls `rangeJoin`. The right table is joined to the left table on the `Y` column, and the [range match expression](#range-match-expressions) specifies that matching rows should contain a value in the `RValue` column that is greater than the corresponding `LStartValue` row and less than the corresponding `LEndValue` row. The last argument calls the [`group`](../group-and-aggregate/AggGroup.md) aggregation to group the responsive `X` values from `rt` into a new `GroupedX` column. Naming the output `GroupedX` keeps it from replacing the left table's `X` column.
 
 ```groovy order=lt,rt,result
 lt = emptyTable(20).updateView("X=ii", "Y=X % 5", "LStartValue=ii / 0.7", "LEndValue=ii / 0.1")
 rt = emptyTable(20).updateView("X=ii", "Y=X % 5", "RValue=ii / 0.3")
 
-result = lt.rangeJoin(rt, List.of("Y", "LStartValue < RValue < LEndValue"), List.of(AggGroup("X")))
+result = lt.rangeJoin(rt, List.of("Y", "LStartValue < RValue < LEndValue"), List.of(AggGroup("GroupedX = X")))
 ```
 
-Let's break down the output to understand why `X` is grouped as it is.
+Let's break down the output to understand why `X` values are grouped as they are.
 
 - `X` = `0` in `lt`
-  - When `Y` is `0`, the range expression creates a [single value range](#single-value-ranges). The range expression uses `<`, which results in a `null` cell for the grouped X column.
+  - `LStartValue` and `LEndValue` are both `0`. The range expression uses `<`, so this is an [invalid range](#invalid-ranges), which results in a `null` cell in the `GroupedX` column.
 - `X` = `1` in `lt`
   - When `X` is `1`, `Y` is `1`. The range expression specifies that `RValue` must be greater than `1.4286` and less than `10`. The range join searches rows where `Y` = `1`, and checks if the corresponding `RValue` cell satisfies the criteria. In this case, it's true only when `X` is `1`.
 - `X` = `3` in `lt`

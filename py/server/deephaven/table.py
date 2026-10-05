@@ -2055,9 +2055,9 @@ class Table(JObjectWrapper):
         and then (2) aggregates over the joined data. Oftentimes this is used to join data for a particular time range
         from the right table onto the left table.
 
-        Rows from the right table with null or NaN key values are discarded; that is, they are never included in the
-        vectors used for aggregation.  For all rows that are not discarded, the right table must be sorted according
-        to the right range column for all rows within a group.
+        Rows from the right table with null or NaN right range column values are discarded; that is, they are never
+        included in the vectors used for aggregation.  For all rows that are not discarded, the right table must be
+        sorted according to the right range column for all rows within a group.
 
         Join key ranges, specified by the 'on' argument, are defined by zero-or-more exact join matches and a single
         range join match. The range join match must be the last match in the list.
@@ -2097,6 +2097,7 @@ class Table(JObjectWrapper):
             Empty Range
             An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right
             rows were found using the exact join matches, or none were in range according to the range join match.
+            For an empty range, the aggregation output is an empty vector.
 
             Single-value Ranges
             A single-value range is a range where the left row's values for the left start column and left end
@@ -2124,7 +2125,8 @@ class Table(JObjectWrapper):
             end, and only the left start column subexpression will be used for the match. If the left start column
             and left end column values are null, the range is unbounded, and all rows will be included.
 
-        Note: At this time, implementations only support static tables. This operation remains under active development.
+        Note: At this time, implementations only support static tables and group aggregations. This operation remains
+        under active development.
 
         Args:
             table (Table): the right table of the join
