@@ -89,8 +89,10 @@ final class MethodPattern {
      *
      * <p>
      * A method matches when its name and parameter types match and either its declaring class matches, or it is an
-     * instance method that overrides a method declared by a class or interface that matches. For an override of a
-     * generic method, the argument list may match either the overriding or the overridden parameter types.
+     * instance method that overrides a method declared by a class or interface that matches. A bridge method declared
+     * by the matching class or interface is never the overridden method, though a bridge may itself be the overriding
+     * method. For an override of a generic method, the argument list may match either the overriding or the overridden
+     * parameter types.
      * </p>
      *
      * @param method the method to test
@@ -143,7 +145,8 @@ final class MethodPattern {
     /**
      * Is {@code candidate}, declared by a supertype of {@code method}'s declaring class, overridden by {@code method}?
      * Type variables in the candidate's parameters are resolved along the inheritance path from the overriding class,
-     * so that {@code Integer.compareTo(Integer)} overrides {@code Comparable.compareTo(T)}.
+     * so that {@code Integer.compareTo(Integer)} overrides {@code Comparable.compareTo(T)}. A bridge candidate is never
+     * overridden, and a bridge {@code method} is compared with the erasure of the candidate, as its signature is.
      */
     private static boolean isOverriddenBy(final Method candidate, final Method method) {
         final int modifiers = candidate.getModifiers();
@@ -354,7 +357,8 @@ final class MethodPattern {
      * Translate a type pattern to a regular expression over canonical or binary class names. A {@code *} alone matches
      * any argument type; otherwise it matches within one segment of a name, which may be the binary name of a nested
      * class. {@code ..} matches any number of intermediate package or enclosing class names, and an unqualified name
-     * that is not a primitive matches only the class of that name in {@code java.lang}.
+     * that is not a primitive matches only the class of that name in {@code java.lang}. In an argument, each trailing
+     * {@code []} matches one array dimension.
      */
     private static Pattern typePattern(final String text, final boolean argument) {
         String element = text.trim();

@@ -160,7 +160,7 @@ A pointcut expression has three parts:
 
 1. **Class name**: The full package and class name (e.g., `java.util.Collections`). A class in `java.lang` may omit its package (`String` is the same as `java.lang.String`). Write a nested class as `java.util.Map.Entry` or `java.util.Map$Entry`, and use `*..*` for every class.
 2. **Method name**: The specific method, a name with `*` wildcards such as `to*Case`, `<constructor>` for a constructor, or `*` for any method or constructor.
-3. **Parameters**: The parameter types or `(..)` for any parameters. Write primitive types by their keyword (`int`, `double`). Other types must be fully qualified, except for types in `java.lang` such as `String`.
+3. **Parameters**: The parameter types or `(..)` for any parameters. Write primitive types by their keyword (`int`, `double`). Other types must be fully qualified, except for types in `java.lang` such as `String`. Write an array parameter as `T[]` in any position, such as `java.util.Arrays fill(int[], int)`. The last parameter may instead be written `T...`, which is the same as `T[]`; `...` is rejected anywhere else.
 
 ### Pattern matching symbols
 

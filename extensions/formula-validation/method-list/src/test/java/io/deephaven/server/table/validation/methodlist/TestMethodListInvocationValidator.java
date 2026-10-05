@@ -83,6 +83,8 @@ public class TestMethodListInvocationValidator {
         assertNotPermitted("java.lang.String *(.., int)", String.class.getMethod("length"));
         assertPermitted("java.util.Arrays toString(int[])", Arrays.class.getMethod("toString", int[].class));
         assertNotPermitted("java.util.Arrays toString(int[])", Arrays.class.getMethod("toString", long[].class));
+        // an array parameter may be in any position
+        assertPermitted("java.util.Arrays fill(int[], int)", Arrays.class.getMethod("fill", int[].class, int.class));
         assertPermitted("java.util.Arrays deepToString(java.lang.Object[])",
                 Arrays.class.getMethod("deepToString", Object[].class));
         // a wildcard within a name does not match an array type
