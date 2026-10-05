@@ -9,6 +9,9 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -18,6 +21,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -26,6 +30,7 @@ import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
+import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.stringset.ArrayStringSet;
@@ -44,6 +49,7 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
@@ -65,6 +71,7 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 
 @Category(OutOfBandTest.class)
 public final class ParquetTableFilterTest {
@@ -2821,6 +2828,103 @@ public final class ParquetTableFilterTest {
         assertEquals(26430, result.size());
         assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
+    }
+
+    /** A filter on {@code A} that fails with {@code failure} whenever it is applied. */
+    private static final class FailingFilter extends RowSetCapturingFilter {
+        private final RuntimeException failure;
+
+        private FailingFilter(final RuntimeException failure) {
+            super(RawString.of("A == 5"));
+            this.failure = failure;
+        }
+
+        @Override
+        public @NotNull WritableRowSet filter(
+                @NotNull final RowSet selection,
+                @NotNull final RowSet fullSet,
+                @NotNull final Table table,
+                final boolean usePrev) {
+            throw failure;
+        }
+
+        @Override
+        public WhereFilter copy() {
+            return this;
+        }
+    }
+
+    private static PushdownResult pushdownDataIndexFailingWith(final RuntimeException failure) {
+        final Table table = TableTools.emptyTable(1000).update("A = ii % 10");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final WhereFilter filter = new FailingFilter(failure);
+        filter.init(table.getDefinition());
+        try (final RowSet selection = table.getRowSet().copy();
+                final PushdownResult input = PushdownResult.allMaybeMatch(selection)) {
+            return ParquetTableLocation.pushdownDataIndex(selection, filter, Map.of(), dataIndex, input);
+        }
+    }
+
+    /**
+     * Applying a filter to a location's data index can fail on an index whose types do not match the table (see
+     * DH-19443), and the pushdown then leaves every row to the filter itself. A cancelled query is not such a failure.
+     */
+    @Test
+    public void testLocationDataIndexPropagatesCancellation() {
+        assertPushdownDataIndexPropagates(new CancellationException("cancelled while filtering the index"));
+    }
+
+    /**
+     * As {@link #testLocationDataIndexPropagatesCancellation()}, for an interrupted read of the index's row sets.
+     */
+    @Test
+    public void testLocationDataIndexPropagatesInterruptedRead() {
+        assertPushdownDataIndexPropagates(
+                new TableDataException("reading the index", new ClosedByInterruptException()));
+    }
+
+    private static void assertPushdownDataIndexPropagates(final RuntimeException failure) {
+        final Exception thrown = Assert.assertThrows(Exception.class,
+                () -> pushdownDataIndexFailingWith(failure).close());
+        Throwable cause = thrown;
+        while (cause != null && cause != failure) {
+            cause = cause.getCause();
+        }
+        assertSame(failure, cause);
+    }
+
+    /**
+     * A failure other than cancellation while filtering a location's data index leaves every row as a maybe match.
+     */
+    @Test
+    public void testLocationDataIndexFailureLeavesRowsToFilter() {
+        try (final PushdownResult result =
+                pushdownDataIndexFailingWith(new IllegalStateException("index does not match the table"))) {
+            assertEquals(0, result.match().size());
+            assertEquals(1000, result.maybeMatch().size());
+        }
+    }
+
+    /**
+     * A location trusts a data index only when its own file declares it, so a sidecar left behind by an earlier write
+     * of the same path is never paired with a rewritten file that did not write one.
+     */
+    @Test
+    public void testLeftoverIndexSidecarIgnored() {
+        final String fileName = "leftoverIndexSidecar.parquet";
+        final String destPath = Path.of(rootFile.getPath(), fileName).toString();
+        final ParquetInstructions indexA = ParquetInstructions.builder().addIndexColumns("A").build();
+        writeTable(TableTools.emptyTable(10_000).update("A = ii % 97", "B = ii"), destPath, indexA);
+        final File sidecar = new File(rootFile, ParquetTools.getRelativeIndexFilePath(fileName, "A"));
+        assertTrue(sidecar.exists());
+
+        final Table rewritten = TableTools.emptyTable(20_000).update("A = ii % 89", "B = ii");
+        writeTable(rewritten, destPath, EMPTY);
+        assertTrue("the earlier write's sidecar is still on disk", sidecar.exists());
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        assertFalse(DataIndexer.hasDataIndex(diskTable, "A"));
+        assertTableEquals(rewritten.where("A == 5"), diskTable.where("A == 5"));
     }
 
     @Test

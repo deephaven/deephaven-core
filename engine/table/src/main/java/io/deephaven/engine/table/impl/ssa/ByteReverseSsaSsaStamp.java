@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ByteSsaSsaStamp and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+// ****** Edit CharSsaSsaStamp and run "./gradlew replicateSegmentedSortedArray" to regenerate
 //
 // @formatter:off
 

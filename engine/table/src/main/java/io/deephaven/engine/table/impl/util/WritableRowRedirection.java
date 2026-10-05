@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
@@ -170,6 +171,25 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
     default void applyShift(final RowSet tableRowSet, final RowSetShiftData shiftData) {
         RowRedirectionUtils.applyRedirectionShift(this, tableRowSet, shiftData);
     }
+
+    /**
+     * Release, at the end of this cycle, storage that holds only outer row keys absent from {@code outerRowSet}. The
+     * values of such row keys are unused after this cycle. An owner whose outer row keys are the rows of
+     * {@code outerRowSet} calls this at most once per cycle, for a cycle in which {@code outerRowSet} changed.
+     *
+     * <p>
+     * The default implementation does nothing.
+     * </p>
+     *
+     * @param removed the outer row keys removed from {@code outerRowSet} this cycle, in the pre-shift key space
+     * @param shifted the shifts applied to {@code outerRowSet} this cycle
+     * @param outerRowSet the outer row keys this redirection maps, whose previous value is the row set at the start of
+     *        this cycle
+     */
+    default void releaseVacatedStorage(
+            @NotNull final RowSet removed,
+            @NotNull final RowSetShiftData shifted,
+            @NotNull final TrackingRowSet outerRowSet) {}
 
     /**
      * Factory for producing WritableRowRedirections and their components.

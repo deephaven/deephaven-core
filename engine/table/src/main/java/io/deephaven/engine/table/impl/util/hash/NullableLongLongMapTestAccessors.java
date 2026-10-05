@@ -8,6 +8,12 @@ import io.deephaven.util.annotations.TestUseOnly;
 @TestUseOnly
 interface NullableLongLongMapTestAccessors extends NullableLongLongMap {
     /**
+     * The map's current keys-and-values array, header included — the very array a reader would snapshot.
+     */
+    @TestUseOnly
+    long[] keysAndValuesSnapshot();
+
+    /**
      * Returns the keys of this map as a newly-allocated {@code long[]}. The array length equals {@link #size()}.
      *
      * <p>
