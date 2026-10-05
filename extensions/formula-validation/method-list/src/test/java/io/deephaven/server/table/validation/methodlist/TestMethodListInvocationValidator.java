@@ -194,6 +194,12 @@ public class TestMethodListInvocationValidator {
         assertNotPermitted("java.lang.Integer compareTo(java.lang.Object)", compareTo);
         assertPermitted("java.lang.Integer compareTo(java.lang.Integer)", compareTo);
         assertPermitted("java.util.List add(java.lang.Object)", ArrayList.class.getMethod("add", Object.class));
+        // a bridge method runs the same code as a virtual call to the method it bridges, so it matches through it
+        final Method bridge = Integer.class.getMethod("compareTo", Object.class);
+        Assert.assertTrue(bridge.isBridge());
+        assertPermitted("java.lang.Comparable compareTo(java.lang.Object)", bridge);
+        assertPermitted("java.lang.Integer compareTo(java.lang.Object)", bridge);
+        assertNotPermitted("java.lang.Integer compareTo(java.lang.Integer)", bridge);
     }
 
     @Test

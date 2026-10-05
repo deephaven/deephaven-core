@@ -44,35 +44,39 @@ import java.util.*;
  * </tr>
  * <tr>
  * <td>*..* *(..)</td>
- * <td>All method and constructor invocations</td>
+ * <td>Every method and constructor of every class</td>
  * </tr>
  * <tr>
  * <td>java.util.* *(..)</td>
- * <td>All method invocations to classes belonging to java.util (excluding sub-packages)</td>
+ * <td>Every method and constructor of the classes in java.util and their nested classes, but not of sub-packages, and
+ * every instance method, in any class, that overrides one of those methods</td>
  * </tr>
  * <tr>
  * <td>java.util..* *(..)</td>
- * <td>All method invocations to classes belonging to java.util (including sub-packages)</td>
+ * <td>Every method and constructor of the classes in java.util, its sub-packages, and their nested classes, and every
+ * instance method, in any class, that overrides one of those methods</td>
  * </tr>
  * <tr>
  * <td>java.util.Collections *(..)</td>
- * <td>All method invocations on java.util.Collections class</td>
+ * <td>Every method and constructor declared by java.util.Collections, and every instance method that overrides one of
+ * its methods</td>
  * </tr>
  * <tr>
  * <td>java.util.Collections unmodifiable*(..)</td>
- * <td>All method invocations starting with "unmodifiable" on java.util.Collections</td>
+ * <td>The methods declared by java.util.Collections whose names start with "unmodifiable"</td>
  * </tr>
  * <tr>
  * <td>java.util.Collections min(..)</td>
- * <td>All method invocations for all overloads of "min"</td>
+ * <td>Every overload of java.util.Collections.min</td>
  * </tr>
  * <tr>
  * <td>java.util.Collections emptyList()</td>
- * <td>All method invocations on java.util.Collections.emptyList()</td>
+ * <td>java.util.Collections.emptyList()</td>
  * </tr>
  * <tr>
  * <td>my.org.MyClass *(boolean, ..)</td>
- * <td>All method invocations where the first arg is a boolean in my.org.MyClass</td>
+ * <td>The methods and constructors of my.org.MyClass whose first parameter is a boolean, and every instance method that
+ * overrides one of those methods</td>
  * </tr>
  * <tr>
  * <td>java.lang.Number intValue()</td>
