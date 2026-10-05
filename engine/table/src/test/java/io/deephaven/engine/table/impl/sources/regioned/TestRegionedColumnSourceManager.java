@@ -976,6 +976,43 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertEquals("sampled regions " + sampled, PushdownResult.REGION_SORTED_DATA_COST, cost.get());
     }
 
+    /**
+     * Sampling seeks to evenly spaced regions rather than visiting every region in the selection, and must still reach
+     * the selection's last region when the selection is sparse.
+     */
+    @Test
+    public void testEstimateSamplesSparseSelection() {
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        final int lastRegion = 999;
+        final WritableRowSet selection = RowSetFactory.empty();
+        for (int ri = 0; ri < 5; ++ri) {
+            selection.insert(RegionedColumnSource.getFirstRowKey(ri));
+        }
+        selection.insert(RegionedColumnSource.getFirstRowKey(lastRegion));
+
+        final Set<Integer> sampled = new HashSet<>();
+        final AtomicLong cost = new AtomicLong(-1);
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        try (selection) {
+            SUT.estimatePushdownFilterCostHelper(selection, "testEstimateSamplesSparseSelection",
+                    new ImmediateJobScheduler(),
+                    (regionIndex, location, shiftedRowSet, onCost, nec) -> {
+                        sampled.add(regionIndex);
+                        // Only the far region supports a pushdown action.
+                        onCost.accept(regionIndex == lastRegion
+                                ? PushdownResult.REGION_SORTED_DATA_COST
+                                : PushdownResult.UNSUPPORTED_ACTION_COST);
+                    },
+                    cost::set, error::set);
+        }
+
+        assertNull(error.get());
+        assertTrue("sampled regions " + sampled, sampled.contains(0) && sampled.contains(lastRegion));
+        assertEquals("sampled regions " + sampled, PushdownResult.REGION_SORTED_DATA_COST, cost.get());
+    }
+
     private static void maybePrintStackTrace(@NotNull final Exception e) {
         if (PRINT_STACK_TRACES) {
             e.printStackTrace();

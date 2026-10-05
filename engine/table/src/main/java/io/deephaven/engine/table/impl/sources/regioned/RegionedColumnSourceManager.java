@@ -849,23 +849,43 @@ public class RegionedColumnSourceManager
     }
 
     /**
-     * Choose up to {@code maxCount} of the region indices spanned by {@code selection}, spread evenly across them so
-     * that the sample is not biased towards the leading regions.
+     * Choose up to {@code maxCount} of the region indices spanned by {@code selection}, spread evenly from its first
+     * region to its last so that the sample is not biased towards the leading regions. Seeks directly to each target
+     * rather than visiting every region, so the cost is bounded by {@code maxCount}.
      */
     private static int[] sampleRegionIndices(final RowSet selection, final int maxCount) {
-        final int[] all = regionIndices(selection);
-        if (all.length <= maxCount) {
-            return all;
-        }
-        if (maxCount <= 0) {
+        if (selection.isEmpty() || maxCount <= 0) {
             return new int[0];
         }
-        // Take the middle region of each of maxCount equal-width buckets.
-        final int[] sample = new int[maxCount];
-        for (int ii = 0; ii < maxCount; ++ii) {
-            sample[ii] = all[(int) ((2L * ii + 1) * all.length / (2L * maxCount))];
+        final int firstRegion = getRegionIndex(selection.firstRowKey());
+        final int lastRegion = getRegionIndex(selection.lastRowKey());
+        final long span = (long) lastRegion - firstRegion;
+        if (span < maxCount) {
+            // Spans no more than maxCount regions, so visiting all of them is already bounded.
+            return regionIndices(selection);
         }
-        return sample;
+        final IntStream.Builder builder = IntStream.builder();
+        try (final RowSet.SearchIterator sit = selection.searchIterator()) {
+            int previousRegion = -1;
+            for (int ii = 0; ii < maxCount; ++ii) {
+                final int targetRegion = maxCount == 1
+                        ? firstRegion
+                        : firstRegion + (int) (ii * span / (maxCount - 1));
+                if (targetRegion <= previousRegion) {
+                    // A sparse selection already carried us past this target.
+                    continue;
+                }
+                if (!sit.advance(getFirstRowKey(targetRegion))) {
+                    break;
+                }
+                final int region = getRegionIndex(sit.currentValue());
+                if (region != previousRegion) {
+                    builder.add(region);
+                    previousRegion = region;
+                }
+            }
+        }
+        return builder.build().toArray();
     }
 
     @FunctionalInterface
