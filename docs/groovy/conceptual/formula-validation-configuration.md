@@ -170,9 +170,9 @@ A pointcut expression has three parts:
 
 ### Inherited methods
 
-A pattern also matches every instance method that overrides a matching method. For example, `java.lang.Object toString()` permits `toString()` on any class, and `java.lang.Number intValue()` permits `intValue()` on `Integer`, `BigDecimal`, and every other subclass of `Number`. Static methods match only the class that declares them.
+A pattern also matches every instance method that overrides a matching method. For example, `java.lang.Object toString()` permits `toString` on any class, and `java.lang.Number intValue()` permits `intValue` on `Integer`, `BigDecimal`, and every other subclass of `Number`. Static methods match only the class that declares them.
 
-A class pattern matches only the methods and constructors the class itself declares, plus overrides of those methods in subclasses. It does not match methods the class inherits without overriding: `java.lang.String *(..)` does not permit `getClass()` on a `String`, because `Object` declares it and `String` does not override it.
+A class pattern matches only the methods and constructors the class itself declares, plus overrides of those methods in subclasses. It does not match methods the class inherits without overriding: `java.lang.String *(..)` does not permit `getClass` on a `String`, because `Object` declares it and `String` does not override it.
 
 ### Common examples
 

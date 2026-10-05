@@ -85,6 +85,22 @@ public class TestMethodListInvocationValidator {
         assertNotPermitted("java.lang.String *(.., int)", String.class.getMethod("length"));
         assertPermitted("java.util.Arrays toString(int[])", Arrays.class.getMethod("toString", int[].class));
         assertNotPermitted("java.util.Arrays toString(int[])", Arrays.class.getMethod("toString", long[].class));
+        // each [] after a wildcard matches exactly one array dimension
+        final String arrays = ArrayParameters.class.getName();
+        final Method vector = ArrayParameters.class.getMethod("vector", String[].class);
+        final Method matrix = ArrayParameters.class.getMethod("matrix", String[][].class);
+        final Method primitiveMatrix = ArrayParameters.class.getMethod("primitiveMatrix", int[][].class);
+        for (final String wildcard : List.of("*", "*..*")) {
+            assertPermitted(arrays + " *(" + wildcard + "[])", vector);
+            assertNotPermitted(arrays + " *(" + wildcard + "[])", matrix);
+            assertNotPermitted(arrays + " *(" + wildcard + "...)", matrix);
+            assertPermitted(arrays + " *(" + wildcard + "[][])", matrix);
+            assertPermitted(arrays + " *(" + wildcard + "...)", vector);
+            assertNotPermitted(arrays + " *(" + wildcard + "[][])", vector);
+            assertPermitted(arrays + " *(" + wildcard + "[][])", primitiveMatrix);
+        }
+        // while a wildcard alone matches any parameter type, arrays included
+        assertPermitted(arrays + " *(*)", matrix);
         // an array parameter may be in any position
         assertPermitted("java.util.Arrays fill(int[], int)", Arrays.class.getMethod("fill", int[].class, int.class));
         assertPermitted("java.util.Arrays deepToString(java.lang.Object[])",
@@ -766,6 +782,14 @@ public class TestMethodListInvocationValidator {
         public int extra() {
             return 1;
         }
+    }
+
+    public static class ArrayParameters {
+        public static void vector(final String[] values) {}
+
+        public static void matrix(final String[][] values) {}
+
+        public static void primitiveMatrix(final int[][] values) {}
     }
 
     public static class ProtectedBase {

@@ -371,7 +371,8 @@ final class MethodPattern {
             throw new IllegalArgumentException("Invalid type pattern: '" + text + "'");
         }
         if ((argument && element.equals("*")) || element.equals("*..*")) {
-            return Pattern.compile(".*" + arraySuffix);
+            // with an array suffix, the wildcard must not match brackets, so that each [] matches one dimension
+            return Pattern.compile((arraySuffix.length() == 0 ? ".*" : "[^\\[\\]]*") + arraySuffix);
         }
 
         final StringBuilder regex = new StringBuilder();
