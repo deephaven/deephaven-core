@@ -218,29 +218,34 @@ public class CrossJoinHelper {
             final ModifiedColumnSet leftKeyColumns =
                     leftTable.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToMatch));
 
-            if (!rightTable.isRefreshing()) {
+            // A static empty left table has no rows to join, and an inner join against a static empty right table has
+            // no rows to match; such a result is empty and never changes, so it is static like a join of static tables.
+            final boolean resultIsStatic =
+                    (!leftTable.isRefreshing() && (!rightTable.isRefreshing() || leftTable.isEmpty()))
+                            || (!rightTable.isRefreshing() && rightTable.isEmpty() && !leftOuterJoin);
+            if (resultIsStatic) {
                 // TODO: use grouping
-                if (!leftTable.isRefreshing()) {
-                    final StaticChunkedCrossJoinStateManager jsm = new StaticChunkedCrossJoinStateManager(
-                            bucketingContext.leftSources, control.initialBuildSize(), control, leftTable,
-                            leftOuterJoin);
+                final StaticChunkedCrossJoinStateManager jsm = new StaticChunkedCrossJoinStateManager(
+                        bucketingContext.leftSources, control.initialBuildSize(), control, leftTable,
+                        leftOuterJoin);
 
-                    // noinspection resource
-                    final WritableRowSet resultRowSet = bucketingContext.buildParameters.firstBuildFrom() == LeftInput
-                            ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable,
-                                    bucketingContext.rightSources)
-                            : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable,
-                                    bucketingContext.rightSources);
+                // noinspection resource
+                final WritableRowSet resultRowSet = bucketingContext.buildParameters.firstBuildFrom() == LeftInput
+                        ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable,
+                                bucketingContext.rightSources)
+                        : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable,
+                                bucketingContext.rightSources);
 
-                    final StaticChunkedCrossJoinStateManager.ResultOnlyCrossJoinStateManager resultStateManager =
-                            jsm.getResultOnlyStateManager();
+                final StaticChunkedCrossJoinStateManager.ResultOnlyCrossJoinStateManager resultStateManager =
+                        jsm.getResultOnlyStateManager();
 
-                    return makeResult(leftTable, rightTable, columnsToAdd, resultStateManager,
-                            resultRowSet.toTracking(),
-                            cs -> CrossJoinRightColumnSource.maybeWrap(
-                                    resultStateManager, cs, rightTable.isRefreshing()));
-                }
+                return makeResult(leftTable, rightTable, columnsToAdd, resultStateManager,
+                        resultRowSet.toTracking(),
+                        cs -> CrossJoinRightColumnSource.maybeWrap(
+                                resultStateManager, cs, rightTable.isRefreshing()));
+            }
 
+            if (!rightTable.isRefreshing()) {
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
                         new LeftOnlyIncrementalChunkedCrossJoinStateManager(
                                 bucketingContext.leftSources, control.initialBuildSize(),

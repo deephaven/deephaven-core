@@ -384,6 +384,53 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    @Test
+    public void testStaticEmptyInputResultIsStatic() {
+        for (final boolean keyed : new boolean[] {false, true}) {
+            final MatchPair[] columnsToMatch =
+                    keyed ? MatchPairFactory.getExpressions("K") : MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY;
+            final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+            for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+                final String description = "keyed=" + keyed + ", leftOuterJoin=" + leftOuterJoin;
+
+                // a static empty left table has no rows to join
+                final QueryTable emptyLeft = testTable(intCol("K"), intCol("A"));
+                final QueryTable tickingRight =
+                        testRefreshingTable(i(0).toTracking(), intCol("K", 1), intCol("Y", 10));
+                final Table emptyLeftJoined = leftOuterJoin
+                        ? CrossJoinHelper.leftOuterJoin(emptyLeft, tickingRight, columnsToMatch, columnsToAdd,
+                                numRightBitsToReserve)
+                        : CrossJoinHelper.join(emptyLeft, tickingRight, columnsToMatch, columnsToAdd,
+                                numRightBitsToReserve);
+                assertFalse(description, emptyLeftJoined.isRefreshing());
+                assertTrue(description, emptyLeftJoined.isEmpty());
+
+                // an inner join against a static empty right table has no rows to match; an outer join follows the
+                // left table
+                final QueryTable tickingLeft = testRefreshingTable(i(0).toTracking(), intCol("K", 1), intCol("A", 2));
+                final QueryTable emptyRight = testTable(intCol("K"), intCol("Y"));
+                final EvalNugget[] en = new EvalNugget[] {
+                        EvalNugget.from(() -> leftOuterJoin
+                                ? CrossJoinHelper.leftOuterJoin(tickingLeft, emptyRight, columnsToMatch,
+                                        columnsToAdd, numRightBitsToReserve)
+                                : CrossJoinHelper.join(tickingLeft, emptyRight, columnsToMatch, columnsToAdd,
+                                        numRightBitsToReserve)),
+                };
+                assertEquals(description, leftOuterJoin, en[0].originalValue.isRefreshing());
+
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(tickingRight, i(1), intCol("K", 1), intCol("Y", 11));
+                    tickingRight.notifyListeners(i(1), i(), i());
+                    addToTable(tickingLeft, i(1), intCol("K", 1), intCol("A", 3));
+                    tickingLeft.notifyListeners(i(1), i(), i());
+                });
+                assertTrue(description, emptyLeftJoined.isEmpty());
+                TstUtils.validate(description, en);
+            }
+        }
+    }
+
     private ErrorListener makeAndListenToValidator(QueryTable joined) {
         final TableUpdateValidator validator = TableUpdateValidator.make("joined", joined);
         final QueryTable validatorResult = validator.getResultTable();
