@@ -449,7 +449,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
          * <p>
          * A large floating-point value against an int or long column is an accepted difference: the query language
          * compares the two in floating point, where more than one integer can round to the value ({@code 2^53 + 1 ==
-         * (double) 2^53}), but the exact equivalent matches only itself.
+         * (double) 2^53}), but the exact equivalent matches only itself. Likewise, a {@link Float} range bound against
+         * an int column orders as its exact equivalent, where the query language compares in float.
          *
          * @param columnType the (boxed) column type, which the error names; {@code converted} may be of another type,
          *        an {@link Integer} for a {@link Character} column

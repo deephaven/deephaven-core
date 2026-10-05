@@ -42,15 +42,16 @@ import java.util.Optional;
  * <p>
  * A query-scope parameter is converted to the column's type as {@link MatchFilter} converts it, so that the filter
  * selects the rows a {@link ConditionFilter} would. Where the converted value would select other rows -- a value the
- * conversion rejects, {@code -0.0} against a byte, short, int or char column (the query language orders it below
- * {@code 0}, which the converted value {@code 0} is not), or a {@link Float} against an int column (the query language
- * compares the two in float, so {@code X > 16777216f} excludes {@code 16777217}) -- the filter fails over to a
- * {@link ConditionFilter}.
+ * conversion rejects, or {@code -0.0} against a byte, short, int or char column (the query language orders it below
+ * {@code 0}, which the converted value {@code 0} is not) -- the filter fails over to a {@link ConditionFilter}.
  *
  * <p>
- * One difference remains, for float and double columns: their range filters treat {@code -0.0} and {@code 0.0} as
- * equal, where the query language orders {@code -0.0} below {@code 0.0}, so on rows holding {@code -0.0},
- * {@code X < 0.0} and {@code X >= 0.0} select otherwise than the query language does.
+ * Two differences remain. Float and double columns' range filters treat {@code -0.0} and {@code 0.0} as equal, where
+ * the query language orders {@code -0.0} below {@code 0.0}, so on rows holding {@code -0.0}, {@code X < 0.0} and
+ * {@code X >= 0.0} select otherwise than the query language does. And a {@link Float} bound against an int column
+ * converts to its exact int, where the query language compares the two in float, rounding an int beyond 2^24: there,
+ * {@code X > 16777216f} excludes {@code 16777217}, which the converted bound {@code 16777216} includes. This is the
+ * range counterpart of {@link MatchFilter}'s exact match of a large floating-point value.
  *
  * <p>
  * For primitive columns the endpoint is compared in Deephaven's type system, where each type's null value sorts below
@@ -272,15 +273,10 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
                             new IllegalArgumentException("RangeFilter does not support array types for column "
                                     + columnName + " with value <" + value + ">");
                 } else if (ordersNegativeZeroBelowZero(colClass) && isNegativeZero(queryScopeValue)) {
-                    // Only to match the query language, which widens the column value to double and compares with
+                    // Failover to match the query language, which widens the column value to double and compares with
                     // Double.compare, ordering -0.0 below 0: X <= -0.0 excludes 0 there, though -0.0 converts to 0.
                     potentialConversionError = new IllegalArgumentException("RangeFilter cannot compare column "
                             + columnName + " with -0.0 as the query language does");
-                } else if (colClass == int.class && queryScopeValue instanceof Float) {
-                    // Only to match the query language, which compares an int column with a Float in float: X >
-                    // 16777216f excludes 16777217 there, though the converted bound 16777216 includes it.
-                    potentialConversionError = new IllegalArgumentException("RangeFilter cannot compare int column "
-                            + columnName + " with a Float as the query language does, in float");
                 }
             } catch (final RuntimeException err) {
                 potentialConversionError = err;

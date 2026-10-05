@@ -60,8 +60,9 @@ import static org.junit.Assert.assertTrue;
  * for instance, is not representable either: the query language compares it as a number, and only a value of the
  * column's own type, the byte -128, is null. There are two exceptions. A large floating-point value against an int or
  * long column matches only its exact equivalent, where the query language, comparing in floating point, would also
- * match the integers that round to it. And a literal is read in the column's type, so the literal -128 against a byte
- * column is null, where the query language reads it as an int.
+ * match the integers that round to it; a large {@link Float} range bound against an int column likewise orders as its
+ * exact equivalent. And a literal is read in the column's type, so the literal -128 against a byte column is null,
+ * where the query language reads it as an int.
  */
 public class MatchFilterCoercionTest {
 
@@ -165,6 +166,24 @@ public class MatchFilterCoercionTest {
                 "X == l24", "X < l24", "X >= l24");
         assertSameRowsAsFailover(newTable(doubleCol("X", 0.5, 5.0, 0x1p53, 0x1p53 + 2, NULL_DOUBLE)),
                 "X == l53", "X < l53", "X >= l53", "X == i5", "X < i5");
+    }
+
+    @Test
+    public void floatBoundOnAnIntColumnIsExact() {
+        // an accepted difference: the query language compares an int with a Float in float, where 16777217 rounds to
+        // 2^24, but the converted bound is the exact int 2^24
+        QueryScope.addParam("f24", 0x1p24f);
+        QueryScope.addParam("f5", 5.0f);
+        final Table t = newTable(intCol("X", 4, 5, 1 << 24, (1 << 24) + 1, NULL_INT));
+        assertFalse(failsOver(t, "X <= f24"));
+        assertTableEquals(newTable(intCol("X", 4, 5, 1 << 24, NULL_INT)), t.where("X <= f24"));
+        assertTableEquals(newTable(intCol("X", (1 << 24) + 1)), t.where("X > f24"));
+        assertTableEquals(newTable(intCol("X", 4, 5, 1 << 24, (1 << 24) + 1, NULL_INT)),
+                t.where(ConditionFilter.createConditionFilter("X <= f24")));
+
+        // where the float is exact for every int it compares, the two agree
+        assertFalse(failsOver(t, "X > f5"));
+        assertSameRowsAsFailover(t, "X < f5", "X <= f5", "X > f5", "X >= f5");
     }
 
     @Test
