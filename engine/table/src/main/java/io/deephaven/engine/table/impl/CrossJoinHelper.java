@@ -120,7 +120,7 @@ public class CrossJoinHelper {
             final MatchPair[] columnsToAdd,
             final int numReserveRightBits,
             final JoinControl control) {
-        return QueryPerformanceRecorder.withNugget("leftJoin(" + rightTable.getDescription() + ","
+        return QueryPerformanceRecorder.withNugget("leftOuterJoin(" + rightTable.getDescription() + ","
                 + matchString(columnsToMatch) + "," + matchString(columnsToAdd) + ")", leftTable.size(), () -> {
                     final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd,
                             numReserveRightBits, control, true);
@@ -139,7 +139,7 @@ public class CrossJoinHelper {
             final boolean leftOuterJoin) {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
-        try (final BucketingContext bucketingContext = new BucketingContext("join",
+        try (final BucketingContext bucketingContext = new BucketingContext(leftOuterJoin ? "leftOuterJoin" : "join",
                 leftTable, rightTable, columnsToMatch, columnsToAdd, control, false, false)) {
             // TODO: if we have a single column of unique values, and the range is small, we can use a simplified table
             // if (!rightTable.isRefreshing()

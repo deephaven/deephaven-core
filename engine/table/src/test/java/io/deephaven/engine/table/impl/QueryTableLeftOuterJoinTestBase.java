@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntArrayGenerator;
@@ -390,6 +391,41 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         TstUtils.validate(en);
         assertTableEquals(TableTools.newTable(intCol("LS", 3, 4), intCol("RS", NULL_INT, NULL_INT)),
                 en[0].originalValue);
+    }
+
+    @Test
+    public void testFailureNamesOperation() {
+        for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+            final QueryTable left = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("K", 1));
+            final QueryTable right = TstUtils.testTable(i(0, 1).toTracking(), intCol("K", 1, 1), intCol("Y", 3, 4));
+            final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+            final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+            final Table joined = leftOuterJoin
+                    ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                    : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10);
+            final MutableObject<String> failedEntry = new MutableObject<>();
+            joined.addUpdateListener(new InstrumentedTableUpdateListenerAdapter("capture", joined, false) {
+                @Override
+                public void onUpdate(final TableUpdate upstream) {}
+
+                @Override
+                public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+                    failedEntry.setValue(String.valueOf(sourceEntry));
+                }
+            });
+
+            // a left row key needing 57 bits leaves too few bits for the 10 reserved right bits
+            final long leftKey = 1L << 56;
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(leftKey), intCol("K", 1));
+                left.notifyListeners(i(leftKey), i(), i());
+            }), errors -> !errors.isEmpty());
+
+            final String expectedDescription = "description='" + (leftOuterJoin ? "leftOuterJoin" : "join") + "(";
+            assertNotNull(failedEntry.getValue());
+            assertTrue(failedEntry.getValue(), failedEntry.getValue().contains(expectedDescription));
+        }
     }
 
     @Test
