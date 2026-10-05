@@ -226,6 +226,50 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     @Test
+    public void testZeroKeyRightModifyOfColumnNotAdded() {
+        final QueryTable lTable = testRefreshingTable(i(1, 5).toTracking(), intCol("LVal", 1, 5));
+        final QueryTable rTable = testRefreshingTable(i(0, 2).toTracking(), intCol("RVal", 10, 12),
+                intCol("RUnused", 20, 22));
+        final QueryTable jt = (QueryTable) lTable.join(rTable, emptyList(), List.of(JoinAddition.parse("RVal")),
+                numRightBitsToReserve);
+        final SimpleListener listener = new SimpleListener(jt);
+        jt.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(2), intCol("RVal", 12), intCol("RUnused", -22));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RUnused")));
+        });
+        assertEquals(0, listener.getCount());
+
+        // the left modification paints only its own left row's block
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(lTable, i(1), intCol("LVal", -1));
+            lTable.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    lTable.newModifiedColumnSet("LVal")));
+            addToTable(rTable, i(2), intCol("RVal", 12), intCol("RUnused", 22));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RUnused")));
+        });
+        assertEquals(1, listener.getCount());
+        assertEquals(rTable.size(), listener.update.modified().size());
+        assertEquals(jt.newModifiedColumnSet("LVal"), listener.update.modifiedColumnSet());
+        listener.reset();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(2), intCol("RVal", -12), intCol("RUnused", 22));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RVal", "RUnused")));
+        });
+        assertEquals(1, listener.getCount());
+        assertEquals(lTable.size(), listener.update.modified().size());
+        assertEquals(jt.newModifiedColumnSet("RVal"), listener.update.modifiedColumnSet());
+        assertTableEquals(lTable.join(rTable, emptyList(), List.of(JoinAddition.parse("RVal")),
+                numRightBitsToReserve), jt);
+    }
+
+    @Test
     public void testIncrementalZeroKeyJoin() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {

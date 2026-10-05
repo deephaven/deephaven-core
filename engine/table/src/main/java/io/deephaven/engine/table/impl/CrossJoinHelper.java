@@ -1056,11 +1056,16 @@ public class CrossJoinHelper {
                 leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
         final ModifiedColumnSet.Transformer rightTransformer =
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
+        final ModifiedColumnSet rightAddedColumns =
+                rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
 
         final BiConsumer<TableUpdate, TableUpdate> onUpdate = (leftUpdate, rightUpdate) -> {
 
             final boolean leftChanged = leftUpdate != null;
             final boolean rightChanged = rightUpdate != null;
+            // a right modification changes result rows only through the right columns the join adds
+            final boolean rightHasModifies = rightChanged && rightUpdate.modified().isNonempty()
+                    && rightUpdate.modifiedColumnSet().containsAny(rightAddedColumns);
 
             final int prevRightBits = crossJoinState.getNumShiftBits();
             final int currRightBits = Math.max(prevRightBits, CrossJoinShiftState.getMinBits(rightTable));
@@ -1077,7 +1082,7 @@ public class CrossJoinHelper {
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
 
             try (final SafeCloseableList closer = new SafeCloseableList()) {
-                if (rightChanged && rightUpdate.modified().isNonempty()) {
+                if (rightHasModifies) {
                     rightTransformer.transform(rightUpdate.modifiedColumnSet(), downstream.modifiedColumnSet);
                 }
                 if (leftChanged && leftUpdate.modified().isNonempty()) {
@@ -1111,7 +1116,6 @@ public class CrossJoinHelper {
 
                     final boolean rightHasAdds = addRight.isNonempty();
                     final boolean rightHasRemoves = rmRight.isNonempty();
-                    final boolean rightHasModifies = modRight.isNonempty();
 
                     // Do note that add/mod's are in post-shift keyspace.
                     final RowSet.SearchIterator leftAddIter = leftChanged ? leftUpdate.added().searchIterator() : null;
