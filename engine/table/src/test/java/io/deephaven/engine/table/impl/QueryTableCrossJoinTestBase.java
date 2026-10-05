@@ -16,17 +16,20 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.OuterJoinTools;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -993,5 +996,62 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             TstUtils.addToTable(table, changed, longCol(keyName, keys), intCol(valueName, values));
         }
         table.notifyListeners(added, removed, modified);
+    }
+
+    @Test
+    public void testAddOnlyAndAppendOnlyLeftWithStaticRight() {
+        for (final String leftAttribute : new String[] {Table.ADD_ONLY_TABLE_ATTRIBUTE,
+                Table.APPEND_ONLY_TABLE_ATTRIBUTE}) {
+            for (final boolean rightRefreshing : new boolean[] {false, true}) {
+                for (final String columnsToMatch : new String[] {"Key", ""}) {
+                    for (final boolean leftOuter : new boolean[] {false, true}) {
+                        final String description = "leftAttribute=" + leftAttribute + ", rightRefreshing="
+                                + rightRefreshing + ", columnsToMatch=" + columnsToMatch + ", leftOuter=" + leftOuter;
+                        final QueryTable lTable = testRefreshingTable(i(10, 20).toTracking(),
+                                intCol("Key", 1, 2), intCol("LVal", 10, 20));
+                        lTable.setAttribute(leftAttribute, true);
+                        final QueryTable rTable = rightRefreshing
+                                ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4))
+                                : testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+
+                        final Table result = leftOuter
+                                ? OuterJoinTools.leftOuterJoin(lTable, rTable, columnsToMatch, "RVal",
+                                        numRightBitsToReserve)
+                                : lTable.join(rTable, columnsToMatch, "RVal", numRightBitsToReserve);
+                        final boolean appendOnlyLeft = leftAttribute.equals(Table.APPEND_ONLY_TABLE_ATTRIBUTE);
+                        assertEquals(description, !rightRefreshing,
+                                Boolean.TRUE.equals(result.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE)));
+                        assertEquals(description, !rightRefreshing && appendOnlyLeft,
+                                Boolean.TRUE.equals(result.getAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE)));
+                        if (rightRefreshing) {
+                            continue;
+                        }
+
+                        final long lastRowKeyBefore = result.getRowSet().lastRowKey();
+                        final SimpleListener listener = new SimpleListener(result);
+                        result.addUpdateListener(listener);
+                        // key 1 matches two right rows and key 3 matches none
+                        final RowSet leftAdded = appendOnlyLeft ? i(30, 40) : i(5, 15, 30);
+                        final int[] addedKeys = appendOnlyLeft ? new int[] {1, 3} : new int[] {3, 1, 3};
+                        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                                .runWithinUnitTestCycle(() -> {
+                                    addToTable(lTable, leftAdded, intCol("Key", addedKeys),
+                                            intCol("LVal", new int[addedKeys.length]));
+                                    lTable.notifyListeners(leftAdded.copy(), i(), i());
+                                });
+                        assertEquals(description, 1, listener.getCount());
+                        final TableUpdate update = listener.getUpdate();
+                        assertTrue(description, update.added().isNonempty());
+                        assertTrue(description, update.removed().isEmpty());
+                        assertTrue(description, update.modified().isEmpty());
+                        assertTrue(description, update.shifted().empty());
+                        if (appendOnlyLeft) {
+                            assertTrue(description, update.added().firstRowKey() > lastRowKeyBefore);
+                        }
+                        listener.close();
+                    }
+                }
+            }
+        }
     }
 }

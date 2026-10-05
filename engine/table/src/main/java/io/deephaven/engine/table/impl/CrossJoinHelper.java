@@ -100,6 +100,14 @@ public class CrossJoinHelper {
         final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits,
                 control, false);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
+        // A static right table fixes every left row's group and the number of right bits, so a left add only adds
+        // result rows within the added left row's own key range; an append to the left appends to the result.
+        if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
+            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        }
+        if (leftTable.isAppendOnly() && !rightTable.isRefreshing()) {
+            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        }
         return result;
     }
 
@@ -125,6 +133,15 @@ public class CrossJoinHelper {
                     final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd,
                             numReserveRightBits, control, true);
                     leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
+                    // A static right table fixes every left row's group, or its null row, and the number of right
+                    // bits, so a left add only adds result rows within the added left row's own key range; an append
+                    // to the left appends to the result.
+                    if (leftTable.isAddOnly() && !rightTable.isRefreshing()) {
+                        result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                    }
+                    if (leftTable.isAppendOnly() && !rightTable.isRefreshing()) {
+                        result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+                    }
                     return result;
                 });
     }
