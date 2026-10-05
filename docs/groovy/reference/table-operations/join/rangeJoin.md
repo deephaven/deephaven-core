@@ -153,7 +153,7 @@ rt = emptyTable(20).updateView("X=ii", "Y=X % 5", "RValue=ii / 0.3")
 result = lt.rangeJoin(rt, List.of("Y", "LStartValue < RValue < LEndValue"), List.of(AggGroup("GroupedX = X")))
 ```
 
-Let's break down the output to understand why `X` values are grouped as they are.
+The following breakdown explains why `X` values are grouped as they are.
 
 - `X` = `0` in `lt`
   - `LStartValue` and `LEndValue` are both `0`. The range expression uses `<`, so this is an [invalid range](#invalid-ranges), which results in a `null` cell in the `GroupedX` column.
