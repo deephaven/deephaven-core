@@ -217,8 +217,9 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationQueu
      * of bounds (an exception) or probes a region that still holds a free slot, because a doubled table is at most
      * three quarters full and a table is only ever halved when under a fifth full; in-place mutation never fills the
      * table; and the iterator's position only decreases. A compound kernel's {@code Hash.Strategy} only reads the probe
-     * and the stored tuples, which are immutable. This depends on every kernel being fastutil-backed, including the
-     * Object kernel, which is why that one uses {@code Object2IntOpenHashMap} rather than {@code HashMap}.
+     * and the stored tuples, which are immutable. This depends on every kernel that holds keys being fastutil-backed,
+     * including the Object kernel, which is why that one uses {@code Object2LongOpenHashMap} rather than
+     * {@code HashMap}; the kernel for a key of no columns holds only a row count.
      */
     SetKernel kernel() {
         return kernel;

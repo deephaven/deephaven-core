@@ -23,7 +23,7 @@ import java.util.Iterator;
  * <p>
  * A single key column is held in a fastutil open hash map from key to count, whose lookups read only its key array. A
  * compound key is held as tuples in a {@link TupleMapSetKernel}, which is matched one chunk per column, so that no
- * tuple is assembled per row.
+ * tuple is assembled per row. A key of no columns is held by a {@link ZeroColumnSetKernel}.
  * <p>
  * An update removes, then adds, then calls {@link #finishRemove(RowSequence)}: a key whose count falls to zero stays
  * until then, so that an addition later in the same update revives it rather than reporting it as both removed and
@@ -44,6 +44,11 @@ abstract class SetKernel {
             @NotNull final ColumnSource<?>[] keySources,
             @NotNull final RowSet initialRows,
             final boolean usePrev) {
+        if (keySources.length == 0) {
+            final ZeroColumnSetKernel kernel = new ZeroColumnSetKernel();
+            kernel.add(initialRows);
+            return kernel;
+        }
         if (keySources.length == 1) {
             final SingleColumnSetKernel kernel = SingleColumnSetKernel.make(keySources[0]);
             kernel.add(initialRows, usePrev);

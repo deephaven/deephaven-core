@@ -860,6 +860,48 @@ public class QueryTableWhereInTest {
     }
 
     @Test
+    public void testNoKeyColumns() {
+        // With no key columns, every row matches while the set table has any row, and none matches while it is empty.
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), intCol("Sentinel", 10, 20, 30));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final QueryTable setTable = testRefreshingTable(i(1, 2).toTracking(), intCol("X", 1, 2));
+        final Table empty = source.where("false");
+
+        final Table inResult = source.whereIn(setTable);
+        final Table notInResult = source.whereNotIn(setTable);
+        assertTableEquals(source, inResult);
+        assertTableEquals(empty, notInResult);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(setTable, i(1));
+            setTable.notifyListeners(i(), i(1), i());
+        });
+        assertTableEquals(source, inResult);
+        assertTableEquals(empty, notInResult);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(setTable, i(2));
+            setTable.notifyListeners(i(), i(2), i());
+        });
+        assertTableEquals(empty, inResult);
+        assertTableEquals(source, notInResult);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(setTable, i(3), intCol("X", 3));
+            setTable.notifyListeners(i(3), i(), i());
+        });
+        assertTableEquals(source, inResult);
+        assertTableEquals(empty, notInResult);
+
+        final Table staticIn = source.whereIn(TableTools.emptyTable(1));
+        final Table staticNotIn = source.whereNotIn(TableTools.emptyTable(1));
+        assertTableEquals(source, staticIn);
+        assertTableEquals(empty, staticNotIn);
+        assertTableEquals(empty, source.whereIn(TableTools.emptyTable(0)));
+        assertTableEquals(source, source.whereNotIn(TableTools.emptyTable(0)));
+    }
+
+    @Test
     public void testBlinkSetAccumulates() {
         final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), stringCol("FV", "A", "B", "C"),
                 intCol("Sentinel", 10, 20, 30));
