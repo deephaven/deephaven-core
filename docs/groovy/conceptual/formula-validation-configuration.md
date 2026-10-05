@@ -152,21 +152,25 @@ ColumnExpressionValidator.annotationSets.myapp=static_math_methods,string_helper
 
 Use this approach when you want to allow methods from libraries you don't control (like Java's built-in classes, third-party libraries, etc.).
 
-Since you can't add annotations to external code, you use pointcut expressions - patterns that match method signatures. AspectJ Pointcut expressions, as defined by [OpenRewrite's method matcher](https://docs.openrewrite.org/reference/method-patterns#examples), are a simple way to match one or more Java methods.
+Since you can't add annotations to external code, you use pointcut expressions — patterns that match method signatures. The pattern syntax is adapted from AspectJ method patterns, and is a simple way to match one or more Java methods.
 
 ### Understanding pointcut patterns
 
 A pointcut expression has three parts:
 
-1. **Class name**: The full package and class name (e.g., `java.lang.String`).
-2. **Method name**: The specific method or `*` for any method.
-3. **Parameters**: The parameter types or `(..)` for any parameters.
+1. **Class name**: The full package and class name (e.g., `java.util.Collections`). A class in `java.lang` may omit its package (`String` is the same as `java.lang.String`). Write a nested class as `java.util.Map.Entry` or `java.util.Map$Entry`, and use `*..*` for every class.
+2. **Method name**: The specific method, `<constructor>` for a constructor, or `*` for any method or constructor.
+3. **Parameters**: The parameter types or `(..)` for any parameters. Write primitive types by their keyword (`int`, `double`). Other types must be fully qualified, except for types in `java.lang` such as `String`.
 
 ### Pattern matching symbols
 
-- `*` = Match any single item (one method name, one parameter type, etc.).
-- `..` = Match any number of parameters of any type.
+- `*` = Match any single item (one method name, one parameter type, one package or class name, etc.).
+- `..` = In a parameter list, match any number of parameters of any type. In a class name, match any number of packages — `java.util..*` matches every class in `java.util` and its sub-packages, while `java.util.*` does not include sub-packages.
 - `;` = Separate multiple patterns in one property.
+
+### Inherited methods
+
+A pattern also matches every instance method that overrides a matching method. For example, `java.lang.Object toString()` permits `toString()` on any class, and `java.lang.Number intValue()` permits `intValue()` on `Integer`, `BigDecimal`, and every other subclass of `Number`. Static methods match only the class that declares them.
 
 ### Common examples
 
@@ -226,5 +230,4 @@ ColumnExpressionValidator=method_name
 - [How to select, view, and update data](../how-to-guides/use-select-view-update.md)
 - [Formulas](../how-to-guides/formulas.md)
 - [Java classes & objects](../how-to-guides/java-classes.md)
-- [OpenRewrite method patterns](https://docs.openrewrite.org/reference/method-patterns#examples)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/util/annotations/UserInvocationPermitted.html)
