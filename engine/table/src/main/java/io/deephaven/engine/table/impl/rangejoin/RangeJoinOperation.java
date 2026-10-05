@@ -34,6 +34,8 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
@@ -277,13 +279,25 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             @NotNull final JobScheduler jobScheduler,
             @NotNull final ExecutionContext executionContext) {
         final CompletableFuture<QueryTable> resultFuture = new CompletableFuture<>();
-        new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
         try {
-            return resultFuture.get();
-        } catch (InterruptedException e) {
-            throw new CancellationException(String.format("%s interrupted", description), e);
-        } catch (Exception e) {
-            throw new OperationException(String.format("%s failed", description), e);
+            new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
+            try {
+                return resultFuture.get();
+            } catch (InterruptedException e) {
+                final CancellationException cancellation =
+                        new CancellationException(String.format("%s interrupted", description), e);
+                // Completing the result stops the range search tasks that have not yet started
+                resultFuture.completeExceptionally(cancellation);
+                throw cancellation;
+            } catch (Exception e) {
+                throw new OperationException(String.format("%s failed", description), e);
+            }
+        } finally {
+            // Wait for all of this operation's jobs to finish, so that none is running when we return or throw
+            final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
+            if (baseEntry != null) {
+                QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
+            }
         }
     }
 
@@ -326,12 +340,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             try {
                 rightTableGrouped = filterAndGroupRightTable();
             } catch (Exception e) {
-                // Try to ensure that the group-left-table job is no longer running before re-throwing
-                groupLeftTableFuture.cancel(true);
-                try {
-                    groupLeftTableFuture.get();
-                } catch (Exception ignored) {
-                }
+                // The group-left-table job may still be running; staticRangeJoin waits for it before re-throwing
                 resultFuture.completeExceptionally(e);
                 return;
             }
@@ -690,6 +699,10 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 @NotNull final TaskContext tc,
                 final int index,
                 @NotNull final Consumer<Exception> nestedErrorConsumer) {
+            if (resultFuture.isDone()) {
+                // The result is complete before all range search tasks have run only if the operation was cancelled
+                throw new CancellationException(String.format("%s cancelled", description));
+            }
             final RowSet leftRows = leftGroupRowSets.get(index);
             assert leftRows != null;
             tc.ensureLeftCapacity(leftRows.size());

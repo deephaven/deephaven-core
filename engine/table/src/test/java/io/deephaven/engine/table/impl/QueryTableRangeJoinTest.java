@@ -9,7 +9,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -18,6 +21,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -31,6 +36,9 @@ import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.table.TableFactory.emptyTable;
@@ -247,6 +255,145 @@ public class QueryTableRangeJoinTest {
     }
 
     // endregion negative zero tests
+
+    // region job lifecycle tests
+
+    private static final long JOB_HOLD_SECONDS = 2;
+    private static final long JOB_TIMEOUT_SECONDS = 30;
+
+    private static volatile CountDownLatch heldJobEntered;
+    private static volatile CountDownLatch heldJobRelease;
+    private static final AtomicInteger HELD_JOB_CALLS = new AtomicInteger();
+    private static final AtomicInteger HELD_JOBS_RUNNING = new AtomicInteger();
+
+    /**
+     * Formula that holds the job evaluating it until {@link #heldJobRelease} is released, which happens at the latest
+     * {@link #JOB_HOLD_SECONDS} after the first hold began.
+     */
+    @SuppressWarnings("unused")
+    public static int holdJob(final long rowKey) {
+        HELD_JOB_CALLS.incrementAndGet();
+        HELD_JOBS_RUNNING.incrementAndGet();
+        try {
+            heldJobEntered.countDown();
+            if (!heldJobRelease.await(JOB_HOLD_SECONDS, TimeUnit.SECONDS)) {
+                heldJobRelease.countDown();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            HELD_JOBS_RUNNING.decrementAndGet();
+        }
+        return 0;
+    }
+
+    /**
+     * Formula that fails once a job is held by {@link #holdJob(long)}.
+     */
+    @SuppressWarnings("unused")
+    public static int failAfterHeldJobEntered(final long rowKey) {
+        try {
+            // noinspection ResultOfMethodCallIgnored
+            heldJobEntered.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        throw new IllegalStateException("right range value failure");
+    }
+
+    /**
+     * When the right table work fails while the left grouping job is running, rangeJoin reports the failure only after
+     * that job has finished.
+     */
+    @Test
+    public void testRightFailureWaitsForLeftGroupingJob() throws InterruptedException {
+        final int heldJobsRunning = runWithHeldJobs(() -> {
+            final Table left = TableTools.emptyTable(10).view(
+                    "K = holdJob(ii)", "LSV = (int) ii", "LEV = (int) ii + 2");
+            final Table right = TableTools.emptyTable(10).view(
+                    "K = (int) 0", "RRV = failAfterHeldJobEntered(ii)", "Sentinel = (int) ii");
+            left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
+        }, false, OperationException.class);
+        assertThat(heldJobsRunning).as("held jobs running when rangeJoin failed").isZero();
+    }
+
+    /**
+     * When the thread waiting for rangeJoin is interrupted, rangeJoin starts no further range search tasks, and reports
+     * the cancellation only after its running range search tasks have finished.
+     */
+    @Test
+    public void testInterruptWaitsForRangeSearchJobs() throws InterruptedException {
+        final int numBuckets = 20;
+        final int heldJobsRunning = runWithHeldJobs(() -> {
+            final Table left = TableTools.emptyTable(numBuckets).view(
+                    "K = (int) ii", "LSV = holdJob(ii)", "LEV = (int) 100");
+            final Table right = TableTools.emptyTable(numBuckets).view(
+                    "K = (int) ii", "RRV = (int) ii", "Sentinel = (int) ii");
+            left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
+        }, true, CancellationException.class);
+        assertThat(heldJobsRunning).as("held jobs running when rangeJoin was cancelled").isZero();
+        assertThat(HELD_JOB_CALLS.get()).as("range search tasks run").isLessThan(numBuckets);
+    }
+
+    /**
+     * Run {@code operation} with a parallel operation initializer, expecting it to fail with {@code expectedFailure}.
+     * Held jobs are released when {@code operation} returns. If {@code interrupt}, this thread is interrupted once a
+     * job is held.
+     *
+     * @return The number of held jobs running when {@code operation} failed
+     */
+    private static int runWithHeldJobs(
+            @NotNull final Runnable operation,
+            final boolean interrupt,
+            @NotNull final Class<? extends Exception> expectedFailure) throws InterruptedException {
+        heldJobEntered = new CountDownLatch(1);
+        heldJobRelease = new CountDownLatch(1);
+        HELD_JOB_CALLS.set(0);
+        HELD_JOBS_RUNNING.set(0);
+
+        final Thread operationThread = Thread.currentThread();
+        final Thread interrupter = new Thread(() -> {
+            try {
+                if (heldJobEntered.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                    operationThread.interrupt();
+                }
+            } catch (InterruptedException ignored) {
+            }
+        }, "QueryTableRangeJoinTest-interrupter");
+        interrupter.setDaemon(true);
+
+        final OperationInitializationThreadPool threadPool =
+                new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, 4);
+        final ExecutionContext parallelContext = ExecutionContext.getContext().withOperationInitializer(threadPool);
+        int heldJobsRunning = -1;
+        try (final SafeCloseable ignored1 = parallelContext.open();
+                final SafeCloseable ignored2 = threadPool::shutdown) {
+            ExecutionContext.getContext().getQueryLibrary().importStatic(QueryTableRangeJoinTest.class);
+            if (interrupt) {
+                interrupter.start();
+            }
+            try {
+                operation.run();
+                failBecauseExceptionWasNotThrown(expectedFailure);
+            } catch (RuntimeException expected) {
+                heldJobsRunning = HELD_JOBS_RUNNING.get();
+                assertThat(expected).isInstanceOf(expectedFailure);
+            }
+        } finally {
+            heldJobRelease.countDown();
+            if (interrupt) {
+                interrupter.join(TimeUnit.SECONDS.toMillis(JOB_TIMEOUT_SECONDS));
+                if (interrupter.isAlive()) {
+                    fail("interrupter thread did not finish");
+                }
+            }
+            // noinspection ResultOfMethodCallIgnored
+            Thread.interrupted();
+        }
+        return heldJobsRunning;
+    }
+
+    // endregion job lifecycle tests
 
     // region validation tests
 
