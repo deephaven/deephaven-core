@@ -11,6 +11,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -28,6 +29,7 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.OuterJoinTools;
 import io.deephaven.engine.util.PrintListener;
@@ -1082,6 +1084,95 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             TstUtils.addToTable(table, changed, longCol(keyName, keys), intCol(valueName, values));
         }
         table.notifyListeners(added, removed, modified);
+    }
+
+    private static final class CountingIntTestSource extends IntTestSource {
+        long reads;
+
+        CountingIntTestSource(final RowSet rowSet, final int[] values) {
+            super(rowSet, IntChunk.chunkWrap(values));
+        }
+
+        @Override
+        public int getInt(final long index) {
+            ++reads;
+            return super.getInt(index);
+        }
+
+        @Override
+        public int getPrevInt(final long index) {
+            ++reads;
+            return super.getPrevInt(index);
+        }
+    }
+
+    @Test
+    public void testBothTickingLeftNonKeyModifyDoesNotReadKeys() {
+        final int size = 1_000;
+        final int[] keys = IntStream.range(0, size).toArray();
+        final CountingIntTestSource keySource = new CountingIntTestSource(RowSetFactory.flat(size), keys);
+        final IntTestSource valueSource = new IntTestSource(RowSetFactory.flat(size), IntChunk.chunkWrap(keys));
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        columns.put("Key", keySource);
+        columns.put("LVal", valueSource);
+        final QueryTable lTable = new QueryTable(RowSetFactory.flat(size).toTracking(), columns);
+        lTable.setRefreshing(true);
+        final QueryTable rTable = testRefreshingTable(RowSetFactory.flat(size).toTracking(), intCol("Key", keys),
+                intCol("RVal", keys));
+
+        // no validator listens to the result, so only the join reads the key column during the update
+        final Table joined = lTable.join(rTable, List.of(JoinMatch.parse("Key")),
+                List.of(JoinAddition.parse("RVal")), numRightBitsToReserve);
+
+        final ModifiedColumnSet valueColumnSet = lTable.newModifiedColumnSet("LVal");
+        keySource.reads = 0;
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            valueSource.add(RowSetFactory.flat(size), IntChunk.chunkWrap(IntStream.range(0, size).map(ii -> -ii)
+                    .toArray()));
+            lTable.notifyListeners(new TableUpdateImpl(i(), i(), RowSetFactory.flat(size), RowSetShiftData.EMPTY,
+                    valueColumnSet));
+        });
+        // the modified rows keep their slots, which the left row redirection already holds
+        assertEquals(0, keySource.reads);
+        assertTableEquals(lTable.snapshot().join(rTable.snapshot(), "Key", "RVal"), joined);
+    }
+
+    @Test
+    public void testBothTickingLeftKeyModifySomeKeysUnchanged() {
+        final QueryTable lTable = testRefreshingTable(i(10, 20, 30, 40, 50, 60).toTracking(),
+                intCol("Key", 1, 1, 2, 2, 3, 3), intCol("LVal", 10, 20, 30, 40, 50, 60));
+        final QueryTable rTable = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                intCol("Key", 1, 2, 2, 3), intCol("RVal", 100, 200, 201, 300));
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> lTable.join(rTable, List.of(JoinMatch.parse("Key")),
+                        List.of(JoinAddition.parse("RVal")), numRightBitsToReserve)),
+                EvalNugget.from(() -> CrossJoinHelper.leftOuterJoin(lTable, rTable,
+                        MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RVal"),
+                        numRightBitsToReserve)),
+        };
+
+        final ModifiedColumnSet keyAndValueColumnSet = lTable.newModifiedColumnSet("Key", "LVal");
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            // rows 40, 50 and 60 shift to 45, 55 and 65; of the modified rows, 20 and 45 keep their keys, 30 moves to
+            // a matched key, 55 to an unmatched key and 65 to a matched key
+            removeRows(lTable, i(40, 50, 60));
+            addToTable(lTable, i(20, 30, 45, 55, 65), intCol("Key", 1, 3, 2, 4, 1),
+                    intCol("LVal", 21, 31, 41, 51, 61));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(40, 60, 5);
+            lTable.notifyListeners(new TableUpdateImpl(i(), i(), i(20, 30, 45, 55, 65), shiftBuilder.build(),
+                    keyAndValueColumnSet));
+        });
+        TstUtils.validate(en);
+
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            // the key column is modified but no row's key value changes
+            addToTable(lTable, i(10, 45), intCol("Key", 1, 2), intCol("LVal", 12, 42));
+            lTable.notifyListeners(new TableUpdateImpl(i(), i(), i(10, 45), RowSetShiftData.EMPTY,
+                    keyAndValueColumnSet));
+        });
+        TstUtils.validate(en);
     }
 
     @Test
