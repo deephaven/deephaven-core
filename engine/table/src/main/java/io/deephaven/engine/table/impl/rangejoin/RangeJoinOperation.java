@@ -119,6 +119,25 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         validateExactMatchColumns();
         rangeValueType = validateRangeMatchColumns();
         SupportedRangeJoinAggregations.validate(description, aggregations);
+        validateAggregationInputColumns();
+    }
+
+    /**
+     * Validate that the input column for each aggregation exists in the right table.
+     */
+    private void validateAggregationInputColumns() {
+        final TableDefinition rightTableDefinition = rightTable.getDefinition();
+        final List<String> missingInputColumnNames = AggregationPairs.of(aggregations)
+                .map((final Pair groupPair) -> groupPair.input().name())
+                .distinct()
+                .filter((final String inputColumnName) -> rightTableDefinition.getColumn(inputColumnName) == null)
+                .collect(Collectors.toList());
+        if (!missingInputColumnNames.isEmpty()) {
+            throw new IllegalArgumentException(String.format(
+                    "%s: Invalid aggregations: right table has no aggregation input columns %s, "
+                            + "available right columns are %s",
+                    description, missingInputColumnNames, rightTableDefinition.getColumnNames()));
+        }
     }
 
     /**

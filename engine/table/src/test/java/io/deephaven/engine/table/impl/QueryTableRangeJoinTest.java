@@ -567,6 +567,23 @@ public class QueryTableRangeJoinTest {
                 .hasMessageNotContaining("left start column");
     }
 
+    @Test
+    public void testMissingAggregationInputColumns() {
+        final Table lt = emptyTable(100).updateView("II=ii", "BB=II % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
+        final Table rt = emptyTable(100).updateView("II=ii", "BB=II % 5", "RRV=ii / 0.3");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"),
+                List.of(AggGroup("G1=WRONG1", "II"), AggGroup("G2=WRONG2", "G3=WRONG1"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .isNotInstanceOf(OperationException.class)
+                .hasMessageEndingWith(": Invalid aggregations: right table has no aggregation input columns "
+                        + "[WRONG1, WRONG2], available right columns are [II, BB, RRV]");
+        // Left table columns are not aggregation inputs
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"), List.of(AggGroup("LSV"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageEndingWith(": Invalid aggregations: right table has no aggregation input columns [LSV], "
+                        + "available right columns are [II, BB, RRV]");
+    }
+
     private static void expectException(
             @NotNull final Runnable test,
             @NotNull final Class<? extends Exception> exceptionClass) {
