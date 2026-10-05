@@ -7,6 +7,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -202,6 +203,10 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
                     return result.isEmpty() ? FilterNullBehavior.EXCLUDES_NULLS : FilterNullBehavior.INCLUDES_NULLS;
                 }
             } catch (final Exception e) {
+                // A cancelled query must stop, not carry on as though the filter failed on nulls.
+                if (CancellationException.isCancellation(e)) {
+                    throw e;
+                }
                 return FilterNullBehavior.FAILS_ON_NULLS;
             }
         }

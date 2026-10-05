@@ -59,11 +59,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.InterruptedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.channels.ClosedByInterruptException;
-import java.nio.channels.FileLockInterruptionException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -1070,21 +1067,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
-    private static boolean isCancellation(final Throwable failure) {
-        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
-            if (cause instanceof CancellationException
-                    || cause instanceof java.util.concurrent.CancellationException
-                    || cause instanceof InterruptedException
-                    || cause instanceof InterruptedIOException
-                    || cause instanceof ClosedByInterruptException
-                    || cause instanceof FileLockInterruptionException
-                    || (cause instanceof TableDataException && ((TableDataException) cause).wasInterrupted())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * Apply the filter to the data index table and return the result. When the index is applied, the result has no
      * maybe matches: rows the index does not place under a matching key are treated as not matching, so the index must
@@ -1130,7 +1112,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 }
             } catch (final Exception e) {
                 // A cancelled query must stop, not carry on filtering without the index.
-                if (isCancellation(e)) {
+                if (CancellationException.isCancellation(e)) {
                     throw e;
                 }
                 // Filtering the index fails when the read instructions changed the indexed column's type, since the
