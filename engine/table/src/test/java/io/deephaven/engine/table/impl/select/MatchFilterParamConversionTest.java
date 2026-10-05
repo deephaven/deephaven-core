@@ -133,11 +133,27 @@ public class MatchFilterParamConversionTest {
     public void nonNumbersAreNotConverted() {
         assertRejected("5", int.class);
         assertRejected(Boolean.TRUE, double.class);
-        assertRejected('A', int.class);
         assertRejected("A", char.class);
-        assertRejected('A', BigInteger.class);
-        assertRejected('A', BigDecimal.class);
         assertNotConverted("A", BigInteger.class);
+    }
+
+    /** The query language, as Java, compares a char with a number by its code point. */
+    @Test
+    public void charsConvertByCodePoint() {
+        assertEquals(65, convert('A', int.class));
+        assertEquals(65534L, convert('\uFFFE', long.class));
+        assertEquals(65534f, convert('\uFFFE', float.class));
+        assertEquals(65534.0, convert('\uFFFE', double.class));
+        assertEquals(BigInteger.valueOf(65), convert('A', BigInteger.class));
+        assertEquals(BigDecimal.valueOf(65), convert('A', BigDecimal.class));
+        assertEquals((byte) 53, convert('5', byte.class));
+        assertEquals((short) 32767, convert('\u7FFF', short.class));
+        // beyond a byte or short
+        assertRejected('\u0080', byte.class);
+        assertRejected('\u8000', short.class);
+        // NULL_CHAR is null
+        assertEquals(QueryConstants.NULL_INT_BOXED, convert(QueryConstants.NULL_CHAR_BOXED, int.class));
+        assertNull(convert(QueryConstants.NULL_CHAR_BOXED, BigDecimal.class));
     }
 
     /** A Number of another type has no exact value to compare: longValue() would drop the fraction of 5.7. */

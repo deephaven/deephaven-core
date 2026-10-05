@@ -36,6 +36,7 @@ import static io.deephaven.engine.util.TableTools.shortCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_CHAR_BOXED;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE_BOXED;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
@@ -317,6 +318,45 @@ public class MatchFilterCoercionTest {
                 newTable(col("X", new BigDecimal("0.1"), new BigDecimal(0.1), BigDecimal.valueOf(0.1f),
                         new BigDecimal(0.1f), new BigDecimal("5"), new BigDecimal("65.0"), null)),
                 "X == v01", "X <= v01", "X == f01", "X == l5", "X == cA", "X != cA");
+    }
+
+    @Test
+    public void charValuesSelectWhatTheFailoverSelects() {
+        // the query language, as Java, compares a char with a number by its code point
+        QueryScope.addParam("c5", '5');
+        QueryScope.addParam("cE", 'é'); // 233, beyond a byte
+        QueryScope.addParam("cHigh", '耀'); // 32768, beyond a short
+        QueryScope.addParam("cMax", '￾');
+        QueryScope.addParam("cNull", NULL_CHAR_BOXED);
+        final String[] filters = {"X == c5", "X != c5", "X < c5", "X >= c5", "X == cE", "X < cE", "X == cHigh",
+                "X > cHigh", "X == cMax", "X <= cMax", "X == cNull", "X != cNull"};
+
+        final Table bytes = newTable(byteCol("X", (byte) 0, (byte) 53, (byte) 127, (byte) 233, NULL_BYTE));
+        final Table shorts = newTable(shortCol("X", (short) 0, (short) 53, Short.MAX_VALUE, (short) -1, NULL_SHORT));
+        final Table ints = newTable(intCol("X", 0, 53, 233, 32768, 65534, NULL_INT));
+        final Table longs = newTable(longCol("X", 0L, 53L, 65534L, NULL_LONG));
+        final Table floats = newTable(floatCol("X", 0.5f, 53f, 65534f, NULL_FLOAT));
+        final Table doubles = newTable(doubleCol("X", 0.5, 53.0, 65534.0, NULL_DOUBLE));
+        final Table bigIntegers = newTable(col("X", BigInteger.valueOf(53), BigInteger.valueOf(65534), null));
+        final Table bigDecimals = newTable(col("X", new BigDecimal("53"), new BigDecimal("53.0"),
+                new BigDecimal("53.5"), null));
+        for (final Table t : new Table[] {bytes, shorts, ints, longs, floats, doubles, bigIntegers, bigDecimals}) {
+            assertSameRowsAsFailover(t, filters);
+            assertFalse(failsOver(t, "X == c5"));
+            assertFalse(failsOver(t, "X < c5"));
+        }
+        assertTrue(failsOver(bytes, "X == cE"));
+        assertTrue(failsOver(shorts, "X == cHigh"));
+        assertFalse(failsOver(ints, "X == cHigh"));
+
+        assertTableEquals(newTable(intCol("X", 53)), ints.where("X in c5"));
+        assertTableEquals(newTable(byteCol("X", (byte) 53)), bytes.where("X in c5"));
+        assertTableEquals(newTable(intCol("X", 53)),
+                ints.where(FilterComparison.eq(ColumnName.of("X"), Literal.of('5'))));
+        assertTableEquals(newTable(col("X", new BigDecimal("53"), new BigDecimal("53.0"))),
+                bigDecimals.where(new MatchFilter(MatchOptions.REGULAR, "X", '5')));
+        assertRejected(() -> bytes.where("X in cE"));
+        assertRejected(() -> shorts.where(new MatchFilter(MatchOptions.REGULAR, "X", '耀')));
     }
 
     @Test

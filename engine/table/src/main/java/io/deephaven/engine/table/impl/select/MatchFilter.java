@@ -638,6 +638,16 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             if (isNullValue(paramValue)) {
                 return nullValue;
             }
+            if (paramValue instanceof Character) {
+                // the query language, as Java, compares a char with a number by its code point
+                final int codePoint = (Character) paramValue;
+                final Number converted = narrow(codePoint);
+                if (converted.intValue() != codePoint) {
+                    // beyond a byte or short
+                    throw cannotConvert(paramValue, boxedType, "the column type cannot represent its code point", null);
+                }
+                return converted;
+            }
             if (!(paramValue instanceof Number)) {
                 throw cannotConvert(paramValue, boxedType, "it is not a number", null);
             }
@@ -851,7 +861,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         }
                         if (paramValue instanceof Character) {
                             // the query language compares a char with it by code point
-                            throw cannotConvert(paramValue, BigDecimal.class, "it is not a number", null);
+                            return BigDecimal.valueOf((Character) paramValue);
                         }
                         if (!(paramValue instanceof Number)) {
                             // it can never match, and dropUnmatchable removes it
@@ -888,7 +898,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         }
                         if (paramValue instanceof Character) {
                             // the query language compares a char with it by code point
-                            throw cannotConvert(paramValue, BigInteger.class, "it is not a number", null);
+                            return BigInteger.valueOf((Character) paramValue);
                         }
                         if (!(paramValue instanceof Number)) {
                             // it can never equal a BigInteger, so it matches nothing
