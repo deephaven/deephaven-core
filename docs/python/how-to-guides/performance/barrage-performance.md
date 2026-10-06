@@ -152,7 +152,7 @@ Each time the server propagates an update to a table's subscribers, it writes ea
 - `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. The other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` writes to subscribers one after another.
 
 > [!NOTE]
-> `PropagateNanos` measures the time to write an update to all of a table's subscribers, so with parallel writes it can be much less than the sum of their `WriteNanos`. A single subscriber's write still runs on one thread.
+> `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread.
 
 ## Additional Barrage configuration
 

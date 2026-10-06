@@ -520,6 +520,85 @@ public class TestInvokeParallel {
         assertThat(contextsOpen.get()).isZero();
     }
 
+    /**
+     * An executor that fails a submission with an Error, as one does when it cannot make a thread, fails the invocation
+     * with that Error once the running tasks are done, ends the iteration in onError, and releases the invoker it never
+     * took, rather than leaving the caller waiting forever.
+     */
+    @Test
+    public void testExecutorErrorFailsTheInvocationAndReleasesTheInvoker() throws InterruptedException {
+        final ThreadPoolExecutor pool = newPool(1);
+        final AtomicInteger submissions = new AtomicInteger();
+        final OutOfMemoryError cannotMakeThread = new OutOfMemoryError("unable to create native thread");
+        final Executor failsSecondSubmission = command -> {
+            if (submissions.incrementAndGet() > 1) {
+                throw cannotMakeThread;
+            }
+            pool.execute(command);
+        };
+        final AtomicInteger started = new AtomicInteger();
+        final AtomicInteger finished = new AtomicInteger();
+        final AtomicInteger contextsOpen = new AtomicInteger();
+        final Supplier<JobScheduler.JobThreadContext> countingContexts = () -> {
+            contextsOpen.incrementAndGet();
+            return new JobScheduler.JobThreadContext() {
+                @Override
+                public void close() {
+                    contextsOpen.decrementAndGet();
+                }
+            };
+        };
+        final Outcome outcome = new Outcome();
+
+        withTimeout(() -> {
+            try {
+                assertThatThrownBy(() -> new ExecutorJobScheduler(failsSecondSubmission, 4).invokeParallel(
+                        ExecutionContext.getContext(), null, countingContexts, 0, 8,
+                        (context, idx, nec) -> {
+                            started.incrementAndGet();
+                            sleep(100);
+                            finished.incrementAndGet();
+                        },
+                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(cannotMakeThread);
+            } finally {
+                outcome.returned = true;
+            }
+        });
+
+        assertThat(outcome.completeCalls.get()).isZero();
+        assertThat(outcome.cleanupCalls.get()).isZero();
+        assertThat(outcome.error.get()).isInstanceOf(UncheckedDeephavenException.class);
+        assertThat(outcome.error.get().getCause()).isSameAs(cannotMakeThread);
+        assertThat(started.get()).isLessThanOrEqualTo(1);
+        assertThat(finished.get()).isEqualTo(started.get());
+        assertThat(contextsOpen.get()).isZero();
+    }
+
+    /** An Error from the context factory ends the iteration in onError, never in onComplete, and is thrown. */
+    @Test
+    public void testContextFactoryErrorEndsInOnError() throws InterruptedException {
+        final AssertionError factoryError = new AssertionError("no context");
+        final AtomicInteger runs = new AtomicInteger();
+        final Outcome outcome = new Outcome();
+
+        withTimeout(() -> {
+            try {
+                assertThatThrownBy(() -> newScheduler(3, 4).invokeParallel(ExecutionContext.getContext(), null,
+                        () -> {
+                            throw factoryError;
+                        }, 0, 10, (context, idx, nec) -> runs.incrementAndGet(),
+                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(factoryError);
+            } finally {
+                outcome.returned = true;
+            }
+        });
+
+        assertThat(outcome.completeCalls.get()).isZero();
+        assertThat(outcome.error.get()).isInstanceOf(UncheckedDeephavenException.class);
+        assertThat(outcome.error.get().getCause()).isSameAs(factoryError);
+        assertThat(runs.get()).isZero();
+    }
+
     @Test
     public void testFailureOnTheCallingThreadStopsAtTheFailingTask() {
         final List<Integer> ran = new ArrayList<>();

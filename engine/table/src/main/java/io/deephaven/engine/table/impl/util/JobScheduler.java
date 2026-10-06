@@ -279,12 +279,13 @@ public interface JobScheduler {
                     try {
                         scheduler.submit(executionContext, taskInvoker::execute, description,
                                 IterationManager::onUnexpectedJobError);
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         // The scheduler did not take the invoker, so nothing else will release its context and its
                         // reference to this manager, and the iteration could never complete. A scheduler that ran the
-                        // invoker on this thread before failing has already closed it.
+                        // invoker on this thread before failing has already closed it. The failure itself is recorded
+                        // below, before this manager's own reference is released.
                         taskInvoker.closeIfOpen();
-                        throw e;
+                        throw t;
                     }
                 }
                 if (callerParticipates) {
@@ -299,6 +300,14 @@ public interface JobScheduler {
                 }
             } catch (Exception e) {
                 onTaskError(e);
+                throw e;
+            } catch (Error e) {
+                // An Error from the context factory or the scheduler, OutOfMemoryError when a thread cannot be made in
+                // practice, must end the iteration in onError too. One that a task threw on this thread was already
+                // delivered by its invoker, so only record it when nothing has been.
+                if (exception.get() == null) {
+                    onTaskError(asDeliverableException(e));
+                }
                 throw e;
             } finally {
                 decrementReferenceCount();
