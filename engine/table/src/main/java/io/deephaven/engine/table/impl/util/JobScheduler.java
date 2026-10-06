@@ -791,7 +791,8 @@ public interface JobScheduler {
      * {@link #invokeParallel(ExecutionContext, LogOutputAppendable, Supplier, int, int, IterateResumeAction, Runnable, Runnable, Consumer)
      * resume form} for the contract.
      *
-     * @param executionContext the execution context for the scheduler's threads; the calling thread keeps its own
+     * @param executionContext the execution context the tasks run under, on every thread that runs them, the calling
+     *        thread's included; null to run them under each thread's own
      * @param description the description to use for logging
      * @param taskThreadContextFactory the factory that supplies {@link JobThreadContext contexts} for the tasks
      * @param start the integer value from which to start iterating
@@ -867,7 +868,8 @@ public interface JobScheduler {
      * waits; see {@link #checkInvokeSupported()}, which an unsuitable scheduler makes throw before anything runs.
      * </p>
      *
-     * @param executionContext the execution context for the scheduler's threads; the calling thread keeps its own
+     * @param executionContext the execution context the tasks run under, on every thread that runs them, the calling
+     *        thread's included; null to run them under each thread's own
      * @param description the description to use for logging
      * @param taskThreadContextFactory the factory that supplies {@link JobThreadContext contexts} for the tasks
      * @param start the integer value from which to start iterating
@@ -910,7 +912,8 @@ public interface JobScheduler {
      * steps start, which is why a scheduler that refuses {@code invokeParallel} refuses this too.
      * </p>
      *
-     * @param executionContext the execution context for the scheduler's threads; the calling thread keeps its own
+     * @param executionContext the execution context the tasks run under, on every thread that runs them, the calling
+     *        thread's included; null to run them under each thread's own
      * @param description the description to use for logging
      * @param taskThreadContextFactory the factory that supplies the one {@link JobThreadContext context} the steps
      *        share

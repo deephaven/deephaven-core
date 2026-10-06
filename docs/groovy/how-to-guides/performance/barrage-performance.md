@@ -146,7 +146,7 @@ The two thresholds answer different questions. The fraction asks whether compact
 
 Each time the server propagates an update to a table's subscribers, it writes each subscriber its own view of the update: only the columns, rows, and encoding that subscriber asked for. Writing a message serializes it into the gRPC stream's buffers, which is processor work that does not wait for the client, so the server writes to several subscribers at once rather than one after another.
 
-- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. The other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` writes to subscribers one after another.
+- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. Above `1`, the other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` or less writes to subscribers one after another on the propagation thread, and the server makes no pool.
 
 > [!NOTE]
 > `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread.
@@ -189,7 +189,7 @@ If `WriteNanos` is high or `WriteBytes` is large:
 
 If `PropagateNanos` is consistently high:
 
-- Many subscribers may be connected to the same table. Compare `PropagateNanos` with the sum of the subscribers' `WriteNanos`: when the two are close, the writes are not overlapping, either because `BarrageMessageProducer.propagationThreads` is low (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)) or because the server's processors are already busy. Consider load balancing across multiple server instances.
+- Many subscribers may be connected to the same table. Compare `PropagateNanos` with the sum of the subscribers' `WriteNanos`: when the two are close, the writes are not overlapping, either because `BarrageMessageProducer.propagationThreads` is `1` or less, or well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)) or because the server's processors are already busy. Consider load balancing across multiple server instances.
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
 
 ### Subscription errors

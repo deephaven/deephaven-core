@@ -378,6 +378,38 @@ public class TestInvokeParallel {
         assertThat(contexts).containsExactly(callerContext);
     }
 
+    /**
+     * Tasks run under the given execution context on every thread, the calling thread's included, even when it differs
+     * from the context the caller is running under.
+     */
+    @Test
+    public void testTasksRunUnderTheGivenContextOnTheCallingThreadToo() {
+        final ExecutionContext callerContext = ExecutionContext.getContext();
+        final ExecutionContext taskContext = ExecutionContext.newBuilder().newQueryScope().newQueryLibrary()
+                .setUpdateGraph(callerContext.getUpdateGraph()).build();
+        assertThat(taskContext).isNotSameAs(callerContext);
+        final int threadCount = 4;
+        final ExecutorJobScheduler scheduler = newScheduler(threadCount - 1, threadCount);
+        final CyclicBarrier rendezvous = new CyclicBarrier(threadCount);
+        final Set<ExecutionContext> contexts = ConcurrentHashMap.newKeySet();
+        final Set<Thread> threads = ConcurrentHashMap.newKeySet();
+
+        scheduler.invokeParallel(taskContext, null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, threadCount,
+                (context, idx, nec) -> {
+                    contexts.add(ExecutionContext.getContext());
+                    threads.add(Thread.currentThread());
+                    await(rendezvous);
+                },
+                () -> {
+                }, () -> {
+                }, e -> {
+                });
+
+        assertThat(threads).contains(Thread.currentThread());
+        assertThat(contexts).containsExactly(taskContext);
+        assertThat(ExecutionContext.getContext()).isSameAs(callerContext);
+    }
+
     /** The first failure is thrown once the tasks already running have finished; tasks not yet started are skipped. */
     @Test
     public void testFailureIsThrownAfterRunningTasksFinishAndStopsNewOnes() {

@@ -259,7 +259,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         @Override
         public MemoizedOperationKey getMemoizedOperationKey() {
-            return new MyMemoKey(updateIntervalMs);
+            return new MyMemoKey(updateIntervalMs, propagationJobSchedulerFactory);
         }
 
         @Override
@@ -270,11 +270,18 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
+    /**
+     * Producers of one table are shared by update interval and by how they write to their subscribers: operations that
+     * differ in their propagation job scheduler factory get producers of their own. The server passes one factory to
+     * every operation, so this splits nothing there.
+     */
     private static class MyMemoKey extends MemoizedOperationKey {
         private final long interval;
+        private final Supplier<JobScheduler> propagationJobSchedulerFactory;
 
-        private MyMemoKey(final long interval) {
+        private MyMemoKey(final long interval, @NotNull final Supplier<JobScheduler> propagationJobSchedulerFactory) {
             this.interval = interval;
+            this.propagationJobSchedulerFactory = propagationJobSchedulerFactory;
         }
 
         @Override
@@ -284,12 +291,13 @@ public class BarrageMessageProducer extends LivenessArtifact
             if (o == null || getClass() != o.getClass())
                 return false;
             final MyMemoKey that = (MyMemoKey) o;
-            return interval == that.interval;
+            return interval == that.interval
+                    && propagationJobSchedulerFactory == that.propagationJobSchedulerFactory;
         }
 
         @Override
         public int hashCode() {
-            return Long.hashCode(interval);
+            return 31 * Long.hashCode(interval) + System.identityHashCode(propagationJobSchedulerFactory);
         }
     }
 
