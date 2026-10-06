@@ -64,7 +64,7 @@ public class DisjunctiveFilter extends ComposedFilter {
                     matched = filterMatched;
                 } else {
                     try (final SafeCloseable ignored = filterMatched) {
-                        matched.insert(filterMatched);
+                        matched.subsume(filterMatched);
                     }
                 }
                 if (matched.size() == selection.size()) {

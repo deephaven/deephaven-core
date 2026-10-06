@@ -951,10 +951,6 @@ public class RegionedColumnSourceManager
         final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];
         // The iteration's cleanup runs only after onComplete returns, so when a region fails or onComplete throws,
         // onError must close the per-region results instead.
-        final Runnable closeRegionResults = () -> {
-            SafeCloseableArray.close(matches);
-            SafeCloseableArray.close(maybeMatches);
-        };
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -981,11 +977,14 @@ public class RegionedColumnSourceManager
                             nec);
                 },
                 () -> onComplete.accept(RegionedPushdownHelper.buildResults(matches, maybeMatches, selection)),
-                closeRegionResults,
+                () -> {
+                    SafeCloseableArray.close(matches);
+                    SafeCloseableArray.close(maybeMatches);
+                },
                 e -> {
-                    try (final SafeCloseable ignored = closeRegionResults::run) {
-                        onError.accept(e);
-                    }
+                    SafeCloseable.closeAllDuringFailure(e, matches);
+                    SafeCloseable.closeAllDuringFailure(e, maybeMatches);
+                    onError.accept(e);
                 });
     }
 

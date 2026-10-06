@@ -99,10 +99,16 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                 }
             }
         } catch (final Exception e) {
+            SafeCloseable.closeAllDuringFailure(e, regionEstimateCtx, locationEstimateCtx);
             onError.accept(e);
             return;
-        } finally {
+        }
+        // Closed apart from the estimate so that a failure to close is delivered to onError rather than thrown.
+        try {
             SafeCloseable.closeAll(regionEstimateCtx, locationEstimateCtx);
+        } catch (final Exception e) {
+            onError.accept(e);
+            return;
         }
         onComplete.accept(minCost);
     }
@@ -144,15 +150,19 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
 
         try {
             for (final RegionedPushdownAction action : sorted) {
-                try (final PushdownResult ignored = result) {
+                // Each action's input is closed whether or not the action succeeds. Set result to null so it isn't
+                // closed twice on an exception.
+                final PushdownResult input = result;
+                result = null;
+                try (input) {
                     if (action instanceof RegionedPushdownAction.Location) {
-                        result = tableLocation.performPushdownAction(action, filter, selection, result, usePrev,
+                        result = tableLocation.performPushdownAction(action, filter, selection, input, usePrev,
                                 filterCtx,
                                 locationCtx == null
                                         ? (locationCtx = tableLocation.makeActionContext(filter, filterCtx))
                                         : locationCtx);
                     } else {
-                        result = performPushdownAction(action, filter, selection, result, usePrev, filterCtx,
+                        result = performPushdownAction(action, filter, selection, input, usePrev, filterCtx,
                                 regionCtx == null
                                         ? (regionCtx = makeActionContext(filter, filterCtx))
                                         : regionCtx);
@@ -163,11 +173,17 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                 }
             }
         } catch (final Exception e) {
-            // A failed action has closed the result it was given, the only one outstanding.
+            SafeCloseable.closeAllDuringFailure(e, result, regionCtx, locationCtx);
             onError.accept(e);
             return;
-        } finally {
+        }
+        // Closed apart from the actions so that a failure to close is delivered to onError rather than thrown.
+        try {
             SafeCloseable.closeAll(regionCtx, locationCtx);
+        } catch (final Exception e) {
+            SafeCloseable.closeAllDuringFailure(e, result);
+            onError.accept(e);
+            return;
         }
         onComplete.accept(result);
     }

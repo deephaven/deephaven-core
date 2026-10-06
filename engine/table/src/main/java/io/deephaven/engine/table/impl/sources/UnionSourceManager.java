@@ -801,7 +801,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
         Arrays.fill(costs, PushdownResult.UNSUPPORTED_ACTION_COST);
         final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
         // Close on success and failure to ensure no resource leaks.
-        final Runnable closeLocalSelections = () -> SafeCloseableArray.close(localSelections);
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -830,11 +829,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
                             }, nec);
                 },
                 () -> onComplete.accept(Arrays.stream(costs).min().getAsLong()),
-                closeLocalSelections,
+                () -> SafeCloseableArray.close(localSelections),
                 e -> {
-                    try (final SafeCloseable ignored = closeLocalSelections::run) {
-                        onError.accept(e);
-                    }
+                    SafeCloseable.closeAllDuringFailure(e, localSelections);
+                    onError.accept(e);
                 });
     }
 
@@ -861,11 +859,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
         final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.matchers.size()];
         final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
         // Close on success and failure to ensure no resource leaks.
-        final Runnable closeConstituentRowSets = () -> {
-            SafeCloseableArray.close(localSelections);
-            SafeCloseableArray.close(matches);
-            SafeCloseableArray.close(maybeMatches);
-        };
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -911,11 +904,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
                     }
                 },
-                closeConstituentRowSets,
+                () -> {
+                    SafeCloseableArray.close(localSelections);
+                    SafeCloseableArray.close(matches);
+                    SafeCloseableArray.close(maybeMatches);
+                },
                 e -> {
-                    try (final SafeCloseable ignored = closeConstituentRowSets::run) {
-                        onError.accept(e);
-                    }
+                    SafeCloseable.closeAllDuringFailure(e, localSelections);
+                    SafeCloseable.closeAllDuringFailure(e, matches);
+                    SafeCloseable.closeAllDuringFailure(e, maybeMatches);
+                    onError.accept(e);
                 });
     }
 
