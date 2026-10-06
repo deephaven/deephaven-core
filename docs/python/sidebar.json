@@ -841,7 +841,7 @@
                   },
                   {
                     "label": "Subscribe to ticking tables",
-                    "path": "how-to-guides/client-ticking-tables.md"
+                    "path": "how-to-guides/pydeephaven-ticking.md"
                   }
                 ]
               },
