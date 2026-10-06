@@ -838,6 +838,10 @@
                   {
                     "label": "Stream data with Input Tables",
                     "path": "how-to-guides/client-input-tables.md"
+                  },
+                  {
+                    "label": "Subscribe to ticking tables",
+                    "path": "how-to-guides/client-ticking-tables.md"
                   }
                 ]
               },
