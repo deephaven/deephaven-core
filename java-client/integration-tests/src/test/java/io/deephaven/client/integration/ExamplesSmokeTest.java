@@ -88,6 +88,7 @@ class ExamplesSmokeTest {
                 example(SESSION, "filter-table", "", "--variable", STATIC_TABLE, "I > 5"),
                 example(SESSION, "table-manager", "Stage"),
                 example(SESSION, "subscribe-fields", "Created: ", "-c", "1"),
+                example(SESSION, "subscribe-fields", "", "-c", "0"),
                 example(SESSION, "subscribe-to-logs", "", "-q", "-c", "1", "--timeout", "PT30S"),
                 example(SESSION, "create-shared-id", "shared id: 0x", "--duration", "PT1S"),
                 example(SESSION, "fetch-object", "", "--type", "Figure", "--variable", FIGURE),

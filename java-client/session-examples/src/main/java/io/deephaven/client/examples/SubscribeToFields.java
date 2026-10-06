@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class SubscribeToFields extends SingleSessionExampleBase {
 
     @Option(names = {"-c", "--count"},
-            description = "The number of field change notifications to receive before exiting, unlimited if unset")
+            description = "The number of field change notifications to receive before exiting, unlimited if unset; "
+                    + "0 subscribes and exits without waiting for one")
     Long count;
 
     @Override
@@ -69,6 +70,10 @@ public final class SubscribeToFields extends SingleSessionExampleBase {
             }
         });
         Runtime.getRuntime().addShutdownHook(new Thread(cancel::cancel));
+        if (notificationsToReceive == 0) {
+            // Nothing to wait for; the subscription was still made, so this exercises the call itself
+            latch.countDown();
+        }
         latch.await();
         cancel.cancel();
     }
