@@ -2,7 +2,11 @@
 title: Systemic object marking
 ---
 
-In Deephaven, a **systemic object** is an object whose failure the engine reports to the host application as a fatal error. Failures of non-systemic objects are not reported this way. In either case, the failed table and the tables that depend on it enter a failed state. Deephaven Community Core does not install a fatal-error handler, so the worker keeps running after any failure. Deephaven Core+ (Enterprise) terminates the worker when a systemic object fails. When systemic object marking is disabled (the default), all objects are treated as systemic. When marking is enabled, threads are non-systemic by default — only objects created on explicitly marked threads or within a scoped execution are systemic. This guide explains how to control this behavior using the [`deephaven.systemic_obj_tracker`](https://docs.deephaven.io/core/pydoc/code/deephaven.systemic_obj_tracker.html) module.
+In Deephaven, a **systemic object** is an object whose failure the engine reports to the server, in addition to putting the failed table and the tables that depend on it into a failed state. Failures of non-systemic objects only fail the affected tables.
+
+What happens after a systemic failure depends on the server. Deephaven Community Core logs the error, and the worker keeps running. Deephaven Core+ (Enterprise) terminates the worker.
+
+When systemic object marking is disabled (the default), all objects are treated as systemic. When marking is enabled, threads are non-systemic by default — only objects created on explicitly marked threads or within a scoped execution are systemic. This guide explains how to control this behavior using the [`deephaven.systemic_obj_tracker`](https://docs.deephaven.io/core/pydoc/code/deephaven.systemic_obj_tracker.html) module.
 
 ## Enable systemic object marking
 

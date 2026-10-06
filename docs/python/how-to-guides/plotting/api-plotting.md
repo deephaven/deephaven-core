@@ -193,7 +193,7 @@ plot_xy_scatter = (
 
 #### XY Series as a scatter plot with markers
 
-In the example below, the scatter plot includes markers. First, `twin` method is used to clone the x- and y-axes. Then, the `SCATTER` PlotStyle is applied to the new axes.
+In the example below, the scatter plot includes markers. First, the [`twin`](/core/pydoc/code/deephaven.plot.figure.html#deephaven.plot.figure.Figure.twin) method creates a new set of axes that shares the existing X and Y axes. Then, [`axes`](/core/pydoc/code/deephaven.plot.figure.html#deephaven.plot.figure.Figure.axes) applies the `SCATTER` plot style to the new axes, so the `Buy` and `Sell` series plotted on them appear as markers over the `OHLC` series.
 
 ```python test-set=1 order=null
 from deephaven import time_table
@@ -609,15 +609,13 @@ This query plots the OHLC chart as follows:
 - `ohlc_plot` is the name of the variable that will hold the chart.
   - `plot_ohlc` plots the first series.
   - `"BTC"` is the name of the first series to be used in the chart.
-  - `btc_ohlc` is the table from which the data is being pulled.
-  - `btc_ohlc` is built from `btc_bin`, which filters `crypto_trades` to the `BTC/USD` instrument.
+  - `btc_ohlc` is the table from which the data is being pulled. It is built from `btc_bin`, which filters `crypto_trades` to the `BTC/USD` instrument.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, "`Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
 - `x_twin` is used to show different Y axes.
 - `plot_ohlc` plots the second series.
   - `"ETH"` is the name of the second series to be used in the chart.
-  - `eth_ohlc` is the table from which the data is being pulled.
-  - `eth_ohlc` is built from `eth_bin`, which filters `crypto_trades` to the `ETH/USD` instrument.
+  - `eth_ohlc` is the table from which the data is being pulled. It is built from `eth_bin`, which filters `crypto_trades` to the `ETH/USD` instrument.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, `"Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
 - `figure_title` provides the title for the chart.
@@ -685,7 +683,7 @@ one_click(t: Table, by: list[str] = None, require_all_filters: bool = False) -> 
 
 - `t` is the table containing the data.
 - A list of strings, where each string is the name of a column to be made available for input filtering.
-- `require_all_filters`, when set to `True`, will display a prompt explaining that filter controls must be added to the resulting plot. By default (`False`), this message will not be displayed.
+- `require_all_filters`: when `True`, the plot only displays data once the appropriate one-click filters are selected. When `False` (the default), data displays before all filters are selected.
 
 ```python test-set=9 order=null
 from deephaven import read_csv

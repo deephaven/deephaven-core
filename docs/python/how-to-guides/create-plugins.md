@@ -419,7 +419,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "example_plugin_client"
 version = "0.0.1"
-dependencies = ["pydeephaven>=0.36.1", "pandas"]
+dependencies = ["pydeephaven>=0.37.0", "pandas"]
 ```
 
 > [!NOTE]
@@ -532,7 +532,7 @@ python -m pip install ./client
 With that said and done, the following Python script will use the client-side plugin:
 
 > [!IMPORTANT]
-> Replace `YOUR_PASSWORD_HERE` with the pre-shared key you set when starting the server (in the Docker Compose file or the `Server` `jvm_args`).
+> Replace `YOUR_PASSWORD_HERE` with the pre-shared key you set when starting the server, either in the Docker Compose file or in the `jvm_args` passed to `Server`.
 
 ```python skip-test
 """

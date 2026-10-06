@@ -53,7 +53,9 @@ tasks.named('run', JavaExec) {
 
 ### Authentication
 
-By default, the Deephaven server requires [pre-shared key (PSK) authentication](./authentication/auth-psk.md), and a Java client session that sets no authentication connects as anonymous, which the server rejects. Pass the key to the session builder with `authenticationTypeAndValue`, using the value `io.deephaven.authentication.psk.PskAuthenticationHandler <key>`. The [complete example](#complete-example) below reads the key from the `DEEPHAVEN_PSK` environment variable, so set that variable to your server's key before you run it. If your server has [anonymous authentication](./authentication/auth-anon.md) enabled, you can omit this setting.
+By default, the Deephaven server requires [pre-shared key (PSK) authentication](./authentication/auth-psk.md). A Java client that sets no authentication connects as anonymous, and the server rejects it. If your server has [anonymous authentication](./authentication/auth-anon.md) enabled, you can skip this step.
+
+To authenticate, call `authenticationTypeAndValue` on the builder returned by `factoryBuilder` and pass the value `io.deephaven.authentication.psk.PskAuthenticationHandler <key>`. The [complete example](#complete-example) below reads the key from the `DEEPHAVEN_PSK` environment variable, so set that variable to your server's key before you run it.
 
 ## Basic pattern
 

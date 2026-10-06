@@ -24,12 +24,12 @@ and is not safe to refresh. Note that some usages, such as on an append-only tab
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                                     | Safe on                                         | Throws error on                                |
-| -------------------------------------------- | ----------------------------------------------- | ---------------------------------------------- |
-| `i`, `ii`                                    | static, append-only, blink                      | other refreshing tables, such as add-only      |
-| `k`                                          | static, add-only (including append-only), blink | other refreshing tables                        |
-| Simple constant offset (`Column_[i-1]`)      | all tables                                      | —                                              |
-| Complex array expressions (`Column_[(i)-1]`) | static, blink                                   | other refreshing tables, including append-only |
+| Variable                                     | Safe on                                         | Throws error on                                                           |
+| -------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------- |
+| `i`, `ii`                                    | static, append-only, blink                      | other refreshing tables, such as add-only tables that are not append-only |
+| `k`                                          | static, add-only (including append-only), blink | other refreshing tables                                                   |
+| Simple constant offset (`Column_[i-1]`)      | all tables                                      | —                                                                         |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink                                   | other refreshing tables, including append-only                            |
 
 > [!NOTE]
 > The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables other than blink tables.
@@ -48,14 +48,14 @@ source = emptyTable(10).update(
 
 ## Alternatives for refreshing tables
 
-When working with refreshing tables where you need to reference preceding or following column values, avoid using column array notation (e.g., `Column_[ii-1]`). Instead, use one of the following approaches:
+When working with refreshing tables where you need to reference preceding or following column values, avoid using column array notation (e.g., `Column_[ii-1]`). Instead, use the by → update → ungroup pattern or an as-of join. Partitioning the table first can make either approach more manageable.
 
 > [!NOTE]
 > The examples below use Iceberg tables with auto-refresh mode, which creates refreshing tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
 
 ### 1. Source partitioned tables
 
-Partition a table into multiple smaller tables. This can make operations more manageable and efficient, especially when dealing with add-only tables.
+Partition a table into multiple smaller tables to make operations more manageable and efficient.
 
 ```groovy docker-config=iceberg test-set=1 order=null
 import io.deephaven.iceberg.util.*

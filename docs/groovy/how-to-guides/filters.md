@@ -2,7 +2,7 @@
 title: Filters
 ---
 
-This guide focuses on using filters within [query strings](./query-string-overview.md). Unlike [formulas](./formulas.md), which add new columns to a table, filters are boolean expressions used to create a new table that is a subset of an existing table. Filters are employed in the [`where`](../reference/table-operations/filter/where.md) table operation.
+This guide focuses on using filters within [query strings](./query-string-overview.md). Unlike [formulas](./formulas.md), which add new columns to a table, filters are boolean expressions used to create a new table that is a subset of an existing table. Filters are employed in the [`where`](../reference/table-operations/filter/where.md) table operation. The [`wouldMatch`](../reference/table-operations/filter/would-match.md) operation also evaluates filters, but instead of removing rows, it adds a boolean column showing which rows match.
 
 The related [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) operations do not take filter expressions. Instead, they keep rows based on whether their values match values in another table.
 

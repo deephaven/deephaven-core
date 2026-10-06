@@ -167,7 +167,7 @@ These properties have the following consequences:
 2. The entire table changes every update cycle, so preserving row order from cycle to cycle is irrelevant.
 3. Blink tables can only cause memory problems if a single update receives more data than fits in available RAM. This is unusual, but not impossible.
 
-Blink tables are a common choice for Kafka ingestion (`KafkaTools.TableType.blink()`) because they use little memory. They are most useful for low-memory aggregations, deriving downstream tables, or using programmatic listeners to react to data.
+Blink tables are a common choice for Kafka ingestion because they use little memory. To get one, pass `KafkaTools.TableType.blink()` as the table type when you consume a topic. They are most useful for low-memory aggregations, deriving downstream tables, or using programmatic listeners to react to data.
 
 Check whether a table is a blink table with the [`isBlink`](../reference/table-operations/metadata/isBlink.md) method:
 

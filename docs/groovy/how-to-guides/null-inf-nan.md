@@ -145,7 +145,7 @@ source = emptyTable(10).update(
 
 ### Remove values
 
-[Built-in methods](./built-in-functions.md) can also be used to [filter](./use-filters.md) out null, NaN, and infinite values. Use `isInf` to filter out infinite values, or `isFinite` to remove null, NaN, and infinite values from a column with a single check.
+[Built-in methods](./built-in-functions.md) can also be used to [filter](./use-filters.md) out null, NaN, and infinite values. Use [`isInf`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isInf(double)) to filter out infinite values, or [`isFinite`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isFinite(double)) to remove null, NaN, and infinite values from a column with a single check.
 
 ```groovy order=source,resultNoNulls,resultNoNans,resultNoNullsNans,resultNoInfs,resultFinite
 source = emptyTable(10).update(

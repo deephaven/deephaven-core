@@ -37,17 +37,13 @@ Once you make your selections, click **Create**. The plot will open as a new pan
 
 In the next sections, we'll show you examples of each chart type using two tables of weather data. Run this script if you'd like to follow along:
 
-```python skip-test
-# not yet implemented for v2
+```python test-set=1 order=hi_lo_by_year
 from deephaven import read_csv
+from deephaven import agg
 
 seattle_weather = read_csv(
     "https://media.githubusercontent.com/media/deephaven/examples/main/GSOD/csv/seattle.csv"
 )
-
-from deephaven.time import TimeZone
-from deephaven import agg as agg
-
 
 hi_lo_by_year = (
     seattle_weather.view(

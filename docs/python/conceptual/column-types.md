@@ -158,7 +158,7 @@ t5 = empty_table(3).update(
 
 #### Boolean type
 
-The `Boolean` type represents true/false values. Boolean columns are stored as `java.lang.Boolean`, and their null value is Java `null` (`NULL_BOOLEAN`):
+The `Boolean` type represents true/false values. Boolean columns have the data type `java.lang.Boolean`, and their null value is Java `null` (`NULL_BOOLEAN`). Comparison expressions produce `Boolean` columns:
 
 ```python test-set=column-types order=t6
 from deephaven import empty_table
@@ -289,7 +289,7 @@ t12 = empty_table(2).update(
 
 ### String type
 
-The `String` type stores text data. Each value in a `String` column is a reference to a `java.lang.String` object.
+The `String` type stores text data.
 
 #### Creating string columns
 
@@ -328,7 +328,7 @@ t14 = empty_table(3).update(
 
 #### Strings and memory
 
-Deephaven does not automatically intern strings that formulas produce. Low-cardinality columns (like categories or symbols) are generally cheaper to work with than high-cardinality data (like unique IDs or free-form text).
+Deephaven does not automatically intern strings that formulas produce. A formula that builds strings at runtime, such as by concatenation, creates a new `String` object for each row, even when values repeat. String literals in a formula, such as `` `Active` `` in the example below, are shared across rows. A low-cardinality column built from literals (like categories or symbols) therefore uses less memory than a high-cardinality column (like unique IDs or free-form text).
 
 ```python test-set=column-types order=t15
 from deephaven import empty_table
@@ -643,7 +643,6 @@ sorted_with_nulls = t31.sort("NullableInt")
 - Prefer primitive types over objects (e.g., `int` over `Integer`, `double` over `BigDecimal`).
 - Use appropriate numeric precision (don't use `long` when `int` suffices).
 - Be cautious with high-cardinality strings and object columns.
-- Prefer low-cardinality strings for categorical data.
 
 ### Ensure type safety
 
@@ -654,13 +653,13 @@ sorted_with_nulls = t31.sort("NullableInt")
 
 ### Performance considerations
 
-| Operation            | Fast                                   | Slow                           |
-| -------------------- | -------------------------------------- | ------------------------------ |
-| Primitive arithmetic | ✅ `int`, `long`, `double`             | ❌ `BigDecimal`                |
-| String operations    | ✅ Low-cardinality strings             | ❌ High-cardinality strings    |
-| Null checks          | ✅ Primitive nulls (`NULL_INT`)        | ❌ Complex null checking logic |
-| Aggregations         | ✅ Numeric primitives                  | ❌ Complex objects             |
-| Memory usage         | ✅ Primitives, low-cardinality strings | ❌ Objects, large arrays       |
+| Operation            | Fast                                    | Slow                           |
+| -------------------- | --------------------------------------- | ------------------------------ |
+| Primitive arithmetic | ✅ `int`, `long`, `double`              | ❌ `BigDecimal`                |
+| String operations    | ✅ Low-cardinality strings              | ❌ High-cardinality strings    |
+| Null checks          | ✅ Primitive nulls (`NULL_INT`)         | ❌ Complex null checking logic |
+| Aggregations         | ✅ Numeric primitives                   | ❌ Complex objects             |
+| Memory usage         | ✅ Primitives, repeated string literals | ❌ Objects, large arrays       |
 
 ## Related documentation
 

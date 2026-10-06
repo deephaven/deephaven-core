@@ -205,7 +205,7 @@ In this example, we will be using one of the pre-built Deephaven Docker images: 
 
 ### Classification example
 
-We will classify the Iris dataset with Deephaven tables and use the same PyTorch neural network (`IrisANN`) we built in the [PyTorch guide](./use-pytorch.md#classify-the-iris-dataset-with-deephaven-tables). We will only need to add a few lines of code to enable TensorBoard!
+This example classifies the Iris dataset with Deephaven tables, using the same PyTorch neural network (`IrisANN`) built in the [PyTorch guide](./use-pytorch.md#classify-the-iris-dataset-with-deephaven-tables). Enabling TensorBoard takes only a few extra lines of code.
 
 First, we need to create a `SummaryWriter` instance to log data for consumption and visualization by TensorBoard:
 

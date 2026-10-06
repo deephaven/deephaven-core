@@ -280,7 +280,7 @@ If running Deephaven locally, you can install your plugin by:
 
 ```bash
 # Add your plugin JAR to the classpath when starting Deephaven
-EXTRA_CLASSPATH="/path/to/your-plugin.jar" ./server/jetty-app/build/install/server-jetty/bin/start
+START_OPTS="-Ddeephaven.console.type=groovy -Dauthentication.psk=YOUR_PASSWORD_HERE" EXTRA_CLASSPATH="/path/to/your-plugin.jar" ./server/jetty-app/build/install/server-jetty/bin/start
 ```
 
 See [Install and use Java packages](./install-and-use-java-packages.md) for more about building the server and using `EXTRA_CLASSPATH`.

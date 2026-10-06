@@ -435,15 +435,13 @@ This query plots the OHLC chart as follows:
 - `plotOHLC` is the name of the variable that will hold the chart.
   - `ohlcPlot` plots the first series.
   - `"BTC"` is the name of the first series to be used in the chart.
-  - `btcOHLC` is the table from which the data is being pulled.
-  - `btcOHLC` is built from `btcBin`, which filters `cryptoTrades` to the `BTC/USD` instrument.
+  - `btcOHLC` is the table from which the data is being pulled. It is built from `btcBin`, which filters `cryptoTrades` to the `BTC/USD` instrument.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, "`Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
 - `twinX` is used to show different Y axes.
 - `ohlcPlot` plots the second series.
   - `"ETH"` is the name of the second series to be used in the chart.
-  - `ethOHLC` is the table from which the data is being pulled.
-  - `ethOHLC` is built from `ethBin`, which filters `cryptoTrades` to the `ETH/USD` instrument.
+  - `ethOHLC` is the table from which the data is being pulled. It is built from `ethBin`, which filters `cryptoTrades` to the `ETH/USD` instrument.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, `"Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
 - `chartTitle` provides the title for the chart.
@@ -495,7 +493,7 @@ oneClick(t, byColumns...)
 - `pTable` is a partitioned table containing the data.
 - `t` is the table containing the data.
 - `byColumns` is a list of strings, where each string is the name of a column to be made available for input filtering.
-- `requireAllFiltersToDisplay`: when `true` (the default for the overloads that omit it), the plot only displays data once the appropriate one-click filters are selected. When `false`, data displays before all filters are selected.
+- `requireAllFiltersToDisplay`: when `true`, the plot only displays data once the appropriate one-click filters are selected. When `false`, data displays before all filters are selected. Overloads that omit this argument use `true`.
 
 ```groovy skip-test
 import static io.deephaven.csv.CsvTools.readCsv

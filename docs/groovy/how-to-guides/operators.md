@@ -111,10 +111,11 @@ There are many operators available in the Deephaven Query Language (DQL). They a
 
 ### Bitwise operators
 
-| Symbol | Name        | Description                                                                                                                                                                                                      |
-| ------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `&`    | Bitwise AND | Compares each bit of the first operand to the corresponding bit of the second operand. If both bits are 1, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0.        |
-| `^`    | Bitwise XOR | Compares each bit of the first operand to the corresponding bit of the second operand. If the bits are different, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0. |
+| Symbol          | Name        | Description                                                                                                                                                                                                      |
+| --------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `&`             | Bitwise AND | Compares each bit of the first operand to the corresponding bit of the second operand. If both bits are 1, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0.        |
+| <code>\|</code> | Bitwise OR  | Compares each bit of the first operand to the corresponding bit of the second operand. If either bit is 1, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0.        |
+| `^`             | Bitwise XOR | Compares each bit of the first operand to the corresponding bit of the second operand. If the bits are different, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0. |
 
 Query strings don't support the bitwise complement (`~`) or shift (`<<`, `>>`, `>>>`) operators.
 

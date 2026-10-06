@@ -146,7 +146,7 @@ Thinking in terms of DAGs, UG cycles, and update notifications can be insightful
 
 ### Identifying bottlenecks
 
-Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as `perfmon.update_performance_log()` and `perfmon.update_performance_ancestors_log()`, to see how much time each operation takes in each update graph cycle. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
+Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as the update performance log from `deephaven.perfmon.update_performance_log`, to see how much time each operation spends processing updates in each reporting interval. The update performance ancestors log, from `update_performance_ancestors_log`, shows which upstream operations feed each one. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
 
 Common performance bottlenecks include:
 
@@ -159,7 +159,7 @@ Common performance bottlenecks include:
 
 Once you understand what operations are slow, you can optimize your query:
 
-- **Use `snapshot_when`**: Update results periodically by snapshotting on a slower trigger table instead of on every change. See [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md).
+- **Use [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md)**: Update results periodically by snapshotting on a slower trigger table instead of on every change. See [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md).
 - **Restructure dependencies**: Break long dependency chains into parallel branches.
 - **Pre-aggregate data**: Move expensive aggregations upstream in the DAG.
 - **Filter early**: Apply `where` clauses before expensive operations.

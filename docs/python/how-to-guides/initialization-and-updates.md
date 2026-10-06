@@ -16,6 +16,7 @@ This guide explains:
 Consider this code:
 
 ```python syntax
+from deephaven import kafka_consumer
 import deephaven.pandas as dhpd
 
 # This LOOKS sequential, but it's not!
@@ -311,9 +312,9 @@ state = initialize_from_table(source)
 handle = listen(source, create_update_handler(state))
 ```
 
-### Pattern 7: Use locking for direct table access (advanced)
+### Pattern 7: Use locking for consistent reads across tables (advanced)
 
-For advanced use cases where several reads must see the same update cycle (for example, extracting more than one ticking table, or reading column sources directly), hold the update graph lock around all of them. `to_pandas` already snapshots a single table on its own, so the lock in this example only matters once you add more reads inside the `with` block:
+For advanced use cases where several reads must see the same update cycle, hold the update graph lock around all of them. A single `to_pandas` call doesn't need the lock, because `to_pandas` already snapshots its table. Extracting two tables under one lock guarantees both DataFrames come from the same cycle:
 
 ```python ticking-table order=null
 from deephaven import time_table
@@ -321,19 +322,20 @@ from deephaven.update_graph import shared_lock
 import deephaven.pandas as dhpd
 
 source = time_table("PT0.5s").update("X = ii")
+totals = source.view("X").sum_by()
 
 
 def extract_data_safely():
-    # DO: Use lock for direct access to ticking data
+    # DO: Hold one lock so both extractions see the same update cycle
     with shared_lock(source):
-        # Table is guaranteed consistent while lock is held
         df = dhpd.to_pandas(source)
-        return df
+        totals_df = dhpd.to_pandas(totals)
+    return df, totals_df
 
 
 # Call when needed
-df = extract_data_safely()
-print(f"Extracted {len(df)} rows safely")
+df, totals_df = extract_data_safely()
+print(f"Extracted {len(df)} rows and {len(totals_df)} total row(s) from the same cycle")
 ```
 
 > [!CAUTION]
@@ -350,7 +352,9 @@ import deephaven.pandas as dhpd
 
 def bad_listener(update, is_replay):
     # DON'T: Access other tables in listeners
-    other_data = dhpd.to_pandas(other_table)  # Dangerous - may be inconsistent!
+    other_data = dhpd.to_pandas(
+        other_table
+    )  # Dangerous - may not reflect this update cycle!
 
 
 handle = listen(source, bad_listener)
@@ -433,10 +437,11 @@ import deephaven.pandas as dhpd
 
 # DO: Minimize lock duration
 with shared_lock(source):
-    df = dhpd.to_pandas(source)  # Quick extraction
+    df = dhpd.to_pandas(source)  # Quick extractions only
+    totals_df = dhpd.to_pandas(totals)
 
 # Process OUTSIDE the lock
-result = expensive_ml_training(df)
+result = expensive_ml_training(df, totals_df)
 save_to_database(result)
 ```
 
@@ -450,7 +455,7 @@ save_to_database(result)
 | Aggregate ticking data with custom Python logic | Use table operations (`agg_by`, `update_by`), or Python functions in formulas. |
 | Initialize ML model from table state            | `do_replay=True` in listener, or snapshot before listening.                    |
 | Join ticking data with external database        | Snapshot the ticking table, then join in Python.                               |
-| Debug why data looks inconsistent               | Check if you're reading without synchronization; add logging to listener.      |
+| Debug why data looks inconsistent               | Check for multi-table reads outside one lock or in listeners; add logging.     |
 
 ## Understanding the update cycle
 

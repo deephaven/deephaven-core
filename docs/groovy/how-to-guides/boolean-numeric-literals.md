@@ -20,7 +20,7 @@ Numeric literals in the query language can be integers or floating-point numbers
 - `L` or `l` for a 64-bit signed integer (Java primitive `long`).
 - `f` for a 32-bit floating-point number (Java primitive `float`).
 
-The following example constructs a column for each form of numeric literal. The table metadata is also shown:
+The following example constructs a column for each of several common forms of numeric literal. The table metadata is also shown:
 
 ```groovy order=source,sourceMeta
 source = emptyTable(1).update(

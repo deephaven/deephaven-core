@@ -19,7 +19,7 @@ source = emptyTable(1).update("X = new int[]{1, 2, 3}")
 sourceMeta = source.meta()
 ```
 
-You can also use [Groovy closures](./groovy-closures.md) to create Java primitive array columns. A closure called in a query string returns `Object`, so cast the result to the array type:
+You can also use [Groovy closures](./groovy-closures.md) to create Java primitive array columns. Have the closure return a Java array with `as int[]`. A closure called in a query string returns `Object`, so also cast the result to the array type:
 
 ```groovy order=source,sourceMeta
 listFunc = { -> [4, 5, 6] as int[] }

@@ -142,7 +142,7 @@ Thinking in terms of DAGs, UG cycles, and update notifications can be insightful
 
 ### Identifying bottlenecks
 
-Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as `updatePerformanceLog()` and the tree tables from `PerformanceQueries`, to see how much time each operation takes in each update graph cycle. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
+Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as the update performance log from `updatePerformanceLog`, to see how much time each operation spends processing updates in each reporting interval. The update performance ancestors log, from `updatePerformanceAncestorsLog`, shows which upstream operations feed each one. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
 
 Common performance bottlenecks include:
 
@@ -155,20 +155,20 @@ Common performance bottlenecks include:
 
 Once you understand what operations are slow, you can optimize your query:
 
-- **Use `snapshotWhen`**: Update results periodically by snapshotting on a slower trigger table instead of on every change. See [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md).
+- **Use [`snapshotWhen`](../reference/table-operations/snapshot/snapshot-when.md)**: Update results periodically by snapshotting on a slower trigger table instead of on every change. See [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md).
 - **Restructure dependencies**: Break long dependency chains into parallel branches.
 - **Pre-aggregate data**: Move expensive aggregations upstream in the DAG.
 - **Filter early**: Apply `where` clauses before expensive operations.
 
 For example, instead of:
 
-```groovy order=live_data,result
+```groovy order=liveData,result
 import static io.deephaven.api.agg.Aggregation.AggSum
 
-live_data = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
+liveData = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
 
 // Updates the aggregation every second
-result = live_data.aggBy([AggSum("ExpensiveCalc")], "Group")
+result = liveData.aggBy([AggSum("ExpensiveCalc")], "Group")
 ```
 
 Consider:
@@ -176,11 +176,11 @@ Consider:
 ```groovy order=result test-set=optimization-example
 import static io.deephaven.api.agg.Aggregation.AggSum
 
-live_data = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
+liveData = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
 
 // Optimized: snapshotWhen updates the aggregation every 10 seconds
 trigger = timeTable("PT10S").renameColumns("TriggerTimestamp = Timestamp")
-result = live_data.snapshotWhen(trigger).aggBy([AggSum("ExpensiveCalc")], "Group")
+result = liveData.snapshotWhen(trigger).aggBy([AggSum("ExpensiveCalc")], "Group")
 ```
 
 ## Related documentation

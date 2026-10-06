@@ -158,7 +158,9 @@ For most applications where a single user runs Deephaven, the systemic execution
 
 ### Multiple execution contexts
 
-The previous examples in this guide have only shown the use of the systemic execution context. You can create additional execution contexts with [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx). Called with no arguments, `make_user_exec_ctx` returns a non-systemic execution context that shares the current query scope, query library, query compiler, and update graph. To isolate variables, pass `freeze_vars` (shown below). To isolate the update graph, [create an execution context from scratch](#creating-execution-contexts-from-scratch). The following code block writes to a [table publisher](../reference/table-operations/create/TablePublisher.md) in the systemic execution context, then uses a user execution context to perform a [partitioned table transform](../how-to-guides/partitioned-tables.md#transform):
+The previous examples in this guide have only shown the use of the systemic execution context. You can create additional execution contexts with [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx). Called with no arguments, `make_user_exec_ctx` returns a non-systemic execution context that shares the current query scope, query library, query compiler, and update graph. To isolate variables, pass `freeze_vars` (shown below). To isolate the update graph, [create an execution context from scratch](#creating-execution-contexts-from-scratch).
+
+The following code block writes to a [table publisher](../reference/table-operations/create/TablePublisher.md) in the systemic execution context, then uses a user execution context to perform a [partitioned table transform](../how-to-guides/partitioned-tables.md#transform):
 
 ```python skip-test
 from deephaven.stream.table_publisher import table_publisher
@@ -219,7 +221,7 @@ my_partitioned_table = (
 )
 ```
 
-[`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx) can take an optional parameter `freeze_vars`. By passing one or more variables in a sequence, the variables will be frozen in the new execution context. The following code block freezes `value1`, `value2`, and `value3`:
+When you pass a sequence of variable names to `freeze_vars`, the new execution context gets its own query scope that holds only those variables and their current values. The following code block freezes `value1`, `value2`, and `value3`:
 
 ```python skip-test
 from deephaven.execution_context import make_user_exec_ctx

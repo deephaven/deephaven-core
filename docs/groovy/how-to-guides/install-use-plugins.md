@@ -28,19 +28,19 @@ This guide covers the installation and use of pre-built plugins. For information
 
 First, follow the [Launch Deephaven from pre-built images](../getting-started/docker-install.md) steps from the Docker install guide.
 
-The following Dockerfile provides a template for installing a plugin containing both JavaScript and server components in a Deephaven Docker image:
+The `server-slim` image runs a Groovy console. The following Dockerfile provides a template for installing JS plugins in that image:
 
 ```docker title="Dockerfile"
-FROM ghcr.io/deephaven/web-plugin-packager:main as js-plugins
+FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
 # 1. Package the NPM deephaven-js-plugin(s)
 RUN ./pack-plugins.sh <plugins>
 
-FROM ghcr.io/deephaven/server:main
-# 2. Install the server-side plugin components if necessary (some plugins may be JS only)
-RUN pip install --no-cache-dir <packages>
-# 3. Copy the js-plugins/ directory
+FROM ghcr.io/deephaven/server-slim:latest
+# 2. Copy the js-plugins/ directory
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
+
+For more about JS plugin packaging and configuration, see [Configure JS plugins](./configuration/js-plugins.md). Server-side components of a plugin are Java libraries; to add them to the server's classpath, see [Install and use Java packages](./install-and-use-java-packages.md).
 
 You can use Docker to build and run the image:
 
@@ -107,7 +107,19 @@ Authentication plugins have a more complex installation process than other plugi
 
 The [Java client](https://github.com/deephaven/deephaven-core/tree/main/java-client) can interact with plugin objects on the server through the `fetchable` and `bidirectional` methods of a `Session`. Each method takes a typed ticket, which pairs the plugin's object type with a reference to the object, such as a variable name in the server's scope.
 
-The examples below assume you already have a connected `Session`. For complete, runnable programs that create a session, see the [Java client session examples](https://github.com/deephaven/deephaven-core/tree/main/java-client/session-examples/src/main/java/io/deephaven/client/examples).
+The examples below assume you already have a connected `Session`, and the bidirectional example reuses the `typedTicket` created in the fetch example. For complete, runnable programs that create a session, see the [Java client session examples](https://github.com/deephaven/deephaven-core/tree/main/java-client/session-examples/src/main/java/io/deephaven/client/examples).
+
+### Add the Java client dependency
+
+To use the Java client in your project, add the session library to your `build.gradle`, replacing `<version>` with your Deephaven version:
+
+```gradle
+dependencies {
+    implementation 'io.deephaven:deephaven-java-client-session:<version>'
+
+    // Add other plugin-specific dependencies as needed
+}
+```
 
 ### Fetch a plugin object
 
@@ -167,18 +179,6 @@ try (Bidirectional bidirectional = session.bidirectional(typedTicket).get()) {
 ```
 
 For a complete example, see [`MessageStreamSendReceive.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/session-examples/src/main/java/io/deephaven/client/examples/MessageStreamSendReceive.java).
-
-### Gradle dependencies for plugin development
-
-To use the Java client in your project, add the session library to your `build.gradle`, replacing `<version>` with your Deephaven version:
-
-```gradle
-dependencies {
-    implementation 'io.deephaven:deephaven-java-client-session:<version>'
-
-    // Add other plugin-specific dependencies as needed
-}
-```
 
 ## Related documentation
 

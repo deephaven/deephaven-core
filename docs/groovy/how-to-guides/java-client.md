@@ -14,7 +14,7 @@ We will show you how to construct a simple system that: monitors weather data (s
 
 ## Prerequisites
 
-- Clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core).
+- Optionally, clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core) to run the Barrage client examples in `java-client/barrage-examples`.
 - [Build and run Deephaven](../getting-started/docker-install.md).
 - Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview).
 
@@ -125,6 +125,7 @@ binned_stats60 = binned_data.agg_by(agg_list60, by=["State", "City", "bin1Hr"])
 # Ideally,  these would be viewed in a single aggregated table
 # this will join the two tables together using the State, City, and Hourly time bin
 combined_stats = binned_stats30.natural_join(binned_stats60, "State,City,bin1Hr")
+
 # Finally, create a table of the last relevant value of each location, by City and State,
 # discarding the time bin columns
 # For bonus points, it also joins back on the current weather measurement
@@ -344,13 +345,11 @@ At this point, you have a completely functional Deephaven application that is re
 
 The final, and most interesting part of this example, is the Java client. It is an extremely simple Java Swing UI that has the ability to connect to the Deephaven worker and fetch the final `last_city_by_state` statistics table. It also demonstrates the ability to communicate with the worker by requesting additional cities to be tracked.
 
-The client code can be found in the repository in the `java-client/weather-server-example` directory. Build this and run the `WeatherDash` class to bring up the UI.
+The complete `WeatherDash` client application isn't included in the deephaven-core repository. The following sections show the parts of its code that connect to the server, fetch the table, and send commands to the worker.
 
 ![The Java client UI](../assets/tutorials/java-client/java-app.png)
 
-Enter the address of your Deephaven IDE and click **Connect**. Then type an address in the **Location** text box and click **Add**.
-
-You will now see live weather data for the city you entered.
+In the finished application, you enter the address of your Deephaven IDE and click **Connect**, then type an address in the **Location** text box and click **Add**. The UI then displays live weather data for that city.
 
 ![The Java client UI, now displaying live weather data for the city the user entered](../assets/tutorials/java-client/java-app-data.png)
 
@@ -391,12 +390,10 @@ final FlightSessionFactory flightSessionFactory =
 flightSession = flightSessionFactory.newFlightSession();
 ```
 
-> [!WARNING]
-> The Deephaven Java-API is still an alpha library. In future versions, the method described below to convert the [Arrow Flight](https://arrow.apache.org/) Stream into a Deephaven table will be dramatically simplified.
->
-> This example has packaged this code into the class `BarrageSupport` to separate this complexity.
+> [!NOTE]
+> The weather example wraps the code that converts the [Arrow Flight](https://arrow.apache.org/) stream into a Deephaven table in a helper class, `BarrageSupport`, which isn't part of the deephaven-core repository. The [Table subscription deep dive](#table-subscription-deep-dive) shows how to do the same thing with the `BarrageSession` class from the `java-client/barrage` module.
 
-Now, we will create the `BarrageSupport` instance and fetch the `last_city_by_state` table from the worker.
+Next, the example creates the `BarrageSupport` instance and fetches the `last_city_by_state` table from the worker.
 
 > [!NOTE]
 > This is where the magic happens! In step 3, we defined a query-scope variable named `last_city_by_state`. To reference in a remote client, we convert it into a Flight Ticket simply by prefixing `s/`. Any tables that are exposed in the query scope can be accessed as easily as that.
@@ -440,11 +437,11 @@ The last piece of the puzzle is to process the data from the table. You can, of 
 table.addUpdateListener(listener = new InstrumentedTableUpdateListenerAdapter(table, false) {
     @Override
     public void onUpdate(TableUpdate upstream) {
-        // Process the update as needed,  the TableUpdate class contains RowSet instances that describe
+        // Process the update as needed. The TableUpdate describes:
         // 1) What rows have been added
         // 2) What rows have been removed
         // 3) What rows have been modified
-        // 4) What rows have been structurally shifted in address space,  but without changes to column data
+        // 4) What rows have been structurally shifted in address space, but without changes to column data
         // 5) What columns were affected by the changes
     }
 });
@@ -452,9 +449,11 @@ table.addUpdateListener(listener = new InstrumentedTableUpdateListenerAdapter(ta
 
 ## Table subscription deep dive
 
-The `BarrageSession` class in the `java-client/barrage` module subscribes to a table on the server and produces a live, local Deephaven table. `BarrageSession` extends `FlightSession`. The steps below follow the `SubscribeExampleBase` class in the repository's `java-client/barrage-examples` directory.
+The `BarrageSession` class in the `java-client/barrage` module subscribes to a table on the server and produces a live, local Deephaven table. `BarrageSession` extends `FlightSession`. Create one with `BarrageSessionFactoryConfig` instead of the `FlightSessionFactory` shown earlier.
 
-First, the application requests a `TableHandle` for the table from the server. `TicketTable.fromQueryScopeField` builds the ticket from the name of a query-scope variable. Next, it subscribes to that handle with `subscribe`. Finally, `entireTable()` returns a `Future` that is populated with the subscribed `Table` once all of its rows are available.
+The steps below are adapted from the `SubscribeExampleBase` class in the repository's `java-client/barrage-examples` directory. Its parent class, `BarrageClientExampleBase`, shows how to create the session and set up the client-side update graph that the subscribed table needs.
+
+First, the application requests a `TableHandle` for the table from the server. `TicketTable.fromQueryScopeField` builds the ticket from the name of a query-scope variable. Next, it subscribes to that handle with `subscribe`. Finally, `entireTable` returns a `Future` that is populated with the subscribed `Table` once all of its rows are available.
 
 ```java
 final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
@@ -469,7 +468,7 @@ try (final SafeCloseable ignored = LivenessScopeStack.open();
 }
 ```
 
-With that final step, the Deephaven table is subscribed, and receives live updates from the server as data changes. Client code can then further listen to that table to handle changes as required.
+With that final step, the local Deephaven table is subscribed to the server table and receives live updates as data changes. Client code can then further listen to that table to handle changes as required.
 
 > [!CAUTION]
 > When your app is done using tables that were fetched, close the liveness scope that they were created in, as the `try`-with-resources block above does. Closing the scope releases the subscription and the subscribed table. Without this, the server believes the table is still active and will continue to consume memory and CPU time.

@@ -11,8 +11,6 @@ t2 = t.update("Y = a * X")
 
 This guide will walk you through Groovy's scoping rules and the process for adding variables and using functions in Groovy query strings. There are many reasons to use variables: more understandable code, better reusability, and in some cases, improved efficiency.
 
-To learn more about query strings, see the [query string overview](./query-string-overview.md).
-
 > [!NOTE]
 > Variable names and function names are case-sensitive.
 
@@ -20,8 +18,8 @@ To learn more about query strings, see the [query string overview](./query-strin
 
 In Groovy, the Deephaven Query Language resolves variables using the [`QueryScope`](/core/javadoc/io/deephaven/engine/context/QueryScope.html). In a Groovy session, the query scope is the script session's variable binding:
 
-- Variables defined at the top level of a Groovy script are in the query scope automatically.
-- Variables local to a method or closure are not, so you add them with `QueryScope.addParam(name, value)`. `addParam` writes into the same binding as top-level variables: it overwrites any existing variable with that name, and the variable stays available after the method returns.
+- Variables assigned at the top level of a Groovy script without `def` or a type (for example, `a = 2`) are in the query scope automatically.
+- Variables local to a method or closure are not, so you add them with `QueryScope.addParam(name, value)`. `addParam` writes into the same binding as top-level variables, so it overwrites any existing variable with that name, and the variable stays available after the method or closure returns.
 - Built-in query language functions and constants are always available because they are imported into the query language, not stored in the query scope.
 
 Unlike Python, where the engine resolves local and global variables automatically, Groovy requires explicit management of the query scope for variables that are not at the script level.
@@ -100,19 +98,12 @@ result1 = compute(source, 10)
 result2 = compute(source, 3)
 ```
 
-### Global scope
+### Built-in functions and constants
 
 Deephaven provides built-in functions, constants, and variables that are globally available in all query strings without any additional setup. These include mathematical functions, type conversion utilities, and other commonly used operations. The following query demonstrates using built-in global functions and constants in query strings.
 
-```groovy order=result1,result2,result3
-a = 1
-b = 2
-
-myFunc = { -> 5 }
-
-result1 = newTable(intCol("A", a, b))
-result2 = newTable(stringCol("X", "A", "B", "C")).update("Y = (int)Math.sin(ii)")
-result3 = newTable(intCol("A", 1, 2, 3)).update("X = (int)myFunc()")
+```groovy order=result
+result = emptyTable(5).update("X = sin(ii)", "Y = MINUTE * i")
 ```
 
 ## Use variables in a query string

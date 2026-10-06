@@ -41,7 +41,7 @@ In Groovy, one way to subscribe to a table on another Deephaven server is to res
 ```groovy skip-test
 import static io.deephaven.uri.ResolveTools.resolve
 
-// Subscription: receives ongoing updates
+// Receives an initial snapshot, then ongoing updates
 streamingTable = resolve("dh+plain://remote-server:10000/scope/myTable")
 ```
 
@@ -70,8 +70,7 @@ A viewport defines a window over a table — a range of row positions and a subs
 Viewports are automatically managed by Deephaven's web UI and JavaScript client. When a user scrolls or resizes a table view, the client updates its viewport subscription accordingly.
 
 > [!NOTE]
-> The Python `BarrageSession` API currently supports full-table subscriptions. Viewport functionality is available through the JavaScript client or by subscribing to pre-filtered tables.
-> The Python `BarrageSession` API currently supports full-table subscriptions. Viewport functionality is available through the JavaScript client.
+> Resolving a remote URI creates a full-table subscription. To reduce the data transferred, subscribe to a table that is already filtered on the remote server.
 
 ### Update intervals and batching
 
