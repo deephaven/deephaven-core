@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -75,6 +76,29 @@ abstract class SingleColumnSetKernel extends SetKernel {
     abstract void dropEmptied(@NotNull Chunk<? extends Values> keys);
 
     /**
+     * The export state of a single column kernel: an iterator over its map's keys.
+     */
+    static final class KeyIteratorContext<ITERATOR> extends ExportContext {
+        final ITERATOR keys;
+
+        KeyIteratorContext(@NotNull final ITERATOR keys) {
+            this.keys = keys;
+        }
+    }
+
+    /**
+     * @return An iterator over the keys in the set
+     */
+    abstract Object keyIterator();
+
+    @Override
+    final ExportContext makeExportContext(final int @NotNull [] columns) {
+        Assert.eq(columns.length, "columns.length", 1);
+        Assert.eqZero(columns[0], "columns[0]");
+        return new KeyIteratorContext<>(keyIterator());
+    }
+
+    /**
      * Select the row keys whose key is in the set, or, if {@code inclusion} is false, not in the set; {@code results}
      * is empty to begin with.
      */
@@ -126,7 +150,6 @@ abstract class SingleColumnSetKernel extends SetKernel {
 
     @Override
     final void matchValues(
-            @NotNull final MatchContext context,
             @NotNull final Chunk<Values>[] keyChunks,
             @NotNull final LongChunk<OrderedRowKeys> rowKeys,
             @NotNull final WritableLongChunk<OrderedRowKeys> results,

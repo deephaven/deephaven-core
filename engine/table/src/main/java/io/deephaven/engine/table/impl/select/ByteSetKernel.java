@@ -11,12 +11,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.util.type.TypeUtils;
 import it.unimi.dsi.fastutil.bytes.Byte2LongOpenHashMap;
 import it.unimi.dsi.fastutil.bytes.ByteIterator;
 import org.jetbrains.annotations.NotNull;
@@ -97,18 +97,21 @@ final class ByteSetKernel extends SingleColumnSetKernel {
     }
 
     @Override
-    CloseableIterator<Object> iterator() {
-        final ByteIterator keys = counts.keySet().iterator();
-        return new CloseableIterator<>() {
-            @Override
-            public boolean hasNext() {
-                return keys.hasNext();
-            }
+    Object keyIterator() {
+        return counts.keySet().iterator();
+    }
 
-            @Override
-            public Object next() {
-                return TypeUtils.box(keys.nextByte());
-            }
-        };
+    @Override
+    boolean exportKeys(@NotNull final ExportContext context, @NotNull final WritableChunk<Values>[] keyChunks) {
+        // noinspection unchecked
+        final ByteIterator keys = ((KeyIteratorContext<ByteIterator>) context).keys;
+        final WritableByteChunk<Values> typedKeys = keyChunks[0].asWritableByteChunk();
+        final int capacity = typedKeys.capacity();
+        int exported = 0;
+        while (exported < capacity && keys.hasNext()) {
+            typedKeys.set(exported++, keys.nextByte());
+        }
+        typedKeys.setSize(exported);
+        return exported > 0;
     }
 }

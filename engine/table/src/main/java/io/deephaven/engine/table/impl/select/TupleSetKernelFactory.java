@@ -4,12 +4,14 @@
 package io.deephaven.engine.table.impl.select;
 
 import com.google.common.io.BaseEncoding;
+import com.palantir.javapoet.AnnotationSpec;
 import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.FieldSpec;
 import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
+import com.palantir.javapoet.ParameterSpec;
 import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
@@ -17,6 +19,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
@@ -26,7 +29,9 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.type.TypeUtils;
 import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
 import java.lang.reflect.Constructor;
@@ -52,6 +57,10 @@ import java.util.stream.IntStream;
 public class TupleSetKernelFactory {
 
     public static final String PACKAGE_NAME = "io.deephaven.engine.table.impl.select.tuplemap.gen";
+
+    // Named rather than referenced, as the annotations are only on the compile classpath.
+    private static final ClassName NOT_NULL = ClassName.get("org.jetbrains.annotations", "NotNull");
+    private static final ClassName NULLABLE = ClassName.get("org.jetbrains.annotations", "Nullable");
     private static final String TUPLE_PACKAGE_NAME = "io.deephaven.tuple.generated";
     private static final String COMPARISONS_PACKAGE_NAME = "io.deephaven.util.compare";
     private static final String CLASS_PREFIX = "TupleSetKernel";
@@ -100,7 +109,7 @@ public class TupleSetKernelFactory {
     }
 
     private static Class<?> compile(@NotNull final ChunkType[] chunkTypes, @NotNull final String className) {
-        final String javaString = Arrays.stream(generate(chunkTypes, className).toString().split("\n"))
+        final String javaString = Arrays.stream(generate(chunkTypes, className, false).toString().split("\n"))
                 .filter(line -> !line.startsWith("package "))
                 .collect(Collectors.joining("\n"));
         return ExecutionContext.getContext().getQueryCompiler().compile(QueryCompilerRequest.builder()
@@ -135,9 +144,16 @@ public class TupleSetKernelFactory {
      *
      * @param chunkTypes The key's column chunk types, at least two and none of them {@link ChunkType#Boolean}
      * @param className The class name, from {@link #className(ChunkType[])}
+     * @param nullityAnnotations Whether to annotate the parameters of the overriding methods with {@code NotNull} and
+     *        {@code Nullable}; the annotations are not on the classpath of a kernel compiled when needed
      * @return The generated source
      */
-    public static JavaFile generate(@NotNull final ChunkType[] chunkTypes, @NotNull final String className) {
+    public static JavaFile generate(
+            @NotNull final ChunkType[] chunkTypes,
+            @NotNull final String className,
+            final boolean nullityAnnotations) {
+        final ClassName notNull = nullityAnnotations ? NOT_NULL : null;
+        final ClassName nullable = nullityAnnotations ? NULLABLE : null;
         final int columns = chunkTypes.length;
         final boolean typedTuple = columns <= 3;
         final ClassName tupleClass = typedTuple
@@ -169,7 +185,7 @@ public class TupleSetKernelFactory {
                 .collect(Collectors.joining(", "));
         final MethodSpec strategyHashCode = MethodSpec.methodBuilder("hashCode")
                 .addAnnotation(Override.class).addModifiers(Modifier.PUBLIC).returns(int.class)
-                .addParameter(Object.class, "key")
+                .addParameter(parameter(ClassName.get(Object.class), "key", notNull))
                 .beginControlFlow("if (key instanceof $T)", probeClass)
                 .addStatement("final $T probe = ($T) key", probeClass, probeClass)
                 .addStatement("return hash(" + probeElements + ")")
@@ -180,7 +196,8 @@ public class TupleSetKernelFactory {
 
         final MethodSpec strategyEquals = MethodSpec.methodBuilder("equals")
                 .addAnnotation(Override.class).addModifiers(Modifier.PUBLIC).returns(boolean.class)
-                .addParameter(Object.class, "lhs").addParameter(Object.class, "rhs")
+                .addParameter(parameter(ClassName.get(Object.class), "lhs", nullable))
+                .addParameter(parameter(ClassName.get(Object.class), "rhs", nullable))
                 .beginControlFlow("if (lhs == null || rhs == null)")
                 .addStatement("return lhs == rhs")
                 .endControlFlow()
@@ -211,23 +228,19 @@ public class TupleSetKernelFactory {
                 .addStatement("super(keySources, $T.INSTANCE)", strategyClass)
                 .build();
 
-        final MethodSpec makeProbe = MethodSpec.methodBuilder("makeProbe")
-                .addAnnotation(Override.class).addModifiers(Modifier.PROTECTED).returns(Object.class)
-                .addStatement("return new $T()", probeClass)
-                .build();
-
         final MethodSpec.Builder match = MethodSpec.methodBuilder("match")
                 .addAnnotation(Override.class).addModifiers(Modifier.PROTECTED)
-                .addParameter(Object.class, "probeObject")
-                .addParameter(chunkArrayTypeName(), "keyChunks")
-                .addParameter(ParameterizedTypeName.get(LongChunk.class, OrderedRowKeys.class), "rowKeys")
-                .addParameter(ParameterizedTypeName.get(WritableLongChunk.class, OrderedRowKeys.class), "results")
+                .addParameter(parameter(chunkArrayTypeName(), "keyChunks", notNull))
+                .addParameter(
+                        parameter(ParameterizedTypeName.get(LongChunk.class, OrderedRowKeys.class), "rowKeys", notNull))
+                .addParameter(parameter(ParameterizedTypeName.get(WritableLongChunk.class, OrderedRowKeys.class),
+                        "results", notNull))
                 .addParameter(boolean.class, "inclusion");
         for (int ii = 0; ii < columns; ++ii) {
             match.addStatement("final $T keys$L = keyChunks[$L].as$LChunk()", chunkTypeName(chunkTypes[ii]), ii, ii,
                     chunkTypes[ii].name());
         }
-        match.addStatement("final $T probe = ($T) probeObject", probeClass, probeClass);
+        match.addStatement("final $T probe = new $T()", probeClass, probeClass);
         match.addStatement("final int size = rowKeys.size()");
         match.beginControlFlow("for (int ii = 0; ii < size; ++ii)");
         for (int ii = 0; ii < columns; ++ii) {
@@ -238,6 +251,50 @@ public class TupleSetKernelFactory {
         match.endControlFlow();
         match.endControlFlow();
 
+        final MethodSpec.Builder exportTuples = MethodSpec.methodBuilder("exportTuples")
+                .addAnnotation(Override.class).addModifiers(Modifier.PROTECTED).returns(boolean.class)
+                .addParameter(
+                        parameter(ParameterizedTypeName.get(ObjectIterator.class, Object.class), "tuples", notNull))
+                .addParameter(notNull == null
+                        ? ArrayTypeName.of(TypeName.INT)
+                        : ArrayTypeName.of(TypeName.INT).annotated(AnnotationSpec.builder(notNull).build()),
+                        "columns")
+                .addParameter(parameter(ArrayTypeName.of(ParameterizedTypeName.get(ClassName.get(WritableChunk.class),
+                        ClassName.get(Values.class))), "keyChunks", notNull));
+        // Each tuple column's destination chunk, or null if it is not exported.
+        for (int ii = 0; ii < columns; ++ii) {
+            exportTuples.addStatement("$T keys$L = null", writableChunkTypeName(chunkTypes[ii]), ii);
+        }
+        exportTuples.beginControlFlow("for (int ci = 0; ci < columns.length; ++ci)")
+                .beginControlFlow("switch (columns[ci])");
+        for (int ii = 0; ii < columns; ++ii) {
+            exportTuples.addCode("case $L:\n", ii);
+            exportTuples.addStatement("keys$L = keyChunks[ci].asWritable$LChunk()", ii, chunkTypes[ii].name());
+            exportTuples.addStatement("break");
+        }
+        exportTuples.addCode("default:\n");
+        exportTuples.addStatement("throw new $T($S + columns[ci])", IllegalArgumentException.class,
+                "No key column ");
+        exportTuples.endControlFlow();
+        exportTuples.endControlFlow();
+        exportTuples.addStatement("final int capacity = keyChunks[0].capacity()");
+        exportTuples.addStatement("int exported = 0");
+        exportTuples.beginControlFlow("while (exported < capacity && tuples.hasNext())");
+        exportTuples.addStatement("final $T tuple = ($T) tuples.next()", tupleClass, tupleClass);
+        for (int ii = 0; ii < columns; ++ii) {
+            exportTuples.beginControlFlow("if (keys$L != null)", ii);
+            exportTuples.addStatement("keys$L.set(exported, $L)", ii,
+                    storedElement(chunkTypes[ii], typedTuple, "tuple", ii));
+            exportTuples.endControlFlow();
+        }
+        exportTuples.addStatement("++exported");
+        exportTuples.endControlFlow();
+        exportTuples.beginControlFlow("for (final $T keyChunk : keyChunks)",
+                ParameterizedTypeName.get(ClassName.get(WritableChunk.class), ClassName.get(Values.class)));
+        exportTuples.addStatement("keyChunk.setSize(exported)");
+        exportTuples.endControlFlow();
+        exportTuples.addStatement("return exported > 0");
+
         final TypeSpec kernel = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .superclass(TupleMapSetKernel.class)
@@ -245,7 +302,7 @@ public class TupleSetKernelFactory {
                 .addType(strategy)
                 .addMethod(constructor)
                 .addMethod(hash.build())
-                .addMethod(makeProbe)
+                .addMethod(exportTuples.build())
                 .addMethod(match.build())
                 .build();
 
@@ -259,6 +316,20 @@ public class TupleSetKernelFactory {
                 .addFileComment("\n")
                 .addFileComment("@formatter:off")
                 .build();
+    }
+
+    /**
+     * @return A parameter of {@code type} named {@code name}, annotated with {@code annotation} unless it is null
+     */
+    private static ParameterSpec parameter(
+            @NotNull final TypeName type,
+            @NotNull final String name,
+            @Nullable final ClassName annotation) {
+        final ParameterSpec.Builder parameter = ParameterSpec.builder(type, name);
+        if (annotation != null) {
+            parameter.addAnnotation(annotation);
+        }
+        return parameter.build();
     }
 
     private static TypeName chunkArrayTypeName() {
@@ -310,6 +381,14 @@ public class TupleSetKernelFactory {
 
     private static TypeName chunkTypeName(@NotNull final ChunkType chunkType) {
         final ClassName chunkClass = ClassName.get(Chunk.class.getPackageName(), chunkType.name() + "Chunk");
+        return chunkType == ChunkType.Object
+                ? ParameterizedTypeName.get(chunkClass, ClassName.get(Object.class), ClassName.get(Values.class))
+                : ParameterizedTypeName.get(chunkClass, ClassName.get(Values.class));
+    }
+
+    private static TypeName writableChunkTypeName(@NotNull final ChunkType chunkType) {
+        final ClassName chunkClass =
+                ClassName.get(Chunk.class.getPackageName(), "Writable" + chunkType.name() + "Chunk");
         return chunkType == ChunkType.Object
                 ? ParameterizedTypeName.get(chunkClass, ClassName.get(Object.class), ClassName.get(Values.class))
                 : ParameterizedTypeName.get(chunkClass, ClassName.get(Values.class));

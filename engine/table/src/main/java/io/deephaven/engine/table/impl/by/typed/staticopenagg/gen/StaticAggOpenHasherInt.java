@@ -12,9 +12,11 @@ import static io.deephaven.util.compare.IntComparisons.eq;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.IntChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
@@ -67,6 +69,34 @@ final class StaticAggOpenHasherInt extends StaticChunkedOperatorAggregationState
                         throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
                     }
                 }
+            }
+        }
+    }
+
+    protected void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions) {
+        final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
+        final int chunkSize = keyChunk0.size();
+        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
+            final int k0 = keyChunk0.get(chunkPosition);
+            final int hash = hash(k0);
+            final int firstTableLocation = hashToTableLocation(hash);
+            boolean found = false;
+            int tableLocation = firstTableLocation;
+            int outputPosition;
+            while (!isStateEmpty(outputPosition = mainOutputPosition.getUnsafe(tableLocation))) {
+                if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    outputPositions.set(chunkPosition, outputPosition);
+                    found = true;
+                    break;
+                }
+                tableLocation = nextTableLocation(tableLocation);
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
+            }
+            if (!found) {
+                outputPositions.set(chunkPosition, UNKNOWN_ROW);
             }
         }
     }

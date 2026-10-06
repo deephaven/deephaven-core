@@ -4,6 +4,12 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
@@ -90,6 +96,20 @@ public class TestSymbolTableSource {
         // Assert null lookup is correct.
         final long rowKey = rkl.apply(null, false);
         Assert.assertEquals(9, rowKey);
+
+        // A chunk of keys, including null and one the index does not hold, finds what each key finds alone.
+        final String[] keys = {"S3", null, "S0", "NotAKey", "S8"};
+        final long[] expectedRowKeys = {3, 9, 0, RowSequence.NULL_ROW_KEY, 8};
+        // noinspection unchecked
+        final Chunk<Values>[] keyChunks = new Chunk[] {ObjectChunk.chunkWrap(keys)};
+        try (final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.makeWritableChunk(keys.length)) {
+            rkl.apply(keyChunks, rowKeys, false);
+            Assert.assertEquals(keys.length, rowKeys.size());
+            for (int ki = 0; ki < keys.length; ++ki) {
+                Assert.assertEquals(keys[ki], expectedRowKeys[ki], rowKeys.get(ki));
+                Assert.assertEquals(keys[ki], rkl.apply(keys[ki], false), rowKeys.get(ki));
+            }
+        }
     }
 
     /**

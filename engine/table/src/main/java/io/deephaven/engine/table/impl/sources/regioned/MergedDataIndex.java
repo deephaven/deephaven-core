@@ -11,12 +11,15 @@ import io.deephaven.base.stats.ThreadSafeCounter;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.util.SafeCloseable;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
@@ -28,9 +31,11 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -429,14 +434,34 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
         table(options);
-        return (final Object key, final boolean usePrev) -> {
-            // Pass the object to the aggregation lookup, then return the resulting row position (which is also the row
-            // key).
-            final int keyRowPosition = lookupFunction.get(key);
-            if (keyRowPosition == lookupFunction.noEntryValue()) {
-                return RowSequence.NULL_ROW_KEY;
+        // The aggregation lookup's row positions are also row keys.
+        return new RowKeyLookup() {
+            @Override
+            public long apply(@Nullable final Object key, final boolean usePrev) {
+                final int keyRowPosition = lookupFunction.get(key);
+                if (keyRowPosition == lookupFunction.noEntryValue()) {
+                    return RowSequence.NULL_ROW_KEY;
+                }
+                return keyRowPosition;
             }
-            return keyRowPosition;
+
+            @Override
+            public void apply(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys,
+                    final boolean usePrev) {
+                lookupFunction.get(keyChunks, rowKeys);
+                final long noEntryValue = lookupFunction.noEntryValue();
+                if (noEntryValue == RowSequence.NULL_ROW_KEY) {
+                    return;
+                }
+                final int size = rowKeys.size();
+                for (int ii = 0; ii < size; ++ii) {
+                    if (rowKeys.get(ii) == noEntryValue) {
+                        rowKeys.set(ii, RowSequence.NULL_ROW_KEY);
+                    }
+                }
+            }
         };
     }
 

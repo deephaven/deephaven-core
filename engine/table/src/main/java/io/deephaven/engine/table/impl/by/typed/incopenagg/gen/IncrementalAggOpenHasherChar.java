@@ -12,9 +12,11 @@ import static io.deephaven.util.compare.CharComparisons.eq;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
@@ -88,6 +90,52 @@ final class IncrementalAggOpenHasherChar extends IncrementalChunkedOperatorAggre
                     if (tableLocation == firstTableLocation) {
                         throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
                     }
+                }
+            }
+        }
+    }
+
+    protected void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions) {
+        final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
+        final int chunkSize = keyChunk0.size();
+        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
+            final char k0 = keyChunk0.get(chunkPosition);
+            final int hash = hash(k0);
+            final int firstTableLocation = hashToTableLocation(hash);
+            boolean found = false;
+            int tableLocation = firstTableLocation;
+            int outputPosition;
+            while (!isStateEmpty(outputPosition = mainOutputPosition.getUnsafe(tableLocation))) {
+                if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    outputPositions.set(chunkPosition, outputPosition);
+                    found = true;
+                    break;
+                }
+                tableLocation = nextTableLocation(tableLocation);
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
+            }
+            if (!found) {
+                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                boolean alternateFound = false;
+                if (firstAlternateTableLocation < rehashPointer) {
+                    int alternateTableLocation = firstAlternateTableLocation;
+                    while (!isStateEmpty(outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation))) {
+                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                            outputPositions.set(chunkPosition, outputPosition);
+                            alternateFound = true;
+                            break;
+                        }
+                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                        if (alternateTableLocation == firstAlternateTableLocation) {
+                            throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                        }
+                    }
+                }
+                if (!alternateFound) {
+                    outputPositions.set(chunkPosition, UNKNOWN_ROW);
                 }
             }
         }

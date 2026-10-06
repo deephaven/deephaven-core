@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import com.google.common.collect.Sets;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -12,6 +13,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -22,6 +24,7 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.P
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -31,7 +34,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -56,19 +58,18 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      */
     private final SharedSetKernel sharedSet;
 
-    private List<Object> staticSetLookupKeys;
-
     private ColumnSource<?>[] sourceKeyColumns;
     /** The source key columns, reinterpreted to primitives as the set's keys are. */
     private ColumnSource<?>[] reinterpretedSourceKeyColumns;
-    /** Converts the set's keys to the data index's lookup keys. */
-    private TupleSource<Object> sourceKeySource;
     /**
      * The optimal data index for this filter.
      */
     private @Nullable DataIndex sourceDataIndex;
-    private int @Nullable [] tupleToIndexMap;
-    private int @Nullable [] indexToTupleMap;
+    /**
+     * The position among this filter's key columns of each of {@link #sourceDataIndex}'s key columns, in the index's
+     * order, which projects a set key onto the index's lookup key.
+     */
+    private int @Nullable [] indexKeyColumns;
 
     private volatile RecomputeListener listener;
 
@@ -109,7 +110,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
-        if (sourceKeySource != null) {
+        if (reinterpretedSourceKeyColumns != null) {
             throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
         }
         // The set may have failed, in which case no result built here could ever follow it. Refuse before any
@@ -125,7 +126,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 if (sourceDataIndex.isRefreshing()) {
                     manage(sourceDataIndex);
                 }
-                computeTupleIndexMaps();
+                computeIndexKeyColumns();
             }
         }
 
@@ -140,38 +141,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                         setKeyTypes[ki], reinterpretedSourceKeyColumns[ki].getType()));
             }
         }
-        sourceKeySource = TupleSourceFactory.makeTupleSource(reinterpretedSourceKeyColumns);
-
-        if (!sharedSet.isRefreshing() // Set table is static
-                && staticSetLookupKeys == null // We haven't already computed the lookup keys
-                && sourceDataIndex != null // We might use the lookup keys if we compute them
-                && sourceDataIndex.isRefreshing() // We might use the lookup keys more than once
-                && sourceKeyColumns.length > 1 // Making a lookup key is more complicated than boxing a primitive
-        ) {
-            // Convert the tuples in liveValues to be lookup keys in the sourceDataIndex.
-            staticSetLookupKeys = new ArrayList<>(Math.toIntExact(sharedSet.kernel().size()));
-            final int indexKeySize = sourceDataIndex.keyColumnNames().size();
-            if (indexKeySize > 1) {
-                final Function<Object, Object> keyMappingFunction = indexKeySize == keyColumnNames.length
-                        ? tupleToFullKeyMappingFunction()
-                        : tupleToPartialKeyMappingFunction();
-
-                try (final CloseableIterator<Object> setKeys = sharedSet.kernel().iterator()) {
-                    setKeys.forEachRemaining(key -> {
-                        final Object[] lookupKey = (Object[]) keyMappingFunction.apply(key);
-                        // Store a copy because the mapping function returns the same array each invocation.
-                        staticSetLookupKeys.add(Arrays.copyOf(lookupKey, indexKeySize));
-                    });
-                }
-            } else {
-                final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                try (final CloseableIterator<Object> setKeys = sharedSet.kernel().iterator()) {
-                    setKeys.forEachRemaining(
-                            key -> staticSetLookupKeys.add(sourceKeySource.exportElement(key, keyOffset)));
-                }
-            }
-        }
-
         return () -> {
         };
     }
@@ -208,92 +177,26 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
-     * Calculates mappings from the offset of a {@link ColumnSource} in the {@code sourceDataIndex} to the offset of the
-     * corresponding {@link ColumnSource} in the key sources from the set or source table of a DynamicWhereFilter
-     * ({@code indexToTupleMap}, as well as the reverse ({@code tupleToIndexMap}). This allows for mapping keys from the
-     * {@link SharedSetKernel kernel} to keys in the {@link #sourceDataIndex}.
+     * Find, for each key column of {@link #sourceDataIndex} in the index's order, the position of the same column among
+     * this filter's key columns.
      */
-    private void computeTupleIndexMaps() {
+    private void computeIndexKeyColumns() {
         assert sourceDataIndex != null;
-
-        if (sourceDataIndex.keyColumnNames().size() == 1 && sourceKeyColumns.length == 1) {
-            // Trivial mapping, no need to compute anything.
-            return;
-        }
-
-        final ColumnSource<?>[] dataIndexSources = sourceDataIndex
-                .keyColumnNamesByIndexedColumn()
-                .keySet()
+        final ColumnSource<?>[] indexedColumns = sourceDataIndex.keyColumnNamesByIndexedColumn().keySet()
                 .toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
-
-        // Bi-directional mapping (note that the sizes can be different, e.g. partial matching).
-        final int[] tupleToIndexMap = new int[sourceKeyColumns.length];
-        final int[] indexToTupleMap = new int[dataIndexSources.length];
-
-        // Fill with -1 to indicate no mapping. This value will remain in the case of a partial index to indicate that
-        // the key column is not in the index, thereby poisoning any mistaken attempt to use the mapping.
-        Arrays.fill(tupleToIndexMap, -1);
-
-        boolean sameOrder = true;
-
-        // The tuples will be in sourceKeyColumns order (same as set table key columns order). We need to find the
-        // dataIndex offset for each key source.
-        for (int ii = 0; ii < sourceKeyColumns.length; ++ii) {
-            for (int jj = 0; jj < dataIndexSources.length; ++jj) {
-                if (sourceKeyColumns[ii] == dataIndexSources[jj]) {
-                    tupleToIndexMap[ii] = jj;
-                    indexToTupleMap[jj] = ii;
-                    sameOrder &= ii == jj;
+        final int[] positions = new int[indexedColumns.length];
+        for (int ii = 0; ii < indexedColumns.length; ++ii) {
+            int position = -1;
+            for (int jj = 0; jj < sourceKeyColumns.length; ++jj) {
+                if (sourceKeyColumns[jj] == indexedColumns[ii]) {
+                    position = jj;
                     break;
                 }
             }
+            Assert.geqZero(position, "position");
+            positions[ii] = position;
         }
-
-        // Return null if the map is the identity map
-        this.tupleToIndexMap = sameOrder ? null : tupleToIndexMap;
-        this.indexToTupleMap = sameOrder ? null : indexToTupleMap;
-    }
-
-    @NotNull
-    private Function<Object, Object> tupleToFullKeyMappingFunction() {
-        final Object[] keysInDataIndexOrder = new Object[sourceKeyColumns.length];
-        if (tupleToIndexMap == null) {
-            return (final Object tupleKey) -> {
-                sourceKeySource.exportAllTo(keysInDataIndexOrder, tupleKey);
-                return keysInDataIndexOrder;
-            };
-        }
-        return (final Object tupleKey) -> {
-            sourceKeySource.exportAllTo(keysInDataIndexOrder, tupleKey, tupleToIndexMap);
-            return keysInDataIndexOrder;
-        };
-    }
-
-    @NotNull
-    private Function<Object, Object> tupleToPartialKeyMappingFunction() {
-        assert sourceDataIndex != null;
-
-        final int partialKeySize = sourceDataIndex.keyColumnNames().size();
-
-        // This function is not needed when the partial key is a single column and should not be called.
-        Assert.gt(partialKeySize, "partialKeySize", 1);
-
-        final Object[] keysInDataIndexOrder = new Object[partialKeySize];
-        if (indexToTupleMap == null) {
-            return (final Object tupleKey) -> {
-                for (int ii = 0; ii < partialKeySize; ++ii) {
-                    keysInDataIndexOrder[ii] = sourceKeySource.exportElement(tupleKey, ii);
-                }
-                return keysInDataIndexOrder;
-            };
-        } else {
-            return (final Object tupleKey) -> {
-                for (int ii = 0; ii < partialKeySize; ++ii) {
-                    keysInDataIndexOrder[ii] = sourceKeySource.exportElement(tupleKey, indexToTupleMap[ii]);
-                }
-                return keysInDataIndexOrder;
-            };
-        }
+        indexKeyColumns = positions;
     }
 
     @Override
@@ -336,66 +239,90 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
-     * Apply {@code action} to each value, abandoning the enclosing snapshot attempt if the set changes underneath us;
-     * see {@link SharedSetKernel#kernel()}. The check is made once per {@value #CHUNK_SIZE} values, the same
-     * granularity as the linear path's per-chunk check, and once more at the end so that no torn tail goes unchecked.
-     * Harmless for a static set or a static lookup key list, whose generation never changes.
-     *
-     * @param values The set values to iterate
-     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before {@code values} was obtained
-     * @param action What to do with each value
-     */
-    private void forEachKernelValue(
-            @NotNull final Iterator<Object> values,
-            final long kernelGeneration,
-            @NotNull final Consumer<Object> action) {
-        int sinceCheck = 0;
-        while (values.hasNext()) {
-            action.accept(values.next());
-            if (++sinceCheck == CHUNK_SIZE) {
-                sharedSet.failIfChangedSince(kernelGeneration);
-                sinceCheck = 0;
-            }
-        }
-        sharedSet.failIfChangedSince(kernelGeneration);
-    }
-
-    /**
-     * Look up each value in the data index and accumulate the matching index row keys.
+     * Look up each set key, projected onto the index's key columns, in the data index, and gather the matching index
+     * row keys. The keys are exported from the kernel and looked up a chunk at a time, and the enclosing snapshot
+     * attempt is abandoned if the set changes underneath us; see {@link SharedSetKernel#kernel()}. The check is made
+     * once per chunk, the same granularity as the linear path's, and once more at the end, so that an empty set is
+     * checked too.
+     * <p>
+     * The index row keys arrive in the order of the set's keys, and a projected key can find the same index row as
+     * another, so they are sorted before they are built into a row set, which reads them in order once.
      * <p>
      * This is the first of two phases: gathering the index row keys up front lets
      * {@link #forEachIndexRowSet(RowSet, ColumnSource, boolean, Consumer)} read the index row sets a chunk at a time,
-     * in row key order, rather than one row at a time in set value order.
+     * in row key order, rather than one row at a time in set key order.
      *
-     * @param values The set values to look up
-     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before {@code values} was obtained
-     * @param keyMappingFunction Maps a set value to the lookup key {@code rowKeyLookup} expects
+     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before the kernel was read
      * @param rowKeyLookup The source data index row key lookup
      * @param usePrev Whether to use previous values
      * @return The matching index row keys; the caller must close this
      */
     @NotNull
     private RowSet lookupIndexRowKeys(
-            @NotNull final Iterator<Object> values,
             final long kernelGeneration,
-            @NotNull final Function<Object, Object> keyMappingFunction,
             @NotNull final DataIndex.RowKeyLookup rowKeyLookup,
             final boolean usePrev) {
-        final RowSetBuilderRandom indexRowKeyBuilder = RowSetFactory.builderRandom();
-        forEachKernelValue(values, kernelGeneration, value -> {
-            final long indexRowKey = rowKeyLookup.apply(keyMappingFunction.apply(value), usePrev);
-            if (indexRowKey != RowSequence.NULL_ROW_KEY) {
-                indexRowKeyBuilder.addKey(indexRowKey);
+        Assert.neqNull(indexKeyColumns, "indexKeyColumns");
+        final int[] columns = indexKeyColumns;
+        final SetKernel kernel = sharedSet.kernel();
+        final long setSize = kernel.size();
+        final int chunkSize = (int) Math.max(1, Math.min(setSize, CHUNK_SIZE));
+        // noinspection unchecked
+        final WritableChunk<Values>[] keyChunks = new WritableChunk[columns.length];
+        // Each set key finds at most one index row, so the distinct matches are no more than the smaller of the set and
+        // the index. The buffer starts there, and grows for the rows a partial index finds more than once, or for a set
+        // that changes under a concurrent read. It holds at most one row key per exported set key, and a kernel's map
+        // holds fewer than 2^30 keys, even mid-mutation, so it never needs more than ArrayUtil.MAX_ARRAY_SIZE.
+        Assert.neqNull(sourceDataIndex, "sourceDataIndex");
+        final TrackingRowSet indexTableRows = sourceDataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).getRowSet();
+        final long indexSize = usePrev ? indexTableRows.sizePrev() : indexTableRows.size();
+        long[] indexRowKeys =
+                new long[Math.toIntExact(Math.min(Math.min(setSize, indexSize), ArrayUtil.MAX_ARRAY_SIZE))];
+        int indexRowKeyCount = 0;
+        // @formatter:off
+        try (final SafeCloseableArray<WritableChunk<Values>> ignored = new SafeCloseableArray<>(keyChunks);
+             final WritableLongChunk<RowKeys> lookedUp = WritableLongChunk.makeWritableChunk(chunkSize);
+             final SetKernel.ExportContext exportContext = kernel.makeExportContext(columns)) {
+            // @formatter:on
+            for (int ci = 0; ci < columns.length; ++ci) {
+                keyChunks[ci] = reinterpretedSourceKeyColumns[columns[ci]].getChunkType().makeWritableChunk(chunkSize);
             }
-        });
-        return indexRowKeyBuilder.build();
+            while (kernel.exportKeys(exportContext, keyChunks)) {
+                rowKeyLookup.apply(keyChunks, lookedUp, usePrev);
+                final int lookedUpSize = lookedUp.size();
+                if (indexRowKeyCount + lookedUpSize > indexRowKeys.length) {
+                    indexRowKeys = Arrays.copyOf(indexRowKeys, Math.toIntExact(Math.min(ArrayUtil.MAX_ARRAY_SIZE,
+                            Math.max(2L * indexRowKeys.length, (long) indexRowKeyCount + lookedUpSize))));
+                }
+                for (int ii = 0; ii < lookedUpSize; ++ii) {
+                    final long indexRowKey = lookedUp.get(ii);
+                    if (indexRowKey != RowSequence.NULL_ROW_KEY) {
+                        indexRowKeys[indexRowKeyCount++] = indexRowKey;
+                    }
+                }
+                sharedSet.failIfChangedSince(kernelGeneration);
+            }
+        }
+        sharedSet.failIfChangedSince(kernelGeneration);
+
+        Arrays.sort(indexRowKeys, 0, indexRowKeyCount);
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        long lastIndexRowKey = RowSequence.NULL_ROW_KEY;
+        for (int ii = 0; ii < indexRowKeyCount; ++ii) {
+            final long indexRowKey = indexRowKeys[ii];
+            if (indexRowKey != lastIndexRowKey) {
+                builder.appendKey(indexRowKey);
+                lastIndexRowKey = indexRowKey;
+            }
+        }
+        return builder.build();
     }
 
     /**
      * Apply {@code action} to the index row set at each of {@code indexRowKeys}, reading them in chunks. The second of
-     * the two phases described by
-     * {@link #lookupIndexRowKeys(Iterator, long, Function, DataIndex.RowKeyLookup, boolean)}; it reads only the index,
-     * which is stable for the duration of this snapshot attempt, so it needs no further kernel generation checks.
+     * the two phases described by {@link #lookupIndexRowKeys(long, DataIndex.RowKeyLookup, boolean)}; it reads only the
+     * index, which is stable for the duration of this snapshot attempt, so it needs no further kernel generation
+     * checks.
      *
      * @param indexRowKeys The index row keys to read
      * @param rowSetColumn The source data index row set column
@@ -430,24 +357,12 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
 
         final long kernelGeneration = sharedSet.beginRead();
-        final Function<Object, Object> keyMappingFunction;
-        if (staticSetLookupKeys != null || sourceKeyColumns.length == 1) {
-            keyMappingFunction = Function.identity();
-        } else {
-            keyMappingFunction = tupleToFullKeyMappingFunction();
-        }
 
         // The kernel reads below throw SnapshotInconsistentException when the set table mutates during this concurrent
         // snapshot attempt; that triggers the normal retry path and is not an error. The batcher owns everything it
         // has gathered until it is built, so an abandoned attempt releases it; what is built is closed here.
         WritableRowSet matching = null;
-        try (final CloseableIterator<Object> setKeys =
-                staticSetLookupKeys == null ? sharedSet.kernel().iterator() : null;
-                final RowSet indexRowKeys = lookupIndexRowKeys(
-                        setKeys == null ? staticSetLookupKeys.iterator() : setKeys,
-                        kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
-            // Abandon an attempt the set has already invalidated before paying for any row sets.
-            sharedSet.failIfChangedSince(kernelGeneration);
+        try (final RowSet indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
             // One row set per index row, and the lookup has already reduced the values to distinct row keys.
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexRowKeys.size())) {
                 // An index row set holds every source row for its key, so it is clipped to selection on the way in.
@@ -482,28 +397,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
 
         final long kernelGeneration = sharedSet.beginRead();
-        final Function<Object, Object> keyMappingFunction;
-
-        if (staticSetLookupKeys != null) {
-            keyMappingFunction = Function.identity();
-        } else {
-            if (sourceDataIndex.keyColumnNames().size() == 1) {
-                final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                keyMappingFunction = (final Object key) -> sourceKeySource.exportElement(key, keyOffset);
-            } else {
-                keyMappingFunction = tupleToPartialKeyMappingFunction();
-            }
-        }
 
         final WritableRowSet matching;
-        try (final CloseableIterator<Object> setKeys =
-                staticSetLookupKeys == null ? sharedSet.kernel().iterator() : null;
-                final RowSet indexRowKeys = lookupIndexRowKeys(
-                        setKeys == null ? staticSetLookupKeys.iterator() : setKeys,
-                        kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
-            // Abandon an attempt the set has already invalidated before paying for any row sets.
-            sharedSet.failIfChangedSince(kernelGeneration);
-            // Set values project onto a subset of their columns here, so many of them can land on the same index row.
+        try (final RowSet indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+            // Set keys project onto a subset of their columns here, so many of them can land on the same index row.
             // The lookup collects the row keys into a row set, which leaves each index row set taken once.
             final WritableRowSet possiblyMatching;
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexRowKeys.size())) {
@@ -540,7 +437,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final Chunk<Values>[] keyChunks = new Chunk[reinterpretedSourceKeyColumns.length];
         // @formatter:off
         try (final ProbeContext keyContext = new ProbeContext(reinterpretedSourceKeyColumns, maxChunkSize);
-             final SetKernel.MatchContext matchContext = setKernel.makeMatchContext();
              final RowSequence.Iterator selectionIterator = selection.getRowSequenceIterator();
              final WritableLongChunk<OrderedRowKeys> matchingKeys = WritableLongChunk.makeWritableChunk(maxChunkSize)) {
             // @formatter:on
@@ -553,7 +449,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 } else {
                     getKeyChunks(reinterpretedSourceKeyColumns, keyContext.getContexts, keyChunks, selectionChunk);
                 }
-                setKernel.matchValues(matchContext, keyChunks, selectionRowKeyChunk, matchingKeys, filterInclusion);
+                setKernel.matchValues(keyChunks, selectionRowKeyChunk, matchingKeys, filterInclusion);
                 keyContext.resetSharedContexts();
                 // A set change makes this attempt's results junk; abandon it rather than finish them.
                 sharedSet.failIfChangedSince(kernelGeneration);

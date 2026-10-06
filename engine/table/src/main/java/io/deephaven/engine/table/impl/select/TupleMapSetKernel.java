@@ -7,9 +7,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -17,6 +17,7 @@ import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenCustomHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
@@ -60,7 +61,7 @@ public abstract class TupleMapSetKernel extends SetKernel {
     }
 
     /**
-     * @param probe A probe from {@link #makeProbe()}, whose fields hold a key
+     * @param probe A probe whose fields hold a key
      * @return Whether the key is in the set
      */
     protected final boolean contains(@NotNull final Object probe) {
@@ -68,18 +69,10 @@ public abstract class TupleMapSetKernel extends SetKernel {
     }
 
     /**
-     * @return A new probe, for one caller to reuse across its {@link #match} calls
-     */
-    protected abstract Object makeProbe();
-
-    /**
      * Select the row keys whose key is in the set, or, if {@code inclusion} is false, not in the set; {@code results}
      * is empty to begin with.
-     *
-     * @param probe A probe from {@link #makeProbe()}, which this call overwrites
      */
     protected abstract void match(
-            @NotNull Object probe,
             @NotNull Chunk<Values>[] keyChunks,
             @NotNull LongChunk<OrderedRowKeys> rowKeys,
             @NotNull WritableLongChunk<OrderedRowKeys> results,
@@ -130,33 +123,46 @@ public abstract class TupleMapSetKernel extends SetKernel {
         return emptiedKeys > revivedKeys;
     }
 
-    private static final class ProbeContext extends MatchContext {
-        private final Object probe;
-
-        private ProbeContext(@NotNull final Object probe) {
-            this.probe = probe;
-        }
-    }
-
-    @Override
-    final MatchContext makeMatchContext() {
-        return new ProbeContext(makeProbe());
-    }
-
     @Override
     final void matchValues(
-            @NotNull final MatchContext context,
             @NotNull final Chunk<Values>[] keyChunks,
             @NotNull final LongChunk<OrderedRowKeys> rowKeys,
             @NotNull final WritableLongChunk<OrderedRowKeys> results,
             final boolean inclusion) {
         results.setSize(0);
-        match(((ProbeContext) context).probe, keyChunks, rowKeys, results, inclusion);
+        match(keyChunks, rowKeys, results, inclusion);
+    }
+
+    /**
+     * Copy the columns {@code columns} of the next tuples of {@code tuples}, keys in the set, into {@code keyChunks},
+     * as many as fit: column {@code columns[ii]} into chunk {@code ii}. Sets every chunk's size to the number copied.
+     *
+     * @return Whether any tuple was copied
+     */
+    protected abstract boolean exportTuples(
+            @NotNull ObjectIterator<Object> tuples,
+            int @NotNull [] columns,
+            @NotNull WritableChunk<Values>[] keyChunks);
+
+    private static final class TupleExportContext extends ExportContext {
+        private final ObjectIterator<Object> tuples;
+        private final int[] columns;
+
+        private TupleExportContext(@NotNull final ObjectIterator<Object> tuples, final int @NotNull [] columns) {
+            this.tuples = tuples;
+            this.columns = columns;
+        }
     }
 
     @Override
-    final CloseableIterator<Object> iterator() {
-        return closeable(counts.keySet().iterator());
+    final ExportContext makeExportContext(final int @NotNull [] columns) {
+        return new TupleExportContext(counts.keySet().iterator(), columns);
+    }
+
+    @Override
+    final boolean exportKeys(@NotNull final ExportContext context, @NotNull final WritableChunk<Values>[] keyChunks) {
+        final TupleExportContext tupleContext = (TupleExportContext) context;
+        return exportTuples(tupleContext.tuples, tupleContext.columns, keyChunks);
     }
 
     private void addTuples(@NotNull final ObjectChunk<Object, ? extends Values> tuples) {

@@ -29,7 +29,7 @@ public class ReplicateTupleSetKernels {
                 }
                 chunkTypes[1] = second;
                 final String className = TupleSetKernelFactory.className(chunkTypes);
-                final JavaFile javaFile = TupleSetKernelFactory.generate(chunkTypes, className);
+                final JavaFile javaFile = TupleSetKernelFactory.generate(chunkTypes, className, true);
                 System.out.println("Generating " + className + " to " + sourceRoot);
                 javaFile.writeTo(sourceRoot);
             }

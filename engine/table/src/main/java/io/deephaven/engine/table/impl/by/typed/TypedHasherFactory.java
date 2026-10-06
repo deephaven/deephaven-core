@@ -498,6 +498,10 @@ public class TypedHasherFactory {
         builder.overflowOrAlternateStateName("overflowOutputPosition");
         builder.emptyStateName("EMPTY_OUTPUT_POSITION");
         builder.addExtraMethod(TypedAggregationFactory::createFindPositionForKey);
+        builder.addProbe(new HasherConfig.ProbeSpec("lookup", "outputPosition", false,
+                TypedAggregationFactory::probeFound, TypedAggregationFactory::lookupMissing,
+                ParameterSpec.builder(ParameterizedTypeName.get(WritableLongChunk.class, RowKeys.class),
+                        "outputPositions").build()));
     }
 
     /**

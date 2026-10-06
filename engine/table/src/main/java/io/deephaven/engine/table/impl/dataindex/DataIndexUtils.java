@@ -3,13 +3,20 @@
 //
 package io.deephaven.engine.table.impl.dataindex;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,6 +108,49 @@ public class DataIndexUtils {
             return Arrays.hashCode((Object[]) key);
         }
         return Objects.hashCode(key);
+    }
+
+    /**
+     * Implement {@link DataIndex.RowKeyLookup#apply(Chunk[], WritableLongChunk, boolean)} by boxing each key and
+     * calling {@link DataIndex.RowKeyLookup#apply(Object, boolean)} on {@code lookup}, for implementations that cannot
+     * search a chunk of keys at once.
+     *
+     * @param lookup The lookup to call for each key
+     * @param keyChunks The lookup keys, one chunk per key column, at least one, all the same size
+     * @param rowKeys Receives the result row key of each lookup key; its size is set to the number of keys
+     * @param usePrev Whether to look up the keys in previous space
+     */
+    public static void boxedApply(
+            @NotNull final DataIndex.RowKeyLookup lookup,
+            @NotNull final Chunk<? extends Values>[] keyChunks,
+            @NotNull final WritableLongChunk<RowKeys> rowKeys,
+            final boolean usePrev) {
+        Require.gtZero(keyChunks.length, "keyChunks.length");
+        final int size = keyChunks[0].size();
+        rowKeys.setSize(size);
+        // noinspection unchecked
+        final ObjectChunk<?, ? extends Values>[] boxedKeys = new ObjectChunk[keyChunks.length];
+        final ChunkBoxer.BoxerKernel[] boxers = new ChunkBoxer.BoxerKernel[keyChunks.length];
+        try (final SafeCloseableArray<ChunkBoxer.BoxerKernel> ignored = new SafeCloseableArray<>(boxers)) {
+            for (int ci = 0; ci < keyChunks.length; ++ci) {
+                boxers[ci] = ChunkBoxer.getBoxer(keyChunks[ci].getChunkType(), size);
+                boxedKeys[ci] = boxers[ci].box(keyChunks[ci]);
+            }
+            if (keyChunks.length == 1) {
+                for (int ii = 0; ii < size; ++ii) {
+                    rowKeys.set(ii, lookup.apply(boxedKeys[0].get(ii), usePrev));
+                }
+                return;
+            }
+            for (int ii = 0; ii < size; ++ii) {
+                // A fresh array per key, since a lookup may keep the key it is given.
+                final Object[] key = new Object[keyChunks.length];
+                for (int ci = 0; ci < keyChunks.length; ++ci) {
+                    key[ci] = boxedKeys[ci].get(ii);
+                }
+                rowKeys.set(ii, lookup.apply(key, usePrev));
+            }
+        }
     }
 
     /**
