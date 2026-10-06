@@ -136,35 +136,41 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                         // first result is released once, when its matches are combined or when the second round
                         // fails.
                         final MutableBoolean resultReleased = new MutableBoolean();
-                        final Runnable releaseResult = () -> {
+                        final SafeCloseable releaseResult = () -> {
                             if (resultReleased.isFalse()) {
                                 resultReleased.setTrue();
                                 result.close();
                             }
                         };
-                        wrappedMatcher.pushdownFilter(
-                                filter,
-                                result.maybeMatch(),
-                                usePrev,
-                                ctx.wrappedContext,
-                                costCeiling,
-                                jobScheduler,
-                                nextResult -> {
-                                    // Combine the match results from earlier pushdown
-                                    try {
-                                        nextResult.match().insert(result.match());
-                                    } finally {
-                                        releaseResult.run();
-                                    }
-                                    onComplete.accept(nextResult);
-                                },
-                                e -> {
-                                    try {
+                        try {
+                            wrappedMatcher.pushdownFilter(
+                                    filter,
+                                    result.maybeMatch(),
+                                    usePrev,
+                                    ctx.wrappedContext,
+                                    costCeiling,
+                                    jobScheduler,
+                                    nextResult -> {
+                                        // Combine the match results from earlier pushdown. The second result is ours
+                                        // until onComplete takes it, so close it if the combination fails.
+                                        try {
+                                            nextResult.match().insert(result.match());
+                                            releaseResult.close();
+                                        } catch (final RuntimeException | Error e) {
+                                            SafeCloseable.closeAllDuringFailure(e, nextResult, releaseResult);
+                                            throw e;
+                                        }
+                                        onComplete.accept(nextResult);
+                                    },
+                                    e -> {
+                                        SafeCloseable.closeAllDuringFailure(e, releaseResult);
                                         onError.accept(e);
-                                    } finally {
-                                        releaseResult.run();
-                                    }
-                                });
+                                    });
+                        } catch (final RuntimeException | Error e) {
+                            // A matcher that throws instead of calling onError would leave the first result open.
+                            SafeCloseable.closeAllDuringFailure(e, releaseResult);
+                            throw e;
+                        }
                     },
                     onError);
             return;
