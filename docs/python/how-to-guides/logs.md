@@ -33,7 +33,7 @@ docker logs <CONTAINER> >& log.txt
 
 One of the most common crashes involves the JVM. This results in a `SIGSEGV error`.
 
-When this error occurs, the server Docker container will generate a log. To retrieve that log from the Docker container to your local machine, copy the file. The container needs to be running to copy the log file.
+When this error occurs, the server Docker container will generate a log. To retrieve that log from the Docker container to your local machine, copy the file. The container does not need to be running, but it must still exist. Do not remove it (for example, with `docker compose down` or `docker rm`) before you copy the file.
 
 Replace `<SERVER_CONTAINER>` with the name of your server:
 

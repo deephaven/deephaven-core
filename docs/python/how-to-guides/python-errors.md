@@ -94,7 +94,7 @@ Line: 3
 Namespace: f
 File: <string>
 Traceback (most recent call last):
-  File "<string>", line 10, in <module>
+  File "<string>", line 11, in <module>
   File "<string>", line 3, in f
 
         at org.jpy.PyLib.executeCode(PyLib.java:-2)
@@ -134,11 +134,11 @@ File: <string>
 > [!NOTE]
 > Because the code was specified on the Deephaven command line, the file is `<string>`. If the code is contained in a file, the filename containing the code will be shown.
 
-In this case, the stack trace is helpful. Here we see that the error occurred when the program executed line 10 (`f(10)`) followed by line 3 (`raise Exception("oops 1")`). From this stack trace, you can see that calling `f(1)` did not result in an error. Only calling `f(10)` resulted in an error.
+In this case, the stack trace is helpful. Here we see that the error occurred when the program executed line 11 (`f(10)`) followed by line 3 (`raise Exception("oops 1")`). From this stack trace, you can see that calling `f(1)` did not result in an error. Only calling `f(10)` resulted in an error.
 
 ```
 Traceback (most recent call last):
-  File "<string>", line 10, in <module>
+  File "<string>", line 11, in <module>
   File "<string>", line 3, in f
 ```
 
@@ -172,7 +172,7 @@ Line: 3
 Namespace: f
 File: <string>
 Traceback (most recent call last):
-  File "<string>", line 8, in <module>
+  File "<string>", line 9, in <module>
   File "<string>", line 5, in g
   File "<string>", line 3, in f
 
@@ -515,7 +515,7 @@ Namespace: update
 File: /opt/deephaven-venv/lib/python3.7/site-packages/deephaven/table.py
 Traceback (most recent call last):
   File "<string>", line 13, in <module>
-  File "<string>", line 10, in f2
+  File "<string>", line 9, in f2
   File "/opt/deephaven-venv/lib/python3.7/site-packages/deephaven/table.py", line 471, in update
 
         at org.jpy.PyLib.executeCode(PyLib.java:-2)
@@ -568,13 +568,13 @@ Namespace: update
 File: /opt/deephaven-venv/lib/python3.7/site-packages/deephaven/table.py
 Traceback (most recent call last):
   File "<string>", line 13, in <module>
-  File "<string>", line 10, in f2
+  File "<string>", line 9, in f2
   File "/opt/deephaven-venv/lib/python3.7/site-packages/deephaven/table.py", line 471, in update
 ```
 
 </details>
 
-The error shows that [`update`](../reference/table-operations/select/update.md) could not find the variable `X` when trying to interpret `X * 3` in a query string. Looking at the original code, `X * 3` appears in two places. To figure out which one caused the problem, it is necessary to look at the stack trace. The stack trace indicates that the problem occurred in line 10 of the input, in `f2`. Now that you know the location of the problem, you can see that the table does not contain a column `X`, so the query string does not make sense.
+The error shows that [`update`](../reference/table-operations/select/update.md) could not find the variable `X` when trying to interpret `X * 3` in a query string. Looking at the original code, `X * 3` appears in two places. To figure out which one caused the problem, it is necessary to look at the stack trace. The stack trace indicates that the problem occurred in line 9 of the input, in `f2`. Now that you know the location of the problem, you can see that the table does not contain a column `X`, so the query string does not make sense.
 
 ## One more complex example
 

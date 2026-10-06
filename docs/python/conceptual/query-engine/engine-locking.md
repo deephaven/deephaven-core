@@ -63,28 +63,28 @@ import java.util.concurrent.locks.Condition;
 final Condition myCondition = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().newCondition();
 
 Thread independentThread = new Thread(() -> {
-  System.out.println(Thread.currentThread().getName() + " - " + currentTime() + " - Acquiring update graph exclusive lock...");
+  System.out.println(Thread.currentThread().getName() + " - " + now() + " - Acquiring update graph exclusive lock...");
     ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
-    System.out.println(Thread.currentThread().getName() + " - " + currentTime() + " - Waiting for condition...");
+    System.out.println(Thread.currentThread().getName() + " - " + now() + " - Waiting for condition...");
     myCondition.await();
-    System.out.println(Thread.currentThread().getName() + " - " + currentTime() + " - Condition was signaled!");
+    System.out.println(Thread.currentThread().getName() + " - " + now() + " - Condition was signaled!");
   });
-  System.out.println(Thread.currentThread().getName() + " - " + currentTime() + " - update graph exclusive lock released.")
+  System.out.println(Thread.currentThread().getName() + " - " + now() + " - update graph exclusive lock released.")
 
 }, "myIndependentThread");
 independentThread.start();
 
 // Create a time table that ticks every 5 seconds
-myTable = timeTable("00:00:05");
+myTable = timeTable("PT5s");
 
 myListener = new InstrumentedTableUpdateListenerAdapter(myTable, false) {
   @Override
   public void onUpdate(TableUpdate upstream) {
     // Request that the UpdateGraph signal the condition, so that anything
     // await()ing the condition is notified.
-    System.out.println(Thread.currentThread().getName() + " - " + currentTime() + " - Signaling condition...")
+    System.out.println(Thread.currentThread().getName() + " - " + now() + " - Signaling condition...")
       ExecutionContext.getContext().getUpdateGraph().requestSignal(myCondition);
-    System.out.println(Thread.currentThread().getName() + " - " + currentTime() + " - Condition signaled.")
+    System.out.println(Thread.currentThread().getName() + " - " + now() + " - Condition signaled.")
   }
 };
 
@@ -100,34 +100,36 @@ listener is either [removed](https://deephaven.io/core/javadoc/io/deephaven/engi
 from the table or goes out of scope and is removed by JVM garbage collection.
 
 ```
-myIndependentThread - 2022-10-12T12:36:06.890861000 NY - Acquiring update graph exclusive lock...
-myIndependentThread - 2022-10-12T12:36:06.998700000 NY - Waiting for condition...
-PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T12:36:07.142583000 NY - Signaling condition...
-PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T12:36:07.150394000 NY - Condition signaled.
-myIndependentThread - 2022-10-12T12:36:07.153525000 NY - Condition was signaled!
-myIndependentThread - 2022-10-12T12:36:07.154153000 NY - Update graph exclusive lock released.
-PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T12:36:10.117031000 NY - Signaling condition...
-PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T12:36:10.117912000 NY - Condition signaled.
-PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T12:36:15.115583000 NY - Signaling condition...
-PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T12:36:15.116385000 NY - Condition signaled.
+myIndependentThread - 2022-10-12T16:36:06.890861Z - Acquiring update graph exclusive lock...
+myIndependentThread - 2022-10-12T16:36:06.998700Z - Waiting for condition...
+PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:07.142583Z - Signaling condition...
+PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:07.150394Z - Condition signaled.
+myIndependentThread - 2022-10-12T16:36:07.153525Z - Condition was signaled!
+myIndependentThread - 2022-10-12T16:36:07.154153Z - Update graph exclusive lock released.
+PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:10.117031Z - Signaling condition...
+PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:10.117912Z - Condition signaled.
+PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:15.115583Z - Signaling condition...
+PeriodicUpdateGraph.DEFAULT.refreshThread - 2022-10-12T16:36:15.116385Z - Condition signaled.
 ```
 
 ### Using locks
 
 The preferred way to use either lock is as a
 [functional lock](/core/javadoc/io/deephaven/util/locks/FunctionalLock.html), where the operation
-to execute (the [`SnapshotFunction`](/core/javadoc/io/deephaven/engine/table/impl/remote/ConstructSnapshot.SnapshotFunction.html))
+to execute (a `ThrowingRunnable` for `doLocked` or a `ThrowingSupplier` for `computeLocked`)
 is passed as an argument (typically a lambda expression). This simplifies the standard `try`/`finally`
-locking pattern (demonstrated under [Explicit locking and unlocking](#explicit-locking-and-unlocking))
+locking pattern (demonstrated under [Explicit locking and unlocking](#explicit-locking-and-unlocking)).
 
 The `doLocked` method allows for arbitrary code to be executed while holding the lock:
 
 ```groovy skip-test
+import io.deephaven.engine.table.vectors.ColumnVectors;
+
 Table myTable = getMyTable();
 ExecutionContext.getContext().getUpdateGraph().sharedLock().doLocked( () -> {
   // Retrieve the data from "MyCol" as an array and print it:
-  String[] myColAsArray = myTable.getColumn("MyCol").getDirect()
-  System.out.println(Arrays.toString(col1array));
+  String[] myColAsArray = ColumnVectors.ofObject(myTable, "MyCol", String.class).toArray();
+  System.out.println(Arrays.toString(myColAsArray));
 });
 ```
 
@@ -135,10 +137,12 @@ It is also possible to compute a value while holding the lock and return it dire
 using `computeLocked`:
 
 ```groovy skip-test
+import io.deephaven.engine.table.vectors.ColumnVectors;
+
 Table myTable = getMyTable();
 String[] myColAsArray = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked( () -> {
   // Retrieve the data from "MyCol" as an array and return it:
-  return myTable.getColumn("MyCol").getDirect();
+  return ColumnVectors.ofObject(myTable, "MyCol", String.class).toArray();
 });
 ```
 
@@ -236,6 +240,8 @@ for one or more index keys. Consider the example below, which retrieves data at 
 ```groovy skip-test
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 // Get tables to retrieve data from during the SnapshotFunction:
 Table myTable = getMyTable();
 Table myTable2 = getMyOtherTable();
@@ -244,7 +250,7 @@ Table myTable2 = getMyOtherTable();
 ColumnSource<String> firstTableStrColSource = myTable.getColumnSource("MyStrCol", String.class);
 ColumnSource<Integer> firstTableIntColSource = myTable.getColumnSource("MyIntCol", Integer.class);
 
-ColumnSource<Double> secondTableDoubleColSource = myTable.getColumnSource("MyIntCol", Double.class);
+ColumnSource<Double> secondTableDoubleColSource = myTable2.getColumnSource("MyDoubleCol", Double.class);
 
 
 // Create the SnapshotControl object:
@@ -289,7 +295,7 @@ ConstructSnapshot.callDataSnapshotFunction("my_snapshot", snapshotControl, (bool
   // the 'current value' with the latest data.
   String myStringFromTable = usePrev ? firstTableStrColSource.getPrev(idxKey) : firstTableStrColSource.get(idxKey);
   int myIntFromTable = usePrev ? firstTableIntColSource.getPrevInt(idxKey) : firstTableIntColSource.getInt(idxKey);
-  double myDoubleFromTable = usePrev ? secondTableDoubleColSource.getPrevDouble(idxKey) : secondTableIntColSource.getDouble(idxKey);
+  double myDoubleFromTable = usePrev ? secondTableDoubleColSource.getPrevDouble(idxKey) : secondTableDoubleColSource.getDouble(idxKey);
 
   // Create the result value and store it in the reference.
   // Since the snapshotResult reference is only used by one thread, it is better to use .setPlain() instead
@@ -302,7 +308,7 @@ ConstructSnapshot.callDataSnapshotFunction("my_snapshot", snapshotControl, (bool
 
 // Since callDataSnapshotFunction() has returned and did not throw an exception,
 // proceed with reading the snapshot result:
-System.out.println("String from idx 0 of table: " + snapshotResult.getPlain());
+System.out.println("String from idx 0 of table: " + snapshotResult.getPlain().myStr);
 ```
 
 If the snapshot function returns `false`, it is assumed that the data was inconsistent and the snapshot function is
@@ -346,6 +352,9 @@ ConstructSnapshot.SnapshotControl snapshotControl = ConstructSnapshot.makeSnapsh
   myTable, myTable2
 );
 
+// For this example, we'll retrieve data from index key 0.
+final long idxKey = 0L;
+
 // Create the snapshot result reference:
 final String[] snapshotResults = new String[200];
 
@@ -363,17 +372,17 @@ ConstructSnapshot.callDataSnapshotFunction("my_snapshot", snapshotControl, (bool
     return false;
   }
 
-  snapshotResults[100] usePrev ? table2colSource1.getPrev(idxKey) : table2colSource1.get(idxKey);
-  snapshotResults[101] usePrev ? table2colSource2.getPrev(idxKey) : table2colSource2.get(idxKey);
+  snapshotResults[100] = usePrev ? table2colSource1.getPrev(idxKey) : table2colSource1.get(idxKey);
+  snapshotResults[101] = usePrev ? table2colSource2.getPrev(idxKey) : table2colSource2.get(idxKey);
   // . . .
   snapshotResults[199] = usePrev ? table2colSource100.getPrev(idxKey) : table2colSource100.get(idxKey);
 
 
   // Return true; let the SnapshotControl verify the snapshot
   return true;
-})
+});
 
-Table snapshotResult = snapshotResultRef.getPlain();
+System.out.println(Arrays.toString(snapshotResults));
 ```
 
 ## Choosing between snapshots and locks

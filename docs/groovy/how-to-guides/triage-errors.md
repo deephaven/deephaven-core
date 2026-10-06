@@ -130,8 +130,7 @@ When you interpret these exception chains, it's best to start from the last exce
 
 - The lowest exception is an [`IllegalStateException`](https://docs.oracle.com/javase/7/docs/api/java/lang/IllegalStateException.html), since that is the innermost error in our `throwFunc` function. The error occurs when the table tries to compute a value for the `X` column and invokes our function.
 - Just above, we see [`RuntimeException`](https://docs.oracle.com/javase/7/docs/api/java/lang/RuntimeException.html) as another 'caused by' statement because the [`IllegalStateException`](https://docs.oracle.com/javase/7/docs/api/java/lang/IllegalStateException.html) was passed as the argument to a [`RuntimeException`](https://docs.oracle.com/javase/7/docs/api/java/lang/RuntimeException.html).
-- The top-level [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html) is the point where the Deephaven engine recognized that it had an error it could not handle internally. Any sort of uncaught exception could have been in this position, but a [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html) indicates that some specified formula had a problem. If you had a table with columns `A` and `B`, and you accidentally made a formula referencing column `Aa`, then you would also get a `FormulaEvaluationException`, because the Deephaven engine would be unable to find a column with that exact name.
-- Note also that the exception lists the formula as `throwFunc.call(i)`, instead of `throwFunc(i)`, as it was written. This is because the Deephaven engine explicitly uses the `call` syntax when invoking Groovy closures.
+- Above that, the [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html) is the point where the Deephaven engine recognized that it had an error it could not handle internally. Any sort of uncaught exception could have been in this position, but a [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html) indicates that some specified formula had a problem. A formula that references a column that doesn't exist, such as `Aa`, fails earlier with a `FormulaCompilationException`, because the engine cannot compile the formula.
 
 This is a very simple example of triaging an equally simple query with deliberate errors. In practice, queries will be much more sophisticated and contain many interdependencies between tables. The recipe for triage, however, is the same.
 
@@ -200,7 +199,7 @@ Like the previous examples, the root cause can be found near the end of the stac
 Caused by: java.lang.StringIndexOutOfBoundsException: Index 1 out of bounds for length 1
 ```
 
-This line contains the actual [query string](./work-with-strings.md) that caused the error, making it clear which line is the culprit.
+This tells you that the formula tried to read index 1 of a string that has only one character.
 
 We can inspect the table by adding a new column `ItemsLength = Items.length()`:
 
@@ -297,8 +296,8 @@ The next step is to review your query code.
 - Search for duplicate tables, or tables that only differ in column count. Try to re-use tables in derivative computations as much as possible to make use of the query's previous work. In most cases, Deephaven automatically recognizes duplicate computations and uses the original tables. However, it is best not to rely on this behavior and instead be explicit about what tables you derive from.
 - When using Deephaven query expressions that group rows based on keys ([`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md), [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md), and [`join`](../reference/table-operations/join/join.md) operations), pay close attention to the number of unique keys in the tables you apply these operations to. If keys are generally unique (`SaleID`, for example) within a table, then an operation like [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) will produce potentially millions of single row tables that all consume some heap space in overhead. In these cases, consider if you can use different keys, or even a different set of Deephaven query operations.
 - Carefully consider the order you execute Deephaven query expressions. It’s best to filter data before joining tables.
-  - A very simple example is applying a [`join`](../reference/table-operations/join/join.md) and a [`where`](../reference/table-operations/filter/where.md) condition. If you were to execute ``derived = myTable.join(myOtherTable, “JoinColumn”).where(“FilterColumn=`FilterValue`)``, the [`join`](../reference/table-operations/join/join.md) operation consumes much more heap than it needs to, since it will take time matching rows from `myTable` that would later be filtered down in the [`where`](../reference/table-operations/filter/where.md) expression.
-  - This query would be better expressed as ``derived = myTable.where(“FilterColumn=`FilterValue`).join(myOtherTable, “JoinColumn”)``. This saves in heap usage, but also reduces how many rows are processed in downstream tables (called ticks) when the left hand or right hand tables tick.
+  - A very simple example is applying a [`join`](../reference/table-operations/join/join.md) and a [`where`](../reference/table-operations/filter/where.md) condition. If you were to execute ``derived = myTable.join(myOtherTable, "JoinColumn").where("FilterColumn = `FilterValue`")``, the [`join`](../reference/table-operations/join/join.md) operation consumes much more heap than it needs to, since it will take time matching rows from `myTable` that would later be filtered down in the [`where`](../reference/table-operations/filter/where.md) expression.
+  - This query would be better expressed as ``derived = myTable.where("FilterColumn = `FilterValue`").join(myOtherTable, "JoinColumn")``. This saves in heap usage, but also reduces how many rows are processed in downstream tables (called ticks) when the left hand or right hand tables tick.
 
 There are many other reasons that a query may use more heap than expected. This requires a deep analysis of how the query is performing at runtime. You may need to use a Java profiling tool (such as [JProfiler](https://www.ej-technologies.com/products/jprofiler/overview.html)) to identify poorly-performing sections of your code.
 
@@ -342,13 +341,13 @@ You can also get help by asking questions in our [GitHub Discussions](https://gi
 
 4. If you are using strings in your expression, did you quote them properly?
 
-   - Strings are quoted with the backtick character (`` ` ``), **not** single quotes (`‘`) or double quotes (`"`).
+   - Strings are quoted with the backtick character (`` ` ``), **not** single quotes (`'`) or double quotes (`"`).
    - Do you have matching close quotes for your open quotes?
 
 5. If you are using date-times in your expressions:
 
-   - Did you use single quotes (`‘`), not double quotes (`“`) or backticks (`` ` ``)?
-   - Did you use the proper format? Deephaven date-times are expected as `<yyyyMMDD>T<HH:mm:ss.nnnnnnnnn> <TZ>`.
+   - Did you use single quotes (`'`), not double quotes (`"`) or backticks (`` ` ``)?
+   - Did you use the proper format? Deephaven date-times are expected in the format `yyyy-MM-ddTHH:mm:ss.nnnnnnnnn TZ`, for example `'2024-01-01T09:30:00 ET'`.
 
 6. Are all classes that you are trying to use properly imported?
 

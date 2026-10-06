@@ -12,7 +12,7 @@ If a query seems to be taking too long or throws an error, looking at the proces
 
 ### Evaluation numbers
 
-Several of the performance tables' constructor methods take an `evaluation_number` argument. This number is a unique identifier for a query (whatever you type into the console and press _Enter_) and its subqueries (individual operations within the query, such as individual method calls). Evaluation numbers can be found in the performance data tables obtained from calling [`queryPerformanceLog`](#query-performance-log) or [`queryOperationPerformanceLog`](#query-operation-performance-log).
+Several `PerformanceQueries` methods take an `evaluationNumber` argument. This number is a unique identifier for a query (whatever you type into the console and press _Enter_) and its subqueries (individual operations within the query, such as individual method calls). Evaluation numbers can be found in the performance data tables obtained from calling [`queryPerformanceLog`](#query-performance-log) or [`queryOperationPerformanceLog`](#query-operation-performance-log).
 
 ## Available performance tables
 
@@ -43,18 +43,18 @@ The Query Update Performance table takes in an [evaluation number](#evaluation-n
 The syntax is as follows, where `n` is the evaluation number of the query you want to analyze:
 
 ```groovy skip-test
-import io.deephaven.engine.table.impl.util.TableLoggers
+import io.deephaven.engine.table.impl.util.PerformanceQueries
 
-qup = queryUpdatePerformance(n)
+qup = PerformanceQueries.queryUpdatePerformance(n)
 ```
 
 | Column Name             | Data Type | Description                                                                                                                                                    |
 | ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `EvaluationNumber`      | `long`    | An increasing integral value for requests made to the worker.                                                                                                  |
 | `OperationNumber`       | `int`     | An identifier for an operation within an evaluation.                                                                                                           |
-| `Ratio`                 | `double`  | The ratio of time in an update cycle spent performing calculations. `1` would mean that the entirety of the update cycle was spent performing calculations.    |
-| `QueryMemUsed`          | `long`    | The total memory used by a query, in KB.                                                                                                                       |
-| `QueryMemUsedPct`       | `double`  | The percentage of total memory used by the query.                                                                                                              |
+| `Ratio`                 | `double`  | The fraction of the logging interval this operation spent processing updates. `1` means the entire interval.                                                   |
+| `QueryMemUsed`          | `long`    | Heap memory in use, in bytes (`MaxTotalMemory - MinFreeMemory`).                                                                                               |
+| `QueryMemUsedPct`       | `double`  | `QueryMemUsed` as a fraction of the max heap size (`WorkerHeapSize`).                                                                                          |
 | `IntervalEndTime`       | `Instant` | The end of the interval this row represents.                                                                                                                   |
 | `RowsPerSec`            | `long`    | The number of rows per second.                                                                                                                                 |
 | `RowsPerCPUSec`         | `long`    | The number of rows per CPU second.                                                                                                                             |
@@ -81,17 +81,17 @@ qup = queryUpdatePerformance(n)
 | `UpdateGraph`           | `String`  | The name of the update graph for this entry.                                                                                                                   |
 | `IntervalDurationNanos` | `long`    | The duration of the interval in nanoseconds.                                                                                                                   |
 | `WorkerHeapSize`        | `long`    | The size of the worker heap.                                                                                                                                   |
-| `QueryMemFree`          | `long`    | The amount of free memory in the query.                                                                                                                        |
-| `NRows`                 | `long`    | The number of rows in the query.                                                                                                                               |
+| `QueryMemFree`          | `long`    | The heap memory remaining before the max heap size is reached, in bytes.                                                                                       |
+| `NRows`                 | `long`    | The total number of rows added, removed, and modified in the interval.                                                                                         |
 
 ### Query Operation Performance
 
-The Query Operation Performance table contains data on how long each individual operation of a query ([`where`](../../reference/table-operations/filter/where.md), [`update`](../../reference/table-operations/select/update.md), [`naturalJoin`](../../reference/table-operations/join/natural-join.md), etc., as well as internal functions) takes to execute, and the change in resource consumption while each was executing. The `query_operation_performance` method requires an [evaluation number](#evaluation-numbers) to identify the query you want to analyze.
+The Query Operation Performance table contains data on how long each individual operation of a query ([`where`](../../reference/table-operations/filter/where.md), [`update`](../../reference/table-operations/select/update.md), [`naturalJoin`](../../reference/table-operations/join/natural-join.md), etc., as well as internal functions) takes to execute, and the change in resource consumption while each was executing. The `queryOperationPerformance` method requires an [evaluation number](#evaluation-numbers) to identify the query you want to analyze.
 
-```python skip-test
-import deephaven.perfmon as pm
+```groovy skip-test
+import io.deephaven.engine.table.impl.util.PerformanceQueries
 
-qop = pm.query_operation_performance(n)
+qop = PerformanceQueries.queryOperationPerformance(n)
 ```
 
 | Column Name              | Data Type | Description                                                                                                                                |
@@ -130,7 +130,7 @@ qop = pm.query_operation_performance(n)
 
 ### Query Performance
 
-`query_performance` takes in an [evaluation number](#evaluation-numbers) and returns a table containing that query’s performance data.
+`queryPerformance` takes in an [evaluation number](#evaluation-numbers) and returns a table containing that query’s performance data.
 
 The query performance table contains data on how long each query takes to run. Examples of what constitutes one individual query, for performance logging purposes, include:
 
@@ -138,10 +138,10 @@ The query performance table contains data on how long each query takes to run. E
 - A sort, filter, or custom column generated by a UI.
 - A call from a client API external application.
 
-```python skip-test
-import deephaven.perfmon as pm
+```groovy skip-test
+import io.deephaven.engine.table.impl.util.PerformanceQueries
 
-qop = pm.query_performance(n)
+qp = PerformanceQueries.queryPerformance(n)
 ```
 
 | Column Name              | Data Type | Description                                                                                                                                |
@@ -229,7 +229,7 @@ The `EntryDescription` column identifies the operations themselves. `IntervalSta
 
 | Column Name              | Data Type | Description                                                                                                                                                                         |
 | ------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `EntryID`                | `long`    | A numeric identifier for this performance entry, which can be used to identify the same operation across cycles.                                                                    |
+| `EntryId`                | `long`    | A numeric identifier for this performance entry, which can be used to identify the same operation across cycles.                                                                    |
 | `EvaluationNumber`       | `long`    | The evaluation number of the corresponding entry in the [QueryOperationPerformanceLogLogger](/core/javadoc/io/deephaven/engine/tablelogger/QueryOperationPerformanceLogLogger.html) |
 | `OperationNumber`        | `int`     | The operation number of the corresponding entry in the [QueryOperationPerformanceLogLogger](/core/javadoc/io/deephaven/engine/tablelogger/QueryOperationPerformanceLogLogger.html)  |
 | `EntryDescription`       | `String`  | A textual description of the operation, generally including the name and some of the arguments.                                                                                     |
@@ -265,7 +265,7 @@ The Update Performance Ancestors log contains the `UpdateGraph`, `EntryId`, and 
 | Column Name        | Data Type    | Description                                                                                                      |
 | ------------------ | ------------ | ---------------------------------------------------------------------------------------------------------------- |
 | `UpdateGraph`      | `String`     | The name of the update graph for this entry.                                                                     |
-| `EntryID`          | `long`       | A numeric identifier for this performance entry, which can be used to identify the same operation across cycles. |
+| `EntryId`          | `long`       | A numeric identifier for this performance entry, which can be used to identify the same operation across cycles. |
 | `EntryDescription` | `String`     | A textual description of the operation, generally including the name and some of the arguments.                  |
 | `Ancestors`        | `LongVector` | A vector of ancestor EntryId values.                                                                             |
 
@@ -337,7 +337,7 @@ This table contains metrics collected for the current Deephaven engine process.
 | `Max`             | `long`    | The maximum sample in this interval.                                    |
 | `Avg`             | `long`    | The mean of all samples in this interval.                               |
 | `Sum2`            | `long`    | The sum of the squares of all samples in this interval.                 |
-| `StdDev`          | `long`    | The standard deviation of all samples in this interval.                 |
+| `Stdev`           | `long`    | The standard deviation of all samples in this interval.                 |
 
 ### Process Info Log
 
@@ -357,13 +357,13 @@ This table contains JVM info about memory utilization, the Periodic Update Graph
 | Column Name                            | Data Type | Description                                                                          |
 | -------------------------------------- | --------- | ------------------------------------------------------------------------------------ |
 | `IntervalStartTime`                    | `Instant` | The start time of the interval.                                                      |
-| `IntervalDurationMicros`               | `long`    | The number of microseconds in the interval.                                          |
+| `IntervalDurationMicros`               | `int`     | The number of microseconds in the interval.                                          |
 | `TotalMemoryMiB`                       | `int`     | The amount of memory allocated to the JVM.                                           |
 | `FreeMemoryMiB`                        | `int`     | The amount of free memory in the JVM.                                                |
 | `IntervalCollections`                  | `short`   | The number of garbage collection events in the interval.                             |
 | `IntervalCollectionTimeMicros`         | `int`     | The number of microseconds (approximately) spent collecting garbage in the interval. |
 | `IntervalUGPCyclesOnBudget`            | `short`   | The number of update graph processor cycles on budget in the interval.               |
-| `IntervalUGPCyclesTimeMicros`          | `String`  | The duration of update graph processor cycles, in microseconds in the interval.      |
+| `IntervalUGPCyclesTimeMicros`          | `int[]`   | An array of update graph cycle durations in the interval, in microseconds.           |
 | `IntervalUGPCyclesSafePoints`          | `short`   | The number of safe points in the interval.                                           |
 | `IntervalUGPCyclesSafePointTimeMicros` | `int`     | The number of microseconds spent in safe points in the interval.                     |
 
@@ -373,7 +373,7 @@ This tree table contains Deephaven query performance data. It displays informati
 
 ![The Query Performance Tree Table, with the row where `EvaluationNumber = 20` expanded](../../assets/how-to/perf-qptt.png)
 
-Performance data for _individual_ sub-operations as a tree table is available from calling `query_operation_performance_tree_table`.
+Performance data for _individual_ sub-operations as a tree table is available from calling `PerformanceQueries.queryOperationPerformanceAsTreeTable`.
 
 | Column Name              | Data Type | Description                                                                                                                                                                          |
 | ------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -400,7 +400,7 @@ Performance data for _individual_ sub-operations as a tree table is available fr
 
 ### Query Operation Performance Tree Table
 
-This tree table contains Deephaven performance data on how long each individual operation of a query (`where`, `update`, `natural_join`, etc., as well as internal functions) takes to execute, and the change in resource consumption while each was executing. It displays information that can also be found in the [Query Operation Performance Log](#query-operation-performance-log), in tree table form. It is similar to a traditional call graph, placing every operation with a parent operation into expandable groups.
+This tree table contains Deephaven performance data on how long each individual operation of a query (`where`, `update`, `naturalJoin`, etc., as well as internal functions) takes to execute, and the change in resource consumption while each was executing. It displays information that can also be found in the [Query Operation Performance Log](#query-operation-performance-log), in tree table form. It is similar to a traditional call graph, placing every operation with a parent operation into expandable groups.
 
 ![The Query Operation Performance Tree Table](../../assets/how-to/perf-qoptt.png)
 
@@ -457,8 +457,8 @@ qpl = queryPerformanceLog()
 pml = processMetricsLog()
 pil = processInfoLog()
 ssl = serverStateLog()
-qoptt = PerformanceQueries.queryPerformanceAsTreeTable()
-qptt = PerformanceQueries.queryOperationPerformanceAsTreeTable()
+qptt = PerformanceQueries.queryPerformanceAsTreeTable()
+qoptt = PerformanceQueries.queryOperationPerformanceAsTreeTable()
 
 fast = { x -> return x * (x + 1) / 2 }
 
@@ -518,7 +518,7 @@ There are a couple of key pieces in the above query worth noting:
 
 ![The above `uplUpdate` table](../../assets/how-to/perf-ratio.png)
 
-In the above image, the `Update([Y])` (the `slow` function) takes a whopping 25% of the total interval time. This makes sense based on what's happening; every second, a new row is added to the ticking tables. For a quarter of that second, the Deephaven engine sits around waiting for `time.sleep(0.25)` to be finished. Clearly, `slow` is a bottleneck in this particular code. In real applications, it won't be as obvious why something causes a slowdown. Still, this example query is a simple way to identify areas where performance improvements will be more significant.
+In the above image, the `Update([Y])` (the `slow` function) takes a whopping 25% of the total interval time. This makes sense based on what's happening; every second, a new row is added to the ticking tables. For a quarter of that second, the Deephaven engine sits around waiting for `sleep(250)` to be finished. Clearly, `slow` is a bottleneck in this particular code. In real applications, it won't be as obvious why something causes a slowdown. Still, this example query is a simple way to identify areas where performance improvements will be more significant.
 
 ## Using performance tree tables
 

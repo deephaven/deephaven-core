@@ -90,13 +90,13 @@ a = new AtomicInteger(0)
 t = emptyTable(1_000_000).update("A=a.getAndIncrement()", "B=a.getAndIncrement()")
 ```
 
-Deephaven's default behavior is to treat both `A` and `B` statefully, therefore the table is equivalent to:
+By default, Deephaven treats both `A` and `B` as stateless, so the rows from either column can be evaluated in any order, and the values assigned to `A` and `B` can interleave unpredictably. If you set `QueryTable.statelessSelectByDefault` to `false`, both columns are treated statefully and the table is equivalent to:
 
 ```groovy order=null
 t = emptyTable(1_000_000).update("A=i", "B=1_000_000 + i")
 ```
 
-However, when the columns are stateless, then the rows from either column can be evaluated in any order. To indicate that `A` must be evaluated before `B`, we can use a barrier:
+To indicate that `A` must be evaluated before `B`, use a barrier:
 
 ```groovy order=null
 import java.util.concurrent.atomic.AtomicInteger

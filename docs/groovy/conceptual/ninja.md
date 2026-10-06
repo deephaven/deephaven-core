@@ -6,13 +6,13 @@ title: Think like a Deephaven ninja
 
 The Deephaven Query Language (DQL) uses three types of quotes:
 
-- ‘ (single quote)
+- ' (single quote)
 - " (double quote)
 - ` (backtick)
 
 Choosing the right quote can be confusing. Let’s explore where each should be used.
 
-DQL query strings are [strings](../reference/query-language/types/strings.md). In Python, strings can be defined with either a single quote or a double quote. Both yield valid query strings, as illustrated in this example.
+DQL query strings are [strings](../reference/query-language/types/strings.md). In Groovy, strings can be defined with either a single quote or a double quote. Both yield valid query strings, as illustrated in this example.
 
 ```groovy order=result
 result = emptyTable(10).update("X = i", 'Y = X*X')
@@ -112,7 +112,7 @@ For most use cases, [`where`](../reference/table-operations/filter/where.md) is 
 > This query allocates a billion row table in memory. To see the distinction between each table's load time, run the queries separately.
 
 ```groovy skip-test
-t = emptyTable(1_000_000_000).update("X = i", “Y = X*X”)
+t = emptyTable(1_000_000_000).update("X = i", "Y = X*X")
 
 t1 = t.where("X > 2").where("X < 6")
 

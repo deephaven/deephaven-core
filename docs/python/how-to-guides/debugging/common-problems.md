@@ -22,11 +22,11 @@ In this case, the breakpoint will not be reached, because [`update_view`](../../
 
 ## Ticking tables and the main thread
 
-Currently, Deephaven only notifies Python debuggers of its main thread. However, ticking Deephaven tables spawn new Java threads where evaluation actually happens. If the main thread is not explicitly kept alive, it will shut down before the debugger can reach operations that happen on the other thread. Again, this is particularly relevant with user-defined functions:
+Ticking Deephaven tables are updated on Deephaven's own update threads, not on your script's main thread. Deephaven registers those threads with the debugger, but if your script reaches its last line, the Python process exits and stops the server before any updates run. Again, this is particularly relevant with user-defined functions:
 
 ![img](../../assets/how-to/debugging/prob-3.png)
 
-The main thread here shuts down before the UDF is reached. To remedy this, explicitly keep the main thread alive with a call to [`time.sleep`](https://docs.python.org/3/library/time.html#time.sleep):
+The script ends before the UDF is ever called. To remedy this, keep the process alive with a call to [`time.sleep`](https://docs.python.org/3/library/time.html#time.sleep):
 
 ![img](../../assets/how-to/debugging/prob-4.png)
 

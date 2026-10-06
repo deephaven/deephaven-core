@@ -40,7 +40,7 @@ From PyCharm's launch window, click **Open** and navigate to the `deephaven-core
 
 ![img](../../assets/how-to/debugging/source-1.png)
 
-PyCharm should automatically set the project interpreter to be the virtual environment created in step 1. Confirm this by going to **PyCharm** > **Settings** > **Project: deephaven-core** > **Python Interpreter**. Verify that the path selected matches the path of `source-dh-venv`:
+PyCharm should automatically set the project interpreter to be the virtual environment you created when building Deephaven from source (`source-dh-venv`). Confirm this by going to **PyCharm** > **Settings** > **Project: deephaven-core** > **Python Interpreter**. Verify that the path selected matches the path of `source-dh-venv`:
 
 ![img](../../assets/how-to/debugging/source-2.png)
 
