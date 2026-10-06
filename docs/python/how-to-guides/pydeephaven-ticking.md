@@ -41,7 +41,7 @@ You don't import `pydeephaven_ticking` directly. When it's installed, `pydeephav
 from pydeephaven import Session, TableListener, TableUpdate, listen
 ```
 
-If that import fails, run `import pydeephaven_ticking` to see why. `pydeephaven` only adds the four names when it can import `pydeephaven_ticking`, and it hides the reason when it can't. The direct import shows the real error — for example, the package isn't installed in the active environment, or its compiled library can't load on your platform.
+If that import fails, run `import pydeephaven_ticking.table_listener` to see why. `pydeephaven` only adds the four names when it can import that submodule — which in turn loads the compiled `_core` extension — and it hides the reason when it can't. Plain `import pydeephaven_ticking` doesn't reproduce the failure, since the package's `__init__.py` does no work of its own. The direct submodule import shows the real error — for example, the package isn't installed in the active environment, or its compiled library can't load on your platform.
 
 ## Subscribe with a function
 
@@ -149,23 +149,25 @@ def on_update(update: TableUpdate) -> None:
 
 Deephaven column types map to these PyArrow types. Null values arrive as PyArrow nulls, which become `None` when you call `to_pylist`.
 
-| Deephaven type            | PyArrow type                      |
-| ------------------------- | --------------------------------- |
-| `byte`                    | `int8`                            |
-| `short`                   | `int16`                           |
-| `int`                     | `int32`                           |
-| `long`                    | `int64`                           |
-| `float`                   | `float32`                         |
-| `double`                  | `float64`                         |
-| `char`                    | `uint16` (a number, not a string) |
-| `boolean`                 | `bool`                            |
-| `String`                  | `string`                          |
-| `Instant`                 | `timestamp("ns", "UTC")`          |
-| `LocalDate`               | `date64`                          |
-| `LocalTime`               | `time64("ns")`                    |
-| Arrays of the types above | `list` of the PyArrow type        |
+| Deephaven type                                   | PyArrow type                      |
+| ------------------------------------------------ | --------------------------------- |
+| `byte`                                           | `int8`                            |
+| `short`                                          | `int16`                           |
+| `int`                                            | `int32`                           |
+| `long`                                           | `int64`                           |
+| `float`                                          | `float32`                         |
+| `double`                                         | `float64`                         |
+| `char`                                           | `uint16` (a number, not a string) |
+| `boolean`                                        | `bool`                            |
+| `String`                                         | `string`                          |
+| `Instant`                                        | `timestamp("ns", "UTC")`          |
+| `LocalDate`                                      | `date64`                          |
+| `LocalTime`                                      | `time64("ns")`                    |
+| Arrays/vectors of a type above (except `byte[]`) | `list` of the PyArrow type        |
 
-The package doesn't support other column types, such as `BigDecimal`. Drop or convert those columns on the server — for example with [`view`](../reference/table-operations/select/view.md) — before you subscribe.
+Other column types, such as enums or other custom objects, aren't unsupported outright — the server converts their values to their string representation, so they still arrive as PyArrow `string`.
+
+A smaller set of types fail instead: the server encodes `byte[]`, `BigDecimal`, and `BigInteger` columns as Arrow `binary`, which this package's schema conversion doesn't support. Subscribing to a table with one of these columns makes `start` raise. Drop or convert those columns on the server first — for example with [`view`](../reference/table-operations/select/view.md) — before you subscribe.
 
 ## Subscribe to less data
 
