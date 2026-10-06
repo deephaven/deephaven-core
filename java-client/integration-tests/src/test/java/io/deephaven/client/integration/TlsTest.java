@@ -32,9 +32,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * TLS against a second server started with the development certificates under {@code server/dev-certs}, with client
- * certificates wanted but not required. Covers the handshake and ALPN through the native SSL provider, trust
- * configuration, client identity, and the failure modes a misconfigured client hits. Runs under the {@code testTls}
- * task, which passes {@code dh.tls.port} and {@code dh.devCerts}.
+ * certificates wanted but not required. Covers the handshake and ALPN through whichever SSL provider the client
+ * configures (see {@code TransportTest} for which one that is), trust configuration, client identity, and the failure
+ * modes a misconfigured client hits. Runs under the {@code testTls} task, which passes {@code dh.tls.port} and
+ * {@code dh.devCerts}.
  */
 class TlsTest {
 

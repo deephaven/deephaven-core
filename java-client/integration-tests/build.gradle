@@ -188,7 +188,15 @@ def testTls = tasks.register('testTls', Test) { t ->
         t.systemProperty 'dh.tls.port', tlsPort.get()
     }
 }
+// Print the server log when the tests fail, and also when the server never came up, as the docker extension does
+startTlsServer.configure { finalizedBy writeTlsServerLogs }
+waitForTlsHealthy.configure { finalizedBy writeTlsServerLogs }
 writeTlsServerLogs.configure { t ->
-    t.onlyIf { testTls.get().state.failure != null }
+    t.onlyIf {
+        startTlsServer.get().state.failure != null
+                || waitForTlsHealthy.get().state.failure != null
+                || waitForTlsPort.get().state.failure != null
+                || testTls.get().state.failure != null
+    }
 }
 tasks.named('check') { dependsOn testTls }

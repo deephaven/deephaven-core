@@ -150,6 +150,21 @@ class TransportTest {
                 final FlightStream doGet = flight.stream(source);
                 final TableHandle copy = flight.putExport(doGet)) {
             assertThat(copy.response().getSize()).isEqualTo(LARGE_ROWS);
+            // Read the copy back: the upload path must have kept every row, in order
+            long rows = 0;
+            long sum = 0;
+            try (final FlightStream stream = flight.stream(copy)) {
+                while (stream.next()) {
+                    final BigIntVector i = (BigIntVector) stream.getRoot().getVector("I");
+                    for (int r = 0; r < stream.getRoot().getRowCount(); ++r) {
+                        assertThat(i.get(r)).isEqualTo(rows);
+                        sum += i.get(r);
+                        ++rows;
+                    }
+                }
+            }
+            assertThat(rows).isEqualTo(LARGE_ROWS);
+            assertThat(sum).isEqualTo(LARGE_ROWS * (LARGE_ROWS - 1) / 2);
         }
     }
 

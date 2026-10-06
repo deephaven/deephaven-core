@@ -74,8 +74,8 @@ the host under Gradle and spawns each launcher script as a child process with
 - Each child's stdout and stderr land in `integration-tests/build/example-output/<script>.out` and
   `.err`. On failure the assertion message includes both, and Gradle prints the server log and a
   server thread dump.
-- The child JVM is the test JVM unless `-Ddh.examples.javaHome=<path>` is passed through to the
-  test; the launcher scripts honor `JAVA_HOME`.
+- Each launcher runs on the test JVM's JDK, since the runner sets `JAVA_HOME` from it, so
+  `-PtestRuntimeVersion` applies to the examples too.
 - On JDK 25 the smoke test is skipped: the launchers' default JVM options include a flag JDK 25
   removed, so no example can start there (DH-23820). The other test classes still run on 25. The
   project applies `io.deephaven.java-netty-unsafe`, as the server and the `*-dagger` client tests

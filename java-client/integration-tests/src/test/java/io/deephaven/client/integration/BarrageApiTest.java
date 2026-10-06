@@ -71,6 +71,8 @@ class BarrageApiTest {
     static void disconnect() {
         factory.managedChannel().shutdownNow();
         scheduler.shutdownNow();
+        // Throws if any Arrow buffer the tests read was not released
+        allocator.close();
     }
 
     @Test

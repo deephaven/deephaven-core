@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>
  * The test task sets {@code dh.port} to the server's host port and {@code dh.examples.<distribution>.bin} to each
- * distribution's {@code bin} directory. The child JVM is the one running the tests unless {@code dh.examples.javaHome}
- * names another, which is how the same examples can be exercised on other runtimes.
+ * distribution's {@code bin} directory. The child runs on the same JDK as the test JVM, so a
+ * {@code -PtestRuntimeVersion} given to Gradle applies to the examples too.
  */
 final class ExampleRunner {
 
@@ -96,8 +96,7 @@ final class ExampleRunner {
         final ProcessBuilder builder = new ProcessBuilder(command)
                 .redirectOutput(stdout.toFile())
                 .redirectError(stderr.toFile());
-        builder.environment().put("JAVA_HOME",
-                System.getProperty("dh.examples.javaHome", System.getProperty("java.home")));
+        builder.environment().put("JAVA_HOME", System.getProperty("java.home"));
 
         final Process process = builder.start();
         final boolean exited = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
