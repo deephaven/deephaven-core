@@ -4,7 +4,9 @@ title: Subscribe to ticking tables from a Python client
 
 This guide shows how to receive live updates from a Deephaven table in an external Python application with the `pydeephaven-ticking` package.
 
-A _ticking_ table is one whose rows change while the server runs — rows are added, removed, or modified on each update cycle. The base [`pydeephaven`](../getting-started/pyclient-quickstart.md) package can only fetch a point-in-time snapshot of such a table. `pydeephaven-ticking` adds a subscription: your code receives a callback each time the table changes, containing just the rows that changed.
+A _ticking_ table is one whose contents can change while the server runs — the server can add, remove, or modify rows at any time. The base [`pydeephaven`](../getting-started/pyclient-quickstart.md) package can only fetch a point-in-time snapshot of such a table. `pydeephaven-ticking` adds a subscription: your code receives callbacks that contain just the rows that changed.
+
+Callbacks don't arrive for every individual change. The server collects changes and sends them at most once per update interval, which is one second by default, so a single callback can cover many changes. If nothing changed during an interval, no callback arrives.
 
 > [!NOTE]
 > This guide covers the _client_ package, which runs outside the Deephaven server. To react to table changes in code that runs on the server, see [Listen to ticking tables](./table-listeners-python.md).
@@ -25,13 +27,19 @@ On other platforms, run your client code in a Linux container. For example, this
 docker run --rm -it python:3.12-slim sh -c 'pip install pydeephaven-ticking && python'
 ```
 
+Inside a container, `localhost` refers to the container itself, not to your computer. Point the `Session` at the server in one of these ways:
+
+- **Server on your computer, Docker Desktop on macOS or Windows:** connect with `Session(host="host.docker.internal", port=10000)`.
+- **Server on your computer, Linux:** add `--network host` to `docker run`, then connect to `localhost`.
+- **Server in another container:** add `--network container:<server-container-name>` to `docker run`, then connect to `localhost`.
+
 You don't import `pydeephaven_ticking` directly. When it's installed, `pydeephaven` exposes four extra names: `listen`, `TableListener`, `TableUpdate`, and `TableListenerHandle`.
 
 ```python skip-test
 from pydeephaven import Session, TableListener, TableUpdate, listen
 ```
 
-If that import fails with `ImportError`, `pydeephaven-ticking` isn't installed in the active environment.
+If that import fails, run `import pydeephaven_ticking` to see why. `pydeephaven` only adds the four names when it can import `pydeephaven_ticking`, and it hides the reason when it can't. The direct import shows the real error — for example, the package isn't installed in the active environment, or its compiled library can't load on your platform.
 
 ## Subscribe with a function
 
@@ -90,7 +98,7 @@ handle.start()
 
 ## Read the changes in a table update
 
-Each call to `on_update` receives a `TableUpdate` that describes one update cycle. Every accessor returns a `dict` that maps column names to [PyArrow arrays](https://arrow.apache.org/docs/python/generated/pyarrow.Array.html). The arrays in one `dict` all have the same length, and position `i` in each array belongs to the same row. If a category has no rows in this update, the accessor returns an empty `dict`.
+Each call to `on_update` receives a `TableUpdate` that describes every change since the previous call. Every accessor returns a `dict` that maps column names to [PyArrow arrays](https://arrow.apache.org/docs/python/generated/pyarrow.Array.html). The arrays in one `dict` all have the same length, and position `i` in each array belongs to the same row. If a category has no rows in this update, the accessor returns an empty `dict`.
 
 | Method          | Returns                                                                            |
 | --------------- | ---------------------------------------------------------------------------------- |
@@ -104,7 +112,11 @@ Keep these points in mind:
 - **The first update is the initial snapshot.** When the subscription starts, every row currently in the table arrives as an addition. If the table is empty at that moment, the first update has no rows.
 - **Modified rows include every requested column.** A row is reported as modified if any of its columns changed, and `modified` returns all the columns you ask for, not just the ones that changed. This means you can always read a key column alongside the changed values.
 - **`modified` and `modified_prev` line up by position.** Use them together to see how each row changed — for example, to compute a price move.
-- **Several server changes can arrive in one update.** The server batches changes and sends them at most once per update interval, which is one second by default. A row that changed three times in that second appears once, with its latest value.
+- **One update can combine several changes to the same row.** The server merges all the changes from an update interval, so each row appears at most once per category:
+  - A row modified several times appears once in `modified`, with its latest values. `modified_prev` holds its values from before the first of those changes.
+  - A row added and then modified appears only in `added`, with its latest values. It isn't also in `modified`.
+  - A row added and then removed doesn't appear at all.
+  - A row removed and then added again appears in both `removed` and `added`. Apply removals before additions so that the row ends up present.
 
 ### Request only the columns you need
 
@@ -124,7 +136,8 @@ Each accessor has a `_chunks` variant — `added_chunks`, `removed_chunks`, `mod
 ```python skip-test
 def on_update(update: TableUpdate) -> None:
     for chunk in update.added_chunks(10_000, ["Sym", "Price"]):
-        process(chunk)  # Each chunk is a dict of column name to a PyArrow array of up to 10,000 rows.
+        # Each chunk maps column names to PyArrow arrays of up to 10,000 rows.
+        process(chunk)
 ```
 
 ### Data types
@@ -153,10 +166,10 @@ The package doesn't support other column types, such as `BigDecimal`. Drop or co
 
 A subscription always covers every row and every column of the table you pass to `listen`. Shape the table on the server first, so that only the data you need crosses the network:
 
-- [`where`](../reference/table-operations/filter/where.md) to keep only relevant rows.
-- [`view`](../reference/table-operations/select/view.md) to keep only relevant columns.
-- [`tail`](../reference/table-operations/filter/tail.md) to keep only the most recent rows.
-- [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) to keep only the latest row per key.
+- [`where`](../reference/table-operations/filter/where.md) to keep only relevant rows
+- [`view`](../reference/table-operations/select/view.md) to keep only relevant columns
+- [`tail`](../reference/table-operations/filter/tail.md) to keep only the most recent rows
+- [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) to keep only the latest row per key
 
 ```python skip-test
 trades = session.open_table("trades")
@@ -239,7 +252,7 @@ class QuoteBook(TableListener):
                 self.quotes[sym] = (price, size)
             for (sym, old_price, _), (_, price, size) in zip(rows(prev), rows(curr)):
                 self.quotes[sym] = (price, size)
-                if abs(price - old_price) >= 4.0:
+                if None not in (old_price, price) and abs(price - old_price) >= 4.0:
                     print(f"ALERT {sym}: {old_price:.2f} -> {price:.2f}")
 
     def snapshot(self) -> dict[str, tuple[float, int]]:
@@ -272,7 +285,7 @@ finally:
     session.close()
 ```
 
-The server table uses [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md), so each new symbol arrives as an added row and later trades for that symbol arrive as modified rows. The listener reads `Sym` with every modification even though only `Price` and `Size` change, which is what lets it find the right entry in the `dict`.
+The server table uses [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md), so each new symbol arrives as an added row and later trades for that symbol arrive as modified rows. If a symbol's first trade and later trades fall in the same update interval, only an added row arrives, with the latest trade. The listener handles that case without special code because it stores every added row. The listener reads `Sym` with every modification even though only `Price` and `Size` change, which is what lets it find the right entry in the `dict`.
 
 ## Related documentation
 
