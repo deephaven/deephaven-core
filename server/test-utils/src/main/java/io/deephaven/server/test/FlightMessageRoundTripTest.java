@@ -1642,4 +1642,129 @@ public abstract class FlightMessageRoundTripTest {
             Assert.eq(arr[2][1], "arr[2][1]", 43.43);
         }
     }
+
+    // region gRPC message compression
+
+    private static final Metadata.Key<String> GRPC_ENCODING =
+            Metadata.Key.of("grpc-encoding", Metadata.ASCII_STRING_MARSHALLER);
+
+    /**
+     * Records the {@code grpc-encoding} of every DoGet and DoExchange response, in call order.
+     */
+    private static final class ResponseEncodingRecorder implements ClientInterceptor {
+        private final List<String> encodings = Collections.synchronizedList(new ArrayList<>());
+
+        @Override
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+                final MethodDescriptor<ReqT, RespT> method,
+                final CallOptions callOptions,
+                final Channel next) {
+            final String methodName = method.getBareMethodName();
+            if (!"DoGet".equals(methodName) && !"DoExchange".equals(methodName)) {
+                return next.newCall(method, callOptions);
+            }
+            return new ForwardingClientCall.SimpleForwardingClientCall<>(next.newCall(method, callOptions)) {
+                @Override
+                public void start(final Listener<RespT> responseListener, final Metadata headers) {
+                    super.start(
+                            new ForwardingClientCallListener.SimpleForwardingClientCallListener<>(responseListener) {
+                                @Override
+                                public void onHeaders(final Metadata responseHeaders) {
+                                    final String encoding = responseHeaders.get(GRPC_ENCODING);
+                                    encodings.add(methodName + "=" + (encoding == null ? "identity" : encoding));
+                                    super.onHeaders(responseHeaders);
+                                }
+                            }, headers);
+                }
+            };
+        }
+    }
+
+    /**
+     * Fetches {@code table} with a DoGet, a Barrage snapshot and a Barrage subscription from a Java client that
+     * advertises {@code acceptCompression}, checks the data, and returns the response encodings in that order.
+     */
+    private List<String> fetchWithCompression(final Table table, final Set<String> acceptCompression)
+            throws Exception {
+        final String tableName = "compressionTestTable";
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
+
+        // closing the client session closes the server session it authenticated as, so use a fresh one per fetch
+        final SessionState fetchSession = sessionService.newSession(new AuthContext.SuperUser());
+        final ResponseEncodingRecorder recorder = new ResponseEncodingRecorder();
+        final ClientConfig config = ClientConfig.builder()
+                .target(io.deephaven.uri.DeephavenTarget.of(java.net.URI.create("dh+plain://localhost:" + localPort)))
+                .acceptCompression(acceptCompression)
+                .build();
+        final ManagedChannel channel = ChannelHelper.channelBuilder(config)
+                .intercept(recorder)
+                .intercept(new TestAuthClientInterceptor(fetchSession.getExpiration().token.toString()))
+                .build();
+        try (final SessionImpl session = SessionImpl.create(
+                SessionImplConfig.from(SessionConfig.builder().build(), channel, clientScheduler));
+                final RootAllocator sessionAllocator = new RootAllocator();
+                final BarrageSession barrageSession = BarrageSession.of(session, sessionAllocator, channel);
+                final TableHandle handle = session.execute(TicketTable.fromQueryScopeField(tableName))) {
+
+            long doGetRows = 0;
+            try (final FlightStream stream = barrageSession.stream(handle)) {
+                while (stream.next()) {
+                    doGetRows += stream.getRoot().getRowCount();
+                }
+            }
+            assertEquals(table.size(), doGetRows);
+
+            final Table snapshot = barrageSession.snapshot(handle,
+                    io.deephaven.extensions.barrage.BarrageSnapshotOptions.builder().build()).entireTable().get();
+            io.deephaven.engine.testutil.TstUtils.assertTableEquals(table, snapshot);
+
+            final Table subscribed = barrageSession.subscribe(handle,
+                    io.deephaven.extensions.barrage.BarrageSubscriptionOptions.builder().build()).entireTable().get();
+            io.deephaven.engine.testutil.TstUtils.assertTableEquals(table, subscribed);
+        } finally {
+            channel.shutdownNow();
+            channel.awaitTermination(10, TimeUnit.SECONDS);
+        }
+        return new ArrayList<>(recorder.encodings);
+    }
+
+    private static Table compressionTestTable(final String allowedCompression) {
+        final Table table = TableTools.emptyTable(50_000).update("I = i", "S = `sym` + (i % 32)", "D = i * 0.5");
+        return allowedCompression == null
+                ? table
+                : table.withAttributes(Map.of(Table.BARRAGE_COMPRESSION_ATTRIBUTE, allowedCompression));
+    }
+
+    private static List<String> expectedEncodings(final String encoding) {
+        return List.of("DoGet=" + encoding, "DoExchange=" + encoding, "DoExchange=" + encoding);
+    }
+
+    @Test
+    public void testCompressionUsesFirstAllowedEncodingTheClientAccepts() throws Exception {
+        final Table table = compressionTestTable("zstd,snappy,gzip");
+        assertEquals(expectedEncodings("zstd"), fetchWithCompression(table, Set.of("gzip", "zstd", "snappy")));
+        assertEquals(expectedEncodings("snappy"), fetchWithCompression(table, Set.of("gzip", "snappy")));
+        assertEquals(expectedEncodings("gzip"), fetchWithCompression(table, Set.of("gzip")));
+    }
+
+    @Test
+    public void testCompressionFallsBackToIdentity() throws Exception {
+        // the client accepts nothing the table allows
+        assertEquals(expectedEncodings("identity"),
+                fetchWithCompression(compressionTestTable("zstd"), Set.of("gzip", "snappy")));
+        // the client accepts nothing at all
+        assertEquals(expectedEncodings("identity"),
+                fetchWithCompression(compressionTestTable("zstd,gzip"), Set.of()));
+        // the table does not allow compression
+        assertEquals(expectedEncodings("identity"),
+                fetchWithCompression(compressionTestTable(null), Set.of("gzip", "zstd", "snappy")));
+    }
+
+    @Test
+    public void testMalformedCompressionAttributeIsIgnored() throws Exception {
+        assertEquals(expectedEncodings("identity"),
+                fetchWithCompression(compressionTestTable("zstd,lz4"), Set.of("gzip", "zstd", "snappy")));
+    }
+
+    // endregion gRPC message compression
 }

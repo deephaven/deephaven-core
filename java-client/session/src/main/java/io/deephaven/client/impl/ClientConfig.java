@@ -4,13 +4,16 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.annotations.CopyableStyle;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.uri.DeephavenTarget;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The client configuration encapsulates the configuration to created a {@link io.grpc.ManagedChannel}.
@@ -61,6 +64,18 @@ public abstract class ClientConfig {
     }
 
     /**
+     * The gRPC message encodings this client advertises in {@code grpc-accept-encoding}, and so allows the server to
+     * compress responses with. Any of {@code gzip}, {@code zstd} and {@code snappy}; defaults to all three. The server
+     * only compresses tables that allow it, and picks the encoding from the table's own list. An empty set requests
+     * uncompressed responses.
+     */
+    @Default
+    @SuppressWarnings("immutables:untype") // a defaulted set is set as a whole, without add methods
+    public Set<String> acceptCompression() {
+        return Set.copyOf(CompressionCodecs.SUPPORTED);
+    }
+
+    /**
      * Returns or creates a client config with {@link #ssl()} as {@code ssl}.
      */
     public abstract ClientConfig withSsl(SSLConfig ssl);
@@ -69,6 +84,11 @@ public abstract class ClientConfig {
      * Returns or creates a client config with {@link #userAgent()} as {@code userAgent}.
      */
     public abstract ClientConfig withUserAgent(String userAgent);
+
+    @Check
+    final void checkAcceptCompression() {
+        acceptCompression().forEach(CompressionCodecs::checkSupported);
+    }
 
     public interface Builder {
 
@@ -85,6 +105,8 @@ public abstract class ClientConfig {
         Builder putAllExtraHeaders(Map<String, ? extends String> entries);
 
         Builder maxInboundMessageSize(int maxInboundMessageSize);
+
+        Builder acceptCompression(Set<String> acceptCompression);
 
         ClientConfig build();
     }

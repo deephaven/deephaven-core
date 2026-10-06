@@ -385,6 +385,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.Sort));
 
+        // only survives coalescing; a derived table must opt in to compression explicitly
+        tempMap.put(BARRAGE_COMPRESSION_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.Coalesce));
+
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
 

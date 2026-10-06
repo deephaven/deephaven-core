@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.uri;
 
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.client.impl.*;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
@@ -47,6 +48,16 @@ public final class BarrageTableResolver implements UriResolver {
             Configuration.getInstance().getIntegerWithDefault(
                     "BarrageTableResolver.maxInboundMessageSize",
                     100 * 1024 * 1024); // 100MB default limit
+
+    /**
+     * The gRPC message encodings that remote-table sessions advertise, as a comma-separated list of {@code gzip},
+     * {@code zstd} and {@code snappy}. When unset, sessions use the {@link ClientConfig#acceptCompression()} default;
+     * when blank, they advertise none and always receive uncompressed data.
+     */
+    public static final String ACCEPT_COMPRESSION_PROPERTY = "BarrageTableResolver.acceptCompression";
+
+    private static final String ACCEPT_COMPRESSION =
+            Configuration.getInstance().getStringWithDefault(ACCEPT_COMPRESSION_PROPERTY, null);
 
     /**
      * The default options, which uses {@link BarrageSubscriptionOptions#useDeephavenNulls()}.
@@ -290,10 +301,13 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(DeephavenTarget target) {
-        return newSession(ClientConfig.builder()
+        final ClientConfig.Builder builder = ClientConfig.builder()
                 .target(target)
-                .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE)
-                .build());
+                .maxInboundMessageSize(MAX_INBOUND_MESSAGE_SIZE);
+        if (ACCEPT_COMPRESSION != null) {
+            builder.acceptCompression(Set.copyOf(CompressionCodecs.parseList(ACCEPT_COMPRESSION)));
+        }
+        return newSession(builder.build());
     }
 
     private BarrageSession newSession(ClientConfig config) {

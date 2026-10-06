@@ -229,6 +229,16 @@ public interface Table extends
      * See {@code org.apache.arrow.vector.types.pojo.Schema}.
      */
     String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
+    /**
+     * Set this attribute to a comma-separated, ordered list of gRPC message encodings (any of {@code gzip},
+     * {@code zstd} and {@code snappy}, e.g. {@code "zstd,snappy,gzip"}) to allow compressing this table's Barrage
+     * snapshots and subscriptions. The server uses the first listed encoding that the client advertises in its
+     * {@code grpc-accept-encoding} header, and sends uncompressed data when none match. Tables without this attribute
+     * are never compressed.
+     * <p>
+     * The attribute is not copied to tables derived from this one, except by coalescing an uncoalesced source table.
+     */
+    String BARRAGE_COMPRESSION_ATTRIBUTE = "BarrageCompression";
 
     // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key

@@ -11,6 +11,8 @@ import io.deephaven.uri.DeephavenUri;
 import picocli.CommandLine.Option;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ConnectOptions {
 
@@ -52,6 +54,11 @@ public class ConnectOptions {
     @Option(names = {"--header"})
     Map<String, String> headers;
 
+    @Option(names = {"--accept-compression"}, split = ",",
+            description = "The gRPC message encodings to advertise (gzip, zstd, snappy); "
+                    + "defaults to all three. Pass an empty value to advertise none.")
+    Set<String> acceptCompression;
+
     public ClientConfig config() {
         final Builder builder = ClientConfig.builder().target(target);
         if (userAgent != null) {
@@ -68,6 +75,12 @@ public class ConnectOptions {
         }
         if (headers != null) {
             builder.putAllExtraHeaders(headers);
+        }
+        if (acceptCompression != null) {
+            // an empty --accept-compression value parses as a single blank entry
+            builder.acceptCompression(acceptCompression.stream()
+                    .filter(name -> !name.isBlank())
+                    .collect(Collectors.toSet()));
         }
         return builder.build();
     }
