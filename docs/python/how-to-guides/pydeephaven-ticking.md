@@ -194,7 +194,11 @@ Each `TableListenerHandle` runs its own background thread. Your listener's metho
 
 If `on_update` raises an exception while the subscription is running, the subscription **ends** and the listener's `on_error` method runs with the exception. No more updates arrive after that. The default `on_error` prints the error.
 
-`on_error` only covers failures during active background processing, after `start` has launched the background thread. Errors from opening the connection or writing the subscription request — the setup `start` performs on the calling thread before launching that thread — raise synchronously out of `start` instead. A subscription the server rejects, since that's detected while reading the stream, is surfaced to `on_error`. The background thread also treats a clean end of the stream as normal completion rather than an error, so it stops quietly without calling `on_error`.
+`on_error` only covers failures during active background processing, after `start` has launched the background thread:
+
+- **Synchronous setup failures raise directly from `start`.** Opening the connection and writing the subscription request happen on the calling thread, before the background thread exists, so errors there propagate out of `start` as normal exceptions instead of reaching `on_error`.
+- **Background stream failures reach `on_error`.** Once the background thread is running, failures while reading the stream — including a subscription the server rejects — are caught there and passed to `on_error`.
+- **A clean end of the stream is not an error.** The background thread treats it as normal completion and stops quietly without calling `on_error`.
 
 When your listener is a function, pass an error callback as the third argument to `listen`:
 
@@ -284,13 +288,15 @@ quotes = (
 
 book = QuoteBook()
 handle = listen(quotes, book)
-handle.start()
 try:
-    for _ in range(10):
-        time.sleep(3)
-        print(book.snapshot())
+    handle.start()
+    try:
+        for _ in range(10):
+            time.sleep(3)
+            print(book.snapshot())
+    finally:
+        handle.stop()
 finally:
-    handle.stop()
     session.close()
 ```
 

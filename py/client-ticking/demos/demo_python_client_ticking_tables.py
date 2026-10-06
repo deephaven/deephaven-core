@@ -142,23 +142,25 @@ def main() -> None:
     )
     book = LiveQuoteBook()
     handle = listen(make_quotes(session), book)
-    handle.start()
 
     try:
-        deadline = time.monotonic() + RUN_SECONDS
-        while time.monotonic() < deadline:
-            # Wake every 3 seconds, or right away if the listener fails.
-            if book.failed.wait(timeout=3):
-                print(f"Listener failed: {book.error}")
-                break
-            cycles, quotes = book.snapshot()
-            print(f"--- after {cycles} cycles ---")
-            for sym, q in quotes:
-                print(f"{sym:5} {q.price:8.2f} {q.size:5d}  ({q.updates} updates)")
-    except KeyboardInterrupt:
-        print("Interrupted")
+        handle.start()
+        try:
+            deadline = time.monotonic() + RUN_SECONDS
+            while time.monotonic() < deadline:
+                # Wake every 3 seconds, or right away if the listener fails.
+                if book.failed.wait(timeout=3):
+                    print(f"Listener failed: {book.error}")
+                    break
+                cycles, quotes = book.snapshot()
+                print(f"--- after {cycles} cycles ---")
+                for sym, q in quotes:
+                    print(f"{sym:5} {q.price:8.2f} {q.size:5d}  ({q.updates} updates)")
+        except KeyboardInterrupt:
+            print("Interrupted")
+        finally:
+            handle.stop()
     finally:
-        handle.stop()
         session.close()
 
 
