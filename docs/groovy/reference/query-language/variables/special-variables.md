@@ -33,7 +33,7 @@ The following table summarizes when each variable is safe to use:
 | `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
 | `k`                                          | static, add-only, blink    | append-only, ticking |
 | Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
-| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink              | append-only, ticking |
 
 > [!NOTE]
 > The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
