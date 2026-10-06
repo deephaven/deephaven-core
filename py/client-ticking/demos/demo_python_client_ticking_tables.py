@@ -13,13 +13,18 @@ symbol with last_by. Each update cycle adds rows (new symbols) and modifies rows
   * shares state with the main thread under a lock
   * reports errors through on_error and stops cleanly on Ctrl+C or after a time limit
 
-Requires a Deephaven server on localhost:10000 and the pydeephaven-ticking package.
+Requires Python 3.10 or later, a Deephaven server on localhost:10000, and the
+pydeephaven-ticking package.
 """
 from __future__ import annotations
 
+import sys
 import threading
 import time
 from dataclasses import dataclass
+
+if sys.version_info < (3, 10):
+    sys.exit("This demo requires Python 3.10 or later.")
 
 import pydeephaven as pyd
 from pydeephaven import TableListener, TableUpdate, listen
