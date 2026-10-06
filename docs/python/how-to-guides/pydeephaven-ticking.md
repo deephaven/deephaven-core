@@ -114,7 +114,7 @@ Each call to `on_update` receives a `TableUpdate` that describes the coalesced, 
 
 Keep these points in mind:
 
-- **The first update is the initial snapshot.** When the subscription starts, every row currently in the table arrives as an addition. If the table is empty at that moment, the first update has no rows.
+- **The first update is the initial snapshot.** When the subscription starts, every row currently in the table arrives as an addition. If the table is empty at that moment, the first update has no rows. **Blink tables are the exception**: the server always sends an empty initial snapshot for a blink table, even if rows are present at subscription time. Don't treat that first, empty update as the blink table's current contents — the first real rows arrive in later updates.
 - **Modified rows include every requested column.** A row is reported as modified if any of its columns changed, and `modified` returns all the columns you ask for, not just the ones that changed. This means you can always read a key column alongside the changed values.
 - **`modified` and `modified_prev` line up by position.** Use them together to see how each row changed — for example, to compute a price move.
 - **One update can combine several changes to the same row.** The server merges all the changes from an update interval, so each row appears at most once per category:
@@ -149,25 +149,26 @@ def on_update(update: TableUpdate) -> None:
 
 Deephaven column types map to these PyArrow types. Null values arrive as PyArrow nulls, which become `None` when you call `to_pylist`.
 
-| Deephaven type                                   | PyArrow type                      |
-| ------------------------------------------------ | --------------------------------- |
-| `byte`                                           | `int8`                            |
-| `short`                                          | `int16`                           |
-| `int`                                            | `int32`                           |
-| `long`                                           | `int64`                           |
-| `float`                                          | `float32`                         |
-| `double`                                         | `float64`                         |
-| `char`                                           | `uint16` (a number, not a string) |
-| `boolean`                                        | `bool`                            |
-| `String`                                         | `string`                          |
-| `Instant`                                        | `timestamp("ns", "UTC")`          |
-| `LocalDate`                                      | `date64`                          |
-| `LocalTime`                                      | `time64("ns")`                    |
-| Arrays/vectors of a type above (except `byte[]`) | `list` of the PyArrow type        |
+| Deephaven type                                   | PyArrow type                                     |
+| ------------------------------------------------ | ------------------------------------------------ |
+| `byte`                                           | `int8`                                           |
+| `short`                                          | `int16`                                          |
+| `int`                                            | `int32`                                          |
+| `long`                                           | `int64`                                          |
+| `float`                                          | `float32`                                        |
+| `double`                                         | `float64`                                        |
+| `char`                                           | `uint16` (a number, not a string)                |
+| `boolean`                                        | `bool`                                           |
+| `String`                                         | `string`                                         |
+| `Instant`                                        | `timestamp("ns", "UTC")`                         |
+| `ZonedDateTime`                                  | `timestamp("ns", "UTC")` (the zone is discarded) |
+| `LocalDate`                                      | `date64`                                         |
+| `LocalTime`                                      | `time64("ns")`                                   |
+| Arrays/vectors of a type above (except `byte[]`) | `list` of the PyArrow type                       |
 
 Other column types, such as enums or other custom objects, aren't unsupported outright — the server converts their values to their string representation, so they still arrive as PyArrow `string`.
 
-A smaller set of types fail instead: the server encodes `byte[]`, `BigDecimal`, and `BigInteger` columns as Arrow `binary`, which this package's schema conversion doesn't support. Subscribing to a table with one of these columns makes `start` raise. Drop or convert those columns on the server first — for example with [`view`](../reference/table-operations/select/view.md) — before you subscribe.
+A smaller set of types fail instead: the server encodes `byte[]`, `BigDecimal`, `BigInteger`, and `Schema` columns as Arrow `binary`, and `Duration`, `Period`, and `PeriodDuration` columns as Arrow `duration`/`interval` types — none of which this package's schema conversion supports. Because `start` converts the whole schema before it launches the background thread, a column with one of these types makes `start` raise synchronously, the same way `byte[]` does. Nested arrays and vectors (an array of arrays, or a vector of vectors) aren't supported either, for the same reason — only one level of `list` wrapping is supported. Drop or convert those columns on the server first — for example with [`view`](../reference/table-operations/select/view.md) — before you subscribe.
 
 ## Subscribe to less data
 
