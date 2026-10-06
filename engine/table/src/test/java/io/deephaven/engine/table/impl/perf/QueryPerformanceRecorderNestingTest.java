@@ -313,6 +313,29 @@ public class QueryPerformanceRecorderNestingTest {
     }
 
     /**
+     * An aborted query stays installed until its scope closes, so another query may be resumed on top of it in the
+     * meantime. Its entries are already closed, so there is nothing to pause, and the thread still comes back to it.
+     */
+    @Test
+    public void testResumingOverAnAbortedQueryStillHandsTheThreadBack() {
+        final QueryPerformanceRecorder outer = newQuery("outer");
+        final QueryPerformanceRecorder inner = suspendedQuery("inner");
+
+        try (final SafeCloseable ignored = outer.startQuery()) {
+            outer.abortQuery();
+            Assert.eq(outer.getState(), "outer.getState()", QueryState.INTERRUPTED);
+            assertCurrentRecorder(outer);
+            try (final SafeCloseable ignored2 = inner.resumeQuery()) {
+                assertCurrentRecorder(inner);
+                inner.endQuery();
+            }
+            assertCurrentRecorder(outer);
+            Assert.eqFalse(outer.endQuery(), "outer.endQuery()");
+        }
+        assertCurrentRecorder(QueryPerformanceRecorderState.DUMMY_RECORDER);
+    }
+
+    /**
      * Aborting the outer query while another is nested on top of it must terminate and leave the outer interrupted,
      * whether its time was going to the catch-all or to an open operation nugget, and the thread is still handed back.
      */

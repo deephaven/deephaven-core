@@ -187,9 +187,13 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     }
 
     /**
-     * Pauses this query's accruing entry while another query runs on top of it on this thread.
+     * Pauses this query's accruing entry while another query runs on top of it on this thread. An aborted query stays
+     * installed until its scope closes, with its entries already closed, so there is nothing to pause for it.
      */
     private synchronized void onNestedQueryResumed() {
+        if (state == QueryState.INTERRUPTED) {
+            return;
+        }
         Assert.eq(state, "state", QueryState.RUNNING, "QueryState.RUNNING");
         Assert.eqFalse(pausedForNestedQuery, "pausedForNestedQuery");
         pausedForNestedQuery = true;
