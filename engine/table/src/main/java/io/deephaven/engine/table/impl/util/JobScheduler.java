@@ -271,49 +271,48 @@ public interface JobScheduler {
                 final boolean callerParticipates) {
             // Increment this once in order to maintain >=1 until all tasks have been submitted
             incrementReferenceCount();
-            final List<TaskInvoker> submitted = new ArrayList<>();
+            // every invoker made here: the caller's own, when it takes part, then those submitted to the scheduler
+            final List<TaskInvoker> invokers = new ArrayList<>();
             try {
                 final int numTaskInvokers = Math.min(maxThreads, scheduler.threadCount());
                 final int numSubmitted = callerParticipates ? numTaskInvokers - 1 : numTaskInvokers;
+                if (callerParticipates) {
+                    // Reserve the caller's own task before any helper can start, so that the caller always takes part
+                    // even when a helper would otherwise drain the whole range first.
+                    final TaskInvoker own = makeTaskInvoker(taskThreadContextFactory, Math.max(0, numSubmitted));
+                    if (own != null) {
+                        invokers.add(own);
+                    }
+                }
                 for (int tii = 0; tii < numSubmitted; ++tii) {
                     final TaskInvoker taskInvoker = makeTaskInvoker(taskThreadContextFactory, tii);
                     if (taskInvoker == null) {
                         break;
                     }
-                    submitted.add(taskInvoker);
-                    try {
-                        scheduler.submit(executionContext, taskInvoker::startAndExecute, description,
-                                IterationManager::onUnexpectedJobError);
-                    } catch (Throwable t) {
-                        // The scheduler may not have taken the invoker, so nothing else would release its context and
-                        // its reference to this manager. It is in the submitted list, and the catch below records the
-                        // failure and then closes it along with every other submitted invoker that has not started; a
-                        // scheduler that ran it on this thread before failing has already started it, and it closed
-                        // itself.
-                        throw t;
-                    }
+                    // In the list before it is submitted: should the submission fail, the scheduler may not have taken
+                    // it, and the catch below records the failure and then closes it along with every other invoker
+                    // that has not started. A scheduler that ran it on this thread before failing started it, and it
+                    // closed itself.
+                    invokers.add(taskInvoker);
+                    scheduler.submit(executionContext, taskInvoker::startAndExecute, description,
+                            IterationManager::onUnexpectedJobError);
                 }
                 if (callerParticipates) {
+                    // The caller runs its own invoker first, then any submitted one that has not started yet: a
+                    // blocked caller must never wait on an invoker that has not started, since an executor that
+                    // queues may start one only after the caller has run every other task, or never, if it is queued
+                    // behind the caller's own thread. One the scheduler starts later finds it already taken.
                     try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
-                        final TaskInvoker taskInvoker =
-                                makeTaskInvoker(taskThreadContextFactory, Math.max(0, numSubmitted));
-                        if (taskInvoker != null && taskInvoker.tryStart()) {
-                            taskInvoker.execute();
-                        }
-                        // A blocked caller must never wait on an invoker that has not started: an executor that queues
-                        // may start one only after the caller has run every other task, or never, if it is queued
-                        // behind the caller's own thread. So the caller runs any submitted invoker that has not
-                        // started yet itself, and one that the scheduler starts later finds it already taken.
-                        for (final TaskInvoker helper : submitted) {
-                            if (helper.tryStart()) {
-                                helper.execute();
+                        for (final TaskInvoker taskInvoker : invokers) {
+                            if (taskInvoker.tryStart()) {
+                                taskInvoker.execute();
                             }
                         }
                     }
                 }
             } catch (Exception e) {
                 onTaskError(e);
-                abandonUnstarted(submitted);
+                abandonUnstarted(invokers);
                 throw e;
             } catch (Error e) {
                 // An Error from the context factory or the scheduler, OutOfMemoryError when a thread cannot be made in
@@ -322,7 +321,7 @@ public interface JobScheduler {
                 if (exception.get() == null) {
                     onTaskError(asDeliverableException(e));
                 }
-                abandonUnstarted(submitted);
+                abandonUnstarted(invokers);
                 throw e;
             } finally {
                 decrementReferenceCount();
@@ -330,13 +329,13 @@ public interface JobScheduler {
         }
 
         /**
-         * After a failure to start the iteration, which has already been recorded: close every submitted invoker that
+         * After a failure to start the iteration, which has already been recorded: close every invoker made for it that
          * has not started, releasing its context and its reference, so that the iteration ends without waiting for jobs
          * a queueing scheduler may start late, or never, if they are queued behind this thread. One that the scheduler
          * starts later finds itself taken and does nothing.
          */
-        private void abandonUnstarted(@NotNull final List<TaskInvoker> submitted) {
-            for (final TaskInvoker taskInvoker : submitted) {
+        private void abandonUnstarted(@NotNull final List<TaskInvoker> invokers) {
+            for (final TaskInvoker taskInvoker : invokers) {
                 if (taskInvoker.tryStart()) {
                     taskInvoker.closeIfOpen();
                 }

@@ -270,8 +270,14 @@ public class TestInvokeParallel {
         assertThat(finished.get()).isEqualTo(16);
     }
 
+    /**
+     * An executor that refuses every job leaves all the work to the calling thread, which runs every task exactly once:
+     * its own invoker's, and the refused ones, which run inline as they are submitted. The order then differs from the
+     * index order, since the caller reserves its own task before submitting the others; a scheduler of one thread
+     * submits nothing and runs the tasks in order.
+     */
     @Test
-    public void testRefusingExecutorRunsEverythingOnTheCallingThreadInOrder() {
+    public void testRefusingExecutorRunsEverythingOnTheCallingThread() {
         final Executor refusing = command -> {
             throw new RejectedExecutionException("no threads to spare");
         };
@@ -284,7 +290,7 @@ public class TestInvokeParallel {
 
         outcome.assertCompleted();
         assertThat(threads).containsExactly(Thread.currentThread());
-        assertThat(order).isEqualTo(items(20));
+        assertThat(order).containsExactlyInAnyOrderElementsOf(items(20));
     }
 
     /** A task may invoke a nested iteration on the same pool even when the pool has no thread left. */
@@ -790,7 +796,8 @@ public class TestInvokeParallel {
                 assertThatThrownBy(() -> new ExecutorJobScheduler(queued::add, 4).invokeParallel(
                         ExecutionContext.getContext(), null,
                         () -> {
-                            if (made.incrementAndGet() > 1) {
+                            // the caller's own context, then the first helper's; the second helper's fails
+                            if (made.incrementAndGet() > 2) {
                                 throw noContext;
                             }
                             contextsOpen.incrementAndGet();

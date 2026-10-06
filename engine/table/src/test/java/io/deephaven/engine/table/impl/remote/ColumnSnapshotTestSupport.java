@@ -34,13 +34,13 @@ final class ColumnSnapshotTestSupport {
     private static final int COLUMNS = 4;
     private static final int ROWS = 16;
     /**
-     * The first column, so that under a parallel snapshot the intercepted fill always runs on a scheduler thread: the
-     * first column job goes to the first scheduler thread, while the invoking thread takes the last of the initial
-     * ones, and the other columns' fills wait until the intercepted fill has begun, so the invoking thread cannot run
-     * out of work and take the first job over before that thread starts it. The tests that interrupt the invoking
-     * thread rely on it being the one waiting, not the one running the intercepted fill.
+     * The second column, so that under a parallel snapshot the intercepted fill always runs on a scheduler thread: the
+     * invoking thread reserves the first column job for itself, the second goes to the first scheduler thread, and the
+     * other columns' fills wait until the intercepted fill has begun, so the invoking thread cannot run out of work and
+     * take the second job over before that thread starts it. The tests that interrupt the invoking thread rely on it
+     * being the one waiting, not the one running the intercepted fill.
      */
-    private static final int INTERCEPTED_COLUMN_INDEX = 0;
+    private static final int INTERCEPTED_COLUMN_INDEX = 1;
 
     /** How long the other columns' fills wait for the intercepted fill to begin before going ahead regardless. */
     private static final long INTERCEPTED_START_WAIT_SECONDS = 30;
