@@ -34,9 +34,10 @@ import java.util.function.Supplier;
  * thread for inclusion in overall task metrics.
  *
  * <p>
- * The iteration methods come in two forms. {@link #iterateParallel} and {@link #iterateSerial} return at once and
- * report the outcome through callbacks. {@link #invokeParallel} and {@link #invokeSerial} hold the calling thread,
- * which runs tasks alongside the scheduler's threads, and return or throw only once the iteration is over.
+ * The iteration methods come in two forms. {@link #iterateParallel} and {@link #iterateSerial} report the outcome
+ * through callbacks and may return before the iteration is over, although a scheduler that runs jobs on the submitting
+ * thread can finish it first. {@link #invokeParallel} and {@link #invokeSerial} hold the calling thread, which runs
+ * tasks alongside the scheduler's threads, and return or throw only once the iteration is over.
  * </p>
  */
 public interface JobScheduler {
@@ -850,8 +851,8 @@ public interface JobScheduler {
 
     /**
      * Iterates over a range of values in parallel as {@link #iterateParallel} does, except that the calling thread runs
-     * tasks too, and this method returns only once the iteration is over. Where {@code iterateParallel} returns at once
-     * and reports through its callbacks, this holds the calling thread.
+     * tasks too, and this method returns only once the iteration is over. Where {@code iterateParallel} reports through
+     * its callbacks and may return first, this holds the calling thread.
      *
      * <p>
      * <b>Participation.</b> Up to {@code min(count, threadCount()) - 1} task invokers are submitted to the scheduler,
@@ -922,12 +923,13 @@ public interface JobScheduler {
     }
 
     /**
-     * Iterates over a range of values serially as {@link #iterateSerial} does, except that the calling thread runs the
-     * steps, and this method returns only once the iteration is over. The steps run one at a time, in order, and the
-     * next begins only once the previous has called {@code resume}. A step may hand its completion to nested work that
-     * runs in parallel beneath it, such as an {@link #iterateParallel} on this scheduler given {@code resume} as its
-     * completion and the nested error consumer as its error handler; the thread that finishes that work then runs the
-     * next step, and the caller waits here for the whole chain.
+     * Iterates over a range of values serially as {@link #iterateSerial} does, except that the calling thread starts
+     * the steps and runs each one that the step before it completed on this thread, and this method returns only once
+     * the iteration is over. The steps run one at a time, in order, and the next begins only once the previous has
+     * called {@code resume}. A step may hand its completion to nested work that runs in parallel beneath it, such as an
+     * {@link #iterateParallel} on this scheduler given {@code resume} as its completion and the nested error consumer
+     * as its error handler; the thread that finishes that work then runs the next step, and the caller waits here for
+     * the whole chain.
      *
      * <p>
      * In every other respect, the return point, the callbacks, what is thrown, interruption, and which schedulers allow
