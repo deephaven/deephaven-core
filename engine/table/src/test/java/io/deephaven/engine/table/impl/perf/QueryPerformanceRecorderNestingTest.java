@@ -292,6 +292,7 @@ public class QueryPerformanceRecorderNestingTest {
             catchAll.assertCounts(1, 0, "running before the nested query");
             try (final SafeCloseable ignored2 = inner.resumeQuery()) {
                 catchAll.assertCounts(1, 1, "paused while the nested query runs");
+                Thread.sleep(INNER_WORK_MILLIS);
                 inner.endQuery();
                 catchAll.assertCounts(2, 1, "restarted once the thread is handed back");
             }
@@ -299,7 +300,7 @@ public class QueryPerformanceRecorderNestingTest {
             outer.endQuery();
             catchAll.assertCounts(2, 2, "closed with the outer query");
         }
-        assertAccruedAtLeast(factory.catchAlls.get(0), OUTER_WORK_MILLIS, "outer catch-all after the nested query");
+        assertAccruedOuterWorkOnly(factory.catchAlls.get(0), "outer catch-all");
     }
 
     /** As above, for an outer query whose time is going to an open operation nugget rather than the catch-all. */
@@ -314,13 +315,14 @@ public class QueryPerformanceRecorderNestingTest {
             operation.assertCounts(1, 0, "running before the nested query");
             try (final SafeCloseable ignored2 = inner.resumeQuery()) {
                 operation.assertCounts(1, 1, "paused while the nested query runs");
+                Thread.sleep(INNER_WORK_MILLIS);
                 inner.endQuery();
                 operation.assertCounts(2, 1, "restarted once the thread is handed back");
             }
             Thread.sleep(OUTER_WORK_MILLIS);
             operation.close();
             operation.assertCounts(2, 2, "closed");
-            assertAccruedAtLeast(operation, OUTER_WORK_MILLIS, "outer operation nugget after the nested query");
+            assertAccruedOuterWorkOnly(operation, "outer operation nugget");
             outer.endQuery();
         }
     }
@@ -379,11 +381,17 @@ public class QueryPerformanceRecorderNestingTest {
     }
 
     private static final long OUTER_WORK_MILLIS = 20;
+    private static final long INNER_WORK_MILLIS = 200;
 
-    /** A lower bound only: a stall can only make the entry accrue more, never less. */
-    private static void assertAccruedAtLeast(final QueryPerformanceNugget nugget, final long millis,
-            final String what) {
-        Assert.geq(nugget.getUsageNanos() / 1_000_000, what + " usage millis", millis, "millis");
+    /**
+     * The entry must have accrued the outer work done after the nested query, and not the nested query's own work. The
+     * upper bound leaves the whole nested duration as margin for a stall in the outer segments.
+     */
+    private static void assertAccruedOuterWorkOnly(final QueryPerformanceNugget nugget, final String what) {
+        final long usageMillis = nugget.getUsageNanos() / 1_000_000;
+        Assert.geq(usageMillis, what + " usage millis", OUTER_WORK_MILLIS, "OUTER_WORK_MILLIS");
+        Assert.lt(usageMillis, what + " usage millis", OUTER_WORK_MILLIS + INNER_WORK_MILLIS,
+                "OUTER_WORK_MILLIS + INNER_WORK_MILLIS");
     }
 
     /** A nugget that counts how often it was started and ended, so a test can see it paused and restarted. */

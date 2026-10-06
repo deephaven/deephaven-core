@@ -181,7 +181,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         if (outer != null) {
             QueryPerformanceRecorderState.setInstance(outer);
             if (outer instanceof QueryPerformanceRecorderImpl) {
-                ((QueryPerformanceRecorderImpl) outer).onNestedQueryLeft();
+                ((QueryPerformanceRecorderImpl) outer).onNestedQueryEnd();
             }
         }
     }
@@ -190,7 +190,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      * Pauses this query's accruing entry while another query runs on top of it on this thread. An aborted query stays
      * installed until its scope closes, with its entries already closed, so there is nothing to pause for it.
      */
-    private synchronized void onNestedQueryResumed() {
+    private synchronized void onNestedQueryBegin() {
         if (state == QueryState.INTERRUPTED) {
             return;
         }
@@ -204,7 +204,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
      * Resumes this query's accruing entry once the query that was running on top of it has handed the thread back,
      * unless this query was aborted meanwhile, which already closed the entry.
      */
-    private synchronized void onNestedQueryLeft() {
+    private synchronized void onNestedQueryEnd() {
         if (!pausedForNestedQuery) {
             return;
         }
@@ -254,7 +254,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         }
         outerInstance = current == QueryPerformanceRecorderState.DUMMY_RECORDER ? null : current;
         if (outerInstance instanceof QueryPerformanceRecorderImpl) {
-            ((QueryPerformanceRecorderImpl) outerInstance).onNestedQueryResumed();
+            ((QueryPerformanceRecorderImpl) outerInstance).onNestedQueryBegin();
         }
         final int thisInstallation = ++installation;
         QueryPerformanceRecorderState.setInstance(this);
