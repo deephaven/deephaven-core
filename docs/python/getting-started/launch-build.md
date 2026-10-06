@@ -51,7 +51,7 @@ ls gradlew
 
 ### Docker
 
-Building Deephaven from source requires [Docker](https://docs.docker.com/get-docker/) version 20.10.8 or later. The Gradle build uses Docker to build the web UI and the Python wheel, so the Docker daemon must be running before you run any `./gradlew` command. On Windows, enable Docker's WSL 2 integration.
+Building Deephaven from source requires [Docker](https://docs.docker.com/get-docker/) version 20.10.8 or later. The Gradle build uses Docker to build the web UI and the Python wheel, so the Docker daemon must be running before you run the `./gradlew` commands in this guide. On Windows, enable Docker's WSL 2 integration.
 
 You can check your Docker version with:
 

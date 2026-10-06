@@ -117,7 +117,7 @@ services:
 
 ### Add more memory
 
-The following deployment tell the server to allocate 8GB of heap memory instead of the default of 4GB.
+The following deployment tells the server to allocate 8GB of heap memory.
 
 ```sh
 docker create --name deephaven -p 10000:10000 --env START_OPTS=-Xmx8g ghcr.io/deephaven/server-slim:latest
@@ -211,23 +211,22 @@ services:
 
 ### Build a custom image
 
-Custom Docker deployments often require things that cannot be done in a YAML file or Docker command. For instance, it is not possible to install a Python package this way. Such deployments typically extend a Docker image using both a [Dockerfile](https://docs.docker.com/reference/dockerfile/) and a [docker-compose.yml](https://docs.docker.com/compose/) file.
+Custom Docker deployments often require things that cannot be done in a YAML file or Docker command alone. For instance, you may want Java libraries built into the image so that every container started from it can use them without extra volume mounts. Such deployments typically extend a Docker image using both a [Dockerfile](https://docs.docker.com/reference/dockerfile/) and a [docker-compose.yml](https://docs.docker.com/compose/) file.
 
-The following subsections build a custom Deephaven application through Docker with several Python packages installed that do not ship with official Deephaven Docker images.
+The following subsections build a custom Deephaven application through Docker with Java libraries that do not ship with official Deephaven Docker images.
 
 > [!NOTE]
-> This example uses a flat directory structure - all files are placed in the same directory.
+> This example keeps the `Dockerfile`, the `docker-compose.yml` file, and the `jars` directory in the same directory.
 
 #### Dockerfile
 
 A [Dockerfile](https://docs.docker.com/reference/dockerfile/) dictates which Docker images to build containers from and what else distinguishes these containers from their standard counterparts.
 
-The following Dockerfile takes the latest Deephaven `server-slim` image and installs the Python packages defined in `requirements.txt` into the container created from it.
+The following Dockerfile takes the latest Deephaven `server-slim` image and copies the JARs in the local `jars` directory into `/apps/libs`, which the image adds to the JVM classpath at startup.
 
 ```Dockerfile
 FROM ghcr.io/deephaven/server-slim:latest
-COPY requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt && rm /requirements.txt
+COPY jars/ /apps/libs/
 ```
 
 #### docker-compose.yml

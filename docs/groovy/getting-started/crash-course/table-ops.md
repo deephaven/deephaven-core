@@ -4,14 +4,15 @@ title: Basic Table Operations
 
 This section will cover some table operations that appear in almost all queries. These table operations use query strings extensively, which are discussed in detail in the [next section](./query-strings.md).
 
-Table operations are integral to the Deephaven Query Language (DQL). The previous sections of the crash course used four:
+Table operations are integral to the Deephaven Query Language (DQL). The previous sections of the crash course used five:
 
 - [`updateView`](../../reference/table-operations/select/update-view.md), which adds columns to or modifies existing columns in a table.
 - [`sumBy`](../../reference/table-operations/group-and-aggregate/sumBy.md), which computes the sum of all columns in a table by a grouping column.
+- [`renameColumns`](../../reference/table-operations/select/rename-columns.md), which renames columns in a table.
 - [`sort`](../../reference/table-operations/sort/sort.md), which sorts a table by the given columns from least to greatest.
 - [`sortDescending`](../../reference/table-operations/sort/sort-descending.md), which sorts a table by the given columns from greatest to least.
 
-Table operations are an integral component of DQL. You've already seen several: [`updateView`](../../reference/table-operations/select/update-view.md), [`sumBy`](../../reference/table-operations/group-and-aggregate/sumBy.md), [`sort`](../../reference/table-operations/sort/sort.md) and [`sortDescending`](../../reference/table-operations/sort/sort-descending.md). You can think of these as different transformations being applied to the data in the table. This section will outline some basic table operations that make up the backbones of the most common queries.
+Table operations are an integral component of DQL. You've already seen several: [`updateView`](../../reference/table-operations/select/update-view.md), [`sumBy`](../../reference/table-operations/group-and-aggregate/sumBy.md), [`renameColumns`](../../reference/table-operations/select/rename-columns.md), [`sort`](../../reference/table-operations/sort/sort.md) and [`sortDescending`](../../reference/table-operations/sort/sort-descending.md). You can think of these as different transformations being applied to the data in the table. This section will outline some basic table operations that make up the backbones of the most common queries.
 
 Many of the code blocks in this notebook use the following table, `t`, as the root table. This is a simple table with 100 rows and contains only a `Timestamp` column.
 
