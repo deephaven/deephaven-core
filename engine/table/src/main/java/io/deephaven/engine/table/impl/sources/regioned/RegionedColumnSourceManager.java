@@ -54,7 +54,8 @@ public class RegionedColumnSourceManager
 
     /**
      * How many locations to test for data index or other location-level metadata before we give up and assume the
-     * location has no useful information for push-down purposes.
+     * location has no useful information for push-down purposes. The sampled locations are spread evenly across the
+     * selection.
      */
     private static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
             .getIntegerForClassWithDefault(RegionedColumnSourceManager.class, "pushdownLocationSamples", 5);
@@ -80,10 +81,10 @@ public class RegionedColumnSourceManager
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
 
     /**
-     * The column sources of this table as a map from column source to column name. This map should not be accessed
-     * directly, but rather through {@link #columnSourceToName()}.
+     * The column sources of this table as a map from column source to column name. Built once at construction, since
+     * {@link #columnSources} never changes afterward; it is read concurrently by {@link #makePushdownFilterContext}.
      */
-    private Map<ColumnSource<?>, String> columnSourceToName;
+    private final Map<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -189,6 +190,8 @@ public class RegionedColumnSourceManager
                     columnName,
                     componentFactory.createRegionedColumnSource(this, columnDefinition, codecMappings));
         }
+        columnSourceToName = columnSources.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getValue, Map.Entry::getKey, Assert::neverInvoked, IdentityHashMap::new));
 
         // Create the table that will hold the location data
         partitioningColumnValueSources = tableDefinition.getColumns().stream()
@@ -835,14 +838,54 @@ public class RegionedColumnSourceManager
         return attributes;
     }
 
-    private static int[] regionIndices(final RowSet selection, final int maxCount) {
+    private static int[] selectedRegionIndices(final RowSet selection) {
         try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
             final IntStream.Builder builder = IntStream.builder();
-            for (int i = 0; i < maxCount && rit.hasNext(); ++i) {
+            while (rit.hasNext()) {
                 builder.add(rit.nextInt());
             }
             return builder.build().toArray();
         }
+    }
+
+    /**
+     * Choose up to {@code maxCount} of the region indices spanned by {@code selection}, spread evenly from its first
+     * region to its last so that the sample is not biased towards the leading regions. Seeks directly to each target
+     * rather than visiting every region, so the cost is bounded by {@code maxCount}.
+     */
+    private static int[] sampleRegionIndices(final RowSet selection, final int maxCount) {
+        if (selection.isEmpty() || maxCount <= 0) {
+            return new int[0];
+        }
+        final int firstRegion = getRegionIndex(selection.firstRowKey());
+        final int lastRegion = getRegionIndex(selection.lastRowKey());
+        final long span = (long) lastRegion - firstRegion;
+        if (span < maxCount) {
+            // Spans no more than maxCount regions, so visiting all of them is already bounded.
+            return selectedRegionIndices(selection);
+        }
+        final IntStream.Builder builder = IntStream.builder();
+        try (final RowSet.SearchIterator sit = selection.searchIterator()) {
+            int previousRegion = -1;
+            for (int ii = 0; ii < maxCount; ++ii) {
+                final int targetRegion = maxCount == 1
+                        ? firstRegion
+                        : firstRegion + (int) (ii * span / (maxCount - 1));
+                if (targetRegion <= previousRegion) {
+                    // A sparse selection already carried us past this target.
+                    continue;
+                }
+                if (!sit.advance(getFirstRowKey(targetRegion))) {
+                    break;
+                }
+                final int region = getRegionIndex(sit.currentValue());
+                if (region != previousRegion) {
+                    builder.add(region);
+                    previousRegion = region;
+                }
+            }
+        }
+        return builder.build().toArray();
     }
 
     @FunctionalInterface
@@ -858,6 +901,9 @@ public class RegionedColumnSourceManager
     /**
      * Common helper for estimating pushdown filter cost by sampling regions in parallel and returning the minimum cost.
      * Also used by {@link RegionedColumnSourceBase}.
+     * <p>
+     * The result is a per-region action cost and is deliberately not scaled by the region count: it is later passed
+     * back as the cost ceiling that each location compares against its own action costs.
      */
     void estimatePushdownFilterCostHelper(
             final RowSet selection,
@@ -867,7 +913,7 @@ public class RegionedColumnSourceManager
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
         // Sample a few regions and return the lowest cost
-        final int[] regionIndices = regionIndices(selection, PUSHDOWN_LOCATION_SAMPLES);
+        final int[] regionIndices = sampleRegionIndices(selection, PUSHDOWN_LOCATION_SAMPLES);
 
         final AtomicLong minCost = new AtomicLong(Long.MAX_VALUE);
 
@@ -945,7 +991,7 @@ public class RegionedColumnSourceManager
             final PerRegionPushdownAction action,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        final int[] regionIndices = regionIndices(selection, Integer.MAX_VALUE);
+        final int[] regionIndices = selectedRegionIndices(selection);
 
         final WritableRowSet[] matches = new WritableRowSet[regionIndices.length];
         final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];
@@ -1009,17 +1055,6 @@ public class RegionedColumnSourceManager
                 onError);
     }
 
-    /**
-     * Get (or create) a map from column source to column name.
-     */
-    private Map<ColumnSource<?>, String> columnSourceToName() {
-        if (columnSourceToName != null) {
-            return columnSourceToName;
-        }
-        return columnSourceToName = columnSources.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getValue, Map.Entry::getKey, Assert::neverInvoked, IdentityHashMap::new));
-    }
-
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
@@ -1031,7 +1066,6 @@ public class RegionedColumnSourceManager
         final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(filterSources.size());
         final Map<String, String> renameMap = new HashMap<>();
 
-        final Map<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
         final Map<String, ColumnDefinition<?>> columnNameToDefinition = tableDefinition.getColumnNameMap();
 
         for (int ii = 0; ii < filterColumns.size(); ii++) {

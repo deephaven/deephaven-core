@@ -944,6 +944,80 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     /**
+     * Cost estimation samples a bounded number of regions. The sample must be spread across the selection rather than
+     * taken from its leading regions; otherwise a selection whose leading locations lack a pushdown capability that
+     * later ones have (e.g. only newer partitions carry an index) never attempts pushdown at all.
+     */
+    @Test
+    public void testEstimateSamplesAcrossSelection() {
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        final int numRegions = 10;
+        final WritableRowSet selection = RowSetFactory.empty();
+        for (int ri = 0; ri < numRegions; ++ri) {
+            selection.insert(RegionedColumnSource.getFirstRowKey(ri));
+        }
+
+        final Set<Integer> sampled = new HashSet<>();
+        final AtomicLong cost = new AtomicLong(-1);
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        try (selection) {
+            SUT.estimatePushdownFilterCostHelper(selection, "testEstimateSamplesAcrossSelection",
+                    new ImmediateJobScheduler(),
+                    (regionIndex, location, shiftedRowSet, onCost, nec) -> {
+                        sampled.add(regionIndex);
+                        // Only the later half of the regions support a pushdown action.
+                        onCost.accept(regionIndex >= numRegions / 2
+                                ? PushdownResult.REGION_SORTED_DATA_COST
+                                : PushdownResult.UNSUPPORTED_ACTION_COST);
+                    },
+                    cost::set, error::set);
+        }
+
+        assertNull(error.get());
+        assertTrue("estimation should sample, not visit every region: " + sampled, sampled.size() < numRegions);
+        assertEquals("sampled regions " + sampled, PushdownResult.REGION_SORTED_DATA_COST, cost.get());
+    }
+
+    /**
+     * Sampling seeks to evenly spaced regions rather than visiting every region in the selection, and must still reach
+     * the selection's last region when the selection is sparse.
+     */
+    @Test
+    public void testEstimateSamplesSparseSelection() {
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        final int lastRegion = 999;
+        final WritableRowSet selection = RowSetFactory.empty();
+        for (int ri = 0; ri < 5; ++ri) {
+            selection.insert(RegionedColumnSource.getFirstRowKey(ri));
+        }
+        selection.insert(RegionedColumnSource.getFirstRowKey(lastRegion));
+
+        final Set<Integer> sampled = new HashSet<>();
+        final AtomicLong cost = new AtomicLong(-1);
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        try (selection) {
+            SUT.estimatePushdownFilterCostHelper(selection, "testEstimateSamplesSparseSelection",
+                    new ImmediateJobScheduler(),
+                    (regionIndex, location, shiftedRowSet, onCost, nec) -> {
+                        sampled.add(regionIndex);
+                        // Only the far region supports a pushdown action.
+                        onCost.accept(regionIndex == lastRegion
+                                ? PushdownResult.REGION_SORTED_DATA_COST
+                                : PushdownResult.UNSUPPORTED_ACTION_COST);
+                    },
+                    cost::set, error::set);
+        }
+
+        assertNull(error.get());
+        assertTrue("sampled regions " + sampled, sampled.contains(0) && sampled.contains(lastRegion));
+        assertEquals("sampled regions " + sampled, PushdownResult.REGION_SORTED_DATA_COST, cost.get());
+    }
+
+    /**
      * Removing every location for a partition value empties that key's bucket in the partitioning column's data index.
      * The index table reports the key as removed, so the key must also leave the index table's row set and its lookup.
      */

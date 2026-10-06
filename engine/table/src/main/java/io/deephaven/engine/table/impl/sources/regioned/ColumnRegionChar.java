@@ -150,7 +150,7 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
                 } else {
                     final ColumnSource<?> columnSource =
                             InMemoryColumnSource.makeImmutableConstantSource(char.class, null, value);
-                    matches = SingleValuePushdownHelper.tableFilter(filter, selection, false, columnSource);
+                    matches = SingleValuePushdownHelper.tableFilter(filter, selection, usePrev, columnSource);
                 }
             }
             if (matches) {
