@@ -730,6 +730,90 @@ public class TestInvokeParallel {
         });
     }
 
+    /**
+     * When a later submission fails, invokers submitted before it to an executor that queues may never start; the
+     * caller must close them and fail rather than wait for them.
+     */
+    @Test
+    public void testLaterSubmissionFailureClosesQueuedInvokers() throws InterruptedException {
+        final List<Runnable> queued = Collections.synchronizedList(new ArrayList<>());
+        final IllegalStateException broken = new IllegalStateException("cannot start a thread");
+        final Executor queuesFirstFailsSecond = command -> {
+            if (!queued.isEmpty()) {
+                throw broken;
+            }
+            queued.add(command);
+        };
+        final AtomicInteger contextsOpen = new AtomicInteger();
+        final AtomicInteger runs = new AtomicInteger();
+        final Outcome outcome = new Outcome();
+
+        withTimeout(() -> {
+            try {
+                assertThatThrownBy(() -> new ExecutorJobScheduler(queuesFirstFailsSecond, 4).invokeParallel(
+                        ExecutionContext.getContext(), null,
+                        () -> {
+                            contextsOpen.incrementAndGet();
+                            return new JobScheduler.JobThreadContext() {
+                                @Override
+                                public void close() {
+                                    contextsOpen.decrementAndGet();
+                                }
+                            };
+                        }, 0, 8, (context, idx, nec) -> runs.incrementAndGet(),
+                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(broken);
+            } finally {
+                outcome.returned = true;
+            }
+        });
+
+        outcome.assertFailed(broken);
+        assertThat(contextsOpen.get()).isZero();
+        assertThat(runs.get()).isZero();
+        // the queued job, started late, finds its invoker taken
+        queued.forEach(Runnable::run);
+        assertThat(runs.get()).isZero();
+    }
+
+    /** The same when the context factory fails for a later invoker. */
+    @Test
+    public void testLaterContextFailureClosesQueuedInvokers() throws InterruptedException {
+        final List<Runnable> queued = Collections.synchronizedList(new ArrayList<>());
+        final IllegalStateException noContext = new IllegalStateException("no context");
+        final AtomicInteger made = new AtomicInteger();
+        final AtomicInteger contextsOpen = new AtomicInteger();
+        final AtomicInteger runs = new AtomicInteger();
+        final Outcome outcome = new Outcome();
+
+        withTimeout(() -> {
+            try {
+                assertThatThrownBy(() -> new ExecutorJobScheduler(queued::add, 4).invokeParallel(
+                        ExecutionContext.getContext(), null,
+                        () -> {
+                            if (made.incrementAndGet() > 1) {
+                                throw noContext;
+                            }
+                            contextsOpen.incrementAndGet();
+                            return new JobScheduler.JobThreadContext() {
+                                @Override
+                                public void close() {
+                                    contextsOpen.decrementAndGet();
+                                }
+                            };
+                        }, 0, 8, (context, idx, nec) -> runs.incrementAndGet(),
+                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(noContext);
+            } finally {
+                outcome.returned = true;
+            }
+        });
+
+        outcome.assertFailed(noContext);
+        assertThat(contextsOpen.get()).isZero();
+        assertThat(queued).hasSize(1);
+        queued.forEach(Runnable::run);
+        assertThat(runs.get()).isZero();
+    }
+
     @Test
     public void testFailureOnTheCallingThreadStopsAtTheFailingTask() {
         final List<Integer> ran = new ArrayList<>();

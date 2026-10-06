@@ -271,10 +271,10 @@ public interface JobScheduler {
                 final boolean callerParticipates) {
             // Increment this once in order to maintain >=1 until all tasks have been submitted
             incrementReferenceCount();
+            final List<TaskInvoker> submitted = new ArrayList<>();
             try {
                 final int numTaskInvokers = Math.min(maxThreads, scheduler.threadCount());
                 final int numSubmitted = callerParticipates ? numTaskInvokers - 1 : numTaskInvokers;
-                final List<TaskInvoker> submitted = new ArrayList<>(Math.max(0, numSubmitted));
                 for (int tii = 0; tii < numSubmitted; ++tii) {
                     final TaskInvoker taskInvoker = makeTaskInvoker(taskThreadContextFactory, tii);
                     if (taskInvoker == null) {
@@ -285,13 +285,11 @@ public interface JobScheduler {
                         scheduler.submit(executionContext, taskInvoker::startAndExecute, description,
                                 IterationManager::onUnexpectedJobError);
                     } catch (Throwable t) {
-                        // The scheduler did not take the invoker, so nothing else will release its context and its
-                        // reference to this manager, and the iteration could never complete. A scheduler that ran the
-                        // invoker on this thread before failing has already started it, and it closed itself. The
-                        // failure itself is recorded below, before this manager's own reference is released.
-                        if (taskInvoker.tryStart()) {
-                            taskInvoker.closeIfOpen();
-                        }
+                        // The scheduler may not have taken the invoker, so nothing else would release its context and
+                        // its reference to this manager. It is in the submitted list, and the catch below records the
+                        // failure and then closes it along with every other submitted invoker that has not started; a
+                        // scheduler that ran it on this thread before failing has already started it, and it closed
+                        // itself.
                         throw t;
                     }
                 }
@@ -315,6 +313,7 @@ public interface JobScheduler {
                 }
             } catch (Exception e) {
                 onTaskError(e);
+                abandonUnstarted(submitted);
                 throw e;
             } catch (Error e) {
                 // An Error from the context factory or the scheduler, OutOfMemoryError when a thread cannot be made in
@@ -323,9 +322,24 @@ public interface JobScheduler {
                 if (exception.get() == null) {
                     onTaskError(asDeliverableException(e));
                 }
+                abandonUnstarted(submitted);
                 throw e;
             } finally {
                 decrementReferenceCount();
+            }
+        }
+
+        /**
+         * After a failure to start the iteration, which has already been recorded: close every submitted invoker that
+         * has not started, releasing its context and its reference, so that the iteration ends without waiting for jobs
+         * a queueing scheduler may start late, or never, if they are queued behind this thread. One that the scheduler
+         * starts later finds itself taken and does nothing.
+         */
+        private void abandonUnstarted(@NotNull final List<TaskInvoker> submitted) {
+            for (final TaskInvoker taskInvoker : submitted) {
+                if (taskInvoker.tryStart()) {
+                    taskInvoker.closeIfOpen();
+                }
             }
         }
 
