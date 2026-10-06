@@ -18,13 +18,9 @@ pydeephaven-ticking package.
 """
 from __future__ import annotations
 
-import sys
 import threading
 import time
 from dataclasses import dataclass
-
-if sys.version_info < (3, 10):
-    sys.exit("This demo requires Python 3.10 or later.")
 
 import pydeephaven as pyd
 from pydeephaven import TableListener, TableUpdate, listen
