@@ -196,13 +196,16 @@ public class TestKeyedArrayBackedInputTable {
         validator.getResultTable().addUpdateListener(failureListener);
 
         final MutableInt updates = new MutableInt(0);
-        kabut.addUpdateListener(new InstrumentedTableUpdateListenerAdapter("overlap check", kabut, true) {
-            @Override
-            public void onUpdate(final TableUpdate upstream) {
-                updates.increment();
-                assertFalse("added and modified overlap: " + upstream, upstream.added().overlaps(upstream.modified()));
-            }
-        });
+        final InstrumentedTableUpdateListenerAdapter overlapCheck =
+                new InstrumentedTableUpdateListenerAdapter("overlap check", kabut, false) {
+                    @Override
+                    public void onUpdate(final TableUpdate upstream) {
+                        updates.increment();
+                        assertFalse("added and modified overlap: " + upstream,
+                                upstream.added().overlaps(upstream.modified()));
+                    }
+                };
+        kabut.addUpdateListener(overlapCheck);
 
         final Table cities = testRefreshingTable(i(10).toTracking(),
                 stringCol("Employer", "Spacely Sprockets"), stringCol("City", "Orbit City"));
@@ -231,6 +234,8 @@ public class TestKeyedArrayBackedInputTable {
         assertTableEquals(TableTools.newTable(stringCol("Name", "Fred", "George", "Randy"),
                 stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Tegridy"),
                 stringCol("City", null, "Orbit City", null)), joined);
+
+        kabut.removeUpdateListener(overlapCheck);
     }
 
     public static void handleDelayedRefresh(final ThrowingRunnable<IOException> action,
