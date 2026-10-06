@@ -2,11 +2,9 @@
 title: Filters
 ---
 
-This guide focuses on using filters within [query strings](./query-string-overview.md). Unlike [formulas](./formulas.md), which add new columns to a table, filters are boolean expressions used to create a new table that is a subset of an existing table. Filters are employed in the following table operations:
+This guide focuses on using filters within [query strings](./query-string-overview.md). Unlike [formulas](./formulas.md), which add new columns to a table, filters are boolean expressions used to create a new table that is a subset of an existing table. Filters are employed in the [`where`](../reference/table-operations/filter/where.md) table operation.
 
-- [`where`](../reference/table-operations/filter/where.md)
-- [`whereIn`](../reference/table-operations/filter/where-in.md)
-- [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
+The related [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) operations do not take filter expressions. Instead, they keep rows based on whether their values match values in another table.
 
 Additionally, filters can be used in [partitioned table](./partitioned-tables.md) operations.
 
@@ -170,23 +168,14 @@ Filters can be combined [conjunctively](#conjunctive) or [disjunctively](#disjun
 
 Conjunctive filters return only rows that match _all_ of the specified filters. There are two ways to conjunctively combine filters:
 
-- Pass a single query string with multiple filters separated by the `&&` operator into one of the following table operations:
-  - [`where`](../reference/table-operations/filter/where.md)
-  - [`whereIn`](../reference/table-operations/filter/where-in.md)
-  - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
-- Pass multiple query strings into one of the following table operations:
-  - [`where`](../reference/table-operations/filter/where.md)
-  - [`whereIn`](../reference/table-operations/filter/where-in.md)
-  - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
+- Pass a single query string with multiple filters separated by the `&&` operator to [`where`](../reference/table-operations/filter/where.md).
+- Pass multiple query strings to [`where`](../reference/table-operations/filter/where.md).
 
 ### Disjunctive
 
 Disjunctive filters return only rows that match _any_ of the specified filters. There are two ways to disjunctively combine filters:
 
-- Pass a single query string with multiple filters separated by the `||` operator into one of the following table operations:
-  - [`where`](../reference/table-operations/filter/where.md)
-  - [`whereIn`](../reference/table-operations/filter/where-in.md)
-  - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
+- Pass a single query string with multiple filters separated by the `||` operator to [`where`](../reference/table-operations/filter/where.md).
 - Use [`Filter.or`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(io.deephaven.api.filter.Filter...)) or [`DisjunctiveFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/DisjunctiveFilter.html) to combine multiple filter clauses.
 
 The following examples demonstrate both approaches to disjunctive filtering:

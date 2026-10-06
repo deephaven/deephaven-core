@@ -31,7 +31,7 @@ source = emptyTable(1).update(
 sourceMeta = source.meta()
 ```
 
-Type casting [Groovy variables in query strings](./groovy-variables.md) has limitations. Unlike Groovy, where numeric types can be automatically promoted, Java primitives have fixed precision. You cannot cast a value to a type with smaller precision without potential data loss. For example, the following query may lose precision:
+Type casting [Groovy variables in query strings](./groovy-variables.md) has limitations. Java primitives have fixed precision, so casting to a primitive with fewer significant digits, such as `float`, can round the value. For example, the following query may lose precision:
 
 ```groovy order=source,sourceMeta
 a = 3.14159
@@ -43,11 +43,11 @@ source = emptyTable(1).update(
 sourceMeta = source.meta()
 ```
 
-The Groovy `BigDecimal` type (default for decimal literals) corresponds most closely to the Java `double` type in terms of precision. When a Groovy decimal is used in a query string, explicit casting ensures the correct Java primitive type is used.
+Groovy decimal literals such as `3.14159` are `java.math.BigDecimal` objects, which have arbitrary precision. Without a cast, the column stays `BigDecimal`. A cast to `(double)` or `(float)` converts the value to a Java primitive, which can round it.
 
 ### Groovy closures
 
-[Groovy closures called in query strings](./groovy-closures.md) should generally use explicit parameter and return type declarations rather than relying solely on type casts. However, type casts can still be used when needed to ensure the correct column data type.
+[Groovy closures called in query strings](./groovy-closures.md) return `Object`, because closures cannot declare a return type. Declare argument types to improve performance, and use a type cast when you need a specific column type for the result.
 
 The following example uses a type cast to convert the returned value of a Groovy closure to a [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html):
 

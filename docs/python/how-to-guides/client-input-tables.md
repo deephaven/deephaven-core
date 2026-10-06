@@ -30,7 +30,7 @@ Repeat steps 2-5 as needed.
 
 ## Complete example
 
-The following example tracks device status using a keyed input table. Each device has a unique ID, and updates replace the previous status for that device.
+The following example tracks device status using a keyed input table. Each device has a unique ID, and updates replace the previous status for that device. The example connects to a server that uses pre-shared key authentication; replace `YOUR_PASSWORD_HERE` with your key. See the [Python client quickstart](../getting-started/pyclient-quickstart.md) for other connection and authentication options.
 
 ```python skip-test
 import pyarrow as pa
@@ -47,7 +47,12 @@ schema = pa.schema(
 )
 
 # Use context manager to ensure session is closed on success or failure
-with Session() as session:
+with Session(
+    host="localhost",
+    port=10000,
+    auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler",
+    auth_token="YOUR_PASSWORD_HERE",
+) as session:
     # Create a keyed input table - DeviceId is the key
     # Adding a row with an existing DeviceId updates that row
     input_table = session.input_table(schema=schema, key_cols="DeviceId")

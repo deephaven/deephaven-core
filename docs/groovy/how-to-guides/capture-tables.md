@@ -88,7 +88,7 @@ Once you have a reference to a table on the server, it's easy to publish it with
 from pydeephaven.session import SharedTicket
 
 ticket = SharedTicket.random_ticket()
-client.publish_table(ticket, table_ref)
+client_session.publish_table(ticket, table_ref)
 ```
 
 Next, you will need a Barrage session to subscribe to the ticket. To create the session, use the [`barrage_session`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) function. Notice that [`barrage_session`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) takes the same connection arguments as [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session):
@@ -181,11 +181,13 @@ When subscribing to large ticking tables:
 - **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage. (Note: this is distinct from viewports, which define a scrollable window over row positions.)
 
 ```python skip-test
-# On the remote server: filter before publishing
+# Filter on the remote server before publishing
 filtered_ref = client_session.open_table("large_table").where("Region = `EAST`")
-client_session.publish_table(ticket, filtered_ref)
+filtered_ticket = SharedTicket.random_ticket()
+client_session.publish_table(filtered_ticket, filtered_ref)
 
 # The subscriber now receives only the filtered data
+local_t_filtered = my_barrage_session.subscribe(filtered_ticket.bytes)
 ```
 
 ## Related documentation

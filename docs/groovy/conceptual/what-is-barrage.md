@@ -36,21 +36,20 @@ Barrage supports two primary modes of retrieving data:
 
 - **Snapshot**: Retrieves a one-time, static copy of the table. The connection closes after the data is delivered. Use this for static tables or when you need a point-in-time capture.
 
-```python skip-test
-from deephaven.barrage import barrage_session
+In Groovy, one way to subscribe to a table on another Deephaven server is to resolve its [URI](../how-to-guides/use-uris.md). Resolving a remote `dh://` or `dh+plain://` URI opens a full-table Barrage subscription:
 
-session = barrage_session(host="remote-server", port=10000)
+```groovy skip-test
+import static io.deephaven.uri.ResolveTools.resolve
 
-# Subscription: receives ongoing updates
-streaming_table = session.subscribe(ticket_bytes)
-
-# Snapshot: one-time static copy
-static_table = session.snapshot(ticket_bytes)
+// Subscription: receives ongoing updates
+streamingTable = resolve("dh+plain://remote-server:10000/scope/myTable")
 ```
 
 ### Shared tickets
 
 Shared tickets are endpoints that allow tables to be published and consumed across different sessions. A client can publish a table to a shared ticket, and other clients (or servers) can subscribe to or snapshot that ticket.
+
+For example, the Python client publishes a table to a shared ticket like this:
 
 ```python skip-test
 from pydeephaven import Session
@@ -62,7 +61,7 @@ ticket = SharedTicket.random_ticket()
 client.publish_table(ticket, my_table_ref)
 ```
 
-See [Capture Python client tables](../how-to-guides/capture-tables.md) for complete examples.
+See [Capture Python client tables](../how-to-guides/capture-tables.md) for complete examples, which use the Python client and a Python Barrage session.
 
 ### Viewports
 

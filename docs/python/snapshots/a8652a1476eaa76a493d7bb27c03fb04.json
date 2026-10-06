@@ -1,0 +1,1 @@
+{"file":"conceptual/deephaven-mental-model.md","objects":{"trades":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Symbol","type":"java.lang.String"},{"name":"Price","type":"double"}],"rows":[[{"value":"2026-10-06 18:54:07.200"},{"value":"AAPL"},{"value":"199.1838"}]]}}}}

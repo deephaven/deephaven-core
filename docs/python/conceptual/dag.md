@@ -122,10 +122,8 @@ def handle_alert(update, is_replay):
     if is_replay:
         return  # Skip historical data
 
-    added_rows = update.added()
-    for row in added_rows:
-        server = row["Server"]
-        usage = row["DiskUsagePct"]
+    added = update.added()
+    for server, usage in zip(added["Server"], added["DiskUsagePct"]):
         print(f"ALERT: {server} disk usage at {usage:.1f}%")
         # In production: send_email() or post_to_slack()
 
@@ -148,14 +146,7 @@ Thinking in terms of DAGs, UG cycles, and update notifications can be insightful
 
 ### Identifying bottlenecks
 
-Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the Update Graph Processor (UGP) metrics to identify problems:
-
-```python syntax
-# from deephaven.ugp import exclusive_lock_metrics
-
-# View which operations take the most time
-# metrics = exclusive_lock_metrics()
-```
+Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as `perfmon.update_performance_log()` and `perfmon.update_performance_ancestors_log()`, to see how much time each operation takes in each update graph cycle. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
 
 Common performance bottlenecks include:
 
@@ -168,8 +159,7 @@ Common performance bottlenecks include:
 
 Once you understand what operations are slow, you can optimize your query:
 
-- **Use `coalesce`**: Reduce update frequency by batching changes.
-- **Add `snapshot`**: Create periodic snapshots instead of continuous updates.
+- **Use `snapshot_when`**: Update results periodically by snapshotting on a slower trigger table instead of on every change. See [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md).
 - **Restructure dependencies**: Break long dependency chains into parallel branches.
 - **Pre-aggregate data**: Move expensive aggregations upstream in the DAG.
 - **Filter early**: Apply `where` clauses before expensive operations.
@@ -182,7 +172,7 @@ from deephaven import agg
 
 live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
 
-# Expensive: recalculates complex aggregation on every update
+# Updates the aggregation every second
 result = live_data.agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
 ```
 
@@ -194,8 +184,11 @@ from deephaven import agg
 
 live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
 
-# Optimized: snapshot reduces update frequency
-result = live_data.snapshot().agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
+# Optimized: snapshot_when updates the aggregation every 10 seconds
+trigger = time_table("PT10S").rename_columns(["TriggerTimestamp = Timestamp"])
+result = live_data.snapshot_when(trigger).agg_by(
+    [agg.sum_("ExpensiveCalc")], by=["Group"]
+)
 ```
 
 ## Related documentation

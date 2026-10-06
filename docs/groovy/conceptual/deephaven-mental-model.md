@@ -314,8 +314,9 @@ transformFunc = { t ->
     return t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price"))
 }
 
-// transform() captures the calling execution context and reopens it for every
-// constituent, including ones added later on update-graph threads
+// transform applies transformFunc to every constituent, including ones added later.
+// If the closure uses query-string formulas or query-scope variables, open an
+// execution context inside it (see Partitioned tables).
 transformed = bySymbol.transform(transformFunc)
 ```
 
@@ -343,7 +344,7 @@ Partitioned tables let you parallelize processing, quickly retrieve subtables by
 
 ```groovy syntax
 // DON'T: Extract data for every operation
-// data = myTable.getColumn("X").getDirect()
+// data = ColumnVectors.of(myTable, "X").copyToArray()
 // filteredData = data.findAll { it > 10 }
 // // ... then convert back to table
 

@@ -58,11 +58,14 @@ First, create the object type class. Here's an example in Java:
 ```java
 package com.example;
 
-import io.deephaven.plugin.type.ObjectType;
+import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectTypeBase;
-import io.deephaven.plugin.type.ObjectCommunicationException;
 
-public class ExampleObjectType extends ObjectTypeBase {
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
+public class ExampleObjectType extends ObjectTypeBase.FetchOnly {
     public static final ExampleObjectType INSTANCE = new ExampleObjectType();
 
     private ExampleObjectType() {
@@ -80,12 +83,10 @@ public class ExampleObjectType extends ObjectTypeBase {
     }
 
     @Override
-    public ObjectType.MessageStream compatibleClientConnection(
-            Object object, ObjectType.MessageStream connection)
-            throws ObjectCommunicationException {
-        // For simple object types that don't need custom client communication,
-        // you can use the FetchOnly implementation
-        return ObjectTypeBase.FetchOnly.INSTANCE;
+    public void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out)
+            throws IOException {
+        // FetchOnly sends these bytes to the client once and closes the connection
+        out.write(((ExampleObject) object).getMessage().getBytes(StandardCharsets.UTF_8));
     }
 }
 ```
@@ -95,11 +96,12 @@ Or in Groovy:
 ```groovy skip-test
 package com.example
 
-import io.deephaven.plugin.type.ObjectType
+import io.deephaven.plugin.type.Exporter
 import io.deephaven.plugin.type.ObjectTypeBase
-import io.deephaven.plugin.type.ObjectCommunicationException
 
-class ExampleObjectType extends ObjectTypeBase {
+import java.nio.charset.StandardCharsets
+
+class ExampleObjectType extends ObjectTypeBase.FetchOnly {
     static final ExampleObjectType INSTANCE = new ExampleObjectType()
 
     private ExampleObjectType() {
@@ -117,12 +119,10 @@ class ExampleObjectType extends ObjectTypeBase {
     }
 
     @Override
-    ObjectType.MessageStream compatibleClientConnection(
-            Object object, ObjectType.MessageStream connection)
-            throws ObjectCommunicationException {
-        // For simple object types that don't need custom client communication,
-        // you can use the FetchOnly implementation
-        return ObjectTypeBase.FetchOnly.INSTANCE
+    void writeCompatibleObjectTo(Exporter exporter, Object object, OutputStream out)
+            throws IOException {
+        // FetchOnly sends these bytes to the client once and closes the connection
+        out.write(((ExampleObject) object).message.getBytes(StandardCharsets.UTF_8))
     }
 }
 ```
@@ -280,20 +280,20 @@ If running Deephaven locally, you can install your plugin by:
 
 ```bash
 # Add your plugin JAR to the classpath when starting Deephaven
-java -cp "deephaven-server.jar:your-plugin.jar" io.deephaven.server.runner.Main
+EXTRA_CLASSPATH="/path/to/your-plugin.jar" ./server/jetty-app/build/install/server-jetty/bin/start
 ```
+
+See [Install and use Java packages](./install-and-use-java-packages.md) for more about building the server and using `EXTRA_CLASSPATH`.
 
 ### Docker deployment
 
 For Docker deployments, create a Dockerfile that extends the Deephaven base image:
 
 ```dockerfile
-FROM ghcr.io/deephaven/server:main
+FROM ghcr.io/deephaven/server-slim:latest
 
-# Copy your plugin JAR
-COPY build/libs/your-plugin.jar /opt/deephaven/lib/
-
-# The plugin will be automatically loaded when the server starts
+# Copy your plugin JAR into /apps/libs, which is on the server classpath
+COPY build/libs/your-plugin.jar /apps/libs/
 ```
 
 Create a Docker Compose file to run the server:
@@ -349,7 +349,7 @@ When using Docker, add your test script to the container or run it through the I
 
 ```groovy skip-test
 // This script can be run in the Deephaven IDE after starting the Docker container
-from com.example import ExampleObject
+import com.example.ExampleObject
 
 // Create test instances
 testObject1 = new ExampleObject("Docker test 1")
@@ -377,7 +377,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.deephaven:deephaven-client-api:0.36.1'
+    implementation 'io.deephaven:deephaven-java-client-session:0.36.1'
     implementation 'org.apache.groovy:groovy-all:4.0.15'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
@@ -400,46 +400,57 @@ application {
 
 ### Client implementation
 
-Create a Groovy client that can connect to your plugin objects:
+Create a Groovy client that connects to the server with the [Java client](./java-client.md) session API and fetches the `exampleObject` variable created by the server-side test script. The ticket type, `ExampleObject`, is the name returned by the plugin's `name` method:
 
 ```groovy skip-test
 package com.example.client
 
-import io.deephaven.client.impl.Session
+import io.deephaven.client.impl.ClientConfig
+import io.deephaven.client.impl.ScopeId
 import io.deephaven.client.impl.SessionConfig
-import io.deephaven.client.impl.authentication.ConfigAuthenticationHandler
+import io.deephaven.client.impl.SessionFactoryConfig
+import io.deephaven.client.impl.TypedTicket
+import io.deephaven.uri.DeephavenTarget
+
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.Executors
 
 class ExamplePluginClient {
     static void main(String[] args) {
-        // Create a session configuration
-        def config = SessionConfig.builder()
-            .target("localhost:10000")
-            // Replace "YOUR_PASSWORD_HERE" with a secure password in production
-            .authenticationHandler(ConfigAuthenticationHandler.psk("YOUR_PASSWORD_HERE"))
+        def scheduler = Executors.newScheduledThreadPool(4)
+        def factory = SessionFactoryConfig.builder()
+            .clientConfig(ClientConfig.builder()
+                .target(DeephavenTarget.of(URI.create("dh+plain://localhost:10000")))
+                .build())
+            .sessionConfig(SessionConfig.builder()
+                // Replace YOUR_PASSWORD_HERE with the server's pre-shared key
+                .authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler YOUR_PASSWORD_HERE")
+                .build())
+            .scheduler(scheduler)
             .build()
+            .factory()
 
         // Create and connect the session
-        def session = Session.connect(config).get()
+        def session = factory.newSession()
 
         try {
-            // Print the objects the server can export
-            println("")
-            println("Exportable Objects: ${session.exportableObjects().keySet()}")
-
-            // Access exported objects by name
-            def exportableObjects = session.exportableObjects()
-
-            exportableObjects.each { name, ticket ->
-                println("Found exported object: ${name}")
-
-                // You can fetch the object and work with it
-                def objectHandle = session.fetch(ticket)
-                println("Fetched object: ${objectHandle}")
+            // Fetch the exampleObject variable from the server's query scope
+            def fetchable = session.fetchable(new TypedTicket("ExampleObject", new ScopeId("exampleObject"))).get()
+            def serverData = fetchable.fetch().get()
+            try {
+                def data = serverData.data()
+                def bytes = new byte[data.remaining()]
+                data.get(bytes)
+                println("Fetched object: ${new String(bytes, StandardCharsets.UTF_8)}")
+            } finally {
+                serverData.close()
+                fetchable.close()
             }
-
         } finally {
-            // Close the session
+            // Close the session and release its resources
             session.close()
+            factory.managedChannel().shutdown()
+            scheduler.shutdown()
         }
     }
 }
@@ -468,41 +479,54 @@ Here's a complete example that demonstrates the full plugin workflow:
 ```groovy skip-test
 package com.example.client
 
-import io.deephaven.client.impl.Session
+import io.deephaven.client.impl.ClientConfig
+import io.deephaven.client.impl.ScopeId
 import io.deephaven.client.impl.SessionConfig
-import io.deephaven.client.impl.authentication.ConfigAuthenticationHandler
+import io.deephaven.client.impl.SessionFactoryConfig
+import io.deephaven.client.impl.TypedTicket
+import io.deephaven.uri.DeephavenTarget
+
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.Executors
 
 class CompletePluginTest {
     static void main(String[] args) {
         println("Starting Deephaven plugin test...")
 
-        // Create session configuration
-        def config = SessionConfig.builder()
-            .target("localhost:10000")
-            .authenticationHandler(ConfigAuthenticationHandler.psk("YOUR_PASSWORD_HERE"))
+        def scheduler = Executors.newScheduledThreadPool(4)
+        def factory = SessionFactoryConfig.builder()
+            .clientConfig(ClientConfig.builder()
+                .target(DeephavenTarget.of(URI.create("dh+plain://localhost:10000")))
+                .build())
+            .sessionConfig(SessionConfig.builder()
+                .authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler YOUR_PASSWORD_HERE")
+                .build())
+            .scheduler(scheduler)
             .build()
+            .factory()
 
         // Connect to the server
-        def session = Session.connect(config).get()
+        def session = factory.newSession()
         println("Connected to Deephaven server")
 
         try {
-            // List all exportable objects
-            def exportableObjects = session.exportableObjects()
-            println("\nAvailable objects on server:")
-            exportableObjects.keySet().each { name ->
-                println("  - ${name}")
-            }
-
-            // Test fetching each object
-            exportableObjects.each { name, ticket ->
+            // Test fetching each object created by the server-side test script
+            ["exampleObject", "anotherExample"].each { name ->
                 try {
                     println("\nTesting object: ${name}")
-                    def objectHandle = session.fetch(ticket)
-                    println("Successfully fetched: ${objectHandle}")
+                    def fetchable = session.fetchable(new TypedTicket("ExampleObject", new ScopeId(name))).get()
+                    def serverData = fetchable.fetch().get()
+                    try {
+                        def data = serverData.data()
+                        def bytes = new byte[data.remaining()]
+                        data.get(bytes)
+                        println("Successfully fetched: ${new String(bytes, StandardCharsets.UTF_8)}")
 
-                    // You can add more specific tests here based on your object type
-
+                        // You can add more specific tests here based on your object type
+                    } finally {
+                        serverData.close()
+                        fetchable.close()
+                    }
                 } catch (Exception e) {
                     println("Error fetching ${name}: ${e.message}")
                 }
@@ -515,6 +539,8 @@ class CompletePluginTest {
             e.printStackTrace()
         } finally {
             session.close()
+            factory.managedChannel().shutdown()
+            scheduler.shutdown()
             println("Session closed")
         }
     }
@@ -544,7 +570,7 @@ Clients can then access these objects through the Deephaven client APIs. The obj
 
 For plugins that need custom client-server communication beyond simple object export, you can implement a custom `MessageStream` in the `compatibleClientConnection` method. This allows you to handle bidirectional communication between the client and server.
 
-The example above uses `ObjectTypeBase.FetchOnly.INSTANCE`, which is suitable for simple object types that only need to be fetched by clients without ongoing communication.
+The example above extends `ObjectTypeBase.FetchOnly`, which is suitable for simple object types that only need to be fetched by clients without ongoing communication. Instead of overriding `compatibleClientConnection`, a `FetchOnly` subclass implements `writeCompatibleObjectTo` to write the object's bytes once.
 
 ### Multiple object types
 

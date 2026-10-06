@@ -10,10 +10,8 @@ This guide will show you how to use [scikit-learn](https://scikit-learn.org/stab
 
 - Without example data:
   - [Python with scikit-learn](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/SciKit-Learn/docker-compose.yml)
-  - [Python with All AI](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/All-AI/docker-compose.yml)
 - With example data:
   - [Python with scikit-learn](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/SciKit-Learn/docker-compose.yml)
-  - [Python with All AI](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/All-AI/docker-compose.yml)
 
 Two examples are given below. Both classify observations in the [Iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set), which can be found in [Deephaven's Examples repository](https://github.com/deephaven/examples). The first example uses [scikit-learn](https://scikit-learn.org/stable/), whereas the second integrates Deephaven tables to perform predictions on live data
 

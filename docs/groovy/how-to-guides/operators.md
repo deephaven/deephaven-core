@@ -111,22 +111,22 @@ There are many operators available in the Deephaven Query Language (DQL). They a
 
 ### Bitwise operators
 
-| Symbol | Name               | Description                                                                                                                                                                                                      |
-| ------ | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `~`    | Bitwise complement | A unary operator that "flips" bits.                                                                                                                                                                              |
-| `&`    | Bitwise AND        | Compares each bit of the first operand to the corresponding bit of the second operand. If both bits are 1, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0.        |
-| `<<`   | Left shift         | The left operand's value is shifted left by the number of bits set by the right operand.                                                                                                                         |
-| `>>`   | Right shift        | The left operand's value is shifted right by the number of bits set by the right operand.                                                                                                                        |
-| `^`    | Bitwise XOR        | Compares each bit of the first operand to the corresponding bit of the second operand. If the bits are different, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0. |
+| Symbol | Name        | Description                                                                                                                                                                                                      |
+| ------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `&`    | Bitwise AND | Compares each bit of the first operand to the corresponding bit of the second operand. If both bits are 1, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0.        |
+| `^`    | Bitwise XOR | Compares each bit of the first operand to the corresponding bit of the second operand. If the bits are different, the corresponding result bit is set to 1. Otherwise, the corresponding result bit is set to 0. |
+
+Query strings don't support the bitwise complement (`~`) or shift (`<<`, `>>`, `>>>`) operators.
 
 ### Other Java operators
 
-| Symbol       | Name                                          | Description                                                               |
-| ------------ | --------------------------------------------- | ------------------------------------------------------------------------- |
-| `(type)`     | [Casting](./casting.md)                       | Casts from one type to another.                                           |
-| `()`         | Function call                                 | Calls a function.                                                         |
-| `?:`         | [Ternary conditional](./ternary-if-how-to.md) | Returns one of two values depending on the value of a boolean expression. |
-| `instanceof` | Instance of                                   | Returns `true` if the object is an instance of the class.                 |
+| Symbol   | Name                                          | Description                                                               |
+| -------- | --------------------------------------------- | ------------------------------------------------------------------------- |
+| `(type)` | [Casting](./casting.md)                       | Casts from one type to another.                                           |
+| `()`     | Function call                                 | Calls a function.                                                         |
+| `?:`     | [Ternary conditional](./ternary-if-how-to.md) | Returns one of two values depending on the value of a boolean expression. |
+
+Query strings don't support the `instanceof` operator.
 
 ## Related documentation
 

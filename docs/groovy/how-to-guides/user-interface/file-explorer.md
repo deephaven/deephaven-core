@@ -25,7 +25,7 @@ Click the **New notebook** button on the left and a blank notebook will open bel
 
 ![A new, empty notebook](../../assets/how-to/notebooks/notebook3.png)
 
-As you can see above, the file name extension will reflect the programming language of your current session (in this case, Python).
+The file name extension reflects the programming language of your current session.
 
 Click the **New folder** button on the right to create new folders.
 

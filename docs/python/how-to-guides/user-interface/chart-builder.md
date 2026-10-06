@@ -38,19 +38,32 @@ Once you make your selections, click **Create**. The plot will open as a new pan
 In the next sections, we'll show you examples of each chart type using two tables of weather data. Run this script if you'd like to follow along:
 
 ```python skip-test
-#not yet implemented for v2
+# not yet implemented for v2
 from deephaven import read_csv
 
-seattle_weather = read_csv("https://media.githubusercontent.com/media/deephaven/examples/main/GSOD/csv/seattle.csv")
+seattle_weather = read_csv(
+    "https://media.githubusercontent.com/media/deephaven/examples/main/GSOD/csv/seattle.csv"
+)
 
 from deephaven.time import TimeZone
 from deephaven import agg as agg
 
 
-hi_lo_by_year = seattle_weather.view(formulas=["Year = year(ObservationDate, time_zone("ET"))", "TemperatureF"])\
-    .where(filters=["Year >= 2000"])\
-    .agg_by([agg.avg(cols=["Avg_Temp = TemperatureF"])], by=["Year"])\
-    .formatColumns("Year = Decimal(`#`)")
+hi_lo_by_year = (
+    seattle_weather.view(
+        formulas=["Year = year(ObservationDate, timeZone(`ET`))", "TemperatureF"]
+    )
+    .where(filters=["Year >= 2000"])
+    .agg_by(
+        [
+            agg.avg(cols=["Avg_Temp = TemperatureF"]),
+            agg.min_(cols=["Lo_Temp = TemperatureF"]),
+            agg.max_(cols=["Hi_Temp = TemperatureF"]),
+        ],
+        by=["Year"],
+    )
+    .format_columns("Year = Decimal(`#`)")
+)
 ```
 
 ### Line, Bar, and Scatter

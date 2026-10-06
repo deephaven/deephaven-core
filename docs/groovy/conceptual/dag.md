@@ -29,17 +29,9 @@ This is fundamentally different from traditional batch processing, where entire 
 Deephaven's query syntax is very natural and readable. Under the hood, queries are converted into directed acyclic graphs (DAGs) for efficient real-time processing. Let's look at an example to understand DAGs.
 
 ```groovy order=t1,t2,t3 test-set=dag-example
-import io.deephaven.engine.table.impl.util.ColumnHolder
-
 t1 = timeTable("PT1S").update("Label = (ii % 2)")
 t2 = t1.lastBy("Label")
 t3 = t1.naturalJoin(t2, "Label", "T2 = Timestamp")
-```
-
-```groovy order=t1,t2,t3
-t1 = timeTable("PT1S").update("Label=(ii%2)")
-t2 = t1.lastBy("Label")
-t3 = t1.naturalJoin(t2, "Label", "T2=Timestamp")
 ```
 
 Here, table `t1` is a real-time table with two columns: `Timestamp` and `Label`. A new row is appended every second, and `Label` alternates between zero and one. Table `t2` contains the most recent row for each Label value, and `t3` joins the most recent `Timestamp` for a `Label`, from `t2`, onto `t1`.
@@ -131,6 +123,9 @@ handleAlert = new InstrumentedTableUpdateListenerAdapter("DiskAlertListener", cr
         }
     }
 }
+
+// Attach the listener to the table
+criticalAlerts.addUpdateListener(handleAlert)
 ```
 
 In this example, whenever a new row appears in `criticalAlerts` (indicating a server exceeds 90% disk usage), the custom listener executes and could send notifications to your monitoring system.
@@ -147,14 +142,7 @@ Thinking in terms of DAGs, UG cycles, and update notifications can be insightful
 
 ### Identifying bottlenecks
 
-Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the Update Graph Processor (UGP) metrics to identify problems:
-
-```groovy syntax
-// import io.deephaven.engine.updategraph.UpdateGraphProcessor
-
-// View which operations take the most time
-// metrics = UpdateGraphProcessor.DEFAULT.exclusiveLockMetrics()
-```
+Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as `updatePerformanceLog()` and the tree tables from `PerformanceQueries`, to see how much time each operation takes in each update graph cycle. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
 
 Common performance bottlenecks include:
 
@@ -167,8 +155,7 @@ Common performance bottlenecks include:
 
 Once you understand what operations are slow, you can optimize your query:
 
-- **Use `coalesce`**: Reduce update frequency by batching changes.
-- **Add `snapshot`**: Create periodic snapshots instead of continuous updates.
+- **Use `snapshotWhen`**: Update results periodically by snapshotting on a slower trigger table instead of on every change. See [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md).
 - **Restructure dependencies**: Break long dependency chains into parallel branches.
 - **Pre-aggregate data**: Move expensive aggregations upstream in the DAG.
 - **Filter early**: Apply `where` clauses before expensive operations.
@@ -180,7 +167,7 @@ import static io.deephaven.api.agg.Aggregation.AggSum
 
 live_data = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
 
-// Expensive: recalculates complex aggregation on every update
+// Updates the aggregation every second
 result = live_data.aggBy([AggSum("ExpensiveCalc")], "Group")
 ```
 
@@ -191,8 +178,9 @@ import static io.deephaven.api.agg.Aggregation.AggSum
 
 live_data = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
 
-// Optimized: snapshot reduces update frequency
-result = live_data.snapshot().aggBy([AggSum("ExpensiveCalc")], "Group")
+// Optimized: snapshotWhen updates the aggregation every 10 seconds
+trigger = timeTable("PT10S").renameColumns("TriggerTimestamp = Timestamp")
+result = live_data.snapshotWhen(trigger).aggBy([AggSum("ExpensiveCalc")], "Group")
 ```
 
 ## Related documentation

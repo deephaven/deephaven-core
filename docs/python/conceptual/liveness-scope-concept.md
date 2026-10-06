@@ -22,7 +22,7 @@ When a table is live in Deephaven, the update propagation graph accumulates pare
 
 Before we demonstrate liveness scopes in action, let's demonstrate the problem that liveness scopes solve.
 
-This query creates a simple tree table grouped by Sym. Two tables will open: `crypto` and `data`.
+This query creates a simple tree table grouped by `Instrument`. Two tables remain in the console: `crypto` and `combo_tree`.
 
 ```python order=null
 from deephaven.csv import read as read_csv
@@ -103,7 +103,9 @@ Creating a liveness scope is easy, as it takes no input parameters. It can be cr
 ```python order=null
 from deephaven.liveness_scope import liveness_scope, LivenessScope
 
-scope_from_method = liveness_scope()
+with liveness_scope() as scope_from_method:
+    pass
+
 scope_from_class = LivenessScope()
 ```
 
@@ -146,7 +148,7 @@ def make_table_and_scope(a: int):
     scope = LivenessScope()
     with scope.open():
         ticking_table = some_ticking_source().where(f"A={a}")
-        return some_ticking_table, scope
+        return ticking_table, scope
 
 
 t1, s1 = make_table_and_scope(1)

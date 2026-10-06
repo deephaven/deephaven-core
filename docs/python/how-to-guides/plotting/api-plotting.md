@@ -34,7 +34,7 @@ You can create an XY Series plot using data from Deephaven tables with the follo
 - `"y"` is the name of the column of data to be used for the Y value.
 - `show` tells Deephaven to draw the plot in the console.
 
-The example query below will create an XY series plot showing Bitcoin's high on September 8, 2021.
+The example below creates an XY series plot of distance traveled over time during a metric-century bike ride.
 
 ```python test-set=1 order=source,plot_single default=plot_single
 from deephaven import read_csv
@@ -122,7 +122,7 @@ plot_shared_twin_x = (
 )
 ```
 
-The value range for the high value is shown on the left axis and the value range for the low value is shown on the right axis.
+The value range for altitude is shown on the left Y axis, and the value range for speed is shown on the right Y axis.
 
 The [`y_twin`](/core/pydoc/code/deephaven.plot.figure.html#deephaven.plot.figure.Figure.y_twin) method enables you to use one X axis for one set of the values being plotted and a second X axis for another, while sharing the same Y axis:
 
@@ -193,7 +193,7 @@ plot_xy_scatter = (
 
 #### XY Series as a scatter plot with markers
 
-In the example below, the scatter plot includes markers. First, `twin` method is used to clone the x- and y-axes. Then, the `SCATTER` PlotStyle is applied to the new axes. The `points` method draws the plot markers.
+In the example below, the scatter plot includes markers. First, `twin` method is used to clone the x- and y-axes. Then, the `SCATTER` PlotStyle is applied to the new axes.
 
 ```python test-set=1 order=null
 from deephaven import time_table
@@ -354,7 +354,7 @@ cat_stacked_bar = (
 
 ## Category histogram
 
-Use the [`plot_cat_hist`](../../reference/plot/catPlot.md) method to create category histograms, which show how frequently a set of discrete values (categories) occur.
+Use the [`plot_cat_hist`](../../reference/plot/catHistPlot.md) method to create category histograms, which show how frequently a set of discrete values (categories) occur.
 
 When data is sourced from a Deephaven table, the following syntax can be used:
 
@@ -472,7 +472,7 @@ plot_hist_list = (
 
 ## OHLC
 
-Use the [`ohlcPlot`](../../reference/plot/ohlcPlot.md) method to create Open, High, Low and Close (OHLC) plots. These typically show four prices of a security or commodity per time slice: the open and close of the time slice, and the highest and lowest values reached during the time slice.
+Use the [`plot_ohlc`](../../reference/plot/ohlcPlot.md) method to create Open, High, Low and Close (OHLC) plots. These typically show four prices of a security or commodity per time slice: the open and close of the time slice, and the highest and lowest values reached during the time slice.
 
 This plotting method requires a dataset that includes one column containing the values for the X axis (time), and one column for each of the corresponding four values (open, high, low, close).
 
@@ -610,14 +610,14 @@ This query plots the OHLC chart as follows:
   - `plot_ohlc` plots the first series.
   - `"BTC"` is the name of the first series to be used in the chart.
   - `btc_ohlc` is the table from which the data is being pulled.
-  - ``where("Instrument=`BTC/USD`")`` filters the table to only the AAPL Ticker.
+  - `btc_ohlc` is built from `btc_bin`, which filters `crypto_trades` to the `BTC/USD` instrument.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, "`Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
 - `x_twin` is used to show different Y axes.
 - `plot_ohlc` plots the second series.
   - `"ETH"` is the name of the second series to be used in the chart.
   - `eth_ohlc` is the table from which the data is being pulled.
-  - ``where("Instrument=`ETH/USD`")`` filters the table to only the MSFT Ticker.
+  - `eth_ohlc` is built from `eth_bin`, which filters `crypto_trades` to the `ETH/USD` instrument.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, `"Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
 - `figure_title` provides the title for the chart.
@@ -728,7 +728,7 @@ The `deephaven.plot` method can create subplots within figures. Subplots are plo
 
 ### Define subplots
 
-Set the number of subplots when you create a `Figure`. The input names are `rows` and `columns`.
+Set the number of subplots when you create a `Figure`. The input names are `rows` and `cols`.
 
 ```python syntax
 from deephaven.plot.figure import Figure
@@ -751,7 +751,7 @@ source = empty_table(100).update(["X = i", "Y = cos(0.1 * i)"])
 f = Figure().plot_xy(series_name="Cosine", t=source, x="X", y="Y").show()
 ```
 
-For a single figure with only one plot, specifying `rows` and `columns` is optional. However, if a plot has more than one subplot, these arguments are required. After defining the figure and its subplots, you must specify each subplot with a `new_chart` call. Each `new_chart` call creates a chart at a given row and column in the figure.
+For a single figure with only one plot, specifying `rows` and `cols` is optional. However, if a plot has more than one subplot, these arguments are required. After defining the figure and its subplots, you must specify each subplot with a `new_chart` call. Each `new_chart` call creates a chart at a given row and column in the figure.
 
 For instance, if you wish to have two subplots, one on top of another, a figure needs two rows and one column.
 
@@ -977,7 +977,7 @@ s_and_p_treemap = (
 - [`one_click`](../../reference/plot/one-click.md)
 - [`one_click_partitioned_table`](../../reference/plot/one-click-partitioned-table.md)
 - [`plot_cat`](../../reference/plot/catPlot.md)
-- [`plot_cat_hist`](../../reference/plot/catPlot.md)
+- [`plot_cat_hist`](../../reference/plot/catHistPlot.md)
 - [`plot_xy_hist`](../../reference/plot/histPlot.md)
 - [`plot_ohlc`](../../reference/plot/ohlcPlot.md)
 - [`plot_pie`](../../reference/plot/piePlot.md)

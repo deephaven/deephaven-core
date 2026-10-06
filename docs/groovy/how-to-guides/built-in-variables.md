@@ -24,15 +24,15 @@ and is not safe to refresh. Note that some usages, such as on an append-only tab
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                                     | Safe on                    | Throws error on      |
-| -------------------------------------------- | -------------------------- | -------------------- |
-| `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
-| `k`                                          | static, add-only, blink    | append-only, ticking |
-| Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
-| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
+| Variable                                     | Safe on                                         | Throws error on                                |
+| -------------------------------------------- | ----------------------------------------------- | ---------------------------------------------- |
+| `i`, `ii`                                    | static, append-only, blink                      | other refreshing tables, such as add-only      |
+| `k`                                          | static, add-only (including append-only), blink | other refreshing tables                        |
+| Simple constant offset (`Column_[i-1]`)      | all tables                                      | —                                              |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink                                   | other refreshing tables, including append-only |
 
 > [!NOTE]
-> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
+> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables other than blink tables.
 
 For refreshing tables where you need more complex positional access, see [Alternatives for refreshing tables](#alternatives-for-refreshing-tables) below.
 
@@ -51,7 +51,7 @@ source = emptyTable(10).update(
 When working with refreshing tables where you need to reference preceding or following column values, avoid using column array notation (e.g., `Column_[ii-1]`). Instead, use one of the following approaches:
 
 > [!NOTE]
-> The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
+> The examples below use Iceberg tables with auto-refresh mode, which creates refreshing tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
 
 ### 1. Source partitioned tables
 
@@ -82,17 +82,17 @@ writerOptions = TableParquetWriterOptions.builder()
 sourceWriter = sourceAdapter.tableWriter(writerOptions)
 sourceWriter.append(IcebergWriteInstructions.builder().addTables(sourceData).build())
 
-// Load the Iceberg table with auto-refresh mode (creates an add-only table)
+// Load the Iceberg table with auto-refresh mode (creates a refreshing table)
 autoRefreshInstructions = IcebergReadInstructions.builder()
     .updateMode(IcebergUpdateMode.autoRefreshingMode())
     .build()
-addOnlySource = sourceAdapter.table(autoRefreshInstructions)
+refreshingSource = sourceAdapter.table(autoRefreshInstructions)
 
 // Partition by a grouping column to create multiple tables
-partitioned = addOnlySource.partitionBy("GroupKey")
+partitioned = refreshingSource.partitionBy("GroupKey")
 ```
 
-Each partition can then be processed independently, and operations within each partition can safely use `i` and `ii` since each partition is a separate table.
+Each partition can then be processed independently. Partitioning does not lift the refreshing-table restrictions: the engine still checks each partition, so `i` and `ii` are safe in a partition only if that partition is append-only or blink. For positional access in other partitions, combine partitioning with one of the approaches below.
 
 ### 2. By → update → ungroup pattern
 
@@ -113,12 +113,12 @@ groupWriterOptions = TableParquetWriterOptions.builder()
 groupWriter = groupAdapter.tableWriter(groupWriterOptions)
 groupWriter.append(IcebergWriteInstructions.builder().addTables(groupData).build())
 
-// Load the Iceberg table with auto-refresh mode (creates an add-only table)
-addOnlyGroupSource = groupAdapter.table(autoRefreshInstructions)
+// Load the Iceberg table with auto-refresh mode (creates a refreshing table)
+refreshingGroupSource = groupAdapter.table(autoRefreshInstructions)
 
 // Group by the grouping column and compute previous values using array operations
 // Prepend null to match array sizes for ungroup
-grouped = addOnlyGroupSource.groupBy("Group").update(
+grouped = refreshingGroupSource.groupBy("Group").update(
     "PrevValue = concat(new int[]{NULL_INT}, Value.size() > 0 ? Value.subVector(0, Value.size() - 1).toArray() : new int[0])"
 )
 
@@ -148,14 +148,14 @@ ajWriterOptions = TableParquetWriterOptions.builder()
 ajWriter = ajAdapter.tableWriter(ajWriterOptions)
 ajWriter.append(IcebergWriteInstructions.builder().addTables(ajData).build())
 
-// Load the Iceberg table with auto-refresh mode (creates an add-only table)
-addOnlyAjSource = ajAdapter.table(autoRefreshInstructions)
+// Load the Iceberg table with auto-refresh mode (creates a refreshing table)
+refreshingAjSource = ajAdapter.table(autoRefreshInstructions)
 
 // Create a shifted version for the join
-shifted = addOnlyAjSource.view("ShiftedTimestamp = Timestamp + 1")
+shifted = refreshingAjSource.updateView("ShiftedTimestamp = Timestamp - 1")
 
 // Join to get the previous value based on timestamp
-ajResult = shifted.aj(addOnlyAjSource, "ShiftedTimestamp >= Timestamp", "PrevValue = Value")
+ajResult = shifted.aj(refreshingAjSource, "ShiftedTimestamp >= Timestamp", "PrevValue = Value")
 ```
 
 ### Performance considerations

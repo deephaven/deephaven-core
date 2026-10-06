@@ -51,6 +51,10 @@ tasks.named('run', JavaExec) {
 }
 ```
 
+### Authentication
+
+By default, the Deephaven server requires [pre-shared key (PSK) authentication](./authentication/auth-psk.md), and a Java client session that sets no authentication connects as anonymous, which the server rejects. Pass the key to the session builder with `authenticationTypeAndValue`, using the value `io.deephaven.authentication.psk.PskAuthenticationHandler <key>`. The [complete example](#complete-example) below reads the key from the `DEEPHAVEN_PSK` environment variable, so set that variable to your server's key before you run it. If your server has [anonymous authentication](./authentication/auth-anon.md) enabled, you can omit this setting.
+
 ## Basic pattern
 
 The basic pattern for sending data from a Java client is:
@@ -105,6 +109,9 @@ public class DeviceStatusTracker {
                             .managedChannel(channel)
                             .scheduler(scheduler)
                             .allocator(allocator)
+                            .authenticationTypeAndValue(
+                                    "io.deephaven.authentication.psk.PskAuthenticationHandler "
+                                            + System.getenv("DEEPHAVEN_PSK"))
                             .build()
                             .newFlightSession();
                     try {

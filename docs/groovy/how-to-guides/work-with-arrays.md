@@ -8,7 +8,7 @@ This guide shows you how to work with [arrays](../reference/query-language/types
 
 ## Array column types
 
-Array columns fall into one of three categories of data type.
+Array columns fall into one of two categories of data type.
 
 ### Array columns
 
@@ -19,21 +19,12 @@ source = emptyTable(1).update("X = new int[]{1, 2, 3}")
 sourceMeta = source.meta()
 ```
 
-You can also use [Groovy closures](./groovy-closures.md) to create Java primitive array columns:
+You can also use [Groovy closures](./groovy-closures.md) to create Java primitive array columns. A closure called in a query string returns `Object`, so cast the result to the array type:
 
 ```groovy order=source,sourceMeta
-listFunc = { -> [4, 5, 6] }
+listFunc = { -> [4, 5, 6] as int[] }
 
-source = emptyTable(1).update("ArrayFromGroovy = listFunc()")
-sourceMeta = source.meta()
-```
-
-The Deephaven engine can seamlessly work with these column types.
-
-### Vector columns
-
-```groovy order=source,sourceMeta
-source = emptyTable(5).update("X = ii % 2", "Y = ii").groupBy("X")
+source = emptyTable(1).update("ArrayFromGroovy = (int[])listFunc()")
 sourceMeta = source.meta()
 ```
 

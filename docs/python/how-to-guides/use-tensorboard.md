@@ -20,7 +20,7 @@ First, we have to set a log directory. This is where TensorBoard will store the 
 
 ```python skip-test
 log_dir = "tensorboard_logs"
-os.system("mkdir '{}'".format(logdir))
+os.system("mkdir '{}'".format(log_dir))
 ```
 
 Second, we need to run TensorBoard and provide the log directory and port number:
@@ -67,7 +67,7 @@ import os
 
 # Set up the name of the log directory and run TensorBoard using port 6006
 log_dir = "tensorboard_logs"
-os.system("mkdir '{}'".format(logdir))
+os.system("mkdir '{}'".format(log_dir))
 os.system("tensorboard --logdir='{}' --port 6006 --bind_all &".format(log_dir))
 
 
@@ -205,22 +205,21 @@ In this example, we will be using one of the pre-built Deephaven Docker images: 
 
 ### Classification example
 
-We will classify the Iris dataset with Deephaven tables and use the same Keras neural network we built in our [how-to use PyTorch guide](./use-pytorch.md#classify-the-iris-dataset-with-deephaven-tables). We will only need to add a few lines of code to enable TensorBoard!
+We will classify the Iris dataset with Deephaven tables and use the same PyTorch neural network (`IrisANN`) we built in the [PyTorch guide](./use-pytorch.md#classify-the-iris-dataset-with-deephaven-tables). We will only need to add a few lines of code to enable TensorBoard!
 
 First, we need to create a `SummaryWriter` instance to log data for consumption and visualization by TensorBoard:
 
 ```python skip-test
 from torch.utils.tensorboard import SummaryWriter
 
-writer = SummaryWriter()
+log_dir = "tensorboard_logs"
+writer = SummaryWriter(log_dir)
 ```
-
-Writer will output to ./runs/ directory by default.
 
 Second, we need to run TensorBoard and provide the log directory and port number:
 
 ```python skip-test
-os.system("tensorboard --logdir='runs' --port 6006 --bind_all &".format(log_dir))
+os.system("tensorboard --logdir='{}' --port 6006 --bind_all &".format(log_dir))
 ```
 
 After that, your TensorBoard dashboard will be available via the browser using the following URL:

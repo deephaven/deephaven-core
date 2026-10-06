@@ -36,9 +36,9 @@ Deephaven's Python API follows standard Python conventions outlined in [PEP 8](h
 
 The landing page contains a laundry list of Java packages. But what is a Java package? It's not much different from a Python package in that it contains Java code that that's part of an API. Packages in Java are used to group similar classes and interfaces in the same way a folder is typically used in a file system to group similar files. For instance, the [`io.deephaven.api.agg`](/core/javadoc/io/deephaven/api/agg/package-summary.html) package contains classes and interfaces that form the Java implementation of Deephaven's powerful aggregations. Deephaven's Python analogue, [`deephaven.agg`](/core/pydoc/code/deephaven.agg.html#module-deephaven.agg), is a wrapper around Java source code, so it contains many of the same functionalities.
 
-A Java package will typically contain one or more interfaces and one or more classes. A Java class is similar to a Python class - it's a blueprint for how to build certain types of objects. For instance, the Deephaven Java class [`io.deephaven.api.agg.Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html) contains the blueprints for implementing all of the different types of aggregations Deephaven has to offer. A Java interface is a bit different. For the sake of this document, just think of an interface as a Java mechanism to achieve [abstraction](https://en.wikipedia.org/wiki/Abstraction_(computer_science)), which hides implementation details from users.
+A Java package will typically contain one or more interfaces and one or more classes. A Java class is similar to a Python class - it's a blueprint for how to build certain types of objects. A Java interface is a bit different. For the sake of this document, just think of an interface as a Java mechanism to achieve [abstraction](https://en.wikipedia.org/wiki/Abstraction_(computer_science)), which hides implementation details from users. An interface can also hold static methods. For instance, the Deephaven Java interface [`io.deephaven.api.agg.Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html) defines static factory methods for every aggregation type Deephaven offers.
 
-Java methods live within classes. Following the previous path, [`io.deephaven.api.agg.Aggregation.AggAbsSum`](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggAbsSum(java.lang.String...)) is the blueprint for building an absolute sum aggregation. It's a method which is a member of a class, which is a member of a package.
+Java methods live within classes and interfaces. Following the previous path, [`io.deephaven.api.agg.Aggregation.AggAbsSum`](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggAbsSum(java.lang.String...)) is the blueprint for building an absolute sum aggregation. It's a static method that is a member of an interface, which is a member of a package.
 
 Javadocs organize the packages, classes, interfaces, methods, and attributes in a hierarchical fashion.
 
@@ -65,14 +65,15 @@ Each `AggPct` in the block above is a different method, despite having the same 
 
 ### Varargs
 
-Note how, in the previous section, each overloaded method uses `...`. This is called `varargs` (short for variable arguments), and it means that an input parameter can take an arbitrary number of values. For instance, `String...` is an input data type to many of Deephaven's methods. The `...` means "zero or more". Any varargs input parameter must _always_ be the final input parameter if there is more than one input to a method. For the second overload above (`AggPct(double percentile, String... pairs)`), any of the following method calls are valid:
+Note how, in the previous section, each overloaded method uses `...`. This is called `varargs` (short for variable arguments), and it means that an input parameter can take an arbitrary number of values. For instance, `String...` is an input data type to many of Deephaven's methods. The `...` means "zero or more". Any varargs input parameter must _always_ be the final input parameter if there is more than one input to a method. For the second overload above (`AggPct(double percentile, String... pairs)`), any of the following calls are valid:
 
 ```java skip-test
 AggPct(0.5, "Col2", "AnotherColumn", "SomeOtherColumn = Col1")
 AggPct(0.2, "ColNew = ColOld")
 AggPct(0.9, "A = B", "C = D", "E = F", "G = H")
-AggPct(0.1)
 ```
+
+Java's varargs syntax accepts zero values, but a method can still reject an empty list at runtime. `AggPct` requires at least one column pair.
 
 ## Java vs Python
 

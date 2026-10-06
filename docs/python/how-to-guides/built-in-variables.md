@@ -24,15 +24,15 @@ and is not safe to refresh. Note that some usages, such as on an append-only tab
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                                     | Safe on                    | Throws error on      |
-| -------------------------------------------- | -------------------------- | -------------------- |
-| `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
-| `k`                                          | static, add-only, blink    | append-only, ticking |
-| Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
-| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
+| Variable                                     | Safe on                                         | Throws error on                                |
+| -------------------------------------------- | ----------------------------------------------- | ---------------------------------------------- |
+| `i`, `ii`                                    | static, append-only, blink                      | other refreshing tables, such as add-only      |
+| `k`                                          | static, add-only (including append-only), blink | other refreshing tables                        |
+| Simple constant offset (`Column_[i-1]`)      | all tables                                      | —                                              |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink                                   | other refreshing tables, including append-only |
 
 > [!NOTE]
-> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
+> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables other than blink tables.
 
 For refreshing tables where you need more complex positional access, see [Alternatives for refreshing tables](#alternatives-for-refreshing-tables) below.
 
@@ -53,7 +53,7 @@ source = empty_table(10).update(
 When working with refreshing tables where you need to reference preceding or following column values, avoid using column array notation (e.g., `Column_[ii-1]`). Instead, use one of the following approaches:
 
 > [!NOTE]
-> The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
+> The examples below use Iceberg tables with auto-refresh mode, which creates refreshing tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
 
 ### 1. Source partitioned tables
 
@@ -87,16 +87,16 @@ writer_options = iceberg.TableParquetWriterOptions(
 source_writer = source_adapter.table_writer(writer_options=writer_options)
 source_writer.append(iceberg.IcebergWriteInstructions([source_data]))
 
-# Load the Iceberg table with auto-refresh mode (creates an add-only table)
-add_only_source = source_adapter.table(
+# Load the Iceberg table with auto-refresh mode (creates a refreshing table)
+refreshing_source = source_adapter.table(
     update_mode=iceberg.IcebergUpdateMode.auto_refresh()
 )
 
 # Partition by a grouping column to create multiple tables
-partitioned = add_only_source.partition_by(by=["GroupKey"])
+partitioned = refreshing_source.partition_by(by=["GroupKey"])
 ```
 
-Each partition can then be processed independently, and operations within each partition can safely use `i` and `ii` since each partition is a separate table.
+Each partition can then be processed independently. Partitioning does not lift the refreshing-table restrictions: the engine still checks each partition, so `i` and `ii` are safe in a partition only if that partition is append-only or blink. For positional access in other partitions, combine partitioning with one of the approaches below.
 
 ### 2. By → update → ungroup pattern
 
@@ -119,14 +119,14 @@ group_writer_options = iceberg.TableParquetWriterOptions(
 group_writer = group_adapter.table_writer(writer_options=group_writer_options)
 group_writer.append(iceberg.IcebergWriteInstructions([group_data]))
 
-# Load the Iceberg table with auto-refresh mode (creates an add-only table)
-add_only_group_source = group_adapter.table(
+# Load the Iceberg table with auto-refresh mode (creates a refreshing table)
+refreshing_group_source = group_adapter.table(
     update_mode=iceberg.IcebergUpdateMode.auto_refresh()
 )
 
 # Group by the grouping column and compute previous values using array operations
 # Prepend null to match array sizes for ungroup
-grouped = add_only_group_source.group_by(by=["Group"]).update(
+grouped = refreshing_group_source.group_by(by=["Group"]).update(
     "PrevValue = concat(new int[]{NULL_INT}, Value.size() > 0 ? Value.subVector(0, Value.size() - 1).toArray() : new int[0])"
 )
 
@@ -158,17 +158,17 @@ aj_writer_options = iceberg.TableParquetWriterOptions(
 aj_writer = aj_adapter.table_writer(writer_options=aj_writer_options)
 aj_writer.append(iceberg.IcebergWriteInstructions([aj_data]))
 
-# Load the Iceberg table with auto-refresh mode (creates an add-only table)
-add_only_aj_source = aj_adapter.table(
+# Load the Iceberg table with auto-refresh mode (creates a refreshing table)
+refreshing_aj_source = aj_adapter.table(
     update_mode=iceberg.IcebergUpdateMode.auto_refresh()
 )
 
 # Create a shifted version for the join
-shifted = add_only_aj_source.view("ShiftedTimestamp = Timestamp + 1")
+shifted = refreshing_aj_source.update_view("ShiftedTimestamp = Timestamp - 1")
 
 # Join to get the previous value based on timestamp
 aj_result = shifted.aj(
-    table=add_only_aj_source,
+    table=refreshing_aj_source,
     on=["ShiftedTimestamp >= Timestamp"],
     joins=["PrevValue = Value"],
 )
