@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.ssa;
 
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.*;
@@ -16,15 +18,44 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
     boolean SEGMENTED_SORTED_ARRAY_VALIDATION =
             Configuration.getInstance().getBooleanWithDefault("SegmentedSortedArray.validation", false);
 
-    static SegmentedSortedArray make(ChunkType chunkType, boolean reverse, int nodeSize) {
-        return makeFactory(chunkType, reverse, nodeSize).get();
+    /**
+     * Make a SegmentedSortedArray for values of the given type.
+     *
+     * @param chunkType the chunk type of the values
+     * @param equalsConsistent true when values of the data type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject SSA that tests Object equality with {@code equals}; when false, Object equality is
+     *        tested with {@link ObjectComparisons#compareEquals(Object, Object)}. Other chunk types ignore it. An
+     *        operation reads the registry once and passes the same decision to every kernel it creates, so its kernels
+     *        come from one family.
+     * @param reverse true for a descending SSA
+     * @param nodeSize the leaf size of the SSA
+     * @return a new SegmentedSortedArray
+     */
+    static SegmentedSortedArray make(ChunkType chunkType, boolean equalsConsistent, boolean reverse, int nodeSize) {
+        return makeFactory(chunkType, equalsConsistent, reverse, nodeSize).get();
     }
 
-    static Supplier<SegmentedSortedArray> makeFactory(ChunkType chunkType, boolean reverse, int nodeSize) {
+    /**
+     * Make a factory for SegmentedSortedArrays of values of the given type, choosing the implementation once.
+     *
+     * @param chunkType the chunk type of the values
+     * @param equalsConsistent true when values of the data type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject SSA that tests Object equality with {@code equals}; when false, Object equality is
+     *        tested with {@link ObjectComparisons#compareEquals(Object, Object)}. Other chunk types ignore it. An
+     *        operation reads the registry once and passes the same decision to every kernel it creates, so its kernels
+     *        come from one family.
+     * @param reverse true for a descending SSA
+     * @param nodeSize the leaf size of the SSA
+     * @return a factory for new SegmentedSortedArrays
+     */
+    static Supplier<SegmentedSortedArray> makeFactory(ChunkType chunkType, boolean equalsConsistent, boolean reverse,
+            int nodeSize) {
         switch (chunkType) {
             case Char:
-                return reverse ? () -> new NullAwareCharReverseSegmentedSortedArray(nodeSize)
-                        : () -> new NullAwareCharSegmentedSortedArray(nodeSize);
+                return reverse ? () -> new CharReverseSegmentedSortedArray(nodeSize)
+                        : () -> new CharSegmentedSortedArray(nodeSize);
             case Byte:
                 return reverse ? () -> new ByteReverseSegmentedSortedArray(nodeSize)
                         : () -> new ByteSegmentedSortedArray(nodeSize);
@@ -44,6 +75,10 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
                 return reverse ? () -> new DoubleReverseSegmentedSortedArray(nodeSize)
                         : () -> new DoubleSegmentedSortedArray(nodeSize);
             case Object:
+                if (equalsConsistent) {
+                    return reverse ? () -> new EqualsConsistentObjectReverseSegmentedSortedArray(nodeSize)
+                            : () -> new EqualsConsistentObjectSegmentedSortedArray(nodeSize);
+                }
                 return reverse ? () -> new ObjectReverseSegmentedSortedArray(nodeSize)
                         : () -> new ObjectSegmentedSortedArray(nodeSize);
             default:

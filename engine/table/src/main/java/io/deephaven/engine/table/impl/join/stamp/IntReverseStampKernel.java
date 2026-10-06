@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit IntReverseStampKernel and run "./gradlew replicateStampKernel" to regenerate
+// ****** Edit CharStampKernel and run "./gradlew replicateStampKernel" to regenerate
 //
 // @formatter:off
 
@@ -12,6 +12,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.IntComparisons;
 
 
 public class IntReverseStampKernel implements StampKernel {
@@ -42,10 +43,11 @@ public class IntReverseStampKernel implements StampKernel {
 
         for (int li = 0; li < leftSize;) {
             final int leftValue = leftStamps.get(li);
-            if (lt(leftValue, rightLowValue)) {
+            final int lowComparison = doComparison(leftValue, rightLowValue);
+            if (lowComparison < 0) {
                 leftRedirections.set(li++, RowSequence.NULL_ROW_KEY);
                 continue;
-            } else if (eq(leftValue, rightLowValue)) {
+            } else if (lowComparison == 0) {
                 leftRedirections.set(li++, rightKeyIndices.get(rightLowIdx));
                 continue;
             }
@@ -55,10 +57,11 @@ public class IntReverseStampKernel implements StampKernel {
             while (rightLowIdx < rightHighIdx) {
                 final int rightMidIdx = ((rightHighIdx - rightLowIdx) / 2) + rightLowIdx;
                 final int rightMidValue = rightStamps.get(rightMidIdx);
-                if (leq(rightMidValue, leftValue)) {
+                final int midComparison = doComparison(rightMidValue, leftValue);
+                if (midComparison <= 0) {
                     rightLowIdx = rightMidIdx;
                     rightLowValue = rightMidValue;
-                    if (rightLowIdx == rightHighIdx - 1 || eq(rightLowValue, leftValue)) {
+                    if (rightLowIdx == rightHighIdx - 1 || midComparison == 0) {
                         break;
                     }
                 } else {
@@ -83,21 +86,11 @@ public class IntReverseStampKernel implements StampKernel {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(int lhs, int rhs) {
-        return -1 * Integer.compare(lhs, rhs);
+        return -1 * IntComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
     private static boolean lt(int lhs, int rhs) {
         return doComparison(lhs, rhs) < 0;
-    }
-
-    private static boolean leq(int lhs, int rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
-
-    private static boolean eq(int lhs, int rhs) {
-        // region equality function
-        return lhs == rhs;
-        // endregion equality function
     }
 }

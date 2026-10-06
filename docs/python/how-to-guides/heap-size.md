@@ -1,6 +1,5 @@
 ---
 title: Configure and adjust heap size
-sidebar_label: Adjust heap size
 ---
 
 When launching Deephaven, you may have very specific and perhaps large data needs that require fine-tuned resource management, such as adjusting your heap size (memory).

@@ -1,6 +1,5 @@
 ---
 title: deephaven.ui
-sidebar_label: deephaven.ui
 ---
 
 Now that you're more familiar with the table API and visualizing data, it's time to consider how to present your work. The [`deephaven.ui`](/core/ui/docs/) package provides a rich set of tools for building interactive user experiences that show off the tables, plots, and other widgets your queries created.

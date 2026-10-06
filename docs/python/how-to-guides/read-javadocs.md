@@ -1,6 +1,5 @@
 ---
 title: Javadocs for Python users
-sidebar_label: Read Javadocs
 ---
 
 This guide will cover best practices for reading Javadocs as a Python user. Deephaven's query engine is written in Java, and Deephaven query strings can call Java, so a basic understanding of Javadocs and how to effectively use them can greatly benefit any Python user who wants to maximize the return from their queries.

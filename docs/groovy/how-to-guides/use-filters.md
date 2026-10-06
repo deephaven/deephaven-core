@@ -1,6 +1,5 @@
 ---
 title: Filter table data
-sidebar_label: Filter
 ---
 
 This guide covers filtering table data in Deephaven. Many different table operations filter data in a table. Some keep data based on conditional formulas, whereas others keep data based on row positions or columns.

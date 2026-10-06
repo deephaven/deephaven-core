@@ -1,7 +1,6 @@
 ---
 id: docker-setup
 title: Debug Docker-run Deephaven with PyCharm
-sidebar_label: Docker
 ---
 
 This guide shows you how to set up a remote debugging server in PyCharm Professional to debug Deephaven code running in a Docker container.

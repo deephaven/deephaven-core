@@ -10,13 +10,17 @@ import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
@@ -1011,6 +1015,187 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertNull(error.get());
         assertTrue("sampled regions " + sampled, sampled.contains(0) && sampled.contains(lastRegion));
         assertEquals("sampled regions " + sampled, PushdownResult.REGION_SORTED_DATA_COST, cost.get());
+    }
+
+    /**
+     * Removing every location for a partition value empties that key's bucket in the partitioning column's data index.
+     * The index table reports the key as removed, so the key must also leave the index table's row set and its lookup.
+     */
+    @Test
+    public void testPartitioningIndexAfterBucketEmptied() {
+        SUT = new RegionedColumnSourceManager(true, true, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+        captureIndexes(SUT.initialize());
+        checkIndexes();
+
+        // Add and include all 4 locations: region indices 0, 1, 2, 3 in insertion order. Partition A holds regions 0
+        // and 1, partition B holds regions 2 and 3.
+        Arrays.stream(tableLocations).forEach(SUT::addLocation);
+        setSizeExpectations(true, true, 5, 1000, 5003, 2);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
+        checkIndexes();
+
+        final DataIndex partitioningIndex = capturedPartitioningColumnIndex;
+        // The index mutates its row sets in place without previous values, so validate the keys and row set only.
+        final TableUpdateValidator validator = TableUpdateValidator.make(
+                (QueryTable) partitioningIndex.table().view(partitioningColumnDefinition.getName()));
+
+        // While the index table's update is being delivered, B is gone from the current table but still in the
+        // previous one.
+        final long positionB = partitioningIndex.rowKeyLookup().apply("B", false);
+        assertNotEquals(RowSequence.NULL_ROW_KEY, positionB);
+        final AtomicLong currentDuringUpdate = new AtomicLong(-2);
+        final AtomicLong previousDuringUpdate = new AtomicLong(-2);
+        final AtomicReference<RowSet> addedDuringUpdate = new AtomicReference<>();
+        final TableUpdateListener lookupRecorder =
+                new InstrumentedTableUpdateListenerAdapter(partitioningIndex.table(), false) {
+                    @Override
+                    public void onUpdate(final TableUpdate upstream) {
+                        currentDuringUpdate.set(partitioningIndex.rowKeyLookup().apply("B", false));
+                        previousDuringUpdate.set(partitioningIndex.rowKeyLookup().apply("B", true));
+                        addedDuringUpdate.set(upstream.added().copy());
+                    }
+                };
+        partitioningIndex.table().addUpdateListener(lookupRecorder);
+
+        // Remove both of partition B's locations, emptying its bucket.
+        expectPoison(2);
+        expectPoison(3);
+        jmock.checking(new Expectations() {
+            {
+                allowing(tableLocation1B).supportsSubscriptions();
+                will(returnValue(true));
+                allowing(tableLocation1B).unsubscribe(with(subscriptionBuffers[3]));
+                allowing(tableLocation0B).supportsSubscriptions();
+                will(returnValue(false));
+            }
+        });
+        updateGraph.runWithinUnitTestCycle(() -> {
+            SUT.removeLocationKey(tableLocation0B.getKey());
+            SUT.removeLocationKey(tableLocation1B.getKey());
+            SUT.refresh();
+        });
+        jmock.assertIsSatisfied();
+        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
+
+        validator.validate();
+        assertFalse(validator.hasFailed());
+        assertEquals(RowSequence.NULL_ROW_KEY, currentDuringUpdate.get());
+        assertEquals(positionB, previousDuringUpdate.get());
+        assertEquals(RowSequence.NULL_ROW_KEY, partitioningIndex.rowKeyLookup().apply("B", false));
+
+        // Once another cycle has passed, B is gone from the previous table too.
+        updateGraph.runWithinUnitTestCycle(() -> {
+        });
+        assertEquals(RowSequence.NULL_ROW_KEY, partitioningIndex.rowKeyLookup().apply("B", true));
+        final WritableRowSet expectedA = RowSetFactory.fromRange(
+                RegionedColumnSource.getFirstRowKey(0), RegionedColumnSource.getFirstRowKey(0) + 4);
+        expectedA.insertRange(
+                RegionedColumnSource.getFirstRowKey(1), RegionedColumnSource.getFirstRowKey(1) + 999);
+        checkIndex(Map.of("A", expectedA), partitioningIndex);
+
+        // Adding a location for B again brings its bucket back at the position it had before, as an add.
+        addedDuringUpdate.get().close();
+        final int readdedRegion = 4;
+        jmock.checking(new Expectations() {
+            {
+                oneOf(tableLocation0B).refresh();
+                IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
+                    oneOf(columnSources[ci]).addRegion(with(columnDefinitions.get(ci)),
+                            with(columnLocations[2][ci]));
+                    will(returnValue(readdedRegion));
+                });
+            }
+        });
+        SUT.addLocation(tableLocation0B);
+        updateGraph.runWithinUnitTestCycle(SUT::refresh);
+        jmock.assertIsSatisfied();
+
+        validator.validate();
+        assertFalse(validator.hasFailed());
+        try (final RowSet added = addedDuringUpdate.get()) {
+            assertRowSetEquals(RowSetFactory.fromKeys(positionB), added);
+        }
+        assertEquals(positionB, currentDuringUpdate.get());
+        assertEquals(RowSequence.NULL_ROW_KEY, previousDuringUpdate.get());
+        checkIndex(Map.of(
+                "A", expectedA,
+                "B", RowSetFactory.fromRange(RegionedColumnSource.getFirstRowKey(readdedRegion),
+                        RegionedColumnSource.getFirstRowKey(readdedRegion) + lastSizes[2] - 1)),
+                partitioningIndex);
+        partitioningIndex.table().removeUpdateListener(lookupRecorder);
+
+        IntStream.range(0, 2).forEachOrdered(li -> {
+            final TableLocation tl = tableLocations[li];
+            jmock.checking(new Expectations() {
+                {
+                    oneOf(tl).supportsSubscriptions();
+                    if (li % 2 == 0) {
+                        will(returnValue(false));
+                    } else {
+                        will(returnValue(true));
+                        oneOf(tl).unsubscribe(with(subscriptionBuffers[li]));
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Adding two locations for the same new partition value in one cycle creates that key's bucket and then grows it.
+     * The index table must report the key's position only as added, never as both added and modified.
+     */
+    @Test
+    public void testPartitioningIndexNewKeyFromTwoLocationsInOneCycle() {
+        SUT = new RegionedColumnSourceManager(true, true, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+        captureIndexes(SUT.initialize());
+        checkIndexes();
+
+        final DataIndex partitioningIndex = capturedPartitioningColumnIndex;
+        final AtomicReference<RowSet> addedDuringUpdate = new AtomicReference<>();
+        final AtomicReference<RowSet> modifiedDuringUpdate = new AtomicReference<>();
+        final TableUpdateListener updateRecorder =
+                new InstrumentedTableUpdateListenerAdapter(partitioningIndex.table(), false) {
+                    @Override
+                    public void onUpdate(final TableUpdate upstream) {
+                        addedDuringUpdate.set(upstream.added().copy());
+                        modifiedDuringUpdate.set(upstream.modified().copy());
+                    }
+                };
+        partitioningIndex.table().addUpdateListener(updateRecorder);
+
+        // Add and include all 4 locations in one cycle. Partition A arrives as regions 0 and 1, partition B as regions
+        // 2 and 3, so each new key's bucket is created by one location and grown by the other.
+        Arrays.stream(tableLocations).forEach(SUT::addLocation);
+        setSizeExpectations(true, true, 5, 1000, 5003, 2);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
+        checkIndexes();
+        partitioningIndex.table().removeUpdateListener(updateRecorder);
+
+        // expect table locations to be cleaned up via LivenessScope release as the test exits, even if an assertion
+        // below fails
+        IntStream.range(0, tableLocations.length).forEachOrdered(li -> {
+            final TableLocation tl = tableLocations[li];
+            jmock.checking(new Expectations() {
+                {
+                    oneOf(tl).supportsSubscriptions();
+                    if (li % 2 == 0) {
+                        // Even locations don't support subscriptions
+                        will(returnValue(false));
+                    } else {
+                        will(returnValue(true));
+                        oneOf(tl).unsubscribe(with(subscriptionBuffers[li]));
+                    }
+                }
+            });
+        });
+
+        try (final RowSet added = addedDuringUpdate.get();
+                final RowSet modified = modifiedDuringUpdate.get()) {
+            assertRowSetEquals(RowSetFactory.fromRange(0, 1), added);
+            assertTrue("modified " + modified + " overlaps added " + added, modified.isEmpty());
+        }
     }
 
     private static void maybePrintStackTrace(@NotNull final Exception e) {

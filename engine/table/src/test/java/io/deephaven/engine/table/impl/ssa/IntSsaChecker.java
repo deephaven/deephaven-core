@@ -18,6 +18,7 @@ import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.util.compare.IntComparisons;
 
 public class IntSsaChecker implements SsaChecker {
     static IntSsaChecker INSTANCE = new IntSsaChecker();
@@ -77,7 +78,7 @@ public class IntSsaChecker implements SsaChecker {
 
     private static boolean eq(int lhs, int rhs) {
         // region equality function
-        return lhs == rhs;
+        return IntComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

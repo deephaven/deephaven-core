@@ -1,6 +1,5 @@
 ---
 title: Where can I find the password for the Deephaven IDE?
-sidebar_label: Where can I find the password for the Deephaven IDE?
 ---
 
 <em>I started a Deephaven server from Python. I want to connect to the IDE via my web browser, but it's asking me for a password I didn't set. Where can I find the password?</em>

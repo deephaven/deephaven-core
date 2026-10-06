@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.protobuf.test;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+message FooBar {
+  int32 foo = 1;
+  string bar = 2;
+}

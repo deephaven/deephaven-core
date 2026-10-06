@@ -1,6 +1,5 @@
 ---
 title: Deephaven Community Core Quickstart
-sidebar_label: Quickstart
 ---
 
 Deephaven Community Core can be installed with [Docker](https://docs.docker.com/engine/install/) or the [production application](./production-application.md). If you are familiar with Docker or already have it installed, the single-line Docker command is an easy way to get started with Deephaven. If you wish to not use Docker, use the production application.

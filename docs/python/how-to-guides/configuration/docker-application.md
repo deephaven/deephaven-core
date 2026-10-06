@@ -1,6 +1,5 @@
 ---
 title: Configure the Deephaven Docker application
-sidebar_label: Deephaven Docker application
 ---
 
 This guide covers best practices for configuring the Deephaven Docker application. Deephaven can be run from [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). The latter is recommended for customized applications, as it provides a simpler mechanism for orchestrating complex applications with multiple services.
@@ -112,10 +111,10 @@ RUN pip install some-awesome-package
 
 ### Extended Python images
 
-- `ghcr.io/deephaven/server-all-ai`: Deephaven's server-side API with NLTK, Tensorflow, PyTorch, and SciKit-Learn.
+- `ghcr.io/deephaven/server-all-ai`: Deephaven's server-side API with NLTK, Tensorflow, PyTorch, and scikit-learn.
 - `ghcr.io/deephaven/server-nltk`: Deephaven's server-side API with NLTK.
 - `ghcr.io/deephaven/server-pytorch`: Deephaven's server-side API with PyTorch.
-- `ghcr.io/deephaven/server-sklearn`: Deephaven's server-side API with SciKit-Learn.
+- `ghcr.io/deephaven/server-sklearn`: Deephaven's server-side API with scikit-learn.
 - `ghcr.io/deephaven/server-tensorflow`: Deephaven's server-side API with Tensorflow.
 
 ### Debugging

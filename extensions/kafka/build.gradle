@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    id 'com.google.protobuf' version '0.9.6'
 }
 
 def kafka_images = [
@@ -105,4 +106,18 @@ tasks.register('testOutOfBand', Test) {
 
     // Kafka client logging is very verbose; tune it down to only log warn or more severe
     systemProperty 'org.slf4j.simpleLogger.log.org.apache.kafka', 'warn'
+}
+
+spotless {
+    java {
+        targetExclude(
+                'build/generated/sources/proto/test/java/**',
+        )
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = libs.protoc.get().toString()
+    }
 }

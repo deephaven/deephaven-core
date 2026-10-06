@@ -226,6 +226,89 @@ public class TestVectorComponentFilterWrapper {
         }
     }
 
+    /**
+     * A null vector or array has no elements, so it matches nothing. The int component filter is an IntChunkFilter,
+     * which exercises the single-element path.
+     */
+    @Test
+    public void testNullCellsMatchNothing() {
+        final Table toFilter = TableTools
+                .newTable(TableTools.intCol("Group", 0, 0, 1, 2, 2, 3),
+                        TableTools.intCol("X", 1, 2, 1, 3, 4, 1))
+                .groupBy("Group")
+                .update("Vector = Group == 1 ? null : X", "Array = Group == 1 ? null : X.toArray()");
+
+        for (final String column : new String[] {"Vector", "Array"}) {
+            final WhereFilter[] filters =
+                    WhereFilterFactory.expandQuickFilter(toFilter.getDefinition(), "1", Set.of(column));
+            assertEquals(1, filters.length);
+            assertTrue(filters[0] instanceof VectorComponentFilterWrapper);
+            assertTableEquals(toFilter.where("Group in 0, 3"), toFilter.where(Filter.or(filters)));
+        }
+
+        final WhereFilter[] arrayFilters =
+                WhereFilterFactory.expandQuickFilter(toFilter.getDefinition(), "1", Set.of("Array"));
+        arrayFilters[0].init(toFilter.getDefinition());
+        try (final VectorChunkFilter chunkFilter = ((VectorComponentFilterWrapper) arrayFilters[0]).chunkFilter();
+                final WritableObjectChunk<int[], Values> values = WritableObjectChunk.makeWritableChunk(32);
+                final WritableBooleanChunk<Values> matches = WritableBooleanChunk.makeWritableChunk(32)) {
+            values.setSize(0);
+            values.add(new int[] {1});
+            values.add(null);
+            values.add(new int[] {2, 1});
+            assertEquals(2, chunkFilter.filter(values, matches));
+            assertTrue(matches.get(0));
+            assertFalse(matches.get(1));
+            assertTrue(matches.get(2));
+
+            matches.fillWithValue(0, 3, true);
+            assertEquals(2, chunkFilter.filterAnd(values, matches));
+            assertTrue(matches.get(0));
+            assertFalse(matches.get(1));
+            assertTrue(matches.get(2));
+        }
+    }
+
+    /**
+     * The instant filter is not an ObjectChunkFilter, so this exercises the chunked path on null cells.
+     */
+    @Test
+    public void testNullInstantCellsMatchNothing() {
+        final Table toFilter = TableTools
+                .newTable(TableTools.col("ToMatch", DateTimeUtils.parseInstant("2025-08-20T13:01:00 NY"),
+                        DateTimeUtils.parseInstant("2025-08-20T13:02:00 NY"),
+                        DateTimeUtils.parseInstant("2025-08-21T14:04:00 NY")),
+                        TableTools.intCol("Group", 0, 1, 2))
+                .groupBy("Group")
+                .update("Array = Group == 1 ? null : ToMatch.toArray()");
+
+        final WhereFilter[] arrayFilters =
+                WhereFilterFactory.expandQuickFilter(toFilter.getDefinition(), "2025-08-20 NY", Set.of("Array"));
+        assertEquals(1, arrayFilters.length);
+        assertTableEquals(toFilter.where("Group == 0"), toFilter.where(Filter.or(arrayFilters)));
+
+        // a ternary loses the vector's component type, so build the vector filter on the grouped column
+        final WhereFilter[] vectorFilters =
+                WhereFilterFactory.expandQuickFilter(toFilter.getDefinition(), "2025-08-20 NY", Set.of("ToMatch"));
+        vectorFilters[0].init(toFilter.getDefinition());
+        try (final VectorChunkFilter chunkFilter = ((VectorComponentFilterWrapper) vectorFilters[0]).chunkFilter();
+                final WritableObjectChunk<ObjectVector<Instant>, Values> values =
+                        WritableObjectChunk.makeWritableChunk(32);
+                final WritableBooleanChunk<Values> matches = WritableBooleanChunk.makeWritableChunk(32)) {
+            values.setSize(0);
+            values.add(null);
+            values.add(makeInstantVector("2025-08-20T13:00:00 NY"));
+            assertEquals(1, chunkFilter.filter(values, matches));
+            assertFalse(matches.get(0));
+            assertTrue(matches.get(1));
+
+            matches.fillWithValue(0, 2, true);
+            assertEquals(1, chunkFilter.filterAnd(values, matches));
+            assertFalse(matches.get(0));
+            assertTrue(matches.get(1));
+        }
+    }
+
     @NotNull
     private static ObjectVector<Instant> makeInstantVector(final String... times) {
         return new CountingObjectVector<>(

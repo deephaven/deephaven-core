@@ -1,6 +1,5 @@
 ---
 title: Deephaven’s live Directed-Acyclic-Graph (DAG)
-sidebar_label: Live DAG
 ---
 
 <div className="comment-title">

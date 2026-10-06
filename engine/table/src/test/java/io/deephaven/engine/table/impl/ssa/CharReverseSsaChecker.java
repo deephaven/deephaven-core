@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharSsaChecker and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+// ****** Edit CharSsaChecker and run "./gradlew replicateSegmentedSortedArray" to regenerate
 //
 // @formatter:off
 
@@ -20,6 +20,7 @@ import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.util.compare.CharComparisons;
 
 public class CharReverseSsaChecker implements SsaChecker {
     static CharReverseSsaChecker INSTANCE = new CharReverseSsaChecker();
@@ -79,7 +80,7 @@ public class CharReverseSsaChecker implements SsaChecker {
 
     private static boolean eq(char lhs, char rhs) {
         // region equality function
-        return lhs == rhs;
+        return CharComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

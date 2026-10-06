@@ -1,6 +1,5 @@
 ---
 title: Access your file system with Docker data volumes
-sidebar_label: Docker data volumes
 ---
 
 This guide discusses accessing your file system within your Deephaven Docker container using [data volumes](https://docs.docker.com/storage/volumes/). Before we dive into the mount points, let's cover the basics of Docker and how Deephaven uses it.
