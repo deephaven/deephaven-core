@@ -6,7 +6,7 @@ This guide shows how to receive live updates from a Deephaven table in an extern
 
 A _ticking_ table is one whose contents can change while the server runs — the server can add, remove, or modify rows at any time. The base [`pydeephaven`](../getting-started/pyclient-quickstart.md) package can only fetch a point-in-time snapshot of such a table. `pydeephaven-ticking` adds a subscription: your code receives callbacks that contain just the rows that changed.
 
-Callbacks don't arrive for every individual change. The server collects changes and sends them at most once per update interval, which is one second by default, so a single callback can cover many changes. After the initial snapshot, if nothing changed during an interval, no callback arrives.
+Callbacks don't arrive for every individual change. The server collects changes and sends them at most once per update interval, which is one second by default, so a single callback can cover many changes. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. After the initial snapshot, if nothing changed during an interval, no callback arrives.
 
 > [!NOTE]
 > This guide covers the _client_ package, which runs outside the Deephaven server. To react to table changes in code that runs on the server, see [Listen to ticking tables](./table-listeners-python.md).
@@ -166,7 +166,7 @@ Deephaven column types map to these PyArrow types. Null values arrive as PyArrow
 | `LocalTime`                                      | `time64("ns")`                                   |
 | Arrays/vectors of a type above (except `byte[]`) | `list` of the PyArrow type                       |
 
-Other column types, such as enums or other custom objects, aren't unsupported outright — the server converts their values to their string representation, so they still arrive as PyArrow `string`.
+Other column types, such as enums or other custom objects, are supported too: the server stringifies their values, so they arrive as PyArrow `string`.
 
 A smaller set of types fail instead: the server encodes `byte[]`, `BigDecimal`, `BigInteger`, and `Schema` columns as Arrow `binary`, and `Duration`, `Period`, and `PeriodDuration` columns as Arrow `duration`/`interval` types — none of which this package's schema conversion supports. Because `start` converts the whole schema before it launches the background thread, a column with one of these types makes `start` raise synchronously, the same way `byte[]` does. Nested arrays and vectors (an array of arrays, or a vector of vectors) aren't supported either, for the same reason — only one level of `list` wrapping is supported. Drop or convert those columns on the server first — for example with [`view`](../reference/table-operations/select/view.md) — before you subscribe.
 
