@@ -49,7 +49,7 @@ The deployment automates the creation of an Iceberg catalog with a single table 
 
 After creating the Iceberg catalog and table, head to the [Deephaven IDE](http://localhost:10000/ide).
 
-To interact with an Iceberg catalog, you must first create an [`IcebergCatalogAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergCatalogAdapter.html) instance. Since this guide uses a REST catalog, the adapter can be created using the generic [`createAdapter`](https://deephaven.io/core/javadoc/io/deephaven/iceberg/util/IcebergTools.html#createAdapter(org.apache.iceberg.catalog.Catalog)) method:
+To interact with an Iceberg catalog, you must first create an [`IcebergCatalogAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergCatalogAdapter.html) instance. Since this guide uses a REST catalog, the adapter can be created using the generic [`createAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTools.html#createAdapter(java.lang.String,java.util.Map)) method:
 
 ```groovy skip-test
 import io.deephaven.iceberg.util.*
@@ -263,7 +263,7 @@ writerOptionsPartitioned = TableParquetWriterOptions.builder()
 sourceWriterPartitioned = sourceAdapterPartitioned.tableWriter(writerOptionsPartitioned)
 ```
 
-Now you can write the data to Iceberg. The following code block writes the `source_2024` and `source_2025` tables to the `nyc.source_partitioned` table. The partition paths are specified in the [`IcebergWriteInstructions`](/core/javadoc/io/deephaven/iceberg/util/IcebergWriteInstructions.Builder.html):
+Now you can write the data to Iceberg. The following code block writes the `source2024` and `source2025` tables to the `nyc.sourcePartitioned` table. The partition paths are specified in the [`IcebergWriteInstructions`](/core/javadoc/io/deephaven/iceberg/util/IcebergWriteInstructions.Builder.html):
 
 ```groovy docker-config=iceberg test-set=1 order=null
 sourceWriterPartitioned.append(IcebergWriteInstructions.builder()
@@ -292,6 +292,8 @@ sourcePartitionedFromIceberg = sourceAdapterPartitioned.table()
 
 You can specify custom instructions when creating an [`IcebergReadInstructions`](/core/javadoc/io/deephaven/iceberg/util/IcebergReadInstructions.html) instance. Each subsection below covers a different custom instruction that can be passed in when reading Iceberg tables.
 
+To use a custom table definition or rename columns, pass an [`UnboundResolver`](../../reference/data-import-export/Iceberg/unbound-resolver.md) to `LoadTableOptions.builder().resolver(...)` instead, as shown in [Load an Iceberg table into Deephaven](#load-an-iceberg-table-into-deephaven). To map a Deephaven column to an Iceberg field by name rather than by field ID, use `ColumnInstructions.schemaFieldName`, such as `putColumnInstructions("PickupTime", ColumnInstructions.schemaFieldName("tpep_pickup_datetime"))`.
+
 #### Refreshing Iceberg tables
 
 Deephaven also supports reading refreshing Iceberg tables. The [`IcebergUpdateMode`](/core/javadoc/io/deephaven/iceberg/util/IcebergUpdateMode.html) class has three different supported update modes:
@@ -313,45 +315,6 @@ autoRefreshEveryMinute = IcebergUpdateMode.autoRefreshingMode()
 
 // Automatically refreshing every 30 seconds
 autoRefreshEvery30Seconds = IcebergUpdateMode.autoRefreshingMode(30_000)
-```
-
-#### Table definition
-
-You can specify the resultant table definition when building [`IcebergReadInstructions`](/core/javadoc/io/deephaven/iceberg/util/IcebergReadInstructions.html). This is useful when Deephaven cannot automatically infer the correct data types for an Iceberg table. The following code block defines a custom table definition to use when reading from Iceberg:
-
-```groovy order=null
-import io.deephaven.iceberg.util.IcebergReadInstructions
-import io.deephaven.engine.table.ColumnDefinition
-import io.deephaven.engine.table.TableDefinition
-
-defInstructions = IcebergReadInstructions.builder()
-    .tableDefinition(
-        TableDefinition.of(
-            ColumnDefinition.ofLong("ID"),
-            ColumnDefinition.ofTime("Timestamp"),
-            ColumnDefinition.ofString("Operation"),
-            ColumnDefinition.ofString("Summary")
-        )
-    )
-    .build()
-```
-
-#### Column renames
-
-You can rename columns when reading from Iceberg as well:
-
-```groovy order=null
-import io.deephaven.iceberg.util.IcebergReadInstructions
-
-icebergInstructionsRenames = IcebergReadInstructions.builder()
-    .putAllColumnRenames(
-        Map.of(
-            "tpep_pickup_datetime", "PickupTime",
-            "tpep_dropoff_datetime", "DropoffTime",
-            "passenger_count", "NumPassengers",
-            "trip_distance", "Distance",
-        )
-    )
 ```
 
 #### Snapshot ID

@@ -66,7 +66,7 @@ The components are:
   - A Docker container name (for container-to-container communication within the same Docker network).
   - A hostname/IP address (for network communication).
 - **`<port>`** is optional and only needed when:
-  - The Deephaven instance is running on a non-default port (something other than 10000).
+  - The Deephaven instance is not on the scheme's default port: 10000 for `dh+plain://`, 443 for `dh://`.
   - You're connecting across a network to a specific port.
 - **`<scope>`** identifies the namespace where the resource exists. This is typically `scope` for variables created in interactive console sessions, or `app/<app_name>/field` for resources exported from Application Mode applications.
 - **`<resource_name>`** is the exact name of the table or resource you want to access.
@@ -240,9 +240,9 @@ You can also share tables across networks, public or private. Just like the prev
 
 > [!NOTE]
 >
-> - When sharing tables across a network, you do **not** need to specify the port if Deephaven is running on the default port `10000`.
+> - You do **not** need to specify the port when the server uses the scheme's default port (10000 for `dh+plain`, 443 for `dh`).
 > - You **must** specify the port in the URI when:
->   - The remote Deephaven instance runs on a non-default port (not 10000).
+>   - The remote Deephaven instance runs on a port other than the scheme's default.
 >   - You're connecting to a custom port forwarding configuration.
 >
 > Example format with port: `dh+plain://hostname:9876/scope/table_name`
@@ -290,7 +290,7 @@ When using URIs to share tables across instances, particularly over networks, th
 ### Optimization strategies
 
 - **Only share what's needed**: Filter, aggregate, and limit the amount of data you're sharing to only what a downstream consumer actually needs. This includes applying filters at the source, projecting only necessary columns, and pre-aggregating large datasets to reduce the volume of transferred data.
-- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Each call to `resolve` creates a new connection, so reuse the table reference when possible within your application.
+- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Connections to the same server are reused, but each call to `resolve` creates a new Barrage subscription to the remote table.
 - **Use appropriate data consistency models**: For analysis requiring consistent data across multiple operations, use table snapshots instead of live updating tables. Point-in-time consistency ensures all your data represents the same moment in time, preventing issues where some data updates mid-analysis while other data remains static. Snapshots freeze the table state at a specific moment, guaranteeing consistent results and reducing network overhead from continuous updates.
 
 ## Related documentation

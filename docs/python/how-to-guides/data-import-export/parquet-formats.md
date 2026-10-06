@@ -28,7 +28,7 @@ A flat layout may be useful if:
 
 These Parquet files are hierarchically [partitioned](../../reference/data-import-export/Parquet/readTable.md#partitioned-datasets), nested in directories with names in the form of "key=value". All Parquet files are stored at the same nesting level. Choose this format if you have hierarchical partitioning and want Deephaven to determine the partitioning columns and value types automatically. Deephaven infers partitioning column names from the “keys” and parses the value type. This is useful if you do not have metadata files with information about expected types.
 
-Note that if Deephaven does not know how to parse a value, it becomes a string. Support for unknown types can be accomplished with [`codec_args`](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet).
+If Deephaven cannot infer a more specific type for a partition value, the column becomes a `String` column. To choose the type yourself, pass a table definition with the `table_definition` argument to [`read`](../../reference/data-import-export/Parquet/readTable.md).
 
 ## Metadata files
 
@@ -65,7 +65,7 @@ result = read(
 )
 ```
 
-Deephaven never writes `UINT_64`, so these options apply only to reads. Deephaven applies the same default and offers the same coercions when reading Arrow data; see the notes on integral coercion in the [Arrow Flight guide](./arrow-flight.md).
+Deephaven never writes `UINT_64`, so these options apply only to reads. Arrow data uses the same `BigInteger` default for unsigned 64-bit integers, but its coercions differ: coercing to `long` reinterprets the bits as signed, like `SIGNED_LONG`, without raising an error. See the notes on integral coercion in the [Arrow Flight guide](./arrow-flight.md#integral-coercion).
 
 ## Related documentation
 

@@ -101,7 +101,7 @@ There are five arguments to `write`:
 
 #### Sample
 
-Here is a sample implementation of `MyIntSink`, using `TIntArrayList` as the underlying data structure:
+Here is a sample implementation of `MyIntSink`, using a growable `int[]` as the underlying data structure. Each sink class needs a constructor that takes an `int` column index, because the factory methods accept `IntFunction` suppliers:
 
 ```
 private static final class MyIntSink implements Sink<int[]> {
@@ -109,7 +109,7 @@ private static final class MyIntSink implements Sink<int[]> {
 
     private int[] array;
 
-    public MyIntSink() {
+    public MyIntSink(int columnIndex) {
         array = new int[INITIAL_SIZE];
     }
 
@@ -162,7 +162,7 @@ private static SinkFactory makeMySinkFactory() {
 
 ### Put it all together
 
-We now have everything we need to use our own data structures with the library. Simply take the example code in the [Use the Reference Implementation](#use-the-reference-implementation) section and change `SinkFactory.trove()` to `makeMySinkFactory`.
+We now have everything we need to use our own data structures with the library. Simply take the example code in the [Use the Reference Implementation](#use-the-reference-implementation) section and change `SinkFactory.arrays()` to `makeMySinkFactory()`.
 
 ## Handle nulls
 
@@ -178,7 +178,7 @@ private static final class MyIntSink implements Sink<int[]> {
 
     private int[] array;
 
-    public MyIntSink() {
+    public MyIntSink(int columnIndex) {
         array = new int[INITIAL_SIZE];
     }
 
@@ -191,14 +191,6 @@ private static final class MyIntSink implements Sink<int[]> {
         final int destEndAsInt = Math.toIntExact(destEnd);
         final int destSize = destEndAsInt - destBeginAsInt;
 
-        // This is the new null-handling code, which conveniently
-        // modifies the source data in place before processing it
-        for (int i = 0; i < size; ++i) {
-            if (isNull[i]) {
-                src[i] = Integer.MIN_VALUE;
-            }
-        }
-
         if (array.length < destEndAsInt) {
             final int highBit = Integer.highestOneBit(destEndAsInt);
             final int newCapacity =
@@ -208,6 +200,8 @@ private static final class MyIntSink implements Sink<int[]> {
             array = newArray;
         }
 
+        // This is the new null-handling code, which conveniently
+        // modifies the source data in place before processing it
         for (int i = 0; i < destSize; ++i) {
             if (isNull[i]) {
                 src[i] = Integer.MIN_VALUE;
@@ -254,7 +248,7 @@ private static SinkFactory makeMySinkFactory() {
 
 ## Support the fast path for numeric type inference
 
-There is an optional optimization available for the four integral sinks (namely byte, short, int, and long), which allows them to support faster type inference at the cost of some additional implementation effort. This optimization allows the library to read data back from your collection rather than reparsing the input when it needs to widen the type. To implement it, the corresponding four adaptor classes (`MyByteSink`, `MyShortSink`, `MyIntSink`, `MyLongSink`) should implement the `Source<TARRAY>` interface as well. Because this is an optional optimization, you should only implement it if your data structure can easily support it
+There is an optional optimization available for the four integral sinks (namely byte, short, int, and long), which allows them to support faster type inference at the cost of some additional implementation effort. This optimization allows the library to read data back from your collection rather than reparsing the input when it needs to widen the type. To implement it, the corresponding four adaptor classes (`MyByteSink`, `MyShortSink`, `MyIntSink`, `MyLongSink`) should implement the `Source<TARRAY>` interface as well, and you must build your factory with `SinkFactory.of` rather than `SinkFactory.ofSimple`, as shown at the end of this section. Because this is an optional optimization, you should only implement it if your data structure can easily support it.
 
 The definition of `Source<TARRAY>` is:
 
@@ -272,9 +266,9 @@ When it is reading back data from a column, the library will repeatedly call `re
 
 These are the four arguments to read:
 
-1. `dest` - the destination data. This is a temporary array to which the data should be copied. The data should be copied starting at array index 0, and the number of elements to be copied is given by (`destEnd - destBegin`).
+1. `dest` - the destination data. This is a temporary array to which the data should be copied. The data should be copied starting at array index 0, and the number of elements to be copied is given by (`srcEnd - srcBegin`).
 2. `isNull` - a parallel array of booleans. If nulls are supported, the implementor should set `isNull[i]` to `true` for each element that represents a null value, otherwise it should set it to `false`. If `isNull[i]` is `true`, then the corresponding value in `dest[i]` will be ignored.
-3. `srctBegin` - the inclusive start index of the source data range.
+3. `srcBegin` - the inclusive start index of the source data range.
 4. `srcEnd` - the exclusive end index of the source data range. The library promises to only read from elements that it has previously written to.
 
 What follows is a complete implementation of `MyIntSink`, including a `Source<int[]>` implementation and null value handling:
@@ -285,7 +279,7 @@ private static final class MyIntSink implements Sink<int[]>, Source<int[]> {
 
     private int[] array;
 
-    public MyIntSink() {
+    public MyIntSink(int columnIndex) {
         array = new int[INITIAL_SIZE];
     }
 
@@ -334,6 +328,25 @@ private static final class MyIntSink implements Sink<int[]>, Source<int[]> {
     }
 
     public Object getUnderlying() { return array; }
+}
+```
+
+To enable the fast path, build the factory with `SinkFactory.of` instead of `SinkFactory.ofSimple`. `SinkFactory.of` takes the same arguments as `SinkFactory.ofSimple`, but requires the byte, short, int, and long sinks to implement both `Sink` and `Source`. `SinkFactory.ofSimple` never uses a `Source`, so a factory built with it does not use the fast path. The example below omits sentinels for brevity. If your sinks use null sentinels, as `MyIntSink` does, call the longer `SinkFactory.of` overload that also takes the sentinel values, like the longer `SinkFactory.ofSimple` overload shown in [Handle nulls](#handle-nulls).
+
+```
+private static SinkFactory makeMySinkFactory() {
+    return SinkFactory.of(
+            MyByteSink::new,
+            MyShortSink::new,
+            MyIntSink::new,
+            MyLongSink::new,
+            MyFloatSink::new,
+            MyDoubleSink::new,
+            MyBooleanAsByteSink::new,
+            MyCharSink::new,
+            MyStringSink::new,
+            MyDateTimeAsLongSink::new,
+            MyTimestampAsLongSink::new);
 }
 ```
 

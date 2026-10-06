@@ -24,7 +24,7 @@ The user-defined `tableGenerator` function can source its data from anywhere - t
 
 ### Execution context
 
-The `function_generated_table` method requires an [execution context](../conceptual/execution-context.md) to run in. If you don't specify an execution context, the method will use the systemic [execution context](../conceptual/execution-context.md). The examples below do not specify one, so the systemic execution context is used.
+`create` does not accept an [execution context](../conceptual/execution-context.md). When you call it from a console script, the `tableGenerator` function runs under an empty execution context, without the console's query scope, query library, or formula compiler. A `tableGenerator` that runs query operations such as `update` must therefore open a context itself: capture the console's context with `defaultCtx = ExecutionContext.getContext()` and open it inside the function with `try (SafeCloseable ignored = defaultCtx.open())`, as the examples below do.
 
 ### Define a `tableGenerator` function
 
@@ -32,11 +32,11 @@ Next, we create a `tableGenerator` function. Transform your data any way you wan
 
 Here's a simple example:
 
-```groovy order=result
+```groovy order=null
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.util.SafeCloseable
 
-// create execution context
+// capture the console's execution context
 defaultCtx = ExecutionContext.getContext()
 
 // define tableGenerator function
@@ -61,7 +61,7 @@ import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.util.SafeCloseable
 import io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory
 
-// create execution context
+// capture the console's execution context
 defaultCtx = ExecutionContext.getContext()
 
 // define tableGenerator function

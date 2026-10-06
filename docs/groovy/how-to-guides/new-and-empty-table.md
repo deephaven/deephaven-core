@@ -6,7 +6,7 @@ Deephaven is often used to read table data from Parquet, Kafka, or other externa
 
 ## `emptyTable`
 
-The [`emptyTable`](../reference/table-operations/create/emptyTable.md) function takes a single argument - an `int` representing the number of rows in the new table. The resulting table has no columns and the specified number of rows. In the following example, we create a table with 10 rows and no columns:
+The [`emptyTable`](../reference/table-operations/create/emptyTable.md) function takes a single argument - a `long` representing the number of rows in the new table. The resulting table has no columns and the specified number of rows. In the following example, we create a table with 10 rows and no columns:
 
 ```groovy order=table
 table = emptyTable(10)
@@ -130,6 +130,6 @@ Deephaven supports the following column types:
 - [Operators in query strings](./operators.md)
 - [How to use `select`, `view`, and `update`](./use-select-view-update.md)
 - [Query string overview](./query-string-overview.md)
-- [`empty_table`](../reference/table-operations/create/emptyTable.md)
-- [`new_table`](../reference/table-operations/create/newTable.md)
+- [`emptyTable`](../reference/table-operations/create/emptyTable.md)
+- [`newTable`](../reference/table-operations/create/newTable.md)
 - [`update`](../reference/table-operations/select/update.md)

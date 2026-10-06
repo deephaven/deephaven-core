@@ -9,8 +9,6 @@ title: Arrow Flight and Deephaven
 - Maps have very limited support as Deephaven Column Sources cannot keep track of key or value types.
 - No support for large types such as LargeUtf8, LargeBinary, LargeList, and LargeListView (requires simulating 64-bit arrays).
 - No support for structs.
-- No support for run-end encoding.
-- No support for dictionary encoding.
 - No support for Utf8View or BinaryView.
 
 ## Arrow Type Support Matrix
@@ -42,6 +40,8 @@ Deephaven supports a wide range of Arrow types. The following table summarizes t
 | `Null`                                | `Object`                                                                        | —                                                                              | Best when coupled with a Union.                                                                                                                                       |
 | `Map`                                 | `LinkedHashMap`                                                                 | —                                                                              | Cells are received as dictionaries.                                                                                                                                   |
 | `List` / `ListView` / `FixedSizeList` | Array of the inner field type                                                   | Supports conversion to Deephaven internal `Vector` types such as `LongVector`. | Fixed-size list wire formats will be truncated and/or null-padded to match the data as best as possible.                                                              |
+| `RunEndEncoded`                       | Default type of the values child                                                | —                                                                              | The column type comes from the values child; the `run_ends` child is only an index.                                                                                   |
+| Dictionary-encoded fields             | Default type of the dictionary value type                                       | —                                                                              | Applies to any field that carries a `DictionaryEncoding`.                                                                                                             |
 
 ### Integral Coercion
 

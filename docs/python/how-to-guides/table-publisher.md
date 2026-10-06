@@ -21,7 +21,7 @@ More sophisticated use cases will add steps but follow the same basic formula.
 
 ### The factory function
 
-The [`table_publisher`](../reference/table-operations/create/TablePublisher.md) factory function returns a [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher) and its linked [blink table](../conceptual/table-types.md#specialization-3-blink), in that order. The following code block creates a table publisher named `My table publisher` that publishes to a [blink table](../conceptual/table-types.md#specialization-3-blink) with two columns, `X` and `Y`, which are `int` and `double` data types, respectively.
+The [`table_publisher`](../reference/table-operations/create/TablePublisher.md) factory function returns the linked [blink table](../conceptual/table-types.md#specialization-3-blink) and a [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher), in that order. The following code block creates a table publisher named `My table publisher` that publishes to a [blink table](../conceptual/table-types.md#specialization-3-blink) with two columns, `X` and `Y`, which are `int` and `double` data types, respectively.
 
 ```python syntax
 from deephaven.stream.table_publisher import table_publisher
@@ -430,7 +430,7 @@ def write_data_live():
         y3 = np.tan(x)
         table_writer.write_row(x, y1, y2, y3)
         end = time.time()
-        time.sleep(0.2 - (start - end))
+        time.sleep(max(0, 0.2 - (end - start)))
 
 
 thread = threading.Thread(target=write_data_live)

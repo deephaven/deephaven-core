@@ -3,13 +3,13 @@ title: Write your own custom parser for Kafka
 subtitle: Custom parser
 ---
 
-Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser or use an object processor that converts raw bytes from Kafka into rich objects and table columns.
+Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Groovy objects and table columns.
 
 This guide shows how to:
 
 - **Understand when you need a custom parser**.
-- **Consume raw bytes or structured data from Kafka into a Deephaven table**.
-- **Apply custom parsing logic to build a domain object**.
+- **Consume raw bytes from Kafka into a Deephaven table**.
+- **Apply a Groovy parser to turn those bytes into a domain object**.
 - **Project that object into regular Deephaven columns**.
 
 > [!NOTE]
@@ -28,9 +28,9 @@ A custom parser is useful when:
 
 In this guide, you will:
 
-1. Define a domain class for your records.
-2. Use JSON tools to map Kafka values into that class.
-3. Expose the parsed object fields as columns in a Deephaven table.
+1. Consume a topic as raw bytes using [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md).
+2. Convert each record to a `Person` object using a Groovy parser class.
+3. Extract `Age` and `Name` columns from that object.
 
 ## Prerequisites
 
@@ -39,20 +39,59 @@ In this guide, you will:
 - You are comfortable with basic Groovy and classes.
 - You understand the basics of [Kafka in Deephaven](../../conceptual/kafka-basic-terms.md).
 
-## Step 1: Define a domain class
+## Step 1: Consume raw bytes from Kafka
 
-Start by defining a Groovy class that represents the logical payload you want to work with.
+The first step is to consume the Kafka value as a `byte[]`. This preserves the payload exactly as it appears on the wire, letting you apply any parsing you need.
 
 ```groovy docker-config=kafka order=null
+import io.deephaven.kafka.KafkaTools
+
+kafkaProps = new Properties()
+kafkaProps.put('bootstrap.servers', 'redpanda:9092')
+
+rawTable = KafkaTools.consumeToTable(
+    kafkaProps,
+    'test.topic',
+    KafkaTools.ALL_PARTITIONS,
+    KafkaTools.ALL_PARTITIONS_SEEK_TO_END,
+    KafkaTools.Consume.IGNORE,
+    KafkaTools.Consume.simpleSpec('Bytes', byte[].class),
+    KafkaTools.TableType.append()
+)
+```
+
+In this example:
+
+- **`Bytes`** is the column that holds the raw Kafka value as a `byte[]`.
+- **`KafkaTools.Consume.IGNORE`** skips the Kafka key.
+- **`ALL_PARTITIONS_SEEK_TO_END`** starts reading from the latest offsets only.
+- **`TableType.append()`** creates an append-only table of all messages.
+
+## Step 2: Define a domain class and parser
+
+Next, you define a Groovy class to represent the logical payload, and a parser class with a method that converts raw bytes into that object.
+
+```groovy docker-config=kafka order=null
+import groovy.json.JsonSlurper
+
 class Person {
-    int age
-    String name
+    public int age
+    public String name
 
     Person(int age, String name) {
         this.age = age
         this.name = name
     }
 }
+
+class PersonParser {
+    Person parse(byte[] rawBytes) {
+        def jsonObject = new JsonSlurper().parseText(new String(rawBytes, 'UTF-8'))
+        return new Person(jsonObject.age as int, jsonObject.name as String)
+    }
+}
+
+parser = new PersonParser()
 ```
 
 This example assumes that each Kafka value is a JSON object of the form:
@@ -61,74 +100,27 @@ This example assumes that each Kafka value is a JSON object of the form:
 { "age": 42, "name": "Alice" }
 ```
 
-You can adjust the `Person` class to match any format your topic uses.
+You can adjust `PersonParser.parse` to match any format your topic uses, such as CSV, custom binary, or nested JSON structures.
 
-## Step 2: Describe the payload with column definitions
+## Step 3: Apply the parser to each row
 
-Next, you define column definitions that describe the columns you want in the Deephaven table, and a mapping from JSON field names to those column names.
+With the raw table and parser in place, you can call [`update`](../../reference/table-operations/select/update.md) to create a column that holds the parsed object, and then project that into regular columns.
 
-```groovy docker-config=kafka order=null
-import io.deephaven.engine.table.ColumnDefinition
-
-ageDef = ColumnDefinition.ofInt('Age')
-nameDef = ColumnDefinition.ofString('Name')
-
-ColumnDefinition[] colDefs = [ageDef, nameDef]
-
-mapping = ['age': 'Age', 'name': 'Name']
-```
-
-- `colDefs` describes the Deephaven columns you want.
-- `mapping` explains how JSON field names map onto those columns.
-
-## Step 3: Create a JSON spec and consume the topic
-
-You can now build a JSON spec using `KafkaTools.Consume.jsonSpec` and pass it to [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md).
-
-```groovy docker-config=kafka order=null
-import io.deephaven.engine.table.ColumnDefinition
-import io.deephaven.kafka.KafkaTools
-
-// Define column definitions for JSON deserialization
-ageDef = ColumnDefinition.ofInt('Age')
-nameDef = ColumnDefinition.ofString('Name')
-
-// Create column definitions array
-ColumnDefinition[] colDefs = [ageDef, nameDef]
-
-// Create mapping from JSON field names to column names
-mapping = ['age': 'Age', 'name': 'Name']
-
-// Set up Kafka properties
-kafkaProps = new Properties()
-kafkaProps.put('bootstrap.servers', 'redpanda:9092')
-kafkaProps.put('schema.registry.url', 'http://redpanda:8081')
-
-// Create JSON spec for Kafka consumption
-jsonSpec = KafkaTools.Consume.jsonSpec(colDefs, mapping, null)
-
-// Consume the Kafka topic with JSON deserialization
-personTable = KafkaTools.consumeToTable(
-    kafkaProps,
-    'test.topic',
-    KafkaTools.ALL_PARTITIONS,
-    KafkaTools.ALL_PARTITIONS_SEEK_TO_END,
-    KafkaTools.Consume.IGNORE,
-    jsonSpec,
-    KafkaTools.TableType.append()
+```groovy syntax
+parsedTable = rawTable.update('Person = parser.parse(Bytes)').view(
+    'Age = Person.age',
+    'Name = Person.name'
 )
 ```
 
-The resulting `personTable` has the columns:
+This pattern stores a Groovy object in a Deephaven column and then projects its fields into regular Deephaven column types.
+
+The resulting `parsedTable` has the following columns:
 
 - **`Age`** as an `int`.
 - **`Name`** as a `String`.
 
-From here, you can:
-
-- Compute aggregates like average age.
-- Join with other tables on `Name`.
-- Filter or sort based on derived columns.
+Because `view` keeps only the columns it lists, `parsedTable` drops both the original `Bytes` column and the intermediate `Person` column. To keep them, use `update` instead of `view` in the second step.
 
 ## Alternative: Use an object processor spec
 

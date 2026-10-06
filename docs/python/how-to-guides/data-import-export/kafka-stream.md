@@ -57,7 +57,7 @@ While these three fields are traditionally included in the new table, you can ch
 
 Kafka streams store data in the `KafkaKey` and `KafkaValue` columns. This information is logged onto the partition with an offset at a certain time. For example, a list of Kafka messages might have a stock ticker as the key and its price as the value.
 
-`KafkaKey` and `KafkaValue` are similar in that they can be nearly any sequence of bytes. The primary difference is that the key is used to create a hash that will facilitate load balancing. By default, each key and value are stored with column names of either `KafkaKey` or `KafkaValue`, and String type.
+`KafkaKey` and `KafkaValue` are similar in that they can be nearly any sequence of bytes. The primary difference is that the key is used to create a hash that will facilitate load balancing. By default, the key and value columns are named `KafkaKey` and `KafkaValue`. Unless a key or value spec sets the type explicitly, the column type comes from the `deephaven.key.column.type`/`deephaven.value.column.type` properties or from the configured `key.deserializer`/`value.deserializer`.
 
 The `KafkaKey` and `KafkaValue` attributes can be:
 
@@ -173,8 +173,8 @@ Let's walk through this query, focusing on the new optional arguments we've set.
 
 - `partitions` is set to `None`, which specifies that we want to listen to all partitions. This is the default behavior if `partitions` is not explicitly defined. To listen to specific partitions, we can define them as a list of integers (e.g., `partitions=[1, 3, 5]`).
 - `offsets` is set to `ALL_PARTITIONS_DONT_SEEK`, which only listens to new messages produced after this call is processed.
-- `key_spec` is set to `simple('Symbol')`, which instructs the consumer to expect messages with a Kafka `key` field, and creates a `Symbol` column of type String to store the information.
-- `value_spec` is set to `simple('Price')`, which instructs the consumer to expect messages with a Kafka `value` field, and creates a `Price` column of type String to store the information.
+- `key_spec` is set to `simple_spec('Symbol', dht.string)`, which instructs the consumer to expect messages with a Kafka `key` field, and creates a `Symbol` column of type String to store the information.
+- `value_spec` is set to `simple_spec('Price', dht.double)`, which instructs the consumer to expect messages with a Kafka `value` field, and creates a `Price` column of type double to store the information.
 - `table_type` is set to `append`, which creates an append-only table.
 
 Now let's add some entries to our Kafka stream.
@@ -189,7 +189,7 @@ AAPL 136.82
 
 ### Read a Kafka stream ignoring keys
 
-In this example, [`consume`](../../reference/data-import-export/Kafka/consume.md) reads the Kafka topic `share.price` and ignores the partition and key values.
+In this example, [`consume`](../../reference/data-import-export/Kafka/consume.md) reads the Kafka topic `share.price` and ignores the key.
 
 Run the same `docker compose exec redpanda rpk topic produce share.price -f '%k %v\n'` command from the previous section and enter the sample key-value pairs.
 
@@ -267,12 +267,9 @@ Run `docker compose exec redpanda rpk topic produce orders -f "%v\n"` in your te
 
 In this query, the `value_spec` argument uses [`json_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec). A JSON parameterization is used for the `KafkaValue` field.
 
-After this, we see an ordered list of Python tuples specifying column definitions.
+The first argument to `json_spec` is a table definition: a dictionary that maps each column name in the result table to its Deephaven type (for example, `dht.double`).
 
-- The first element in each tuple is a string for the column name in the result table.
-- The second element in each tuple is a string for the column data type in the result table.
-
-Within the `value_spec` argument, the keyword argument of `mapping` is given. This is a Python dictionary specifying a mapping from JSON field names to resulting table column names. Column names should be in the list provided in the first argument described above. The `mapping` dictionary may contain fewer entries than the total number of columns defined in the first argument.
+Within the `value_spec` argument, the keyword argument of `mapping` is given. This is a Python dictionary specifying a mapping from JSON field names to resulting table column names. Column names should be in the table definition provided in the first argument described above. The `mapping` dictionary may contain fewer entries than the total number of columns defined in the first argument.
 
 In the example, the map entry `'price' : 'Price'` specifies the incoming messages are expected to contain a JSON field named `price`, whose value will be mapped to the `Price` column in the resulting table. The columns not mentioned are mapped from matching JSON fields.
 
@@ -303,14 +300,15 @@ In this query, the first argument includes an additional entry for `schema.regis
 
 The `value_spec` argument uses [`avro_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec), which specifies an Avro format for the Kafka `value` field.
 
-The first positional argument in the [`avro_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec) call specifies the Avro schema to use. In this case, [`avro_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec) gets the schema named `share.price.record` from the schema registry. Alternatively, the first argument can be an `org.apache.avro.Schema` object obtained from [`getAvroSchema`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.html#getAvroSchema(java.lang.String)).
+The first positional argument in the [`avro_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec) call specifies the Avro schema to use. In this case, [`avro_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec) gets the schema named `share.price.record` from the schema registry. Alternatively, the first argument can be a JSON-encoded Avro schema definition string.
 
 Three optional keyword arguments are supported:
 
 - `schema_version` specifies the version of the schema to get, for the given name, from the schema registry. If not specified, the default of `latest` is assumed. This will retrieve the latest available schema version.
 - `mapping` expects a dictionary value and, if provided, specifies a name mapping for Avro field names to table column names. Any Avro field name not mentioned is mapped to a column of the same name.
-- `mapping_only` expects a dictionary value and, if provided, specifies a name mapping for Avro field names to table column names. Any Avro field name not mentioned is omitted from the resulting table.
-- When `mapping` and `mapping_only` are both omitted, all Avro schema fields are mapped to columns using the field name as column name.
+- `mapped_only` (bool, default `False`): when `True`, Avro fields not named in `mapping` are omitted from the resulting table.
+
+When `mapping` is omitted, all Avro schema fields are mapped to columns using the field name as column name.
 
 ### Read Kafka topic in Protobuf format
 
@@ -337,9 +335,9 @@ In this query, the first argument includes an additional entry for `schema.regis
 
 The `value_spec` argument uses [`protobuf_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec), which specifies a Protocol Buffer format for the Kafka `value` field.
 
-The first positional argument in the [`protobuf_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec) call specifies the schema name -- in this case, `share.price.record` from the schema registry. Alternatively, this could be the fully-qualified Java class name for the protobuf message on the current classpath, for example “com.example.MyMessage” or “com.example.OuterClass$MyMessage”.
+The first positional argument in the [`protobuf_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec) call is `schema`, the schema subject name -- in this case, `share.price.record` from the schema registry. To read the message descriptor from the classpath instead, omit `schema` and pass the fully-qualified Java class name as `message_class`, for example `message_class="com.example.MyMessage"`.
 
-Several optional keyword arguments are supported:
+The following arguments are supported:
 
 - `schema` is the schema subject name as used above. When set, this will fetch the protobuf message descriptor from the schema registry. Either this or `message_class` must be set.
 - `message_class` is the fully-qualified Java class name for the protobuf message on the current classpath, for example “com.example.MyMessage” or “com.example.OuterClass$MyMessage”. When this is set, the schema registry will not be used. Either this or `schema` must be set.

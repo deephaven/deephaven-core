@@ -4,7 +4,7 @@ title: Export Deephaven Tables to Parquet Files
 
 The [Deephaven Parquet Python module](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet) provides tools to integrate Deephaven with the Parquet file format. This module makes it easy to write Deephaven tables to Parquet files and directories. This document covers writing Deephaven tables to single Parquet files, flat partitioned Parquet directories, and key-value partitioned Parquet directories.
 
-By default, Deephaven tables are written to Parquet files using `SNAPPY` compression when writing the data. This default can be changed with the `compression_codec_name` argument in any of the writing functions discussed here or with the `codec_name` argument in the [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) class. See the [column instructions section](#column-instructions) for more information.
+By default, Deephaven tables are written to Parquet files using `SNAPPY` compression when writing the data. This default can be changed with the `compression_codec_name` argument in any of the writing functions discussed here. Compression is set for the whole file. See the [optional arguments section](#optional-arguments) for the available compression codecs.
 
 > [!NOTE]
 > Much of this document covers writing Parquet files to S3. For the best performance, the Deephaven instance should be running in the same AWS region as the S3 bucket. Additional performance improvements can be made by using directory buckets to localize all data to a single AWS sub-region, and running the Deephaven instance in that same sub-region. See [this article](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en) for more information on S3 directory buckets. Take care to replace the S3 authentication details in the examples with the correct values for your S3 instance.
@@ -93,7 +93,7 @@ parquet.write(
 
 Deephaven supports writing tables to partitioned Parquet directories. A partitioned Parquet directory organizes data into subdirectories based on one or more partitioning columns. This structure allows for more efficient data querying by pruning irrelevant partitions, leading to faster read times than a single Parquet file. Deephaven tables can be written to _flat_ partitioned directories or _key-value_ partitioned directories.
 
-Data can be written to partitioned directories from Deephaven tables or from Deephaven's [partitioned tables](../../how-to-guides/partitioned-tables.md). Partitioned tables have partitioning columns built into the API, so Deephaven can use those partitioning columns to create partitioned directories. Regular Deephaven tables do not have partitioning columns, so the user must provide that information using the `table_definition` argument to any of the writing functions.
+Data can be written to partitioned directories from Deephaven tables or from Deephaven's [partitioned tables](../../how-to-guides/partitioned-tables.md). Partitioned tables have partitioning columns built into the API, so Deephaven can use those partitioning columns to create partitioned directories. Regular Deephaven tables do not have partitioning columns, so when writing a regular table to a key-value partitioned directory, the user must provide that information using the `table_definition` argument to [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned).
 
 Table definitions represent a table's schema. They are constructed from lists of Deephaven [`Column`](/core/pydoc/code/deephaven.column.html#deephaven.column.Column) objects that specify a column's name and type using types from the [`deephaven.dtypes`](/core/pydoc/code/deephaven.dtypes.html) Python module. Additionally, [`Column`](/core/pydoc/code/deephaven.column.html#deephaven.column.Column) objects are used to specify whether a particular column is a partitioning column by setting the `column_type` argument to `ColumnType.PARTITIONING`.
 
@@ -146,7 +146,7 @@ parquet.write_partitioned(
 
 ### To S3
 
-[`parquet.write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned) is used to write key-value partitioned Parquet directories to S3. The `path` should be the URI of the destination directory in S3. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance.
+[`parquet.write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned) is used to write key-value partitioned Parquet directories to S3. The `destination_dir` should be the URI of the destination directory in S3. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance.
 
 ```python test-set=1
 from deephaven.experimental import s3
@@ -184,7 +184,7 @@ parquet.write(science_grades, "/data/grades_flat_1/science.parquet")
 parquet.write(history_grades, "/data/grades_flat_1/history.parquet")
 ```
 
-Use [`parquet.batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) to accomplish the same thing by passing multiple tables to the `tables` argument and multiple destination paths to the `paths` argument. This requires the `table_definition` argument to be specified.
+Use [`parquet.batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) to accomplish the same thing by passing multiple tables to the `tables` argument and multiple destination paths to the `paths` argument. If the tables have different definitions, also pass the `table_definition` argument.
 
 ```python test-set=1
 parquet.batch_write(
@@ -194,11 +194,10 @@ parquet.batch_write(
         "/data/grades_flat_2/science.parquet",
         "/data/grades_flat_2/history.parquet",
     ],
-    table_definition=grades_def,
 )
 ```
 
-To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.md) to a flat partitioned Parquet directory, the table must first be broken into a list of constituent tables, then [`parquet.batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) can be used to write all of the resulting constituent tables to Parquet. Again, the `table_definition` argument must be specified.
+To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.md) to a flat partitioned Parquet directory, the table must first be broken into a list of constituent tables, then [`parquet.batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) can be used to write all of the resulting constituent tables to Parquet.
 
 ```python test-set=1
 from deephaven.pandas import to_pandas
@@ -222,7 +221,6 @@ parquet.batch_write(
         "/data/grades_flat_3/science.parquet",
         "/data/grades_flat_3/history.parquet",
     ],
-    table_definition=grades_def,
 )
 ```
 
@@ -244,7 +242,6 @@ parquet.batch_write(
         "s3://example-bucket/science.parquet",
         "s3://example-bucket/history.parquet",
     ],
-    table_definition=grades_def,
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
         endpoint_override="http://minio.example.com:9000",
@@ -258,8 +255,16 @@ parquet.batch_write(
 The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) functions from the [Deephaven Parquet Python module](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet) all accept additional optional arguments used to control the specifics of how data gets written from Deephaven to Parquet. Here are the additional arguments that all three of these functions accept:
 
 - `table_definition`: The table definition or schema, provided as a dictionary of string-[`DType`](/core/pydoc/code/deephaven.dtypes.html#deephaven.dtypes.DType) pairs, or as a list of [`ColumnDefinition`](/core/pydoc/code/deephaven.column.html#deephaven.column.ColumnDefinition) instances. When not provided, the column definitions implied by the table(s) are used.
-- `col_instructions`: Instructions for customizations while writing particular columns, provided as a [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) or a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md)s. The default is `None`, which means no specialization for any column.
-- `compression_codec_name`: The name of the [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-hadoop/1.8.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use. Defaults to `SNAPPY`.
+- `col_instructions`: Instructions for customizations while writing particular columns, provided as a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) objects. The default is `None`, which means no specialization for any column.
+- `compression_codec_name`: The name of the [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-hadoop/1.8.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use for the whole file. The choice of codec can have significant implications for the speed of the export. The options are:
+  - `SNAPPY`: (default) Aims for high speed and a reasonable amount of compression. Based on [Google](https://github.com/google/snappy/blob/main/format_description.txt)'s Snappy compression format.
+  - `UNCOMPRESSED`: The output will not be compressed.
+  - `LZ4_RAW`: A codec based on the [LZ4 block format](https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md). Should always be used instead of `LZ4`.
+  - `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
+  - `GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
+  - `ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
+  - `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
+  - `LZ4`: **Deprecated** Use `LZ4_RAW` instead.
 - `max_dictionary_keys`: The maximum number of unique keys the writer should add to a dictionary page before switching to non-dictionary encoding. This is never evaluated for non-string columns. Defaults to 2^20 (1,048,576).
 - `max_dictionary_size`: The maximum number of bytes the writer should add to the dictionary before switching to non-dictionary encoding. This is never evaluated for non-string columns. Defaults to 2^20 (1,048,576).
 - `target_page_size`: The target page size in bytes. Defaults to 2^20 bytes (1 MiB).
@@ -275,45 +280,34 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
 
 ### Column instructions
 
-The `col_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) must be an instance of the [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) class. This class maps specific columns in the Deephaven table to specific columns in the resulting Parquet files, as well as specifying the method of compression used for that column.
+The `col_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) must be a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) instances. This class maps specific columns in the Deephaven table to specific columns in the resulting Parquet files, and optionally sets an object codec or dictionary encoding for that column.
 
 [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) has the following arguments:
 
 - `column_name`: The column name in the Deephaven table to apply these instructions.
 - `parquet_column_name`: The name of the corresponding column in the Parquet dataset.
-- `codec_name`: The name of the [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-hadoop/1.8.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use.
-- `codec_args`: An implementation-specific string used to map types to/from bytes. It is typically used in cases where there is no obvious language-agnostic representation in Parquet.
+- `codec_name`: The fully qualified name of an `ObjectCodec` class that serializes the column's values to and from bytes. It is typically used for types with no obvious language-agnostic representation in Parquet. This is not the compression codec, which is set for the whole file with the `compression_codec_name` argument.
+- `codec_args`: An implementation-specific argument string passed to the codec named by `codec_name`.
 - `use_dictionary`: `True` or `False` indicating whether or not to use [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for string columns.
-
-Of particular interest is the `codec_name` argument. This defines the particular type of compression used for the given column and can have significant implications for the speed of the export. The options are:
-
-- `SNAPPY`: (default) Aims for high speed and a reasonable amount of compression. Based on [Google](https://github.com/google/snappy/blob/main/format_description.txt)'s Snappy compression format.
-- `UNCOMPRESSED`: The output will not be compressed.
-- `LZ4_RAW`: A codec based on the [LZ4 block format](https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md). Should always be used instead of `LZ4`.
-- `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
-- `GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
-- `ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-- `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
-- `LZ4`: **Deprecated** Use `LZ4_RAW` instead.
 
 ### Special instructions (S3 only)
 
-The `special_instructions` argument to [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) is relevant when reading from an S3 instance and takes an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. This class specifies details for connecting to the S3 instance.
+The `special_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) is relevant when writing to an S3 instance and takes an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. This class specifies details for connecting to the S3 instance.
 
-[`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) has the following arguments:
+The following [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) arguments are relevant when writing. See the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) API documentation for the full list, including arguments that apply only to reads.
 
-- `region_name`: The region name of the AWS S3 bucket where the Parquet data exists. If not provided, the region name is picked by the AWS SDK from the 'aws.region' system property, the "AWS_REGION" environment variable, the \{user.home}/.aws/credentials, \{user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
-- `credentials` : The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `None`.
-- `endpoint_override`: The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs. The default is `None`
-- `anonymous_access`: `True` or `False` indicating the use of anonymous credentials. The default is `False`.
-- `read_ahead_count`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is `1`.
-- `fragment_size`: The maximum size of each fragment to read in bytes. The default is 5 MB.
-- `read_timeout`: The amount of time it takes to time out while reading a fragment. The default is 2 seconds.
-- `max_concurrent_requests`: The maximum number of concurrent requests to make to S3. The default is 50.
-- `max_cache_size`: The maximum number of fragments to cache in memory while reading. The default is 32.
+- `region_name`: The region name of the AWS S3 bucket. If not provided, the region name is picked by the AWS SDK from the 'aws.region' system property, the "AWS_REGION" environment variable, the \{user.home}/.aws/credentials, \{user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
+- `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `Credentials.resolving()`.
+- `endpoint_override`: The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs. The default is `None`.
 - `connection_timeout`: Time to wait for a successful S3 connection before timing out. The default is 2 seconds.
-- `access_key_id`: The access key for reading files. If set, `secret_access_key` must also be set.
-- `secret_access_key`: The secret access key for reading files.
+- `write_timeout`: The amount of time to wait when writing a fragment before timing out. The default is 2 seconds.
+- `write_part_size`: The part or chunk size, in bytes, when writing to S3. The default is 10 MiB, and the minimum is 5242880 bytes (5 MiB).
+- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently without blocking. The default is 64.
+- `profile_name`: The AWS profile name used to configure the default region, credentials, and other settings.
+- `config_file_path`: The path to the AWS configuration file.
+- `credentials_file_path`: The path to the AWS credentials file.
+
+The `access_key_id`, `secret_access_key`, and `anonymous_access` arguments are deprecated. Use `Credentials.basic(access_key_id, secret_access_key)` or `Credentials.anonymous()` for the `credentials` argument instead.
 
 ## Related documentation
 

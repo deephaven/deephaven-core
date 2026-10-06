@@ -11,7 +11,7 @@ A Table Publisher publishes data to a [blink table](../conceptual/table-types.md
 
 ## Table publisher
 
-A table publisher uses the [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md#methods) method to create an instance of the [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher). Then, call the `TablePublisher.table()` method to return the table publisher's linked [blink table](../conceptual/table-types.md#specialization-3-blink). You can also:
+A table publisher uses the [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md#methods) method to create an instance of the [`TablePublisher`](/core/javadoc/io/deephaven/stream/TablePublisher.html). Then, call the `TablePublisher.table()` method to return the table publisher's linked [blink table](../conceptual/table-types.md#specialization-3-blink). You can also:
 
 - Add data to the [blink table](../conceptual/table-types.md#specialization-3-blink) with [`add`](../reference/table-operations/create/TablePublisher.md#methods).
 - (Optionally) Store [data history](#data-history) in a downstream table.
@@ -21,7 +21,7 @@ More sophisticated use cases will add steps but follow the same basic formula.
 
 ### Construct the table publisher and its associated blink table
 
-The [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md) function returns a [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher). The following code block creates a table publisher named `My publisher` that publishes to a [blink table](../conceptual/table-types.md#specialization-3-blink) with two columns, `X` and `Y`, which are `int` and `double` data types, respectively.
+The [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md) function returns a [`TablePublisher`](/core/javadoc/io/deephaven/stream/TablePublisher.html). The following code block creates a table publisher named `My publisher` that publishes to a [blink table](../conceptual/table-types.md#specialization-3-blink) with two columns, `X` and `Y`, which are `int` and `double` data types, respectively.
 
 ```groovy syntax
 import io.deephaven.engine.table.ColumnDefinition
@@ -42,7 +42,7 @@ source = publisher.table()
 
 ### Example: Getting started
 
-The following example creates a table with three columns (`X`, `Y`, and `Z`). The columns initially contain no data because `addTable` has not yet been called.
+The following example creates a table with three columns (`X`, `Y`, and `Z`). The columns initially contain no data because `add` has not yet been called.
 
 ```groovy test-set=1 order=publishedTable
 import io.deephaven.engine.table.ColumnDefinition
@@ -271,7 +271,7 @@ trig_plot = FigureFactory.figure()
 
 ### DynamicTableWriter and the Update Graph
 
-Both the Python interpreter and the [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) require the [Update Graph (UG) lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) to execute. As a result, new rows will not appear in output tables until the next UG cycle. As an example, what would you expect the `print` statement below to produce?
+Both the Groovy script session and the [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) require the [Update Graph (UG) lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) to execute. As a result, new rows will not appear in output tables until the next UG cycle. As an example, what would you expect the `println` statement below to produce?
 
 ```groovy order=result test-set=1 reset
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
@@ -293,9 +293,9 @@ tableWriter.logRow(4, "Writer")
 println result.isEmpty()
 ```
 
-You may be surprised, but the table does not contain rows when the `print` statement is reached. The Python interpreter holds the UG lock while the code block executes, preventing `result` from being updated with the new rows until the next UG cycle. Because `print` is in the code block, it sees the table before rows are added.
+You may be surprised, but the table does not contain rows when the `println` statement is reached. The Groovy script session holds the UG lock while the code block executes, preventing `result` from being updated with the new rows until the next UG cycle. Because `println` is in the code block, it sees the table before rows are added.
 
-However, calling the same `print` statement as a second command produces the expected result.
+However, calling the same `println` statement as a second command produces the expected result.
 
 ```groovy test-set=1
 println result.isEmpty()

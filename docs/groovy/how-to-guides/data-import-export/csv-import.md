@@ -119,7 +119,7 @@ deniroPSV = readCsv("https://raw.githubusercontent.com/deephaven/examples/main/D
 
 #### Trim
 
-By default, quoted values that have leading and trailing white space include the white space when reading the CSV file. For example, if `" Taxi Driver "` is in the CSV file, it will be read as `Taxi Driver`.
+By default, quoted values that have leading and trailing white space include the white space when reading the CSV file. For example, if `" Taxi Driver "` is in the CSV file, the value keeps its leading and trailing spaces instead of being read as `Taxi Driver`.
 
 By setting `trim` to `true` when reading the CSV file, these leading and trailing white space will be removed. So `" Taxi Driver "` will be read as `Taxi Driver`.
 

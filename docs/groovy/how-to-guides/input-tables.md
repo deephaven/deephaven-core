@@ -73,7 +73,7 @@ source = newTable(
 result = KeyedArrayBackedInputTable.make(source, "Strings")
 ```
 
-In the case of multiple key columns, specify them in a list.
+In the case of multiple key columns, pass each column name as a separate argument.
 
 ```groovy test-set=1 order=null
 result = KeyedArrayBackedInputTable.make(source, "Strings", "Doubles")

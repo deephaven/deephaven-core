@@ -16,9 +16,9 @@ Deephaven provides a suite of tools that makes Kafka integration easy.
 
 <div className="row">
 
-<CoreTutorialCard to="/core/docs/conceptual/kafka-in-deephaven">
+<CoreTutorialCard to="/core/docs/conceptual/kafka-basic-terms">
 
-## Kafka in Deephaven
+## Kafka basic terms
 
 </CoreTutorialCard>
 
@@ -73,21 +73,22 @@ It is important to note that when we execute `read` to load the historical data,
 After a bit more browsing, we switch to a graphical view for more perspective. We want a line graph for the last 4 months of data. We create a filtered version of the table:
 
 ```python skip-test
-svc_use_last4months = svc_use.where(filters=["Date > `20210501`"])
+svc_use_last4months = svc_use.where(filters=["Date > `2021-05-01`"])
 ```
 
-With the panel for this new table selected, we click on **Table Options** and pick **Chart Builder** from the menu (alternatively, we can type `svc_use_last4months.plot()`). A simple line chart will do for now. From the graph, we realize the data has marked seasonality; we believe it may follow a “time of the day - day of the week” pattern. To confirm our guess, we define a derived table adding a few columns:
+With the panel for this new table selected, we click on **Table Options** and pick [**Chart Builder**](./user-interface/chart-builder.md) from the menu. A simple line chart will do for now. From the graph, we realize the data has marked seasonality; we believe it may follow a “time of the day - day of the week” pattern. To confirm our guess, we define a derived table adding a few columns:
 
 ```python skip-test
-def secs(ts):
-    return 10 * int(ts.getMillis() / 10000)  # Note we round to a 10s period
+def secs(ts) -> int:
+    return 10 * (ts.toEpochMilli() // 10000)  # Note we round to a 10s period
 
 
 svc_use_decorated = svc_use.update_view(
     formulas=[
-        "OrdinalDay=secs(Timestamp) / (24*60*60)",
-        "SecondsInDay=secs(Timestamp) % (24*60*60)",
-        "OrdinalWeek=OrdinalDay / 7",
+        "Secs=secs(Timestamp)",
+        "OrdinalDay=(long) (Secs / (24*60*60))",
+        "SecondsInDay=Secs % (24*60*60)",
+        "OrdinalWeek=(long) (OrdinalDay / 7)",
         "DayOfWeek=OrdinalDay % 7",
     ]
 )
@@ -114,33 +115,35 @@ We explore the idea by defining several derived tables and looking at graphs and
 - A table to represent the average as defined above as a tentative baseline.
 - A table to compare live samples arriving right now to its baseline.
 
-Creating a table to represent the average for the last four values that match time of day and day of week involves doing aggregations and filtering. As table operations go, these are slightly more complicated and a detailed description is beyond the scope of this document. In general terms, the code below restricts samples to the last 4 weeks, and then aggregates by the `SecondsInDay` column:
+Creating a table to represent the average for the last four values that match time of day and day of week involves doing aggregations and filtering. As table operations go, these are slightly more complicated and a detailed description is beyond the scope of this document. In general terms, the code below restricts samples to the last 4 weeks, and then aggregates by the `DayOfWeek` and `SecondsInDay` columns:
 
 <!--TODO: link to overviews -->
 
 ```python skip-test
-import deephaven.time as dhtu
-
-TZ = dhtu.time_zone("ET")  # replace by correct time zone.
-LAST_MIDNIGHT_SECS = secs(dhtu.at_midnight(dhtu.now(), TZ))
-svc_use_last4weeks = svc_use_decorated.where(
-    "secs(Timestamp) >= LAST_MIDNIGHT_SECS - 4*7*24*60*60"
-)
-
+import jpy
+from deephaven.time import dh_now, to_j_time_zone
 from deephaven import agg as agg
 
-svc_use_last4_weeks_avg = svc_use_last4weeks.aggBy(
-    [agg.avg(cols=["Last4Avg=Value"])], "OrdinalDay", "SecondsInDay"
+_DateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+
+TZ = to_j_time_zone("ET")  # replace by correct time zone.
+LAST_MIDNIGHT_SECS = secs(_DateTimeUtils.atMidnight(dh_now(), TZ))
+svc_use_last4weeks = svc_use_decorated.where(
+    "Secs >= LAST_MIDNIGHT_SECS - 4*7*24*60*60"
+)
+
+svc_use_last4weeks_avg = svc_use_last4weeks.agg_by(
+    [agg.avg(cols=["Last4Avg=Value"])], by=["DayOfWeek", "SecondsInDay"]
 )
 ```
 
 We are ready now to get live samples to compare against. Ingesting the Kafka feed to a live Deephaven table is simple, and the result is powerful: _the generated table is a live table that looks and feels like our previous tables for historical data_.
 
-This example assumes we have an Avro schema defined for the Kafka `Value` field in the `ServiceUse` topic, and we are reading it from a schema service under the name `service_use_record`:
+This example assumes we have an Avro schema defined for the Kafka `Value` field in the `ServiceUse` topic, and we are reading it from a schema service under the name `service_use_record`. The record has a `Value` field that holds the request count:
 
 ```python skip-test
 from deephaven import kafka_consumer as ck
-from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
+from deephaven.stream.kafka.consumer import TableType
 import deephaven.dtypes as dht
 
 live_use = ck.consume(
@@ -148,12 +151,12 @@ live_use = ck.consume(
     "ServiceUse",
     key_spec=ck.simple_spec("ServiceName", dht.string),
     value_spec=ck.avro_spec("service_use_record"),
-    table_type=TableType.Append,
+    table_type=TableType.append(),
 ).where(filters=["ServiceName =`MySvcName`"])
 ```
 
 > [!NOTE]
-> This query can be written more efficiently by applying the `where` operation before collecting events. As written, `consume` collects events immediately as they arrive (`table_type=TableType.append()`). The more efficient version requires using `table_type=TableType.blink()`, applying the filter, and then using `.blinkToAppendOnly()` after the filter. For more information, see our reference guide for [`consume`](../reference/data-import-export/Kafka/consume.md).
+> This query can be written more efficiently by applying the `where` operation before collecting events. As written, `consume` collects events immediately as they arrive (`table_type=TableType.append()`). The more efficient version requires using `table_type=TableType.blink()`, applying the filter, and then passing the result to [`blink_to_append_only`](../reference/table-operations/create/blink-to-append-only.md) from `deephaven.stream`. For more information, see our reference guide for [`consume`](../reference/data-import-export/Kafka/consume.md).
 
 There are a few important points about live tables that deserve more explanation:
 
@@ -161,12 +164,22 @@ There are a few important points about live tables that deserve more explanation
 2. All table methods, operations and functions work identically on live tables as on static tables. No separate vocabularies or concepts.
 3. Moreover, derived tables defined by queries on live tables are also live. Query operation results are calculated efficiently by considering previous results and state and incrementally applying row adds, modifies and deletes as appropriate for the operation (see our concept guide on the [Deephaven table update model](../conceptual/table-update-model.md) for details). For example, the filtering done by the `where` operation above is implemented by processing added (and more generally, potentially removed or modified) rows to its parent table. Instead of recomputing the result of the whole filter every time the parent table changes, it updates the previous result with the relevant change information (add, modifies and deletes) from the base table.
 
-Now we are ready to decorate the live data with the last 4 samples average we calculated previously:
+Now we are ready to decorate the live data with the last 4 samples average we calculated previously. First, we derive the same time columns from the `KafkaTimestamp` column that the consumer adds to the live table:
 
 ```python skip-test
-live_use_with_last4weeks_avg = live_use.natural_join(
-    svc_use_last4weeks_avg, "SecondsInDay"
-).update_view("PredictedDiff=Value-Last4Avg", "PredictedPct=100*Value/Last4Avg")
+live_use_with_last4weeks_avg = (
+    live_use.update_view(
+        formulas=[
+            "Secs=secs(KafkaTimestamp)",
+            "SecondsInDay=Secs % (24*60*60)",
+            "DayOfWeek=((long) (Secs / (24*60*60))) % 7",
+        ]
+    )
+    .natural_join(svc_use_last4weeks_avg, on=["DayOfWeek", "SecondsInDay"])
+    .update_view(
+        formulas=["PredictedDiff=Value-Last4Avg", "PredictedPct=100*Value/Last4Avg"]
+    )
+)
 ```
 
 The operation above does a natural join between the live table and the static table containing our calculations of averages from historical data, and then adds two new columns that compare the value to the baseline. Note for the natural join there is no need to specify a time window; the join is a full blown, fully capable join operation that will incrementally recalculate and add to the result as new rows arrive to the live input table.

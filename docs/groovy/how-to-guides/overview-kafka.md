@@ -16,13 +16,13 @@ Deephaven provides a suite of tools that makes Kafka integration easy.
 
 <div className="row">
 
-<CoreTutorialCard to="../conceptual/kafka-in-deephaven">
+<CoreTutorialCard to="/core/docs/conceptual/kafka-basic-terms">
 
-## Kafka in Deephaven
+## Kafka basic terms
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="../how-to-guides/data-import-export/kafka-stream">
+<CoreTutorialCard to="/core/docs/how-to-guides/data-import-export/kafka-stream">
 
 ## Connect to a Kafka stream
 
@@ -73,28 +73,29 @@ It is important to note that when we execute `readTable` to load the historical 
 After a bit more browsing, we switch to a graphical view for more perspective. We want a line graph for the last 4 months of data. We create a filtered version of the table:
 
 ```groovy skip-test
-svcUseLast4months = svcUse.where("Date > `20210501`")
+svcUseLast4months = svcUse.where("Date > `2021-05-01`")
 ```
 
-With the panel for this new table selected, we click on **Table Options** and pick **Chart Builder** from the menu (alternatively, we can type `svcUseLast4months.plot()`). A simple line chart will do for now. From the graph, we realize the data has marked seasonality; we believe it may follow a “time of the day - day of the week” pattern. To confirm our guess, we define a derived table adding a few columns:
+With the panel for this new table selected, we click on **Table Options** and pick [**Chart Builder**](./user-interface/chart-builder.md) from the menu. A simple line chart will do for now. From the graph, we realize the data has marked seasonality; we believe it may follow a “time of the day - day of the week” pattern. To confirm our guess, we define a derived table adding a few columns:
 
 ```groovy skip-test
-def secs(ts) {
-    // Note: we round to a 10s period
-    return 10 * ((ts.getMillis() / 10000) as int)
-}
+import java.time.Instant
+
+// Note: we round to a 10s period
+secs = { Instant ts -> 10L * (long) (ts.toEpochMilli() / 10000) }
 
 svcUseDecorated = svcUse.updateView(
-    "OrdinalDay=secs(Timestamp) / (24*60*60)",
-    "SecondsInDay=secs(Timestamp) % (24*60*60)",
-    "OrdinalWeek=OrdinalDay / 7",
+    "Secs=(long) secs(Timestamp)",
+    "OrdinalDay=(long) (Secs / (24*60*60))",
+    "SecondsInDay=Secs % (24*60*60)",
+    "OrdinalWeek=(long) (OrdinalDay / 7)",
     "DayOfWeek=OrdinalDay % 7"
 )
 ```
 
 Similarly to how the loading of data from the partitioned Parquet files does not happen until specific rows are pulled by downstream operations, here column values for the result of `updateView` will be computed and materialized in memory only as needed by some later operation, like a UI view or a chained computation. There is also no additional memory cost in the derived table for the pre-existing columns: they exist only as references to row ranges in the base table.
 
-Note also in the code above, the Groovy native function `secs` is mixed into column expressions. We are giving code to the query engine for future evaluation when calculating query operation results.
+Note also in the code above, the Groovy closure `secs` is mixed into column expressions. We are giving code to the query engine for future evaluation when calculating query operation results.
 
 Some filtering from this new table combined with graphing confirms our intuition about seasonality; exceptions to this rule happen on holidays where the daily pattern resembles the one for Sundays. We make a note for later to incorporate this complexity in our model, and ignore it for now.
 
@@ -111,7 +112,7 @@ We explore the idea by defining several derived tables and looking at graphs and
 - A table to represent the average as defined above as a tentative baseline.
 - A table to compare live samples arriving right now to its baseline.
 
-Creating a table to represent the average for the last four values that match time of day and day of week involves doing aggregations and filtering. As table operations go, these are slightly more complicated and a detailed description is beyond the scope of this document. In general terms, the code below restricts samples to the last 4 weeks, and then aggregates by the `SecondsInDay` column:
+Creating a table to represent the average for the last four values that match time of day and day of week involves doing aggregations and filtering. As table operations go, these are slightly more complicated and a detailed description is beyond the scope of this document. In general terms, the code below restricts samples to the last 4 weeks, and then aggregates by the `DayOfWeek` and `SecondsInDay` columns:
 
 <!--TODO: link to overviews -->
 
@@ -121,18 +122,18 @@ import static io.deephaven.api.agg.Aggregation.AggAvg
 
 
 tz = DateTimeUtils.timeZone("ET") // replace by correct time zone
-lastMidnightSecs = secs(DateTimeUtils.atMidnight(DateTimeUtils.now(), TZ))
-svcUseLast4weeks = svcUseDecorated.where("secs(Timestamp) >= lastMidnightSecs - 4*7*24*60*60")
+lastMidnightSecs = secs(DateTimeUtils.atMidnight(DateTimeUtils.now(), tz))
+svcUseLast4weeks = svcUseDecorated.where("Secs >= lastMidnightSecs - 4*7*24*60*60")
 
 svcUseLast4WeeksAvg = svcUseLast4weeks.aggBy(
     [AggAvg("Last4Avg=Value")],
-    "OrdinalDay", "SecondsInDay"
+    "DayOfWeek", "SecondsInDay"
 )
 ```
 
 We are ready now to get live samples to compare against. Ingesting the Kafka feed to a live Deephaven table is simple, and the result is powerful: _the generated table is a live table that looks and feels like our previous tables for historical data_.
 
-This example assumes we have an Avro schema defined for the Kafka `Value` field in the `ServiceUse` topic, and we are reading it from a schema service under the name `serviceUseRecord`:
+This example assumes we have an Avro schema defined for the Kafka `Value` field in the `ServiceUse` topic, and we are reading it from a schema service under the name `service_use_record`. The record has a `Value` field that holds the request count:
 
 ```groovy skip-test
 import io.deephaven.kafka.KafkaTools
@@ -146,15 +147,14 @@ liveUse = KafkaTools.consumeToTable(
     "ServiceUse",
     KafkaTools.ALL_PARTITIONS,
     KafkaTools.ALL_PARTITIONS_DONT_SEEK,
-    KafkaTools.Consume.IGNORE,
     KafkaTools.Consume.simpleSpec('ServiceName', java.lang.String),
-    KafkaTools.Consume.avroSpec('service_use_record', 'serviceUseRecord'),
+    KafkaTools.Consume.avroSpec('service_use_record'),
     KafkaTools.TableType.append()
 ).where("ServiceName =`MySvcName`")
 ```
 
 > [!NOTE]
-> This query can be written more efficiently by applying the `where` operation before collecting events. As written, `consumeToTable` collects events immediately as they arrive (`KafkaTools.TableType.append()`). The more efficient version requires using `KafkaTools.TableType.blink()`, applying the filter, and then using `.blinkToAppendOnly()` after the filter. For more information, see our reference guide for [`consumeToTable`](../reference/data-import-export/Kafka/consumeToTable.md).
+> This query can be written more efficiently by applying the `where` operation before collecting events. As written, `consumeToTable` collects events immediately as they arrive (`KafkaTools.TableType.append()`). The more efficient version requires using `KafkaTools.TableType.blink()`, applying the filter, and then passing the result to [`BlinkTableTools.blinkToAppendOnly`](../reference/table-operations/create/blink-to-append-only.md). For more information, see our reference guide for [`consumeToTable`](../reference/data-import-export/Kafka/consumeToTable.md).
 
 There are a few important points about live tables that deserve more explanation:
 
@@ -162,11 +162,15 @@ There are a few important points about live tables that deserve more explanation
 2. All table methods, operations and functions work identically on live tables as on static tables. No separate vocabularies or concepts.
 3. Moreover, derived tables defined by queries on live tables are also live. Query operation results are calculated efficiently by considering previous results and state and incrementally applying row adds, modifies and deletes as appropriate for the operation (see our concept guide on the [Deephaven table update model](../conceptual/table-update-model.md) for details). For example, the filtering done by the `where` operation above is implemented by processing added (and more generally, potentially removed or modified) rows to its parent table. Instead of recomputing the result of the whole filter every time the parent table changes, it updates the previous result with the relevant change information (add, modifies and deletes) from the base table.
 
-Now we are ready to decorate the live data with the last 4 samples average we calculated previously:
+Now we are ready to decorate the live data with the last 4 samples average we calculated previously. First, we derive the same time columns from the `KafkaTimestamp` column that the consumer adds to the live table:
 
 ```groovy skip-test
-liveUseWithLast4weeksAvg = liveUse.naturalJoin(
-    svcUseLast4WeeksAvg, "SecondsInDay"
+liveUseWithLast4weeksAvg = liveUse.updateView(
+    "Secs=(long) secs(KafkaTimestamp)",
+    "SecondsInDay=Secs % (24*60*60)",
+    "DayOfWeek=((long) (Secs / (24*60*60))) % 7"
+).naturalJoin(
+    svcUseLast4WeeksAvg, "DayOfWeek, SecondsInDay"
 ).updateView("PredictedDiff=Value-Last4Avg", "PredictedPct=100*Value/Last4Avg")
 ```
 

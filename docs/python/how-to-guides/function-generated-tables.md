@@ -68,12 +68,11 @@ result_from_refresh_interval = function_generated_table(
 
 ## Weather data
 
-The following example pulls weather from NOAA's free-to-use [Weather API](https://www.weather.gov/documentation/services-web-api) for the city of Denver, Colorado. The trigger table ticks once per minute.
+The following example pulls weather from NOAA's free-to-use [Weather API](https://www.weather.gov/documentation/services-web-api) for the city of Denver, Colorado. The function re-runs once per minute (`refresh_interval_ms=60_000`).
 
 ```python ticking-table order=null
 from deephaven import function_generated_table
 from deephaven import column as dhcol
-from deephaven import time_table
 from deephaven import new_table
 
 from urllib.request import Request, urlopen
