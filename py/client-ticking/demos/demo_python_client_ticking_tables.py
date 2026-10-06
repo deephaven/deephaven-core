@@ -54,18 +54,22 @@ class LiveQuoteBook(TableListener):
         # Apply removes before adds and modifies, so that a key that is removed and
         # re-added within one cycle ends up present.
         removed = update.removed(KEY)
-        added_chunks = list(update.added_chunks(SNAPSHOT_CHUNK, COLS))
         prev = update.modified_prev(COLS)
         curr = update.modified(COLS)
 
         alerts = []
+        num_chunks = 0
         with self.lock:
             self.cycles += 1
+            cycle = self.cycles
 
             for sym in removed.get(KEY, []):
                 self.quotes.pop(sym.as_py(), None)
 
-            for chunk in added_chunks:
+            # Consume the generator one chunk at a time, so that only one chunk of
+            # added rows is in memory at once.
+            for chunk in update.added_chunks(SNAPSHOT_CHUNK, COLS):
+                num_chunks += 1
                 for sym, price, size in _rows(chunk):
                     self.quotes[sym] = Quote(price, size)
 
@@ -80,8 +84,8 @@ class LiveQuoteBook(TableListener):
                         if abs(move) >= MOVE_ALERT:
                             alerts.append((sym, old_price, new_price, move))
 
-        if len(added_chunks) > 1:
-            print(f"[cycle {self.cycles}] read {len(added_chunks)} chunks of adds")
+        if num_chunks > 1:
+            print(f"[cycle {cycle}] read {num_chunks} chunks of adds")
         for sym, old, new, move in alerts:
             print(f"  ALERT {sym}: {old:.2f} -> {new:.2f} ({move:+.2f})")
 
@@ -89,12 +93,14 @@ class LiveQuoteBook(TableListener):
         self.error = error
         self.failed.set()
 
-    def snapshot(self) -> list[tuple[str, Quote]]:
+    def snapshot(self) -> tuple[int, list[tuple[str, Quote]]]:
+        """Returns the cycle count and a copy of the quotes, read together under the lock."""
         with self.lock:
-            return sorted(
+            quotes = sorted(
                 ((s, Quote(q.price, q.size, q.updates)) for s, q in self.quotes.items()),
                 key=lambda item: item[0],
             )
+            return self.cycles, quotes
 
 
 def _rows(cols: dict) -> list[tuple]:
@@ -128,8 +134,9 @@ def main() -> None:
             if book.failed.wait(timeout=3):
                 print(f"Listener failed: {book.error}")
                 break
-            print(f"--- after {book.cycles} cycles ---")
-            for sym, q in book.snapshot():
+            cycles, quotes = book.snapshot()
+            print(f"--- after {cycles} cycles ---")
+            for sym, q in quotes:
                 print(f"{sym:5} {q.price:8.2f} {q.size:5d}  ({q.updates} updates)")
     except KeyboardInterrupt:
         print("Interrupted")

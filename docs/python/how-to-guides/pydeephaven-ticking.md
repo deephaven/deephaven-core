@@ -21,11 +21,13 @@ pip install pydeephaven-ticking
 
 This also installs `pydeephaven`. Install the version that matches your server, for example `pip install pydeephaven-ticking==42.5` for a 42.5 server.
 
-On other platforms, run your client code in a Linux container. For example, this starts a Python shell with the package installed:
+On other platforms, run your client code in a Linux x86_64 container. For example, this starts a Python shell with the package installed:
 
 ```sh
-docker run --rm -it python:3.12-slim sh -c 'pip install pydeephaven-ticking && python'
+docker run --rm -it --platform linux/amd64 python:3.12-slim sh -c 'pip install pydeephaven-ticking && python'
 ```
+
+The `--platform linux/amd64` flag matters on ARM computers, such as Macs with Apple silicon. Without it, Docker runs an ARM container, and `pip` can't find a `pydeephaven-ticking` package to install. With it, Docker emulates x86_64, which runs more slowly than a native container.
 
 Inside a container, `localhost` refers to the container itself, not to your computer. Point the `Session` at the server in one of these ways:
 
