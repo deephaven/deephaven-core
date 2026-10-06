@@ -120,8 +120,7 @@ def tlsPort = project.objects.property(Integer)
 // http.port is explicit because the server defaults to 443 once an SSL identity is configured
 def tlsStartOpts = serverStartOpts + ' -Dhttp.port=10000 ' +
         '-Dssl.identity.type=privatekey -Dssl.identity.certChainPath=/dev-certs/server.chain.crt ' +
-        '-Dssl.identity.privateKeyPath=/dev-certs/server.key ' +
-        '-Dssl.trust.type=certs -Dssl.trust.path=/dev-certs/ca.crt -Dssl.clientAuthentication=WANTED'
+        '-Dssl.identity.privateKeyPath=/dev-certs/server.key'
 // The image's health check probes in plaintext; this server only speaks TLS
 def tlsHealthCheck = '/opt/grpc_health_probe/grpc_health_probe -addr=localhost:10000 -tls -tls-no-verify ' +
         '-connect-timeout=10s || exit 1'

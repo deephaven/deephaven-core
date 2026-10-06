@@ -46,8 +46,8 @@ class SubscribeToLogs extends SessionExampleBase {
     Set<String> levels;
 
     @Option(names = {"--timeout"},
-            description = "Exit after this duration even if fewer than --count messages arrived, for example PT5S; "
-                    + "unlimited if unset")
+            description = "Stop waiting for messages after this duration even if fewer than --count arrived, for "
+                    + "example PT5S; unlimited if unset. Applies to the server stream, not to --sleep")
     Duration timeout;
 
     @Override

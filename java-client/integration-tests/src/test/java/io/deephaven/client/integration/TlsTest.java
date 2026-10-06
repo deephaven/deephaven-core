@@ -10,7 +10,6 @@ import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.SessionFactoryConfig;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.qst.table.TableSpec;
-import io.deephaven.ssl.config.IdentityPrivateKey;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustCertificates;
 import io.deephaven.uri.DeephavenTarget;
@@ -31,10 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * TLS against a second server started with the development certificates under {@code server/dev-certs}, with client
- * certificates wanted but not required. Covers the handshake and ALPN through whichever SSL provider the client
- * configures (see {@code TransportTest} for which one that is), trust configuration, client identity, and the failure
- * modes a misconfigured client hits. Runs under the {@code testTls} task, which passes {@code dh.tls.port} and
+ * TLS against a second server started with the development certificates under {@code server/dev-certs}. Covers the
+ * handshake and ALPN through whichever SSL provider the client configures (see {@code TransportTest} for which one that
+ * is), trust configuration, and the failure modes a misconfigured client hits. Mutual TLS is not covered; see the
+ * README for why and how it would be. Runs under the {@code testTls} task, which passes {@code dh.tls.port} and
  * {@code dh.devCerts}.
  */
 class TlsTest {
@@ -71,17 +70,6 @@ class TlsTest {
                 .build();
     }
 
-    /** Trust the development CA and present the development client certificate. */
-    private static SSLConfig mutualTls() {
-        return SSLConfig.builder()
-                .trust(TrustCertificates.of(devCerts.resolve("ca.crt").toString()))
-                .identity(IdentityPrivateKey.builder()
-                        .certChainPath(devCerts.resolve("client.chain.crt").toString())
-                        .privateKeyPath(devCerts.resolve("client.key").toString())
-                        .build())
-                .build();
-    }
-
     private static SessionFactoryConfig.Factory sessionFactory(ClientConfig clientConfig) {
         return SessionFactoryConfig.builder()
                 .clientConfig(clientConfig)
@@ -94,17 +82,6 @@ class TlsTest {
     void tlsWithTrustedCaConnects() throws Exception {
         final SessionFactoryConfig.Factory factory = sessionFactory(
                 ClientConfig.builder().target(target(true)).ssl(trustDevCa()).build());
-        try (final Session session = factory.newSession()) {
-            assertThat(session.getConfigurationConstants().get(10, TimeUnit.SECONDS)).isNotEmpty();
-        } finally {
-            factory.managedChannel().shutdownNow();
-        }
-    }
-
-    @Test
-    void mutualTlsConnects() throws Exception {
-        final SessionFactoryConfig.Factory factory = sessionFactory(
-                ClientConfig.builder().target(target(true)).ssl(mutualTls()).build());
         try (final Session session = factory.newSession()) {
             assertThat(session.getConfigurationConstants().get(10, TimeUnit.SECONDS)).isNotEmpty();
         } finally {

@@ -16,7 +16,8 @@ use:
 | `barrage-examples` | `java-client-barrage` | Barrage snapshots and subscriptions into a client-side engine |
 
 `example-utilities` holds the picocli option groups they share. Each project's `README.md` says how
-to build and run its launchers; `integration-tests` runs every launcher against a server in Docker.
+to build and run its launchers; `integration-tests` runs every launcher the test server can support
+against a server in Docker.
 
 ### Running
 
@@ -143,13 +144,18 @@ classpath, so `check` reruns it without being asked:
 ### The TLS tests
 
 `TlsTest` runs under its own task, `testTls`, against a second container started with the
-development certificates from `server/dev-certs` bind-mounted in, serving TLS on its port with
-client certificates wanted but not required. The `deephavenDocker` extension manages one container
-per project, so `build.gradle` registers that container's tasks by hand, mirroring the extension,
-with the image's plaintext health check replaced by a TLS one. The tests cover a trusted-CA
-connection, mutual TLS with the client certificate, Flight data over TLS, and two failures: the
+development certificates from `server/dev-certs` bind-mounted in, serving TLS on its port. The
+`deephavenDocker` extension manages one container per project, so `build.gradle` registers that
+container's tasks by hand, mirroring the extension, with the image's plaintext health check replaced
+by a TLS one. The tests cover a trusted-CA connection, Flight data over TLS, and two failures: the
 JDK's default trust rejecting the self-signed server, and plaintext against the TLS port. The
 `test` task excludes `*TlsTest*`; `check` runs both tasks.
+
+Mutual TLS is not tested. No production use requires the client to present a certificate today,
+and a server that only wants one cannot prove the client sent it. If that changes, the pieces are
+in place: start the container with `-Dssl.clientAuthentication=NEEDED` and the dev CA as its trust,
+and add a test whose `SSLConfig` carries an `IdentityPrivateKey` for `client.chain.crt` and
+`client.key`, alongside one asserting that a client without an identity is rejected.
 
 ### Things that have bitten
 

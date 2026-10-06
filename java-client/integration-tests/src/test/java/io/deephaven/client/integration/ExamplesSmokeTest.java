@@ -24,9 +24,9 @@ import static io.deephaven.client.integration.ExampleRunner.Project.SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Runs every runnable example from {@code java-client/*-examples} once against the Docker server and checks that it
- * exits cleanly and prints what it is expected to print. This guards the examples against rot; it is not a substitute
- * for API-level tests.
+ * Runs every example from {@code java-client/*-examples} that the test server can support, once each, against the
+ * Docker server, and checks that it exits cleanly and prints what it is expected to print. The two it cannot support
+ * are listed below. This guards the examples against rot; it is not a substitute for API-level tests.
  *
  * <p>
  * The examples run one at a time because several publish fixed variable names on the server. A small setup step creates
