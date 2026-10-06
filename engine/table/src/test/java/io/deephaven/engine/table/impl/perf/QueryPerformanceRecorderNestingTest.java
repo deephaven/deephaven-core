@@ -14,6 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 public class QueryPerformanceRecorderNestingTest {
 
     @Rule
@@ -274,40 +277,50 @@ public class QueryPerformanceRecorderNestingTest {
 
     /**
      * While a query is resumed on top of another, the outer query is not running, so its time must not include the
-     * inner query's: the catch-all that was accruing uninstrumented time for the outer pauses for the duration.
+     * inner query's: the catch-all that was accruing uninstrumented time for the outer is paused for the duration and
+     * restarted when the thread comes back, and accrues again from then on.
      */
     @Test
-    public void testNestedQueryTimeIsNotChargedToTheOuterCatchAll() throws InterruptedException {
-        final CapturingFactory factory = new CapturingFactory();
+    public void testNestedQueryPausesAndRestartsTheOuterCatchAll() throws InterruptedException {
+        final CountingFactory factory = new CountingFactory();
         final QueryPerformanceRecorder outer = QueryPerformanceRecorder.newQuery("outer", null, factory);
         final QueryPerformanceRecorder inner = suspendedQuery("inner");
 
         try (final SafeCloseable ignored = outer.startQuery()) {
+            Assert.eq(factory.catchAlls.size(), "factory.catchAlls.size()", 1);
+            final CountingNugget catchAll = factory.catchAlls.get(0);
+            catchAll.assertCounts(1, 0, "running before the nested query");
             try (final SafeCloseable ignored2 = inner.resumeQuery()) {
-                Thread.sleep(INNER_SLEEP_MILLIS);
+                catchAll.assertCounts(1, 1, "paused while the nested query runs");
                 inner.endQuery();
+                catchAll.assertCounts(2, 1, "restarted once the thread is handed back");
             }
+            Thread.sleep(OUTER_WORK_MILLIS);
             outer.endQuery();
+            catchAll.assertCounts(2, 2, "closed with the outer query");
         }
-
-        Assert.eq(factory.catchAlls.size(), "factory.catchAlls.size()", 1);
-        assertExcludesInnerTime(factory.catchAlls.get(0), "outer catch-all");
+        assertAccruedAtLeast(factory.catchAlls.get(0), OUTER_WORK_MILLIS, "outer catch-all after the nested query");
     }
 
     /** As above, for an outer query whose time is going to an open operation nugget rather than the catch-all. */
     @Test
-    public void testNestedQueryTimeIsNotChargedToTheOuterOperationNugget() throws InterruptedException {
-        final QueryPerformanceRecorder outer = newQuery("outer");
+    public void testNestedQueryPausesAndRestartsTheOuterOperationNugget() throws InterruptedException {
+        final CountingFactory factory = new CountingFactory();
+        final QueryPerformanceRecorder outer = QueryPerformanceRecorder.newQuery("outer", null, factory);
         final QueryPerformanceRecorder inner = suspendedQuery("inner");
 
         try (final SafeCloseable ignored = outer.startQuery()) {
-            final QueryPerformanceNugget operation = outer.getNugget("operation", 0);
+            final CountingNugget operation = (CountingNugget) outer.getNugget("operation", 0);
+            operation.assertCounts(1, 0, "running before the nested query");
             try (final SafeCloseable ignored2 = inner.resumeQuery()) {
-                Thread.sleep(INNER_SLEEP_MILLIS);
+                operation.assertCounts(1, 1, "paused while the nested query runs");
                 inner.endQuery();
+                operation.assertCounts(2, 1, "restarted once the thread is handed back");
             }
+            Thread.sleep(OUTER_WORK_MILLIS);
             operation.close();
-            assertExcludesInnerTime(operation, "outer operation nugget");
+            operation.assertCounts(2, 2, "closed");
+            assertAccruedAtLeast(operation, OUTER_WORK_MILLIS, "outer operation nugget after the nested query");
             outer.endQuery();
         }
     }
@@ -365,27 +378,73 @@ public class QueryPerformanceRecorderNestingTest {
         }
     }
 
-    private static final long INNER_SLEEP_MILLIS = 100;
+    private static final long OUTER_WORK_MILLIS = 20;
 
-    private static void assertExcludesInnerTime(final QueryPerformanceNugget nugget, final String what) {
-        final long usageMillis = nugget.getUsageNanos() / 1_000_000;
-        Assert.lt(usageMillis, what + " usage millis", INNER_SLEEP_MILLIS / 2, "half the inner query's sleep");
+    /** A lower bound only: a stall can only make the entry accrue more, never less. */
+    private static void assertAccruedAtLeast(final QueryPerformanceNugget nugget, final long millis,
+            final String what) {
+        Assert.geq(nugget.getUsageNanos() / 1_000_000, what + " usage millis", millis, "millis");
     }
 
-    /** Records the catch-all nuggets it creates, so a test can read what the outer query charged to them. */
-    private static final class CapturingFactory implements QueryPerformanceNugget.Factory {
-        final List<QueryPerformanceNugget> catchAlls = new ArrayList<>();
+    /** A nugget that counts how often it was started and ended, so a test can see it paused and restarted. */
+    private static final class CountingNugget extends QueryPerformanceNugget {
+        private int starts;
+        private int ends;
+
+        CountingNugget(final long evaluationNumber, final long parentEvaluationNumber, final int operationNumber,
+                final int parentOperationNumber, final int depth, @NotNull final String description,
+                final boolean isUser, final long inputSize,
+                @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
+            super(evaluationNumber, parentEvaluationNumber, operationNumber, parentOperationNumber, depth,
+                    description, null, isUser, false, inputSize, onCloseCallback);
+        }
+
+        @Override
+        public synchronized void onBaseEntryStart() {
+            super.onBaseEntryStart();
+            ++starts;
+        }
+
+        @Override
+        public synchronized void onBaseEntryEnd() {
+            super.onBaseEntryEnd();
+            ++ends;
+        }
+
+        synchronized void assertCounts(final int expectedStarts, final int expectedEnds, final String when) {
+            Assert.eq(starts, "starts (" + when + ")", expectedStarts, "expectedStarts");
+            Assert.eq(ends, "ends (" + when + ")", expectedEnds, "expectedEnds");
+        }
+    }
+
+    /** Creates counting catch-all and operation nuggets, and records the catch-alls. */
+    private static final class CountingFactory implements QueryPerformanceNugget.Factory {
+        final List<CountingNugget> catchAlls = new ArrayList<>();
 
         @Override
         public QueryPerformanceNugget createForCatchAll(
                 @NotNull final QueryPerformanceNugget parentQuery,
                 final int operationNumber,
                 @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
-            final QueryPerformanceNugget nugget =
-                    QueryPerformanceNugget.Factory.super.createForCatchAll(parentQuery, operationNumber,
-                            onCloseCallback);
+            final CountingNugget nugget = new CountingNugget(parentQuery.getEvaluationNumber(),
+                    parentQuery.getParentEvaluationNumber(), operationNumber, NULL_INT, 0,
+                    QueryPerformanceRecorder.UNINSTRUMENTED_CODE_DESCRIPTION, false, NULL_LONG, onCloseCallback);
             catchAlls.add(nugget);
             return nugget;
+        }
+
+        @Override
+        public QueryPerformanceNugget createForOperation(
+                @NotNull final QueryPerformanceNugget parentQueryOrOperation,
+                final int operationNumber,
+                final String description,
+                final long inputSize,
+                @NotNull final Consumer<QueryPerformanceNugget> onCloseCallback) {
+            final int parentDepth = parentQueryOrOperation.getDepth();
+            return new CountingNugget(parentQueryOrOperation.getEvaluationNumber(),
+                    parentQueryOrOperation.getParentEvaluationNumber(), operationNumber,
+                    parentQueryOrOperation.getOperationNumber(), parentDepth == NULL_INT ? 0 : parentDepth + 1,
+                    description, true, inputSize, onCloseCallback);
         }
     }
 
