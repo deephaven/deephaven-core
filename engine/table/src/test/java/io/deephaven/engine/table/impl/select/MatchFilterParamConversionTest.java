@@ -109,17 +109,19 @@ public class MatchFilterParamConversionTest {
     }
 
     @Test
-    public void valuesThatConvertExactlyToTheNullValueAreRejected() {
-        // (int) (long) Integer.MIN_VALUE is NULL_INT, but the query language compares the long as a number below every
-        // int; only the int Integer.MIN_VALUE is null
-        assertRejected((long) Integer.MIN_VALUE, int.class);
-        assertRejected((int) Short.MIN_VALUE, short.class);
-        assertRejected(-128, byte.class);
-        assertRejected((double) -Float.MAX_VALUE, float.class);
-        assertRejected(-0x1p63, long.class);
-        // 65535 converts to NULL_CHAR, the highest char, where the null values of the other types are their lowest
+    public void valuesThatConvertExactlyToTheNullValueAreNull() {
+        // (int) (long) Integer.MIN_VALUE is NULL_INT, so the long is null, as the int Integer.MIN_VALUE is, although
+        // the
+        // query language compares it as a number below every int
+        assertEquals(QueryConstants.NULL_INT_BOXED, convert((long) Integer.MIN_VALUE, int.class));
+        assertEquals(QueryConstants.NULL_SHORT_BOXED, convert((int) Short.MIN_VALUE, short.class));
+        assertEquals(QueryConstants.NULL_BYTE_BOXED, convert(-128, byte.class));
+        assertEquals(QueryConstants.NULL_FLOAT_BOXED, convert((double) -Float.MAX_VALUE, float.class));
+        assertEquals(QueryConstants.NULL_LONG_BOXED, convert(-0x1p63, long.class));
+        // but 65535, which converts to NULL_CHAR, is rejected: NULL_CHAR is the highest char, yet orders below every
+        // char, where the query language compares 65535 above them all
         assertRejected((int) Character.MAX_VALUE, char.class);
-        // a value that only wraps to the null value is rejected too
+        // and a value that only wraps to the null value is not exact
         assertRejected(1L << 31, int.class);
     }
 

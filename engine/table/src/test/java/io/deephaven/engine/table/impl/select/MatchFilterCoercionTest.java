@@ -57,13 +57,12 @@ import static org.junit.Assert.assertTrue;
  * Filter values -- query-scope parameters and directly supplied match values -- must select exactly the rows that the
  * {@link ConditionFilter} failover, which evaluates the filter in the query language, would select. A value that cannot
  * be converted to the column's type exactly is never truncated or wrapped: filters that have a failover use it, and the
- * rest reject the value. A value that converts exactly to the column type's null value, an int -128 for a byte column
- * for instance, is not representable either: the query language compares it as a number, and only a value of the
- * column's own type, the byte -128, is null. There are two exceptions. A large floating-point value against an int or
- * long column matches only its exact equivalent, where the query language, comparing in floating point, would also
- * match the integers that round to it; a large {@link Float} range bound against an int column likewise orders as its
- * exact equivalent. And a literal is read in the column's type, so the literal -128 against a byte column is null,
- * where the query language reads it as an int.
+ * rest reject the value. There are three exceptions. A large floating-point value against an int or long column matches
+ * only its exact equivalent, where the query language, comparing in floating point, would also match the integers that
+ * round to it; a large {@link Float} range bound against an int column likewise orders as its exact equivalent. A value
+ * that converts exactly to the column type's null value, an int -128 for a byte column for instance, is null, as the
+ * byte -128 is, where the query language compares it as a number below every byte. And a literal is read in the
+ * column's type, so the literal -128 against a byte column is null too, where the query language reads it as an int.
  */
 public class MatchFilterCoercionTest {
 
@@ -188,23 +187,39 @@ public class MatchFilterCoercionTest {
     }
 
     @Test
-    public void valueThatConvertsToTheNullValueIsANumber() {
-        // an int -128 converts exactly to the byte -128, which is NULL_BYTE, but the query language compares it with
-        // a byte as an int: a number below every byte, which X == -128 matches no row of, and X < -128 only the nulls
+    public void valueThatConvertsToTheNullValueIsNull() {
+        // An int -128 converts exactly to the byte -128, which is NULL_BYTE, so it is null, as the Byte -128 and the
+        // literal -128 are. The query language compares it as an int instead, a number below every byte, so these
+        // differ from the failover, where X == vm128 matches no row and X < vm128 only the nulls.
         QueryScope.addParam("vm128", -128);
         QueryScope.addParam("lmin", (long) Integer.MIN_VALUE);
         QueryScope.addParam("dmin", -0x1p31);
         QueryScope.addParam("vnegmax", -(double) Float.MAX_VALUE);
-        final String[] filters = {"X == vm128", "X != vm128", "X < vm128", "X <= vm128", "X > vm128", "X >= vm128"};
         final Table bytes = newTable(byteCol("X", (byte) -127, (byte) 0, (byte) 5, NULL_BYTE));
-        assertSameRowsAsFailover(bytes, filters);
-        assertRejected(() -> bytes.where("X in vm128"));
-        assertRejected(() -> bytes.where(new MatchFilter(MatchOptions.REGULAR, "X", -128)));
+        final Table nullBytes = bytes.where("isNull(X)");
+        final Table nonNullBytes = bytes.where("!isNull(X)");
 
-        assertSameRowsAsFailover(newTable(intCol("X", -Integer.MAX_VALUE, 0, NULL_INT)),
-                "X == lmin", "X != lmin", "X < lmin", "X >= lmin", "X == dmin", "X < dmin");
-        assertSameRowsAsFailover(newTable(floatCol("X", Float.NEGATIVE_INFINITY, 0.5f, NULL_FLOAT)),
-                "X == vnegmax", "X != vnegmax", "X <= vnegmax", "X > vnegmax");
+        assertTableEquals(nullBytes, bytes.where("X == vm128"));
+        assertTableEquals(nullBytes, bytes.where("X in vm128"));
+        assertTableEquals(nullBytes, bytes.where(new MatchFilter(MatchOptions.REGULAR, "X", -128)));
+        assertTableEquals(nonNullBytes, bytes.where("X != vm128"));
+        assertTableEquals(nonNullBytes, bytes.where("X not in vm128"));
+        // null orders below every value, so no row is below it
+        assertTableEquals(bytes.head(0), bytes.where("X < vm128"));
+        for (final String operator : new String[] {"==", "!=", "<", "<=", ">", ">="}) {
+            // the same rows as the literal, and with the typed filter
+            final String filter = "X " + operator + " vm128";
+            assertTableEquals(filter, bytes.where("X " + operator + " -128"), bytes.where(filter));
+            assertFalse(filter, failsOver(bytes, filter));
+        }
+
+        final Table ints = newTable(intCol("X", -Integer.MAX_VALUE, 0, NULL_INT));
+        for (final String filter : new String[] {"X == lmin", "X in lmin", "X == dmin", "X in dmin"}) {
+            assertTableEquals(filter, ints.where("isNull(X)"), ints.where(filter));
+        }
+        final Table floats = newTable(floatCol("X", Float.NEGATIVE_INFINITY, 0.5f, NULL_FLOAT));
+        assertTableEquals(floats.where("isNull(X)"), floats.where("X == vnegmax"));
+        assertTableEquals(floats.where("isNull(X)"), floats.where("X in vnegmax"));
     }
 
     @Test

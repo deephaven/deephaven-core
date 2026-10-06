@@ -59,10 +59,9 @@ import java.util.Optional;
  * every other value. An endpoint of the column's own type equal to its null value -- {@code -Double.MAX_VALUE} is
  * {@code NULL_DOUBLE}, and {@code Long.MIN_VALUE} is {@code NULL_LONG} -- is therefore null, as it is in the query
  * language, so {@code X < -Double.MAX_VALUE} matches no rows at all, {@code -Infinity} included. An endpoint of another
- * type that converts to the null value, a query-scope int {@code v = -128} against a byte column for instance, is a
- * number in the query language, which the conversion rejects: {@code X < v} selects the null rows only. A literal,
- * though, is read in the column's type, so the literal {@code -128} against a byte column is {@code NULL_BYTE}, and
- * null.
+ * type that converts exactly to the null value, a query-scope int {@code v = -128} against a byte column for instance,
+ * is null too, as the literal {@code -128} against a byte column is: {@code X < v} selects no rows. The query language
+ * compares it as a number below every byte instead, so there {@code X < v} selects the null rows.
  */
 public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 

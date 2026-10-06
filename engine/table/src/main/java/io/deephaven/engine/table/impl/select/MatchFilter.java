@@ -440,8 +440,9 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         /**
          * Throws, so that a filter fails over to its {@link ConditionFilter}, unless {@code converted} -- {@code value}
          * cast to the column type -- selects the rows {@code value} would select in the query language: it must equal
-         * {@code value} exactly. The convertors also reject a value that converts exactly to the column type's null
-         * value: only a value of the column's own type is null there, in the query language as here.
+         * {@code value} exactly. A value that converts exactly to the column type's null value is null, as a value of
+         * the column's own type is; the query language compares it as a number instead, below every value of the column
+         * (or, for {@code char}, above them all, which is why the char convertor rejects it).
          *
          * <p>
          * A {@link BigDecimal} or {@link BigInteger} against a float or double column is the one case where "equal" is
@@ -617,7 +618,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /**
      * Converts a numeric query-scope value to a primitive numeric column type: exactly, to the type's null value if it
-     * is its own type's null value, or not at all (see {@link #checkRoundTrip(Number, Number, Class)}).
+     * is its own type's null value, or not at all (see {@link #checkRoundTrip(Number, Number, Class)}). A value that
+     * converts exactly to the column type's null value is null, whatever its type.
      */
     private abstract static class NumericColumnTypeConvertor extends ColumnTypeConvertor {
         private final Class<?> boxedType;
@@ -666,12 +668,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             }
             final Number number = (Number) paramValue;
             final Number converted = narrow(number);
+            // A value that converts exactly to the column type's null value -- an int -128 for a byte column -- is
+            // null, as the Byte -128 and the literal -128 are, although the query language compares it as a number
+            // below every byte.
             checkRoundTrip(number, converted, boxedType);
-            if (converted.equals(nullValue)) {
-                // The query language compares an int -128 with a byte column as a number below every byte, not as
-                // null; only a value of the column's own type is null at the null value.
-                throw cannotConvert(number, boxedType, "it converts to the column type's null value", null);
-            }
             return converted;
         }
     }
@@ -842,10 +842,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         final char converted = (char) number.intValue();
                         checkRoundTrip(number, (int) converted, Character.class);
                         if (converted == QueryConstants.NULL_CHAR) {
-                            // As for the numeric types, a value that converts to the null value is a number in the
-                            // query language, not null (NULL_INT, which is null there too, was converted above). For
-                            // char this matters more: NULL_CHAR is the highest char (65535), yet it orders below
-                            // every char, while the query language compares 65535 as a number above them all.
+                            // Unlike the numeric types, where such a value is null, this is rejected: NULL_CHAR is
+                            // the highest char (65535), yet it orders below every char, while the query language
+                            // compares 65535 as a number above them all. (NULL_INT, a null value of its own type, was
+                            // converted above.)
                             throw cannotConvert(number, Character.class,
                                     "it converts to NULL_CHAR, which orders below every char", null);
                         }
