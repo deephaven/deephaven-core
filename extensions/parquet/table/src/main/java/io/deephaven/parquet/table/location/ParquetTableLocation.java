@@ -348,11 +348,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return StandaloneDataIndex.from(table, columns, INDEX_ROW_SET_COLUMN_NAME);
         }
         // The adjusted table maps positions to row keys lazily, so it keeps the location's row set for its lifetime.
-        final Table adjustedTable = table.updateView(List.of(new FunctionalColumn<>(
-                INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
-                INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
-                (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
-        return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
+        // If the index cannot be built, nothing owns the row set, so close it here.
+        try {
+            final Table adjustedTable = table.updateView(List.of(new FunctionalColumn<>(
+                    INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                    INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                    (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
+            return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
+        } catch (final RuntimeException | Error e) {
+            SafeCloseable.closeAllDuringFailure(e, locationRowSet);
+            throw e;
+        }
     }
 
     private static class IndexFileMetadata {
