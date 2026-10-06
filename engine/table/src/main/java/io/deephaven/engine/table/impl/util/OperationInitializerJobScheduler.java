@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -35,12 +36,19 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
         outstandingJobs.incrementAndGet();
+        final AtomicBoolean started = new AtomicBoolean();
         try {
-            operationInitializer.submit(() -> wrapRunnable(executionContext, runnable, description, onError));
+            operationInitializer.submit(() -> {
+                started.set(true);
+                wrapRunnable(executionContext, runnable, description, onError);
+            });
         } catch (Throwable t) {
-            // An Error here, OutOfMemoryError when the pool cannot make a thread in practice, must release the count
-            // too, or getAccumulatedPerformance would wait forever for a job that was never submitted.
-            decrementOutstandingJobs();
+            // A job that never started must release its count here, or getAccumulatedPerformance would wait forever
+            // for it; an Error counts too, OutOfMemoryError when the pool cannot make a thread in practice. A job that
+            // an inline initializer started has released its count already, in wrapRunnable, whatever it threw.
+            if (!started.get()) {
+                decrementOutstandingJobs();
+            }
             throw t;
         }
     }

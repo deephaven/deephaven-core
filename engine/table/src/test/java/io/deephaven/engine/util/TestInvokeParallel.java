@@ -1033,6 +1033,45 @@ public class TestInvokeParallel {
         assertThat(runs.get()).isZero();
     }
 
+    /**
+     * An inline operation initializer runs a job inside submit; when that job ends in an Error, the count it took is
+     * released once, in the job, and not again by submit, so that later waits for outstanding work still balance.
+     */
+    @Test
+    public void testInlineOperationInitializerErrorReleasesTheCountOnce() throws InterruptedException {
+        final AssertionError taskError = new AssertionError("task error");
+        final OperationInitializerJobScheduler scheduler =
+                new OperationInitializerJobScheduler(OperationInitializer.NON_PARALLELIZABLE);
+        // the scheduler reports the task's Error as fatal and rethrows it; the unit test reporter throws in its place
+        final Throwable thrown = catchThrowable(() -> scheduler.submit(null, () -> {
+            throw taskError;
+        }, null, e -> {
+        }));
+        assertThat(thrown).isNotNull();
+
+        // A second, successful job: if the first had released its count twice, the count would now sit below zero
+        // and this job's release would leave it at zero early, or the wait below would never see it reach zero.
+        final AtomicInteger runs = new AtomicInteger();
+        scheduler.submit(null, runs::incrementAndGet, null, e -> {
+        });
+        assertThat(runs.get()).isEqualTo(1);
+        withTimeout(() -> assertThat(scheduler.getAccumulatedPerformance()).isNotNull());
+        final AtomicInteger outstanding = outstandingJobs(scheduler);
+        assertThat(outstanding.get()).isZero();
+    }
+
+    /** The scheduler's outstanding job count, which nothing else exposes. */
+    private static AtomicInteger outstandingJobs(final OperationInitializerJobScheduler scheduler) {
+        try {
+            final java.lang.reflect.Field field =
+                    OperationInitializerJobScheduler.class.getDeclaredField("outstandingJobs");
+            field.setAccessible(true);
+            return (AtomicInteger) field.get(scheduler);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     /** One context per invoker, never shared between threads at once, and all closed before onComplete runs. */
     @Test
     public void testOneContextPerInvokerClosedBeforeOnComplete() {
