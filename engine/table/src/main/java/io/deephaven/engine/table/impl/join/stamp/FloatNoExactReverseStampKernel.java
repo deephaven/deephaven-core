@@ -2,18 +2,17 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit FloatNoExactReverseStampKernel and run "./gradlew replicateStampKernel" to regenerate
+// ****** Edit CharNoExactStampKernel and run "./gradlew replicateStampKernel" to regenerate
 //
 // @formatter:off
 
 package io.deephaven.engine.table.impl.join.stamp;
 
-import io.deephaven.util.compare.FloatComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.FloatComparisons;
 
 
 public class FloatNoExactReverseStampKernel implements StampKernel {
@@ -80,6 +79,7 @@ public class FloatNoExactReverseStampKernel implements StampKernel {
     }
 
     // region comparison functions
+    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(float lhs, float rhs) {
         return -1 * FloatComparisons.compare(lhs, rhs);
     }

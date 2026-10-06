@@ -48,12 +48,14 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
 
     private static CompletionParser ensureParserForSession(SessionState session) {
         return parsers.computeIfAbsent(session, s -> {
-            CompletionParser parser = new CompletionParser();
+            // register before creating the parser: if the session has expired this throws, and nothing is left behind
             s.addOnCloseCallback(() -> {
-                parsers.remove(s);
-                parser.close();
+                final CompletionParser parser = parsers.remove(s);
+                if (parser != null) {
+                    parser.close();
+                }
             });
-            return parser;
+            return new CompletionParser();
         });
     }
 

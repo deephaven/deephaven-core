@@ -1,6 +1,5 @@
 ---
 title: Configure JS plugins
-sidebar_label: JS plugins
 ---
 
 The Deephaven server supports custom JS plugins that extend the functionality of the [server](https://github.com/deephaven/deephaven-core) and [web client UI](https://github.com/deephaven/web-client-ui). This guide shows you how to install JS plugins and provides an example using the [Keycloak](https://www.keycloak.org/) authentication plugin, which is JS-only and works with `server-slim`.

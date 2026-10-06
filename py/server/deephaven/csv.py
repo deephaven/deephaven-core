@@ -40,7 +40,11 @@ def read(
     """Read the CSV data specified by the path parameter as a table.
 
     Args:
-        header (Optional[dict[str, DType]]): a dict to define the table columns with key being the name, value being the data type
+        header (Optional[dict[str, DType]]): a dict to define the table columns with key being the name, value being the data type.
+            The keys are applied by position: the first key names and types the first column of the file, the second
+            key the second column, and so on. When the file has a header row, these names replace the names in it;
+            they are not matched against it. The dict must therefore list the columns in the file's order. A dict in a
+            different order assigns names and types to the wrong columns, silently when the types happen to parse.
         headless (bool): whether the csv file doesn't have a header row, default is False
         header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
             headless is True, otherwise an exception will be raised

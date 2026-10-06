@@ -1,6 +1,5 @@
 ---
 title: What's the best approach to monitor Deephaven server health?
-sidebar_label: What's the best approach to monitor Deephaven server health?
 ---
 
 - The default Deephaven server Docker image has a [built-in healthcheck](https://github.com/deephaven/deephaven-core/blob/main/docker/server/src/main/docker/Dockerfile#L31).

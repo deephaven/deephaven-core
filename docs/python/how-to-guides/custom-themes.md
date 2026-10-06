@@ -1,6 +1,5 @@
 ---
 title: Create custom themes
-sidebar_label: Custom themes
 ---
 
 This guide will show you how to create a custom theme for the Deephaven UI. Themes work by providing a set of [CSS variables](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties) that override either the default dark or light theme. This document creates a custom theme that emulates the look of the [Financial Times](https://www.ft.com/) website.

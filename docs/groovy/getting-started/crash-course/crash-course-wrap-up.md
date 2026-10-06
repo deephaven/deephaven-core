@@ -1,6 +1,5 @@
 ---
 title: Wrapping Up
-sidebar_label: Wrapping Up
 ---
 
 ## Where to go from here

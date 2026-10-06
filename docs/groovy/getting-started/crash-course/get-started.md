@@ -1,6 +1,5 @@
 ---
 title: Get Started
-sidebar_label: Get Started
 ---
 
 _A Crash Course in Deephaven_ is your backpack guide through the world of real-time data analysis using the Deephaven data engine. This guide provides a broad - but clear and technically informative - overview of Deephaven’s capabilities. Let's dive in and unlock the potential of this powerful platform.

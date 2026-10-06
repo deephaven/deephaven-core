@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ShortMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
+// ****** Edit LongMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
 //
 // @formatter:off
 package io.deephaven.parquet.base.materializers;

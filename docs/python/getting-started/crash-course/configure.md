@@ -1,6 +1,5 @@
 ---
 title: Configure your Deephaven Instance
-sidebar_label: Configure your Instance
 ---
 
 This last section covers configuration details needed to take your Deephaven instance beyond the defaults.

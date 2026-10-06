@@ -1,6 +1,5 @@
 ---
 title: Python functions in query strings
-sidebar_label: Functions
 ---
 
 The ability to use your own custom Python [variables](./python-variables.md), functions, and [classes](./python-classes.md) in Deephaven query strings is one of its most powerful features. The use of custom Python functions in query strings follows some basic rules, which are outlined in this guide.

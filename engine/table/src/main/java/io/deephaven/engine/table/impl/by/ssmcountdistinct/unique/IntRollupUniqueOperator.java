@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.ssms.IntSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.util.compare.IntComparisons;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -165,6 +166,30 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
+        // modifies of shifted constituents are delivered to shiftChunk, so pre- and post-shift keys coincide here
+        replaceConstituents(bucketedContext, preValues, postValues, postShiftRowKeys, postShiftRowKeys, destinations,
+                startPositions, length, stateModified);
+    }
+
+    @Override
+    public void shiftChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+            LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        replaceConstituents(bucketedContext, preValues, postValues, preShiftRowKeys, postShiftRowKeys, destinations,
+                startPositions, length, stateModified);
+    }
+
+    /**
+     * Replace each constituent's previous contribution with its current one. The previous {@code singletonCount} is
+     * read at {@code preShiftRowKeys} and the current one at {@code postShiftRowKeys}.
+     */
+    private void replaceConstituents(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+            LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final SsmUniqueRollupContext context = (SsmUniqueRollupContext) bucketedContext;
         final IntChunk<? extends Values> prevValueChunk = preValues.asIntChunk();
         final IntChunk<? extends Values> postValueChunk = postValues.asIntChunk();
@@ -186,14 +211,13 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
             int removeCount = 0;
             int addCount = 0;
             for (int kk = startPosition; kk < startPosition + runLength; ++kk) {
-                final long rowKey = postShiftRowKeys.get(kk);
-                final long prevSc = constituentSingletonCount.getPrevLong(rowKey);
+                final long prevSc = constituentSingletonCount.getPrevLong(preShiftRowKeys.get(kk));
                 if (prevSc > 0) {
                     removeValues.set(removeCount++, prevValueChunk.get(kk));
                 } else if (isNonUniqueState(prevSc)) {
                     nonUniqueDelta--;
                 }
-                final long sc = constituentSingletonCount.getLong(rowKey);
+                final long sc = constituentSingletonCount.getLong(postShiftRowKeys.get(kk));
                 if (sc > 0) {
                     addValues.set(addCount++, postValueChunk.get(kk));
                 } else if (isNonUniqueState(sc)) {
@@ -201,7 +225,7 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
                 }
             }
             // net the two so values unchanged across the modify cancel out, then apply the surviving removals/additions
-            IntCompactModifications.compactAndCountModifications(removeValues, context.counts, addValues,
+            doCompactAndCountModifications(removeValues, context.counts, addValues,
                     context.postCounts, 0, removeCount, 0, addCount, true, true, context.removedSize,
                     context.addedSize);
             applyRemoves(destination, removeValues, context.removedSize.get(), context.counts, context.removeContext,
@@ -273,6 +297,27 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+        // modifies of shifted constituents are delivered to shiftChunk, so pre- and post-shift keys coincide here
+        return replaceConstituents(singletonContext, chunkSize, preValues, postValues, postShiftRowKeys,
+                postShiftRowKeys, destination);
+    }
+
+    @Override
+    public boolean shiftChunk(SingletonContext singletonContext, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+            LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+        return replaceConstituents(singletonContext, preValues.size(), preValues, postValues, preShiftRowKeys,
+                postShiftRowKeys, destination);
+    }
+
+    /**
+     * Replace each constituent's previous contribution with its current one. The previous {@code singletonCount} is
+     * read at {@code preShiftRowKeys} and the current one at {@code postShiftRowKeys}.
+     */
+    private boolean replaceConstituents(SingletonContext singletonContext, int chunkSize,
+            Chunk<? extends Values> preValues, Chunk<? extends Values> postValues,
+            LongChunk<? extends RowKeys> preShiftRowKeys, LongChunk<? extends RowKeys> postShiftRowKeys,
+            long destination) {
         final SsmUniqueRollupContext context = (SsmUniqueRollupContext) singletonContext;
         final IntChunk<? extends Values> prevValueChunk = preValues.asIntChunk();
         final IntChunk<? extends Values> postValueChunk = postValues.asIntChunk();
@@ -289,14 +334,13 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
         int removeCount = 0;
         int addCount = 0;
         for (int kk = 0; kk < chunkSize; ++kk) {
-            final long rowKey = postShiftRowKeys.get(kk);
-            final long prevSc = constituentSingletonCount.getPrevLong(rowKey);
+            final long prevSc = constituentSingletonCount.getPrevLong(preShiftRowKeys.get(kk));
             if (prevSc > 0) {
                 removeValues.set(removeCount++, prevValueChunk.get(kk));
             } else if (isNonUniqueState(prevSc)) {
                 nonUniqueDelta--;
             }
-            final long sc = constituentSingletonCount.getLong(rowKey);
+            final long sc = constituentSingletonCount.getLong(postShiftRowKeys.get(kk));
             if (sc > 0) {
                 addValues.set(addCount++, postValueChunk.get(kk));
             } else if (isNonUniqueState(sc)) {
@@ -304,7 +348,7 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
             }
         }
         // net the two so values unchanged across the modify cancel out, then apply the surviving removals/additions
-        IntCompactModifications.compactAndCountModifications(removeValues, context.counts, addValues,
+        doCompactAndCountModifications(removeValues, context.counts, addValues,
                 context.postCounts, 0, removeCount, 0, addCount, true, true, context.removedSize, context.addedSize);
         applyRemoves(destination, removeValues, context.removedSize.get(), context.counts, context.removeContext, count,
                 ssmHolder);
@@ -347,7 +391,7 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
             return;
         }
         values.setSize(addCount);
-        IntCompactKernel.compactAndCount(values, counts, true, true);
+        doCompactAndCount(values, counts, true, true);
         applyAdds(destination, values, values.size(), counts, count, ssmHolder);
     }
 
@@ -383,7 +427,7 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
         }
         // singleton: a single held value with a positive count
         final int held = singletonValue.getUnsafe(destination);
-        if (distinctCount == 1 && IntComparisons.eq(values.get(0), held)) {
+        if (distinctCount == 1 && eq(values.get(0), held)) {
             count.add(counts.get(0));
             return;
         }
@@ -407,7 +451,7 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
             return;
         }
         values.setSize(removeCount);
-        IntCompactKernel.compactAndCount(values, counts, true, true);
+        doCompactAndCount(values, counts, true, true);
         applyRemoves(destination, values, values.size(), counts, removeContext, count, ssmHolder);
     }
 
@@ -527,6 +571,16 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
         return columns;
     }
 
+    /**
+     * Each constituent's {@code singletonCount} is read from {@code constituentSingletonCount} by row key, so this
+     * operator needs row keys for every add, remove, modify, and shift, even when no other operator in the aggregation
+     * does.
+     */
+    @Override
+    public boolean requiresRowKeys() {
+        return true;
+    }
+
     @Override
     public void startTrackingPrevValues() {
         internalResult.startTrackingPrevValues();
@@ -554,5 +608,40 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
     private void clearSsm(long destination) {
         ssms.clear(destination);
     }
+
+    /**
+     * Test two values for equality consistent with the ordering of the SSM; a state holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(int lhs, int rhs) {
+        // region equality function
+        return IntComparisons.eq(lhs, rhs);
+        // endregion equality function
+    }
     // endregion
+
+    /**
+     * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in
+     * {@code counts}; both chunks are resized to the number of distinct values.
+     */
+    private void doCompactAndCount(WritableIntChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, boolean countNull, boolean countNaN) {
+        // region CompactAndCount
+        IntCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);
+        // endregion CompactAndCount
+    }
+
+    /**
+     * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
+     * with counts, and sets the surviving lengths in {@code removedSize} and {@code addedSize}.
+     */
+    private void doCompactAndCountModifications(WritableIntChunk<? extends Values> removedValues,
+            WritableIntChunk<ChunkLengths> removedCounts, WritableIntChunk<? extends Values> addedValues,
+            WritableIntChunk<ChunkLengths> addedCounts, int removedStart, int removedLength, int addedStart,
+            int addedLength, boolean countNull, boolean countNaN, MutableInt removedSize, MutableInt addedSize) {
+        // region CompactAndCountModifications
+        IntCompactModifications.compactAndCountModifications(removedValues, removedCounts, addedValues, addedCounts,
+                removedStart, removedLength, addedStart, addedLength, countNull, countNaN, removedSize, addedSize);
+        // endregion CompactAndCountModifications
+    }
 }

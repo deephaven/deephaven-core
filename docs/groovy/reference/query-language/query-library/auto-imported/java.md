@@ -1,9 +1,8 @@
 ---
 title: Java classes
-sidebar_label: Java
 ---
 
-Java standard library classes available in query strings.
+Java standard library classes (String, Integer, List, Map, etc.).
 
 | Type  | Name                                   | Signature                                                                                                                  | Description                                                                                          |
 | ----- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -223,3 +222,4 @@ Java standard library classes available in query strings.
 ## Related documentation
 
 - [Auto-imported functions](./index.md)
+- [Query language functions](../../../../how-to-guides/built-in-functions.md)

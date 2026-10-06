@@ -112,7 +112,7 @@ public class ObjectCompactKernel implements CompactKernel {
             }
             // region maybeCountNaN
             // endregion maybeCountNaN
-            if (wpos == -1 || !ObjectComparisons.eq(nextValue, lastValue)) {
+            if (wpos == -1 || !eq(nextValue, lastValue)) {
                 valueChunk.set(++wpos + start, nextValue);
                 counts.set(wpos + start, currentCount = 1);
                 lastValue = nextValue;
@@ -123,4 +123,16 @@ public class ObjectCompactKernel implements CompactKernel {
         // endregion compactAndCount
         return wpos + 1;
     }
+
+    // region equality helper
+    /**
+     * Test two values for equality consistent with the order in which {@code compactAndCount} sorts them; each class of
+     * equal values is compacted to one value and its count.
+     */
+    private static boolean eq(Object lhs, Object rhs) {
+        // region equality function
+        return ObjectComparisons.compareEquals(lhs, rhs);
+        // endregion equality function
+    }
+    // endregion equality helper
 }

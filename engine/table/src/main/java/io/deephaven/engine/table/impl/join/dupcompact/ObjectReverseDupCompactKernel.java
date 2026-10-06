@@ -2,22 +2,17 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ObjectReverseDupCompactKernel and run "./gradlew replicateDupCompactKernel" to regenerate
+// ****** Edit CharDupCompactKernel and run "./gradlew replicateDupCompactKernel" to regenerate
 //
 // @formatter:off
 
 package io.deephaven.engine.table.impl.join.dupcompact;
 
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.compare.ObjectComparisons;
 import org.jetbrains.annotations.NotNull;
 
 public class ObjectReverseDupCompactKernel implements DupCompactKernel {
@@ -124,7 +119,7 @@ public class ObjectReverseDupCompactKernel implements DupCompactKernel {
 
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return Objects.equals(lhs, rhs);
+        return ObjectComparisons.compareEquals(lhs, rhs);
         // endregion equality function
     }
 }

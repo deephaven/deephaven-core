@@ -2,18 +2,12 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ObjectChunkSsaStamp and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+// ****** Edit CharChunkSsaStamp and run "./gradlew replicateSegmentedSortedArray" to regenerate
 //
 // @formatter:off
 
 
 package io.deephaven.engine.table.impl.ssa;
-
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -22,6 +16,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.util.compare.ObjectComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.

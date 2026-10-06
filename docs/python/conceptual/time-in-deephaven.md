@@ -1,6 +1,5 @@
 ---
 title: Work with time
-sidebar_label: Work with time
 ---
 
 This guide discusses working with time in Deephaven. Deephaven is a real-time data platform that handles streaming data of various formats and sizes, offering a unified interface for the ingestion, manipulation, and analysis of this data. A significant part of the Deephaven experience involves working with data that signifies specific moments in time: calendar dates, time-periods or durations, time zones, and more. These can appear as data in Deephaven tables, literals in query strings, or values in Python scripts. So, it is important to learn about the best tools for these different jobs. Additionally, because the Deephaven query engine is implemented in Java and queries are often written in Python, there are some details to consider when crossing between the two languages. This guide will show you how to work with time efficiently in all cases.

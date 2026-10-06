@@ -1,6 +1,5 @@
 ---
 title: Deephaven's column types
-sidebar_label: Column types
 ---
 
 Deephaven tables store data in strongly-typed columns. Each column in a table must have a specific type that determines what values it can hold, how much memory it uses, and how operations behave on that column's data. Understanding column types is essential for designing efficient table schemas, writing correct queries, and optimizing performance. This guide covers the column types available in Deephaven tables, how to choose the right type for your data, and how types behave in table operations.
