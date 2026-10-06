@@ -480,10 +480,13 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      */
     public WritableRowSet unapply(final WritableRowSet rowSet, final long offset) {
         final int size = size();
-        // Every window is checked before any of the rowset is read, so the rejection does not depend on how far into
-        // the shifts the rowset reaches.
-        for (int idx = 0; idx < size; ++idx) {
-            checkOffsetWindow(idx, offset);
+        // The offset is checked before any of the rowset is read, so the rejection does not depend on how far into the
+        // shifts the rowset reaches. The windows are ordered in both keyspaces (see validate()), so the first window
+        // holds the smallest keys and the last the largest, before and after the shift; if the offset keeps those two
+        // inside the key space, it keeps every window inside it.
+        if (size > 0) {
+            checkOffsetWindow(0, offset);
+            checkOffsetWindow(size - 1, offset);
         }
         // Accumulate what moves and put it back in two set operations, rather than one subset/remove/shift/insert per
         // shift range: each of those touches the whole rowset, so doing them one at a time costs the number of shifts

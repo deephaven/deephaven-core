@@ -143,6 +143,29 @@ public class RowSetShiftDataKeySpaceTest {
         }
     }
 
+    /**
+     * With several windows, the first holds the smallest keys and the last the largest, before and after the shift; an
+     * offset that carries only one of them out of the key space is rejected, whatever the rowset holds.
+     */
+    @Test
+    public void testUnapplyRejectsOffsetCarryingOnlyAnOuterWindowOut() {
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+        builder.shiftRange(100, 300, 3);
+        builder.shiftRange(1000, 1100, -50);
+        builder.shiftRange(5000, 5100, 2);
+        final RowSetShiftData shiftData = builder.build();
+        try (final WritableRowSet rowSet = RowSetFactory.empty()) {
+            // the first window begins below zero
+            assertThrows(IllegalArgumentException.class, () -> shiftData.unapply(rowSet, -101));
+            // the last window's post-shift image ends past the maximum
+            assertThrows(IllegalArgumentException.class, () -> shiftData.unapply(rowSet, MAX - 5101));
+            // the first window begins on zero and the last window's post-shift image ends on the maximum
+            shiftData.unapply(rowSet, -100);
+            shiftData.unapply(rowSet, MAX - 5102);
+            assertEquals(0, rowSet.size());
+        }
+    }
+
     @Test
     public void testUnapplyAcceptsOffsetLandingTheWindowOnZero() {
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
