@@ -111,9 +111,9 @@ test {
 
 deephavenDocker.shouldLogIfTaskFails tasks.named('test')
 
-// A second server, serving TLS with the development certificates and accepting (but not requiring) client
-// certificates, for the TLS tests. The deephavenDocker extension manages one container per project, so these tasks
-// mirror it by hand: create, start, wait for healthy, read the published port, run the tests, log on failure, remove.
+// A second server, serving TLS with the development certificates and no client-certificate authentication, for the
+// TLS tests. The deephavenDocker extension manages one container per project, so these tasks mirror it by hand:
+// create, start, wait for healthy, read the published port, run the tests, log on failure, remove.
 def devCerts = rootProject.file('server/dev-certs')
 def tlsContainerName = "dh-server-tls-for-java-client-${randomSuffix}"
 def tlsPort = project.objects.property(Integer)
