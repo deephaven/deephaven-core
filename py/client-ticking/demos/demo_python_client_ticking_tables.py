@@ -4,8 +4,10 @@
 """Keeps a live client-side copy of a ticking, keyed table and reacts to changes.
 
 The server publishes a simulated trade feed and reduces it to the latest trade per
-symbol with last_by. Each update cycle adds rows (new symbols) and modifies rows
-(new trades for known symbols). The listener:
+symbol with last_by. Only five symbols are ever produced, so update cycles add rows
+(new symbols) only until all five have appeared; after that, cycles modify rows
+(new trades for known symbols), and a given cycle may contain only adds, only
+modifies, or both. The listener:
 
   * applies removes, adds, and modifies to a local dict keyed by symbol
   * reads only the columns it needs, and reads the initial snapshot in chunks

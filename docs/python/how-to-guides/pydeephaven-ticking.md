@@ -192,7 +192,9 @@ Each `TableListenerHandle` runs its own background thread. Your listener's metho
 
 ## Handle errors
 
-If the connection fails, or `on_update` raises an exception, the subscription **ends** and the listener's `on_error` method runs with the exception. No more updates arrive after that. The default `on_error` prints the error.
+If `on_update` raises an exception while the subscription is running, the subscription **ends** and the listener's `on_error` method runs with the exception. No more updates arrive after that. The default `on_error` prints the error.
+
+`on_error` only covers failures during active background processing. A connection failure in `start` itself (for example, a bad host or a subscription the server rejects) raises synchronously out of `start` instead, since that work runs on the calling thread before the background thread exists. The background thread also treats a clean end of the stream as normal completion rather than an error, so it stops quietly without calling `on_error`.
 
 When your listener is a function, pass an error callback as the third argument to `listen`:
 
@@ -210,7 +212,7 @@ To recover, create a new handle and call `start` again. If you'd rather keep the
 
 ## Stop the subscription
 
-Call `stop` when you're done. It cancels the subscription and waits for the background thread to exit, so no callbacks run after it returns. Close the session after stopping its handles. Use `try`/`finally` so that cleanup happens even when your program fails or is interrupted:
+Call `stop` when you're done. Called from outside the listener thread, it cancels the subscription and waits for the background thread to exit, so no further callbacks run after it returns. Called from inside `on_update` (as described above), it only marks the subscription cancelled and returns immediately without waiting — the current callback keeps running, and the background thread exits on its own once that callback finishes. Close the session after stopping its handles. Use `try`/`finally` so that cleanup happens even when your program fails or is interrupted:
 
 ```python ticking-table order=null skip-test
 handle = listen(table, on_update)
