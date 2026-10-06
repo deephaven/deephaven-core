@@ -59,7 +59,7 @@ The snapshot request is queued for processing. Barrage records `QueueNanos`, the
 
 2. The snapshot is constructed
 
-The snapshot request is then fulfilled. The snapshot is normally built concurrently with the UG. If the concurrent attempts fail (for example, because the table keeps changing while a long snapshot is built), Barrage falls back to holding the UG shared lock for a final attempt. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener.
+The snapshot request is then fulfilled. Barrage normally builds the snapshot concurrently with the UG, retrying if the table changes during an attempt. If those concurrent attempts keep failing, or a single attempt takes too long, Barrage holds the UG shared lock for a final attempt. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener.
 
 Similar to subscription requests, Barrage records `WriteNanos` and `WriteBytes`, the time it took to write, and how many bytes were written.
 

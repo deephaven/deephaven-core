@@ -207,7 +207,7 @@ Under the hood, Deephaven:
 
 1. **Parses** your query string into an Abstract Syntax Tree (AST).
 2. **Analyzes** the AST to determine dependencies and types.
-3. **Generates** Java code for the formula. (A formula that only references another column, such as `Y = X`, skips this step and uses the source column's values without compiling any code.)
+3. **Generates** Java code for the formula.
 4. **Compiles** the generated code.
 5. **Executes** the compiled code on chunks of data.
 
@@ -230,6 +230,8 @@ This compiled code:
 - Can be JIT-optimized by the JVM.
 - Can be vectorized by the CPU.
 - Runs at native speed.
+
+A formula that only references another column, such as `Y = X`, skips parsing and code generation: Deephaven treats it as a column reference and compiles no code.
 
 ## Real-time processing: The killer feature
 

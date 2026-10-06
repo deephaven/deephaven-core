@@ -57,7 +57,7 @@ Why is [NumPy](https://numpy.org/) so much slower?
 - When creating `result_numpy`, the query engine calls NumPy's [`sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html) method for every row. So, it has to cross the Python-Java boundary twice for each row.
   - The first time, it goes from Java to Python to calculate the sine of `X`.
   - The second time, it converts the result from Python to Java.
-  - Because `np.sin(X)` is a method call on a module object and its result is cast, the engine cannot vectorize it into one call per chunk. So, 100,000 rows means 100,000 round trips.
+  - Deephaven can vectorize some Python function calls, making one call per chunk of rows instead of one per row. A call is vectorized only when it is a plain function call (not called through a module or object) that is not cast or used inside a larger expression. `np.sin(X)` breaks two of these rules: it is called through the `np` module, and its result is explicitly cast. So the engine calls it once per row, and 100,000 rows means 100,000 round trips.
 
 ## What's built into the query language?
 
@@ -99,7 +99,7 @@ When using [Python user-defined functions (UDFs)](../how-to-guides/python-functi
 To minimize memory risks when using Python UDFs:
 
 - **Convert performance-critical UDFs to Java** — For frequently called functions, consider implementing them in Java or using built-in query language functions instead.
-- **Avoid returning large Python objects in UDFs** — They can remain in Python memory for extended periods, and if not freed in a timely manner, may cause a Python `MemoryError` and crash the worker process. Instead, when possible, have UDFs return only the data needed for table columns, which are typically primitive types and text. In situations where Java is not actively garbage collecting unused table columns that store Python objects, you can call [`deephaven.garbage_collect`](../reference/garbage-collect.md) to run Python garbage collection and request a JVM garbage collection, but the JVM treats the request as advisory, so the effect is not guaranteed.
+- **Avoid returning large Python objects in UDFs** — They can remain in Python memory for extended periods, and if not freed in a timely manner, may cause a Python `MemoryError` and crash the worker process. Instead, when possible, have UDFs return only the data needed for table columns, which are typically primitive types and text. If Java is not actively garbage collecting unused table columns that store Python objects, call [`deephaven.garbage_collect`](../reference/garbage-collect.md) to run Python garbage collection and request a JVM garbage collection. The JVM treats the request as advisory, so the effect is not guaranteed.
 - **Monitor resident memory** — Track total process memory, not just Java heap usage, for queries using Python UDFs.
 
 ## The Python API under the hood

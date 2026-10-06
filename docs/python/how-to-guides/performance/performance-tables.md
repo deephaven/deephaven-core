@@ -12,7 +12,7 @@ If a query seems to be taking too long or throws an error, looking at the proces
 
 ### Evaluation numbers
 
-Several `perfmon` functions take an `eval_number` argument. This number is a unique identifier for a query (whatever you type into the console and press _Enter_) and its subqueries (individual operations within the query, such as individual method calls). Evaluation numbers can be found in the performance data tables obtained from calling [`query_performance_log`](#query-performance-log) or [`query_operation_performance_log`](#query-operation-performance-log).
+Several [`perfmon`](/core/pydoc/code/deephaven.perfmon.html#module-deephaven.perfmon) functions take an `eval_number` argument. This number is a unique identifier for a query (whatever you type into the console and press _Enter_) and its subqueries (individual operations within the query, such as individual method calls). Evaluation numbers can be found in the performance data tables obtained from calling [`query_performance_log`](#query-performance-log) or [`query_operation_performance_log`](#query-operation-performance-log).
 
 ## Available performance tables
 
@@ -53,8 +53,8 @@ qup = pm.query_update_performance(n)
 | `EvaluationNumber`      | `long`    | An increasing integral value for requests made to the worker.                                                                                                  |
 | `OperationNumber`       | `int`     | An identifier for an operation within an evaluation.                                                                                                           |
 | `Ratio`                 | `double`  | The fraction of the logging interval this operation spent processing updates. `1` means the entire interval.                                                   |
-| `QueryMemUsed`          | `long`    | Heap memory in use, in bytes (`MaxTotalMemory - MinFreeMemory`).                                                                                               |
-| `QueryMemUsedPct`       | `double`  | `QueryMemUsed` as a fraction of the max heap size (`WorkerHeapSize`).                                                                                          |
+| `QueryMemUsed`          | `long`    | The heap memory in use, in bytes (`MaxTotalMemory - MinFreeMemory`).                                                                                           |
+| `QueryMemUsedPct`       | `double`  | The fraction of the max heap size (`WorkerHeapSize`) that `QueryMemUsed` represents.                                                                           |
 | `IntervalEndTime`       | `Instant` | The end of the interval this row represents.                                                                                                                   |
 | `RowsPerSec`            | `long`    | The number of rows per second.                                                                                                                                 |
 | `RowsPerCPUSec`         | `long`    | The number of rows per CPU second.                                                                                                                             |

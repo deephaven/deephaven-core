@@ -44,7 +44,7 @@ result = empty_table(10).update(
 )
 ```
 
-In this example, column X is created and is set equal to a [date-time](../reference/query-language/types/date-time.md). Column Y is also a [date-time](../reference/query-language/types/date-time.md) and is set equal to 10 seconds after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column Z is a [date-time](../reference/query-language/types/date-time.md) and is set equal to one day after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column A is a character. A single quote is used both to surround the [date-time](../reference/query-language/types/date-time.md), the time difference, the [time period](../reference/query-language/types/periods.md), and the character.
+In this example, column X is created and is set equal to a [date-time](../reference/query-language/types/date-time.md). Column Y is also a [date-time](../reference/query-language/types/date-time.md) and is set equal to 10 seconds after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column Z is a [date-time](../reference/query-language/types/date-time.md) and is set equal to one day after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column A is a character. Single quotes surround the [date-time](../reference/query-language/types/date-time.md), the time difference, the [time period](../reference/query-language/types/periods.md), and the character.
 
 > [!TIP]
 > Date columns are frequently stored as strings, which use backticks.

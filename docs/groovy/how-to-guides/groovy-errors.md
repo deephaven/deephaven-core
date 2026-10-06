@@ -79,7 +79,7 @@ io.deephaven.engine.util.GroovyExceptionWrapper: startup failed:
 Script_6: 5: Unexpected input: ... @ line 5, column 1.
 ```
 
-The line and column numbers show where the syntax problem is.
+The line and column numbers show where the parser failed. For an unclosed parenthesis or bracket, as here, the parser fails only after it reaches the code Deephaven appends after your script, so the reported line (5) can be past the end of your own code.
 
 > [!NOTE]
 > Each time you execute code in the Deephaven console, it is compiled into a new class named `Script_N`, where `N` increments with each execution. You will see `Script_N.groovy` references in stack traces wherever your code appears. Line numbers in `Script_N.groovy` frames are one greater than the line in your editor, because Deephaven adds a `package io.deephaven.dynamic;` line before your code when it compiles it.
@@ -588,7 +588,7 @@ As expected for a ticking table error, the thread is `aph-updateExecutor-N` and 
 The formula string in the error is `Y = Math.floorDiv((long)1, X)`—preserved exactly as written. The `Caused by:` chain shows the root cause: `ArithmeticException: / by zero`, thrown by `Math.floorDiv` when `X` reached zero.
 
 > [!NOTE]
-> In Deephaven query strings, the `/` operator on integer columns performs `double` division, so dividing by zero returns `Infinity` (or `NaN` for `0 / 0`) rather than throwing an exception. To reliably produce an exception on zero, use `Math.floorDiv` or a similar Java `Math` method.
+> In Deephaven query strings, the `/` operator on integer columns performs `double` division, so dividing by zero returns `Infinity`, `-Infinity`, or `NaN` (for `0 / 0`) instead of throwing an exception. To reliably produce an exception on zero, use `Math.floorDiv` or a similar Java `Math` method.
 
 ## Related documentation
 
