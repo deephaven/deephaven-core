@@ -83,7 +83,7 @@ timesInRange = timeArithmeticTable.where(
 
 ## Time zones
 
-Time zones are a critical part of temporal data. For example, if it's 6 PM in Los Angeles, it's 3 AM the next day in Shanghai. There are many methods that require time zone information because the answer is dependent on the time zone.
+Time zones are a critical part of temporal data. For example, if it's 6 PM in Los Angeles during daylight saving time, it's 9 AM the next day in Shanghai. There are many methods that require time zone information because the answer is dependent on the time zone.
 
 ```groovy test-set=4
 timeZoneArithmeticTable = emptyTable(10).update(

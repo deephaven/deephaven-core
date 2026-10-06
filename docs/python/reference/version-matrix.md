@@ -18,9 +18,12 @@ We aim to support all Java LTS versions greater than or equal to our minimum Jav
 
 | Deephaven Version |    JDK 11 (LTS)    |    JDK 17 (LTS)    |    JDK 21 (LTS)    |  JDK 25 (latest)   |
 | ----------------- | :----------------: | :----------------: | :----------------: | :----------------: |
-| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 42.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| 42.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 43.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+
+Deephaven 0.40.x and 41.x were also tested against JDK 24, the latest Java version at the time of those releases.
 
 We build and test using OpenJDK packages. We do not regularly run or test with GraalVM.
 
@@ -40,6 +43,6 @@ In terms of other systems where we don’t extensively test ourselves but a prio
 - Deephaven Server and web UI when built with a Python REPL have hard dependencies on Python packages for jpy, numpy, pandas and pyarrow (Apache Arrow), and soft dependencies on numba and jedi. We specify version requirements in the traditional Python fashion; for the reasons noted earlier, we do not test every version combination and it is possible (and known to have happened in the past) that particular versions may cause conflicts.
 - We have two flavors of Python client: "pydeephaven" with regular Arrow support for static tables, and "pydeephaven_ticking" adding support for ticking tables.
   - The platform-agnostic "pydeephaven" wheel is uploaded to PyPi on every release. It can be installed on any platform that supports its dependencies, the main ones being numpy, pandas, and pyarrow.
-  - The "pydeephaven_ticking" package depends on Deephaven’s C++ client code via Cython. We build and test "pydeephaven_ticking" wheels for Linux x86_64 using manylinux2014 tools, and these also get uploaded to PyPi on every release. At this time, we do not support building "pydeephaven_ticking" for platforms other than Linux (e.g., Windows or MacOS). We do not build or test ourselves "pydeephaven_ticking" on Linux arm.
+  - The "pydeephaven_ticking" package depends on Deephaven’s C++ client code via Cython. We build and test "pydeephaven_ticking" wheels for Linux x86_64 using manylinux2014 tools, and these also get uploaded to PyPi on every release. Prebuilt "pydeephaven_ticking" wheels are published only for Linux x86_64. On Windows, you can build it from source by following the [Windows build instructions](https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README-windows.md). MacOS is not supported. We do not build or test ourselves "pydeephaven_ticking" on Linux arm.
 - We do not build binary packages for our C++ client, but we do provide instructions for building it from source. The code is regularly tested on Ubuntu 24.04 x86_64, and basic smoke tests are run for RHEL 8 x86_64 and Fedora 38 x86_64. At this time we do not support building our C++ client for platforms other than Linux and Windows (e.g., MacOS).
 - We do not build packages for our R client or publish it on CRAN, but we do provide instructions for building from source. The code is regularly tested on Ubuntu 24.04 x86_64 and R 4.3.1 "Beagle Scouts". At this time, we do not support building our R client for platforms other than Linux (e.g., Windows or MacOS).

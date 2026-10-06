@@ -20,7 +20,7 @@ staticTable2 = emptyTable(5).updateView(
 )
 ```
 
-> **_NOTE:_** The variables `i` and `ii` correspond to `int` and `long` row indices, respectively. They are only supported in [append-only tables](../../conceptual/table-types.md#specialization-1-append-only).
+> **_NOTE:_** The [special variables](../../reference/query-language/variables/special-variables.md) `i` and `ii` hold each row's position as an `int` and a `long`, respectively. They are safe in static tables like this one. In ticking tables, they are only supported in [append-only](../../conceptual/table-types.md#specialization-1-append-only) and [blink](../../conceptual/table-types.md#specialization-3-blink) tables, because a row's position can change between updates in other ticking tables.
 
 The two tables look identical but are created differently.
 
@@ -37,7 +37,7 @@ tickingTable = timeTable("PT1s")
 
 ![A GIF showing the creation and updating of a ticking table in Deephaven](../../assets/tutorials/crash-course/crash-course-3.gif)
 
-The `PT1s` argument is an [ISO-8641 formatted duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that indicates the table will tick once every second.
+The `PT1s` argument is an [ISO 8601 duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that indicates the table will tick once every second.
 
 New ticking tables can be derived from existing ones using DQL, just as in the static case.
 

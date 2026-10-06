@@ -269,7 +269,7 @@ ohlcByMinute = (
 
 You may want to perform window-based calculations, compute moving or cumulative statistics, or look at pair-wise differences. Deephaven's [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation is the right tool for the job.
 
-Compute the moving average and standard deviation of each instrument's price using [`rollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) and [`rollingStd`](../reference/table-operations/update-by-operations/rolling-std.md):
+Compute the moving average and standard deviation of each instrument's price using [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) and [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md):
 
 ```groovy test-set=1 order=null ticking-table
 import java.time.Duration

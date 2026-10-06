@@ -28,7 +28,7 @@ Running Deephaven from Docker requires [`docker`](https://docs.docker.com/refere
 
 ## The simplest possible installation
 
-The following shell command downloads and runs the `server` image:
+The following shell command downloads and runs the `server-slim` image (Deephaven with Groovy):
 
 ```sh
 docker run --name deephaven -p 10000:10000 ghcr.io/deephaven/server-slim:latest
@@ -222,7 +222,7 @@ The following subsections build a custom Deephaven application through Docker wi
 
 A [Dockerfile](https://docs.docker.com/reference/dockerfile/) dictates which Docker images to build containers from and what else distinguishes these containers from their standard counterparts.
 
-The following Dockerfile takes the latest Deephaven `server` image and installs the Python packages defined in `requirements.txt` into the container created from it.
+The following Dockerfile takes the latest Deephaven `server-slim` image and installs the Python packages defined in `requirements.txt` into the container created from it.
 
 ```Dockerfile
 FROM ghcr.io/deephaven/server-slim:latest
@@ -256,7 +256,7 @@ You can make your own Java classes (and third-party libraries) available to quer
 ```bash
 $ mkdir -p jars
 $ cp /path/to/<custom>.jar jars/
-$ docker run --rm -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/server:latest
+$ docker run --rm -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/server-slim:latest
 ```
 
 </details>
@@ -267,7 +267,7 @@ $ docker run --rm -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/s
 ```yaml title="docker-compose.yml"
 services:
   deephaven:
-    image: ghcr.io/deephaven/server:latest
+    image: ghcr.io/deephaven/server-slim:latest
     ports:
       - "10000:10000"
     volumes:
@@ -278,11 +278,9 @@ services:
 
 Now you can run queries that use your custom JARs. For example, if you have a class `org.example.MathFns` with a static method `square(long x)`, you can run the following query:
 
-```python skip-test
-# Example usage (requires custom JAR with org.example.MathFns class)
-from deephaven import empty_table
-
-table = empty_table(5).update("squares = org.example.MathFns.square(i)")
+```groovy skip-test
+// Example usage (requires custom JAR with org.example.MathFns class)
+table = emptyTable(5).update("Squares = org.example.MathFns.square(i)")
 ```
 
 ## Start the application
@@ -296,7 +294,7 @@ docker compose up --build
 The `--build` flag tells Docker to build the services specified by the `docker-compose.yml` file. The `Dockerfile` defines the custom installation process of the service.
 
 > [!NOTE]
-> If you've previously run `docker compose up`, add `--pull` to the command above to ensure you have the latest version of the Docker images.
+> If you've previously run `docker compose up`, add `--pull always` to the command above (for example, `docker compose up --build --pull always`) to ensure you have the latest version of the Docker images.
 
 ## Run Deephaven IDE
 

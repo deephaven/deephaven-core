@@ -52,7 +52,7 @@ plot_twin = (
 )
 ```
 
-![A ticking plot with two x axes](../../assets/tutorials/crash-course/crash-course-8.gif)
+![A ticking plot with two y axes that share an x axis](../../assets/tutorials/crash-course/crash-course-8.gif)
 
 ## Subplots
 

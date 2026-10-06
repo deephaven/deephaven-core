@@ -27,22 +27,17 @@ In addition to PSK authentication, Deephaven supports the following types of aut
 
 ## Deployments
 
-Deephaven provides [multiple Docker images](../../getting-started/docker-install.md#image-versions). Each of these images, called deployments, comes pre-installed with different Python packages. You also have the option of including [Deephaven's example data](https://github.com/deephaven/examples) in any of these images.
-Many of these images integrate with popular Python libraries. For example, the [`server-all-ai`](https://github.com/deephaven/deephaven-core/pkgs/container/server-all-ai) image comes pre-installed with [PyTorch](https://pytorch.org), [Tensorflow](https://www.tensorflow.org), [scikit-learn](https://scikit-learn.org/stable/), and [nltk](https://www.nltk.org). You can use this image with this Docker command:
-
-```bash skip-test
-docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server-all-ai:latest
-```
+Deephaven publishes several Docker images. For Groovy, use `server-slim`, which starts a Groovy console. The other images, such as `server` and `server-all-ai`, start a Python console and come pre-installed with different Python libraries. Each image is available in several [versions](../../getting-started/docker-install.md#image-versions), such as `latest` or a specific release. You also have the option of using [Deephaven's example data](https://github.com/deephaven/examples) with your deployment.
 
 To learn more about deployments, check out the guide for [installing Deephaven with Docker](../../getting-started/docker-install.md).
 
 ## Installing Java packages
 
-Even with a standard deployment, you may need to install new Java packages at some point. To install packages, the package must be added to a custom Docker image. This allows imports to persist across all instances of Deephaven that are started with the custom image. See the [user guide on installing Java packages](../../how-to-guides/install-and-use-java-packages.md) for more information.
+Even with a standard deployment, you may need to install new Java packages at some point. To make a Java package available, add its JAR to Deephaven's classpath. With Docker, you can either mount a directory of JARs to `/apps/libs` or build a custom image that includes them. A custom image keeps the package available in every container started from it. See the [user guide on installing Java packages](../../how-to-guides/install-and-use-java-packages.md) for more information.
 
 ## RAM
 
-Large datasets require significant memory — often much more than the 4G that Deephaven allocates by default. Fortunately, it's easy to give Deephaven more memory.
+Large datasets require significant memory. Unless you set `-Xmx`, the JVM picks a maximum heap size based on the memory available, which is often too small for large data. Fortunately, it's easy to give Deephaven more memory.
 
 If you're using Docker-installed Deephaven, Docker itself imposes memory constraints on processes it runs - you can raise this ceiling in [Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources) by going to `Settings > Resources` and raising the memory parameter. Then, you can specify the memory allocated to Deephaven with the `-Xmx` flag. Here's the command to pull and run the latest version of the Deephaven server with 16G of RAM:
 
