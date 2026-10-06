@@ -798,6 +798,30 @@ public class TestInvokeParallel {
                 .satisfies(thrown -> assertThat(thrown.getSuppressed()).containsExactly(handlerFailure));
     }
 
+    /**
+     * An Error from onError on the calling thread does not replace the iteration's own failure, which stays the one
+     * thrown, with the Error attached to it as suppressed.
+     */
+    @Test
+    public void testOnErrorErrorOnTheCallingThreadIsSuppressedOnTheIterationFailure() {
+        final IllegalStateException failure = new IllegalStateException("task failed");
+        final AssertionError handlerError = new AssertionError("handler error");
+
+        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
+                (context, idx, nec) -> {
+                    throw failure;
+                },
+                () -> {
+                }, () -> {
+                }, e -> {
+                    throw handlerError;
+                }))
+                .isSameAs(failure)
+                .satisfies(thrown -> assertThat(thrown.getSuppressed()).hasSize(1)
+                        .allSatisfy(suppressed -> assertThat(suppressed.getCause()).isSameAs(handlerError)));
+    }
+
     @Test
     public void testOnCompleteFailureIsDeliveredToOnErrorAndThrown() {
         final IllegalStateException completeFailure = new IllegalStateException("onComplete failed");

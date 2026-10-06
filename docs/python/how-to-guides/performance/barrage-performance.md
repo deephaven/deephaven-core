@@ -192,7 +192,7 @@ If `WriteNanos` is high or `WriteBytes` is large:
 
 If `PropagateNanos` is consistently high:
 
-- Many subscribers may be connected to the same table. Compare `PropagateNanos` with the sum of the subscribers' `WriteNanos`: when the two are close, the writes are not overlapping, either because `BarrageMessageProducer.propagationThreads` is `1` or less, or well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)) or because the server's processors are already busy. Consider load balancing across multiple server instances.
+- Many subscribers may be connected to the same table. Their writes overlap only as far as `BarrageMessageProducer.propagationThreads` and idle processors allow: check that the property is above `1` and not well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)), and whether the server's processors are already busy. Consider load balancing across multiple server instances.
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
 
 ### Subscription errors

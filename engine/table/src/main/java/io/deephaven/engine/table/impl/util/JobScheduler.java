@@ -475,10 +475,16 @@ public interface JobScheduler {
                 error = e;
             }
             invocation.awaitFinished();
+            if (error != null && invocation.failedWith(error)) {
+                // the iteration failed with this Error, which a task or a callback threw on this thread
+                throw error;
+            }
+            // Otherwise the Error came from onError on this thread, while it handled the iteration's own failure; that
+            // failure stays the one thrown, and the Error is attached to it as suppressed.
+            invocation.rethrowFailure();
             if (error != null) {
                 throw error;
             }
-            invocation.rethrowFailure();
         }
 
         /**
@@ -514,6 +520,12 @@ public interface JobScheduler {
                 if (interrupted) {
                     Thread.currentThread().interrupt();
                 }
+            }
+
+            /** @return whether the iteration's first recorded failure is {@code error}, or the wrapper delivering it */
+            private boolean failedWith(@NotNull final Error error) {
+                final Exception first = failure.get();
+                return first == null || first.getCause() == error || first == UNREPORTABLE_JOB_ERROR;
             }
 
             private void rethrowFailure() {
