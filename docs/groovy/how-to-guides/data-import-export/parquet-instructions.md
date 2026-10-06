@@ -50,7 +50,14 @@ The `ParquetInstructions` class has the following methods:
 - `withTableDefinition(tableDefinition)`: Returns a new `ParquetInstructions` instance with the supplied table definition.
 - `withTableDefinitionAndLayout(tableDefinition, fileLayout)`: Returns a new `ParquetInstructions` instance with the supplied table definition and `ParquetFileLayout`.
 
-The default values are available as the constants `DEFAULT_COMPRESSION_CODEC_NAME` (`SNAPPY`), `DEFAULT_MAXIMUM_DICTIONARY_KEYS` and `DEFAULT_MAXIMUM_DICTIONARY_SIZE` (1048576 each), and `DEFAULT_TARGET_PAGE_SIZE` (65536 unless overridden by the `Parquet.defaultTargetPageSize` configuration property).
+### `ParquetInstructions` default values
+
+`ParquetInstructions` defines the following default values as constants:
+
+- `DEFAULT_COMPRESSION_CODEC_NAME`: `SNAPPY`.
+- `DEFAULT_MAXIMUM_DICTIONARY_KEYS`: 1048576.
+- `DEFAULT_MAXIMUM_DICTIONARY_SIZE`: 1048576.
+- `DEFAULT_TARGET_PAGE_SIZE`: 65536. Override it with the `Parquet.defaultTargetPageSize` configuration property.
 
 ### `ParquetInstructions.Builder` methods
 
@@ -113,7 +120,7 @@ The `S3Instructions` class has the following methods:
 - `fragmentSize`: The maximum byte size of each fragment to read from S3. Defaults to 65536; must be larger than 8192.
 - `maxConcurrentRequests`: The maximum number of concurrent requests to make to S3. Defaults to 256.
 - `numConcurrentWriteParts`: The maximum number of parts that can be uploaded concurrently when writing to S3 without blocking. Defaults to 64; must be no greater than `maxConcurrentRequests`.
-- `readAheadCount`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is `32`.
+- `readAheadCount`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is 32.
 - `readTimeout`: The amount of time it takes to time out while reading a fragment. The default is 2 seconds.
 - `regionName`: The region name of the AWS S3 bucket where the Parquet data exists. If this is not set, it is picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the `{user.home}/.aws/credentials` or `{user.home}/.aws/config` files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
 - `writePartSize`: The size of each part (in bytes) to upload when writing to S3. Default is 10485760.

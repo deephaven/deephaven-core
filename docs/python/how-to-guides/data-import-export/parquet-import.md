@@ -96,14 +96,17 @@ Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.r
 from deephaven import parquet
 from deephaven.experimental import s3
 
+credentials = s3.Credentials.basic(
+    access_key_id="example_username", secret_access_key="example_password"
+)
+
 # directory layout may be inferred
 grades_inferred = parquet.read(
     path="s3://example-bucket/grades_kv/",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
         endpoint_override="http://minio.example.com:9000",
-        access_key_id="example_username",
-        secret_access_key="example_password",
+        credentials=credentials,
     ),
 )
 
@@ -114,8 +117,7 @@ grades_provided = parquet.read(
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
         endpoint_override="http://minio.example.com:9000",
-        access_key_id="example_username",
-        secret_access_key="example_password",
+        credentials=credentials,
     ),
 )
 ```
@@ -238,6 +240,7 @@ The `col_instructions` argument to [`parquet.read`](/core/pydoc/code/deephaven.p
 - `codec_name`: The fully qualified name of an `ObjectCodec` class that serializes the column's values to and from bytes, for types with no language-agnostic Parquet representation (for example, `io.deephaven.util.codec.LocalDateCodec`). This is not a compression codec.
 - `codec_args`: An implementation-specific argument string passed to the codec named by `codec_name`.
 - `use_dictionary`: `True` or `False` indicating whether or not to use [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for string columns.
+- `unsigned_long_target`: The Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as, provided as a [`parquet.UnsignedLongTarget`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.UnsignedLongTarget). The default is `None`, which reads such columns as `BigInteger`.
 
 ### Special instructions (S3 only)
 
@@ -246,7 +249,7 @@ The `special_instructions` argument to [`parquet.read`](/core/pydoc/code/deephav
 [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) has the following arguments:
 
 - `region_name`: The region name of the AWS S3 bucket where the Parquet data exists. If not provided, the region name is picked by the AWS SDK from the 'aws.region' system property, the "AWS_REGION" environment variable, the \{user.home}/.aws/credentials, \{user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
-- `credentials` : The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `None`, which uses `Credentials.resolving()`.
+- `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `None`, which uses [`Credentials.resolving`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.resolving).
 - `endpoint_override`: The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs. The default is `None`.
 - `read_ahead_count`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is `32`.
 - `fragment_size`: The maximum size of each fragment to read in bytes. The default is 65536 bytes (64 KiB).

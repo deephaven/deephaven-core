@@ -306,7 +306,7 @@ Three optional keyword arguments are supported:
 
 - `schema_version` specifies the version of the schema to get, for the given name, from the schema registry. If not specified, the default of `latest` is assumed. This will retrieve the latest available schema version.
 - `mapping` expects a dictionary value and, if provided, specifies a name mapping for Avro field names to table column names. Any Avro field name not mentioned is mapped to a column of the same name.
-- `mapped_only` (bool, default `False`): when `True`, Avro fields not named in `mapping` are omitted from the resulting table.
+- `mapped_only` expects a boolean value and defaults to `False`. When `True`, Avro fields not named in `mapping` are omitted from the resulting table.
 
 When `mapping` is omitted, all Avro schema fields are mapped to columns using the field name as column name.
 
@@ -335,7 +335,7 @@ In this query, the first argument includes an additional entry for `schema.regis
 
 The `value_spec` argument uses [`protobuf_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec), which specifies a Protocol Buffer format for the Kafka `value` field.
 
-The first positional argument in the [`protobuf_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec) call is `schema`, the schema subject name -- in this case, `share.price.record` from the schema registry. To read the message descriptor from the classpath instead, omit `schema` and pass the fully-qualified Java class name as `message_class`, for example `message_class="com.example.MyMessage"`.
+The first positional argument in the [`protobuf_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec) call is `schema`, the schema subject name — in this case, `share.price.record` from the schema registry. To read the message descriptor from the classpath instead, omit `schema` and pass the fully-qualified Java class name as `message_class`, for example `message_class="com.example.MyMessage"`.
 
 The following arguments are supported:
 

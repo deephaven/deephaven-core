@@ -263,8 +263,7 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
   - `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
   - `GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
   - `ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-  - `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
-  - `LZ4`: **Deprecated** Use `LZ4_RAW` instead.
+  - `LZ4`: **Deprecated.** Use `LZ4_RAW` instead.
 - `max_dictionary_keys`: The maximum number of unique keys the writer should add to a dictionary page before switching to non-dictionary encoding. This is never evaluated for non-string columns. Defaults to 2^20 (1,048,576).
 - `max_dictionary_size`: The maximum number of bytes the writer should add to the dictionary before switching to non-dictionary encoding. This is never evaluated for non-string columns. Defaults to 2^20 (1,048,576).
 - `target_page_size`: The target page size in bytes. Defaults to 2^20 bytes (1 MiB).
@@ -280,7 +279,7 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
 
 ### Column instructions
 
-The `col_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) must be a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) instances. This class maps specific columns in the Deephaven table to specific columns in the resulting Parquet files, and optionally sets an object codec or dictionary encoding for that column.
+The `col_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) must be a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) instances. Each `ColumnInstruction` maps a column in the Deephaven table to a column in the resulting Parquet files, and optionally sets an object codec or dictionary encoding for that column.
 
 [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) has the following arguments:
 
@@ -294,7 +293,7 @@ The `col_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.
 
 The `special_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) is relevant when writing to an S3 instance and takes an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. This class specifies details for connecting to the S3 instance.
 
-The following [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) arguments are relevant when writing. See the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) API documentation for the full list, including arguments that apply only to reads.
+The following `S3Instructions` arguments are relevant when writing. See the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) API documentation for the full list, including arguments that apply only to reads.
 
 - `region_name`: The region name of the AWS S3 bucket. If not provided, the region name is picked by the AWS SDK from the 'aws.region' system property, the "AWS_REGION" environment variable, the \{user.home}/.aws/credentials, \{user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
 - `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `Credentials.resolving()`.
@@ -302,7 +301,8 @@ The following [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html
 - `connection_timeout`: Time to wait for a successful S3 connection before timing out. The default is 2 seconds.
 - `write_timeout`: The amount of time to wait when writing a fragment before timing out. The default is 2 seconds.
 - `write_part_size`: The part or chunk size, in bytes, when writing to S3. The default is 10 MiB, and the minimum is 5242880 bytes (5 MiB).
-- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently without blocking. The default is 64.
+- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently without blocking. The default is 64. This value cannot exceed `max_concurrent_requests`.
+- `max_concurrent_requests`: The maximum number of concurrent requests to make to S3, for reads and writes. The default is 256.
 - `profile_name`: The AWS profile name used to configure the default region, credentials, and other settings.
 - `config_file_path`: The path to the AWS configuration file.
 - `credentials_file_path`: The path to the AWS credentials file.

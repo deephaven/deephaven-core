@@ -22,7 +22,7 @@ Individual Kafka feeds are called topics. Topics are are identified by a name. W
 
 ### Partition
 
-A partition is a non-negative integer (numbered from 0) used to divide a topic into parts. By selecting individual partitions, subscribers can opt to listen to only a subset of messages from a topic.
+A partition is a part of a topic, identified by an integer starting at zero. By selecting individual partitions, subscribers can opt to listen to only a subset of messages from a topic.
 
 A topic may have a single partition or many. The producer selects the partition for a message when the data is written to the Kafka stream.
 
@@ -120,7 +120,7 @@ The previous sections introduced Kafka concepts. The following sections describe
 
 ### Key and value specification
 
-A key specification and a value specification, called a `KeyOrValueSpec` in code (`KafkaTools.Consume.KeyOrValueSpec` for consuming, `KafkaTools.Produce.KeyOrValueSpec` for producing), maps between columnar data in tables and key-value pairs in Kafka messages. Deephaven has consume specifications for all of the [formats](#format) listed above, and produce specifications for JSON and Avro. Key specifications specify the mapping between table columns and Kafka message keys, while value specifications specify the mapping between table columns and Kafka message values.
+Key and value specifications map between columnar data in tables and key-value pairs in Kafka messages. In code, they are `KeyOrValueSpec` objects: `KafkaTools.Consume.KeyOrValueSpec` for consuming and `KafkaTools.Produce.KeyOrValueSpec` for producing. Deephaven has consume specifications for all of the [formats](#format) listed above, and produce specifications for JSON and Avro. Key specifications specify the mapping between table columns and Kafka message keys, while value specifications specify the mapping between table columns and Kafka message values.
 
 ### Table types
 

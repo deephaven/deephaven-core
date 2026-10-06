@@ -303,7 +303,7 @@ source_from_iceberg_partitioned = source_adapter_partitioned.table()
 
 You can specify custom instructions when creating an [`IcebergReadInstructions`](../../reference/iceberg/iceberg-read-instructions.md) instance. Each subsection below covers a different custom instruction that can be passed in when reading Iceberg tables.
 
-To use a custom table definition or rename columns, pass an [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md) to `load_table` instead, as shown in [Load an Iceberg table into Deephaven](#load-an-iceberg-table-into-deephaven). In the `UnboundResolver` `column_instructions` argument, an `int` value maps a Deephaven column to an Iceberg schema field ID, and a `str` value maps it to a schema field name, such as `{"PickupTime": "tpep_pickup_datetime"}`.
+`IcebergReadInstructions` does not set the table definition or column names. To control either, pass an [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md) to `load_table`, as shown in [Load an Iceberg table into Deephaven](#load-an-iceberg-table-into-deephaven). In the `column_instructions` argument of `UnboundResolver`, an `int` value maps a Deephaven column to an Iceberg schema field ID, and a `str` value maps it to a schema field name, such as `{"PickupTime": "tpep_pickup_datetime"}`.
 
 #### Refreshing Iceberg tables
 

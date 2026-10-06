@@ -63,7 +63,7 @@ Key-value partitioned Parquet directories extend partitioning by organizing data
 
 ### From local storage
 
-Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a key-value partitioned Parquet directory into a Deephaven table. The directory structure may be automatically inferred by [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md). Alternatively, provide the appropriate directory structure to the `readInstructions` argument using [`ParquetFileLayout.valueOf("KV_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#KV_PARTITIONED). Providing this argument will boost performance, as no computation is required to infer the directory layout.
+Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a key-value partitioned Parquet directory into a Deephaven table. The directory structure may be automatically inferred by [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md). Alternatively, provide the directory layout by supplying the `setFileLayout` method with [`ParquetFileLayout.valueOf("KV_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#KV_PARTITIONED) and passing the resulting `ParquetInstructions` as the `readInstructions` argument. Providing this argument will boost performance, as no computation is required to infer the directory layout.
 
 ```groovy test-set=3 order=gradesInferred,gradesProvided
 import io.deephaven.parquet.table.ParquetTools
@@ -80,7 +80,7 @@ gradesProvided = ParquetTools.readTable(
 )
 ```
 
-If the key-value partitioned Parquet directory contains `_common_metadata` and `_metadata` files, utilize them by setting the `readInstructions` argument to [`ParquetFileLayout.valueOf("METADATA_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#METADATA_PARTITIONED). This is the most performant option if the metadata files are available.
+If the key-value partitioned Parquet directory contains `_common_metadata` and `_metadata` files, utilize them by supplying the `setFileLayout` method with [`ParquetFileLayout.valueOf("METADATA_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#METADATA_PARTITIONED). This is the most performant option if the metadata files are available.
 
 ```groovy test-set=3
 // use metadata files for maximum performance
@@ -131,7 +131,7 @@ gradesProvided = ParquetTools.readTable(
 )
 ```
 
-S3-hosted key-value partitioned Parquet datasets may also have `_common_metadata` and `_metadata` files. Utilize them by setting the `setFileLayout` argument to [`ParquetFileLayout.valueOf("METADATA_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html).
+S3-hosted key-value partitioned Parquet datasets may also have `_common_metadata` and `_metadata` files. Utilize them by supplying the `setFileLayout` method with [`ParquetFileLayout.valueOf("METADATA_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#METADATA_PARTITIONED).
 
 ```groovy test-set=4 docker-config=minio
 credentials = Credentials.basic("example_username", "example_password")
@@ -158,7 +158,7 @@ A flat partitioned Parquet directory stores data without nested subdirectories. 
 
 ### From local storage
 
-Read local flat partitioned Parquet directories into Deephaven tables with [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md). Set the `readInstructions` argument to [`ParquetFileLayout.valueOf("FLAT_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) for maximum performance.
+Read local flat partitioned Parquet directories into Deephaven tables with [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md). For maximum performance, supply the `setFileLayout` method with [`ParquetFileLayout.valueOf("FLAT_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) and pass the resulting `ParquetInstructions` as the `readInstructions` argument.
 
 ```groovy test-set=5 order=gradesInferred,gradesProvided
 import io.deephaven.parquet.table.ParquetTools

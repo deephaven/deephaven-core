@@ -6,7 +6,7 @@ Deephaven is often used to read table data from Parquet, Kafka, or other externa
 
 ## `empty_table`
 
-The [`empty_table`](../reference/table-operations/create/emptyTable.md) function takes a single argument - an `int` representing the number of rows in the new table. The resulting table has no columns and the specified number of rows. In the following example, we create a table with 10 rows and no columns:
+The [`empty_table`](../reference/table-operations/create/emptyTable.md) function takes a single argument — an `int` representing the number of rows in the new table. The resulting table has no columns and the specified number of rows. In the following example, we create a table with 10 rows and no columns:
 
 ```python order=table
 from deephaven import empty_table
@@ -88,7 +88,7 @@ result = source.update(formulas=["X = A + 3 * sqrt(B) + var + f(A, B)"])
 
 ### Array columns
 
-[`new_table`](../reference/table-operations/create/newTable.md) can also create array columns, where each cell holds an array. Typed helpers such as [`int_col`](../reference/table-operations/create/intCol.md) and [`string_col`](../reference/table-operations/create/stringCol.md) can't create these. Instead, use the [`InputColumn`](/core/pydoc/code/deephaven.column.html#deephaven.column.InputColumn) class directly with an array type from the [dtypes](../reference/python/deephaven-python-types.md) package, such as `dtypes.int32_array`.
+[`new_table`](../reference/table-operations/create/newTable.md) can also create array columns, where each cell holds an array. Typed helpers such as [`int_col`](../reference/table-operations/create/intCol.md) and [`string_col`](../reference/table-operations/create/stringCol.md) can't create these. Instead, use the [`InputColumn`](/core/pydoc/code/deephaven.column.html#deephaven.column.InputColumn) class directly with an array type from the [`deephaven.dtypes`](../reference/python/deephaven-python-types.md) module, such as `dtypes.int32_array`.
 
 The following example creates a new table with a single integer array column.
 

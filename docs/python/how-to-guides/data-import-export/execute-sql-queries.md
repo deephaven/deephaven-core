@@ -63,7 +63,7 @@ crypto_trades = read_sql(conn=sql_uri, query=my_query, driver="connectorx")
 
 ### odbc.read_cursor
 
-This example requires the PostgreSQL ODBC driver to be installed and registered with the ODBC driver manager. Turbodbc takes an ODBC connection string rather than a PostgreSQL URI.
+This example requires the PostgreSQL ODBC driver to be installed and registered with the ODBC driver manager. The `Driver` value in the connection string must match the registered driver name (`PostgreSQL Unicode` in this example). `turbodbc.connect` takes an ODBC connection string rather than a PostgreSQL URI.
 
 ```python skip-test
 from deephaven.dbc import odbc as dhodbc

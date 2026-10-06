@@ -122,7 +122,7 @@ Creating a table to represent the average for the last four values that match ti
 ```python skip-test
 import jpy
 from deephaven.time import dh_now, to_j_time_zone
-from deephaven import agg as agg
+from deephaven import agg
 
 _DateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
@@ -164,7 +164,7 @@ There are a few important points about live tables that deserve more explanation
 2. All table methods, operations and functions work identically on live tables as on static tables. No separate vocabularies or concepts.
 3. Moreover, derived tables defined by queries on live tables are also live. Query operation results are calculated efficiently by considering previous results and state and incrementally applying row adds, modifies and deletes as appropriate for the operation (see our concept guide on the [Deephaven table update model](../conceptual/table-update-model.md) for details). For example, the filtering done by the `where` operation above is implemented by processing added (and more generally, potentially removed or modified) rows to its parent table. Instead of recomputing the result of the whole filter every time the parent table changes, it updates the previous result with the relevant change information (add, modifies and deletes) from the base table.
 
-Now we are ready to decorate the live data with the last 4 samples average we calculated previously. First, we derive the same time columns from the `KafkaTimestamp` column that the consumer adds to the live table:
+Now we are ready to decorate the live data with the last 4 samples average we calculated previously. First, we derive the join-key columns `DayOfWeek` and `SecondsInDay` from the `KafkaTimestamp` column that the consumer adds to the live table:
 
 ```python skip-test
 live_use_with_last4weeks_avg = (
@@ -214,6 +214,6 @@ What can we do with a feed in Deephaven? We can compute derived feeds, we can in
 
 ## Related documentation
 
-- [Kafka in Deephaven](../conceptual/kafka-basic-terms.md)
+- [Kafka basic terms](../conceptual/kafka-basic-terms.md)
 - [Connect to a Kafka stream](./data-import-export/kafka-stream.md)
 - [`consume`](../reference/data-import-export/Kafka/consume.md)

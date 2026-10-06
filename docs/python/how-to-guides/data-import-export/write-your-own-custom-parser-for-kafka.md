@@ -3,7 +3,7 @@ title: Write your own custom parser for Kafka
 subtitle: Custom parser
 ---
 
-Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Python objects and table columns.
+Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Python objects and table columns, or use an object processor spec.
 
 This guide shows how to:
 
@@ -64,7 +64,7 @@ In this example:
 - **`Bytes`** is the column that will hold the raw Kafka value as a `byte_array`.
 - **`KeyValueSpec.IGNORE`** skips the Kafka key.
 - **`ALL_PARTITIONS_SEEK_TO_END`** starts reading from the latest offsets only.
-- **`TableType.append()`** creates an append-only table of all messages.
+- **`TableType.append()`** creates an append-only table that keeps every message it receives.
 
 ## Step 2: Define a domain object and parser function
 

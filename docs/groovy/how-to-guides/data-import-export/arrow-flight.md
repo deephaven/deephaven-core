@@ -83,7 +83,7 @@ See [uploading a table](#upload-a-table) for an example of setting the schema me
 
 Any table uploaded to Deephaven via a DoPut places the Flight Schema in a table attribute key of `BarrageSchema` (aka `io.deephaven.engine.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This is convenient as it allows you to upload a table and then download the table using exactly the same wire format.
 
-Most table operations drop this attribute, even for column types that are completely preserved. Filters (such as `where`), `sort`, `reverse`, `flatten`, `firstBy`, and `lastBy` keep it, and so do the constituent tables of a `partitionBy`. Re-attach the schema after any other operation if you want to preserve the original wire types.
+Most table operations drop this attribute, even for column types that are completely preserved. Filters (such as [`where`](../../reference/table-operations/filter/where.md)), [`sort`](../../reference/table-operations/sort/sort.md), [`reverse`](../../reference/table-operations/sort/reverse.md), [`flatten`](../../reference/table-operations/create/flatten.md), [`firstBy`](../../reference/table-operations/group-and-aggregate/firstBy.md), and [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md) keep it, and so do the constituent tables of a [`partitionBy`](../../reference/table-operations/group-and-aggregate/partitionBy.md). Re-attach the schema after any other operation if you want to preserve the original wire types.
 
 ### Exporting
 

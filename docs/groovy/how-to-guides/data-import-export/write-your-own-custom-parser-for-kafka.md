@@ -3,7 +3,7 @@ title: Write your own custom parser for Kafka
 subtitle: Custom parser
 ---
 
-Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Groovy objects and table columns.
+Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Groovy objects and table columns, or use an object processor spec.
 
 This guide shows how to:
 
@@ -65,7 +65,7 @@ In this example:
 - **`Bytes`** is the column that holds the raw Kafka value as a `byte[]`.
 - **`KafkaTools.Consume.IGNORE`** skips the Kafka key.
 - **`ALL_PARTITIONS_SEEK_TO_END`** starts reading from the latest offsets only.
-- **`TableType.append()`** creates an append-only table of all messages.
+- **`TableType.append`** creates an append-only table that keeps every message it receives.
 
 ## Step 2: Define a domain class and parser
 
@@ -113,14 +113,12 @@ parsedTable = rawTable.update('Person = parser.parse(Bytes)').view(
 )
 ```
 
-This pattern stores a Groovy object in a Deephaven column and then projects its fields into regular Deephaven column types.
-
 The resulting `parsedTable` has the following columns:
 
 - **`Age`** as an `int`.
 - **`Name`** as a `String`.
 
-Because `view` keeps only the columns it lists, `parsedTable` drops both the original `Bytes` column and the intermediate `Person` column. To keep them, use `update` instead of `view` in the second step.
+Because [`view`](../../reference/table-operations/select/view.md) keeps only the columns it lists, `parsedTable` drops both the original `Bytes` column and the intermediate `Person` column. To keep them, replace the `view` call with `update`.
 
 ## Alternative: Use an object processor spec
 

@@ -162,7 +162,7 @@ private static SinkFactory makeMySinkFactory() {
 
 ### Put it all together
 
-We now have everything we need to use our own data structures with the library. Simply take the example code in the [Use the Reference Implementation](#use-the-reference-implementation) section and change `SinkFactory.arrays()` to `makeMySinkFactory()`.
+We now have everything we need to use our own data structures with the library. Take the example code in the [Use the reference implementation](#use-the-reference-implementation) section and change `SinkFactory.arrays()` to `makeMySinkFactory()`.
 
 ## Handle nulls
 
@@ -248,7 +248,7 @@ private static SinkFactory makeMySinkFactory() {
 
 ## Support the fast path for numeric type inference
 
-There is an optional optimization available for the four integral sinks (namely byte, short, int, and long), which allows them to support faster type inference at the cost of some additional implementation effort. This optimization allows the library to read data back from your collection rather than reparsing the input when it needs to widen the type. To implement it, the corresponding four adaptor classes (`MyByteSink`, `MyShortSink`, `MyIntSink`, `MyLongSink`) should implement the `Source<TARRAY>` interface as well, and you must build your factory with `SinkFactory.of` rather than `SinkFactory.ofSimple`, as shown at the end of this section. Because this is an optional optimization, you should only implement it if your data structure can easily support it.
+There is an optional optimization available for the four integral sinks (namely byte, short, int, and long), which allows them to support faster type inference at the cost of some additional implementation effort. This optimization allows the library to read data back from your collection rather than reparsing the input when it needs to widen the type. To implement it, the corresponding four adaptor classes (`MyByteSink`, `MyShortSink`, `MyIntSink`, `MyLongSink`) should implement the `Source<TARRAY>` interface as well. Your factory must also hand those sources to the library. If you use the factory methods, build it with `SinkFactory.of` rather than `SinkFactory.ofSimple`, as shown at the end of this section. Because this is an optional optimization, you should only implement it if your data structure can easily support it.
 
 The definition of `Source<TARRAY>` is:
 
@@ -331,7 +331,9 @@ private static final class MyIntSink implements Sink<int[]>, Source<int[]> {
 }
 ```
 
-To enable the fast path, build the factory with `SinkFactory.of` instead of `SinkFactory.ofSimple`. `SinkFactory.of` takes the same arguments as `SinkFactory.ofSimple`, but requires the byte, short, int, and long sinks to implement both `Sink` and `Source`. `SinkFactory.ofSimple` never uses a `Source`, so a factory built with it does not use the fast path. The example below omits sentinels for brevity. If your sinks use null sentinels, as `MyIntSink` does, call the longer `SinkFactory.of` overload that also takes the sentinel values, like the longer `SinkFactory.ofSimple` overload shown in [Handle nulls](#handle-nulls).
+`SinkFactory.of` takes the same arguments as `SinkFactory.ofSimple`, but requires the byte, short, int, and long sinks to implement both `Sink` and `Source`. `SinkFactory.ofSimple` never uses a `Source`, so a factory built with it does not use the fast path.
+
+The example below omits sentinels for brevity. If your sinks use null sentinels, as `MyIntSink` does, call the longer `SinkFactory.of` overload that also takes the sentinel values, like the longer `SinkFactory.ofSimple` overload shown in [Handle nulls](#handle-nulls).
 
 ```
 private static SinkFactory makeMySinkFactory() {

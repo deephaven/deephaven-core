@@ -38,7 +38,7 @@ Deephaven's SQL implementation supports:
 
 - **SELECT** statements with column selection and aliasing.
 - **WHERE** clauses for filtering.
-- **JOIN** operations: inner equi-joins (`JOIN` or `INNER JOIN ... ON a.X = b.X`). Outer joins (LEFT, RIGHT, FULL) are not supported: they do not raise an error, but they run as inner joins, so unmatched rows are dropped.
+- **JOIN** operations: inner joins (`JOIN` or `INNER JOIN`). Deephaven runs outer joins (LEFT, RIGHT, FULL) as inner joins without raising an error, so unmatched rows are dropped.
 - **GROUP BY** and aggregate functions (SUM, AVG, MIN, MAX, STDDEV, VARIANCE, `COUNT(*)`, and `COUNT(DISTINCT col)`). `COUNT(col)` is not supported.
 - **ORDER BY** for sorting.
 - **LIMIT** for restricting the number of rows. **OFFSET** is not supported.

@@ -292,7 +292,7 @@ sourcePartitionedFromIceberg = sourceAdapterPartitioned.table()
 
 You can specify custom instructions when creating an [`IcebergReadInstructions`](/core/javadoc/io/deephaven/iceberg/util/IcebergReadInstructions.html) instance. Each subsection below covers a different custom instruction that can be passed in when reading Iceberg tables.
 
-To use a custom table definition or rename columns, pass an [`UnboundResolver`](../../reference/data-import-export/Iceberg/unbound-resolver.md) to `LoadTableOptions.builder().resolver(...)` instead, as shown in [Load an Iceberg table into Deephaven](#load-an-iceberg-table-into-deephaven). To map a Deephaven column to an Iceberg field by name rather than by field ID, use `ColumnInstructions.schemaFieldName`, such as `putColumnInstructions("PickupTime", ColumnInstructions.schemaFieldName("tpep_pickup_datetime"))`.
+`IcebergReadInstructions` does not set the table definition or column names. To control either, pass an [`UnboundResolver`](../../reference/data-import-export/Iceberg/unbound-resolver.md) to the `resolver` method of [`LoadTableOptions`](../../reference/data-import-export/Iceberg/load-table-options.md), as shown in [Load an Iceberg table into Deephaven](#load-an-iceberg-table-into-deephaven). To map a Deephaven column to an Iceberg field by name rather than by field ID, use [`ColumnInstructions.schemaFieldName`](/core/javadoc/io/deephaven/iceberg/util/ColumnInstructions.html#schemaFieldName(java.lang.String)), such as `putColumnInstructions("PickupTime", ColumnInstructions.schemaFieldName("tpep_pickup_datetime"))`.
 
 #### Refreshing Iceberg tables
 

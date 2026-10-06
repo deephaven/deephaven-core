@@ -54,7 +54,7 @@ If you are using Docker-installed Deephaven, you can find a `/data` folder insid
 
 ### Null values
 
-Null values are common in tables. How are they handled when exporting data to a CSV? This depends on how you call [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md).
+Null values are common in tables. This section shows how [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md) handles them when exporting data to a CSV.
 
 First, let's create a table with null values. The example below uses the [ternary conditional operator](../ternary-if-how-to.md) to fill the `SinX` column with a large number of nulls.
 

@@ -182,7 +182,7 @@ resultRing = KafkaTools.consumeToTable(
 )
 ```
 
-Let's walk through this query, focusing on the new optional arguments we've set.
+Let's walk through the arguments in this query.
 
 - The partition filter is `KafkaTools.ALL_PARTITIONS`, which specifies that we want to listen to all partitions. To listen to specific partitions, use `KafkaTools.partitionFilterFromArray(new int[]{1, 3, 5})`.
 - The initial offset is `KafkaTools.ALL_PARTITIONS_DONT_SEEK`, which only listens to new messages produced after this call is processed.
@@ -305,7 +305,7 @@ In this query, the `valueSpec` argument uses [`jsonSpec`](https://deephaven.io/c
 
 The first argument to `jsonSpec` is an array of `ColumnDefinition`s that gives each column's name and type in the result table.
 
-The second argument, `mapping`, is a `Map` from JSON field names to resulting table column names. Column names should be in the array provided in the first argument described above. The map may contain fewer entries than the total number of columns defined in the first argument. The third argument is an optional custom Jackson `ObjectMapper`; passing `null` uses the default.
+The second argument, `mapping`, is a `Map` from JSON field names to resulting table column names. Column names should be in the array provided in the first argument described above. The map may contain fewer entries than the total number of columns defined in the first argument. The third argument is a custom Jackson `ObjectMapper`. Pass `null` to use the default.
 
 In the example, the map entry `'price' : 'Price'` specifies the incoming messages are expected to contain a JSON field named `price`, whose value will be mapped to the `Price` column in the resulting table. The columns not mentioned are mapped from matching JSON fields.
 
@@ -390,8 +390,13 @@ In this query, the first argument includes an additional entry for `schema.regis
 The only argument to [`protobufSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#protobufSpec(io.deephaven.kafka.protobuf.ProtobufConsumeOptions)) is a `ProtobufConsumeOptions` object, created with `ProtobufConsumeOptions.builder()`. The builder methods include:
 
 - `descriptorProvider` sets where the protobuf message descriptor comes from. It is required.
-  - `DescriptorSchemaRegistry.builder()` fetches the descriptor from the schema registry, as in the example above. Its builder takes `subject` (the schema subject name, `share.price.record` here), `version` (the schema version; when not set, the latest version is fetched), and `messageName` (the fully-qualified protobuf message name, for example `com.example.MyMessage`; when not set, the first message descriptor in the schema is used). We recommend setting `version` and `messageName` so that the resulting table definition does not change across restarts.
-  - `DescriptorMessageClass.of(MyMessage.class)` reads the descriptor from a protobuf message class on the current classpath. When this is used, the schema registry is not used.
+  - `DescriptorSchemaRegistry.builder()` fetches the descriptor from the schema registry, as in the example above. Its builder methods are:
+    - `subject`: the schema subject name, `share.price.record` in the example.
+    - `version`: the schema version. When not set, the latest version is fetched.
+    - `messageName`: the fully-qualified protobuf message name, for example `com.example.MyMessage`. When not set, the first message descriptor in the schema is used.
+
+    We recommend setting `version` and `messageName` so that the resulting table definition does not change across restarts.
+  - `DescriptorMessageClass.of(MyMessage.class)` reads the descriptor from a protobuf message class on the current classpath and does not contact the schema registry.
 - `parserOptions` takes a `ProtobufDescriptorParserOptions` object, which controls how the descriptor is parsed, such as which field paths to include.
 - `protocol` sets the wire protocol for this payload.
   - With `DescriptorSchemaRegistry`, `Protocol.serdes()` is used by default.
@@ -531,7 +536,7 @@ See the dedicated guide, [Write your own custom parser for Kafka](./write-your-o
 
 ## Write to a Kafka stream
 
-Deephaven can write tables to Kafka streams as well. When data in a table changes with real-time updates, those changes are also written to Kafka. The [`KafkaTools.Produce`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Produce.html) class and [`produceFromTable`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.html#produceFromTable(io.deephaven.kafka.KafkaPublishOptions)) method do this.
+Deephaven can write tables to Kafka streams as well. When data in a table changes with real-time updates, those changes are also written to Kafka. The [`KafkaTools.Produce`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Produce.html) class and [`produceFromTable`](../../reference/data-import-export/Kafka/produceFromTable.md) method do this.
 
 In this example, we write a simple [time table](../../reference/table-operations/create/timeTable.md) to a topic called `time-topic`. With only one data point, we use the `X` as a key and ignore the value.
 
