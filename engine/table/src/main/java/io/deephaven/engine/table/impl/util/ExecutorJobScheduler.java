@@ -15,6 +15,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -76,8 +77,10 @@ public class ExecutorJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
+        final AtomicBoolean started = new AtomicBoolean();
         try {
             executor.execute(() -> {
+                started.set(true);
                 final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
                 baseEntry.onBaseEntryStart();
                 try {
@@ -88,6 +91,11 @@ public class ExecutorJobScheduler implements JobScheduler {
                 }
             });
         } catch (final RejectedExecutionException e) {
+            if (started.get()) {
+                // A synchronous executor ran the job, which then threw this itself: the job has run, and must not
+                // run again.
+                throw e;
+            }
             // Every thread is busy: the job is the submitting thread's own work, and is accounted as such
             JobScheduler.runJob(executionContext, runnable, description, onError);
         }

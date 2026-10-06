@@ -102,13 +102,19 @@ public class OperationInitializerJobScheduler implements JobScheduler {
 
     @Override
     public BasePerformanceEntry getAccumulatedPerformance() {
+        boolean interrupted = false;
         synchronized (outstandingJobs) {
             while (outstandingJobs.get() > 0) {
                 try {
                     outstandingJobs.wait();
-                } catch (InterruptedException ignored) {
+                } catch (InterruptedException e) {
+                    // keep waiting, and restore the interrupt for the caller, which may be about to check it
+                    interrupted = true;
                 }
             }
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
         }
         return accumulatedBaseEntry;
     }

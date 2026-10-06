@@ -8,6 +8,7 @@ import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.After;
 import org.junit.Rule;
@@ -21,6 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -138,6 +140,63 @@ public class TestExecutorJobScheduler {
         });
         assertThat(runningThread.get()).isSameAs(Thread.currentThread());
         holdTheThread.countDown();
+    }
+
+    /**
+     * A synchronous executor that runs the job, which then throws a RejectedExecutionException itself, has not refused
+     * it: the job must not run a second time on the submitting thread.
+     */
+    @Test
+    public void testRejectionThrownByARunJobDoesNotRunItAgain() {
+        final Executor direct = Runnable::run;
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(direct, 2);
+        final AtomicInteger runs = new AtomicInteger();
+        final RejectedExecutionException fromTheJob = new RejectedExecutionException("thrown by the job's handler");
+
+        assertThatThrownBy(() -> scheduler.submit(null, () -> {
+            runs.incrementAndGet();
+            throw new IllegalStateException("job failed");
+        }, null, e -> {
+            throw fromTheJob;
+        })).isSameAs(fromTheJob);
+
+        assertThat(runs.get()).isEqualTo(1);
+    }
+
+    /** Waiting for outstanding jobs keeps going through an interrupt, and restores it for the caller. */
+    @Test
+    public void testPerformanceWaitRestoresTheInterrupt() throws InterruptedException {
+        final CountDownLatch release = new CountDownLatch(1);
+        final CountDownLatch running = new CountDownLatch(1);
+        final OperationInitializerJobScheduler scheduler =
+                new OperationInitializerJobScheduler(ExecutionContext.getContext().getOperationInitializer());
+        scheduler.submit(null, () -> {
+            running.countDown();
+            try {
+                release.await();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, null, e -> {
+        });
+        await(running);
+
+        final AtomicReference<Boolean> interruptedAfter = new AtomicReference<>();
+        final Thread waiter = new Thread(() -> {
+            scheduler.getAccumulatedPerformance();
+            interruptedAfter.set(Thread.currentThread().isInterrupted());
+        }, "performance-waiter");
+        waiter.setDaemon(true);
+        waiter.start();
+        // let the waiter block, interrupt it, then let the job finish
+        Thread.sleep(100);
+        waiter.interrupt();
+        Thread.sleep(50);
+        release.countDown();
+        waiter.join(10_000);
+
+        assertThat(waiter.isAlive()).isFalse();
+        assertThat(interruptedAfter.get()).isTrue();
     }
 
     @Test
