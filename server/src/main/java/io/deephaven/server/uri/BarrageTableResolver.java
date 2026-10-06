@@ -3,7 +3,6 @@
 //
 package io.deephaven.server.uri;
 
-import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.client.impl.*;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
@@ -12,6 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.session.SessionFactoryCreator;

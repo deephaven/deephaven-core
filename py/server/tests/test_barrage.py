@@ -91,14 +91,14 @@ class BarrageTestCase(BaseTestCase):
         # a single string is one encoding, not a sequence of characters
         for accept_compression in ["zstd", ["gzip", "zstd"], []]:
             with self.subTest(accept_compression=accept_compression):
-                session = barrage_session(
+                with barrage_session(
                     host="localhost",
                     port=10000,
                     auth_type="Anonymous",
                     accept_compression=accept_compression,
-                )
-                t = session.snapshot(ticket=self.shared_ticket.bytes)
-                self.assertEqual(t.size, 1000)
+                ) as session:
+                    t = session.snapshot(ticket=self.shared_ticket.bytes)
+                    self.assertEqual(t.size, 1000)
 
         with self.assertRaises(DHError):
             barrage_session(
