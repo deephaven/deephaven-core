@@ -101,7 +101,8 @@ abstract class AggInputBase extends FlightExampleBase {
                     final double z_ = random.nextDouble();
                     rows.row(i, group, u_, v_, w_, x_, y_, z_);
                 }
-                flight.addToInputTable(base, rows.newTable(), bufferAllocator);
+                // Await each add so a failure surfaces, and so the last one lands before the handles are closed
+                flight.addToInputTable(base, rows.newTable(), bufferAllocator).get(5, TimeUnit.SECONDS);
                 Thread.sleep(sleepMillis);
             }
         } finally {
