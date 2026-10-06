@@ -13,7 +13,7 @@ symbol with last_by. Each update cycle adds rows (new symbols) and modifies rows
   * shares state with the main thread under a lock
   * reports errors through on_error and stops cleanly on Ctrl+C or after a time limit
 
-Requires Python 3.10 or later, a Deephaven server on localhost:10000, and the
+Requires Python 3.9 or later, a Deephaven server on localhost:10000, and the
 pydeephaven-ticking package.
 """
 from __future__ import annotations
