@@ -18,8 +18,11 @@ import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -271,31 +274,43 @@ public interface JobScheduler {
             try {
                 final int numTaskInvokers = Math.min(maxThreads, scheduler.threadCount());
                 final int numSubmitted = callerParticipates ? numTaskInvokers - 1 : numTaskInvokers;
+                final List<TaskInvoker> submitted = new ArrayList<>(Math.max(0, numSubmitted));
                 for (int tii = 0; tii < numSubmitted; ++tii) {
                     final TaskInvoker taskInvoker = makeTaskInvoker(taskThreadContextFactory, tii);
                     if (taskInvoker == null) {
-                        return;
+                        break;
                     }
+                    submitted.add(taskInvoker);
                     try {
-                        scheduler.submit(executionContext, taskInvoker::execute, description,
+                        scheduler.submit(executionContext, taskInvoker::startAndExecute, description,
                                 IterationManager::onUnexpectedJobError);
                     } catch (Throwable t) {
                         // The scheduler did not take the invoker, so nothing else will release its context and its
                         // reference to this manager, and the iteration could never complete. A scheduler that ran the
-                        // invoker on this thread before failing has already closed it. The failure itself is recorded
-                        // below, before this manager's own reference is released.
-                        taskInvoker.closeIfOpen();
+                        // invoker on this thread before failing has already started it, and it closed itself. The
+                        // failure itself is recorded below, before this manager's own reference is released.
+                        if (taskInvoker.tryStart()) {
+                            taskInvoker.closeIfOpen();
+                        }
                         throw t;
                     }
                 }
                 if (callerParticipates) {
-                    final TaskInvoker taskInvoker =
-                            makeTaskInvoker(taskThreadContextFactory, Math.max(0, numSubmitted));
-                    if (taskInvoker == null) {
-                        return;
-                    }
                     try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
-                        taskInvoker.execute();
+                        final TaskInvoker taskInvoker =
+                                makeTaskInvoker(taskThreadContextFactory, Math.max(0, numSubmitted));
+                        if (taskInvoker != null && taskInvoker.tryStart()) {
+                            taskInvoker.execute();
+                        }
+                        // A blocked caller must never wait on an invoker that has not started: an executor that queues
+                        // may start one only after the caller has run every other task, or never, if it is queued
+                        // behind the caller's own thread. So the caller runs any submitted invoker that has not
+                        // started yet itself, and one that the scheduler starts later finds it already taken.
+                        for (final TaskInvoker helper : submitted) {
+                            if (helper.tryStart()) {
+                                helper.execute();
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -425,6 +440,11 @@ public interface JobScheduler {
                         } catch (Exception e) {
                             // The callback form reports this as unexpected; here there is a caller to throw it to.
                             invocation.fail(e);
+                        } catch (Error e) {
+                            // Thrown to the caller as well, and still propagated on this thread, which may be a
+                            // scheduler thread that reports it as fatal.
+                            invocation.fail(asDeliverableException(e));
+                            throw e;
                         } finally {
                             invocation.finish();
                         }
@@ -436,6 +456,9 @@ public interface JobScheduler {
                         } catch (Exception handlerFailure) {
                             // Likewise; the iteration's own failure stays the one thrown.
                             invocation.fail(handlerFailure);
+                        } catch (Error handlerError) {
+                            invocation.fail(asDeliverableException(handlerError));
+                            throw handlerError;
                         } finally {
                             invocation.finish();
                         }
@@ -447,8 +470,7 @@ public interface JobScheduler {
                 // startTasks recorded this as the iteration's failure, so onError sees it and it is thrown below
                 invocation.fail(e);
             } catch (Error e) {
-                // The invoker or the scheduler has delivered this already, so the iteration will end. Wait for it
-                // before
+                // The invoker or startTasks has recorded this already, so the iteration will end. Wait for it before
                 // letting the error go: it is about to unwind past whatever the tasks still running are using.
                 error = e;
             }
@@ -526,6 +548,8 @@ public interface JobScheduler {
 
             private boolean closed;
             private boolean running;
+            /** Set by whichever thread runs this invoker first: the scheduler's, or a blocked caller taking it over. */
+            private final AtomicBoolean started = new AtomicBoolean();
 
             /**
              * Construct a TaskInvoker which will iteratively reschedule itself to perform parallel tasks as needed.
@@ -544,6 +568,18 @@ public interface JobScheduler {
                 this.context = context;
                 this.invokerIndex = invokerIndex;
                 acquiredTaskIndex = initialTaskIndex;
+            }
+
+            /** @return whether this thread is the one to run this invoker */
+            private boolean tryStart() {
+                return started.compareAndSet(false, true);
+            }
+
+            /** The job a scheduler runs: this invoker, unless a blocked caller has already taken it over. */
+            private void startAndExecute() {
+                if (tryStart()) {
+                    execute();
+                }
             }
 
             private synchronized void execute() {
@@ -793,9 +829,11 @@ public interface JobScheduler {
      *
      * <p>
      * <b>Participation.</b> Up to {@code min(count, threadCount()) - 1} task invokers are submitted to the scheduler,
-     * and one more runs on the calling thread, with a task context of its own from {@code taskThreadContextFactory}.
-     * The caller therefore works even when the scheduler accepts every submission, and the iteration completes even
-     * when the scheduler has no thread to spare.
+     * and one more runs on the calling thread, each with a task context of its own from
+     * {@code taskThreadContextFactory}, which is called on the calling thread. The caller therefore works even when the
+     * scheduler accepts every submission. When the caller runs out of tasks it runs any submitted invoker that the
+     * scheduler has not started yet, which then does nothing when the scheduler does start it; so the caller never
+     * waits on an invoker that has not started, whatever the scheduler does with a job it cannot start at once.
      * </p>
      *
      * <p>

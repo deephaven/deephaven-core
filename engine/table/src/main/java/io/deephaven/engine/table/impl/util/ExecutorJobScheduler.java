@@ -23,11 +23,12 @@ import java.util.function.Consumer;
  * the submitting thread instead, so no job is ever dropped and no job ever waits in a queue behind another.
  *
  * <p>
- * That makes this the scheduler for {@link #invokeParallel}: a job the executor accepts starts at once on a thread of
- * its own, and a job it refuses runs on the caller, so a thread that blocks waiting for the jobs it submitted never
- * waits on one that has not started. It is meant for a pool shaped like {@link #newHelperPool}, which may be small and
- * shared by many callers, and on which a job may itself invoke a nested iteration; the pool's size bounds the threads a
- * caller adds to its own, never the work it can finish.
+ * It is meant for a pool shaped like {@link #newHelperPool}, which may be small and shared by many callers, and on
+ * which a job may itself invoke a nested iteration; the pool's size bounds the threads a caller adds to its own, never
+ * the work it can finish. {@link #invokeParallel} works with any executor, because its caller never waits on a helper
+ * that has not started. A task that hands its completion to a nested callback-form iteration through {@code resume}
+ * does wait on that iteration's jobs, though, so with an executor that queues, such a task must not run on a thread the
+ * queued jobs need: with this pool shape a job either starts at once or runs on its submitter, so that cannot happen.
  * </p>
  *
  * <p>

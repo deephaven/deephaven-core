@@ -23,6 +23,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -599,6 +602,101 @@ public class TestInvokeParallel {
         assertThat(runs.get()).isZero();
     }
 
+    /**
+     * A single-thread executor's own worker may invoke on a scheduler over that executor: the helper it submits is
+     * queued behind the worker itself, and the worker must finish the iteration without waiting for it.
+     */
+    @Test
+    public void testInvokeFromTheOnlyThreadOfAQueuedExecutorCompletes() throws Exception {
+        final ExecutorService single = Executors.newSingleThreadExecutor(runnable -> {
+            final Thread thread = new Thread(runnable, "invoke-parallel-test-single");
+            thread.setDaemon(true);
+            return thread;
+        });
+        try {
+            final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(single, 4);
+            final ExecutionContext executionContext = ExecutionContext.getContext();
+            final AtomicIntegerArray runs = new AtomicIntegerArray(20);
+            final Future<?> done = single.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    invoke(scheduler, 20, (context, idx, nec) -> runs.incrementAndGet(idx)).assertCompleted();
+                }
+            });
+            done.get(30, TimeUnit.SECONDS);
+            for (int ii = 0; ii < 20; ++ii) {
+                assertThat(runs.get(ii)).isEqualTo(1);
+            }
+        } finally {
+            single.shutdownNow();
+        }
+    }
+
+    /**
+     * A queueing executor may start a helper only after the caller has run every task; the caller must not wait for it,
+     * and the helper, when it does start, must find nothing to do and leave no context open.
+     */
+    @Test
+    public void testDoesNotWaitForHelpersThatHaveNotStarted() {
+        final List<Runnable> queued = Collections.synchronizedList(new ArrayList<>());
+        final Executor deferring = queued::add;
+        final AtomicInteger contextsOpen = new AtomicInteger();
+        final AtomicInteger runs = new AtomicInteger();
+        final Set<Thread> threads = ConcurrentHashMap.newKeySet();
+
+        final Outcome outcome = invoke(new ExecutorJobScheduler(deferring, 4),
+                () -> {
+                    contextsOpen.incrementAndGet();
+                    return new JobScheduler.JobThreadContext() {
+                        @Override
+                        public void close() {
+                            contextsOpen.decrementAndGet();
+                        }
+                    };
+                }, 10, (context, idx, nec) -> {
+                    runs.incrementAndGet();
+                    threads.add(Thread.currentThread());
+                });
+        outcome.assertCompleted();
+        assertThat(runs.get()).isEqualTo(10);
+        assertThat(threads).containsExactly(Thread.currentThread());
+        assertThat(queued).hasSize(3);
+        assertThat(contextsOpen.get()).isZero();
+
+        // the late jobs find their invokers already run by the caller, and do nothing
+        queued.forEach(Runnable::run);
+        assertThat(runs.get()).isEqualTo(10);
+        assertThat(outcome.completeCalls.get()).isEqualTo(1);
+    }
+
+    /** An Error from cleanup, even on a scheduler thread, reaches the invoking caller rather than only that thread. */
+    @Test
+    public void testCleanupErrorReachesTheCaller() throws InterruptedException {
+        final AssertionError cleanupError = new AssertionError("cleanup error");
+        final int threadCount = 4;
+        final ExecutorJobScheduler scheduler = newScheduler(threadCount - 1, threadCount);
+        final CyclicBarrier rendezvous = new CyclicBarrier(threadCount);
+
+        withTimeout(() -> {
+            final Throwable thrown = catchThrowable(() -> scheduler.invokeParallel(ExecutionContext.getContext(),
+                    null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, threadCount,
+                    (context, idx, nec) -> {
+                        await(rendezvous);
+                        if (idx != 0) {
+                            // let a scheduler thread finish last, so that cleanup runs there
+                            sleep(50);
+                        }
+                    },
+                    () -> {
+                    }, () -> {
+                        throw cleanupError;
+                    }, e -> {
+                    }));
+            // as itself when cleanup ran on the calling thread, wrapped when it ran on a scheduler thread
+            assertThat(thrown == cleanupError || thrown.getCause() == cleanupError)
+                    .as("thrown %s", thrown).isTrue();
+        });
+    }
+
     @Test
     public void testFailureOnTheCallingThreadStopsAtTheFailingTask() {
         final List<Integer> ran = new ArrayList<>();
@@ -935,5 +1033,14 @@ public class TestInvokeParallel {
                 })).isInstanceOf(UnsupportedOperationException.class);
 
         assertThat(runs.get()).isZero();
+    }
+
+    private static Throwable catchThrowable(final Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (final Throwable t) {
+            return t;
+        }
+        throw new AssertionError("expected a throwable");
     }
 }
