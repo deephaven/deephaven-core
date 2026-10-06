@@ -838,7 +838,7 @@ public class RegionedColumnSourceManager
         return attributes;
     }
 
-    private static int[] regionIndices(final RowSet selection) {
+    private static int[] selectedRegionIndices(final RowSet selection) {
         try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
             final IntStream.Builder builder = IntStream.builder();
             while (rit.hasNext()) {
@@ -862,7 +862,7 @@ public class RegionedColumnSourceManager
         final long span = (long) lastRegion - firstRegion;
         if (span < maxCount) {
             // Spans no more than maxCount regions, so visiting all of them is already bounded.
-            return regionIndices(selection);
+            return selectedRegionIndices(selection);
         }
         final IntStream.Builder builder = IntStream.builder();
         try (final RowSet.SearchIterator sit = selection.searchIterator()) {
@@ -991,7 +991,7 @@ public class RegionedColumnSourceManager
             final PerRegionPushdownAction action,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        final int[] regionIndices = regionIndices(selection);
+        final int[] regionIndices = selectedRegionIndices(selection);
 
         final WritableRowSet[] matches = new WritableRowSet[regionIndices.length];
         final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];

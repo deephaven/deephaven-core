@@ -64,7 +64,7 @@ public class TstColumnRegionInt {
         }
     }
 
-    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionInt<Values>> {
+    public static class TestNull extends TstColumnRegionPrimitive<ColumnRegionInt<Values>> {
 
         @Before
         public void setUp() throws Exception {
@@ -82,7 +82,7 @@ public class TstColumnRegionInt {
         }
     }
 
-    public static class TestConstant extends TstColumnRegionPrimative.Constant<ColumnRegionInt<Values>> {
+    public static class TestConstant extends TstColumnRegionPrimitive.Constant<ColumnRegionInt<Values>> {
 
         @Before
         public void setUp() throws Exception {
@@ -97,7 +97,7 @@ public class TstColumnRegionInt {
         }
     }
 
-    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionInt<Values>> {
+    public static class TestDeferred extends TstColumnRegionPrimitive.Deferred<ColumnRegionInt<Values>> {
 
         @Before
         public void setUp() throws Exception {

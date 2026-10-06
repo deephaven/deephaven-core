@@ -66,7 +66,7 @@ public abstract class TstColumnRegionByte {
         }
     }
 
-    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionByte<Values>> {
+    public static class TestNull extends TstColumnRegionPrimitive<ColumnRegionByte<Values>> {
 
         @Before
         public void setUp() throws Exception {
@@ -97,7 +97,7 @@ public abstract class TstColumnRegionByte {
         }
     }
 
-    public static class TestConstant extends TstColumnRegionPrimative.Constant<ColumnRegionByte<Values>> {
+    public static class TestConstant extends TstColumnRegionPrimitive.Constant<ColumnRegionByte<Values>> {
 
         @Before
         public void setUp() throws Exception {
@@ -112,7 +112,7 @@ public abstract class TstColumnRegionByte {
         }
     }
 
-    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionByte<Values>> {
+    public static class TestDeferred extends TstColumnRegionPrimitive.Deferred<ColumnRegionByte<Values>> {
 
         @Before
         public void setUp() throws Exception {

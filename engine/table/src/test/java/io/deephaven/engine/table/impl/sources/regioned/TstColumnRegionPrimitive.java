@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
  * Base class for testing {@link ColumnRegion} implementations.
  */
 
-abstract class TstColumnRegionPrimative<REGION_TYPE extends ColumnRegion<Values>> {
+abstract class TstColumnRegionPrimitive<REGION_TYPE extends ColumnRegion<Values>> {
 
     @Rule
     public final JMockRule jmock = new JMockRule();
@@ -40,13 +40,13 @@ abstract class TstColumnRegionPrimative<REGION_TYPE extends ColumnRegion<Values>
     public abstract void testGet();
 
     static abstract class Deferred<REGION_TYPE extends ColumnRegion<Values>>
-            extends TstColumnRegionPrimative<REGION_TYPE> {
+            extends TstColumnRegionPrimitive<REGION_TYPE> {
 
         Supplier<REGION_TYPE> regionSupplier;
     }
 
     static abstract class Constant<REGION_TYPE extends ColumnRegion<Values>>
-            extends TstColumnRegionPrimative<REGION_TYPE> {
+            extends TstColumnRegionPrimitive<REGION_TYPE> {
 
         @Rule
         public final EngineCleanup framework = new EngineCleanup();

@@ -56,8 +56,7 @@ abstract class PageStorePushdownHelper {
     /**
      * Iterate over the subregions of a {@link RegionedPageStore} that overlap {@code selection}, dispatch
      * {@link RegionedPushdownFilterMatcher#performPushdownAction} on each subregion in local key space, and assemble
-     * the per-subregion results into a single page-store-space {@link PushdownResult}. Returns a copy of {@code input}
-     * if the page store has no subregions.
+     * the per-subregion results into a single page-store-space {@link PushdownResult}.
      */
     static <ATTR extends Any, REGION_TYPE extends ColumnRegion<ATTR>> PushdownResult performPushdownAction(
             final RegionedPageStore<ATTR, ATTR, REGION_TYPE> pageStore,
@@ -70,8 +69,8 @@ abstract class PageStorePushdownHelper {
             final RegionedPushdownAction.ActionContext actionContext) {
         final int regionCount = pageStore.getRegionCount();
         if (regionCount == 0) {
-            // No regions to consult, so nothing has been proven about the input rows; leave them as they are.
-            return input.copy();
+            // No regions, no matches.
+            return PushdownResult.noneMatch(selection);
         }
 
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
