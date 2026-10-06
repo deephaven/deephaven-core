@@ -194,7 +194,7 @@ Each `TableListenerHandle` runs its own background thread. Your listener's metho
 
 If `on_update` raises an exception while the subscription is running, the subscription **ends** and the listener's `on_error` method runs with the exception. No more updates arrive after that. The default `on_error` prints the error.
 
-`on_error` only covers failures during active background processing. A connection failure in `start` itself (for example, a bad host or a subscription the server rejects) raises synchronously out of `start` instead, since that work runs on the calling thread before the background thread exists. The background thread also treats a clean end of the stream as normal completion rather than an error, so it stops quietly without calling `on_error`.
+`on_error` only covers failures during active background processing, after `start` has launched the background thread. Errors from opening the connection or writing the subscription request — the setup `start` performs on the calling thread before launching that thread — raise synchronously out of `start` instead. A subscription the server rejects, since that's detected while reading the stream, is surfaced to `on_error`. The background thread also treats a clean end of the stream as normal completion rather than an error, so it stops quietly without calling `on_error`.
 
 When your listener is a function, pass an error callback as the third argument to `listen`:
 
