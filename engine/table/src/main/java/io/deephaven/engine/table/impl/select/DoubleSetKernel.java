@@ -11,13 +11,13 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkMatchFilterFactory;
-import io.deephaven.util.type.TypeUtils;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import org.jetbrains.annotations.NotNull;
@@ -99,18 +99,21 @@ final class DoubleSetKernel extends SingleColumnSetKernel {
     }
 
     @Override
-    CloseableIterator<Object> iterator() {
-        final LongIterator keys = counts.keySet().iterator();
-        return new CloseableIterator<>() {
-            @Override
-            public boolean hasNext() {
-                return keys.hasNext();
-            }
+    Object keyIterator() {
+        return counts.keySet().iterator();
+    }
 
-            @Override
-            public Object next() {
-                return TypeUtils.box(Double.longBitsToDouble(keys.nextLong()));
-            }
-        };
+    @Override
+    boolean exportKeys(@NotNull final ExportContext context, @NotNull final WritableChunk<Values>[] keyChunks) {
+        // noinspection unchecked
+        final LongIterator keys = ((KeyIteratorContext<LongIterator>) context).keys;
+        final WritableDoubleChunk<Values> typedKeys = keyChunks[0].asWritableDoubleChunk();
+        final int capacity = typedKeys.capacity();
+        int exported = 0;
+        while (exported < capacity && keys.hasNext()) {
+            typedKeys.set(exported++, Double.longBitsToDouble(keys.nextLong()));
+        }
+        typedKeys.setSize(exported);
+        return exported > 0;
     }
 }

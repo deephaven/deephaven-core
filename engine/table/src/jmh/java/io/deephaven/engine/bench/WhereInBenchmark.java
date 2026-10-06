@@ -25,6 +25,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.util.TableTools;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -61,6 +62,11 @@ import java.util.concurrent.TimeUnit;
  * The {@link KeyShape} parameter selects the key columns. The single column shapes ({@code LONG}, {@code STRING})
  * filter on {@code Key1}; the multiple column shapes ({@code LONG_INT}, {@code STRING_LONG}) filter on {@code Key1} and
  * {@code Key2}, which together identify an id while neither column alone does.
+ * </p>
+ *
+ * <p>
+ * The {@link SourceIndex} parameter gives the source table a data index, which the filter uses instead of matching
+ * every row once the source has more than four rows per index key.
  * </p>
  *
  * <p>
@@ -113,12 +119,26 @@ public class WhereInBenchmark {
     @Param({"true", "false"})
     public boolean inclusion;
 
+    /**
+     * The data index of the source table, if any, which a large enough filter uses to find its rows. A partial index
+     * covers {@code Key1} alone, which is the whole key of the single column shapes.
+     */
+    public enum SourceIndex {
+        NONE, FULL, PARTIAL
+    }
+
+    @Param({"NONE"})
+    public SourceIndex sourceIndex;
+
     @Param({"10000000"})
     public int rows;
 
     @Param({"1000000"})
     public int keys;
 
+    /**
+     * The ids the set holds at once; zero holds half of the {@code keys} ids.
+     */
     @Param({"500000"})
     public int setKeys;
 
@@ -164,8 +184,19 @@ public class WhereInBenchmark {
 
         source = makeSource();
         matchColumns = keyShape.multipleColumns ? new String[] {"Key1", "Key2"} : new String[] {"Key1"};
+        switch (sourceIndex) {
+            case NONE:
+                break;
+            case FULL:
+                DataIndexer.getOrCreateDataIndex(source, matchColumns);
+                break;
+            case PARTIAL:
+                DataIndexer.getOrCreateDataIndex(source, "Key1");
+                break;
+        }
 
-        setRowSet = RowSetFactory.fromRange(0, setKeys - 1).toTracking();
+        final int setKeyCount = setKeys > 0 ? setKeys : keys / 2;
+        setRowSet = RowSetFactory.fromRange(0, setKeyCount - 1).toTracking();
         final Map<String, ColumnSource<?>> setColumns = new LinkedHashMap<>();
         switch (keyShape) {
             case LONG:

@@ -8,7 +8,11 @@ import io.deephaven.base.testing.JMockRule;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSequence;
@@ -433,6 +437,33 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             assertNotNull(indexRows);
             assertRowSetEquals(expectedRows, indexRows);
         });
+
+        // A chunk of keys, including one the index does not hold, finds what each key finds alone.
+        final String[] keys = expected.keySet().toArray(new String[expected.size() + 1]);
+        keys[expected.size()] = "NotAKey";
+        final long[] chunkedRowKeys = chunkedLookup(index, false, keys);
+        for (int ki = 0; ki < keys.length; ++ki) {
+            assertEquals(keys[ki], rowKeyLookup.apply(keys[ki], false), chunkedRowKeys[ki]);
+        }
+        assertEquals(RowSequence.NULL_ROW_KEY, chunkedRowKeys[expected.size()]);
+    }
+
+    /**
+     * @return The index table row key of each of {@code keys}, looked up a chunk at a time
+     */
+    private static long[] chunkedLookup(
+            @NotNull final DataIndex index,
+            final boolean usePrev,
+            @NotNull final String... keys) {
+        // noinspection unchecked
+        final Chunk<Values>[] keyChunks = new Chunk[] {ObjectChunk.chunkWrap(keys)};
+        try (final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.makeWritableChunk(keys.length)) {
+            index.rowKeyLookup().apply(keyChunks, rowKeys, usePrev);
+            assertEquals(keys.length, rowKeys.size());
+            final long[] result = new long[keys.length];
+            rowKeys.copyToTypedArray(0, result, 0, keys.length);
+            return result;
+        }
     }
 
     @Test
@@ -1050,6 +1081,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertNotEquals(RowSequence.NULL_ROW_KEY, positionB);
         final AtomicLong currentDuringUpdate = new AtomicLong(-2);
         final AtomicLong previousDuringUpdate = new AtomicLong(-2);
+        final AtomicLong chunkedCurrentDuringUpdate = new AtomicLong(-2);
+        final AtomicLong chunkedPreviousDuringUpdate = new AtomicLong(-2);
         final AtomicReference<RowSet> addedDuringUpdate = new AtomicReference<>();
         final TableUpdateListener lookupRecorder =
                 new InstrumentedTableUpdateListenerAdapter(partitioningIndex.table(), false) {
@@ -1057,6 +1090,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                     public void onUpdate(final TableUpdate upstream) {
                         currentDuringUpdate.set(partitioningIndex.rowKeyLookup().apply("B", false));
                         previousDuringUpdate.set(partitioningIndex.rowKeyLookup().apply("B", true));
+                        chunkedCurrentDuringUpdate.set(chunkedLookup(partitioningIndex, false, "A", "B")[1]);
+                        chunkedPreviousDuringUpdate.set(chunkedLookup(partitioningIndex, true, "A", "B")[1]);
                         addedDuringUpdate.set(upstream.added().copy());
                     }
                 };
@@ -1086,6 +1121,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         assertFalse(validator.hasFailed());
         assertEquals(RowSequence.NULL_ROW_KEY, currentDuringUpdate.get());
         assertEquals(positionB, previousDuringUpdate.get());
+        assertEquals(RowSequence.NULL_ROW_KEY, chunkedCurrentDuringUpdate.get());
+        assertEquals(positionB, chunkedPreviousDuringUpdate.get());
         assertEquals(RowSequence.NULL_ROW_KEY, partitioningIndex.rowKeyLookup().apply("B", false));
 
         // Once another cycle has passed, B is gone from the previous table too.

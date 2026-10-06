@@ -10,7 +10,9 @@ package io.deephaven.engine.table.impl.select.tuplemap.gen;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -19,8 +21,12 @@ import io.deephaven.tuple.generated.LongShortTuple;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.compare.ShortComparisons;
 import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import java.lang.IllegalArgumentException;
 import java.lang.Object;
 import java.lang.Override;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public final class TupleSetKernelLongShort extends TupleMapSetKernel {
     public TupleSetKernelLongShort(ColumnSource[] keySources) {
@@ -34,17 +40,47 @@ public final class TupleSetKernelLongShort extends TupleMapSetKernel {
     }
 
     @Override
-    protected Object makeProbe() {
-        return new Probe();
+    protected boolean exportTuples(@NotNull ObjectIterator<Object> tuples, int @NotNull [] columns,
+            @NotNull WritableChunk<Values>[] keyChunks) {
+        WritableLongChunk<Values> keys0 = null;
+        WritableShortChunk<Values> keys1 = null;
+        for (int ci = 0; ci < columns.length; ++ci) {
+            switch (columns[ci]) {
+                case 0:
+                keys0 = keyChunks[ci].asWritableLongChunk();
+                break;
+                case 1:
+                keys1 = keyChunks[ci].asWritableShortChunk();
+                break;
+                default:
+                throw new IllegalArgumentException("No key column " + columns[ci]);
+            }
+        }
+        final int capacity = keyChunks[0].capacity();
+        int exported = 0;
+        while (exported < capacity && tuples.hasNext()) {
+            final LongShortTuple tuple = (LongShortTuple) tuples.next();
+            if (keys0 != null) {
+                keys0.set(exported, tuple.getFirstElement());
+            }
+            if (keys1 != null) {
+                keys1.set(exported, tuple.getSecondElement());
+            }
+            ++exported;
+        }
+        for (final WritableChunk<Values> keyChunk : keyChunks) {
+            keyChunk.setSize(exported);
+        }
+        return exported > 0;
     }
 
     @Override
-    protected void match(Object probeObject, Chunk<Values>[] keyChunks,
-            LongChunk<OrderedRowKeys> rowKeys, WritableLongChunk<OrderedRowKeys> results,
-            boolean inclusion) {
+    protected void match(@NotNull Chunk<Values>[] keyChunks,
+            @NotNull LongChunk<OrderedRowKeys> rowKeys,
+            @NotNull WritableLongChunk<OrderedRowKeys> results, boolean inclusion) {
         final LongChunk<Values> keys0 = keyChunks[0].asLongChunk();
         final ShortChunk<Values> keys1 = keyChunks[1].asShortChunk();
-        final Probe probe = (Probe) probeObject;
+        final Probe probe = new Probe();
         final int size = rowKeys.size();
         for (int ii = 0; ii < size; ++ii) {
             probe.k0 = keys0.get(ii);
@@ -65,7 +101,7 @@ public final class TupleSetKernelLongShort extends TupleMapSetKernel {
         private static final Strategy INSTANCE = new Strategy();
 
         @Override
-        public int hashCode(Object key) {
+        public int hashCode(@NotNull Object key) {
             if (key instanceof Probe) {
                 final Probe probe = (Probe) key;
                 return hash(probe.k0, probe.k1);
@@ -75,7 +111,7 @@ public final class TupleSetKernelLongShort extends TupleMapSetKernel {
         }
 
         @Override
-        public boolean equals(Object lhs, Object rhs) {
+        public boolean equals(@Nullable Object lhs, @Nullable Object rhs) {
             if (lhs == null || rhs == null) {
                 return lhs == rhs;
             }

@@ -4,10 +4,14 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -24,6 +28,7 @@ import io.deephaven.engine.table.impl.ForcedParallelWhere;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
@@ -33,20 +38,24 @@ import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -554,11 +563,22 @@ public class TestDynamicWhereFilter {
         @Override
         public @NotNull RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
             requests.add(options);
-            return (final Object key, final boolean usePrev) -> {
-                gate.passThrough();
-                lookups.incrementAndGet();
-                final Long indexRowKey = indexRowKeyByKey.get(key);
-                return indexRowKey == null ? RowSequence.NULL_ROW_KEY : indexRowKey;
+            return new RowKeyLookup() {
+                @Override
+                public long apply(@Nullable final Object key, final boolean usePrev) {
+                    gate.passThrough();
+                    lookups.incrementAndGet();
+                    final Long indexRowKey = indexRowKeyByKey.get(key);
+                    return indexRowKey == null ? RowSequence.NULL_ROW_KEY : indexRowKey;
+                }
+
+                @Override
+                public void apply(
+                        @NotNull final Chunk<? extends Values>[] keyChunks,
+                        @NotNull final WritableLongChunk<RowKeys> rowKeys,
+                        final boolean usePrev) {
+                    DataIndexUtils.boxedApply(this, keyChunks, rowKeys, usePrev);
+                }
             };
         }
 
@@ -569,21 +589,24 @@ public class TestDynamicWhereFilter {
     }
 
     /**
-     * A source table of {@code 5} rows for each of the keys {@code 1} and {@code 2}, with a {@link GatedSourceIndex}
-     * over its key column. The row count is deliberately more than
-     * {@value io.deephaven.engine.table.impl.QueryTable#DATA_INDEX_FOR_WHERE_THRESHOLD} times the index table's size,
-     * so that {@link DynamicWhereFilter} filters through the index rather than linearly.
+     * A source table with the same number of rows for each of the keys {@code 1} and {@code 2}, with a
+     * {@link GatedSourceIndex} over its key column. The rows per key are deliberately more than
+     * {@code 1 / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD}, so that {@link DynamicWhereFilter} filters through the
+     * index rather than linearly.
      */
     private static QueryTable indexedSourceTable(final GatedSourceIndex[] indexOut, final Gate lookupGate) {
-        final int[] values = new int[10];
+        final int rowsPerKey = (int) Math.ceil(1 / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD) + 1;
+        final int[] values = new int[2 * rowsPerKey];
         for (int ii = 0; ii < values.length; ++ii) {
-            values[ii] = ii < 5 ? 1 : 2;
+            values[ii] = ii < rowsPerKey ? 1 : 2;
         }
         final QueryTable source = sourceTable(new GatedIntegerArraySource(new Gate()), true, values);
         final QueryTable indexTable = TstUtils.testTable(i(0, 1).toTracking(), intCol(KEY, 1, 2),
                 col(ROW_SET_COLUMN,
-                        (RowSet) RowSetFactory.fromRange(0, 4),
-                        (RowSet) RowSetFactory.fromRange(5, 9)));
+                        (RowSet) RowSetFactory.fromRange(0, rowsPerKey - 1),
+                        (RowSet) RowSetFactory.fromRange(rowsPerKey, 2L * rowsPerKey - 1)));
+        assertTrue("the source must be large enough relative to its index for the index path to be taken",
+                source.size() > indexTable.size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
         final GatedSourceIndex index =
                 new GatedSourceIndex(source, indexTable, Map.of(1, 0L, 2, 1L), lookupGate);
         assertEquals(ROW_SET_COLUMN, index.rowSetColumnName());
@@ -1926,9 +1949,10 @@ public class TestDynamicWhereFilter {
     // endregion Attempts that cannot commit over the set they read (DH-23666)
 
     /**
-     * A key of four columns makes {@code ArrayTuple}s of boxed values, unboxed to be matched: a null element must match
-     * the type's null value, and doubles must match as they do for {@code ==}, so the set holds -0.0 where the source
-     * holds 0.0. The four values identify each id, so matching keys selects the ids in the set's window.
+     * A key of four columns makes {@code ArrayTuple}s of boxed values, unboxed to be matched and exported: a null
+     * element must match the type's null value, and doubles must match as they do for {@code ==}, so the set holds -0.0
+     * where the source holds 0.0. The four values identify each id, so matching keys selects the ids in the set's
+     * window, and exporting them yields each of the window's keys once, in any projection of the columns.
      */
     @Test
     public void testFourColumnKeysMatchArrayTuples() {
@@ -1959,9 +1983,7 @@ public class TestDynamicWhereFilter {
         final DynamicWhereFilter inFilter = new DynamicWhereFilter(setTable, true, keyPairs);
         final Table in = source.where(inFilter);
         final Table notIn = source.where(new DynamicWhereFilter(setTable, false, keyPairs));
-        try (final CloseableIterator<Object> setKeys = inFilter.sharedSet().kernel().iterator()) {
-            assertTrue(setKeys.next() instanceof ArrayTuple);
-        }
+        checkFourColumnExport(inFilter.sharedSet().kernel(), 0, windowSize);
 
         for (int cycle = 0; cycle <= 20; ++cycle) {
             final long first = (long) cycle * slide;
@@ -1976,8 +1998,86 @@ public class TestDynamicWhereFilter {
             }
             final String inWindow = "Id >= " + first + " && Id < " + (first + windowSize);
             assertTableEquals(source.where(inWindow), in);
+            checkFourColumnExport(inFilter.sharedSet().kernel(), first, windowSize);
             assertTableEquals(source.where("!(" + inWindow + ")"), notIn);
         }
+    }
+
+    /**
+     * Export {@code kernel}'s keys, all four columns in order and then {@code K4} and {@code K2} alone, and check that
+     * each export yields one key per id in {@code [first, first + count)}.
+     */
+    private static void checkFourColumnExport(final SetKernel kernel, final long first, final int count) {
+        final int[] allColumns = {0, 1, 2, 3};
+        final int[] projected = {3, 1};
+        final ChunkType[] allTypes = {ChunkType.Long, ChunkType.Int, ChunkType.Object, ChunkType.Double};
+        final Set<Long> exportedIds = new HashSet<>();
+        final WritableChunk<Values>[] keyChunks = makeChunks(allTypes, 100);
+        try (final SetKernel.ExportContext context = kernel.makeExportContext(allColumns);
+                final SafeCloseableArray<WritableChunk<Values>> ignored = new SafeCloseableArray<>(keyChunks)) {
+            while (kernel.exportKeys(context, keyChunks)) {
+                for (int ii = 0; ii < keyChunks[0].size(); ++ii) {
+                    final long key1 = keyChunks[0].asLongChunk().get(ii);
+                    final int key2 = keyChunks[1].asIntChunk().get(ii);
+                    final String key3 = (String) keyChunks[2].asObjectChunk().get(ii);
+                    final double key4 = keyChunks[3].asDoubleChunk().get(ii);
+                    final long id = fourColumnId(key1, key2, key3, key4);
+                    assertTrue("exported " + id + " twice", exportedIds.add(id));
+                }
+            }
+        }
+        assertEquals(count, exportedIds.size());
+        for (long id = first; id < first + count; ++id) {
+            assertTrue("missing " + id, exportedIds.contains(id));
+        }
+
+        final Map<Integer, Integer> projectedKey2s = new HashMap<>();
+        int projectedCount = 0;
+        final WritableChunk<Values>[] projectedChunks =
+                makeChunks(new ChunkType[] {ChunkType.Double, ChunkType.Int}, 64);
+        try (final SetKernel.ExportContext context = kernel.makeExportContext(projected);
+                final SafeCloseableArray<WritableChunk<Values>> ignored =
+                        new SafeCloseableArray<>(projectedChunks)) {
+            while (kernel.exportKeys(context, projectedChunks)) {
+                projectedCount += projectedChunks[0].size();
+                for (int ii = 0; ii < projectedChunks[1].size(); ++ii) {
+                    projectedKey2s.merge(projectedChunks[1].asIntChunk().get(ii), 1, Integer::sum);
+                }
+            }
+        }
+        // A projection exports one entry per set key, so each id's K2 appears as often as ids share it.
+        assertEquals(count, projectedCount);
+        final Map<Integer, Integer> expectedKey2s = new HashMap<>();
+        for (long id = first; id < first + count; ++id) {
+            expectedKey2s.merge(fourColumnKey2(Math.toIntExact(id)), 1, Integer::sum);
+        }
+        assertEquals(expectedKey2s, projectedKey2s);
+    }
+
+    private static WritableChunk<Values>[] makeChunks(final ChunkType[] types, final int capacity) {
+        // noinspection unchecked
+        final WritableChunk<Values>[] chunks = new WritableChunk[types.length];
+        for (int ii = 0; ii < types.length; ++ii) {
+            chunks[ii] = types[ii].makeWritableChunk(capacity);
+        }
+        return chunks;
+    }
+
+    /**
+     * @return The id whose four column key this is, from the columns that identify it
+     */
+    private static long fourColumnId(final long key1, final int key2, final String key3, final double key4) {
+        if (key1 != QueryConstants.NULL_LONG) {
+            return key1 * 7 + key2;
+        }
+        // K1 is null only for ids divisible by 11, whose K3 is never null; K3 holds id / 5, and K2 holds id % 7.
+        final long block = Long.parseLong(key3.substring(1)) * 5;
+        for (long id = block; id < block + 5; ++id) {
+            if (id % 11 == 0 && id % 7 == key2) {
+                return id;
+            }
+        }
+        throw new AssertionError("No id for " + key2 + ", " + key3 + ", " + key4);
     }
 
     private static long fourColumnKey1(final int id) {

@@ -6,7 +6,10 @@ package io.deephaven.engine.table.impl.by;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -24,6 +27,7 @@ import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
@@ -144,7 +148,27 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
 
     @Override
     public int findPositionForKey(final Object key) {
-        // Build the map if it doesn't exist
+        return keyToPosition().getInt(key);
+    }
+
+    @Override
+    public void findPositionsForKeys(
+            @NotNull final Chunk<? extends Values>[] keyChunks,
+            @NotNull final WritableLongChunk<RowKeys> positions) {
+        Require.eq(keyChunks.length, "keyChunks.length", 1);
+        final Object2IntMap<String> localKeyToPosition = keyToPosition();
+        final ObjectChunk<String, ? extends Values> keys = keyChunks[0].asObjectChunk();
+        final int size = keys.size();
+        positions.setSize(size);
+        for (int ii = 0; ii < size; ++ii) {
+            positions.set(ii, localKeyToPosition.getInt(keys.get(ii)));
+        }
+    }
+
+    /**
+     * @return The map from each key to its position, built when first needed
+     */
+    private Object2IntMap<String> keyToPosition() {
         Object2IntMap<String> localKeyToPosition;
         if ((localKeyToPosition = keyToPosition) == null) {
             synchronized (this) {
@@ -163,6 +187,6 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
                 }
             }
         }
-        return localKeyToPosition.getInt(key);
+        return localKeyToPosition;
     }
 }

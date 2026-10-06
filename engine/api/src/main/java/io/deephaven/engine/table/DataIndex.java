@@ -4,8 +4,12 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +25,9 @@ public interface DataIndex extends BasicDataIndex {
      * reinterpreted values and are specified as follows:
      * <dl>
      * <dt>No key columns</dt>
-     * <dd>"Empty" keys are signified by any zero-length {@code Object[]}</dd>
+     * <dd>"Empty" keys are signified by any zero-length {@code Object[]}, and are looked up one at a time; the chunked
+     * {@link RowKeyLookup#apply(Chunk[], WritableLongChunk, boolean) apply} needs a key column to give the number of
+     * keys</dd>
      * <dt>One key column</dt>
      * <dd>Singular keys are (boxed, if needed) objects</dd>
      * <dt>Multiple key columns</dt>
@@ -38,6 +44,25 @@ public interface DataIndex extends BasicDataIndex {
          * @return The result row key, or {@link RowSequence#NULL_ROW_KEY} if the key is not found.
          */
         long apply(Object key, boolean usePrev);
+
+        /**
+         * Get the row key in the index table for each of a chunk of lookup keys, given one chunk per key column in the
+         * order of the index's key columns, each reinterpreted as for {@link #apply(Object, boolean)}. The index must
+         * have at least one key column, whose chunk gives the number of keys.
+         * <p>
+         * Implementations that cannot search a chunk of keys at once may delegate to
+         * {@code io.deephaven.engine.table.impl.dataindex.DataIndexUtils.boxedApply}, which boxes each key and calls
+         * {@link #apply(Object, boolean)}.
+         *
+         * @param keyChunks The lookup keys, one chunk per key column, at least one, all the same size
+         * @param rowKeys Receives the result row key of each lookup key, or {@link RowSequence#NULL_ROW_KEY} for a key
+         *        that is not found; its size is set to the number of keys
+         * @param usePrev Whether to look up the keys in previous space
+         */
+        void apply(
+                @NotNull Chunk<? extends Values>[] keyChunks,
+                @NotNull WritableLongChunk<RowKeys> rowKeys,
+                boolean usePrev);
     }
 
     /**
@@ -130,6 +155,28 @@ public interface DataIndex extends BasicDataIndex {
                 }
 
                 return rowKeyLookup().apply(indexKey, usePrev);
+            }
+
+            // The caller's key chunks in the index's order, reused across chunked lookups.
+            // noinspection unchecked
+            final Chunk<? extends Values>[] indexKeyChunks = new Chunk[indexToCallerOffsetMap.length];
+
+            // The index's own lookup, obtained by the first chunked lookup.
+            RowKeyLookup indexLookup;
+
+            @Override
+            public void apply(
+                    @NotNull final Chunk<? extends Values>[] callerKeyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys,
+                    final boolean usePrev) {
+                // Reorder the chunks rather than each key.
+                for (int ii = 0; ii < indexKeyChunks.length; ++ii) {
+                    indexKeyChunks[ii] = callerKeyChunks[indexToCallerOffsetMap[ii]];
+                }
+                if (indexLookup == null) {
+                    indexLookup = rowKeyLookup();
+                }
+                indexLookup.apply(indexKeyChunks, rowKeys, usePrev);
             }
         };
     }

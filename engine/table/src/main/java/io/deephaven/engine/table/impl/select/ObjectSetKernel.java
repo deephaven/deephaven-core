@@ -7,12 +7,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -91,7 +93,21 @@ final class ObjectSetKernel extends SingleColumnSetKernel {
     }
 
     @Override
-    CloseableIterator<Object> iterator() {
-        return closeable(counts.keySet().iterator());
+    Object keyIterator() {
+        return counts.keySet().iterator();
+    }
+
+    @Override
+    boolean exportKeys(@NotNull final ExportContext context, @NotNull final WritableChunk<Values>[] keyChunks) {
+        // noinspection unchecked
+        final ObjectIterator<Object> keys = ((KeyIteratorContext<ObjectIterator<Object>>) context).keys;
+        final WritableObjectChunk<Object, Values> typedKeys = keyChunks[0].asWritableObjectChunk();
+        final int capacity = typedKeys.capacity();
+        int exported = 0;
+        while (exported < capacity && keys.hasNext()) {
+            typedKeys.set(exported++, keys.next());
+        }
+        typedKeys.setSize(exported);
+        return exported > 0;
     }
 }

@@ -7,7 +7,11 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -19,6 +23,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -329,15 +334,26 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions unusedOptions) {
         final TrackingRowSet indexRowSet = indexTable.getRowSet();
-        return (final Object key, final boolean usePrev) -> {
-            final int position = keyPositionMap.getInt(key);
-            if (position == KEY_NOT_FOUND) {
-                return RowSequence.NULL_ROW_KEY;
+        return new RowKeyLookup() {
+            @Override
+            public long apply(@Nullable final Object key, final boolean usePrev) {
+                final int position = keyPositionMap.getInt(key);
+                if (position == KEY_NOT_FOUND) {
+                    return RowSequence.NULL_ROW_KEY;
+                }
+                // A key whose locations are all removed keeps its position but is not in the index table.
+                return (usePrev ? indexRowSet.prev() : indexRowSet).containsRange(position, position)
+                        ? position
+                        : RowSequence.NULL_ROW_KEY;
             }
-            // A key whose locations are all removed keeps its position but is not in the index table.
-            return (usePrev ? indexRowSet.prev() : indexRowSet).containsRange(position, position)
-                    ? position
-                    : RowSequence.NULL_ROW_KEY;
+
+            @Override
+            public void apply(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys,
+                    final boolean usePrev) {
+                DataIndexUtils.boxedApply(this, keyChunks, rowKeys, usePrev);
+            }
         };
     }
 
