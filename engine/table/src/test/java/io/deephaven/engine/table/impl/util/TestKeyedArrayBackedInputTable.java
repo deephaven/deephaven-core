@@ -196,7 +196,7 @@ public class TestKeyedArrayBackedInputTable {
         validator.getResultTable().addUpdateListener(failureListener);
 
         final MutableInt updates = new MutableInt(0);
-        kabut.addUpdateListener(new InstrumentedTableUpdateListenerAdapter("overlap check", kabut, false) {
+        kabut.addUpdateListener(new InstrumentedTableUpdateListenerAdapter("overlap check", kabut, true) {
             @Override
             public void onUpdate(final TableUpdate upstream) {
                 updates.increment();
