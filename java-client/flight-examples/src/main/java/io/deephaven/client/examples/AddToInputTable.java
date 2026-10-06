@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 class AddToInputTable extends FlightExampleBase {
 
     @Option(names = {"--rows"}, description = "The number of rows to add before exiting, unlimited if unset")
-    Long rows;
+    Integer rows;
 
     @Option(names = {"--sleep-millis"},
             description = "The sleep milliseconds between rows, defaults to a random duration under one second")
@@ -115,7 +115,7 @@ class AddToInputTable extends FlightExampleBase {
                 }
             }
 
-            final long numRows = rows == null ? Long.MAX_VALUE : rows;
+            final int numRows = rows == null ? Integer.MAX_VALUE : rows;
             int rowCount = 0;
 
             while (rowCount < numRows) {

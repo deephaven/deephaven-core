@@ -50,9 +50,10 @@ class TlsTest {
     }
 
     @AfterAll
-    static void tearDown() {
+    static void tearDown() throws InterruptedException {
         scheduler.shutdownNow();
         allocator.close();
+        NettyLeakRecorder.assertNoLeaks();
     }
 
     private static DeephavenTarget target(boolean secure) {

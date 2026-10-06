@@ -68,11 +68,12 @@ class BarrageApiTest {
     }
 
     @AfterAll
-    static void disconnect() {
+    static void disconnect() throws InterruptedException {
         factory.managedChannel().shutdownNow();
         scheduler.shutdownNow();
         // Throws if any Arrow buffer the tests read was not released
         allocator.close();
+        NettyLeakRecorder.assertNoLeaks();
     }
 
     @Test

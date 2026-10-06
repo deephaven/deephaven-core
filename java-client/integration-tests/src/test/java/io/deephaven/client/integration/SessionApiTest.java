@@ -53,9 +53,10 @@ class SessionApiTest {
     }
 
     @AfterAll
-    static void disconnect() {
+    static void disconnect() throws InterruptedException {
         factory.managedChannel().shutdownNow();
         scheduler.shutdownNow();
+        NettyLeakRecorder.assertNoLeaks();
     }
 
     @Test

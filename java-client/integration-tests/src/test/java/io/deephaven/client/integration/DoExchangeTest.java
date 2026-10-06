@@ -60,10 +60,11 @@ class DoExchangeTest {
     }
 
     @AfterAll
-    static void disconnect() {
+    static void disconnect() throws InterruptedException {
         factory.managedChannel().shutdownNow();
         scheduler.shutdownNow();
         allocator.close();
+        NettyLeakRecorder.assertNoLeaks();
     }
 
     @Test

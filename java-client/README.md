@@ -138,8 +138,10 @@ classpath, so `check` reruns it without being asked:
   that changes either side of that shows up here. The netty artifact versions in use are printed
   into the report.
 - The test JVM runs with `io.netty.leakDetection.level=paranoid`; `logback-test.xml` routes netty's
-  leak reports into `NettyLeakRecorder`, and the class fails in `@AfterAll` if any were recorded or
-  if the Arrow allocator still holds memory.
+  leak reports into `NettyLeakRecorder`, and every test class asserts in `@AfterAll` that none have
+  been recorded so far, so a leak from any class is caught by it or by whichever class runs next,
+  in any order. The Arrow-backed classes also close their allocator there, which throws if it still
+  holds memory.
 
 ### The TLS tests
 
@@ -159,7 +161,8 @@ and add a test whose `SSLConfig` carries an `IdentityPrivateKey` for `client.cha
 
 ### Things that have bitten
 
-- A repeated `@ArgGroup` list is filled last-first by picocli. `Publish` relies on this and says so.
+- `Session.publish` takes the destination ticket first and the source second. `Publish` takes them
+  from the command line in the other order and says so.
 - The console reports changes to displayable variables only. `x = 1` prints nothing; a table does.
 - The log subscription replays the server's recent history, so `subscribe-to-logs -c 1` returns on
   old messages. Pair `--count` with `--timeout` when the point is to wait for something new.

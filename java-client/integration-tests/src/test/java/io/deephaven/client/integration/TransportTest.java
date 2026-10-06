@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -71,10 +72,7 @@ class TransportTest {
         // Every Arrow buffer the tests read must have been released; close() throws otherwise
         assertThat(allocator.getAllocatedMemory()).as("Arrow memory still allocated").isZero();
         allocator.close();
-        // Netty reports a leak only once the garbage collector finds an unreleased buffer, so give it a chance
-        System.gc();
-        Thread.sleep(500);
-        assertThat(NettyLeakRecorder.leaks()).as("netty buffer leaks reported during the run").isEmpty();
+        NettyLeakRecorder.assertNoLeaks();
     }
 
     private static FlightSessionFactoryConfig.Factory factory(ClientConfig clientConfig) {
@@ -221,9 +219,13 @@ class TransportTest {
                 }
             });
 
+            // Hold every worker until all are submitted, so they start their calls together rather than as the
+            // submission loop reaches them
+            final CountDownLatch start = new CountDownLatch(1);
             final List<Future<Long>> reads = new ArrayList<>();
             for (int i = 0; i < readers; ++i) {
                 reads.add(pool.submit((Callable<Long>) () -> {
+                    start.await();
                     long rows = 0;
                     try (final FlightStream stream = flight.stream(handle)) {
                         while (stream.next()) {
@@ -236,11 +238,13 @@ class TransportTest {
             final List<Future<Long>> unaries = new ArrayList<>();
             for (int i = 0; i < unaryCalls; ++i) {
                 unaries.add(pool.submit((Callable<Long>) () -> {
+                    start.await();
                     try (final TableHandle one = flight.session().execute(TableSpec.empty(1))) {
                         return one.response().getSize();
                     }
                 }));
             }
+            start.countDown();
             // And a console command in the middle of it, which the log subscription will see
             console.executeCode("print('multiplexing')");
 
