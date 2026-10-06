@@ -2,18 +2,19 @@
 title: Subscribe to ticking tables from a Python client
 ---
 
-This guide shows how to receive live updates from a Deephaven table in an external Python application with the `pydeephaven-ticking` package.
+This guide shows how to receive live updates from a Deephaven table in an external Python application with the `pydeephaven-ticking` package. Use it to build a dashboard, an alerting service, a feed into a downstream system or ML pipeline, or any other application that reacts to table changes without running inside the Deephaven server.
 
-A _ticking_ table is one whose contents can change while the server runs — the server can add, remove, or modify rows at any time. The base [`pydeephaven`](../getting-started/pyclient-quickstart.md) package can only fetch a point-in-time snapshot of such a table. `pydeephaven-ticking` adds a subscription: your code receives callbacks that contain just the rows that changed.
+A _ticking_ table is one whose contents can change while the server runs — the server can add, remove, or modify rows at any time. The base [`pydeephaven`](../getting-started/pyclient-quickstart.md) package can only fetch a point-in-time snapshot of such a table, so keeping up with a ticking table means repeatedly re-fetching the whole thing and diffing it yourself. `pydeephaven-ticking` does that work for you: your code receives callbacks that contain just the rows that changed.
 
-Callbacks don't arrive for every individual change. The server collects changes and sends them at most once per update interval, which is one second by default, so a single callback can cover many changes. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. After the initial snapshot, if nothing changed during an interval, no callback arrives.
+Callbacks don't arrive for every individual change — the server batches them, sending at most one callback per update interval, which is one second by default. Configure that interval with the server-side `-Dbarrage.minUpdateInterval` setting (in milliseconds); see [What is Barrage?](../conceptual/what-is-barrage.md) for details. After the initial snapshot, if nothing changed during an interval, no callback arrives.
 
 > [!NOTE]
-> This guide covers the _client_ package, which runs outside the Deephaven server. To react to table changes in code that runs on the server, see [Listen to ticking tables](./table-listeners-python.md).
+> This guide covers the _client_ package, which runs outside the Deephaven server. Choose it when your code runs in a separate application or process. If your code already runs on the server — for example, in a query — use [Listen to ticking tables](./table-listeners-python.md) instead; it's simpler there because there's no network or serialization involved.
 
 ## Install the package
 
-`pydeephaven-ticking` is published to PyPI as prebuilt packages for **Linux on x86_64 only**. It wraps Deephaven's C++ client with Cython, and no macOS, Windows, or Linux ARM packages are available. See the [version matrix](../reference/version-matrix.md) for details.
+> [!IMPORTANT]
+> `pydeephaven-ticking` wraps Deephaven's C++ client with Cython, and is published to PyPI as prebuilt packages for **Linux on x86_64 only**. No macOS, Windows, or Linux ARM packages are available. See the [version matrix](../reference/version-matrix.md) for details.
 
 ```sh
 pip install pydeephaven-ticking

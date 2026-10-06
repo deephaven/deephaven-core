@@ -543,6 +543,10 @@
                 "path": "how-to-guides/deephaven-python-package.md"
               },
               {
+                "label": "Deephaven's pydeephaven-ticking package",
+                "path": "how-to-guides/pydeephaven-ticking.md"
+              },
+              {
                 "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               },
@@ -838,10 +842,6 @@
                   {
                     "label": "Stream data with Input Tables",
                     "path": "how-to-guides/client-input-tables.md"
-                  },
-                  {
-                    "label": "Subscribe to ticking tables from a Python client",
-                    "path": "how-to-guides/pydeephaven-ticking.md"
                   }
                 ]
               },
