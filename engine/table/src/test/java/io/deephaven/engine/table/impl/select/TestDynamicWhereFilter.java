@@ -1151,7 +1151,7 @@ public class TestDynamicWhereFilter {
                 () -> source.where(new DynamicWhereFilter(setTable, true, pairs())));
 
         assertTrue("where filtered through the index", index.lookups.get() > 0);
-        assertEquals(5, result.size());
+        assertEquals("the rows of key 1, half of the source", source.size() / 2, result.size());
         assertFalse(index.requests.isEmpty());
         for (final DataIndexOptions options : index.requests) {
             assertTrue("requested the fully merged index table", options.operationUsesPartialTable());

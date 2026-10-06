@@ -212,9 +212,12 @@ public class QueryTable extends BaseTable<QueryTable> {
      * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
      * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
      * ignore the index table and filter the rows directly.
+     * <p>
+     * The default, {@code 1 / 16}, uses an index only when the rows to be filtered average more than 16 per index key:
+     * below that, reading and merging a row set per key costs more than matching each row.
      */
     public static double DATA_INDEX_FOR_WHERE_THRESHOLD =
-            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 0.25);
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 1.0 / 16);
 
     /**
      * If the Configuration property "QueryTable.useDataIndexForAggregation" is set to true (default), then permit

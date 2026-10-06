@@ -66,7 +66,9 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>
  * The {@link SourceIndex} parameter gives the source table a data index, which the filter uses instead of matching
- * every row once the source has more than four rows per index key.
+ * every row once the source has more than sixteen rows per index key (the default
+ * {@code QueryTable.dataIndexForWhereThreshold}). The default {@code rows} and {@code keys} give ten rows per key, so
+ * exercising the index requires more rows or fewer keys.
  * </p>
  *
  * <p>
