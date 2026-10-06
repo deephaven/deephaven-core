@@ -500,7 +500,7 @@ trimmed_crypto_dh = crypto_dh.where("dateTime >= j_min && dateTime <= j_max").so
 
 ### Java to Python conversions
 
-In addition to providing functions to convert Python types to their equivalent Java types, [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) provides a suite of functions to convert Java types to Python types. These functions convert Java date-time values (`LocalDate`, `LocalTime`, `Instant`, `ZonedDateTime`, `Duration`, and `Period`) to their Python equivalents. `to_timedelta` and `to_pd_timedelta` accept only day- or week-based periods; `to_np_timedelta64` accepts a period in a single unit of days, months, or years. There is no Java-to-Python conversion for `ZoneId`.
+In addition to providing functions to convert Python types to their equivalent Java types, [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) provides a suite of functions to convert Java types to Python types. These functions convert Java date-time values (`LocalDate`, `LocalTime`, `Instant`, `ZonedDateTime`, `Duration`, and `Period`) to their Python equivalents. There is no Java-to-Python conversion for `ZoneId`.
 
 The Java-to-Python conversion methods included in [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) are:
 
@@ -512,6 +512,8 @@ The Java-to-Python conversion methods included in [`deephaven.time`](/core/pydoc
 - [`to_np_timedelta64`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_np_timedelta64)
 - [`to_pd_timestamp`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_pd_timestamp)
 - [`to_pd_timedelta`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_pd_timedelta)
+
+Not every `Period` converts. [`to_timedelta`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_timedelta) and [`to_pd_timedelta`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_pd_timedelta) accept only day- or week-based periods, and [`to_np_timedelta64`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_np_timedelta64) accepts a period in a single unit of days, months, or years.
 
 A common use case for this functionality is in writing Python functions that act on Deephaven columns from within query strings. Here's an example that trains a simple [ARIMA model](https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average) on a toy dataset and uses a Python function to make forecasts with that model in a Deephaven table:
 
@@ -572,9 +574,9 @@ mse = t_testing_eval.update("SqErr = Math.pow(Y - YPred, 2)").agg_by(
 
 The [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) module includes two functions, [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_today) that return current date-time information according to the _Deephaven clock_.
 
-Typically, the Deephaven clock is set to the system clock of the computer the software is running on. However, this is not always the case. The Deephaven clock can be replaced with a custom clock (for example, a replay clock) with [`DateTimeUtils.setClock`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#setClock(io.deephaven.base.clock.Clock)). When that happens, [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_today) return times from that clock instead of the system clock, so it is important to be aware of cases where this may arise.
+Typically, the Deephaven clock is set to the system clock of the computer the software is running on. However, this is not always the case. The Deephaven clock can be replaced with a custom clock (for example, a replay clock) with [`DateTimeUtils.setClock`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#setClock(io.deephaven.base.clock.Clock)). When that happens, [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_today) return times from that clock instead of the system clock.
 
-Here is simple example of [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_today):
+Here is a simple example of [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_today):
 
 ```python test-set=15
 import deephaven.time as dhtime
@@ -653,7 +655,7 @@ gsod_meta = gsod.meta_table
 
 This means that none of the date-time functionality previously discussed will be available. To remedy this, [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) provides the [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format) function, which makes parsing ingested date-time values easy.
 
-To use [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format), pass a string that describes the format of the _input_ date-time values. Since the `BEGIN` and `END` columns are formatted as `yyyyMMdd`, the argument to [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format) should be `"yyyyMMdd"` (lowercase `y` and `d`: in Java date-time patterns, uppercase `Y` is week-year and uppercase `D` is day-of-year):
+To use [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format), pass a string that describes the format of the _input_ date-time values. Since the `BEGIN` and `END` columns are formatted as `yyyyMMdd`, the argument to [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format) should be `"yyyyMMdd"`. Use lowercase `y` and `d`: in Java date-time patterns, uppercase `Y` is week-year and uppercase `D` is day-of-year.
 
 ```python test-set=17
 from deephaven.time import simple_date_format

@@ -143,7 +143,7 @@ irisFilterOr = iris.where(Filter.or(Filter.from("PetalLengthCM > 1.9", "PetalWid
 
 ## Filter one table based on another
 
-The [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. ​The following example uses [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica petal widths that match and do not match Iris versicolor petal widths:
+The [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. The following example uses [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica petal widths that match and do not match Iris versicolor petal widths:
 
 ```groovy test-set=1 order=virginica,versicolor,virginicaMatchingPetalWidths,virginicaNonMatchingPetalWidths
 virginica = iris.where("Class in `Iris-virginica`")

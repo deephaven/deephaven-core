@@ -127,7 +127,9 @@ The following methods return a RowSet of the added, removed, or modified data:
 - [`removed`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#removed()) - rows removed during the current update cycle.
 - [`getModifiedPreShift`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()) - modified rows in their pre-shift row key positions (before any shifts were applied during this update cycle).
 
-These methods return row keys, not column values. To read the values, look up each row key in a [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html), as the examples below do. To keep a `TableUpdate` after `onUpdate` returns, call [`acquire`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) on it, and call [`release`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#release()) when you are done with it. An acquired update is still valid only during the update cycle that created it.
+These methods return row keys, not column values. To read the values, look up each row key in a [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html), as the examples below do.
+
+To keep a `TableUpdate` after `onUpdate` returns, call [`acquire`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) on it, and call [`release`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#release()) when you are done with it. An acquired update is still valid only during the update cycle that created it.
 
 The following example listens to added rows during each update cycle. It prints the data as the listener receives it.
 
@@ -417,14 +419,14 @@ source.addUpdateListener(listener, true)
 
 ## Dependent tables
 
-Listeners can use data from tables other than the one they are listening to if the additional tables are configured as dependencies. When one or more tables are listed as a dependency to a listener, the query engine will wait to call the listener until all dependent tables have been processed. When a table is not listed as a dependency, it may be in an inconsistent state when accessed.
+Listeners can use data from tables other than the one they are listening to if the additional tables are configured as dependencies. When one or more tables are registered as dependencies of a listener, the query engine waits to call the listener until all dependent tables have been processed. When a table is not registered as a dependency, it may be in an inconsistent state when accessed.
 
 > [!WARNING]
 > Don't do table operations inside the listener. While performing operations on the dependent tables in the listener is safe, it is not recommended because reading or operating on the result tables of those operations may not be safe. It is best to perform the operations on the dependent tables beforehand and then add the result tables as dependencies to the listener so that they can be safely read in it.
 
 For example, consider two tables, `sourceA` and `sourceB`, that tick simultaneously but cannot be joined. When listening to `sourceA`, it is not guaranteed that `sourceB` will have its updates processed in full before the listener receives the update from `sourceA`. To guarantee that all data is processed before the listener triggers, `sourceB` must be registered as a dependency for the listener.
 
-To register a dependency, override the listener's `canExecute` method so that it also requires each dependency to be satisfied for the current update cycle. The following example makes `sourceB` a dependency of a listener on `sourceA`, then reads `sourceB` directly in `onUpdate`.
+To register a dependency, override the listener's [`canExecute`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#canExecute(long)) method so that it also requires each dependency to be satisfied for the current update cycle. The following example makes `sourceB` a dependency of a listener on `sourceA`, then reads `sourceB` directly in `onUpdate`.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate

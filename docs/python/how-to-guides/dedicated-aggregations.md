@@ -253,7 +253,7 @@ var = source.drop_columns(cols=["Subject"]).var_by(by=["Name"])
 
 ### `median_by`
 
-In this example, [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md) calculates the median of test scores for each `Name`. The string column `Subject` is dropped before applying [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md) so that the result contains only the median score; otherwise, `median_by` would also return the median subject for each `Name`.
+In this example, [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md) calculates the median of test scores for each `Name`. The string column `Subject` is dropped before applying [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md) so that the result contains only the median score; otherwise, `median_by` would also return the alphabetically middle subject for each `Name`.
 
 ```python test-set=1
 median = source.drop_columns(cols=["Subject"]).median_by(by=["Name"])

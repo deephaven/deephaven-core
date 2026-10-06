@@ -141,7 +141,7 @@ The `keyed_transpose` operation follows specific rules for naming output columns
 | Starts with number                   | Prefixed with `column_`       | `123` → `column_123`     |
 | Duplicate names                      | Suffix added                  | `INFO`, `INFO2`          |
 
-This example demonstrates the column naming scenarios described above. Duplicate source rows, such as the two `INFO` rows for each `RowKey`, are aggregated into a single group before transposing, so they produce one column, not two:
+This example demonstrates each column naming scenario in the table above except duplicate names:
 
 ```python order=result,source
 from deephaven import agg, new_table
@@ -192,7 +192,7 @@ scenario3 = keyed_transpose(
     source, [agg.sum_(["Value"])], ["RowKey"], ["Category", "NodeId"]
 )
 
-# Combined example showing all scenarios together
+# Combine the three results into one table
 result = scenario1.natural_join(scenario2, ["RowKey"]).natural_join(
     scenario3, ["RowKey"]
 )
@@ -207,7 +207,7 @@ In this example:
 - **Sum_Normal**, **Count_Normal**: Multiple aggregations prefix the column name. The aggregation prefix is added before the name is cleaned up, so `123` becomes `Sum_123`. That name starts with a letter, so it doesn't get the `column_` prefix.
 - **INFO_10**, **WARN_10**: Multiple column-by values are joined with underscores.
 
-This example does not produce duplicate names. If two values clean up to the same name, such as `INFO` and `IN.FO`, the first becomes `INFO` and the second gets a numeric suffix: `INFO2`.
+This example does not produce duplicate names. The two `INFO` rows for each `RowKey` are aggregated into a single group before transposing, so they produce one `INFO` column, not two. Duplicate names occur only when two different values clean up to the same name, such as `INFO` and `IN.FO`: the first becomes `INFO` and the second gets a numeric suffix, `INFO2`.
 
 ### Sanitize data before transposing
 

@@ -48,14 +48,14 @@ The resulting table `result` is all of the source tables stacked vertically. If 
 
 The [`mergeSorted`](../reference/table-operations/merge/merge-sorted.md) method merges tables that are each already sorted on a key column into one table sorted by that column.
 
-> [!NOTE]
-> Each input table must already be sorted by the key column, or the results are undefined. `mergeSorted` does not support refreshing (ticking) tables.
-
 ```groovy syntax
 t = mergeSorted(keyColumn, tables)
 ```
 
 Where `keyColumn` is the column by which to sort the merged table, and `tables` are the source tables.
+
+> [!NOTE]
+> Each input table must already be sorted by the key column, or the results are undefined. `mergeSorted` does not support refreshing (ticking) tables.
 
 Let's merge our three tables and sort by `Number` with [`mergeSorted`](../reference/table-operations/merge/merge-sorted.md).
 
@@ -96,7 +96,7 @@ for (int i = 0; i < 5; i++) {
 result = merge(tableArray)
 ```
 
-If you are sorting the data you want to merge, it is more efficient to use the [`mergeSorted`](../reference/table-operations/merge/merge-sorted.md) method instead of [`merge`](../reference/table-operations/merge/merge.md) followed by [`sort`](../reference/table-operations/sort/sort.md). Your code will be easier to read, too.
+If each of the tables you want to merge is already sorted by the same key column, it is more efficient to use the [`mergeSorted`](../reference/table-operations/merge/merge-sorted.md) method instead of [`merge`](../reference/table-operations/merge/merge.md) followed by [`sort`](../reference/table-operations/sort/sort.md). Your code will be easier to read, too.
 
 ```groovy order=null
 source1 = newTable(stringCol("Letter", "A", "B", "D"), intCol("Number", 1, 2, 3))

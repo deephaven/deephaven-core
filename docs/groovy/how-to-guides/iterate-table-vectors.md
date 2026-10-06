@@ -11,7 +11,7 @@ Deephaven's [`ColumnVectors`](https://docs.deephaven.io/core/javadoc/io/deephave
 > [!NOTE]
 > It's recommended to avoid random access when possible, as it's less efficient than bulk access.
 
-For refreshing tables, a vector is only valid for the current update cycle. If you create it with previous values by passing `true` as the final `usePreviousValues` argument (for example, `ColumnVectors.ofInt(source, 'X', true)`), it is valid for the updating phase instead. See [engine locking](../conceptual/query-engine/engine-locking.md) for more information on concurrent and consistent data access.
+For refreshing tables, a vector is only valid for the current update cycle. A vector that contains previous values is valid for the updating phase instead. To create one, pass `true` as the final `usePreviousValues` argument, as in `ColumnVectors.ofInt(source, 'X', true)`. See [engine locking](../conceptual/query-engine/engine-locking.md) for more information on concurrent and consistent data access.
 
 Column vectors are created from specific data types. For example, for an `int` column, use `ColumnVectors.ofInt`; for a `double` column, use `ColumnVectors.ofDouble`. For generic or non-primitive types, use `ColumnVectors.ofObject`.
 

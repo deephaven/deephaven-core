@@ -48,12 +48,12 @@ The resulting table `result` is all of the source tables stacked vertically. If 
 
 The [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md) method merges tables that are each already sorted on a key column into one table sorted by that column.
 
-> [!NOTE]
-> Each input table must already be sorted by the key column, or the results are undefined. `merge_sorted` does not support refreshing (ticking) tables.
-
 ```python syntax
 t = merge_sorted(tables: List[Table], order_by: str)
 ```
+
+> [!NOTE]
+> Each input table must already be sorted by the key column, or the results are undefined. `merge_sorted` does not support refreshing (ticking) tables.
 
 Let's merge our three tables and sort by `Number` with [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md).
 
@@ -102,7 +102,7 @@ for i in range(5):
 result = merge(table_array)
 ```
 
-If you are sorting the data you want to merge, it is more efficient to use the [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md) method instead of [`merge`](../reference/table-operations/merge/merge.md) followed by [`sort`](../reference/table-operations/sort/sort.md). Your code will be easier to read, too.
+If each of the tables you want to merge is already sorted by the same key column, it is more efficient to use the [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md) method instead of [`merge`](../reference/table-operations/merge/merge.md) followed by [`sort`](../reference/table-operations/sort/sort.md). Your code will be easier to read, too.
 
 ```python order=null
 from deephaven import merge, merge_sorted, new_table

@@ -66,7 +66,7 @@ The following aggregations are supported:
 | [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)                   | <Check/>              |
 | [`AggWSum`](../reference/table-operations/group-and-aggregate/AggWSum.md)                   | <Check/>              |
 
-`AggFormula` is supported when the formula string names its output and input columns, for example `AggFormula("Total = sum(Value)")`. The deprecated form that takes a `paramToken` is not supported.
+`AggFormula` is supported in its formula-string forms, for example `AggFormula("Total = sum(Value)")` or `AggFormula("Total", "sum(Value)")`. The deprecated form that takes a `paramToken` is not supported.
 
 The aggregations must be passed as a collection, such as a Groovy list, even when there is only one aggregation: `[AggAvg("Value")]`. The aggregation list can be defined outside of the `rollup` call just like with [combined aggregations](./combined-aggregations.md#syntax).
 

@@ -151,7 +151,7 @@ iris_where_one_of = iris.where_one_of(
 
 ## Filter one table based on another
 
-The [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. ​The following example uses [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica petal widths that match and do not match Iris versicolor petal widths:
+The [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. The following example uses [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica petal widths that match and do not match Iris versicolor petal widths:
 
 ```python test-set=1 order=virginica,versicolor,virginica_matching_petal_widths,virginica_non_matching_petal_widths
 virginica = iris.where(filters=["Class in `Iris-virginica`"])

@@ -8,7 +8,7 @@ This guide will show you how to create a hierarchical tree table. A tree table i
 
 In computer science, trees are data structures used to represent hierarchical relationships between pieces of data. The data within the tree is stored in _nodes_, which are represented by the boxes in the diagram above.
 
-In a Deephaven tree table, the root level of the tree holds every row whose parent column is null. These rows are the top-level nodes of the tree. Every other node has one (and only one) parent, and any node can have zero or more children. In the diagram above, `B7`'s parent is `A3`, and its children are `C1` and `C2`. Nodes with no children are known as _leaf nodes_, or leaves, as they are the terminal nodes of the tree structure. `B3` and `C1` are both leaves in the diagram above.
+In a Deephaven tree table, the root node (`Root` in the diagram above) is implicit: its children are the rows whose parent column is null, and these rows are the top-level nodes of the tree. Every other node has one (and only one) parent, and any node can have zero or more children. In the diagram above, `B7`'s parent is `A3`, and its children are `C1` and `C2`. Nodes with no children are known as _leaf nodes_, or leaves, as they are the terminal nodes of the tree structure. `B3` and `C1` are both leaves in the diagram above.
 
 A node whose parent ID is not null but does not match any row's ID is an _orphan_. Orphans are left out of the tree.
 
@@ -24,7 +24,7 @@ Where:
 
 - `id_col` is the name of the column that contains the unique identifier for each node in the tree.
 - `parent_col` is the name of the column that contains the unique identifier for the parent of each node in the tree.
-- `promote_orphans` is an optional boolean that determines whether orphan nodes (rows whose parent does not exist in the table) are promoted to children of the root node instead of being left out of the tree. By default, this is set to `False`.
+- `promote_orphans` is an optional boolean that determines whether orphan nodes (rows whose non-null parent does not exist in the table) are promoted to children of the root node instead of being left out of the tree. By default, this is set to `False`.
 
 The resulting table initially shows only the top-level rows (rows with a null parent), collapsed. Click a row to expand it and show its children, and so on. Rows in the initial table with a `parent_col` value equal to a row in the `id_col` column will appear as children of the parent row.
 
@@ -74,11 +74,11 @@ Rows (nodes) in a tree table are considered "orphans" if:
 - The node's parent is _not_ null.
 - The node's parent does not exist in the table.
 
-Rows whose parent is null are not orphans. They are top-level nodes of the tree, like rows 102 and 103 in the following figure. When promoted, orphans become top-level nodes in the same way.
+Rows whose parent is null are not orphans. They are top-level nodes of the tree, like rows 102 and 103 in the following figure.
 
-![A tree table with orphan nodes](../assets/how-to/tree-null-parents.png)
+![A tree table in which rows 102 and 103, which have null parents, appear as top-level nodes](../assets/how-to/tree-null-parents.png)
 
-By default, orphan nodes don't appear in the tree table. To include orphans in a tree table as children of the root node, switch the optional argument `promote_orphans` to `True`.
+By default, orphan nodes don't appear in the tree table. To include orphans in a tree table as children of the root node (top-level nodes, like rows with a null parent), switch the optional argument `promote_orphans` to `True`.
 
 The following example shows how the resulting tree table changes if orphans are promoted.
 

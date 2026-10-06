@@ -14,7 +14,7 @@ This guide covers exact and relational joins in Deephaven. Exact and relational 
 
 Exact and relational joins differ from time-series and range joins. For a detailed guide, see [Joins: time-series and range](./joins-timeseries-range.md).
 
-To join three or more table operations with one operation, see the [`MultiJoinFactory.of`](../reference/table-operations/join/multijoin.md) operation documented in a [later section](#join-three-or-more-tables) of this article.
+To join three or more tables with one operation, see the [`MultiJoinFactory.of`](../reference/table-operations/join/multijoin.md) operation documented in a [later section](#join-three-or-more-tables) of this article.
 
 ## Syntax
 

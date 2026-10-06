@@ -308,7 +308,7 @@ println plus(time1, negDuration)
 
 ### Time zones
 
-Deephaven uses Java's [`ZoneId`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZoneId.html) class to store time zone information. Deephaven supports time zone aliases, such as `ET` for US Eastern time, `UTC` or `Z` for coordinated universal time (UTC), etc.
+Deephaven uses Java's [`ZoneId`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZoneId.html) class to store time zone information. In addition to standard zone IDs such as `UTC` or `Z` for coordinated universal time (UTC), Deephaven supports time zone aliases such as `ET` for US Eastern time.
 
 ```groovy order=:log
 println timeZone("ET")
@@ -316,7 +316,7 @@ println timeZone("PT")
 println timeZone("UTC")
 ```
 
-By default, Deephaven uses the JVM's default time zone, which can be set with `-Duser.timezone` (see [How to set the timezone](../reference/community-questions/set-timezone.md)). For example, when writing a CSV from a table which includes [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) columns, this time zone is used unless a different time zone is passed to the [`writeCsv`](../reference/data-import-export/CSV/writeCsv.md) call.
+By default, Deephaven uses the JVM's default time zone. To change it, see [How to set the timezone](../reference/community-questions/set-timezone.md). For example, when writing a CSV from a table which includes [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) columns, this time zone is used unless a different time zone is passed to the [`writeCsv`](../reference/data-import-export/CSV/writeCsv.md) call.
 
 The following example prints a time in the Denver time zone and in the New York time zone. The printed values end with `Z` (UTC), so the two-hour difference between the two time zones is apparent.
 
