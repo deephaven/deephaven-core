@@ -35,7 +35,7 @@ Inside a container, `localhost` refers to the container itself, not to your comp
 
 You don't import `pydeephaven_ticking` directly. When it's installed, `pydeephaven` exposes four extra names: `listen`, `TableListener`, `TableUpdate`, and `TableListenerHandle`.
 
-```python skip-test
+```python ticking-table order=null skip-test
 from pydeephaven import Session, TableListener, TableUpdate, listen
 ```
 
@@ -45,7 +45,7 @@ If that import fails, run `import pydeephaven_ticking` to see why. `pydeephaven`
 
 The simplest listener is a function that takes one argument — a `TableUpdate`:
 
-```python skip-test
+```python ticking-table order=null skip-test
 import time
 from pydeephaven import Session, TableUpdate, listen
 
@@ -74,7 +74,7 @@ session.close()
 
 For listeners that keep state or need custom error handling, subclass `TableListener`. You must implement `on_update`; `on_error` is optional.
 
-```python skip-test
+```python ticking-table order=null skip-test
 from pydeephaven import TableListener, TableUpdate, listen
 
 
@@ -122,7 +122,7 @@ Keep these points in mind:
 
 Every accessor takes an optional `cols` argument — a single column name or a list of names. By default, it returns all columns.
 
-```python skip-test
+```python ticking-table order=null skip-test
 def on_update(update: TableUpdate) -> None:
     prices = update.modified(["Sym", "Price"])
     if prices:
@@ -133,7 +133,7 @@ def on_update(update: TableUpdate) -> None:
 
 Each accessor has a `_chunks` variant — `added_chunks`, `removed_chunks`, `modified_chunks`, and `modified_prev_chunks` — that returns a generator instead of one `dict`. Each chunk holds at most `chunk_size` rows. Use these to limit memory use when an update, such as the initial snapshot of a large table, contains many rows.
 
-```python skip-test
+```python ticking-table order=null skip-test
 def on_update(update: TableUpdate) -> None:
     for chunk in update.added_chunks(10_000, ["Sym", "Price"]):
         # Each chunk maps column names to PyArrow arrays of up to 10,000 rows.
@@ -171,7 +171,7 @@ A subscription always covers every row and every column of the table you pass to
 - [`tail`](../reference/table-operations/filter/tail.md) to keep only the most recent rows
 - [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) to keep only the latest row per key
 
-```python skip-test
+```python ticking-table order=null skip-test
 trades = session.open_table("trades")
 latest = trades.where("Exchange = `NYSE`").view(["Sym", "Price", "Size"]).last_by("Sym")
 handle = listen(latest, on_update)
@@ -191,7 +191,7 @@ If the connection fails, or `on_update` raises an exception, the subscription **
 
 When your listener is a function, pass an error callback as the third argument to `listen`:
 
-```python skip-test
+```python ticking-table order=null skip-test
 def on_error(error: Exception) -> None:
     print(f"Subscription failed: {error}")
 
@@ -207,7 +207,7 @@ To recover, create a new handle and call `start` again. If you'd rather keep the
 
 Call `stop` when you're done. It cancels the subscription and waits for the background thread to exit, so no callbacks run after it returns. Close the session after stopping its handles. Use `try`/`finally` so that cleanup happens even when your program fails or is interrupted:
 
-```python skip-test
+```python ticking-table order=null skip-test
 handle = listen(table, on_update)
 handle.start()
 try:
@@ -221,7 +221,7 @@ finally:
 
 This example keeps a local `dict` in sync with a ticking table keyed by symbol and prints alerts for large price moves. It applies removals first, then additions, then modifications.
 
-```python skip-test
+```python ticking-table order=null skip-test
 import threading
 import time
 
