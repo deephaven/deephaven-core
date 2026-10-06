@@ -103,7 +103,7 @@ handle.start()
 
 ## Read the changes in a table update
 
-Each call to `on_update` receives a `TableUpdate` that describes every change since the previous call. Every accessor returns a `dict` that maps column names to [PyArrow arrays](https://arrow.apache.org/docs/python/generated/pyarrow.Array.html). The arrays in one `dict` all have the same length, and position `i` in each array belongs to the same row. If a category has no rows in this update, the accessor returns an empty `dict`.
+Each call to `on_update` receives a `TableUpdate` that describes the coalesced, net row changes since the previous call — not a log of every intermediate change. Every accessor returns a `dict` that maps column names to [PyArrow arrays](https://arrow.apache.org/docs/python/generated/pyarrow.Array.html). The arrays in one `dict` all have the same length, and position `i` in each array belongs to the same row. If a category has no rows in this update, the accessor returns an empty `dict`.
 
 | Method          | Returns                                                                            |
 | --------------- | ---------------------------------------------------------------------------------- |
