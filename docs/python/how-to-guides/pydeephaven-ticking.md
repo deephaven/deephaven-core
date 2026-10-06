@@ -6,7 +6,7 @@ This guide shows how to receive live updates from a Deephaven table in an extern
 
 A _ticking_ table is one whose contents can change while the server runs — the server can add, remove, or modify rows at any time. The base [`pydeephaven`](../getting-started/pyclient-quickstart.md) package can only fetch a point-in-time snapshot of such a table. `pydeephaven-ticking` adds a subscription: your code receives callbacks that contain just the rows that changed.
 
-Callbacks don't arrive for every individual change. The server collects changes and sends them at most once per update interval, which is one second by default, so a single callback can cover many changes. If nothing changed during an interval, no callback arrives.
+Callbacks don't arrive for every individual change. The server collects changes and sends them at most once per update interval, which is one second by default, so a single callback can cover many changes. After the initial snapshot, if nothing changed during an interval, no callback arrives.
 
 > [!NOTE]
 > This guide covers the _client_ package, which runs outside the Deephaven server. To react to table changes in code that runs on the server, see [Listen to ticking tables](./table-listeners-python.md).
