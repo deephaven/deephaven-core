@@ -4,7 +4,7 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.Session;
-import io.deephaven.client.impl.SessionFactoryConfig;
+import io.deephaven.client.impl.SessionFactory;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceBlockingStub;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
@@ -12,7 +12,6 @@ import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest.Builder;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import picocli.CommandLine;
-import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -20,24 +19,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Streams the server's log messages, starting with its recent history, using the raw gRPC console service rather than
- * the session wrapper.
- */
 @Command(name = "subscribe-to-logs", mixinStandardHelpOptions = true,
         description = "Console#SubscribeToLogs", version = "0.1.0")
-class SubscribeToLogs implements Callable<Void> {
-
-    @ArgGroup(exclusive = false)
-    ConnectOptions connectOptions;
-
-    @ArgGroup(exclusive = true)
-    AuthenticationOptions authenticationOptions;
+class SubscribeToLogs extends SessionExampleBase {
 
     @Option(names = {"-c", "--count"},
             description = "The number of messages to consume before exiting, unlimited if unset")
@@ -65,24 +51,14 @@ class SubscribeToLogs implements Callable<Void> {
     Duration timeout;
 
     @Override
-    public Void call() throws Exception {
-        // The scheduler runs the client's background work, such as refreshing the session token
-        final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-        // The factory holds the connection; each session it opens is one authenticated login on that connection
-        final SessionFactoryConfig.Factory factory = SessionFactoryConfig.builder()
-                .clientConfig(ConnectOptions.options(connectOptions).config())
-                .sessionConfig(AuthenticationOptions.sessionConfig(authenticationOptions))
-                .scheduler(scheduler)
-                .build()
-                .factory();
-        try (final Session session = factory.newSession()) {
+    protected void execute(SessionFactory sessionFactory) throws Exception {
+        try (final Session session = sessionFactory.newSession()) {
             final Builder builder = LogSubscriptionRequest.newBuilder();
             if (levels != null) {
                 for (String level : levels) {
                     builder.addLevels(level);
                 }
             }
-            // session.channel() exposes the raw gRPC stubs, for calls the Session wrapper does not cover
             ConsoleServiceBlockingStub console = session.channel().consoleBlocking();
             if (timeout != null) {
                 console = console.withDeadlineAfter(timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -106,11 +82,7 @@ class SubscribeToLogs implements Callable<Void> {
                 }
                 // The --timeout deadline passed; that is a normal exit.
             }
-        } finally {
-            factory.managedChannel().shutdownNow();
-            scheduler.shutdownNow();
         }
-        return null;
     }
 
     private static String format(LogSubscriptionData record) {
@@ -123,6 +95,7 @@ class SubscribeToLogs implements Callable<Void> {
     }
 
     public static void main(String[] args) {
-        System.exit(new CommandLine(new SubscribeToLogs()).execute(args));
+        int execute = new CommandLine(new SubscribeToLogs()).execute(args);
+        System.exit(execute);
     }
 }

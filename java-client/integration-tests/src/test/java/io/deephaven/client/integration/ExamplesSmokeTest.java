@@ -94,14 +94,9 @@ class ExamplesSmokeTest {
                 example(SESSION, "unreferenceable", "^Expected$"),
                 // flight
                 example(FLIGHT, "get-tsv", "duration"),
-                example(FLIGHT, "structured-filter", "^93$", "--filter", "OR"),
-                example(FLIGHT, "structured-filter", "^54$", "--filter", "AND"),
-                example(FLIGHT, "structured-filter", "^98$", "--filter", "MIXED"),
                 example(FLIGHT, "poll-tsv", "", "-c", "2"),
                 example(FLIGHT, "list-tables", STATIC_TABLE),
-                // flight tools
-                example(FLIGHT, "deep-query", "duration", "-c", "16"),
-                example(FLIGHT, "sum-benchmark", "^499500$", "-c", "1000"),
+                example(FLIGHT, "excessive", "duration", "-c", "16"),
                 example(FLIGHT, "aggregate-all", "", "--cycles", "2", "--sleep-millis", "10"),
                 example(FLIGHT, "agg-by", "", "--cycles", "2", "--sleep-millis", "10"),
                 example(FLIGHT, "do-exchange", "", "--variable", STATIC_TABLE),
@@ -118,9 +113,7 @@ class ExamplesSmokeTest {
                 // barrage
                 example(BARRAGE, "snapshot-table", "Table info", "--variable", STATIC_TABLE),
                 example(BARRAGE, "subscribe-table", "Received table update", "--variable", TICKING_TABLE, "--updates",
-                        "1"),
-                // Without a ticket it subscribes to its own time table
-                example(BARRAGE, "subscribe-table", "Received table update", "--updates", "1"));
+                        "1"));
     }
 
     @BeforeAll

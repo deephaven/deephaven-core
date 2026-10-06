@@ -295,7 +295,7 @@ flight.addToInputTable(scopeId, batch, allocator).get(5, TimeUnit.SECONDS);
 
 The Deephaven repository includes complete working examples:
 
-- [`AddToInputTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/tools/AddToInputTable.java) - Append-only input table with validation
+- [`AddToInputTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/AddToInputTable.java) - Append-only input table with validation
 - [`KeyValueInputTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/KeyValueInputTable.java) - Keyed input table with add/delete
 - [`AddToBlinkTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/AddToBlinkTable.java) - Blink input table
 

@@ -3,7 +3,6 @@
 //
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.SessionConfig;
 import picocli.CommandLine.Option;
 
 import java.util.function.Consumer;
@@ -17,18 +16,6 @@ public class AuthenticationOptions {
 
     @Option(names = {"--explicit"}, description = "The explicit authentication type and value")
     String explicit;
-
-    /**
-     * The session config for the given options; anonymous when {@code options} is null, as picocli leaves an absent
-     * argument group.
-     */
-    public static SessionConfig sessionConfig(AuthenticationOptions options) {
-        final SessionConfig.Builder builder = SessionConfig.builder();
-        if (options != null) {
-            options.ifPresent(builder::authenticationTypeAndValue);
-        }
-        return builder.build();
-    }
 
     public String toAuthenticationTypeAndValue() {
         if (mtls != null && mtls) {

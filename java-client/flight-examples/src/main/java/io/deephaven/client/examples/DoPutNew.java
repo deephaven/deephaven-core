@@ -5,42 +5,25 @@ package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.ExportId;
 import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.FlightSessionFactoryConfig;
 import io.deephaven.client.impl.HasTicketId;
 import io.deephaven.client.impl.ScopeId;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
-import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.memory.RootAllocator;
 import picocli.CommandLine;
-import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * Round-trips a table through the client: creates one on the server, reads it with DoGet, writes it back with DoPut,
- * and publishes the copy under a variable name. The three methods differ in how the DoPut destination is managed.
- */
 @Command(name = "do-put-new", mixinStandardHelpOptions = true,
         description = "Do Put New", version = "0.1.0")
-class DoPutNew implements Callable<Void> {
+class DoPutNew extends FlightExampleBase {
 
     enum Method {
         HANDLE, TICKET, DIRECT
     }
-
-    @ArgGroup(exclusive = false)
-    ConnectOptions connectOptions;
-
-    @ArgGroup(exclusive = true)
-    AuthenticationOptions authenticationOptions;
 
     @Option(names = {"-m", "--method"}, description = "The method to use. [ ${COMPLETION-CANDIDATES} ]",
             defaultValue = "HANDLE")
@@ -54,39 +37,20 @@ class DoPutNew implements Callable<Void> {
     String variableName;
 
     @Override
-    public Void call() throws Exception {
-        // Arrow memory for the data read and written over Flight
-        final BufferAllocator allocator = new RootAllocator();
-        // The scheduler runs the client's background work, such as refreshing the session token
-        final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-        // The factory holds the connection; each session it opens is one authenticated login on that connection
-        final FlightSessionFactoryConfig.Factory factory = FlightSessionFactoryConfig.builder()
-                .clientConfig(ConnectOptions.options(connectOptions).config())
-                .sessionConfig(AuthenticationOptions.sessionConfig(authenticationOptions))
-                .allocator(allocator)
-                .scheduler(scheduler)
-                .build()
-                .factory();
-        // A FlightSession pairs a Session (tables, consoles, publishing) with an Arrow Flight client (bulk data)
-        try (final FlightSession flight = factory.newFlightSession()) {
-            switch (method) {
-                case HANDLE:
-                    handle(flight);
-                    break;
-                case TICKET:
-                    ticket(flight);
-                    break;
-                case DIRECT:
-                    direct(flight);
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected method " + method);
-            }
-        } finally {
-            factory.managedChannel().shutdownNow();
-            scheduler.shutdownNow();
+    protected void execute(FlightSession flight) throws Exception {
+        switch (method) {
+            case HANDLE:
+                handle(flight);
+                break;
+            case TICKET:
+                ticket(flight);
+                break;
+            case DIRECT:
+                direct(flight);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected method " + method);
         }
-        return null;
     }
 
     private TableSpec table() {
@@ -98,9 +62,7 @@ class DoPutNew implements Callable<Void> {
     }
 
     private void handle(FlightSession flight) throws Exception {
-        // This version is "prettier", but uses one extra ticket and round trip.
-        // Executing the spec gives a TableHandle export; DoGet streams its rows; DoPut uploads that stream as a
-        // new server table and returns a handle to it.
+        // This version is "prettier", but uses one extra ticket and round trip
         try (final TableHandle sourceHandle = flight.session().execute(table());
                 final FlightStream doGet = flight.stream(sourceHandle);
                 final TableHandle destHandle = flight.putExport(doGet)) {
@@ -129,6 +91,7 @@ class DoPutNew implements Callable<Void> {
     }
 
     public static void main(String[] args) {
-        System.exit(new CommandLine(new DoPutNew()).execute(args));
+        int execute = new CommandLine(new DoPutNew()).execute(args);
+        System.exit(execute);
     }
 }

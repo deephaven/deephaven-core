@@ -1,11 +1,8 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.client.examples.tools;
+package io.deephaven.client.examples;
 
-import io.deephaven.client.examples.AuthenticationOptions;
-import io.deephaven.client.examples.ConnectOptions;
-import io.deephaven.client.examples.TypedTicketConverter;
 import io.deephaven.client.impl.ClientData;
 import io.deephaven.client.impl.HasTicketId;
 import io.deephaven.client.impl.HasTypedTicket;
@@ -14,11 +11,9 @@ import io.deephaven.client.impl.ObjectService.MessageStream;
 import io.deephaven.client.impl.ServerData;
 import io.deephaven.client.impl.ServerObject;
 import io.deephaven.client.impl.Session;
-import io.deephaven.client.impl.SessionFactoryConfig;
 import io.deephaven.client.impl.TableObject;
 import io.deephaven.client.impl.TypedTicket;
 import picocli.CommandLine;
-import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -30,17 +25,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 /**
- * Plugin tool: prints out the returned messages from a {@link Session#bidirectional(HasTypedTicket) bidirectional
- * message stream}. This is suitable for object type protocols that send one response per request. Additionally,
+ * Prints out the returned messages from a {@link Session#bidirectional(HasTypedTicket) bidirectional message stream}.
+ * This is suitable for object type protocols that send one response per request. Additionally,
  * {@link Session#publish(String, HasTicketId) publishes} all {@link TableObject table objects} with the name template
  * "my_table_{ix}".
  *
@@ -75,13 +67,7 @@ import java.util.stream.Collectors;
  */
 @Command(name = "message-stream-send-receive", mixinStandardHelpOptions = true,
         description = "Message stream send and receive", version = "0.1.0")
-class MessageStreamSendReceive implements Callable<Void> {
-
-    @ArgGroup(exclusive = false)
-    ConnectOptions connectOptions;
-
-    @ArgGroup(exclusive = true)
-    AuthenticationOptions authenticationOptions;
+class MessageStreamSendReceive extends SingleSessionExampleBase {
 
     @Option(names = {"--count"}, description = "The number of messages to send, defaults to 1", defaultValue = "1")
     int count = 1;
@@ -97,28 +83,11 @@ class MessageStreamSendReceive implements Callable<Void> {
     List<TypedTicket> typedTickets;
 
     @Override
-    public Void call() throws Exception {
-        final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-        final SessionFactoryConfig.Factory factory = SessionFactoryConfig.builder()
-                .clientConfig(ConnectOptions.options(connectOptions).config())
-                .sessionConfig(AuthenticationOptions.sessionConfig(authenticationOptions))
-                .scheduler(scheduler)
-                .build()
-                .factory();
-        try (final Session session = factory.newSession()) {
-            sendAndReceive(session);
-        } finally {
-            factory.managedChannel().shutdownNow();
-            scheduler.shutdownNow();
-        }
-        return null;
-    }
-
-    private void sendAndReceive(Session session) throws Exception {
+    protected void execute(Session session) throws Exception {
         final CountDownLatch onConnectData = new CountDownLatch(1);
         final CountDownLatch onData = new CountDownLatch(count);
         final List<TableObject> tableObjects = new ArrayList<>();
-        final List<ServerObject> otherObjects = new ArrayList<>();
+        final List<ServerObject> otherObjects = new ArrayList<>();;
         try (final Bidirectional bidirectional = session.bidirectional(typedTicket).get()) {
             final MessageStream<ServerData> fromServer = new MessageStream<>() {
                 @Override
@@ -227,6 +196,7 @@ class MessageStreamSendReceive implements Callable<Void> {
     }
 
     public static void main(String[] args) {
-        System.exit(new CommandLine(new MessageStreamSendReceive()).execute(args));
+        int execute = new CommandLine(new MessageStreamSendReceive()).execute(args);
+        System.exit(execute);
     }
 }
