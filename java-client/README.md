@@ -126,8 +126,10 @@ classpath, so `check` reruns it without being asked:
   table DoPut back: HTTP/2 flow control and both allocators on both sides.
 - `maxInboundMessageSize` set too small fails the stream with RESOURCE_EXHAUSTED; the default
   carries the same table.
-- Thirty-two concurrent DoGets and three hundred concurrent unary calls over one channel while a
-  log subscription stays open on it.
+- Thirty-two DoGets and three hundred unary calls offered to one channel at once while a log
+  subscription stays open on it. That is more streams than jetty allows at a time (128 by default),
+  so the client's pending-stream queueing is exercised, not just multiplexing. If a CI runner
+  cannot keep up, shrink the DoGet table before shrinking the counts.
 - A cancelled stream and a DEADLINE_EXCEEDED call, each followed by proof the channel still works.
 - The SSL provider matches the classpath: BoringSSL loaded if and only if a platform-classified
   `netty-tcnative-boringssl-static` jar is present. Today none is (Arrow's flight-core brings the

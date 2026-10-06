@@ -200,10 +200,13 @@ class TransportTest {
 
     @Test
     void manyStreamsMultiplexOverOneChannel() throws Exception {
+        // Every call below is offered to the one connection at once: 32 DoGets, 300 unary calls, and a log stream,
+        // which is deliberately more than the server allows concurrently (jetty's default is 128 streams), so the
+        // client has to hold the rest in its pending queue and start each as an earlier stream closes
         final int readers = 32;
         final int unaryCalls = 300;
         final TableSpec medium = TableSpec.empty(200_000).view("I=ii");
-        final ExecutorService pool = Executors.newFixedThreadPool(readers);
+        final ExecutorService pool = Executors.newCachedThreadPool();
         try (
                 final FlightSession flight = factory.newFlightSession();
                 final TableHandle handle = flight.session().execute(medium);
