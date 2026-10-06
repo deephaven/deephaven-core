@@ -23,7 +23,7 @@ We aim to support all Java LTS versions greater than or equal to our minimum Jav
 | 42.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | 43.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
-Deephaven 0.40.x and 41.x were also tested against JDK 24, the latest Java version at the time of those releases.
+Deephaven 0.40.x and 41.x were also tested against JDK 24.
 
 We build and test using OpenJDK packages. We do not regularly run or test with GraalVM.
 
