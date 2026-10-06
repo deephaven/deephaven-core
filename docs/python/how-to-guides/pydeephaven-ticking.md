@@ -216,11 +216,13 @@ Call `stop` when you're done. Called from outside the listener thread, it cancel
 
 ```python ticking-table order=null skip-test
 handle = listen(table, on_update)
-handle.start()
 try:
-    run_application()
+    handle.start()
+    try:
+        run_application()
+    finally:
+        handle.stop()
 finally:
-    handle.stop()
     session.close()
 ```
 
