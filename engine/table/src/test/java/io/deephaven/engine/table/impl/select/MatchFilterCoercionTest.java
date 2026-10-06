@@ -92,8 +92,7 @@ public class MatchFilterCoercionTest {
         for (final String filter : filters) {
             final Table normal = table.where(filter);
             final Table failover = table.where(ConditionFilter.createConditionFilter(filter));
-            if (!normal.getRowSet().subsetOf(failover.getRowSet())
-                    || !failover.getRowSet().subsetOf(normal.getRowSet())) {
+            if (!normal.getRowSet().equals(failover.getRowSet())) {
                 mismatches.add(String.format("%s selected %s; the failover selects %s",
                         filter, columnValues(normal), columnValues(failover)));
             }

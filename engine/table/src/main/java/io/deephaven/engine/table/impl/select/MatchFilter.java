@@ -153,15 +153,16 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
      * {@link #getValues()} contract for primitive floating-point columns.
      *
      * <p>
-     * The convertors pass a value they do not convert through as it is: a {@link String} for a {@link BigInteger}
-     * column, or an {@link Integer} for a {@link String} column. No row can match such a value, as the column's chunk
-     * filter matches by {@code equals}, or for a {@link BigDecimal} column by {@link BigDecimal#compareTo(BigDecimal)},
-     * and neither holds between a value and a cell of an unrelated class. Dropping it therefore does not change which
-     * rows the filter selects, but it protects the consumers of {@link #getValues()} that assume the column type: the
-     * sorted-column pushdown ({@code SortedColumnPushdownManager} and the region binary search kernels) locates every
-     * value by ordering, where {@code compareTo} between the column type and a value of another class throws
-     * {@link ClassCastException}, and the case-insensitive {@link String} chunk filter casts every value to
-     * {@link String}. Null is kept: it matches a null cell. An {@link Object} column keeps every value.
+     * The convertors pass a value they do not convert through as it is: for example, a {@link String} for a
+     * {@link BigInteger} column, or an {@link Integer} for a {@link String} column. No row can match such a value, as
+     * the column's chunk filter matches by {@code equals}, or for a {@link BigDecimal} column by
+     * {@link BigDecimal#compareTo(BigDecimal)}, and neither holds between a value and a cell of an unrelated class.
+     * Dropping it therefore does not change which rows the filter selects, but it protects the consumers of
+     * {@link #getValues()} that assume the column type: the sorted-column pushdown ({@code SortedColumnPushdownManager}
+     * and the region binary search kernels) locates every value by ordering, where {@code compareTo} between the column
+     * type and a value of another class throws {@link ClassCastException}, and the case-insensitive {@link String}
+     * chunk filter casts every value to {@link String}. Null is kept: it matches a null cell. An {@link Object} column
+     * keeps every value.
      */
     private Object[] dropUnmatchable(final Object[] convertedValues, final boolean dropNaN) {
         final Class<?> valueType = TypeUtils.getBoxedType(columnType);
@@ -492,6 +493,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             return exactValue(a).compareTo(exactValue(b)) == 0;
         }
 
+        /**
+         * The exact value of {@code number}: a {@code float} or {@code double} through
+         * {@link BigDecimal#BigDecimal(double)}, its exact binary value, so {@code 0.1} is
+         * {@code 0.1000000000000000055511151231257827021181583404541015625}. This is what tells whether a cast lost
+         * anything. Compare {@link #toBigDecimal(Number)}, which converts a floating-point value as the query language
+         * compares it, to its shortest decimal.
+         */
         private static BigDecimal exactValue(final Number number) {
             if (number instanceof BigDecimal) {
                 return (BigDecimal) number;
@@ -535,7 +543,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
         /**
          * Converts {@code number} to a {@link BigDecimal} as the query language does when it compares the two: a
-         * floating-point value through {@link BigDecimal#valueOf(double)}, and any other value exactly.
+         * floating-point value through {@link BigDecimal#valueOf(double)}, its shortest decimal, so {@code 0.1} is
+         * {@code 0.1}, and any other value exactly, by {@link #exactValue(Number)}. The two differ only for a
+         * floating-point value, and both are needed: {@link #checkRoundTrip(Number, Number, Class)} compares a big
+         * value with a float or double the query language's way, through this, and everything else exactly.
          */
         static BigDecimal toBigDecimal(final Number number) {
             return isFloatingPoint(number) ? BigDecimal.valueOf(number.doubleValue()) : exactValue(number);
