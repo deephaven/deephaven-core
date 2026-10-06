@@ -146,7 +146,7 @@ The two thresholds answer different questions. The fraction asks whether compact
 
 ## Compress Barrage data
 
-By default, the server sends Barrage snapshots and subscriptions uncompressed. To let it compress a table's data, set the table's `BarrageCompression` attribute to an ordered, comma-separated list of the gRPC message encodings the server may use: `gzip`, `zstd`, or `snappy`. Every gRPC client lists the encodings it can decode in a `grpc-accept-encoding` request header. When a client fetches the table, the server uses the first encoding in the table's list that the client also lists, and sends uncompressed data when none match.
+By default, the server sends Barrage snapshots and subscriptions uncompressed. To let it compress a table's data, set the table's `BarrageCompression` attribute to an ordered, comma-separated list of the gRPC message encodings the server may use: `gzip`, `zstd`, or `snappy`. A gRPC client may list the encodings it is able to decode in a `grpc-accept-encoding` request header. When a client fetches the table, the server uses the first encoding in the table's list that the client also lists, and sends uncompressed data when none match or the client lists none.
 
 ```python order=null
 from deephaven import empty_table
@@ -157,7 +157,7 @@ t_compressed = t.with_attributes({"BarrageCompression": "zstd,gzip"})
 
 The attribute applies only to the table it is set on. Tables derived from it, for example by sorting or filtering, are sent uncompressed unless they set the attribute themselves. For a rollup or tree table, set the attribute on the rollup or tree table rather than on its source.
 
-These are the encodings each client lists by default:
+These are the encodings each client lists by default. A client that lists none always receives uncompressed data.
 
 | Client                                                       | Encodings listed                                      |
 | ------------------------------------------------------------ | ----------------------------------------------------- |
@@ -165,7 +165,7 @@ These are the encodings each client lists by default:
 | Python (`pydeephaven`), C++, and R clients                   | `gzip` (and `deflate`, which the server does not use) |
 | Web UI and JavaScript API, Go client                         | None, so data is always sent uncompressed             |
 
-Choose the list based on what the server's CPU can afford. On a one-million-row table of mixed trade data, the encodings compare as follows:
+Choose the list based on what the server's CPU can afford. The following figures are one sample measurement of a one-million-row table of mixed trade data, taken single-threaded with JDK 21 on an Apple silicon laptop using the `BarrageCompressionBenchmark` JMH benchmark in `extensions/barrage/benchmark`. Absolute speeds depend on the hardware and the data, so use them to compare the encodings rather than to predict throughput:
 
 | Encoding | Size after compression | Compression speed | Decompression speed |
 | -------- | ---------------------- | ----------------- | ------------------- |
