@@ -25,6 +25,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,6 +41,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.table.TableFactory.emptyTable;
@@ -314,8 +316,24 @@ public class QueryTableRangeJoinTest {
             final Table right = TableTools.emptyTable(10).view(
                     "K = (int) 0", "RRV = failAfterHeldJobEntered(ii)", "Sentinel = (int) ii");
             left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
-        }, false, OperationException.class);
+        }, null, OperationException.class);
         assertThat(heldJobsRunning).as("held jobs running when rangeJoin failed").isZero();
+    }
+
+    /**
+     * When the thread waiting for the left grouping job is interrupted, rangeJoin reports the cancellation only after
+     * that job has finished.
+     */
+    @Test
+    public void testInterruptWhileWaitingForLeftGroupingJob() throws InterruptedException {
+        final int heldJobsRunning = runWithHeldJobs(() -> {
+            final Table left = TableTools.emptyTable(10).view(
+                    "K = holdJob(ii)", "LSV = (int) ii", "LEV = (int) ii + 2");
+            final Table right = TableTools.emptyTable(1).view(
+                    "K = (int) 0", "RRV = (int) ii", "Sentinel = (int) ii");
+            left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
+        }, QueryTableRangeJoinTest::isWaitingForLeftGroupingJob, CancellationException.class);
+        assertThat(heldJobsRunning).as("held jobs running when rangeJoin was cancelled").isZero();
     }
 
     /**
@@ -331,21 +349,38 @@ public class QueryTableRangeJoinTest {
             final Table right = TableTools.emptyTable(numBuckets).view(
                     "K = (int) ii", "RRV = (int) ii", "Sentinel = (int) ii");
             left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
-        }, true, CancellationException.class);
+        }, operationThread -> true, CancellationException.class);
         assertThat(heldJobsRunning).as("held jobs running when rangeJoin was cancelled").isZero();
         assertThat(HELD_JOB_CALLS.get()).as("range search tasks run").isLessThan(numBuckets);
     }
 
     /**
+     * Whether {@code operationThread} is parked in the static range join's wait for its left grouping job, which it
+     * enters once the right table work is complete.
+     */
+    private static boolean isWaitingForLeftGroupingJob(@NotNull final Thread operationThread) {
+        if (operationThread.getState() != Thread.State.WAITING) {
+            return false;
+        }
+        for (final StackTraceElement frame : operationThread.getStackTrace()) {
+            if (!frame.getClassName().startsWith("java.") && !frame.getClassName().startsWith("jdk.")) {
+                return frame.getClassName().endsWith("RangeJoinOperation$StaticRangeJoinPhase1")
+                        && frame.getMethodName().equals("start");
+            }
+        }
+        return false;
+    }
+
+    /**
      * Run {@code operation} with a parallel operation initializer, expecting it to fail with {@code expectedFailure}.
-     * Held jobs are released when {@code operation} returns. If {@code interrupt}, this thread is interrupted once a
-     * job is held.
+     * Held jobs are released when {@code operation} returns. If {@code interruptWhen} is non-null, this thread is
+     * interrupted once a job is held and {@code interruptWhen} accepts this thread.
      *
      * @return The number of held jobs running when {@code operation} failed
      */
     private static int runWithHeldJobs(
             @NotNull final Runnable operation,
-            final boolean interrupt,
+            @Nullable final Predicate<Thread> interruptWhen,
             @NotNull final Class<? extends Exception> expectedFailure) throws InterruptedException {
         heldJobEntered = new CountDownLatch(1);
         heldJobRelease = new CountDownLatch(1);
@@ -355,9 +390,17 @@ public class QueryTableRangeJoinTest {
         final Thread operationThread = Thread.currentThread();
         final Thread interrupter = new Thread(() -> {
             try {
-                if (heldJobEntered.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                    operationThread.interrupt();
+                if (!heldJobEntered.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                    return;
                 }
+                final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(JOB_TIMEOUT_SECONDS);
+                while (!interruptWhen.test(operationThread)) {
+                    if (System.nanoTime() > deadlineNanos) {
+                        return;
+                    }
+                    Thread.sleep(1);
+                }
+                operationThread.interrupt();
             } catch (InterruptedException ignored) {
             }
         }, "QueryTableRangeJoinTest-interrupter");
@@ -370,7 +413,7 @@ public class QueryTableRangeJoinTest {
         try (final SafeCloseable ignored1 = parallelContext.open();
                 final SafeCloseable ignored2 = threadPool::shutdown) {
             ExecutionContext.getContext().getQueryLibrary().importStatic(QueryTableRangeJoinTest.class);
-            if (interrupt) {
+            if (interruptWhen != null) {
                 interrupter.start();
             }
             try {
@@ -382,7 +425,7 @@ public class QueryTableRangeJoinTest {
             }
         } finally {
             heldJobRelease.countDown();
-            if (interrupt) {
+            if (interruptWhen != null) {
                 interrupter.join(TimeUnit.SECONDS.toMillis(JOB_TIMEOUT_SECONDS));
                 if (interrupter.isAlive()) {
                     fail("interrupter thread did not finish");

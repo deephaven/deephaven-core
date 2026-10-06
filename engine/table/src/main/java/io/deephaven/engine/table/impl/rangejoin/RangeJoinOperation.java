@@ -368,6 +368,10 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             final Table leftTableGrouped;
             try {
                 leftTableGrouped = groupLeftTableFuture.get();
+            } catch (InterruptedException e) {
+                // staticRangeJoin observes the restored interrupt in its wait for the result and reports cancellation
+                Thread.currentThread().interrupt();
+                return;
             } catch (Exception e) {
                 resultFuture.completeExceptionally(e);
                 return;
