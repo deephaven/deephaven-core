@@ -534,6 +534,15 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     releaseFileManager,
                     // cleanup runs only after a success, so a failure releases the file manager here
                     err -> releaseFileManager.run());
+        } catch (RuntimeException e) {
+            // invokeParallel restores an interrupt that arrived while it waited; cancellation is what the caller asked
+            // for, so it takes precedence over a compilation failure, which is kept alongside it
+            if (Thread.currentThread().isInterrupted()) {
+                final CancellationException cancellation = new CancellationException("interrupted while compiling");
+                cancellation.addSuppressed(e);
+                throw cancellation;
+            }
+            throw e;
         } finally {
             final BasePerformanceEntry perfEntry = jobScheduler.getAccumulatedPerformance();
             if (perfEntry != null) {

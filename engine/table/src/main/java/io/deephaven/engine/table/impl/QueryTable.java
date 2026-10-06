@@ -1851,6 +1851,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         }, failure -> {
                                         });
                             } catch (RuntimeException e) {
+                                // invokeSerial restores an interrupt that arrived while it waited; cancellation is
+                                // what the caller asked for, so it takes precedence over the analyzer's failure
+                                if (Thread.currentThread().isInterrupted()) {
+                                    throw new CancellationException(
+                                            "interrupted while computing select or update", e);
+                                }
                                 throw new TableInitializationException(updateDescription,
                                         "an exception occurred while performing the initial select or update", e);
                             } finally {

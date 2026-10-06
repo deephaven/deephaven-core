@@ -37,9 +37,11 @@ public class OperationInitializerJobScheduler implements JobScheduler {
         outstandingJobs.incrementAndGet();
         try {
             operationInitializer.submit(() -> wrapRunnable(executionContext, runnable, description, onError));
-        } catch (Exception e) {
+        } catch (Throwable t) {
+            // An Error here, OutOfMemoryError when the pool cannot make a thread in practice, must release the count
+            // too, or getAccumulatedPerformance would wait forever for a job that was never submitted.
             decrementOutstandingJobs();
-            throw e;
+            throw t;
         }
     }
 

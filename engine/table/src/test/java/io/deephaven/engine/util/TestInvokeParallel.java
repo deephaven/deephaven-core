@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Rule;
@@ -852,6 +853,44 @@ public class TestInvokeParallel {
         for (int ii = 0; ii < 50; ++ii) {
             assertThat(runs.get(ii)).isEqualTo(1);
         }
+    }
+
+    /**
+     * An operation initializer that fails a submission with an Error leaves no job counted as outstanding, so the
+     * performance the caller collects afterwards is available rather than waited for forever.
+     */
+    @Test
+    public void testOperationInitializerSubmitErrorReleasesTheOutstandingCount() throws InterruptedException {
+        final OutOfMemoryError cannotMakeThread = new OutOfMemoryError("unable to create native thread");
+        final OperationInitializer failing = new OperationInitializer() {
+            @Override
+            public boolean canParallelize() {
+                return true;
+            }
+
+            @Override
+            public Future<?> submit(final Runnable runnable) {
+                throw cannotMakeThread;
+            }
+
+            @Override
+            public int parallelismFactor() {
+                return 4;
+            }
+        };
+        final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(failing);
+        final AtomicInteger runs = new AtomicInteger();
+
+        withTimeout(() -> {
+            assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8, (context, idx, nec) -> runs.incrementAndGet(),
+                    () -> {
+                    }, () -> {
+                    }, e -> {
+                    })).isSameAs(cannotMakeThread);
+            assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
+        });
+        assertThat(runs.get()).isZero();
     }
 
     /** One context per invoker, never shared between threads at once, and all closed before onComplete runs. */
