@@ -221,7 +221,7 @@ tradesUpdated = ptTradesUpdated.merge()
 
 The same result can be obtained via a [`PartitionedTable.Proxy`](/core/javadoc/io/deephaven/engine/table/PartitionedTable.Proxy.html) object. A partitioned table proxy is a proxy for a partitioned table that allows users to call standard table operations on it.
 
-The following code block applies an [`update`](../reference/table-operations/select/update.md) to every constituent of the `ptQuotes` table by creating a proxy rather than applying a [`transform`](#transform).
+The following code block applies an [`update`](../reference/table-operations/select/update.md) to every constituent of the `ptTrades` table by creating a proxy rather than applying a [`transform`](#transform).
 
 ```groovy test-set=1 order=tradesUpdated
 ptTradesProxy = ptTrades.proxy()

@@ -44,10 +44,10 @@ sortColumns = [
 result = source.sort(sortColumns)
 ```
 
-This is simpler than invoking both methods to accomplish the same result:
+This is simpler than chaining `sort` and `sortDescending` to accomplish the same result. A chain must list the sorts in reverse priority order, because each sort is stable and the last sort becomes the primary sort key:
 
 ```groovy test-set=1 order=result
-result = source.sort("Letter").sortDescending("Number")
+result = source.sortDescending("Number").sort("Letter")
 ```
 
 ## `restrictSortTo`

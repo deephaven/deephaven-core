@@ -24,11 +24,11 @@ result = source.snapshot_when(
 > The stamp column(s) from the trigger table appears in the result table. If the source table has a column with the same name as the stamp column, an error will be raised. To avoid this problem, rename the stamp column in the trigger table using [`rename_columns`](../reference/table-operations/select/rename-columns.md).
 
 > [!CAUTION]
-> When using [`snapshot_when`](../reference/table-operations/snapshot/snapshot.md) to capture full table history, a copy of the entire source table is stored for every trigger event. Large source tables or rapidly changing trigger tables can result in intensive memory usage.
+> When using [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) to capture full table history, a copy of the entire source table is stored for every trigger event. Large source tables or rapidly changing trigger tables can result in intensive memory usage.
 
 ## Include a history
 
-In this example, there are two input tables. The `source` table updates every 0.01 seconds with new data. The `trigger` table updates every second, triggering a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
+In this example, there are two input tables. The `source` table updates every 0.2 seconds with new data. The `trigger` table updates every two seconds, triggering a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
 
 ```python ticking-table order=null
 from deephaven import time_table
@@ -46,9 +46,9 @@ source = (
     .last_by(by=["X"])
 )
 
-trigger = time_table("PT2S")
+trigger = time_table("PT2S").rename_columns(["TriggerTimestamp = Timestamp"])
 
-result = source.snapshot_when(trigger_table=trigger, stamp_cols=[], history=True)
+result = source.snapshot_when(trigger_table=trigger, history=True)
 ```
 
 ![A user navigates between the `source` and `trigger` tables in the console](../assets/how-to/snapshot-when-history.gif)

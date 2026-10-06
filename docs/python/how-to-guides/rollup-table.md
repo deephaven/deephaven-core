@@ -26,12 +26,12 @@ Rollup tables are created with the [`rollup`](../reference/table-operations/crea
 The basic syntax is as follows:
 
 ```syntax
-result = source.rollup(aggs=agg_list, by=by_list, include_constituents)
+result = source.rollup(aggs=agg_list, by=by_list, include_constituents=False)
 ```
 
 In the result table, only the first and second levels are initially expanded. Levels can be expanded by clicking on the right-facing arrow in a corresponding `by` column.
 
-The [`rollup`](../reference/table-operations/create/rollup.md) method takes three arguments. The first two are required, while the third is optional.
+The [`rollup`](../reference/table-operations/create/rollup.md) method takes three arguments. Only `aggs` is required; `by` and `include_constituents` are optional.
 
 1. `aggs`: One or more aggregations.
 
@@ -44,10 +44,10 @@ The following aggregations are supported:
 | [`count_`](../reference/table-operations/group-and-aggregate/AggCount.md)                 | <Check/>              |
 | [`count_distinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) | <Check/>              |
 | [`count_where`](../reference/table-operations/group-and-aggregate/AggCountWhere.md)       | <Check/>              |
-| [`distinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)            | <RedX/>               |
+| [`distinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)            | <Check/>              |
 | [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md)                  | <Check/>              |
-| [`formula`](../reference/table-operations/group-and-aggregate/AggFormula.md)              | <RedX/>               |
-| [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md)                  | <RedX/>               |
+| [`formula`](../reference/table-operations/group-and-aggregate/AggFormula.md)              | <Check/>              |
+| [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md)                  | <Check/>              |
 | [`last`](../reference/table-operations/group-and-aggregate/AggLast.md)                    | <Check/>              |
 | [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md)                     | <Check/>              |
 | [`median`](../reference/table-operations/group-and-aggregate/AggMed.md)                   | <RedX/>               |
@@ -57,15 +57,17 @@ The following aggregations are supported:
 | [`sorted_first`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md)     | <Check/>              |
 | [`sorted_last`](../reference/table-operations/group-and-aggregate/AggSortedLast.md)       | <Check/>              |
 | [`std`](../reference/table-operations/group-and-aggregate/AggStd.md)                      | <Check/>              |
-| [`sum_`](../reference/table-operations/group-and-aggregate/AggSum.md)                     | <RedX/>               |
+| [`sum_`](../reference/table-operations/group-and-aggregate/AggSum.md)                     | <Check/>              |
 | [`unique`](../reference/table-operations/group-and-aggregate/AggUnique.md)                | <Check/>              |
 | [`var`](../reference/table-operations/group-and-aggregate/AggVar.md)                      | <Check/>              |
 | [`weighted_avg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)            | <Check/>              |
 | [`weighted_sum`](../reference/table-operations/group-and-aggregate/AggWSum.md)            | <Check/>              |
 
+`formula` is supported when the formula string names its output and input columns, for example `agg.formula("Total = sum(Value)")`. The deprecated form that uses `formula_param` is not supported.
+
 In the case of a rollup table with a single aggregation, that aggregation can be on its own or in a single-element list. When more than one aggregation is used, the aggregations must be in a list. The aggregation(s) can be defined outside of the `rollup` call just like with [combined aggregations](./combined-aggregations.md#syntax).
 
-2. `by`: The set of columns that define the hierarchy of the table. These columns are what you will be able to expand and collapse with the arrows in the UI. The hierarchy is determined in a left-to-right order, so if the columns are specified `["ColumnOne", "ColumnTwo"]`, `ColumnOne` can be expanded to show all values of `ColumnTwo` that belong to each unique value in `ColumnOne`.
+2. `by`: (Optional) The set of columns that define the hierarchy of the table. These columns are what you will be able to expand and collapse with the arrows in the UI. The hierarchy is determined in a left-to-right order, so if the columns are specified `["ColumnOne", "ColumnTwo"]`, `ColumnOne` can be expanded to show all values of `ColumnTwo` that belong to each unique value in `ColumnOne`. The default value is `None`, which aggregates all rows into a single root node.
 
 3. `include_constituents`: (Optional) A boolean to indicate whether or not the table will include an additional level at each leaf that displays the rows from the original table that were aggregated. The default value is `False`, so that no rows from the original table will be included in the result.
 
@@ -75,7 +77,7 @@ In the case of a rollup table with a single aggregation, that aggregation can be
 
 In our [examples repository](https://github.com/deephaven/examples), we have an [insurance dataset](https://github.com/deephaven/examples/tree/main/Insurance) that can show a simple real-world use case of aggregations and hierarchy.
 
-In this example, two rollup tables are created. The first performs zero aggregations, but creates a hierarchy from the `region` and `age` columns. The second calculates an aggregated average of the `bmi` and `expenses` columns. Each rollup table specifies `include_constituents=True` as the second argument to include the rows from the original table that made up each aggregation.
+In this example, a rollup table calculates an aggregated average of the `bmi` and `expenses` columns, grouped by `region` and `age`. It sets `include_constituents=True` to include the rows from the original table that made up each aggregation.
 
 ```python order=insurance,insurance_rollup
 from deephaven import read_csv, agg

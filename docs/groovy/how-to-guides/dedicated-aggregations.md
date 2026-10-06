@@ -43,8 +43,8 @@ Each dedicated aggregator performs one calculation at a time:
 - [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md) - Sum of each group.
 - [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md) - Last `n` rows of each group.
 - [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) - Sample variance of each group.
-- [`weightedAvgBy`](../reference/table-operations/group-and-aggregate/wavgBy.md) - Weighted average of each group.
-- [`weightedSumBy`](../reference/table-operations/group-and-aggregate/wsumBy.md) - Weighted sum of each group.
+- [`wavgBy`](../reference/table-operations/group-and-aggregate/wavgBy.md) - Weighted average of each group.
+- [`wsumBy`](../reference/table-operations/group-and-aggregate/wsumBy.md) - Weighted sum of each group.
 
 In the following examples, we have test results in various subjects for some students. We want to summarize this information to see if students perform better in one class or another.
 
@@ -164,7 +164,7 @@ count = source.countBy("NumTests", "Name")
 In the following examples, we start with the same source table containing students' test results as used above.
 
 > [!CAUTION]
-> Applying these aggregations to a column where the average cannot be computed will result in an error. For example, the average is not defined for a column of string values. For more information on removing columns from a table, see [`dropColumns`](../reference/table-operations/select/drop-columns.md). The syntax for using [`dropColumns`](../reference/table-operations/select/drop-columns.md) is `result = source.dropColumns("Col1", "Col2").sumBy("Col3", "Col4")`.
+> Applying `sumBy`, `avgBy`, `stdBy`, or `varBy` to a column of an unsupported type, such as a string column, results in an error. For more information on removing columns from a table, see [`dropColumns`](../reference/table-operations/select/drop-columns.md). The syntax for using [`dropColumns`](../reference/table-operations/select/drop-columns.md) is `result = source.dropColumns("Col1", "Col2").sumBy("Col3", "Col4")`.
 
 ### `sumBy`
 
@@ -200,7 +200,7 @@ var = source.dropColumns("Subject").varBy("Name")
 
 ### `medianBy`
 
-In this example, [`medianBy`](../reference/table-operations/group-and-aggregate/medianBy.md) calculates the median of test scores for each `Name`. Because a median cannot be computed for the string column `Subject`, this column is dropped before applying [`medianBy`](../reference/table-operations/group-and-aggregate/medianBy.md).
+In this example, [`medianBy`](../reference/table-operations/group-and-aggregate/medianBy.md) calculates the median of test scores for each `Name`. The string column `Subject` is dropped before applying [`medianBy`](../reference/table-operations/group-and-aggregate/medianBy.md) so that the result contains only the median score; otherwise, `medianBy` would also return the median subject for each `Name`.
 
 ```groovy test-set=1
 median = source.dropColumns("Subject").medianBy("Name")
@@ -208,7 +208,7 @@ median = source.dropColumns("Subject").medianBy("Name")
 
 ### `minBy`
 
-In this example, [`minBy`](../reference/table-operations/group-and-aggregate/minBy.md) calculates the minimum of test scores for each `Name`. Because a minimum cannot be computed for the string column `Subject`, this column is dropped before applying [`minBy`](../reference/table-operations/group-and-aggregate/minBy.md).
+In this example, [`minBy`](../reference/table-operations/group-and-aggregate/minBy.md) calculates the minimum of test scores for each `Name`. The string column `Subject` is dropped before applying [`minBy`](../reference/table-operations/group-and-aggregate/minBy.md) so that the result contains only the minimum score; otherwise, `minBy` would also return the alphabetically first subject for each `Name`.
 
 ```groovy test-set=1
 minimum = source.dropColumns("Subject").minBy("Name")
@@ -216,7 +216,7 @@ minimum = source.dropColumns("Subject").minBy("Name")
 
 ### `maxBy`
 
-In this example, [`maxBy`](../reference/table-operations/group-and-aggregate/maxBy.md) calculates the maximum of test scores for each `Name`. Because a maximum cannot be computed for the string column `Subject`, this column is dropped before applying [`maxBy`](../reference/table-operations/group-and-aggregate/maxBy.md) .
+In this example, [`maxBy`](../reference/table-operations/group-and-aggregate/maxBy.md) calculates the maximum of test scores for each `Name`. The string column `Subject` is dropped before applying [`maxBy`](../reference/table-operations/group-and-aggregate/maxBy.md) so that the result contains only the maximum score; otherwise, `maxBy` would also return the alphabetically last subject for each `Name`.
 
 ```groovy test-set=1
 maximum = source.dropColumns("Subject").maxBy("Name")

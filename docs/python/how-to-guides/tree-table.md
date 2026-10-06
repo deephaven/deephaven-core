@@ -8,9 +8,9 @@ This guide will show you how to create a hierarchical tree table. A tree table i
 
 In computer science, trees are data structures used to represent hierarchical relationships between pieces of data. The data within the tree is stored in _nodes_, which are represented by the boxes in the diagram above.
 
-Every tree table has one (and only one) root node, which is the topmost node in the tree. Aside from the root node, all other nodes in the tree follow the same rules: each node can have one (and only one) parent, and zero or more children. In the diagram above, `B7`'s parent is `A3`, and its children are `C1` and `C2`. Nodes with no children are known as _leaf nodes_, or leaves, as they are the terminal nodes of the tree structure. `B3` and `C1` are both leaves in the diagram above.
+In a Deephaven tree table, the root level of the tree holds every row whose parent column is null. These rows are the top-level nodes of the tree. Every other node has one (and only one) parent, and any node can have zero or more children. In the diagram above, `B7`'s parent is `A3`, and its children are `C1` and `C2`. Nodes with no children are known as _leaf nodes_, or leaves, as they are the terminal nodes of the tree structure. `B3` and `C1` are both leaves in the diagram above.
 
-A node with no parent is known as an _orphan_, and will appear in the table outside of the tree structure.
+A node whose parent ID is not null but does not match any row's ID is an _orphan_. Orphans are left out of the tree.
 
 ## `tree`
 
@@ -24,9 +24,9 @@ Where:
 
 - `id_col` is the name of the column that contains the unique identifier for each node in the tree.
 - `parent_col` is the name of the column that contains the unique identifier for the parent of each node in the tree.
-- `promote_orphans` is an optional boolean that determines whether nodes with no parent should be promoted to be children of the root node rather than appearing outside of the tree structure. By default, this is set to `False`.
+- `promote_orphans` is an optional boolean that determines whether orphan nodes (rows whose parent does not exist in the table) are promoted to children of the root node instead of being left out of the tree. By default, this is set to `False`.
 
-The resulting table is initially collapsed, only showing the root node. Clicking on that node will expand it to show its children, and so on. Rows in the initial table with a `parent_col` value equal to a row in the `id_col` column will appear as children of the parent row.
+The resulting table initially shows only the top-level rows (rows with a null parent), collapsed. Click a row to expand it and show its children, and so on. Rows in the initial table with a `parent_col` value equal to a row in the `id_col` column will appear as children of the parent row.
 
 ![A user expands notes in a tree table](../assets/how-to/treetable.gif)
 
@@ -34,7 +34,7 @@ The resulting table is initially collapsed, only showing the root node. Clicking
 
 ### Static data
 
-The first example creates two constituent tables, which are then [joined](../reference/table-operations/join/join.md) together to form the `source` table. The `ID` and `Parent` columns in `source` are used as the ID and parent columns, respectively.
+The first example creates a `source` table in which each row's `Parent` is its `ID` divided by 4, rounded down (row 0 has a null parent), and builds a tree from the `ID` and `Parent` columns.
 
 ```python order=result,source
 from deephaven.constants import NULL_INT
@@ -49,7 +49,7 @@ result = source.tree(id_col="ID", parent_col="Parent")
 
 ### Real-time data
 
-Tree tables work in real-time applications the same way as they do in static contexts. This can be shown via an example similar to the one above.
+Tree tables work in real-time applications the same way as they do in static contexts. This can be shown via an example similar to the one above. It creates two constituent tables, which are then [joined](../reference/table-operations/join/join.md) together to form the `source` table.
 
 ```python ticking-table order=null
 from deephaven import empty_table, time_table
@@ -71,17 +71,14 @@ result = source.tree(id_col="ID", parent_col="Parent")
 
 Rows (nodes) in a tree table are considered "orphans" if:
 
-- The node in question is not the root node.
 - The node's parent is _not_ null.
 - The node's parent does not exist in the table.
 
-Non-root nodes where the parent is `null` _are not considered orphans_. They can appear in the tree table, but they will appear outside of the tree structure and will be unaffected by the `promote_orphans` argument. For example, see rows 102 and 103 in the following figure:
+Rows whose parent is null are not orphans. They are top-level nodes of the tree, like rows 102 and 103 in the following figure. When promoted, orphans become top-level nodes in the same way.
 
 ![A tree table with orphan nodes](../assets/how-to/tree-null-parents.png)
 
-Note that these rows appear on the same level as the root node, outside of the tree structure.
-
-Orphan nodes appear outside of the tree table's tree structure by default. To include orphans in a tree table as children of the root node, switch the optional argument `promote_orphans` to `True`.
+By default, orphan nodes don't appear in the tree table. To include orphans in a tree table as children of the root node, switch the optional argument `promote_orphans` to `True`.
 
 The following example shows how the resulting tree table changes if orphans are promoted.
 

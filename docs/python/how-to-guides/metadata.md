@@ -4,7 +4,7 @@ title: Access table metadata
 
 This guide will show you how to use methods from Deephaven's `Table` class to access the metadata for your table.
 
-A table's metadata provides basic information about its source data, such as the table type and size, whether the data is refreshing, and the data types of each column. You may want to confirm if a column is an `int` or a `double`, or check whether a column is a partitioning column or grouping column.
+A table's metadata provides basic information about its source data, such as the table type and size, whether the data is refreshing, and the data types of each column. You may want to confirm if a column is an `int` or a `double`, or check whether a column is a partitioning column.
 
 ## `meta_table`
 
@@ -14,7 +14,7 @@ The [`meta_table`](../reference/table-operations/metadata/meta_table.md) attribu
 result = source.meta_table
 ```
 
-This can be useful when you want to confirm which columns in a table are partitioning or grouping, or verify the data type of a column.
+This can be useful when you want to confirm which columns in a table are partitioning columns, or verify the data type of a column.
 
 Let's create a table of weather data for Miami, Florida.
 
@@ -138,7 +138,7 @@ print(d)
 
 ## Attributes
 
-The following attributes do not take arguments, but will print metadata information in the console.
+The following are properties, not methods: access them without parentheses. Each returns a value; the examples print it.
 
 ### `columns`
 

@@ -382,14 +382,14 @@ print(datetime1 - datetime_array)
 
 [`pandas`](https://pandas.pydata.org) uses different types to represent scalar and array versions of each type:
 
-| Type                                                                                        | Represents                                                                          |
-| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| [`Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)           | Singular dates, times, or date-times, optionally includes time zone information     |
-| [`DatetimeIndex`](https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.html)   | Sequences of dates, times, or date-times, optionally includes time zone information |
-| [`Timedelta`](https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html)           | Singular durations less than a day in length                                        |
-| [`TimedeltaIndex`](https://pandas.pydata.org/docs/reference/api/pandas.TimedeltaIndex.html) | Sequences of durations, each less than a day in length                              |
-| [`Period`](https://pandas.pydata.org/docs/reference/api/pandas.Period.html)                 | Singular durations lasting a day or more                                            |
-| [`PeriodIndex`](https://pandas.pydata.org/docs/reference/api/pandas.PeriodIndex.html)       | Sequences of durations, each lasting a day or more                                  |
+| Type                                                                                        | Represents                                                                                  |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [`Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)           | Singular dates, times, or date-times, optionally includes time zone information             |
+| [`DatetimeIndex`](https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.html)   | Sequences of dates, times, or date-times, optionally includes time zone information         |
+| [`Timedelta`](https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html)           | Singular durations of any length                                                            |
+| [`TimedeltaIndex`](https://pandas.pydata.org/docs/reference/api/pandas.TimedeltaIndex.html) | Sequences of durations                                                                      |
+| [`Period`](https://pandas.pydata.org/docs/reference/api/pandas.Period.html)                 | Singular spans of time with a fixed frequency (for example, a specific day, month, or year) |
+| [`PeriodIndex`](https://pandas.pydata.org/docs/reference/api/pandas.PeriodIndex.html)       | Sequences of such spans                                                                     |
 
 The date-time types also support imposing a time-zone, but no explicit time zone type is provided, as in the [`datetime`](https://docs.python.org/3/library/datetime.html#module-datetime) package.
 
@@ -500,7 +500,7 @@ trimmed_crypto_dh = crypto_dh.where("dateTime >= j_min && dateTime <= j_max").so
 
 ### Java to Python conversions
 
-In addition to providing functions to convert Python types to their equivalent Java types, [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) provides a suite of functions to convert Java types to Python types. These functions support converting any of the seven key Java types to their Python equivalents.
+In addition to providing functions to convert Python types to their equivalent Java types, [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) provides a suite of functions to convert Java types to Python types. These functions convert Java date-time values (`LocalDate`, `LocalTime`, `Instant`, `ZonedDateTime`, `Duration`, and `Period`) to their Python equivalents. `to_timedelta` and `to_pd_timedelta` accept only day- or week-based periods; `to_np_timedelta64` accepts a period in a single unit of days, months, or years. There is no Java-to-Python conversion for `ZoneId`.
 
 The Java-to-Python conversion methods included in [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) are:
 
@@ -570,11 +570,11 @@ mse = t_testing_eval.update("SqErr = Math.pow(Y - YPred, 2)").agg_by(
 
 ### Current time and the Deephaven Clock
 
-The [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) module includes two functions, [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) that return current date-time information according to the _Deephaven clock_.
+The [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) module includes two functions, [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_today) that return current date-time information according to the _Deephaven clock_.
 
-Typically, the Deephaven clock is set to the system clock of the computer the software is running on. However, this is not always the case. In particular, [TableReplayer](../reference/table-operations/create/Replayer.md) sets the Deephaven clock to a simulated clock that aligns with the timestamps being replayed. Thus, the Deephaven clock will be different from the system clock, and it is important to be aware of cases where this may arise.
+Typically, the Deephaven clock is set to the system clock of the computer the software is running on. However, this is not always the case. The Deephaven clock can be replaced with a custom clock (for example, a replay clock) with [`DateTimeUtils.setClock`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#setClock(io.deephaven.base.clock.Clock)). When that happens, [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_today) return times from that clock instead of the system clock, so it is important to be aware of cases where this may arise.
 
-Here is simple example of [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now):
+Here is simple example of [`dh_now`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_now) and [`dh_today`](/core/pydoc/code/deephaven.time.html#deephaven.time.dh_today):
 
 ```python test-set=15
 import deephaven.time as dhtime
@@ -645,7 +645,7 @@ from deephaven import read_csv
 gsod = read_csv("/data/examples/GSOD/csv/station_data.csv")
 ```
 
-The `BEGIN` and `END` columns are dates, formatted as `YYYYMMDD`. However, Deephaven does not recognize that format as a date-time format, and interprets the columns as integers:
+The `BEGIN` and `END` columns are dates, formatted as `yyyyMMdd`. However, Deephaven does not recognize that format as a date-time format, and interprets the columns as integers:
 
 ```python test-set=17
 gsod_meta = gsod.meta_table
@@ -653,14 +653,14 @@ gsod_meta = gsod.meta_table
 
 This means that none of the date-time functionality previously discussed will be available. To remedy this, [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) provides the [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format) function, which makes parsing ingested date-time values easy.
 
-To use [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format), pass a string that describes the format of the _input_ date-time values. Since the `BEGIN` and `END` columns are formatted as `YYYYMMDD`, the argument to [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format) should be `"YYYYMMDD"`:
+To use [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format), pass a string that describes the format of the _input_ date-time values. Since the `BEGIN` and `END` columns are formatted as `yyyyMMdd`, the argument to [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.time.simple_date_format) should be `"yyyyMMdd"` (lowercase `y` and `d`: in Java date-time patterns, uppercase `Y` is week-year and uppercase `D` is day-of-year):
 
 ```python test-set=17
 from deephaven.time import simple_date_format
 
 # pass the format of the input date-time
-input_format = simple_date_format("YYYYMMDD")
-input_format2 = simple_date_format("YYYYMMDD")
+input_format = simple_date_format("yyyyMMdd")
+input_format2 = simple_date_format("yyyyMMdd")
 ```
 
 Now, `input_format` is an object that can be used in a query to format the `BEGIN` and `END` columns. This is done with the [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)) method, which accepts the input date-time columns as strings. So, the `int` values must be converted to strings before calling [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)). Finally, call [`toInstant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Date.html#toInstant()) on the result to get the formatted date-time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
@@ -850,14 +850,14 @@ Again, the resulting tables are identical, but the execution times are quite dif
 | [`datetime.timedelta`](https://docs.python.org/3/library/datetime.html#datetime.timedelta)          | [`Duration`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html)           | [`to_timedelta`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_timedelta)           | [`to_j_duration`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_duration)     |
 | [`datetime.timedelta`](https://docs.python.org/3/library/datetime.html#datetime.timedelta)          | [`Period`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Period.html)               | [`to_timedelta`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_timedelta)           | [`to_j_period`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_period)         |
 | [`datetime.tzinfo`](https://docs.python.org/3/library/datetime.html#datetime.tzinfo)                | [`ZoneId`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZoneId.html)               | NA                                                                                           | [`to_j_time_zone`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_time_zone)   |
-| [`numpy.datetime64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.datetime64)   | [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html)         | [`to_np_datetime64`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_np_datetime64)   | [`to_j_local_date`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_date) |
-| [`numpy.datetime64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.datetime64)   | [`LocalTime`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalTime.html)         | [`to_np_datetime64`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_np_datetime64)   | [`to_j_local_time`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_time) |
+| [`numpy.datetime64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.datetime64)   | [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html)         | NA                                                                                           | [`to_j_local_date`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_date) |
+| [`numpy.datetime64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.datetime64)   | [`LocalTime`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalTime.html)         | NA                                                                                           | [`to_j_local_time`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_time) |
 | [`numpy.datetime64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.datetime64)   | [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html)              | [`to_np_datetime64`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_np_datetime64)   | [`to_j_instant`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_instant)       |
 | [`numpy.datetime64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.datetime64)   | [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZonedDateTime.html) | [`to_np_datetime64`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_np_datetime64)   | [`to_j_zdt`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_zdt)               |
 | [`numpy.timedelta64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.timedelta64) | [`Duration`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html)           | [`to_np_timedelta64`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_np_timedelta64) | [`to_j_duration`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_duration)     |
 | [`numpy.timedelta64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.timedelta64) | [`Period`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Period.html)               | [`to_np_timedelta64`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_np_timedelta64) | [`to_j_period`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_period)         |
-| [`pandas.Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)            | [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html)         | [`to_pd_timestamp`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_pd_timestamp)     | [`to_j_local_date`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_date) |
-| [`pandas.Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)            | [`LocalTime`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalTime.html)         | [`to_pd_timestamp`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_pd_timestamp)     | [`to_j_local_time`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_time) |
+| [`pandas.Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)            | [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html)         | NA                                                                                           | [`to_j_local_date`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_date) |
+| [`pandas.Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)            | [`LocalTime`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalTime.html)         | NA                                                                                           | [`to_j_local_time`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_local_time) |
 | [`pandas.Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)            | [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html)              | [`to_pd_timestamp`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_pd_timestamp)     | [`to_j_instant`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_instant)       |
 | [`pandas.Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)            | [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZonedDateTime.html) | [`to_pd_timestamp`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_pd_timestamp)     | [`to_j_zdt`](/core/pydoc/code/deephaven.time.html#deephaven.time.to_j_zdt)               |
 | [`pandas.DatetimeIndex`](https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.html)    | NA                                                                                                            | NA                                                                                           | NA                                                                                       |

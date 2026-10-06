@@ -134,11 +134,11 @@ The `keyedTranspose` operation follows specific rules for naming output columns:
 | Single aggregation, single column-by | Value from column-by column   | `INFO`, `WARN`           |
 | Multiple aggregations                | Aggregation name + value      | `Count_INFO`, `Sum_WARN` |
 | Multiple column-by columns           | Values joined with underscore | `INFO_10`, `WARN_20`     |
-| Invalid characters                   | Characters removed            | `1-2.3/4` → `1234`       |
+| Invalid characters                   | Characters removed            | `Type-A` → `TypeA`       |
 | Starts with number                   | Prefixed with `column_`       | `123` → `column_123`     |
 | Duplicate names                      | Suffix added                  | `INFO`, `INFO2`          |
 
-This example demonstrates each of the column naming scenarios described above:
+This example demonstrates the column naming scenarios described above. Duplicate source rows, such as the two `INFO` rows for each `RowKey`, are aggregated into a single group before transposing, so they produce one column, not two:
 
 ```groovy order=result,source
 import io.deephaven.engine.table.impl.util.KeyedTranspose
@@ -152,7 +152,7 @@ source = newTable(
 )
 
 // Scenario 1: Single aggregation, single column-by
-// Result columns: RowKey, Normal, 1234, column_123, INFO, INFO2, WARN
+// Result columns: RowKey, Normal, column_1234, column_123, INFO, WARN
 scenario1 = KeyedTranspose.keyedTranspose(
     source,
     List.of(AggSum("Value")),
@@ -161,7 +161,7 @@ scenario1 = KeyedTranspose.keyedTranspose(
 )
 
 // Scenario 2: Multiple aggregations
-// Result columns: RowKey, Sum_Normal, Sum_1234, Sum_column_123, Sum_INFO, Sum_INFO2, Sum_WARN, Count_Normal, Count_1234, Count_column_123, Count_INFO, Count_INFO2, Count_WARN
+// Result columns: RowKey, Sum_Normal, Count_Normal, Sum_1234, Count_1234, Sum_123, Count_123, Sum_INFO, Count_INFO, Sum_WARN, Count_WARN
 scenario2 = KeyedTranspose.keyedTranspose(
     source,
     List.of(
@@ -173,7 +173,7 @@ scenario2 = KeyedTranspose.keyedTranspose(
 )
 
 // Scenario 3: Multiple column-by columns
-// Result columns: RowKey, Normal_1, 1234_1, column_123_1, INFO_10, INFO2_10, WARN_10, Normal_1_2, 1234_1_2, column_123_1_2, INFO_20, INFO2_20, WARN_20
+// Result columns: RowKey, Normal_1, column_1234_1, column_123_1, INFO_10, WARN_10, INFO_20, WARN_20
 scenario3 = KeyedTranspose.keyedTranspose(
     source,
     List.of(AggSum("Value")),
@@ -188,12 +188,13 @@ result = scenario1.naturalJoin(scenario2, "RowKey").naturalJoin(scenario3, "RowK
 In this example:
 
 - **Normal**: Standard column name (single aggregation, single column-by).
-- **1234**: Invalid characters (`-`, `.`, `/`) are removed.
+- **column_1234**: Invalid characters (`-`, `.`, `/`) are removed, then `column_` is prefixed because the result starts with a number.
 - **column_123**: Numeric value is prefixed with `column_`.
-- **INFO** and **INFO2**: Duplicate names get suffixes.
 - **WARN**: Additional standard column name.
-- **Sum_Normal**, **Count_Normal**: Multiple aggregations prefix the column name.
+- **Sum_Normal**, **Count_Normal**: Multiple aggregations prefix the column name. The aggregation prefix is added before the name is cleaned up, so `123` becomes `Sum_123`. That name starts with a letter, so it doesn't get the `column_` prefix.
 - **INFO_10**, **WARN_10**: Multiple column-by values are joined with underscores.
+
+This example does not produce duplicate names. If two values clean up to the same name, such as `INFO` and `IN.FO`, the first becomes `INFO` and the second gets a numeric suffix: `INFO2`.
 
 ### Sanitize data before transposing
 

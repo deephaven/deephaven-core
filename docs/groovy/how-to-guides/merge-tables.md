@@ -46,7 +46,10 @@ The resulting table `result` is all of the source tables stacked vertically. If 
 
 ## `mergeSorted`
 
-The [`mergeSorted`](../reference/table-operations/merge/merge-sorted.md) method sorts the result table after merging the data.
+The [`mergeSorted`](../reference/table-operations/merge/merge-sorted.md) method merges tables that are each already sorted on a key column into one table sorted by that column.
+
+> [!NOTE]
+> Each input table must already be sorted by the key column, or the results are undefined. `mergeSorted` does not support refreshing (ticking) tables.
 
 ```groovy syntax
 t = mergeSorted(keyColumn, tables)
@@ -60,7 +63,7 @@ Let's merge our three tables and sort by `Number` with [`mergeSorted`](../refere
 result = mergeSorted("Number", source1, source2, source3)
 ```
 
-The resulting table is all of the source tables stacked vertically and sorted by the `Number` column.
+The resulting table contains all rows from the source tables, sorted by the `Number` column.
 
 ## Perform efficient merges
 
@@ -73,7 +76,7 @@ result = null
 
 for (int i = 0; i < 5; i++) {
    new_result = newTable(stringCol("Code", String.format("A%d", i), String.format("A%d", i)), intCol("Val", i, 10*i))
-   if (result = null) {
+   if (result == null) {
        result = new_result
    } else {
        result = merge(result, new_result)

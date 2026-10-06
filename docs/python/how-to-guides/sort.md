@@ -53,10 +53,10 @@ desc = SortDirection.DESCENDING
 result = source.sort(order_by=["Letter", "Number"], order=[asc, desc])
 ```
 
-This is simpler than invoking both methods to accomplish the same result:
+This is simpler than chaining `sort` and `sort_descending` to accomplish the same result. A chain must list the sorts in reverse priority order, because each sort is stable and the last sort becomes the primary sort key:
 
 ```python test-set=1 order=result
-result = source.sort(order_by="Letter").sort_descending(order_by="Number")
+result = source.sort_descending(order_by="Number").sort(order_by="Letter")
 ```
 
 ## `restrict_sort_to`

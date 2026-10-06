@@ -272,11 +272,11 @@ You can also create foreground heat maps with `heatmapFg` or `heatmapForeground`
 
 ### Advanced row formatting
 
-The special column name `__ROWFORMATTED` allows you to format entire rows based on conditions. This is particularly useful for creating banded tables or highlighting specific data patterns:
+To format entire rows based on conditions, use `*` as the column name in `formatColumns`. `formatRowWhere` uses the same mechanism internally. Row formatting is useful for creating banded tables or highlighting specific data patterns:
 
 ```groovy test-set=1 order=studentsRowFormat
 studentsRowFormat = students.formatColumns(
-    "__ROWFORMATTED = GPA >= 3.5 ? bg(LIGHT_GREEN) : GPA >= 3 ? bg(LIGHT_BLUE) : bg(BRIGHT_YELLOW)"
+    "* = GPA >= 3.5 ? bg(LIGHT_GREEN) : GPA >= 3 ? bg(LIGHT_BLUE) : bg(BRIGHT_YELLOW)"
 )
 ```
 

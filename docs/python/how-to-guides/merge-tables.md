@@ -34,7 +34,7 @@ t = merge(tables: List[Table])
 ```
 
 > [!NOTE]
-> The columns for each table must have the same names and types, or a column mismatch error will occur. `NULL` inputs are ignored.
+> The columns for each table must have the same names and types, or a column mismatch error will occur. All elements of `tables` must be tables; `None` is not accepted.
 
 Let's merge two of our tables using the [`merge`](../reference/table-operations/merge/merge.md) method.
 
@@ -46,7 +46,10 @@ The resulting table `result` is all of the source tables stacked vertically. If 
 
 ## `merge_sorted`
 
-The [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md) method sorts the result table after merging the data.
+The [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md) method merges tables that are each already sorted on a key column into one table sorted by that column.
+
+> [!NOTE]
+> Each input table must already be sorted by the key column, or the results are undefined. `merge_sorted` does not support refreshing (ticking) tables.
 
 ```python syntax
 t = merge_sorted(tables: List[Table], order_by: str)
@@ -58,7 +61,7 @@ Let's merge our three tables and sort by `Number` with [`merge_sorted`](../refer
 result = merge_sorted([source1, source2, source3], "Number")
 ```
 
-The resulting table is all of the source tables stacked vertically and sorted by the `Number` column.
+The resulting table contains all rows from the source tables, sorted by the `Number` column.
 
 ## Perform efficient merges
 

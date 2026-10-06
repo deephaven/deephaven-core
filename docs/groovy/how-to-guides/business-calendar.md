@@ -27,7 +27,7 @@ We can see from the output that `nyseCal` is an [`io.deephaven.time.calendar.Bus
 
 ### Create data
 
-Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates a month's worth of date-time data spaced 3 minutes apart.
+Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates about three weeks' worth of date-time data spaced 3 minutes apart.
 
 ```groovy test-set=1 order=source
 // Create sample data
@@ -102,7 +102,8 @@ The `TestCalendar_2024.calendar` file can be found [here](https://github.com/dee
         This calendar file defines standard business hours, weekends, and holidays.
     </description>
         <default>
-        <businessTime><open>08:00</open><close>12:00</close><open>13:00</open><close>17:00</close></businessTime>
+        <businessTime><open>08:00</open><close>12:00</close></businessTime>
+        <businessTime><open>13:00</open><close>17:00</close></businessTime>
         <weekend>Saturday</weekend>
         <weekend>Sunday</weekend>
     </default>
@@ -168,15 +169,17 @@ import static io.deephaven.time.calendar.Calendars.addCalendarFromFile
 addCalendarFromFile("/data/examples/Calendar/TestCalendar_2024.calendar")
 ```
 
-The second way is through the configuration property `Calendar.importPath`. This should point to a text file with line-separated locations of any calendar files to load by default. Say your Docker configuration has a `/data/Calendar` folder that contains three calendar files: `MyCalendar.calendar`, `TestCalendar_2024.calendar`, `CrazyCalendar.calendar`. The text file, which we'll name `calendar_imports.txt` and place in the root of your Deephaven deployment, would look as follows:
+The second way is through the configuration property `Calendar.userImportPath`, which adds calendars to the built-in set when the server starts. It points to a text file with line-separated locations of calendar files to load. Deephaven loads both this text file and each calendar file it lists as classpath resources, not as filesystem paths. The directory that holds them must be on the server's classpath, and each location is relative to that directory.
+
+Say a `calendars` folder next to your `docker-compose.yml` file contains three calendar files: `MyCalendar.calendar`, `TestCalendar_2024.calendar`, `CrazyCalendar.calendar`. The same folder also contains a text file named `calendar_imports.txt`, which looks as follows:
 
 ```txt
-/data/Calendar/MyCalendar.calendar
-/data/Calendar/TestCalendar_2024.calendar
-/data/Calendar/CrazyCalendar.calendar
+/MyCalendar.calendar
+/TestCalendar_2024.calendar
+/CrazyCalendar.calendar
 ```
 
-To make Deephaven load this list of calendars automatically upon startup via [`docker compose`](https://docs.docker.com/compose/), you can set the property directly:
+To make Deephaven load this list of calendars automatically upon startup via [`docker compose`](https://docs.docker.com/compose/), mount the folder, add it to the classpath with `EXTRA_CLASSPATH`, and set the property:
 
 ```yaml
 services:
@@ -186,11 +189,16 @@ services:
       - "${DEEPHAVEN_PORT:-10000}:10000"
     volumes:
       - ./data:/data
+      - ./calendars:/calendars
     environment:
-      - START_OPTS=-Xmx4g -DCalendar.importPath="/calendar_imports.txt"
+      - EXTRA_CLASSPATH=/apps/libs/*:/calendars
+      - START_OPTS=-Xmx4g -DCalendar.userImportPath=/calendar_imports.txt
 ```
 
 Alternatively, a [configuration file](./configuration/config-file.md) could be used to set the property.
+
+> [!CAUTION]
+> Do not set `Calendar.importPath` to load your own calendars. That property lists the built-in calendars, so overriding it removes `UTC`, `USNYSE_EXAMPLE`, and `USBANK_EXAMPLE`. That includes `UTC`, which `Calendar.default` names by default.
 
 ### Get an instance of the new calendar
 

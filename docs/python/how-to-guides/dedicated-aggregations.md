@@ -43,7 +43,7 @@ Each dedicated aggregator performs one calculation at a time:
 - [`sum_by`](../reference/table-operations/group-and-aggregate/sumBy.md) - Sum of each group.
 - [`tail_by`](../reference/table-operations/group-and-aggregate/tailBy.md) - Last `n` rows of each group.
 - [`var_by`](../reference/table-operations/group-and-aggregate/varBy.md) - Sample variance of each group.
-- [`weighted_avg_by`](../reference/table-operations/group-and-aggregate/weighted-sum-by.md) - Weighted average of each group.
+- [`weighted_avg_by`](../reference/table-operations/group-and-aggregate/weighted-avg-by.md) - Weighted average of each group.
 - [`weighted_sum_by`](../reference/table-operations/group-and-aggregate/weighted-sum-by.md) - Weighted sum of each group.
 
 In the following examples, we have test results in various subjects for some students. We want to summarize this information to see if students perform better in one class or another.
@@ -217,7 +217,7 @@ count = source.count_by("NumTests", by=["Name"])
 In the following examples, we start with the same source table containing students' test results as used above.
 
 > [!CAUTION]
-> Applying these aggregations to a column where the average cannot be computed will result in an error. For example, the average is not defined for a column of string values. For more information on removing columns from a table, see [`drop_columns`](../reference/table-operations/select/drop-columns.md). The syntax for using [`drop_columns`](../reference/table-operations/select/drop-columns.md) is `result = source.drop_columns(cols=["Col1", "Col2"]).sum_by(by=["Col3", "Col4"])`.
+> Applying `sum_by`, `avg_by`, `std_by`, or `var_by` to a column of an unsupported type, such as a string column, results in an error. For more information on removing columns from a table, see [`drop_columns`](../reference/table-operations/select/drop-columns.md). The syntax for using [`drop_columns`](../reference/table-operations/select/drop-columns.md) is `result = source.drop_columns(cols=["Col1", "Col2"]).sum_by(by=["Col3", "Col4"])`.
 
 ### `sum_by`
 
@@ -253,7 +253,7 @@ var = source.drop_columns(cols=["Subject"]).var_by(by=["Name"])
 
 ### `median_by`
 
-In this example, [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md) calculates the median of test scores for each `Name`. Because a median cannot be computed for the string column `Subject`, this column is dropped before applying [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md).
+In this example, [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md) calculates the median of test scores for each `Name`. The string column `Subject` is dropped before applying [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md) so that the result contains only the median score; otherwise, `median_by` would also return the median subject for each `Name`.
 
 ```python test-set=1
 median = source.drop_columns(cols=["Subject"]).median_by(by=["Name"])
@@ -261,7 +261,7 @@ median = source.drop_columns(cols=["Subject"]).median_by(by=["Name"])
 
 ### `min_by`
 
-In this example, [`min_by`](../reference/table-operations/group-and-aggregate/minBy.md) calculates the minimum of test scores for each `Name`. Because a minimum cannot be computed for the string column `Subject`, this column is dropped before applying [`min_by`](../reference/table-operations/group-and-aggregate/minBy.md).
+In this example, [`min_by`](../reference/table-operations/group-and-aggregate/minBy.md) calculates the minimum of test scores for each `Name`. The string column `Subject` is dropped before applying [`min_by`](../reference/table-operations/group-and-aggregate/minBy.md) so that the result contains only the minimum score; otherwise, `min_by` would also return the alphabetically first subject for each `Name`.
 
 ```python test-set=1
 minimum = source.drop_columns(cols=["Subject"]).min_by(by=["Name"])
@@ -269,7 +269,7 @@ minimum = source.drop_columns(cols=["Subject"]).min_by(by=["Name"])
 
 ### `max_by`
 
-In this example, [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md) calculates the maximum of test scores for each `Name`. Because a maximum cannot be computed for the string column `Subject`, this column is dropped before applying [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md) .
+In this example, [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md) calculates the maximum of test scores for each `Name`. The string column `Subject` is dropped before applying [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md) so that the result contains only the maximum score; otherwise, `max_by` would also return the alphabetically last subject for each `Name`.
 
 ```python test-set=1
 maximum = source.drop_columns(cols=["Subject"]).max_by(by=["Name"])

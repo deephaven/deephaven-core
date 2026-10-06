@@ -106,7 +106,7 @@ t_ungrouped = t.ungroup()
 
 ## Handling different array lengths
 
-The [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) method cannot unpack a row that contains [arrays](../reference/query-language/types/arrays.md) of different length.
+By default, the [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) method cannot unpack a row that contains [arrays](../reference/query-language/types/arrays.md) of different lengths.
 
 To demonstrate this, we'll start by creating a table with two columns and one row.
 
@@ -122,12 +122,19 @@ t_ungrouped = t.ungroup()  // This results in an error
 
 ![A collapsed error message highlighted in the Deephaven IDE](../assets/how-to/t_ungrouped_Error.png)
 
-It is only possible to ungroup columns of the same length. [Arrays](../reference/query-language/types/arrays.md) of different lengths must be ungrouped separately.
+To ungroup [arrays](../reference/query-language/types/arrays.md) of different lengths, ungroup each column separately:
 
 ```groovy order=t,t_ungroupedByX,t_ungroupedByZ
 t = emptyTable(1).update("X = new int[]{1, 2, 3}", "Z = new int[]{4, 5}")
 t_ungroupedByX = t.ungroup("X")
 t_ungroupedByZ = t.ungroup("Z")
+```
+
+Alternatively, pass `true` as the first argument (`nullFill`) to pad the shorter arrays with null values:
+
+```groovy order=t,t_ungroupedNullFill
+t = emptyTable(1).update("X = new int[]{1, 2, 3}", "Z = new int[]{4, 5}")
+t_ungroupedNullFill = t.ungroup(true)
 ```
 
 ## Null values

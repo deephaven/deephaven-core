@@ -47,9 +47,9 @@ For [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/ta
 
 - `joins`: The column(s) in the right table to join to the left table. If not specified, all columns are joined.
 
-For [`range_join`](../reference/table-operations/join/range-join.md), the third argument is also optional:
+For [`range_join`](../reference/table-operations/join/range-join.md), the third argument is required:
 
-- `aggs`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. If not specified, no aggregations are performed. Currently, only the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
+- `aggs`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. Currently, only the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
 
 ### Multiple match columns
 
@@ -165,10 +165,10 @@ result = trades.aj(
 
 ### `raj`
 
-The reverse as-of join, [`raj`](../reference/table-operations/join/raj.md), is conceptually identical, but instead of seeking a respective row that is "the same or prior to" the left-table's join-value, it seeks the value that is the "the same or just after." Compared to [`aj`](../reference/table-operations/join/aj.md), the syntax and mental model are the same, except, as you'd expect [`raj`](../reference/table-operations/join/raj.md) uses either `<`, `<=`, or `=`:
+The reverse as-of join, [`raj`](../reference/table-operations/join/raj.md), is conceptually identical, but instead of seeking a respective row that is "the same or prior to" the left-table's join-value, it seeks the value that is the "the same or just after." Compared to [`aj`](../reference/table-operations/join/aj.md), the syntax and mental model are the same, except, as you'd expect [`raj`](../reference/table-operations/join/raj.md) uses either `<` or `<=`:
 
-- `>` will join on inexact matches only.
-- `>=` will join on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `on=["ColumnToMatch"]`)
+- `<` will join on inexact matches only.
+- `<=` will join on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `on=["ColumnToMatch"]`)
 
 ```python order=result_inexact_exact,result_inexact_only,left,right
 from deephaven import empty_table
@@ -244,7 +244,7 @@ For columns appended to the left table (joins), cell values equal aggregations o
 > [!NOTE]
 > Reminders: (i) [`range_join`](../reference/table-operations/join/range-join.md) currently only supports static tables, not yet live, real-time data; and (ii) the only aggregation currently supported is the `group` operation.
 
-The following example joins two tables with [`range_join`](../reference/table-operations/join/range-join.md). The `right` table is joined to `left` on the `Y` column. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `result` table's `X` column.
+The following example joins two tables with [`range_join`](../reference/table-operations/join/range-join.md). It uses only a range match, with no exact-match columns. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` and less than the corresponding `LeftEndValue`. The aggregation groups the right table's `Y` values for each left row into the `Y` column of `result`.
 
 ```python test-set=1 order=result,left,right
 from deephaven import empty_table
