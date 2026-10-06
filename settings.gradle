@@ -301,6 +301,9 @@ project(':extensions-json-jackson').projectDir = file('extensions/json-jackson')
 include(':extensions-bson-jackson')
 project(':extensions-bson-jackson').projectDir = file('extensions/bson-jackson')
 
+include(':extensions-hadoop-common-test')
+project(':extensions-hadoop-common-test').projectDir = file('extensions/hadoop-common-test')
+
 include(':plugin')
 
 include(':plugin-options')
