@@ -555,10 +555,6 @@
                 "path": "how-to-guides/jupyter.md"
               },
               {
-                "label": "Subscribe to ticking tables from a Python client",
-                "path": "how-to-guides/pydeephaven-ticking.md"
-              },
-              {
                 "label": "Library integrations",
                 "items": [
                   {
@@ -842,6 +838,10 @@
                   {
                     "label": "Stream data with Input Tables",
                     "path": "how-to-guides/client-input-tables.md"
+                  },
+                  {
+                    "label": "Subscribe to ticking tables from a Python client",
+                    "path": "how-to-guides/pydeephaven-ticking.md"
                   }
                 ]
               },
