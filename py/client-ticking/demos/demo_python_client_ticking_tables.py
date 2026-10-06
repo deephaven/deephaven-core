@@ -15,9 +15,19 @@ symbol with last_by. Each update cycle adds rows (new symbols) and modifies rows
 
 Requires Python 3.9 or later, a Deephaven server on localhost:10000, and the
 pydeephaven-ticking package.
+
+By default, this connects with anonymous authentication. A Deephaven server started
+from the default configuration instead requires pre-shared key (PSK) authentication;
+for such a server, set the DH_AUTH_TYPE and DH_AUTH_TOKEN environment variables, for
+example:
+
+    DH_AUTH_TYPE=io.deephaven.authentication.psk.PskAuthenticationHandler \\
+    DH_AUTH_TOKEN=<your key> \\
+    python demo_python_client_ticking_tables.py
 """
 from __future__ import annotations
 
+import os
 import threading
 import time
 from dataclasses import dataclass
@@ -122,7 +132,12 @@ def make_quotes(session: pyd.Session) -> pyd.Table:
 
 
 def main() -> None:
-    session = pyd.Session(host="localhost", port=10000)
+    session = pyd.Session(
+        host="localhost",
+        port=10000,
+        auth_type=os.environ.get("DH_AUTH_TYPE", "Anonymous"),
+        auth_token=os.environ.get("DH_AUTH_TOKEN", ""),
+    )
     book = LiveQuoteBook()
     handle = listen(make_quotes(session), book)
     handle.start()

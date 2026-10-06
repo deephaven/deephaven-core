@@ -47,6 +47,9 @@ If that import fails, run `import pydeephaven_ticking` to see why. `pydeephaven`
 
 The simplest listener is a function that takes one argument — a `TableUpdate`:
 
+> [!NOTE]
+> The examples in this guide create a `Session` with no `auth_type`, which defaults to [anonymous authentication](./authentication/auth-anon.md). A Deephaven server started from the default configuration instead requires [pre-shared key authentication](./authentication/auth-psk.md); for such a server, pass `auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler"` and `auth_token="<your key>"` to `Session`, as shown in [Capture Python client tables](./capture-tables.md#connect-the-python-client-to-the-remote-deephaven-server).
+
 ```python ticking-table order=null skip-test
 import time
 from pydeephaven import Session, TableUpdate, listen
