@@ -370,9 +370,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         try (final RowSet remove = toRemove.build();
-                final RowSet insert = toInsert.build()) {
+                final WritableRowSet insert = toInsert.build()) {
             rowSet.remove(remove);
-            rowSet.insert(insert);
+            rowSet.subsume(insert);
 
             return rowSet;
         }
@@ -463,9 +463,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         try (final RowSet remove = toRemove.build();
-                final RowSet insert = toInsert.build()) {
+                final WritableRowSet insert = toInsert.build()) {
             rowSet.remove(remove);
-            rowSet.insert(insert);
+            rowSet.subsume(insert);
         }
         return rowSet;
     }
@@ -521,9 +521,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         try (final RowSet remove = toRemove.build();
-                final RowSet insert = toInsert.build()) {
+                final WritableRowSet insert = toInsert.build()) {
             rowSet.remove(remove);
-            rowSet.insert(insert);
+            rowSet.subsume(insert);
         }
         return rowSet;
     }
