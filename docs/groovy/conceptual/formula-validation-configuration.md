@@ -152,7 +152,7 @@ ColumnExpressionValidator.annotationSets.myapp=static_math_methods,string_helper
 
 Use this approach when you want to allow methods from libraries you don't control (like Java's built-in classes, third-party libraries, etc.).
 
-Since you can't add annotations to external code, you use pointcut expressions — patterns that match method signatures. The pattern syntax is adapted from AspectJ method patterns, and is a simple way to match one or more Java methods.
+Since you cannot add annotations to external code, you use pointcut expressions — patterns that match method signatures. The pattern syntax is adapted from AspectJ method patterns, and is a simple way to match one or more Java methods.
 
 ### Understanding pointcut patterns
 
@@ -172,7 +172,7 @@ A pointcut expression has three parts:
 
 A pattern also matches every instance method that overrides a matching method. For example, `java.lang.Object toString()` permits `toString` on any class, and `java.lang.Number intValue()` permits `intValue` on `Integer`, `BigDecimal`, and every other subclass of `Number`. Static methods match only the class that declares them.
 
-A class pattern matches only the methods and constructors the class itself declares, plus overrides of those methods in subclasses. It does not match methods the class inherits without overriding: `java.lang.String *(..)` does not permit `getClass` on a `String`, because `Object` declares it and `String` does not override it.
+A class pattern matches only the methods and constructors that the class itself declares, plus overrides of those methods in subclasses. It does not match methods the class inherits without overriding: `java.lang.String *(..)` does not permit `getClass` on a `String`, because `Object` declares it and `String` does not override it.
 
 ### Common examples
 
