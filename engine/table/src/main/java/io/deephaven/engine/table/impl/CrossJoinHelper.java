@@ -283,10 +283,8 @@ public class CrossJoinHelper {
             }
 
             final RightIncrementalChunkedCrossJoinStateManager jsm = new RightIncrementalChunkedCrossJoinStateManager(
-                    bucketingContext.leftSources, control.initialBuildSize(), bucketingContext.rightSources, leftTable,
-                    numRightBitsToReserve, leftOuterJoin);
-            jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
-            jsm.setTargetLoadFactor(control.getTargetLoadFactor());
+                    bucketingContext.leftSources, control.initialBuildSize(), control.getMaximumLoadFactor(),
+                    bucketingContext.rightSources, leftTable, numRightBitsToReserve, leftOuterJoin);
 
             // noinspection resource
             final TrackingWritableRowSet resultRowSet = jsm.build(leftTable, rightTable).toTracking();
@@ -802,6 +800,7 @@ public class CrossJoinHelper {
 
                         resultTable.notifyListeners(downstream);
 
+                        jsm.releaseEmptySlots(tracker);
                         tracker.clear();
                     }
                 };

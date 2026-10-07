@@ -78,12 +78,6 @@ public class ReplicateHashTable {
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
         final boolean allowMissingDestinations = false;
-
-        // Left-Only-Incremental Cross Join -> Right-Incremental Cross Join
-        doReplicate(
-                SOURCE,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/RightIncrementalChunkedCrossJoinStateManager.java",
-                allowMissingDestinations, Arrays.asList("allowUpdateWriteThroughState"));
     }
 
     private static class RegionedFile {

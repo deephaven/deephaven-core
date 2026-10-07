@@ -27,6 +27,9 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
  * <p>
  * Ids start at zero and stay with their key; moving entries during a rehash does not change them. Callers therefore
  * keep per-key state in their own arrays indexed by id, and never need to update it when the table grows.
+ * <p>
+ * {@link KeyIdHasherTypedBase} only adds keys. {@link IncrementalKeyIdHasherTypedBase} also removes them, reusing their
+ * ids, and grows incrementally.
  */
 public abstract class KeyIdHasher {
     /**
