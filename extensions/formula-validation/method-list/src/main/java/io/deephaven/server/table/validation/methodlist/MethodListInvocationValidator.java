@@ -88,6 +88,7 @@ import java.util.*;
  */
 public class MethodListInvocationValidator implements MethodInvocationValidator {
     private final List<MethodPattern> methodPatterns;
+    private final List<ConstructorPattern> constructorPatterns;
 
     /**
      * Create a new MethodInvocationValidator that permits any of the provided pointcut patterns.
@@ -95,20 +96,30 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
      * @param pointCuts the patterns to permit
      */
     public MethodListInvocationValidator(final Collection<String> pointCuts) {
-        final List<MethodPattern> list = new ArrayList<>();
+        final List<MethodPattern> methods = new ArrayList<>();
+        final List<ConstructorPattern> constructors = new ArrayList<>();
         for (final String pointCut : pointCuts) {
+            final List<MemberPattern> parsed;
             try {
-                list.add(new MethodPattern(pointCut));
+                parsed = MemberPattern.parse(pointCut);
             } catch (Exception e) {
                 throw new UncheckedDeephavenException("Could not parse method pattern: '" + pointCut + "'", e);
             }
+            for (final MemberPattern memberPattern : parsed) {
+                if (memberPattern instanceof MethodPattern) {
+                    methods.add((MethodPattern) memberPattern);
+                } else {
+                    constructors.add((ConstructorPattern) memberPattern);
+                }
+            }
         }
-        methodPatterns = Collections.unmodifiableList(list);
+        methodPatterns = Collections.unmodifiableList(methods);
+        constructorPatterns = Collections.unmodifiableList(constructors);
     }
 
     @Override
     public Boolean permitConstructor(final Constructor<?> constructor) {
-        if (methodPatterns.stream().anyMatch(mp -> mp.matches(constructor))) {
+        if (constructorPatterns.stream().anyMatch(cp -> cp.matches(constructor))) {
             return true;
         }
         return null;

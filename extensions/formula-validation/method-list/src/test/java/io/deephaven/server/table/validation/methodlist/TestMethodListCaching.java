@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class TestMethodListCaching {
     @Rule
@@ -28,12 +27,11 @@ public class TestMethodListCaching {
         final MutableInt nullMethodCount = new MutableInt(0);
 
         final MethodListInvocationValidator validator = new MethodListInvocationValidator(allowedMethods) {
-            final List<MethodPattern> disallowedPatterns =
-                    disallowedMethods.stream().map(MethodPattern::new).collect(Collectors.toUnmodifiableList());
+            final MethodListInvocationValidator disallowed = new MethodListInvocationValidator(disallowedMethods);
 
             @Override
             public Boolean permitMethod(Method method) {
-                if (disallowedPatterns.stream().anyMatch(mp -> mp.matches(method))) {
+                if (disallowed.permitMethod(method) != null) {
                     disallowedMethodCount.increment();
                     return false;
                 }
