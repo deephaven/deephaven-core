@@ -45,7 +45,7 @@ oneHourEarlier = minus(now(), parseDuration("PT1H"))
 result = timeTable(oneHourEarlier, "PT2S").reverse()
 ```
 
-When this code is run, `result` is initially populated with at least 1801 rows of data: one at the start time and one for every two seconds after it, up to the current time. Any delay between computing the start time and creating the table adds rows.
+When this code is run, `result` is initially populated with at least 1801 rows of data: one at the start time and one for every two seconds after it, up to the current time. A delay of two seconds or more between computing the start time and creating the table adds one row for each full two-second period of delay.
 
 ![`result` populates nearly instantly with an hour of data](../assets/how-to/ticking-1h-earlier.gif)
 
