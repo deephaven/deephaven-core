@@ -107,6 +107,20 @@
         "Control: does not flag the 'Shared state' and 'Row ordering' bullets under 'When it breaks' as holding too many ideas (each states a cause and its consequence)"
       ],
       "id": 7
+    },
+    {
+      "id": 8,
+      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide, focusing on links to reference pages: .claude/skills/deephaven-writing-style/evals/files/bare-types-excerpt.md. Treat it as docs/python/conceptual/query-engine/parallelization.md. Report only — don't edit anything.",
+      "expected_output": "Flags the bare type names Selectable and Filter in the opening section's bullets (their links appear only later in the section), gives the link targets, and leaves the code block alone.",
+      "files": [
+        "evals/files/bare-types-excerpt.md"
+      ],
+      "expectations": [
+        "Flags `Selectable` in the first bullet of the opening section as unlinked at its first mention and gives the link target (the Selectable reference page, visible later in the excerpt)",
+        "Flags `Filter` in the second bullet of the opening section as unlinked at its first mention and gives the link target (the Filter reference page, visible later in the excerpt)",
+        "Treats the type names as needing the same first-mention link as method names (does not limit the finding to method-shaped identifiers like with_serial)",
+        "Control: does not ask for `Selectable` in the fenced code block (the import line or `Selectable.parse`) to be linked"
+      ]
     }
   ]
 }

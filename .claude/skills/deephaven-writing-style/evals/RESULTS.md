@@ -74,3 +74,13 @@ Copilot's review pointed out that only the bold-label exemption had a negative c
 | C | Control passages replaced with one-purpose sentences | 30/30 |
 
 In iterations A and B, reviewers flagged the control sentence because it contained both a dash and a colon, which the skill's own em-dash rule allows to be questioned. The em-dash wording now says a colon that introduces a list or code block doesn't count, and the control passages each test one exemption.
+
+### Eval 8: bare type names (review follow-up)
+
+Copilot noted that the required link sweep started from method-shaped identifiers, so a bare `Filter` or `Selectable` could be missed. Eval 8 uses the guide's opening section with the links on `Selectable` and `Filter` removed (the links appear later in the excerpt), plus a code block as a control. 3 runs per configuration, graded blind.
+
+| | New | Baseline |
+| --- | --- | --- |
+| Eval 8 (4 expectations) | 12/12 | 12/12 |
+
+The baseline skill also flagged the bare type names, so this eval doesn't separate the two versions. It guards against a regression in the sweep that now names type names explicitly.
