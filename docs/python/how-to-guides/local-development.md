@@ -30,6 +30,12 @@ To use Deephaven table operations in unit tests, start an embedded server before
 
 ### pytest setup
 
+Install `pytest` alongside `deephaven-server`:
+
+```bash
+pip install pytest
+```
+
 Create a `conftest.py` file in your test directory to start the server once for all tests:
 
 ```python skip-test
@@ -39,7 +45,9 @@ from deephaven_server import Server
 # Start the server at module load time.
 # pytest loads conftest.py before collecting test modules, so this runs
 # before any test file imports deephaven.
-_server = Server(port=10000, jvm_args=["-Xmx2g"])
+# Port 0 lets the OS pick a free port, so the tests don't collide with a
+# Deephaven server that is already running.
+_server = Server(port=0, jvm_args=["-Xmx2g"])
 _server.start()
 ```
 
