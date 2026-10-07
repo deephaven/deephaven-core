@@ -58,7 +58,7 @@ These methods control how Deephaven evaluates the filter. By default, Deephaven 
 
 ### `withSerial`
 
-Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, a filter becomes eligible for parallel evaluation once more than about 131,072 rows reach it. That's the rows passed to this filter, not the source's size: later filters see only the rows that survive earlier ones, and on a refreshing table each update filters only that cycle's changed rows; use `withSerial` to protect filters that cannot tolerate that.
+Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, a filter becomes eligible for parallel evaluation once more than about 131,072 rows reach it. That's the rows passed to this filter, not the source's size: later filters see only the rows that survive earlier ones, and on a refreshing table a typical update filters only that cycle's changed rows, though a filter can request a full refilter when its own inputs change. Use `withSerial` to protect filters that cannot tolerate parallel evaluation.
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
