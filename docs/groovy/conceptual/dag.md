@@ -144,6 +144,20 @@ Thinking in terms of DAGs, UG cycles, and update notifications can be insightful
 
 Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as the update performance log from `updatePerformanceLog`, to see how much time each operation spends processing updates in each reporting interval. The update performance ancestors log, from `updatePerformanceAncestorsLog`, shows which upstream operations feed each one. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
 
+The following query totals the update-processing time for each operation in the update performance log and lists the slowest operations first:
+
+```groovy order=slowestOps
+upl = updatePerformanceLog()
+
+// Total time each operation has spent processing updates, slowest first
+slowestOps = upl
+    .view("EntryDescription", "UsageMillis = UsageNanos / 1000000.0", "InvocationCount")
+    .sumBy("EntryDescription")
+    .sortDescending("UsageMillis")
+```
+
+At the end of each reporting interval (one minute by default), the log adds a row for every operation that processed updates during that interval. The table is empty until the first interval ends, and `slowestOps` updates as your queries run.
+
 Common performance bottlenecks include:
 
 - **Large joins**: Joining tables with millions of rows on each update.
