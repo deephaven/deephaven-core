@@ -930,6 +930,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         final boolean currentMissingAdds = !update.added().subsetOf(getRowSet());
         final boolean currentMissingModifications = !update.modified().subsetOf(getRowSet());
         final boolean previousMissingRemovals = !update.removed().subsetOf(getRowSet().prev());
+        // an added row did not exist on the previous cycle, so it cannot also be modified
+        final boolean addedOverlapsModified = update.added().overlaps(update.modified());
         final boolean currentContainsRemovals;
 
         if (!update.shifted().empty()) {
@@ -942,7 +944,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         if (!previousMissingRemovals && !currentMissingAdds && !currentMissingModifications &&
-                !currentContainsRemovals) {
+                !addedOverlapsModified && !currentContainsRemovals) {
             return;
         }
 
@@ -986,6 +988,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         final RowSet addedMinusCurrent = update.added().minus(getRowSet());
         final RowSet removedIntersectCurrent = update.removed().intersect(getRowSet());
         final RowSet modifiedMinusCurrent = update.modified().minus(getRowSet());
+        final RowSet addedIntersectModified = update.added().intersect(update.modified());
 
         // Everything is messed up for this table, print out the indices in an easy-to-understand way
         final LogOutput logOutput = new LogOutputStringImpl()
@@ -998,7 +1001,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 .append(LogOutput::nl).append("\t                shifted=").append(update.shifted().toString())
                 .append(LogOutput::nl).append("\t  removalsMinusPrevious=").append(removalsMinusPrevious)
                 .append(LogOutput::nl).append("\t      addedMinusCurrent=").append(addedMinusCurrent)
-                .append(LogOutput::nl).append("\t   modifiedMinusCurrent=").append(modifiedMinusCurrent);
+                .append(LogOutput::nl).append("\t   modifiedMinusCurrent=").append(modifiedMinusCurrent)
+                .append(LogOutput::nl).append("\t addedIntersectModified=").append(addedIntersectModified);
 
         if (update.shifted().empty()) {
             logOutput.append(LogOutput::nl).append("\tremovedIntersectCurrent=").append(removedIntersectCurrent);
@@ -1013,7 +1017,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         Assert.assertion(false, "!(previousMissingRemovals || currentMissingAdds || " +
-                "currentMissingModifications || (currentContainsRemovals && shifted.empty()))",
+                "currentMissingModifications || addedOverlapsModified || " +
+                "(currentContainsRemovals && shifted.empty()))",
                 indexUpdateErrorMessage);
     }
 
