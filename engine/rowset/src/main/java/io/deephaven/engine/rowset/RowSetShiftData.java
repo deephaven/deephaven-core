@@ -867,13 +867,12 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * Gallops backward from {@code fromIdx} and then bisects the bracketed interval, so a result near {@code fromIdx}
      * costs a constant number of probes and one {@code d} positions away costs O(log d).
      *
-     * @return the last shift range index in {@code [lowIdx, fromIdx]} whose range begins at or before {@code key}, or
+     * @param fromIdx a shift range index whose range begins after {@code key}
+     * @return the last shift range index in {@code [lowIdx, fromIdx)} whose range begins at or before {@code key}, or
      *         {@code lowIdx - 1} if there is none
      */
     private int lastRangeBeginAtOrBefore(final int fromIdx, final int lowIdx, final long key) {
-        if (getBeginRange(fromIdx) <= key) {
-            return fromIdx;
-        }
+        Assert.gt(getBeginRange(fromIdx), "getBeginRange(fromIdx)", key, "key");
         // getBeginRange(hi) > key holds throughout; lo is either lowIdx - 1 or an index whose range begins at or
         // before key
         int hi = fromIdx;
