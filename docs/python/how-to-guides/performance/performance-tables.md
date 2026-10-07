@@ -154,7 +154,7 @@ The Server State table contains basic memory, update graph processor, and GC sta
 
 ### Query Performance
 
-`query_performance` takes in an [evaluation number](#evaluation-numbers) and returns a table containing that query’s performance data.
+`query_performance` takes in an [evaluation number](#evaluation-numbers) and returns a table containing that query's performance data.
 
 The query performance table contains data on how long each query takes to run. Examples of what constitutes one individual query, for performance logging purposes, include:
 
@@ -568,7 +568,7 @@ Expanding the parent rows in the tree table displays the sub-operations that con
 
 ## Get help
 
-If you can’t find an obvious cause for an error or slow performance in your query, you may have uncovered a bug. In this case, you should [file a bug report](https://github.com/deephaven/deephaven-core/issues). Be sure to include the following with your bug report:
+If you can't find an obvious cause for an error or slow performance in your query, you may have uncovered a bug. In this case, you should [file a bug report](https://github.com/deephaven/deephaven-core/issues). Be sure to include the following with your bug report:
 
 - The version of the Deephaven system.
 - The complete stack trace, not just the list of Caused By expressions.

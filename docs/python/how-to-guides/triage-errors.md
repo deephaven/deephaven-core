@@ -431,7 +431,7 @@ You can also get help by asking questions in our [GitHub Discussions](https://gi
 5. If you are using date-times in your expressions:
 
    - Did you use single quotes (`'`), not double quotes (`"`) or backticks (`` ` ``)?
-   - Did you use the proper format? Deephaven date-times are expected in the format `yyyy-MM-ddTHH:mm:ss.nnnnnnnnn TZ`, for example `'2024-01-01T09:30:00 ET'`.
+   - Did you use the proper format? Deephaven date-times are expected in the format `yyyy-MM-ddTHH:mm:ss[.SSSSSSSSS] TZ`, where the fractional seconds are optional and can have up to nine digits, for example `'2024-01-01T09:30:00 ET'` or `'2024-01-01T09:30:00.123 ET'`.
 
 6. Are all classes that you are trying to use properly imported?
 
