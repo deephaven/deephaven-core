@@ -251,7 +251,7 @@ We also mix in an alpha channel to create transparent colors for you via [color-
 
 ### Use color generators and define your palette
 
-The Deephaven design system is based on the [Adobe spectrum](https://spectrum.adobe.com/page/color-palette/) color system. It is set up to use a palette consisting of:
+The Deephaven design system is based on the [Adobe spectrum](https://spectrum.adobe.com/page/color-fundamentals/) color system. It is set up to use a palette consisting of:
 
 - 11 shades of a "gray" palette used for background colors
 - 13 shades of each of the 12 colors in the "color" palette: Red, Orange, Yellow, Chartreuse, Celery, Green, Seafoam, Cyan, Blue, Indigo, Purple, Fuschia and Magenta
