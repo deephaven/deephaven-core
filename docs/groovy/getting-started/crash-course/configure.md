@@ -29,6 +29,12 @@ In addition to PSK authentication, Deephaven supports the following types of aut
 
 Deephaven publishes several Docker images. For Groovy, use `server-slim`, which starts a Groovy console. The other images, such as `server` and `server-all-ai`, start a Python console and come pre-installed with different Python libraries. Each image is available in several [versions](../../getting-started/docker-install.md#image-versions), such as `latest` or a specific release. You also have the option of using [Deephaven's example data](https://github.com/deephaven/examples) with your deployment.
 
+To run the latest `server-slim` image, use this Docker command:
+
+```bash skip-test
+docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server-slim:latest
+```
+
 To learn more about deployments, check out the guide for [installing Deephaven with Docker](../../getting-started/docker-install.md).
 
 ## Installing Java packages
