@@ -129,7 +129,7 @@ The following methods return a RowSet of the added, removed, or modified data:
 
 These methods return row keys, not column values. To read the values, look up each row key in a [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html), as the examples below do.
 
-To keep a `TableUpdate` after `onUpdate` returns, call [`acquire`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) on it, and call [`release`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#release()) when you are done with it. An acquired update is still valid only during the update cycle that created it.
+To keep a `TableUpdate` after `onUpdate` returns, call [`acquire`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) on it, and call [`release`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#release()) when you are done with it. Acquiring the update keeps it from being cleaned up, but it is still valid only during the updating phase in which it was created; do not use it outside that phase.
 
 The following example listens to added rows during each update cycle. It prints the data as the listener receives it.
 
