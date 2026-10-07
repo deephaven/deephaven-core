@@ -14,7 +14,7 @@ If you only need to add JARs to a standard server, you don't need a custom appli
 
 ## Prerequisites
 
-- Java 17 or later. Deephaven's web server, Jetty 12, requires Java 17.
+- Java 17.0.5 or later. Deephaven's web server, Jetty 12, requires Java 17, and the server refuses to start on Java 17 releases before 17.0.5 because of a JVM bug ([JDK-8287432](https://bugs.openjdk.org/browse/JDK-8287432)).
 - A build tool that resolves Maven artifacts, such as Gradle or Maven. The examples in this guide use Gradle.
 - Familiarity with [Dagger](https://dagger.dev/), the dependency injection framework that assembles the Deephaven server. You need only the basics: components, modules, and the `@Provides`, `@Binds`, and `@IntoSet` annotations.
 
