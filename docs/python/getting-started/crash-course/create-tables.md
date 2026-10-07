@@ -27,7 +27,8 @@ static_table2 = empty_table(5).update_view(
 )
 ```
 
-> **_NOTE:_** The [special variables](../../reference/query-language/variables/special-variables.md) `i` and `ii` hold each row's position as an `int` and a `long`, respectively. They are safe in static tables like this one. In ticking tables, they are only supported in [append-only](../../conceptual/table-types.md#specialization-1-append-only) and [blink](../../conceptual/table-types.md#specialization-3-blink) tables, because a row's position can change between updates in other ticking tables.
+> [!NOTE]
+> The [special variables](../../reference/query-language/variables/special-variables.md) `i` and `ii` hold each row's position as an `int` and a `long`, respectively. They are safe in static tables like this one. In ticking tables, they are only supported in [append-only](../../conceptual/table-types.md#specialization-1-append-only) and [blink](../../conceptual/table-types.md#specialization-3-blink) tables, because a row's position can change between updates in other ticking tables.
 
 The two tables look identical but are created differently.
 

@@ -321,7 +321,7 @@ See the [`updateBy` user guide](../../how-to-guides/rolling-aggregations.md) to 
 
 ## Combine tables
 
-There are two different ways to combine tables in Deephaven: merging and joining. Merging tables can be visualized as a vertical stacking of tables, whereas joining is more horizontal in nature, appending columns from one table to another based on matching values in key columns.
+There are two different ways to combine tables in Deephaven: merging and joining. Merging tables can be visualized as a vertical stacking of tables, whereas joining is more horizontal in nature, appending columns from matching rows of another table, based on values in key columns.
 
 Each subsection below defines its own tables to demonstrate merging and joining tables in Deephaven.
 

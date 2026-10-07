@@ -161,7 +161,7 @@ deephavenTable = myIcebergTableAdapter.table(staticInstructions)
 // Now 'deephavenTable' can be used like any other Deephaven table.
 ```
 
-Similarly, this code creates a new Iceberg table and writes a Deephaven table to it. `createTable` fails if the table already exists; use `loadTable` to write to an existing table.
+Similarly, this code creates a new Iceberg table and writes a Deephaven table to it. [`createTable`](../../reference/data-import-export/Iceberg/iceberg-catalog-adapter.md) fails if the table already exists; use [`loadTable`](../../reference/data-import-export/Iceberg/iceberg-catalog-adapter.md) to write to an existing table.
 
 ```groovy docker-config=iceberg order=null
 import io.deephaven.iceberg.util.IcebergToolsS3

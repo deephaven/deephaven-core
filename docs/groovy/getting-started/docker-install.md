@@ -216,7 +216,7 @@ Custom Docker deployments often require things that cannot be done in a YAML fil
 The following subsections build a custom Deephaven application through Docker with Java libraries that do not ship with official Deephaven Docker images.
 
 > [!NOTE]
-> This example keeps the `Dockerfile`, the `docker-compose.yml` file, and the `jars` directory in the same directory.
+> Put the `jars` directory in the same directory as the `Dockerfile` and `docker-compose.yml`.
 
 #### Dockerfile
 
