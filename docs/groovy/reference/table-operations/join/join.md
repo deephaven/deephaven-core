@@ -44,7 +44,7 @@ The columns from the right table to be added to the left table based on key.
 </Param>
 <Param name="reserveBits" type="int">
 
-The number of bits of each result row key to reserve for the right table rows that match a left table row. Reserving enough bits for the largest group of matching right table rows avoids shifting result rows as groups grow. If the maximum size of a right table's group is small, reserve fewer bits by setting reserveBits on initialization.
+The number of bits of each result row key to reserve for the right table rows that match a left table row. Reserving enough bits for the largest group of matching right table rows avoids shifting result rows as groups grow. If the maximum size of a right table's group is small, reserve fewer bits by setting `reserveBits` on initialization.
 
 </Param>
 </ParamTable>
