@@ -4,6 +4,7 @@
 package io.deephaven.server.table.validation.methodlist;
 
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -14,7 +15,18 @@ import java.util.regex.Pattern;
 abstract sealed class MemberPattern permits MethodPattern, ConstructorPattern {
     private static final String CONSTRUCTOR_NAME = "<constructor>";
     private static final String ANY_ARGUMENTS = "..";
-    private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("[\\p{javaJavaIdentifierPart}*]+");
+    /** A package, class or method name, in which "*" matches any run of characters. */
+    private static final String SEGMENT = "[\\p{javaJavaIdentifierStart}*][\\p{javaJavaIdentifierPart}*]*";
+    /** A dotted name, in which ".." matches any number of intermediate names. */
+    private static final String TYPE = SEGMENT + "(?:\\.\\.?" + SEGMENT + ")*";
+    private static final String ARGUMENT = TYPE + "(?:\\[])*(?:\\.\\.\\.)?";
+    private static final String COMMA = "\\s*,\\s*";
+    /** Arguments without "..", or with exactly one ".." among them. */
+    private static final String ARGUMENT_LIST = "(?:" + ARGUMENT + "(?:" + COMMA + ARGUMENT + ")*"
+            + "|(?:" + ARGUMENT + COMMA + ")*\\.\\.(?:" + COMMA + ARGUMENT + ")*)";
+    /** The whole pattern; the declaring class is separated from the name by spaces or "#". */
+    private static final Pattern PATTERN = Pattern.compile("(?<type>" + TYPE + ")(?:\\s+|\\s*#\\s*)"
+            + "(?<name><constructor>|" + SEGMENT + ")\\s*\\(\\s*(?<arguments>" + ARGUMENT_LIST + ")?\\s*\\)");
     private static final Set<String> PRIMITIVE_NAMES =
             Set.of("boolean", "byte", "char", "short", "int", "long", "float", "double", "void");
 
@@ -39,30 +51,25 @@ abstract sealed class MemberPattern permits MethodPattern, ConstructorPattern {
      * @throws IllegalArgumentException if the pattern is malformed
      */
     static List<MemberPattern> parse(final String pattern) {
-        final String trimmed = pattern.trim();
-        final int space = trimmed.indexOf(' ');
-        final int open = trimmed.indexOf('(');
-        if (space <= 0 || open < space || !trimmed.endsWith(")")) {
+        final Matcher matcher = PATTERN.matcher(pattern.trim());
+        if (!matcher.matches()) {
             throw new IllegalArgumentException(
                     "Expected '<declaring class> <method name>(<argument list>)', but got '" + pattern + "'");
         }
-        final String declaringTypeText = trimmed.substring(0, space);
+        final String declaringTypeText = matcher.group("type");
         if (declaringTypeText.equals("*")) {
             throw new IllegalArgumentException("Use '*..*' rather than '*' to match every declaring class: '"
                     + pattern + "'");
         }
         final Pattern declaringType = typePattern(declaringTypeText, false);
-        final String name = trimmed.substring(space + 1, open).trim();
-        if (!name.equals(CONSTRUCTOR_NAME) && !IDENTIFIER_PATTERN.matcher(name).matches()) {
-            throw new IllegalArgumentException("Invalid method name pattern: '" + name + "'");
-        }
+        final String name = matcher.group("name");
 
-        final String argumentList = trimmed.substring(open + 1, trimmed.length() - 1).trim();
+        final String argumentList = matcher.group("arguments");
         final List<Object> parsedArguments = new ArrayList<>();
-        if (!argumentList.isEmpty()) {
-            final String[] split = argumentList.split(",", -1);
+        if (argumentList != null) {
+            final String[] split = argumentList.split(COMMA);
             for (int ai = 0; ai < split.length; ++ai) {
-                final String argument = split[ai].trim();
+                final String argument = split[ai];
                 if (argument.equals(ANY_ARGUMENTS)) {
                     parsedArguments.add(ANY_ARGUMENTS);
                 } else if (argument.endsWith("...")) {
@@ -134,14 +141,11 @@ abstract sealed class MemberPattern permits MethodPattern, ConstructorPattern {
      * {@code []} matches one array dimension.
      */
     private static Pattern typePattern(final String text, final boolean argument) {
-        String element = text.trim();
+        String element = text;
         final StringBuilder arraySuffix = new StringBuilder();
         while (argument && element.endsWith("[]")) {
-            element = element.substring(0, element.length() - 2).trim();
+            element = element.substring(0, element.length() - 2);
             arraySuffix.append("\\[\\]");
-        }
-        if (element.isEmpty() || element.startsWith(".") || element.endsWith(".") || element.contains("...")) {
-            throw new IllegalArgumentException("Invalid type pattern: '" + text + "'");
         }
         if ((argument && element.equals("*")) || element.equals("*..*")) {
             // with an array suffix, the wildcard must not match brackets, so that each [] matches one dimension
@@ -154,9 +158,6 @@ abstract sealed class MemberPattern permits MethodPattern, ConstructorPattern {
             final int dot = element.indexOf('.', start);
             final int end = dot < 0 ? element.length() : dot;
             final String segment = element.substring(start, end);
-            if (!IDENTIFIER_PATTERN.matcher(segment).matches()) {
-                throw new IllegalArgumentException("Invalid type pattern: '" + text + "'");
-            }
             // a wildcard within a name does not match the brackets of an array type
             regex.append(globToRegex(segment, "[^.\\[\\]]*"));
             if (dot < 0) {

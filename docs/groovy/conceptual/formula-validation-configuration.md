@@ -156,7 +156,7 @@ Since you cannot add annotations to external code, you use pointcut expressions 
 
 ### Understanding pointcut patterns
 
-A pointcut expression has three parts:
+A pointcut expression has three parts. Separate the class name from the method name with a space or `#` (`java.lang.String length()` and `java.lang.String#length()` are the same).
 
 1. **Class name**: The full package and class name (e.g., `java.util.Collections`). A class in `java.lang` may omit its package (`String` is the same as `java.lang.String`). Write a nested class as `java.util.Map.Entry` or `java.util.Map$Entry`, and use `*..*` for every class.
 2. **Method name**: The specific method, a name with `*` wildcards such as `to*Case`, `<constructor>` for a constructor, or `*` for any method or constructor.
@@ -165,7 +165,7 @@ A pointcut expression has three parts:
 ### Pattern matching symbols
 
 - `*` = A wildcard within a name. In a method name, or in one segment of a class or parameter type name, it matches any run of characters but never crosses a `.`: `to*Case` matches `toUpperCase` and `toLowerCase`, and `java.lang.*` matches every class in `java.lang`, but not arrays of them, which `java.lang.*[]` matches. In a class name, a segment also matches the binary name of a nested class, so `java.util.*` also matches `java.util.Map$Entry`. A parameter of only `*` matches any one parameter type, including primitive and array types, and a method name of only `*` matches constructors as well as methods.
-- `..` = In a parameter list, match any number of parameters of any type. In a class name, match any number of package or enclosing class names — `java.util..*` matches every class in `java.util` and its sub-packages, and `java.util..Entry` matches `java.util.Map.Entry`, while `java.util.*` does not include sub-packages.
+- `..` = In a parameter list, match any number of parameters of any type; a parameter list may contain at most one `..`. In a class name, match any number of package or enclosing class names — `java.util..*` matches every class in `java.util` and its sub-packages, and `java.util..Entry` matches `java.util.Map.Entry`, while `java.util.*` does not include sub-packages.
 - `;` = Separate multiple patterns in one property.
 
 ### Inherited methods

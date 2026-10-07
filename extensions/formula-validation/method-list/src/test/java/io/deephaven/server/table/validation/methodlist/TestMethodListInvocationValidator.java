@@ -464,6 +464,18 @@ public class TestMethodListInvocationValidator {
     }
 
     @Test
+    public void testSeparatorsAndWhitespace() throws NoSuchMethodException {
+        final Method length = String.class.getMethod("length");
+        assertPermitted("java.lang.String#length()", length);
+        assertPermitted("java.lang.String # length()", length);
+        assertPermitted("  java.lang.String   length ( )  ", length);
+        final Method substring = String.class.getMethod("substring", int.class, int.class);
+        assertPermitted("java.lang.String substring(int,int)", substring);
+        assertPermitted("java.lang.String substring( int ,\tint )", substring);
+        assertPermitted("java.lang.String#substring(..,int)", substring);
+    }
+
+    @Test
     public void testInvalidPatterns() {
         for (final String invalid : List.of("", "java.lang.String", "java.lang.String length", "length()",
                 "java.lang.String length(", "java.lang.String len-gth()", "java.lang.String length(int,)",
@@ -472,7 +484,10 @@ public class TestMethodListInvocationValidator {
                 ".java.lang.String length()", "java.lang.String. length()", "java...String length()",
                 "java.lang.Str-ing length()", "java.lang.String valueOf(java.lang.Ob#ject)",
                 "java.lang.String valueOf(java..lang...Object)", "java.lang.String valueOf(.Object)",
-                "java.lang.String valueOf([])")) {
+                "java.lang.String valueOf([])",
+                // at most one ".." in an argument list, and names do not start with a digit
+                "java.lang.String *(.., int, ..)", "java.lang.String 1length()", "java.1lang.String length()",
+                "java.lang.String # # length()", "java.lang.String length() trailing")) {
             Assert.assertThrows(invalid, UncheckedDeephavenException.class,
                     () -> new MethodListInvocationValidator(List.of(invalid)));
         }

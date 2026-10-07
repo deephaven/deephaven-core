@@ -20,6 +20,8 @@ import java.util.*;
  * <P>
  * <B> #declaring class# #method name#(#argument list#) </B>
  * <ul>
+ * <li>The declaring class is separated from the method name by spaces or by "#", as in
+ * {@code java.lang.String#length()}.</li>
  * <li>The declaring class must be fully qualified, except that a class in the {@code java.lang} package may be
  * unqualified. A nested class may be written as {@code java.util.Map.Entry} or {@code java.util.Map$Entry}.</li>
  * <li>A wildcard character, "*", may be used in the declaring class or method name. In the declaring class it matches
@@ -30,7 +32,7 @@ import java.util.*;
  * <li>The argument list is expressed as a comma-separated list of the argument types. A type in the {@code java.lang}
  * package may be unqualified, and "*" matches any single argument. An array argument is written {@code T[]}, in any
  * position; only the last argument may instead be written {@code T...}, which is the same as {@code T[]}.</li>
- * <li>".." can be used in the argument list to match zero or more arguments of any type.</li>
+ * <li>".." can be used once in the argument list to match zero or more arguments of any type.</li>
  * <li>"&lt;constructor&gt;" can be used as the method name to match a constructor. A method name of only wildcards also
  * matches constructors.</li>
  * <li>An instance method also matches when it overrides a method declared by a matching class or interface. For
