@@ -25,7 +25,7 @@
       ],
       "expectations": [
         "Flags the opening sentence of 'Serial filters' ('The same applies to filters.') because a reader who lands on the section cannot tell what 'the same' refers to",
-        "Proposes an opener for 'Serial filters' that names its own subject (that string-based filters in where are parallelized by default and when to construct serial Filter objects) rather than only deleting the sentence",
+        "Proposes a fix for the 'Serial filters' opener that leaves the section readable on its own: either an opener that names its own subject (that string-based filters in where are parallelized by default and when to construct serial Filter objects), or deleting the sentence because the remaining first sentence already names its subject",
         "States the rule as a section's first paragraph making sense without the previous section, or pointing to an earlier section only by naming the target and restating what it needs from it (regardless of how far up the target is), not as 'every section must repeat its prerequisites'",
         "Control: does not list the 'Building on the counter example above' opener of 'Example: extending the counter with a barrier' as a defect, or marks it as acceptable because it names the example and restates the setup"
       ],
