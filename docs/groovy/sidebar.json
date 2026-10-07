@@ -2041,7 +2041,7 @@
                   },
                   {
                     "label": "Multi-join",
-                    "path": "reference/table-operations/join/multijoin.md"
+                    "path": "reference/table-operations/join/multi-join.md"
                   },
                   {
                     "label": "MultiJoinInput",
@@ -2061,7 +2061,7 @@
                   },
                   {
                     "label": "rangeJoin",
-                    "path": "reference/table-operations/join/rangeJoin.md"
+                    "path": "reference/table-operations/join/range-join.md"
                   }
                 ]
               },
