@@ -82,13 +82,14 @@ final class IntSetKernel extends SingleColumnSetKernel {
     }
 
     @Override
-    void match(
-            @NotNull final Chunk<Values> keys,
+    void matchValues(
+            @NotNull final Chunk<Values>[] keyChunks,
             @NotNull final LongChunk<OrderedRowKeys> rowKeys,
             @NotNull final WritableLongChunk<OrderedRowKeys> results,
             final boolean inclusion) {
-        final IntChunk<Values> typedKeys = keys.asIntChunk();
+        final IntChunk<Values> typedKeys = keyChunks[0].asIntChunk();
         final int keysSize = typedKeys.size();
+        results.setSize(0);
         for (int ii = 0; ii < keysSize; ++ii) {
             if (counts.containsKey(typedKeys.get(ii)) == inclusion) {
                 results.add(rowKeys.get(ii));

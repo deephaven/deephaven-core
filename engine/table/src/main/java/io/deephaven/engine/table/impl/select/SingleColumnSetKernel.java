@@ -5,11 +5,8 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
@@ -98,16 +95,6 @@ abstract class SingleColumnSetKernel extends SetKernel {
         return new KeyIteratorContext<>(keyIterator());
     }
 
-    /**
-     * Select the row keys whose key is in the set, or, if {@code inclusion} is false, not in the set; {@code results}
-     * is empty to begin with.
-     */
-    abstract void match(
-            @NotNull Chunk<Values> keys,
-            @NotNull LongChunk<OrderedRowKeys> rowKeys,
-            @NotNull WritableLongChunk<OrderedRowKeys> results,
-            boolean inclusion);
-
     @Override
     final void beginUpdate() {
         insertedKeys = 0;
@@ -146,16 +133,6 @@ abstract class SingleColumnSetKernel extends SetKernel {
     @Override
     final boolean keysRemoved() {
         return emptiedKeys > revivedKeys;
-    }
-
-    @Override
-    final void matchValues(
-            @NotNull final Chunk<Values>[] keyChunks,
-            @NotNull final LongChunk<OrderedRowKeys> rowKeys,
-            @NotNull final WritableLongChunk<OrderedRowKeys> results,
-            final boolean inclusion) {
-        results.setSize(0);
-        match(keyChunks[0], rowKeys, results, inclusion);
     }
 
     private void forEachKeyChunk(
