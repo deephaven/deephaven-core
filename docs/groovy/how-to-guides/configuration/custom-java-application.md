@@ -291,7 +291,7 @@ Because `run` doesn't block, your application can do other work after the server
 
 ## Configure logging
 
-Deephaven logs through [SLF4J](https://www.slf4j.org/). The build above uses Logback. Add a `src/main/resources/logback.xml` file that sends logs to the console and to the log buffer that the web UI's **Log** panel reads:
+Deephaven logs through [SLF4J](https://www.slf4j.org/). The build above uses Logback. Add a `src/main/resources/logback.xml` file that sends logs to the console and to the log buffer that the web UI's **Log** panel should read:
 
 ```xml
 <configuration>
@@ -337,7 +337,7 @@ When the server is ready, the log shows `Server started on port 10000`. By defau
 Connect automatically to Web UI with http://localhost:10000/?psk=<key>
 ```
 
-Open that URL to use the web UI. The Groovy console works as it does in any Deephaven server, and the **Panels** menu lists the `ticking` and `static_table` fields from `MyApplication`.
+Open that URL to use the web UI. The Groovy console works as it does in any Deephaven server, and the **Panels** menu should list the `ticking` and `static_table` fields from `MyApplication`.
 
 ## Configure the server
 
