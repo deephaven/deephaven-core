@@ -19,15 +19,15 @@ When using `update`, the new columns are evaluated and stored in memory. Existin
 ## Syntax
 
 ```
-update(formulas: Union[str, Sequence[str]]) -> Table
+update(formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="Union[str, Sequence[str], Selectable, Sequence[Selectable]]">
 
-Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`.
+Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`. A [`Selectable`](../../query-language/types/Selectable.md) carries the same formula plus concurrency controls such as [`with_serial`](../../query-language/types/Selectable.md#with_serial).
 
 </Param>
 </ParamTable>
