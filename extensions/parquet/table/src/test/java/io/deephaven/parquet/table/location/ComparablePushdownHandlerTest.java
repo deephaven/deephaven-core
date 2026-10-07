@@ -252,9 +252,12 @@ public class ComparablePushdownHandlerTest {
         assertSame(StatisticsEvaluator.ALWAYS_MAYBE, ComparablePushdownHandler.maybeCreateEvaluator(
                 makeMatchFilter(MatchOptions.INVERTED, "dateCol", (Object) null)));
 
-        // A value that is not Comparable has no place in the ordering, so it cannot be tested against min/max at all.
-        assertSame(StatisticsEvaluator.ALWAYS_MAYBE, ComparablePushdownHandler.maybeCreateEvaluator(
+        // A value that is not of the column's type can never match, so MatchFilter drops it from its values: a regular
+        // match has nothing left to find, and an inverted one matches every row.
+        assertSame(StatisticsEvaluator.ALWAYS_NO_OVERLAP, ComparablePushdownHandler.maybeCreateEvaluator(
                 makeMatchFilter(MatchOptions.REGULAR, "dateCol", new Object())));
+        assertSame(StatisticsEvaluator.ALWAYS_MAYBE, ComparablePushdownHandler.maybeCreateEvaluator(
+                makeMatchFilter(MatchOptions.INVERTED, "dateCol", new Object())));
     }
 
     /**
