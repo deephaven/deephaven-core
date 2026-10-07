@@ -26,7 +26,7 @@ The production application's entry point, `io.deephaven.server.jetty.JettyMain`,
 2. Build a Dagger component. The component wires together every server service: the gRPC and Arrow Flight APIs, the web UI, authentication, the console, and Application Mode. A component factory, a subclass of `ComponentFactoryBase`, builds the component from the configuration.
 3. Get the server from the component and call `run`, which starts the server and returns once it is listening. Call `join` to block until the server shuts down.
 
-The production application's component factory, `CommunityComponentFactory`, belongs to the `server-jetty-app` project, which isn't published to Maven Central. A custom application defines its own component and factory using the modules in the published `deephaven-server-jetty` artifact. The rest of this guide walks through doing that.
+The production application's component factory, `CommunityComponentFactory`, belongs to the `server-jetty-app` project, which isn't published to Maven Central. A custom application defines its own component and factory using the modules in the published `deephaven-server-jetty` artifact. The rest of this guide walks through how to do that.
 
 > [!TIP]
 > The `deephaven-core` repository contains a complete example of a custom application in [`server/jetty-app-custom`](https://github.com/deephaven/deephaven-core/tree/main/server/jetty-app-custom). It also replaces the authorization provider. If you have a local clone, run it with `./gradlew server-jetty-app-custom:run -Pgroovy`.
@@ -114,7 +114,7 @@ Flight SQL needs an extra step. Adding `deephaven-extensions-flight-sql` as a de
 
 ## Write the component factory
 
-The component factory builds the Dagger component. Dagger generates the component's implementation at compile time, naming the generated class after the nesting of the interface: `MyComponentFactory.MyComponent` becomes `DaggerMyComponentFactory_MyComponent`.
+The component factory builds the Dagger component. Dagger generates the component's implementation at compile time, naming the generated class based on the interface's nesting: `MyComponentFactory.MyComponent` becomes `DaggerMyComponentFactory_MyComponent`.
 
 ```java
 package com.example;
