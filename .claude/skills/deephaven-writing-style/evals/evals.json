@@ -34,7 +34,7 @@
     },
     {
       "prompt": "Do a style review of this excerpt of a deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/awk-excerpt.md. Report only — don't edit anything.",
-      "expected_output": "Flags the real paragraphs Chip Kent called awkward (GIL paragraph, barrier definition, execution-order sentence, implicit-barriers opener, configuration intro) as needing unusual punctuation to be grammatical, reports it as one pattern, proposes rewrites in plain short sentences or a bullet list, and leaves the two clean paragraphs alone.",
+      "expected_output": "Flags the real paragraphs Chip Kent called awkward (GIL paragraph, barrier definition, execution-order sentence, implicit-barriers opener, configuration intro) as hard to read (with the punctuation as the evidence), reports it as one pattern, proposes rewrites in plain short sentences or a bullet list, and leaves the two clean paragraphs alone.",
       "files": [
         "evals/files/awk-excerpt.md"
       ],
@@ -42,9 +42,9 @@
         "Flags the GIL paragraph ('Most Python builds use the GIL ...' with its semicolon) as hard to read because of its punctuation or compound structure, and proposes splitting it into separate sentences",
         "Flags the Barrier definition paragraph (colon, bold terms, and a semicolon in one sentence) as hard to read and proposes plain separate sentences or a short list",
         "Flags the 'Execution order: A and B run in parallel ...' paragraph and proposes a bullet list with one bullet per column (or equivalent enumeration)",
-        "Flags the implicit-barriers opener ('When implicit barriers are enabled ... — two serial columns ... without explicit barriers:' ) as needing a dash and colon to be grammatical and proposes splitting it",
-        "Flags the configuration intro ('Parallelization needs no configuration. These properties tune it; defaults ...') as relying on a semicolon and proposes plain sentences",
-        "Reports the problem as one named pattern (a paragraph that needs unusual punctuation such as colons, em dashes, parentheticals, or semicolons to be grammatical) rather than only as unrelated one-off comments",
+        "Flags the implicit-barriers opener ('When implicit barriers are enabled ... — two serial columns ... without explicit barriers:' ) as hard to read because of its dash-and-colon structure and proposes splitting it",
+        "Flags the configuration intro ('Parallelization needs no configuration. These properties tune it; defaults ...') as hard to read because of its semicolon structure and proposes plain sentences",
+        "Reports the problem as one named pattern (a hard-to-read sentence or paragraph, with punctuation such as colons, em dashes, parentheticals, or semicolons as the evidence) rather than only as unrelated one-off comments",
         "Rewritten text offered for the flagged paragraphs contains no semicolons and no em-dash or parenthetical asides inside a sentence",
         "Control: does not flag the 'Updates' paragraph under Query phases, or the 'Column A gets values 0–9. Column B gets values 10–19.' paragraph, as hard to read",
         "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",

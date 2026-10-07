@@ -78,7 +78,7 @@ weigh:
   prose of every section, not only the opening ones. The check under **Terminology introduced
   before it's defined** uses this list.
 
-You'll cross-reference all three lists against the prose in the checks below — build them once,
+You'll cross-reference all four lists against the prose in the checks below — build them once,
 up front, rather than re-deriving them per check.
 
 ## 2. Named structural pitfalls to check
