@@ -56,7 +56,7 @@ tableGenerator = { ->
 
 Now, we'll create two function-generated tables: one that re-runs the `tableGenerator` whenever the source table updates, and one that re-runs the `tableGenerator` function every 2000ms.
 
-```groovy order=resultTime,resultTick reset
+```groovy ticking-table order=null reset
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.util.SafeCloseable
 import io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory

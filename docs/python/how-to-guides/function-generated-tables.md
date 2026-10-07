@@ -44,7 +44,7 @@ The following code block uses `make_table` as the table generator function. [`fu
 - Once with a trigger table.
 - Once with a refresh interval.
 
-```python test-set=1 order=result_from_table,result_from_refresh_interval reset
+```python test-set=1 ticking-table order=null reset
 from deephaven import time_table, empty_table
 from deephaven import function_generated_table
 
