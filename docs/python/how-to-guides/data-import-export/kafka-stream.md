@@ -102,7 +102,7 @@ result_append = kc.consume(
 
 In this example, [`consume`](../../reference/data-import-export/Kafka/consume.md) creates a Deephaven table from a Kafka topic. Here, `{'bootstrap.servers': 'redpanda:9092'}` is a dictionary describing how the Kafka infrastructure is configured. `bootstrap.servers` provides the initial hosts that a Kafka client uses to connect. In this case, `bootstrap.servers` is set to `redpanda:9092`.
 
-`table_type` is set to `kc.TableType.append()` to create an append-only table, and `key_spec` is set to `kc.KeyValueSpec.IGNORE` to ignore the Kafka key.
+`table_type` is set to `kc.TableType.append` to create an append-only table, and `key_spec` is set to `kc.KeyValueSpec.IGNORE` to ignore the Kafka key.
 
 The `result` table is now subscribed to all partitions in the `test.topic` topic. When data is sent to the `test.topic` topic, it will appear in the table.
 
@@ -347,8 +347,8 @@ The following arguments are supported:
   - For example, `include=[“/foo/bar”]` will include the field path name paths `[]`, `[“foo”]`, and `[“foo”, “bar”]`.
   - `include=[“/foo/bar/*”]` will additionally include any field path name paths that start with `[“foo”, “bar”]: [“foo”, “bar”, “baz”], [“foo”, “bar”, “baz”, “zap”]`, etc. When multiple includes are specified, the fields will be included when any of the components match. The default is `None`, which includes all paths.
 - `protocol` is the wire protocol for this payload.
-  - When `schema` is set, `ProtobufProtocol.serdes()` will be used by default.
-  - When `message_class` is set, `ProtobufProtocol.raw()` will be used by default.
+  - When `schema` is set, `ProtobufProtocol.serdes` will be used by default.
+  - When `message_class` is set, `ProtobufProtocol.raw` will be used by default.
 
 ### Perform multiple operations
 

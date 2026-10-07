@@ -69,8 +69,8 @@ The `KafkaKey` and `KafkaValue` attributes can be:
 
 Deephaven Kafka tables can be append-only, blink, or ring.
 
-- [Append-only](../../conceptual/table-types.md#specialization-1-append-only) tables keep every row. Table size (and thus, memory consumption) can grow indefinitely. Set this value with `KafkaTools.TableType.append()`.
-- [Blink](../../conceptual/table-types.md#specialization-3-blink) tables only keep the set of rows from the current update cycle. This forms the basis for more advanced use cases when combined with stateful table aggregations like [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md). For blink tables without any downstream table operations, aggregations or listeners, the new messages will appear as rows in the table for one update cycle, then disappear on the next update cycle. Set this value with `KafkaTools.TableType.blink()`.
+- [Append-only](../../conceptual/table-types.md#specialization-1-append-only) tables keep every row. Table size (and thus, memory consumption) can grow indefinitely. Set this value with `KafkaTools.TableType.append`.
+- [Blink](../../conceptual/table-types.md#specialization-3-blink) tables only keep the set of rows from the current update cycle. This forms the basis for more advanced use cases when combined with stateful table aggregations like [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md). For blink tables without any downstream table operations, aggregations or listeners, the new messages will appear as rows in the table for one update cycle, then disappear on the next update cycle. Set this value with `KafkaTools.TableType.blink`.
 - [Ring](../../conceptual/table-types.md#specialization-4-ring) tables keep only the last `N` rows. When the table grows beyond `N` rows, the oldest are discarded until `N` remain. Set this value with `KafkaTools.TableType.ring(N)`.
 
 ## Launching Kafka with Deephaven
@@ -104,7 +104,7 @@ resultAppend = KafkaTools.consumeToTable(
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) creates a Deephaven table from a Kafka topic. Here, `kafkaProps` is a `Properties` object describing how the Kafka infrastructure is configured. `bootstrap.servers` provides the initial hosts that a Kafka client uses to connect. In this case, `bootstrap.servers` is set to `redpanda:9092`.
 
-The table type is `KafkaTools.TableType.append()`, which creates an append-only table, and the key spec is `KafkaTools.Consume.IGNORE`, which ignores the Kafka key.
+The table type is `KafkaTools.TableType.append`, which creates an append-only table, and the key spec is `KafkaTools.Consume.IGNORE`, which ignores the Kafka key.
 
 The `result` table is now subscribed to all partitions in the `test.topic` topic. When data is sent to the `test.topic` topic, it will appear in the table.
 
@@ -188,7 +188,7 @@ Let's walk through the arguments in this query.
 - The initial offset is `KafkaTools.ALL_PARTITIONS_DONT_SEEK`, which only listens to new messages produced after this call is processed.
 - The key spec is `KafkaTools.Consume.simpleSpec('Symbol', java.lang.String)`, which instructs the consumer to expect messages with a Kafka `key` field, and creates a `Symbol` column of type String to store the information.
 - The value spec is `KafkaTools.Consume.simpleSpec('Price', double)`, which instructs the consumer to expect messages with a Kafka `value` field, and creates a `Price` column of type double to store the information.
-- The table type is `KafkaTools.TableType.append()`, which creates an append-only table.
+- The table type is `KafkaTools.TableType.append`, which creates an append-only table.
 
 Now let's add some entries to our Kafka stream.
 
@@ -387,10 +387,10 @@ result = KafkaTools.consumeToTable(
 
 In this query, the first argument includes an additional entry for `schema.registry.url` to specify the URL for a schema registry with a REST API compatible with [Confluent's schema registry specification](https://docs.confluent.io/platform/current/schema-registry/develop/api.html).
 
-The only argument to [`protobufSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#protobufSpec(io.deephaven.kafka.protobuf.ProtobufConsumeOptions)) is a `ProtobufConsumeOptions` object, created with `ProtobufConsumeOptions.builder()`. The builder methods include:
+The only argument to [`protobufSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#protobufSpec(io.deephaven.kafka.protobuf.ProtobufConsumeOptions)) is a `ProtobufConsumeOptions` object, created with `ProtobufConsumeOptions.builder`. The builder methods include:
 
 - `descriptorProvider` sets where the protobuf message descriptor comes from. It is required.
-  - `DescriptorSchemaRegistry.builder()` fetches the descriptor from the schema registry, as in the example above. Its builder methods are:
+  - `DescriptorSchemaRegistry.builder` fetches the descriptor from the schema registry, as in the example above. Its builder methods are:
     - `subject`: the schema subject name, `share.price.record` in the example.
     - `version`: the schema version. When not set, the latest version is fetched.
     - `messageName`: the fully-qualified protobuf message name, for example `com.example.MyMessage`. When not set, the first message descriptor in the schema is used.
@@ -399,8 +399,8 @@ The only argument to [`protobufSpec`](https://deephaven.io/core/javadoc/io/deeph
   - `DescriptorMessageClass.of(MyMessage.class)` reads the descriptor from a protobuf message class on the current classpath and does not contact the schema registry.
 - `parserOptions` takes a `ProtobufDescriptorParserOptions` object, which controls how the descriptor is parsed, such as which field paths to include.
 - `protocol` sets the wire protocol for this payload.
-  - With `DescriptorSchemaRegistry`, `Protocol.serdes()` is used by default.
-  - With `DescriptorMessageClass`, `Protocol.raw()` is used by default.
+  - With `DescriptorSchemaRegistry`, `Protocol.serdes` is used by default.
+  - With `DescriptorMessageClass`, `Protocol.raw` is used by default.
 
 ### Perform multiple operations
 

@@ -269,7 +269,7 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
 - `target_page_size`: The target page size in bytes. Defaults to 65536 bytes (64 KiB), which you can change with the `Parquet.defaultTargetPageSize` [configuration property](../configuration/configuration-properties.md).
 - `generate_metadata_files`: Whether to generate Parquet `_metadata` and `_common_metadata` files. Defaults to `False`.
 - `row_group_info`: Sets the Row Group type used for writing. Available Row Group types are:
-  - `RowGroupInfo.single_group()`: All data is within a single Row Group. This is the default `RowGroupInfo` implementation.
+  - `RowGroupInfo.single_group`: All data is within a single Row Group. This is the default `RowGroupInfo` implementation.
   - `RowGroupInfo.max_rows(max_rows)`: Splits into a number of Row Groups, each of which has no more than the requested number of rows.
   - `RowGroupInfo.max_groups(num_row_groups)`: Split evenly into a pre-defined number of Row Groups, each of which contains the same number of rows. If the input table size is not evenly divisible by the number of Row Groups requested, then some Row Groups will contain one fewer row.
   - `RowGroupInfo.by_groups(groups, (Optional) max_rows)`: Splits each unique group into a Row Group. If the table does not have all values for the group(s) contiguously, then an error will be raised. If `max_rows` is set and a given Row Group yields a row count greater than the requested number of rows, then it will be split further using `max_rows(...)`.
@@ -296,7 +296,7 @@ The `special_instructions` argument to [`write`](/core/pydoc/code/deephaven.parq
 The following `S3Instructions` arguments are relevant when writing. See the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) API documentation for the full list, including arguments that apply only to reads.
 
 - `region_name`: The region name of the AWS S3 bucket. If not provided, the region name is picked by the AWS SDK from the 'aws.region' system property, the "AWS_REGION" environment variable, the \{user.home}/.aws/credentials, \{user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
-- `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `Credentials.resolving()`.
+- `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `Credentials.resolving`.
 - `endpoint_override`: The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs. The default is `None`.
 - `connection_timeout`: Time to wait for a successful S3 connection before timing out. The default is 2 seconds.
 - `write_timeout`: The amount of time to wait when writing a fragment before timing out. The default is 2 seconds.
@@ -307,7 +307,7 @@ The following `S3Instructions` arguments are relevant when writing. See the [`S3
 - `config_file_path`: The path to the AWS configuration file.
 - `credentials_file_path`: The path to the AWS credentials file.
 
-The `access_key_id`, `secret_access_key`, and `anonymous_access` arguments are deprecated. Use `Credentials.basic(access_key_id, secret_access_key)` or `Credentials.anonymous()` for the `credentials` argument instead.
+The `access_key_id`, `secret_access_key`, and `anonymous_access` arguments are deprecated. Use `Credentials.basic(access_key_id, secret_access_key)` or `Credentials.anonymous` for the `credentials` argument instead.
 
 ## Related documentation
 

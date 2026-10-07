@@ -162,7 +162,7 @@ private static SinkFactory makeMySinkFactory() {
 
 ### Put it all together
 
-We now have everything we need to use our own data structures with the library. Take the example code in the [Use the reference implementation](#use-the-reference-implementation) section and change `SinkFactory.arrays()` to `makeMySinkFactory()`.
+We now have everything we need to use our own data structures with the library. Take the example code in the [Use the reference implementation](#use-the-reference-implementation) section and replace the call to `SinkFactory.arrays` with a call to `makeMySinkFactory`.
 
 ## Handle nulls
 
