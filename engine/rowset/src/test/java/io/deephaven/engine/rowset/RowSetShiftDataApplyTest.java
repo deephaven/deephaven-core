@@ -7,6 +7,7 @@ import io.deephaven.util.SafeCloseablePair;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -173,7 +174,7 @@ public class RowSetShiftDataApplyTest {
                 expectedPreShift.addKey(unapplyByScan(sd, key, 0));
             }
         }
-        final String context = sd + " keys " + RowSetFactory.fromKeys(keys);
+        final String context = sd + " keys " + Arrays.toString(keys);
         try (final WritableRowSet applied = sd.apply(RowSetFactory.fromKeys(keys));
                 final RowSet expected = expectedApply.build()) {
             assertEquals("apply " + context, expected, applied);
