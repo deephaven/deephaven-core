@@ -30,7 +30,7 @@ The two tables look identical but are created differently.
 
 ## Ticking tables
 
-You can create ticking tables to get a feel for live data in Deephaven. The [`timeTable`](../../reference/table-operations/create/timeTable.md) method works similarly to [`emptyTable`](../../reference/table-operations/create/emptyTable.md) in that DQL is used to populate the table with more data. It creates a table with just a `Timestamp` column. The resultant table ticks at a regular interval specified by the input argument.
+You can create ticking tables to get a feel for live data in Deephaven. The [`timeTable`](../../reference/table-operations/create/timeTable.md) method works similarly to [`emptyTable`](../../reference/table-operations/create/emptyTable.md) in that DQL is used to populate the table with more data. It creates a table with just a `Timestamp` column. The resultant table adds rows at a regular interval specified by the input argument.
 
 ```groovy test-set=2 ticking-table order=null
 tickingTable = timeTable("PT1s")
@@ -38,7 +38,7 @@ tickingTable = timeTable("PT1s")
 
 ![A GIF showing the creation and updating of a ticking table in Deephaven](../../assets/tutorials/crash-course/crash-course-3.gif)
 
-The `PT1s` argument is an [ISO 8601 duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that indicates the table will tick once every second.
+The `PT1s` argument is an [ISO 8601 duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that sets the period between rows: the table adds one row for each second that elapses.
 
 New ticking tables can be derived from existing ones using DQL, just as in the static case.
 
