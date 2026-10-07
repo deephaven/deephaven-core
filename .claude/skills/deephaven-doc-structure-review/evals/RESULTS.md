@@ -56,3 +56,5 @@ Baseline here is iteration 1 of the new skill, 3 runs each, graded blind.
 The one control expectation (the named, restated opener isn't a defect) went from 0/3 to 3/3 after the rule was reworded. The same expectation scored 1/3 for iteration 1 in the first grading pass, so treat that control as noisy.
 
 Wording note: eval 2's rule expectation now accepts a pointer to any earlier section that names its target and restates what it needs, regardless of distance, matching the control that accepts "Building on the counter example above".
+
+Wording note: eval 3 expectation 1 now describes a late definition rather than a missing one (the property appears only in the later Configuration table). The scores above were graded on the previous wording of that expectation, which asked the same question in different words; they were not re-graded.

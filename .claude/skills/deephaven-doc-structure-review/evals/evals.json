@@ -33,12 +33,12 @@
     },
     {
       "prompt": "Do a structure review of the 'Barriers' section (from '### Barriers' to just before '## Configuration') of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md. Report only — don't edit anything.",
-      "expected_output": "Finds that 'enabled' is used without naming the setting or default at that point, that 'stateless mode / stateful mode' are unexplained labels, and that 'this setting' has no antecedent; ranks it as a top finding and proposes explaining them at first use without moving a configuration property into the narrative.",
+      "expected_output": "Finds that 'enabled' is used before the controlling setting is introduced (it appears only later, in the Configuration table), that 'stateless mode / stateful mode' are unexplained labels, and that 'this setting' has no antecedent in the section; ranks it as a top finding and proposes explaining them at first use without moving a configuration property into the narrative.",
       "files": [
         "../eval-fixtures/parallelization-609b-chip-round2.md"
       ],
       "expectations": [
-        "Flags that the 'Implicit barriers' section says 'when implicit barriers are enabled' without saying, at that point, what setting turns the feature on or what its default is (the opener describes only the effect, and the property appears only in the separate Configuration table)",
+        "Flags that the 'Implicit barriers' section says 'when implicit barriers are enabled' before the controlling setting is introduced: the property and its default appear only later, in the separate Configuration table, so the section's first use arrives with no name or default for the setting (a late definition, not a missing one)",
         "Flags 'Stateless mode (default)' and 'Stateful mode' as undefined labels, and notes that 'stateless' is defined earlier on the page with a different meaning (rows independent of each other)",
         "Flags 'this setting' in 'Most users don't need to change this setting' as referring to a setting no earlier sentence names",
         "Proposes defining the term at or before its first use on the page, with a concrete definition sentence",
