@@ -84,3 +84,5 @@ Copilot noted that the required link sweep started from method-shaped identifier
 | Eval 8 (4 expectations) | 12/12 | 12/12 |
 
 The baseline skill also flagged the bare type names, so this eval doesn't separate the two versions. It guards against a regression in the sweep that now names type names explicitly.
+
+Iteration D: the rule now treats hard-to-read sentences as the defect and punctuation as evidence for it (review follow-up). Eval 3 scored 28/30 (new skill only, 3 runs, graded blind). The two misses were a rewrite that kept a parenthetical, and a control sentence flagged for its unnamed "this setting" rather than for punctuation.

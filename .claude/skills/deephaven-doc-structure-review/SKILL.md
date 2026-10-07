@@ -84,8 +84,8 @@ up front, rather than re-deriving them per check.
 ## 2. Named structural pitfalls to check
 
 - **Terminology introduced before it's defined:** Using your term list, check every term on the
-  page, not only the ones in the opening sections. A term used before any definition or glossary
-  entry appears leaves the reader with no anchor for it, and a term that is neither defined on
+  page, not only the ones in the opening sections. A term used before any definition, glossary
+  entry, or link to the page that defines it leaves the reader with no anchor for it, and a term that is neither defined on
   the page nor linked to the page that defines it is worse: the reader has to leave the page
   or guess. Watch for these shapes:
   - A feature name used as if the reader already knew it ("When implicit barriers are enabled,
@@ -105,7 +105,10 @@ up front, rather than re-deriving them per check.
   section and define the behavior in the narrative (see **Level of abstraction**).
 
 - **Section can't be read on its own:** People skip around, so each section should make sense to
-  a reader who lands on it from the table of contents or a heading link. For each section, cover
+  a reader who lands on it from the table of contents or a heading link. This applies to Concept
+  guides, Reference guides, and how-tos that readers dip into. A Crash Course chapter and an
+  explicitly sequential how-to may rely on steps the reader has just completed, so for those only
+  flag an opener that leaves the reader unable to tell what it refers to. For each section, cover
   the earlier sections and read only its heading and first paragraph. If you find yourself
   asking "the same as what?", the section fails. The usual cause is an opener that points back
   without saying to what: "The same applies to …", "As above, …", "This also …", "Likewise, …",
