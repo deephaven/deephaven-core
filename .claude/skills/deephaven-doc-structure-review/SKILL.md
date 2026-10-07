@@ -84,10 +84,12 @@ up front, rather than re-deriving them per check.
 ## 2. Named structural pitfalls to check
 
 - **Terminology introduced before it's defined:** Using your term list, check every term on the
-  page, not only the ones in the opening sections. A term used before any definition, glossary
-  entry, or link to the page that defines it leaves the reader with no anchor for it, and a term that is neither defined on
-  the page nor linked to the page that defines it is worse: the reader has to leave the page
-  or guess. Watch for these shapes:
+  page, not only the ones in the opening sections. Compare each term's first use with the
+  earliest definition, glossary entry, or link to the page that defines it. A term defined or
+  linked at its first use is fine. A term whose definition or link comes only after its first
+  use leaves the reader with no anchor at that point. A term with no definition and no link
+  anywhere on the page is the stronger finding: the reader has to leave the page or guess.
+  Watch for these shapes:
   - A feature name used as if the reader already knew it ("When implicit barriers are enabled,
     …") with no sentence saying what it is or what enabling it means.
   - A label reused with a different meaning than the page gave it earlier (a page that defines
