@@ -78,13 +78,14 @@ final class ObjectSetKernel extends SingleColumnSetKernel {
     }
 
     @Override
-    void match(
-            @NotNull final Chunk<Values> keys,
+    void matchValues(
+            @NotNull final Chunk<Values>[] keyChunks,
             @NotNull final LongChunk<OrderedRowKeys> rowKeys,
             @NotNull final WritableLongChunk<OrderedRowKeys> results,
             final boolean inclusion) {
-        final ObjectChunk<?, Values> typedKeys = keys.asObjectChunk();
+        final ObjectChunk<?, Values> typedKeys = keyChunks[0].asObjectChunk();
         final int keysSize = typedKeys.size();
+        results.setSize(0);
         for (int ii = 0; ii < keysSize; ++ii) {
             if (counts.containsKey(typedKeys.get(ii)) == inclusion) {
                 results.add(rowKeys.get(ii));
