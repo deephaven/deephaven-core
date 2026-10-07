@@ -41,8 +41,6 @@ Both columns need `with_serial` here because both mutate the shared `counter`. T
 
 <!-- excerpt gap: text between these passages omitted -->
 
-```
-
 Execution order: A and B run in parallel (they don't depend on each other); D starts after A finishes (doesn't wait for B); C starts after both A and B finish.
 
 Barriers work the same way for [`Filter`](../../reference/query-language/types/Filter.md) objects in `where` operations — use them when one filter has side effects that another depends on. This is uncommon; most filters are stateless and don't need barriers.

@@ -16,6 +16,21 @@ Building on the counter example above: consider two columns that share a counter
 
 <!-- excerpt gap: text between these passages omitted -->
 
+```python order=t
+from deephaven.concurrency_control import Barrier
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+counter = 0
+
+
+def get_and_increment_counter() -> int:
+    global counter
+    ret = counter
+    counter += 1
+    return ret
+
+
 barrier = Barrier()
 
 # Column A: serial (protect counter) + declares barrier (must finish first)

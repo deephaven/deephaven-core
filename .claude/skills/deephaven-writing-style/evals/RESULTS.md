@@ -60,3 +60,5 @@ Baseline here is iteration 1 of the new skill, 3 runs each, graded blind.
 | 4 | 14/15 | 13/15 |
 
 The link-target expectation in eval 4 went from 1/3 to 3/3. The remaining miss in eval 3 is the implicit-barriers opener, where one run flagged the paragraph but proposed no split in both iterations.
+
+Fixture note: after review, a stray closing fence was removed from `awk-excerpt.md` and the opening fence was added to the code block in `column-names-excerpt.md`. Evals 3 and 6 were run on the earlier, unbalanced versions (the reviewers read the raw text), so a re-run on the corrected files would confirm the scores.
