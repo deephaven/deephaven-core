@@ -3,7 +3,7 @@ title: Write your own custom parser for Kafka
 subtitle: Custom parser
 ---
 
-Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Groovy objects and table columns, or use an object processor spec.
+Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Groovy objects and table columns, or build a key or value spec with [`objectProcessorSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#objectProcessorSpec(org.apache.kafka.common.serialization.Deserializer,io.deephaven.processor.NamedObjectProcessor)), as described in [Alternative: Use an object processor spec](#alternative-use-an-object-processor-spec).
 
 This guide shows how to:
 
@@ -121,6 +121,8 @@ The resulting `parsedTable` has the following columns:
 Because [`view`](../../reference/table-operations/select/view.md) keeps only the columns it lists, `parsedTable` drops both the original `Bytes` column and the intermediate `Person` column. To keep them, replace the `view` call with `update`.
 
 ## Alternative: Use an object processor spec
+
+An object processor spec is a Kafka key or value spec built from an object processor: a component that turns each record's raw bytes into values for one or more named, typed columns. You pass the spec to `consumeToTable` as the key or value spec, and the processor fills those columns as records arrive, so no parsing step is needed in your query.
 
 For some advanced use cases, you may want to use [`objectProcessorSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#objectProcessorSpec(org.apache.kafka.common.serialization.Deserializer,io.deephaven.processor.NamedObjectProcessor)) with a JSON provider such as [`JacksonProvider`](https://deephaven.io/core/javadoc/io/deephaven/json/jackson/JacksonProvider.html). This is especially useful when:
 

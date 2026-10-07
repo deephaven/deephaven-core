@@ -3,7 +3,7 @@ title: Write your own custom parser for Kafka
 subtitle: Custom parser
 ---
 
-Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Python objects and table columns, or use an object processor spec.
+Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Python objects and table columns, or build a key or value spec with [`object_processor_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec), as described in [Alternative: Use an object processor spec](#alternative-use-an-object-processor-spec).
 
 This guide shows how to:
 
@@ -119,6 +119,8 @@ The resulting `parsed_table` has the following columns:
 You can still keep the original `Bytes` column or drop it if you no longer need it.
 
 ## Alternative: Use an object processor spec
+
+An object processor spec is a Kafka key or value spec built from an object processor: a component that turns each record's raw bytes into values for one or more named, typed columns. You pass the spec to `consume` as the `key_spec` or `value_spec`, and the processor fills those columns as records arrive, so no parsing step is needed in your query.
 
 For some advanced use cases, you may want to register a reusable parser implementation and reference it via [`object_processor_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec). This is especially useful when:
 

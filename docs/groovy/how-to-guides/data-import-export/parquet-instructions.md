@@ -57,7 +57,7 @@ The `ParquetInstructions` class has the following methods:
 - `DEFAULT_COMPRESSION_CODEC_NAME`: `SNAPPY`.
 - `DEFAULT_MAXIMUM_DICTIONARY_KEYS`: 1048576.
 - `DEFAULT_MAXIMUM_DICTIONARY_SIZE`: 1048576.
-- `DEFAULT_TARGET_PAGE_SIZE`: 65536. Override it with the `Parquet.defaultTargetPageSize` configuration property.
+- `DEFAULT_TARGET_PAGE_SIZE`: 65536. Override it with the `Parquet.defaultTargetPageSize` [configuration property](../configuration/configuration-properties.md).
 
 ### `ParquetInstructions.Builder` methods
 
