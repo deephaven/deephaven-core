@@ -45,6 +45,9 @@ import static io.deephaven.uri.ResolveTools.resolve
 streamingTable = resolve("dh+plain://remote-server:10000/scope/myTable")
 ```
 
+> [!NOTE]
+> URI resolution does not send credentials, so the remote server must allow [anonymous authentication](../how-to-guides/authentication/auth-anon.md). A server that uses the default pre-shared key authentication rejects the subscription.
+
 ### Shared tickets
 
 Shared tickets are endpoints that allow tables to be published and consumed across different sessions. A client can publish a table to a shared ticket, and other clients (or servers) can subscribe to or snapshot that ticket.

@@ -19,6 +19,8 @@ We will classify the Iris dataset with Deephaven tables and use the same Keras n
 First, we have to set a log directory. This is where TensorBoard will store the logs. It will read these logs to show various visualizations:
 
 ```python skip-test
+import os
+
 log_dir = "tensorboard_logs"
 os.system("mkdir '{}'".format(log_dir))
 ```
@@ -26,6 +28,8 @@ os.system("mkdir '{}'".format(log_dir))
 Second, we need to run TensorBoard and provide the log directory and port number:
 
 ```python skip-test
+import os
+
 os.system("tensorboard --logdir='{}' --port 6006 --bind_all &".format(log_dir))
 ```
 
@@ -219,6 +223,8 @@ writer = SummaryWriter(log_dir)
 Second, we need to run TensorBoard and provide the log directory and port number:
 
 ```python skip-test
+import os
+
 os.system("tensorboard --logdir='{}' --port 6006 --bind_all &".format(log_dir))
 ```
 
