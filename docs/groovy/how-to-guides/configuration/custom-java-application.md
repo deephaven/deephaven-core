@@ -77,7 +77,7 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -100,7 +100,9 @@ Keep the following in mind:
 - **The JVM arguments are required.** These are the same arguments that the production application's `start` script passes. Apache Arrow needs `--add-opens java.base/java.nio=ALL-UNNAMED`. The two `--add-exports` arguments are needed only if you include `deephaven-hotspot-impl` and `deephaven-clock-impl`, respectively. `-Dio.netty.noUnsafe=false` is required on Java 25 and later, and harmless on earlier versions. If you launch the application another way, such as from your IDE or a container, pass the same arguments.
 - **Pick a console language.** The server's default console language is Python, which requires a Python environment that the JVM can load. Setting `deephaven.console.type` to `groovy` gives you a Groovy console with no extra setup. Set it to `none` to disable the console entirely.
 
-Deephaven's optional integrations are separate artifacts. Add the ones you use as runtime dependencies. For example, the production application also includes `deephaven-engine-sql`, `deephaven-extensions-s3`, `deephaven-extensions-iceberg-s3`, `deephaven-extensions-json-jackson`, and `deephaven-extensions-flight-sql`.
+Deephaven's optional integrations are separate artifacts. Add the ones you use as runtime dependencies. For example, the production application also includes `deephaven-engine-sql`, `deephaven-extensions-s3`, `deephaven-extensions-iceberg-s3`, and `deephaven-extensions-json-jackson`.
+
+Flight SQL needs an extra step. Adding `deephaven-extensions-flight-sql` as a dependency puts its classes on the classpath, but it doesn't register the service with the server. Add it as an `implementation` dependency (not `runtimeOnly`), so the compiler can see `FlightSqlModule`, and include that module in your Dagger component, as described in [Write the component factory](#write-the-component-factory). `FlightSqlModule` binds `FlightSqlResolver` as the `TicketResolver` and `ActionResolver` that handle Flight SQL requests; without it, the server never creates those bindings, even if the artifact is present at runtime.
 
 ## Write the component factory
 
@@ -187,6 +189,8 @@ The included modules supply the server:
 | `SslConfigModule`              | The TLS configuration for those outgoing connections.                                                      |
 
 To change a part of the server, replace the module that provides it. For example, the `jetty-app-custom` example drops `CommunityAuthorizationModule` and binds its own `AuthorizationProvider` that disables the input table service.
+
+To add an optional integration that registers its own services, such as Flight SQL, add its module to the `@Module(includes = {...})` list. For example, include `io.deephaven.server.flightsql.FlightSqlModule` from `deephaven-extensions-flight-sql` to enable Flight SQL.
 
 ## Publish tables at startup
 
