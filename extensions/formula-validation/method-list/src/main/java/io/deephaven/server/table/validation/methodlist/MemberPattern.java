@@ -20,13 +20,16 @@ abstract sealed class MemberPattern permits MethodPattern, ConstructorPattern {
     /** A dotted name, in which ".." matches any number of intermediate names. */
     private static final String TYPE = SEGMENT + "(?:\\.\\.?" + SEGMENT + ")*";
     private static final String ARGUMENT = TYPE + "(?:\\[])*(?:\\.\\.\\.)?";
-    private static final String COMMA = "\\s*,\\s*";
+    private static final String COMMA = " *, *";
     /** Arguments without "..", or with exactly one ".." among them. */
     private static final String ARGUMENT_LIST = "(?:" + ARGUMENT + "(?:" + COMMA + ARGUMENT + ")*"
             + "|(?:" + ARGUMENT + COMMA + ")*\\.\\.(?:" + COMMA + ARGUMENT + ")*)";
-    /** The whole pattern; the declaring class is separated from the name by spaces or "#". */
-    private static final Pattern PATTERN = Pattern.compile("(?<type>" + TYPE + ")(?:\\s+|\\s*#\\s*)"
-            + "(?<name><constructor>|" + SEGMENT + ")\\s*\\(\\s*(?<arguments>" + ARGUMENT_LIST + ")?\\s*\\)");
+    /**
+     * The whole pattern; the declaring class is separated from the name by spaces or "#". Only spaces may separate the
+     * elements of a pattern.
+     */
+    private static final Pattern PATTERN = Pattern.compile("(?<type>" + TYPE + ")(?: +| *# *)"
+            + "(?<name><constructor>|" + SEGMENT + ") *\\( *(?<arguments>" + ARGUMENT_LIST + ")? *\\)");
     private static final Set<String> PRIMITIVE_NAMES =
             Set.of("boolean", "byte", "char", "short", "int", "long", "float", "double", "void");
 

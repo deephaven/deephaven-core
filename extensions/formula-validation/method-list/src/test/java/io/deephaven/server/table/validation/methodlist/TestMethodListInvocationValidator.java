@@ -471,7 +471,7 @@ public class TestMethodListInvocationValidator {
         assertPermitted("  java.lang.String   length ( )  ", length);
         final Method substring = String.class.getMethod("substring", int.class, int.class);
         assertPermitted("java.lang.String substring(int,int)", substring);
-        assertPermitted("java.lang.String substring( int ,\tint )", substring);
+        assertPermitted("java.lang.String substring( int , int )", substring);
         assertPermitted("java.lang.String#substring(..,int)", substring);
     }
 
@@ -487,7 +487,9 @@ public class TestMethodListInvocationValidator {
                 "java.lang.String valueOf([])",
                 // at most one ".." in an argument list, and names do not start with a digit
                 "java.lang.String *(.., int, ..)", "java.lang.String 1length()", "java.1lang.String length()",
-                "java.lang.String # # length()", "java.lang.String length() trailing")) {
+                "java.lang.String # # length()", "java.lang.String length() trailing",
+                // only spaces separate the elements of a pattern
+                "java.lang.String\tlength()", "java.lang.String\t#length()", "java.lang.String substring(int,\tint)")) {
             Assert.assertThrows(invalid, UncheckedDeephavenException.class,
                     () -> new MethodListInvocationValidator(List.of(invalid)));
         }
