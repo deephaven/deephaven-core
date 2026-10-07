@@ -102,7 +102,7 @@
         "../eval-fixtures/crash-course-parallelization-pre-review.md"
       ],
       "expectations": [
-        "Flags the sentence under 'The fix' that begins 'The with_serial method tells Deephaven to process this formula serially: never running concurrently with itself, with rows evaluated one at a time ...' as relying on a colon to be grammatical and proposes separate sentences or a list",
+        "Flags the sentence under 'The fix' that begins 'The with_serial method tells Deephaven to process this formula serially: never running concurrently with itself, with rows evaluated one at a time ...' as hard to read (for example because of its colon-introduced run of clauses) and proposes separate sentences or a list",
         "Flags `with_serial` in the Key takeaways bullets as unlinked, even though the page links it earlier",
         "Control: does not flag the 'Shared state' and 'Row ordering' bullets under 'When it breaks' as holding too many ideas (each states a cause and its consequence)"
       ],
