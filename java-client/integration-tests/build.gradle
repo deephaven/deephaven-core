@@ -42,6 +42,8 @@ dependencies {
     // TransportTest inspects netty directly: the native SSL provider and the buffer leak detector
     testImplementation platform(libs.netty.bom)
     testImplementation 'io.netty:netty-handler'
+    // NettyLeakRecorder allocates a buffer to make the leak detector report
+    testImplementation 'io.netty:netty-buffer'
     // The barrage layer runs a client-side engine, which needs its configuration and logging on the classpath
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':log-to-slf4j')

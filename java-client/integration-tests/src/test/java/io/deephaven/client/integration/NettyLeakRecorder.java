@@ -5,6 +5,7 @@ package io.deephaven.client.integration;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
+import io.netty.buffer.PooledByteBufAllocator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,13 +29,17 @@ public final class NettyLeakRecorder extends AppenderBase<ILoggingEvent> {
     }
 
     /**
-     * Fails if netty has reported a leak so far in this JVM. Every test class calls this from its {@code @AfterAll}, so
-     * a leak from any class is caught by that class or by whichever runs after it, in any order. Netty reports a leak
-     * only once the garbage collector finds an unreleased buffer, so this gives it a chance first.
+     * Fails if netty has reported a leak so far in this JVM. Every test class that opens a channel calls this from its
+     * {@code @AfterAll}, so a leak from any class is caught by that class or by whichever runs after it, in any order.
+     * Netty reports a leak only once the garbage collector finds an unreleased buffer, and only when the next tracked
+     * allocation polls the detector's reference queue, so this does both before looking.
      */
     static void assertNoLeaks() throws InterruptedException {
         System.gc();
         Thread.sleep(200);
+        // Tracking an allocation reports whatever the GC just enqueued. The pooled allocator tracks every buffer at
+        // this level; the unpooled one tracks only direct buffers, so an Unpooled heap buffer would not do.
+        PooledByteBufAllocator.DEFAULT.heapBuffer(1).release();
         assertThat(leaks()).as("netty buffer leaks reported so far in this JVM").isEmpty();
     }
 

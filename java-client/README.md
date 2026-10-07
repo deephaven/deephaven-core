@@ -138,10 +138,12 @@ classpath, so `check` reruns it without being asked:
   that changes either side of that shows up here. The netty artifact versions in use are printed
   into the report.
 - The test JVM runs with `io.netty.leakDetection.level=paranoid`; `logback-test.xml` routes netty's
-  leak reports into `NettyLeakRecorder`, and every test class asserts in `@AfterAll` that none have
-  been recorded so far, so a leak from any class is caught by it or by whichever class runs next,
-  in any order. The Arrow-backed classes also close their allocator there, which throws if it still
-  holds memory.
+  leak reports into `NettyLeakRecorder`, and every test class that opens a channel asserts in
+  `@AfterAll` that none have been recorded so far, so a leak from any class is caught by it or by
+  whichever class runs next, in any order. Netty only reports a leak when a later tracked
+  allocation polls its reference queue, so the assertion runs a GC and then allocates and releases
+  one buffer before looking. `ExamplesSmokeTest` has no such assertion: it only spawns processes.
+  The Arrow-backed classes also close their allocator there, which throws if it still holds memory.
 
 ### The TLS tests
 
