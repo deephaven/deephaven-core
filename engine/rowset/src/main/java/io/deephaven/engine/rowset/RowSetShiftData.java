@@ -579,12 +579,26 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
         final int lastRelevant =
                 Math.min(size - 1, firstWindowEndAtOrAfter(firstRelevant, size, filterRowSet.lastRowKey(), false, 0));
-        boolean hasReverseShift = false;
+        // Adjacent polarity runs have opposite signs, so the relevant shift ranges include a negative delta exactly
+        // when the first of them is negative or its run ends at or before the last of them.
+        final boolean hasReverseShift = getShiftDelta(firstRelevant) < 0
+                || polaritySwapIndices.getInt(polarityRun(firstRelevant)) <= lastRelevant;
         try (final RowSet.SearchIterator it = filterRowSet.reverseIterator()) {
-            FORWARD_SHIFT: for (int ii = lastRelevant; ii >= firstRelevant; --ii) {
+            // The descending pass gallops back past any run of shift ranges that begins after the row set's next key
+            // at or below the current one, and skips each run of negative shift ranges whole.
+            int ii = lastRelevant;
+            int run = polarityRun(ii);
+            int runStart = polarityRunStart(run);
+            FORWARD_SHIFT: while (ii >= firstRelevant) {
+                if (ii < runStart) {
+                    // stepping or skipping crosses one run boundary; a gallop may cross several
+                    run = ii >= polarityRunStart(run - 1) ? run - 1 : polarityRun(ii);
+                    runStart = polarityRunStart(run);
+                }
                 final long delta = getShiftDelta(ii);
                 if (delta < 0) {
-                    hasReverseShift = true;
+                    // the negative shift ranges are the ascending pass's; skip the whole run
+                    ii = runStart - 1;
                     continue;
                 }
                 final long start = getBeginRange(ii);
@@ -592,6 +606,11 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 if (!it.advance(end)) {
                     break;
                 }
+                if (it.currentValue() < start) {
+                    ii = lastRangeBeginAtOrBefore(ii, firstRelevant, it.currentValue());
+                    continue;
+                }
+                --ii;
                 while (it.currentValue() >= start) {
                     callback.shift(it.currentValue(), delta);
                     if (!it.hasNext()) {
@@ -607,12 +626,21 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         try (final RowSet.SearchIterator it = filterRowSet.searchIterator()) {
-            // The ascending pass gallops past any run of shift ranges that ends before the row set's next key.
+            // The ascending pass gallops past any run of shift ranges that ends before the row set's next key, and
+            // skips each run of positive shift ranges whole.
             int ii = firstRelevant;
+            int run = polarityRun(ii);
+            int runEnd = polaritySwapIndices.getInt(run);
             REVERSE_SHIFT: while (ii <= lastRelevant) {
+                if (ii >= runEnd) {
+                    // stepping or skipping crosses one run boundary; a gallop may cross several
+                    run = ii < polaritySwapIndices.getInt(run + 1) ? run + 1 : polarityRun(ii);
+                    runEnd = polaritySwapIndices.getInt(run);
+                }
                 final long delta = getShiftDelta(ii);
                 if (delta > 0) {
-                    ++ii;
+                    // the positive shift ranges are the descending pass's; skip the whole run
+                    ii = runEnd;
                     continue;
                 }
                 final long start = getBeginRange(ii);
@@ -833,6 +861,65 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             }
         }
         return lo;
+    }
+
+    /**
+     * Gallops backward from {@code fromIdx} and then bisects the bracketed interval, so a result near {@code fromIdx}
+     * costs a constant number of probes and one {@code d} positions away costs O(log d).
+     *
+     * @return the last shift range index in {@code [lowIdx, fromIdx]} whose range begins at or before {@code key}, or
+     *         {@code lowIdx - 1} if there is none
+     */
+    private int lastRangeBeginAtOrBefore(final int fromIdx, final int lowIdx, final long key) {
+        if (getBeginRange(fromIdx) <= key) {
+            return fromIdx;
+        }
+        // getBeginRange(hi) > key holds throughout; lo is either lowIdx - 1 or an index whose range begins at or
+        // before key
+        int hi = fromIdx;
+        int step = 1;
+        int lo = fromIdx - step;
+        while (lo >= lowIdx && getBeginRange(lo) > key) {
+            hi = lo;
+            // the step saturates at the distance to lowIdx, so doubling it can never overflow
+            step = step <= ((hi - lowIdx) >>> 1) ? step << 1 : hi - lowIdx + 1;
+            lo = hi - step;
+        }
+        while (hi - lo > 1) {
+            final int mid = (lo + hi) >>> 1;
+            if (getBeginRange(mid) <= key) {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
+        }
+        return lo;
+    }
+
+    /**
+     * @return the position in {@code polaritySwapIndices} of the polarity run that holds the {@code idx}th shift range
+     */
+    private int polarityRun(final int idx) {
+        // polaritySwapIndices holds the exclusive end of every run in ascending order, the last being size()
+        int lo = 0;
+        int hi = polaritySwapIndices.size() - 1;
+        while (lo < hi) {
+            final int mid = (lo + hi) >>> 1;
+            if (polaritySwapIndices.getInt(mid) <= idx) {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        return lo;
+    }
+
+    /**
+     * @return the index of the first shift range in the polarity run at position {@code run} in
+     *         {@code polaritySwapIndices}
+     */
+    private int polarityRunStart(final int run) {
+        return run == 0 ? 0 : polaritySwapIndices.getInt(run - 1);
     }
 
     /**

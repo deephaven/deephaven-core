@@ -384,4 +384,55 @@ public class RowSetShiftDataApplyTest {
                     tinyNanos < 2 * fullNanos);
         }
     }
+
+    /**
+     * Visits a two-key row set, with one key in the first and one in the last of a million shift ranges, a hundred
+     * times, once with every delta positive (the descending pass) and once with every delta negative (the ascending
+     * pass), and compares each total with a single visit of a row set holding a key in every range. Between its two
+     * keys each visit gallops across the empty shift ranges in about forty probes, so the hundred visits take a small
+     * fraction of one full walk in either direction; stepping across the empty ranges one at a time would cost each
+     * visit a walk of the whole shift list, several full walks in total. Each measurement is the fastest of four
+     * repetitions, the first of which also warms up both paths.
+     */
+    @Test
+    @Category(OutOfBandTest.class)
+    public void testForAllInRowSetGallopsAcrossEmptyRangesInBothDirections() {
+        final int numRanges = 1_000_000;
+        for (final long delta : new long[] {2, -2}) {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            for (int ii = 0; ii < numRanges; ++ii) {
+                builder.shiftRange(10L * ii + 3, 10L * ii + 5, delta);
+            }
+            final RowSetShiftData sd = builder.build();
+
+            final RowSetBuilderSequential everyRange = RowSetFactory.builderSequential();
+            for (int ii = 0; ii < numRanges; ++ii) {
+                everyRange.appendKey(10L * ii + 4);
+            }
+            try (final RowSet fullRowSet = everyRange.build();
+                    final RowSet endsRowSet = RowSetFactory.fromKeys(4, 10L * (numRanges - 1) + 4)) {
+                final int numVisits = 100;
+                final long[] calls = new long[1];
+                long fullNanos = Long.MAX_VALUE;
+                long endsNanos = Long.MAX_VALUE;
+                for (int rep = 0; rep < 4; ++rep) {
+                    calls[0] = 0;
+                    final long fullStart = System.nanoTime();
+                    sd.forAllInRowSet(fullRowSet, (key, keyDelta) -> ++calls[0]);
+                    fullNanos = Math.min(fullNanos, System.nanoTime() - fullStart);
+                    assertEquals(numRanges, calls[0]);
+
+                    calls[0] = 0;
+                    final long endsStart = System.nanoTime();
+                    for (int ii = 0; ii < numVisits; ++ii) {
+                        sd.forAllInRowSet(endsRowSet, (key, keyDelta) -> ++calls[0]);
+                    }
+                    endsNanos = Math.min(endsNanos, System.nanoTime() - endsStart);
+                    assertEquals(2L * numVisits, calls[0]);
+                }
+                assertTrue("delta " + delta + ": " + numVisits + " visits took " + endsNanos + "ns, a full walk "
+                        + fullNanos + "ns", endsNanos < fullNanos / 2);
+            }
+        }
+    }
 }
