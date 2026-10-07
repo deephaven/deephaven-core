@@ -81,13 +81,13 @@ See [uploading a table](#upload-a-table) for an example of setting the schema me
 
 ### Round-Tripping
 
-Any table uploaded to Deephaven via a DoPut places the Flight Schema in a table attribute key of `BarrageSchema` (aka `io.deephaven.engine.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This is convenient as it allows you to upload a table and then download the table using exactly the same wire format.
+Any table uploaded to Deephaven via a DoPut places the Flight Schema in a table attribute key of `BarrageSchema` (aka `io.deephaven.engine.table.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This is convenient as it allows you to upload a table and then download the table using exactly the same wire format.
 
 Most table operations drop this attribute, even for column types that are completely preserved. Filters (such as [`where`](../../reference/table-operations/filter/where.md)), [`sort`](../../reference/table-operations/sort/sort.md), [`reverse`](../../reference/table-operations/sort/reverse.md), [`flatten`](../../reference/table-operations/create/flatten.md), [`firstBy`](../../reference/table-operations/group-and-aggregate/firstBy.md), and [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md) keep it, and so do the constituent tables of a [`partitionBy`](../../reference/table-operations/group-and-aggregate/partitionBy.md). Re-attach the schema after any other operation if you want to preserve the original wire types.
 
 ### Exporting
 
-You can specify the wire-type schema to use when exporting a table to a Flight client. Simply place the Schema POJO in the table's attributes with the key `BarrageSchema` (aka `io.deephaven.engine.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This will override the default schema that would be generated from the table's column types.
+You can specify the wire-type schema to use when exporting a table to a Flight client. Simply place the Schema POJO in the table's attributes with the key `BarrageSchema` (aka `io.deephaven.engine.table.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This will override the default schema that would be generated from the table's column types.
 
 Consider using [`BarrageUtil#schemaFromTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/util/BarrageUtil.html#schemaFromTable(io.deephaven.engine.table.Table)) to generate the default schema and then modify it as needed.
 
