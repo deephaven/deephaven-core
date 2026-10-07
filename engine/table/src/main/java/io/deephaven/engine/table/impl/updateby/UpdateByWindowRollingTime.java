@@ -9,6 +9,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
@@ -96,6 +97,40 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
             final RowSet subset, long revNanos, long fwdNanos, boolean usePrev) {
         // swap fwd/rev to get the affected windows
         return computeInfluencerRowsTime(ctx, tsContext, subset, fwdNanos, revNanos, usePrev);
+    }
+
+    /**
+     * Append the modified rows whose timestamp changed to or from null to {@code postShiftBuilder} (as post-shift keys)
+     * and {@code preShiftBuilder} (as pre-shift keys).
+     */
+    private static void collectNullTransitions(
+            final UpdateByWindowTimeBucketContext ctx,
+            final ChunkSource.GetContext tsContext,
+            final TableUpdate upstream,
+            final RowSetBuilderSequential postShiftBuilder,
+            final RowSetBuilderSequential preShiftBuilder) {
+        try (final ChunkSource.GetContext prevTsContext =
+                ctx.timestampColumnSource.makeGetContext(ctx.workingChunkSize);
+                final RowSequence.Iterator it = upstream.modified().getRowSequenceIterator();
+                final RowSequence.Iterator prevIt = upstream.getModifiedPreShift().getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                // modified and modifiedPreShift hold the same rows in the same order
+                final RowSequence rs = it.getNextRowSequenceWithLength(ctx.workingChunkSize);
+                final RowSequence prevRs = prevIt.getNextRowSequenceWithLength(ctx.workingChunkSize);
+                final LongChunk<? extends Values> timestamps =
+                        ctx.timestampColumnSource.getChunk(tsContext, rs).asLongChunk();
+                final LongChunk<? extends Values> prevTimestamps =
+                        ctx.timestampColumnSource.getPrevChunk(prevTsContext, prevRs).asLongChunk();
+                final LongChunk<OrderedRowKeys> keys = rs.asRowKeyChunk();
+                final LongChunk<OrderedRowKeys> prevKeys = prevRs.asRowKeyChunk();
+                for (int ii = 0; ii < timestamps.size(); ii++) {
+                    if ((timestamps.get(ii) == NULL_LONG) != (prevTimestamps.get(ii) == NULL_LONG)) {
+                        postShiftBuilder.appendKey(keys.get(ii));
+                        preShiftBuilder.appendKey(prevKeys.get(ii));
+                    }
+                }
+            }
+        }
     }
 
     private static WritableRowSet computeInfluencerRowsTime(
@@ -199,16 +234,9 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
 
             // consider the modifications only when input or timestamp columns were modified
             if (upstream.modified().isNonempty() && (ctx.timestampsModified || ctx.inputModified)) {
-                // A timestamp modified to or from null shifts the positions of later rows, so operators that store
-                // windows as position offsets must cascade like an add or remove. Math.max corrects the search for
-                // forward-only or backward-only windows.
-                final boolean cascade = ctx.timestampsModified && operatorsRequirePositions;
-                final long modPrev = cascade ? Math.max(0, prevUnits) : prevUnits;
-                final long modFwd = cascade ? Math.max(0, fwdUnits) : fwdUnits;
-
                 // recompute all windows that have the modified rows in their window
                 try (final WritableRowSet modifiedAffected =
-                        computeAffectedRowsTime(ctx, tsContext, upstream.modified(), modPrev, modFwd, false)) {
+                        computeAffectedRowsTime(ctx, tsContext, upstream.modified(), prevUnits, fwdUnits, false)) {
                     tmpAffected.subsume(modifiedAffected);
                 }
 
@@ -216,7 +244,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                     // recompute all windows previously containing the modified rows
                     // after the timestamp modifications
                     try (final WritableRowSet modifiedAffectedPrev =
-                            computeAffectedRowsTime(ctx, tsContext, upstream.getModifiedPreShift(), modPrev, modFwd,
+                            computeAffectedRowsTime(ctx, tsContext, upstream.getModifiedPreShift(), prevUnits, fwdUnits,
                                     true)) {
                         // we used the SSA (post-shift) to get these keys, no need to shift
                         // retain only the rows that still exist in the sourceRowSet
@@ -226,6 +254,32 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
 
                     // re-compute all modified rows, they have new windows after the timestamp modifications
                     tmpAffected.insert(upstream.modified());
+
+                    if (operatorsRequirePositions) {
+                        // A timestamp modified to or from null shifts the positions of later rows, so operators that
+                        // store windows as position offsets must cascade like an add or remove for those rows. Other
+                        // timestamp modifications leave positions unchanged and are fully handled above. Math.max
+                        // corrects the search for forward-only or backward-only windows.
+                        final RowSetBuilderSequential nullChangedBuilder = RowSetFactory.builderSequential();
+                        final RowSetBuilderSequential nullChangedPrevBuilder = RowSetFactory.builderSequential();
+                        collectNullTransitions(ctx, tsContext, upstream, nullChangedBuilder, nullChangedPrevBuilder);
+                        try (final WritableRowSet nullChanged = nullChangedBuilder.build();
+                                final WritableRowSet nullChangedPrev = nullChangedPrevBuilder.build()) {
+                            if (nullChanged.isNonempty()) {
+                                final long prev = Math.max(0, prevUnits);
+                                final long fwd = Math.max(0, fwdUnits);
+                                try (final WritableRowSet nullChangedAffected =
+                                        computeAffectedRowsTime(ctx, tsContext, nullChanged, prev, fwd, false)) {
+                                    tmpAffected.subsume(nullChangedAffected);
+                                }
+                                try (final WritableRowSet nullChangedAffectedPrev =
+                                        computeAffectedRowsTime(ctx, tsContext, nullChangedPrev, prev, fwd, true)) {
+                                    nullChangedAffectedPrev.retain(ctx.timestampValidRowSet);
+                                    tmpAffected.subsume(nullChangedAffectedPrev);
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
