@@ -31,7 +31,7 @@ Deephaven provides some tooling around reading from S3 with the [`deephaven.expe
 
 Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a single Parquet file from S3, where the `path` argument is provided as the endpoint to the Parquet file on the S3 instance. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance.
 
-```python test-set=2 docker-config=minio
+```python test-set=2 docker-config=rustfs
 from deephaven import parquet
 from deephaven.experimental import s3
 
@@ -45,7 +45,7 @@ grades = parquet.read(
     path="s3://example-bucket/grades/grades.parquet",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )
@@ -92,7 +92,7 @@ grades_metadata = parquet.read(
 
 Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a key-value partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class, and set the `file_layout` argument to [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED) for maximum performance.
 
-```python test-set=4 order=grades_inferred,grades_provided docker-config=minio
+```python test-set=4 order=grades_inferred,grades_provided docker-config=rustfs
 from deephaven import parquet
 from deephaven.experimental import s3
 
@@ -101,7 +101,7 @@ grades_inferred = parquet.read(
     path="s3://example-bucket/grades_kv/",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         access_key_id="example_username",
         secret_access_key="example_password",
     ),
@@ -113,7 +113,7 @@ grades_provided = parquet.read(
     file_layout=parquet.ParquetFileLayout.KV_PARTITIONED,
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         access_key_id="example_username",
         secret_access_key="example_password",
     ),
@@ -122,7 +122,7 @@ grades_provided = parquet.read(
 
 S3-hosted key-value partitioned Parquet datasets may also have `_common_metadata` and `_metadata` files. Utilize them by setting the `file_layout` argument to [`parquet.ParquetFileLayout.METADATA_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.METADATA_PARTITIONED).
 
-```python test-set=4 docker-config=minio
+```python test-set=4 docker-config=rustfs
 credentials = s3.Credentials.basic(
     access_key_id="example_username", secret_access_key="example_password"
 )
@@ -133,7 +133,7 @@ grades_metadata = parquet.read(
     file_layout=parquet.ParquetFileLayout.METADATA_PARTITIONED,
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )
@@ -164,7 +164,7 @@ grades_provided = parquet.read(
 
 Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a flat partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class, and set the `file_layout` argument to [`parquet.ParquetFileLayout.FLAT_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.FLAT_PARTITIONED) for maximum performance.
 
-```python test-set=6 order=grades_inferred,grades_provided docker-config=minio
+```python test-set=6 order=grades_inferred,grades_provided docker-config=rustfs
 from deephaven import parquet
 from deephaven.experimental import s3
 
@@ -177,7 +177,7 @@ grades_inferred = parquet.read(
     path="s3://example-bucket/grades_flat/",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )
@@ -188,7 +188,7 @@ grades_provided = parquet.read(
     file_layout=parquet.ParquetFileLayout.FLAT_PARTITIONED,
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )
@@ -207,7 +207,7 @@ grades_metadata = parquet.read(
     file_layout=parquet.ParquetFileLayout.METADATA_PARTITIONED,
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )

@@ -1,0 +1,45 @@
+services:
+  server:
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  rustfs:
+    image: rustfs/rustfs:1.0.1@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
+    hostname:
+      rustfs.example.com
+    environment:
+      # Enable Virtual Host-style paths
+      RUSTFS_SERVER_DOMAINS: rustfs.example.com
+      RUSTFS_REGION: us-east-1
+      RUSTFS_ACCESS_KEY: example_username
+      RUSTFS_SECRET_KEY: example_password
+    networks:
+      default:
+        aliases:
+          # Add an alias for each bucket
+          - example-bucket.rustfs.example.com
+    expose:
+      - 9000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  init:
+    image: amazon/aws-cli:2.27.50@sha256:48c3d4212e2f5b0e24bdc6af7708f9412ce65425a79575e0f78b8f8c0dcd70ab
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    volumes:
+      - ../data/examples/ParquetExamples:/data:ro
+    environment:
+      AWS_ACCESS_KEY_ID: example_username
+      AWS_SECRET_ACCESS_KEY: example_password
+      AWS_REGION: us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      aws --endpoint-url http://rustfs:9000 s3 mb s3://example-bucket &&
+      aws --endpoint-url http://rustfs:9000 s3 cp --recursive /data s3://example-bucket
+      "
