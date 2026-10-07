@@ -149,6 +149,12 @@ public class TestMethodListInvocationValidator {
         // an unqualified name with a wildcard is not taken to be in java.lang, so it matches only the unnamed package
         assertNotPermitted("java.lang.String valueOf(Obj*)", String.class.getMethod("valueOf", Object.class));
         assertNotPermitted("Str* length()", String.class.getMethod("length"));
+        // a nested java.lang class without its package uses the binary form; a dotted name is taken as qualified
+        final Method stateValues = Thread.State.class.getMethod("values");
+        assertPermitted("Thread$State values()", stateValues);
+        assertPermitted("java.lang.Thread.State values()", stateValues);
+        assertPermitted("java.lang.Thread$State values()", stateValues);
+        assertNotPermitted("Thread.State values()", stateValues);
         assertNotPermitted("java.util.Collections unmodifiableMap(Map)",
                 Collections.class.getMethod("unmodifiableMap", Map.class));
         assertPermitted("java.util.Collections unmodifiableMap(java.util.Map)",

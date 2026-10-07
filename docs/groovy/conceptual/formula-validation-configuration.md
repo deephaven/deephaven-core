@@ -158,7 +158,7 @@ Since you cannot add annotations to external code, you use pointcut expressions 
 
 A pointcut expression has three parts. Separate the class name from the method name with a space or `#` (`java.lang.String length()` and `java.lang.String#length()` are the same).
 
-1. **Class name**: The full package and class name (e.g., `java.util.Collections`). A class in `java.lang` may omit its package (`String` is the same as `java.lang.String`). Write a nested class as `java.util.Map.Entry` or `java.util.Map$Entry`, and use `*..*` for every class.
+1. **Class name**: The full package and class name (e.g., `java.util.Collections`). A class in `java.lang` may omit its package (`String` is the same as `java.lang.String`). Write a nested class as `java.util.Map.Entry` or `java.util.Map$Entry`, and use `*..*` for every class. Only a name without dots or wildcards is taken to be in `java.lang`, so a nested `java.lang` class without its package must use `$`: `Thread$State` works, but `Thread.State` matches nothing (write `java.lang.Thread.State` instead).
 2. **Method name**: The specific method, a name with `*` wildcards such as `to*Case`, `<constructor>` for a constructor, or `*` for any method or constructor.
 3. **Parameters**: The parameter types or `(..)` for any parameters. Write primitive types by their keyword (`int`, `double`). Other types must be fully qualified, except for types in `java.lang` such as `String`. Write an array parameter as `T[]` in any position, such as `java.util.Arrays fill(int[], int)`. The last parameter may instead be written `T...`, which is the same as `T[]`; `...` is rejected anywhere else.
 
