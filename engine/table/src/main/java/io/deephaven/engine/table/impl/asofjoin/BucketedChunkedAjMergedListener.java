@@ -738,7 +738,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                         boolean makeLeftIndex = false;
                         boolean updateLeftIndex = false;
-                        boolean processInitial = false;
 
                         final byte state = asOfJoinStateManager.getState(slot);
                         switch (state) {
@@ -755,7 +754,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                             case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_BUILDER:
                             case ENTRY_LEFT_IS_EMPTY | ENTRY_RIGHT_IS_ROWSET:
-                                processInitial = true;
                                 break;
 
                             case ENTRY_LEFT_IS_BUILDER | ENTRY_RIGHT_IS_BUILDER:
@@ -792,12 +790,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             final SegmentedSortedArray rightSsa =
                                     asOfJoinStateManager.getRightSsa(slot, rightSsaFactory);
                             final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
-
-                            if (processInitial) {
-                                ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
-                                leftSsa.forAllKeys(modifiedBuilder::addKey);
-                            }
-
 
                             try (final RowSequence.Iterator leftRsIt = ownedLeftAdded.getRowSequenceIterator()) {
                                 assert leftFillContext != null;
