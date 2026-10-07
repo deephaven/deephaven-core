@@ -85,8 +85,9 @@ up front, rather than re-deriving them per check.
 
 - **Terminology introduced before it's defined:** Using your term list, check every term on the
   page, not only the ones in the opening sections. A term used before any definition or glossary
-  entry appears leaves the reader with no anchor for it, and a term that is *never* defined on
-  the page is worse: the reader has to leave the page or guess. Watch for these shapes:
+  entry appears leaves the reader with no anchor for it, and a term that is neither defined on
+  the page nor linked to the page that defines it is worse: the reader has to leave the page
+  or guess. Watch for these shapes:
   - A feature name used as if the reader already knew it ("When implicit barriers are enabled,
     …") with no sentence saying what it is or what enabling it means.
   - A label reused with a different meaning than the page gave it earlier (a page that defines

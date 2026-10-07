@@ -107,6 +107,7 @@ required searches, not optional style intuition:
   `where`/`update`/`with_serial`/etc. vs. only isolated dot-prefixed outliers, each traceable to a
   specific bug). Flag every dot-prefixed method reference in prose (e.g. `.with_serial`, `.where`)
   for correction — see **Method names in prose** above.
+- Search for backticked type names too (`PascalCase`, such as `Filter`, `Selectable`, or `Barrier`) and apply the same per-section check to them.
 - Search for backticked method-shaped identifiers (`snake_case` or `camelCase`, especially ones
   matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and, **only for
   those that have an appropriate reference page or pydoc/javadoc anchor to link to** (per the
