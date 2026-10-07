@@ -156,7 +156,7 @@ slowestOps = upl
     .sortDescending("UsageMillis")
 ```
 
-At the end of each reporting interval (one minute by default), the log adds a row for every operation that processed updates during that interval. The table is empty until the first interval ends, and `slowestOps` updates as your queries run.
+At the end of each reporting interval (one minute by default), the log adds a row for each operation that did significant update work during that interval. Operations that did very little work share one combined row. The table is empty until the first interval ends, and `slowestOps` updates as your queries run.
 
 Common performance bottlenecks include:
 
@@ -176,12 +176,12 @@ Once you understand what operations are slow, you can optimize your query:
 
 For example, instead of:
 
-```groovy order=liveData,result
+```groovy ticking-table order=null
 import static io.deephaven.api.agg.Aggregation.AggSum
 
 liveData = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
 
-// Updates the aggregation every second
+// Recomputes the aggregation every time liveData updates
 result = liveData.aggBy([AggSum("ExpensiveCalc")], "Group")
 ```
 

@@ -32,7 +32,7 @@ Additionally, formulas can be used in [partitioned table](./partitioned-tables.m
 
 The LHS of a formula contains only the name of the column that will be created or overwritten if the column name is already present. It must be a valid column name, which means it must follow these rules:
 
-- It must be a valid Java identifier: it starts with a letter, an underscore (`_`), or a dollar sign (`$`), and contains only letters, digits, underscores, and dollar signs. For example, it cannot contain spaces, special characters such as `@`, `#`, or `%`, or arithmetic characters such as `+`, `-`, or `=`.
+- It must be a valid [Java identifier](https://docs.oracle.com/javase/specs/jls/se17/html/jls-3.html#jls-3.8): it starts with a letter, an underscore (`_`), or a dollar sign (`$`), and contains only letters, digits, underscores, and dollar signs. It cannot contain spaces, special characters such as `@`, `#`, or `%`, or arithmetic characters such as `+`, `-`, or `=`.
 - It cannot be a Java [reserved keyword](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html) or literal (`true`, `false`, `null`).
 - It cannot be one of the query-language reserved names `i`, `ii`, `k`, `in`, or `not`.
 

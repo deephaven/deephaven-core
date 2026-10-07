@@ -101,7 +101,7 @@ Most users never interact directly with update notifications, but it is possible
 
 Here's a practical example of a custom listener that monitors disk usage:
 
-```python order=disk_monitor,critical_alerts
+```python ticking-table order=disk_monitor,critical_alerts
 from deephaven import time_table
 from deephaven.table_listener import listen
 
@@ -148,6 +148,25 @@ Thinking in terms of DAGs, UG cycles, and update notifications can be insightful
 
 Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as the update performance log from `deephaven.perfmon.update_performance_log`, to see how much time each operation spends processing updates in each reporting interval. The update performance ancestors log, from `update_performance_ancestors_log`, shows which upstream operations feed each one. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
 
+The following query totals the update-processing time for each operation in the update performance log and lists the slowest operations first:
+
+```python order=slowest_ops
+from deephaven.perfmon import update_performance_log
+
+upl = update_performance_log()
+
+# Total time each operation has spent processing updates, slowest first
+slowest_ops = (
+    upl.view(
+        ["EntryDescription", "UsageMillis = UsageNanos / 1000000.0", "InvocationCount"]
+    )
+    .sum_by("EntryDescription")
+    .sort_descending("UsageMillis")
+)
+```
+
+At the end of each reporting interval (one minute by default), the log adds a row for each operation that did significant update work during that interval. Operations that did very little work share one combined row. The table is empty until the first interval ends, and `slowest_ops` updates as your queries run.
+
 Common performance bottlenecks include:
 
 - **Large joins**: Joining tables with millions of rows on each update.
@@ -166,13 +185,13 @@ Once you understand what operations are slow, you can optimize your query:
 
 For example, instead of:
 
-```python order=live_data,result
+```python ticking-table order=null
 from deephaven import time_table
 from deephaven import agg
 
 live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
 
-# Updates the aggregation every second
+# Recomputes the aggregation every time live_data updates
 result = live_data.agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
 ```
 

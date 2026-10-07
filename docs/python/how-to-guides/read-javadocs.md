@@ -38,7 +38,7 @@ The landing page contains a laundry list of Java packages. But what is a Java pa
 
 A Java package will typically contain one or more interfaces and one or more classes. A Java class is similar to a Python class — it's a blueprint for how to build certain types of objects. A Java interface is a bit different. For the sake of this document, just think of an interface as a Java mechanism to achieve [abstraction](https://en.wikipedia.org/wiki/Abstraction_(computer_science)), which hides implementation details from users. An interface can also hold static methods. For instance, the Deephaven Java interface [`io.deephaven.api.agg.Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html) defines static factory methods for every aggregation type Deephaven offers.
 
-Java methods live within classes and interfaces. Following the previous path, [`io.deephaven.api.agg.Aggregation.AggAbsSum`](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggAbsSum(java.lang.String...)) is the blueprint for building an absolute sum aggregation. It's a static method that is a member of an interface, which is a member of a package.
+Java methods live within classes and interfaces. Following the previous path, [`io.deephaven.api.agg.Aggregation.AggAbsSum`](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggAbsSum(java.lang.String...)) is a static factory method that creates and returns an absolute sum aggregation. It's a member of an interface, which is a member of a package.
 
 Javadocs organize the packages, classes, interfaces, methods, and attributes in a hierarchical fashion.
 

@@ -107,6 +107,7 @@ with liveness_scope() as scope_from_method:
     pass
 
 scope_from_class = LivenessScope()
+scope_from_class.release()
 ```
 
 ## How to use a liveness scope

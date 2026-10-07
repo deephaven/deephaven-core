@@ -608,7 +608,8 @@ export_ticket = session.fetch(plugin_client)
 shared_ticket = SharedTicket.random_ticket()
 session.publish(export_ticket, shared_ticket)
 
-# Now other sessions can use this shared_ticket to access the same plugin object
+# Pass these bytes to other sessions so they can access the same plugin object
+shared_ticket_bytes = shared_ticket.bytes
 ```
 
 ### Fetching a shared plugin object
@@ -625,8 +626,7 @@ sub_session = Session(
     auth_token="YOUR_PASSWORD_HERE",
 )
 
-# Use the shared ticket from the publishing session
-# shared_ticket_bytes is shared_ticket.bytes from the publishing session
+# Use the shared_ticket_bytes value passed from the publishing session
 shared_ticket = SharedTicket(shared_ticket_bytes)
 
 # Create a ServerObject reference with the appropriate type
