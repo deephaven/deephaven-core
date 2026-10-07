@@ -342,8 +342,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
         // The shift ranges and the row set are walked together. The walk ends at the first shift range that begins
-        // after the row set's last key, and a run of shift ranges that ends before the row set's next key (including
-        // the run before its first key) is galloped past, so the work is driven by the shift ranges that hold row keys
+        // after the row set's last key. A run of shift ranges that ends before the row set's next key (including the
+        // run before its first key) is galloped past, so the work is driven by the shift ranges that hold row keys
         // rather than by the total number of shift ranges.
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             final int size = size();
