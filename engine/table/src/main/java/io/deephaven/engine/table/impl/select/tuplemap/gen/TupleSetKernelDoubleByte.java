@@ -77,11 +77,12 @@ public final class TupleSetKernelDoubleByte extends TupleMapSetKernel {
     }
 
     @Override
-    protected void match(@NotNull Chunk<Values>[] keyChunks,
+    protected void matchValues(@NotNull Chunk<Values>[] keyChunks,
             @NotNull LongChunk<OrderedRowKeys> rowKeys,
             @NotNull WritableLongChunk<OrderedRowKeys> results, boolean inclusion) {
         final DoubleChunk<Values> keys0 = keyChunks[0].asDoubleChunk();
         final ByteChunk<Values> keys1 = keyChunks[1].asByteChunk();
+        results.setSize(0);
         final Probe probe = new Probe();
         final int size = rowKeys.size();
         for (int ii = 0; ii < size; ++ii) {

@@ -78,7 +78,7 @@ final class ObjectSetKernel extends SingleColumnSetKernel {
     }
 
     @Override
-    void matchValues(
+    protected void matchValues(
             @NotNull final Chunk<Values>[] keyChunks,
             @NotNull final LongChunk<OrderedRowKeys> rowKeys,
             @NotNull final WritableLongChunk<OrderedRowKeys> results,

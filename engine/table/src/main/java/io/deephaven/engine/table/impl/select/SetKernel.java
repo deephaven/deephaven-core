@@ -110,7 +110,7 @@ abstract class SetKernel {
      * @param results Receives the selected row keys
      * @param inclusion Whether to select the rows whose key is in the set rather than those whose key is not
      */
-    abstract void matchValues(
+    protected abstract void matchValues(
             @NotNull Chunk<Values>[] keyChunks,
             @NotNull LongChunk<OrderedRowKeys> rowKeys,
             @NotNull WritableLongChunk<OrderedRowKeys> results,

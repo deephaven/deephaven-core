@@ -77,11 +77,12 @@ public final class TupleSetKernelShortChar extends TupleMapSetKernel {
     }
 
     @Override
-    protected void match(@NotNull Chunk<Values>[] keyChunks,
+    protected void matchValues(@NotNull Chunk<Values>[] keyChunks,
             @NotNull LongChunk<OrderedRowKeys> rowKeys,
             @NotNull WritableLongChunk<OrderedRowKeys> results, boolean inclusion) {
         final ShortChunk<Values> keys0 = keyChunks[0].asShortChunk();
         final CharChunk<Values> keys1 = keyChunks[1].asCharChunk();
+        results.setSize(0);
         final Probe probe = new Probe();
         final int size = rowKeys.size();
         for (int ii = 0; ii < size; ++ii) {

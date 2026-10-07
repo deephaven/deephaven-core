@@ -228,7 +228,7 @@ public class TupleSetKernelFactory {
                 .addStatement("super(keySources, $T.INSTANCE)", strategyClass)
                 .build();
 
-        final MethodSpec.Builder match = MethodSpec.methodBuilder("match")
+        final MethodSpec.Builder match = MethodSpec.methodBuilder("matchValues")
                 .addAnnotation(Override.class).addModifiers(Modifier.PROTECTED)
                 .addParameter(parameter(chunkArrayTypeName(), "keyChunks", notNull))
                 .addParameter(
@@ -240,6 +240,7 @@ public class TupleSetKernelFactory {
             match.addStatement("final $T keys$L = keyChunks[$L].as$LChunk()", chunkTypeName(chunkTypes[ii]), ii, ii,
                     chunkTypes[ii].name());
         }
+        match.addStatement("results.setSize(0)");
         match.addStatement("final $T probe = new $T()", probeClass, probeClass);
         match.addStatement("final int size = rowKeys.size()");
         match.beginControlFlow("for (int ii = 0; ii < size; ++ii)");
