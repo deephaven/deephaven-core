@@ -1,6 +1,5 @@
 ---
 title: Local development with Deephaven libraries
-sidebar_label: Local development
 ---
 
 This guide explains how to build Java or Groovy projects that depend on Deephaven Community libraries. This is useful for creating utilities, custom functions, or extensions that work with Deephaven tables.

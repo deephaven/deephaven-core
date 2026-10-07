@@ -1,6 +1,5 @@
 ---
 title: Local development with Deephaven libraries
-sidebar_label: Local development
 ---
 
 This guide explains how to build Python projects that use Deephaven tables locally. This is useful for creating utilities, custom functions, or data pipelines that work with Deephaven tables outside of the Deephaven IDE.
