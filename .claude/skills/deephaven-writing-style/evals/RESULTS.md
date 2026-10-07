@@ -92,3 +92,5 @@ Iteration E: the rule now calls punctuation a clue to inspect rather than eviden
 Grader note: the recurring eval 3 miss ("(global interpreter lock)" kept in a rewrite) defines the acronym GIL on first use, which the skill requires, so it is not a parenthetical aside. Expectation 7 now says so. Earlier scores for that expectation were graded under the stricter wording, so treat those misses as a strict grader call; I haven't re-graded them.
 
 Wording note: eval 4 expectation 1 now requires the flag on the section's opening paragraph (the first mention), not a later bullet. Re-graded on the new wording, the scores are unchanged (new 3/3, baseline 0/3, and 3/3 for iteration 2).
+
+Eval 6 extension (review follow-up): the column-name sweep now also searches the prose for names the page defines, used alone or in a coordinated phrase ("A and B run in parallel"). The fixture gained that passage and eval 6 gained a fifth expectation. New skill only, 3 runs, graded blind: 14/15, and the new expectation passed in all 3 runs. The one miss stated the backtick rule without citing the corpus count or the skill.

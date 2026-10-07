@@ -83,7 +83,7 @@
     },
     {
       "prompt": "Do a style review of this excerpt of a deephaven-core concept guide, focusing on how column names are written in prose: .claude/skills/deephaven-writing-style/evals/files/column-names-excerpt.md. Report only — don't edit anything.",
-      "expected_output": "Flags bare column names (column A, column B) in prose, states the backtick convention, and leaves code comments alone.",
+      "expected_output": "Flags bare column names (column A, column B), including names used alone in a coordinated phrase ('A and B run in parallel', 'D starts after A finishes'), states the backtick convention, and leaves code comments alone.",
       "files": [
         "evals/files/column-names-excerpt.md"
       ],
@@ -91,7 +91,8 @@
         "Flags column names written bare in prose (for example 'column A', 'column B', 'Column A gets values 0–9') and proposes backticking the name, as in column `A`",
         "States that column names in prose are backticked as a convention of this doc set (a corpus count or a rule from the skill), not as personal preference",
         "Control: does not ask for the '# Column A: ...' comments inside the fenced code block to be changed",
-        "Does not ask for the generic word 'column' itself, or the words 'declares' and 'respects', to be backticked"
+        "Does not ask for the generic word 'column' itself, or the words 'declares' and 'respects', to be backticked",
+        "Flags the bare column names in the 'Execution order: A and B run in parallel ...; D starts after A finishes ...; C starts after both A and B finish' sentence (names used without the word 'column' before them) and proposes backticking `A`, `B`, `C`, and `D`"
       ],
       "id": 6
     },

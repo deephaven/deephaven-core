@@ -56,3 +56,32 @@ Column A gets values 0–9. Column B gets values 10–19. Without the barrier, b
 > Barriers don't make a column execute serially. If your formula has shared mutable state, you typically need **both** `with_serial` (for sequential row processing within a column) **and** a barrier (for ordering between columns).
 
 Both columns need `with_serial` here because both mutate the shared `counter`. That's not always true: if a respecting column only reads a value that the declaring column already finished writing (rather than mutating shared state itself), it doesn't need `with_serial` — the barrier alone guarantees the write happened first.
+
+<!-- excerpt gap: text between these passages omitted -->
+
+You can create multiple barriers when columns have different dependencies. Each barrier is an independent constraint:
+
+```python order=t
+from deephaven.concurrency_control import Barrier
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+barrier_a = Barrier()
+barrier_b = Barrier()
+
+# Column A declares barrier_a
+col_a = Selectable.parse("A = i * 2").with_declared_barriers(barrier_a)
+
+# Column B declares barrier_b
+col_b = Selectable.parse("B = i * 3").with_declared_barriers(barrier_b)
+
+# Column C respects BOTH barriers — waits for A and B to finish
+col_c = Selectable.parse("C = i * 4").with_respected_barriers([barrier_a, barrier_b])
+
+# Column D respects only barrier_a — waits for A, but not B
+col_d = Selectable.parse("D = i * 5").with_respected_barriers(barrier_a)
+
+t = empty_table(10).update([col_a, col_b, col_c, col_d])
+```
+
+Execution order: A and B run in parallel (they don't depend on each other); D starts after A finishes (doesn't wait for B); C starts after both A and B finish.

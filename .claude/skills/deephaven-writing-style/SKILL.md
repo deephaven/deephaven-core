@@ -120,8 +120,12 @@ required searches, not optional style intuition:
   with its line number and whether it is linked; flag the bare ones. The fix is to link that
   first mention, not to add links to every occurrence.
 - Search for `[Cc]olumns? [A-Z]` and for capitalized single-word names next to "column" or
-  "columns" in prose (for example `column A`, `Column B gets`). For every hit outside a fenced
-  code block and outside a heading, check whether the name is backticked; flag the bare ones.
+  "columns" in prose (for example `column A`, `Column B gets`). Then build a list of the column
+  names the page defines (the left-hand sides of formulas such as `"A = i * 2"`, and explicit
+  labels in code) and search the prose for each of those names used alone or in a coordinated
+  phrase, such as `A and B run in parallel` or `D starts after A finishes`. For every hit outside
+  a fenced code block and outside a heading, check whether the name is backticked; flag the bare
+  ones.
 - Search for a backticked identifier immediately followed by empty `()` outside of a fenced code
   block (e.g. `` `with_serial()` `` in prose) — flag it; empty parentheses add no value in prose.
   However, parentheses *with* arguments (e.g. `` `isNaN(value)` ``) are acceptable when the
