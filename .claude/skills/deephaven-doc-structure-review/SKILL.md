@@ -74,7 +74,7 @@ weigh:
   the start of the document.
 - Build a **term list** for the whole page: every domain term, mode name, setting name, or label
   that isn't plain English (for example "barrier," "implicit barriers," "stateless mode"),
-  with the line of its first use and the line where it is defined, or "never." Do this from the
+  with the line of its first use and the line where it is defined or linked to the page that defines it, or "never" (reserved for terms that are neither defined on the page nor linked). Do this from the
   prose of every section, not only the opening ones. The check under **Terminology introduced
   before it's defined** uses this list.
 
