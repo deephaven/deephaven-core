@@ -182,10 +182,8 @@ public class CrossJoinHelper {
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
                         new LeftOnlyIncrementalChunkedCrossJoinStateManager(
-                                bucketingContext.leftSources, control.initialBuildSize(), leftTable,
-                                numRightBitsToReserve, leftOuterJoin);
-                jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
-                jsm.setTargetLoadFactor(control.getTargetLoadFactor());
+                                bucketingContext.leftSources, control.initialBuildSize(),
+                                control.getMaximumLoadFactor(), leftTable, numRightBitsToReserve, leftOuterJoin);
 
                 // noinspection resource
                 final TrackingWritableRowSet resultRowSet =
