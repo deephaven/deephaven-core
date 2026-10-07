@@ -35,6 +35,9 @@ public final class NettyLeakRecorder extends AppenderBase<ILoggingEvent> {
      * allocation polls the detector's reference queue, so this does both before looking.
      */
     static void assertNoLeaks() throws InterruptedException {
+        // A hint, not a guarantee. If the collector does nothing, or does not reach the leaked buffer, netty never
+        // learns the buffer is gone and this assertion passes with the leak unreported. A missed collection can
+        // only hide a leak, never produce a false failure.
         System.gc();
         Thread.sleep(200);
         // Tracking an allocation reports whatever the GC just enqueued. The pooled allocator tracks every buffer at
