@@ -72,18 +72,61 @@ weigh:
   one-line note on what it says.
 - Note where any glossary, "Key concepts," or terminology-definition section sits relative to
   the start of the document.
+- Build a **term list** for the whole page: every domain term, mode name, setting name, or label
+  that isn't plain English (for example "barrier," "implicit barriers," "stateless mode"),
+  with the line of its first use and the line where it is defined, or "never." Do this from the
+  prose of every section, not only the opening ones. The check under **Terminology introduced
+  before it's defined** uses this list.
 
 You'll cross-reference all three lists against the prose in the checks below — build them once,
 up front, rather than re-deriving them per check.
 
 ## 2. Named structural pitfalls to check
 
-- **Terminology introduced before it's defined:** Scan the opening sections for domain-specific
-  terms (jargon, product-specific concepts, internal names) used in running prose before any
-  definition or glossary entry appears. A term used casually in an intro or overview section,
-  then formally defined only in a glossary buried mid-document, leaves an early reader with no
-  anchor for it. Fix: move the definition earlier (ideally to first use), or add a forward
-  reference ("see **Key concepts** below") the first time the term appears.
+- **Terminology introduced before it's defined:** Using your term list, check every term on the
+  page, not only the ones in the opening sections. A term used before any definition or glossary
+  entry appears leaves the reader with no anchor for it, and a term that is *never* defined on
+  the page is worse: the reader has to leave the page or guess. Watch for these shapes:
+  - A feature name used as if the reader already knew it ("When implicit barriers are enabled,
+    …") with no sentence saying what it is or what enabling it means.
+  - A label reused with a different meaning than the page gave it earlier (a page that defines
+    "stateless" as rows independent of each other, then labels a configuration option "stateless
+    mode").
+  - A pronoun phrase with no antecedent ("this setting" when no earlier sentence names a setting).
+  - A section that introduces several new terms in a few sentences. Rank it by how many reads
+    it takes to get its point: a section a reader would have to read five times is a top
+    finding, however accurate it is.
+
+  Fix: define the term at or before its first use, in a plain sentence that says what it is and
+  what the reader would observe (not only where its setting lives); or link to the page that
+  defines it. Don't send the definition to a glossary the reader may never open. If the
+  definition needs a configuration property or default, keep the property in the Configuration
+  section and define the behavior in the narrative (see **Level of abstraction**).
+
+- **Section can't be read on its own:** People skip around, so each section should make sense to
+  a reader who lands on it from the table of contents or a heading link. For each section, cover
+  the earlier sections and read only its heading and first paragraph. If you find yourself
+  asking "the same as what?", the section fails. The usual cause is an opener that points back
+  without saying to what: "The same applies to …", "As above, …", "This also …", "Likewise, …",
+  "Again, …".
+
+  A section may build on what immediately precedes it, because that is a natural reading order,
+  but only if the opener **names** what it builds on (by heading name or link), says in a clause
+  what it takes from there, and the section still makes its own point. "Building on the
+  [counter example](#example-a-counter-needs-serialization), consider two columns that share a
+  counter" passes, because it names the example and restates the setup. "The same applies to
+  filters." fails even when the section it points to is directly above, because the reader
+  can't tell what "the same" is without finding it. A pointer to something that is *not*
+  adjacent passes by the same test: it names the target (a link helps but isn't required) and
+  restates what it needs from it in a clause. Don't list a pointer that passes as a defect just
+  because the example it names is several sections up; flag only pointers that fail the test
+  ("as above," "the same," "this" with no named target).
+
+  Fix: rewrite the opener to state its own subject in one sentence ("Deephaven parallelizes
+  string-based filters in `where` by default, so construct a serial `Filter` when …"). Deleting
+  the sentence is only right if the section reads on its own afterward, so check that first.
+  Don't require a section to repeat its prerequisites: one clause of context plus a link is
+  enough, and restating a whole earlier section is the "duplicated explanation" pitfall below.
 
 - **Split or duplicated core-concept explanations:** Check whether the *same* underlying concept
   gets explained *in full* twice at different points in the document — once briefly or implicitly

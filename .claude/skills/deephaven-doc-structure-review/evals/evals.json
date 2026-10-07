@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "This parallelization concept guide feels hard to follow. Review its structure and organization: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "prompt": "This parallelization concept guide feels hard to follow. Review its structure and organization: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "A structure critique that states the page's purpose and flags the intro/heading terminology mismatch, misplaced GIL/config detail, the mixed-category quick-reference table, and lists that don't match their section.",
       "files": [
         "../eval-fixtures/parallelization-pre-review.md"
@@ -16,6 +16,49 @@
         "Flags the Quick reference table as mixing kinds of items (a specific example like 'Global counter' next to general categories, or 'File I/O or logging' not meeting the table's criterion)",
         "Flags a list or table whose contents don't match its enclosing section (e.g. the 'What gets / does NOT get parallelized' lists under 'Within a single table' including across-table or dependency items)"
       ]
+    },
+    {
+      "prompt": "Do a structure review of this excerpt of a deephaven-core concept guide, focusing on whether each section can be read on its own: .claude/skills/deephaven-doc-structure-review/evals/files/self-contained-excerpt.md. Report only — don't edit anything.",
+      "expected_output": "Flags the 'The same applies to filters.' opener, proposes an opener that names its subject, and accepts the 'Building on the counter example above' opener because it names what it builds on and restates the setup.",
+      "files": [
+        "evals/files/self-contained-excerpt.md"
+      ],
+      "expectations": [
+        "Flags the opening sentence of 'Serial filters' ('The same applies to filters.') because a reader who lands on the section cannot tell what 'the same' refers to",
+        "Proposes an opener for 'Serial filters' that names its own subject (that string-based filters in where are parallelized by default and when to construct serial Filter objects) rather than only deleting the sentence",
+        "States the rule as a section's first paragraph making sense without the previous section (or only pointing to the immediately preceding section by name or link), not as 'every section must repeat its prerequisites'",
+        "Control: does not list the 'Building on the counter example above' opener of 'Example: extending the counter with a barrier' as a defect, or marks it as acceptable because it names the example and restates the setup"
+      ],
+      "id": 2
+    },
+    {
+      "prompt": "Do a structure review of the 'Barriers' section (from '### Barriers' to just before '## Configuration') of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md. Report only — don't edit anything.",
+      "expected_output": "Finds that 'implicit barriers', 'enabled', and 'stateless mode / stateful mode' are used before any definition on the whole page, ranks it as a top finding, and proposes defining the term at first use without moving a configuration property into the narrative.",
+      "files": [
+        "../eval-fixtures/parallelization-609b-chip-round2.md"
+      ],
+      "expectations": [
+        "Flags 'implicit barriers' as used without ever being defined anywhere on the page (what an implicit barrier is, and what enabling them means)",
+        "Flags 'Stateless mode (default)' and 'Stateful mode' as undefined labels, and notes that 'stateless' is defined earlier on the page with a different meaning (rows independent of each other)",
+        "Flags 'this setting' in 'Most users don't need to change this setting' as referring to a setting no earlier sentence names",
+        "Proposes defining the term at or before its first use on the page, with a concrete definition sentence",
+        "Ranks the undefined terminology in 'Implicit barriers' among the most serious findings for the section",
+        "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link"
+      ],
+      "id": 3
+    },
+    {
+      "prompt": "Do a structure review of this draft Crash Course chapter: .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md. Report only — don't edit anything.",
+      "expected_output": "Held-out fixture, not used to write the new rules: finds terms used without being defined on the page.",
+      "files": [
+        "../eval-fixtures/crash-course-parallelization-pre-review.md"
+      ],
+      "expectations": [
+        "Flags 'stateless' in the Key takeaways ('requires stateless code') as a term the page never defines or introduces by that name",
+        "Flags 'row-set order' under 'The fix' as a term the page never defines",
+        "Does not claim that the page defines these terms elsewhere"
+      ],
+      "id": 4
     }
   ]
 }

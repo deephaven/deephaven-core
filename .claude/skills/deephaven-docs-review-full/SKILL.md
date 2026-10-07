@@ -75,8 +75,14 @@ line by line. Answer, in writing:
   list to the accuracy step as its first targets: a wrong mental model (a whole category of
   operations classified wrongly) is the most expensive error a page can make, and it's easy to
   miss by checking sentences one at a time.
-- **Audience fit:** Concepts used before they're introduced; terms the reader won't know;
-  internal jargon; explanations that talk down.
+- **Audience fit:** Concepts used before they're introduced; terms the reader won't know,
+  including terms the page never defines anywhere; internal jargon; explanations that talk down.
+  A section the reader would have to read several times to get its point is a top finding.
+- **Readable in pieces:** People skip around. Does each section's first paragraph make sense
+  without the sections before it (`deephaven-doc-structure-review`'s **Section can't be read on
+  its own**)? Are sentences plain enough to read once, without a colon, dash, or semicolon
+  holding them together (`deephaven-writing-style`'s **Sentences that need rescuing
+  punctuation**)? Note the answer here; the two skills do the line-level work.
 - **Progression:** Does the page open with motivation, build one idea on the last, and close with
   a summary or next step? Would a reader know from the headings alone why to read each section?
 - **Scope:** Tangents, implementation notes, or configuration detail that belong on a reference
