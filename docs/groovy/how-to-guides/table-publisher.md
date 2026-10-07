@@ -11,7 +11,7 @@ A Table Publisher publishes data to a [blink table](../conceptual/table-types.md
 
 ## Table publisher
 
-A table publisher uses the [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md#methods) method to create an instance of the [`TablePublisher`](/core/javadoc/io/deephaven/stream/TablePublisher.html). Then, call the `TablePublisher.table()` method to return the table publisher's linked [blink table](../conceptual/table-types.md#specialization-3-blink). You can also:
+A table publisher uses the [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md#methods) method to create an instance of the [`TablePublisher`](/core/javadoc/io/deephaven/stream/TablePublisher.html). Then, call the `TablePublisher.table` method to return the table publisher's linked [blink table](../conceptual/table-types.md#specialization-3-blink). You can also:
 
 - Add data to the [blink table](../conceptual/table-types.md#specialization-3-blink) with [`add`](../reference/table-operations/create/TablePublisher.md#methods).
 - (Optionally) Store [data history](#data-history) in a downstream table.

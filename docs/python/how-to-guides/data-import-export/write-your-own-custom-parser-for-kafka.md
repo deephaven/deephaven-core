@@ -64,7 +64,7 @@ In this example:
 - **`Bytes`** is the column that will hold the raw Kafka value as a `byte_array`.
 - **`KeyValueSpec.IGNORE`** skips the Kafka key.
 - **`ALL_PARTITIONS_SEEK_TO_END`** starts reading from the latest offsets only.
-- **`TableType.append()`** creates an append-only table that keeps every message it receives.
+- **`TableType.append`** creates an append-only table that keeps every message it receives.
 
 ## Step 2: Define a domain object and parser function
 
