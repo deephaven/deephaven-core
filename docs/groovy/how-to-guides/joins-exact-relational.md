@@ -195,9 +195,9 @@ result = OuterJoinTools.fullOuterJoin(left, right, "I")
 
 The [`multijoin`](../reference/table-operations/join/multi-join.md) operation joins three or more tables. It was developed to improve the join speed by taking advantage of the potential to share a single hash table and exploit concurrency.
 
-[`MultiJoin.of`](../reference/table-operations/join/multi-join.md) joins three or more tables together in the same way that [`naturalJoin`](../reference/table-operations/join/natural-join.md) joins two tables together. The result of [`MultiJoin.of`](../reference/table-operations/join/multi-join.md) is not a typical table, but rather a `MultiJoinTable` object, so calling the `table` method is necessary for most use cases.
+[`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md) joins three or more tables together in the same way that [`naturalJoin`](../reference/table-operations/join/natural-join.md) joins two tables together. The result of [`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md) is not a typical table, but rather a `MultiJoinTable` object, so calling the `table` method is necessary for most use cases.
 
-There are two ways to use [`MultiJoin.of`](../reference/table-operations/join/multi-join.md): with constituent tables or with one or more `MultiJoinInput` objects.
+There are two ways to use [`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md): with constituent tables or with one or more `MultiJoinInput` objects.
 
 ### With constituent tables
 
@@ -244,7 +244,7 @@ result = mtTable.table()
 
 ### With `MultiJoinInput` objects
 
-Using `MultiJoinInput` objects as inputs for [`MultiJoin.of`](../reference/table-operations/join/multi-join.md) is syntactically more complex than using [constituent tables](#with-constituent-tables), but allows for more flexibility. The syntax for creating a `MultiJoinInput` object is as follows:
+Using `MultiJoinInput` objects as inputs for [`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md) is syntactically more complex than using [constituent tables](#with-constituent-tables), but allows for more flexibility. The syntax for creating a `MultiJoinInput` object is as follows:
 
 ```groovy syntax
 // create a MultiJoinInput array
@@ -341,5 +341,5 @@ The following figure presents a flowchart to help choose the right join method f
 - [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md)
 - [`join`](../reference/table-operations/join/join.md)
 - [`leftOuterJoin`](../reference/table-operations/join/left-outer-join.md)
-- [`MultiJoin.of`](../reference/table-operations/join/multi-join.md)
+- [`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md)
 - [`naturalJoin`](../reference/table-operations/join/natural-join.md)
