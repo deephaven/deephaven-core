@@ -7,6 +7,8 @@ import io.deephaven.jpy.BuiltinsModule;
 import io.deephaven.jpy.JpyModule;
 import io.deephaven.jpy.PythonTest;
 import io.deephaven.jpy.integration.DestructorModuleParent.OnDelete;
+
+import java.lang.ref.Reference;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -73,19 +75,27 @@ public class ReferenceCountingTest extends PythonTest {
 
     @Test
     public void viaPython() throws InterruptedException {
-        PyObject.executeCode("import sys", PyInputMode.STATEMENT);
-        PyObject.executeCode("x = dict()", PyInputMode.STATEMENT);
-        // the extra ref counts here are due to the reference that getrefcount itself is imposing
-        PyObject.executeCode("assert sys.getrefcount(x) == 2", PyInputMode.STATEMENT);
-        {
-            PyObject javaRef = PyObject.executeCode("x", PyInputMode.EXPRESSION);
-            PyObject.executeCode("assert sys.getrefcount(x) == 3", PyInputMode.STATEMENT);
-            ReferenceCounting.blackhole(javaRef);
-            javaRef = null;
-        }
-        // let's hope GC will kick in...
-        ref.gc();
-        PyObject.executeCode("assert sys.getrefcount(x) == 2", PyInputMode.STATEMENT);
+        final boolean cleanedUp = ref.doesCleanupHappenEventually(
+                () -> {
+                    PyObject.executeCode("import sys", PyInputMode.STATEMENT);
+                    PyObject.executeCode("x = dict()", PyInputMode.STATEMENT);
+                    // the extra ref counts here are due to the reference that getrefcount itself is imposing
+                    PyObject.executeCode("assert sys.getrefcount(x) == 2", PyInputMode.STATEMENT);
+                    PyObject javaRef = PyObject.executeCode("x", PyInputMode.EXPRESSION);
+                    PyObject.executeCode("assert sys.getrefcount(x) == 3", PyInputMode.STATEMENT);
+                    return javaRef;
+                },
+
+                () -> {
+                    try {
+                        PyObject.executeCode("assert sys.getrefcount(x) == 2", PyInputMode.STATEMENT);
+                        return true;
+                    } catch (Throwable t) {
+                        return false;
+                    }
+                });
+
+        Assert.assertTrue("Cleanup didn't happen within the deadline", cleanedUp);
     }
 
     @Test
@@ -111,7 +121,7 @@ public class ReferenceCountingTest extends PythonTest {
         scope.asDict().delItem("copy2");
         ref.check(1, pyObject);
 
-        ReferenceCounting.blackhole(scope);
+        Reference.reachabilityFence(scope);
     }
 
     @Test
@@ -130,7 +140,9 @@ public class ReferenceCountingTest extends PythonTest {
         final PyObject javaCopy2 = scope.asDict().get("copy1");
         ref.check(4, pyObject);
 
-        ReferenceCounting.blackhole(scope, javaCopy1, javaCopy2);
+        Reference.reachabilityFence(scope);
+        Reference.reachabilityFence(javaCopy1);
+        Reference.reachabilityFence(javaCopy2);
     }
 
 
@@ -157,7 +169,8 @@ public class ReferenceCountingTest extends PythonTest {
 
         final PyObject copy2 = pyOut.identity((Object) pyObject);
         ref.check(3, pyObject);
-        ReferenceCounting.blackhole(copy1, copy2);
+        Reference.reachabilityFence(copy1);
+        Reference.reachabilityFence(copy2);
     }
 
     @Test
@@ -175,16 +188,18 @@ public class ReferenceCountingTest extends PythonTest {
         // this tests fails in python 2, but I haven't spent time debugging
         assumePython3();
 
+        // Eventually-consistent by design; see the comment on viaPython.
         final CountDownLatch latch = new CountDownLatch(1);
-        {
-            PyObject child = destructor.create_child(new OnDelete(latch));
-            ref.check(1, child);
-            ReferenceCounting.blackhole(child);
-            child = null;
-        }
-        // let's hope GC will kick in...
-        ref.gc();
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        final boolean cleanedUp = ref.doesCleanupHappenEventually(
+                () -> {
+                    PyObject child = destructor.create_child(new OnDelete(latch));
+                    ref.check(1, child);
+                    return child;
+                },
+
+                () -> latch.getCount() == 0);
+
+        Assert.assertTrue("Cleanup didn't happen within the deadline", cleanedUp);
     }
 
     @Test
