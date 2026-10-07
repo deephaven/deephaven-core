@@ -51,9 +51,11 @@ row that uses it. Keep each bounded run to a few seconds.
    `@BeforeAll`, with a `smoke_` prefix so it cannot collide with what examples publish.
 4. Run `./gradlew :java-client-integration-tests:test` and `spotlessApply` on the project.
 
-Removing an example: delete the file, its `createApplication` line, and its smoke row. Nothing else
-references it. A `createApplication` line whose class does not exist still produces a script, and
-nothing but the smoke test will notice.
+Removing an example: delete the file, its `createApplication` line, and its smoke row, then search
+the repository for the script name and the class name. Launchers are also referenced from prose
+(`server/dev-certs/README.md`, `docs/`), and `flight-examples` registers a JavaExec task for one. A
+`createApplication` line whose class does not exist still produces a script, and nothing but the
+smoke test will notice.
 
 ## The integration tests
 

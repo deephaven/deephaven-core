@@ -209,7 +209,8 @@ class TransportTest {
                 final FlightSession flight = factory.newFlightSession();
                 final TableHandle handle = flight.session().execute(medium);
                 final ConsoleSession console = flight.session().console("python").get(10, TimeUnit.SECONDS)) {
-            // Two server-streaming calls stay open on the channel for the whole test
+            // One server-streaming call, the log subscription, stays open on the channel for the whole test; the
+            // DoGets below each close once drained
             final Iterator<LogSubscriptionData> logs = flight.session().channel().consoleBlocking()
                     .withDeadlineAfter(TIMEOUT.toSeconds(), TimeUnit.SECONDS)
                     .subscribeToLogs(LogSubscriptionRequest.newBuilder().build());
