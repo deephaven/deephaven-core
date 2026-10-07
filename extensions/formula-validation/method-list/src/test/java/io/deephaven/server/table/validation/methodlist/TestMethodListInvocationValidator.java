@@ -101,6 +101,12 @@ public class TestMethodListInvocationValidator {
         }
         // while a wildcard alone matches any parameter type, arrays included
         assertPermitted(arrays + " *(*)", matrix);
+        // but "*..*" alone matches only types that are not arrays
+        assertNotPermitted(arrays + " *(*..*)", vector);
+        assertNotPermitted(arrays + " *(*..*)", matrix);
+        assertNotPermitted(arrays + " *(*..*)", primitiveMatrix);
+        assertPermitted("java.lang.String valueOf(*..*)", String.class.getMethod("valueOf", Object.class));
+        assertPermitted("java.lang.Math abs(*..*)", Math.class.getMethod("abs", int.class));
         // an array parameter may be in any position
         assertPermitted("java.util.Arrays fill(int[], int)", Arrays.class.getMethod("fill", int[].class, int.class));
         assertPermitted("java.util.Arrays deepToString(java.lang.Object[])",

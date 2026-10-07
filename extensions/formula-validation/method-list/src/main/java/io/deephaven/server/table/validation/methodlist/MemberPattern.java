@@ -150,9 +150,14 @@ abstract sealed class MemberPattern permits MethodPattern, ConstructorPattern {
             element = element.substring(0, element.length() - 2);
             arraySuffix.append("\\[\\]");
         }
+        if (argument && element.equals("*") && arraySuffix.length() == 0) {
+            // a lone "*" matches any single argument, arrays included
+            return Pattern.compile(".*");
+        }
         if ((argument && element.equals("*")) || element.equals("*..*")) {
-            // with an array suffix, the wildcard must not match brackets, so that each [] matches one dimension
-            return Pattern.compile((arraySuffix.length() == 0 ? ".*" : "[^\\[\\]]*") + arraySuffix);
+            // otherwise the wildcard must not match brackets, so that each [] matches exactly one dimension and
+            // "*..*" alone matches only types that are not arrays
+            return Pattern.compile("[^\\[\\]]*" + arraySuffix);
         }
 
         final StringBuilder regex = new StringBuilder();

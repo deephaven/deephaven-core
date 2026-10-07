@@ -32,8 +32,9 @@ import java.util.*;
  * enclosing class names, so {@code java.util..Entry} matches {@code java.util.Map.Entry}, and {@code *..*} matches
  * every class. A declaring class of only "*" is rejected.</li>
  * <li>The argument list is expressed as a comma-separated list of the argument types. A type in the {@code java.lang}
- * package may be unqualified, and "*" matches any single argument. An array argument is written {@code T[]}, in any
- * position; only the last argument may instead be written {@code T...}, which is the same as {@code T[]}.</li>
+ * package may be unqualified, and "*" matches any single argument, while {@code *..*} matches any argument that is not
+ * an array. An array argument is written {@code T[]}, in any position; only the last argument may instead be written
+ * {@code T...}, which is the same as {@code T[]}.</li>
  * <li>".." can be used once in the argument list to match zero or more arguments of any type.</li>
  * <li>"&lt;constructor&gt;" can be used as the method name to match a constructor. A method name of only wildcards also
  * matches constructors.</li>
