@@ -43,7 +43,7 @@ In this guide, you will:
 
 The first step is to consume the Kafka value as a `byte_array`. This preserves the payload exactly as it appears on the wire, letting you apply any parsing you need.
 
-```python docker-config=kafka order=null
+```python docker-config=kafka test-set=1 order=null
 from deephaven.stream.kafka import consumer as kc
 from deephaven import dtypes as dht
 
@@ -70,7 +70,7 @@ In this example:
 
 Next, you define a Python data class to represent the logical payload, and a parser function that converts raw bytes into that object.
 
-```python docker-config=kafka order=null
+```python docker-config=kafka test-set=1 order=null
 from dataclasses import dataclass
 import json
 
@@ -98,10 +98,10 @@ You can adjust `parse_person` to match any format your topic uses, such as CSV, 
 
 With the raw table and parser in place, you can call [`update`](../../reference/table-operations/select/update.md) to create a column that holds the parsed object, and then project that into regular columns.
 
-```python syntax
-from jpy import PyObject
-
-parsed_table = raw_table.update(["Person = (PyObject) parse_person(Bytes)"]).view(
+```python docker-config=kafka test-set=1 order=parsed_table
+parsed_table = raw_table.update(
+    ["Person = (org.jpy.PyObject) parse_person(Bytes)"]
+).view(
     [
         "Age = (int) Person.age",
         "Name = (String) Person.name",

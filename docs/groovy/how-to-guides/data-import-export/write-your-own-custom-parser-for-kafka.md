@@ -43,7 +43,7 @@ In this guide, you will:
 
 The first step is to consume the Kafka value as a `byte[]`. This preserves the payload exactly as it appears on the wire, letting you apply any parsing you need.
 
-```groovy docker-config=kafka order=null
+```groovy docker-config=kafka test-set=1 order=null
 import io.deephaven.kafka.KafkaTools
 
 kafkaProps = new Properties()
@@ -71,7 +71,7 @@ In this example:
 
 Next, you define a Groovy class to represent the logical payload, and a parser class with a method that converts raw bytes into that object.
 
-```groovy docker-config=kafka order=null
+```groovy docker-config=kafka test-set=1 order=null
 import groovy.json.JsonSlurper
 
 class Person {
@@ -106,7 +106,7 @@ You can adjust `PersonParser.parse` to match any format your topic uses, such as
 
 With the raw table and parser in place, you can call [`update`](../../reference/table-operations/select/update.md) to create a column that holds the parsed object, and then project that into regular columns.
 
-```groovy syntax
+```groovy docker-config=kafka test-set=1 order=parsedTable
 parsedTable = rawTable.update('Person = parser.parse(Bytes)').view(
     'Age = Person.age',
     'Name = Person.name'
