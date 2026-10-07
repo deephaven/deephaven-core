@@ -354,7 +354,7 @@ Consider operations such as union, set difference, or intersect. The system can 
 
 For large datasets, RSP is usually much faster at these operations. If the system can work in pieces at a time for each operation and guarantee that the pieces on each `RowSet` align in terms of values, they can be worked on more efficiently without having to worry about iterators crossing individual array boundaries at different points for each `RowSet`.
 
-RSP also compactly represents values. It would be inefficient to write out every single value in a big range - let's say all of the values in the set `[ 0, 1000 * 2^16 ]`. Deephaven would have to create about 1,000 containers, with all keys in each of them present. Instead, Deephaven has a compact way to represent continuous ranges of values that can span full blocks in `[ n * 2^16, m * 2^16 - 1 ]` space, for some value of `n` and `m` where `m > n`.
+RSP also compactly represents values. It would be inefficient to write out every single value in a big range — let's say all of the values in the set `[ 0, 1000 * 2^16 ]`. Deephaven would have to create about 1,000 containers, with all keys in each of them present. Instead, Deephaven has a compact way to represent continuous ranges of values that can span full blocks in `[ n * 2^16, m * 2^16 - 1 ]` space, for some value of `n` and `m` where `m > n`.
 
 Nevertheless, small `RowSet`s are more expensive in RSP because they are still comprised of an array of containers first and then the containers themselves. This matters for queries that need to create one `RowSet` per row (e.g., joins). This issue is alleviated by creating a special case for single-range `RowSet`s.
 
