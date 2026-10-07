@@ -33,12 +33,12 @@
     },
     {
       "prompt": "Do a structure review of the 'Barriers' section (from '### Barriers' to just before '## Configuration') of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md. Report only — don't edit anything.",
-      "expected_output": "Finds that 'enabled' (what enabling implicit barriers means, and how they are enabled) and 'stateless mode / stateful mode' are used without explanation on the whole page, ranks it as a top finding, and proposes explaining them at first use without moving a configuration property into the narrative.",
+      "expected_output": "Finds that 'enabled' is used without naming the setting or default at that point, that 'stateless mode / stateful mode' are unexplained labels, and that 'this setting' has no antecedent; ranks it as a top finding and proposes explaining them at first use without moving a configuration property into the narrative.",
       "files": [
         "../eval-fixtures/parallelization-609b-chip-round2.md"
       ],
       "expectations": [
-        "Flags that the page never says what enabling implicit barriers means or how they are enabled: the opener describes only the effect of the feature, and the term is used as a named, switchable feature without that explanation",
+        "Flags that the 'Implicit barriers' section says 'when implicit barriers are enabled' without saying, at that point, what setting turns the feature on or what its default is (the opener describes only the effect, and the property appears only in the separate Configuration table)",
         "Flags 'Stateless mode (default)' and 'Stateful mode' as undefined labels, and notes that 'stateless' is defined earlier on the page with a different meaning (rows independent of each other)",
         "Flags 'this setting' in 'Most users don't need to change this setting' as referring to a setting no earlier sentence names",
         "Proposes defining the term at or before its first use on the page, with a concrete definition sentence",
