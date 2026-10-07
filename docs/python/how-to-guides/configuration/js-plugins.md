@@ -1,6 +1,5 @@
 ---
 title: Configure JS plugins
-sidebar_label: JS plugins
 ---
 
 The Deephaven server supports custom JS plugins that extend the functionality of the [server](https://github.com/deephaven/deephaven-core) and [web client UI](https://github.com/deephaven/web-client-ui). `server:latest` ships with several plugins pre-bundled, including Matplotlib, Plotly Express, and the Deephaven UI. This guide shows how to install a plugin that isn't included in the base image, using [Plotly](https://plotly.com/) (basic) as the example.

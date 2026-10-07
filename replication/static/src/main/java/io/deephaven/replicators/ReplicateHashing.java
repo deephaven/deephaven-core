@@ -55,6 +55,7 @@ public class ReplicateHashing {
         final String objectCompact = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/compact/CharCompactKernel.java");
         fixupObjectCompact(objectCompact);
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy(TASK, "CharCompactKernel", objectCompact);
         // noinspection OptionalGetWithoutIsPresent
         fixupBooleanCompact(compactKernels.stream().filter(x -> x.contains("Boolean")).findFirst().get());
         fixupFloatCompact(compactKernels.stream().filter(x -> x.contains("Double")).findFirst().get(), "Double");
@@ -101,6 +102,8 @@ public class ReplicateHashing {
                 "            counts.set(wpos, falseValues);\n" +
                 "        }"));
 
+        // the Boolean compactAndCount counts each value directly, without an equality test
+        lines = removeRegion(lines, "equality helper");
         lines = removeImport(lines, "\\s*import io.deephaven.util.compare.BooleanComparisons;");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
 
@@ -117,6 +120,7 @@ public class ReplicateHashing {
                 "final Object nextValue", "final T nextValue");
         lines = globalReplacements(lines, "NULL_OBJECT", "null");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
+        lines = ReplicateSortKernel.fixupObjectComparisons(lines, true, true);
         FileUtils.writeLines(objectFile, lines);
     }
 

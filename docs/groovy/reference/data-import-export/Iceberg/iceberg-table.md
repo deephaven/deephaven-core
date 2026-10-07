@@ -1,6 +1,5 @@
 ---
 title: IcebergTable
-sidebar_label: IcebergTable
 ---
 
 The `IcebergTable` interface provides methods for loading Iceberg tables from a catalog as Deephaven tables. The interface extends the Deephaven table, enabling the use of all Deephaven table methods, along with overloads to the [`update`](../../table-operations/select/update.md) method to allow updating the data if the underlying Iceberg table is modified.

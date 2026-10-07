@@ -1,6 +1,5 @@
 ---
 title: Configure and use pre-shared key authentication
-sidebar_label: Pre-shared key
 ---
 
 This guide will show you how to configure and use pre-shared key (PSK) authentication for Deephaven. PSK is the default authentication method used by Deephaven, while [username/password authentication](./auth-uname-pw.md) is the most basic method of authentication available.

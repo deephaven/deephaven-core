@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.time.DateTimeUtils;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -36,6 +38,30 @@ import java.util.Optional;
  * <li>GREATER_THAN</li>
  * <li>GREATER_THAN_OR_EQUAL</li>
  * </ul>
+ *
+ * <p>
+ * A query-scope parameter is converted to the column's type as {@link MatchFilter} converts it, so that the filter
+ * selects the rows a {@link ConditionFilter} would. Where the converted value would select other rows -- a value the
+ * conversion rejects, a value of another type that the conversion leaves as it is (an {@link Integer} against a
+ * {@link String} column, say), or {@code -0.0} against a byte, short, int or char column (the query language orders it
+ * below {@code 0}, which the converted value {@code 0} is not) -- the filter fails over to a {@link ConditionFilter}.
+ *
+ * <p>
+ * Two differences remain. Float and double columns' range filters treat {@code -0.0} and {@code 0.0} as equal, where
+ * the query language orders {@code -0.0} below {@code 0.0}, so on rows holding {@code -0.0}, {@code X < 0.0} and
+ * {@code X >= 0.0} select otherwise than the query language does. And a {@link Float} bound against an int column
+ * converts to its exact int, where the query language compares the two in float, rounding an int beyond 2^24: there,
+ * {@code X > 16777216f} excludes {@code 16777217}, which the converted bound {@code 16777216} includes. This is the
+ * range counterpart of {@link MatchFilter}'s exact match of a large floating-point value.
+ *
+ * <p>
+ * For primitive columns the endpoint is compared in Deephaven's type system, where each type's null value sorts below
+ * every other value. An endpoint of the column's own type equal to its null value -- {@code -Double.MAX_VALUE} is
+ * {@code NULL_DOUBLE}, and {@code Long.MIN_VALUE} is {@code NULL_LONG} -- is therefore null, as it is in the query
+ * language, so {@code X < -Double.MAX_VALUE} matches no rows at all, {@code -Infinity} included. An endpoint of another
+ * type that converts exactly to the null value, a query-scope int {@code v = -128} against a byte column for instance,
+ * is null too, as the literal {@code -128} against a byte column is: {@code X < v} selects no rows. The query language
+ * compares it as a number below every byte instead, so there {@code X < v} selects the null rows.
  */
 public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
@@ -127,6 +153,22 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
     }
 
+    /**
+     * Whether the query language compares a column of this integral type with a floating-point value through
+     * {@link Double#compare} or {@link Float#compare}, which order {@code -0.0} below {@code 0}. It compares a
+     * {@code long} column exactly, where {@code -0.0} is {@code 0}. (A float or double column keeps the sign of
+     * {@code -0.0}, but its range filters do not tell it from {@code 0.0}; see the class documentation.)
+     */
+    private static boolean ordersNegativeZeroBelowZero(final Class<?> colClass) {
+        final Class<?> type = TypeUtils.getUnboxedTypeIfBoxed(colClass);
+        return type == byte.class || type == short.class || type == int.class || type == char.class;
+    }
+
+    private static boolean isNegativeZero(final Object value) {
+        return (value instanceof Double && Double.doubleToRawLongBits((Double) value) == Long.MIN_VALUE)
+                || (value instanceof Float && Float.floatToRawIntBits((Float) value) == Integer.MIN_VALUE);
+    }
+
     @Override
     public List<String> getColumns() {
         if (filter == null) {
@@ -157,6 +199,21 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return filter == null || filter.canPushdown();
     }
 
+    @Override
+    public void validateSafeForRefresh(final BaseTable<?> sourceTable) {
+        if (filter == null) {
+            super.validateSafeForRefresh(sourceTable);
+        } else {
+            filter.validateSafeForRefresh(sourceTable);
+        }
+    }
+
+    @Override
+    public boolean permitParallelization() {
+        // A failover ConditionFilter may not permit parallelization, so answer for the real filter.
+        return filter == null ? super.permitParallelization() : filter.permitParallelization();
+    }
+
     @VisibleForTesting
     public WhereFilter getRealFilter() {
         return filter;
@@ -175,7 +232,10 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
             return;
         }
 
-        RuntimeException conversionError = null;
+        // Why the converted value cannot be used, if it cannot: it does not convert exactly, or would not select the
+        // rows the query language selects, or there is no such column. The filter then fails over to a
+        // ConditionFilter; this is thrown only if it cannot.
+        RuntimeException potentialConversionError = null;
         ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
             if ((def = tableDefinition.getColumn(value)) != null) {
@@ -185,41 +245,56 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
                 value = tmp;
                 condition = condition.mirror();
             } else {
-                conversionError = new RuntimeException("Column \"" + columnName
+                potentialConversionError = new RuntimeException("Column \"" + columnName
                         + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
             }
         }
 
         final Class<?> colClass = def == null ? null : def.getDataType();
         final MutableObject<Object> realValue = new MutableObject<>();
+        Object queryScopeValue = null;
 
         if (def != null) {
             final MatchFilter.ColumnTypeConvertor convertor =
                     MatchFilter.ColumnTypeConvertorFactory.getConvertor(def.getDataType());
 
             try {
+                final Map<String, Object> queryScopeVariables =
+                        compilationProcessor.getFormulaImports().getQueryScopeVariables();
+                // consulted only if convertValue succeeds, which it does not when a column of this name takes
+                // precedence
+                queryScopeValue = MatchFilter.ColumnTypeConvertor.maybeUnwrapPyObject(queryScopeVariables.get(value));
                 boolean wasAnArrayType = convertor.convertValue(
-                        def, tableDefinition, value, compilationProcessor.getFormulaImports().getQueryScopeVariables(),
-                        realValue::setValue);
+                        def, tableDefinition, value, queryScopeVariables, realValue::setValue);
                 if (wasAnArrayType) {
-                    conversionError =
+                    potentialConversionError =
                             new IllegalArgumentException("RangeFilter does not support array types for column "
                                     + columnName + " with value <" + value + ">");
+                } else if (ordersNegativeZeroBelowZero(colClass) && isNegativeZero(queryScopeValue)) {
+                    // Failover to match the query language, which widens the column value to double and compares with
+                    // Double.compare, ordering -0.0 below 0: X <= -0.0 excludes 0 there, though -0.0 converts to 0.
+                    potentialConversionError = new IllegalArgumentException("RangeFilter cannot compare column "
+                            + columnName + " with -0.0 as the query language does");
+                } else if (realValue.getValue() != null
+                        && !TypeUtils.getBoxedType(colClass).isInstance(realValue.getValue())) {
+                    // a value the convertor passed through unconverted, which the range filters below would cast
+                    potentialConversionError = MatchFilter.ColumnTypeConvertor.cannotConvert(realValue.getValue(),
+                            TypeUtils.getBoxedType(colClass), "it is not of the column's type", null);
                 }
             } catch (final RuntimeException err) {
-                conversionError = err;
+                potentialConversionError = err;
             }
         }
 
-        if (conversionError != null) {
+        if (potentialConversionError != null) {
             if (expression != null) {
                 try {
                     filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 } catch (final RuntimeException ignored) {
-                    throw conversionError;
+                    throw potentialConversionError;
                 }
             } else {
-                throw conversionError;
+                throw potentialConversionError;
             }
         } else if (colClass == double.class || colClass == Double.class) {
             filter = DoubleRangeFilter.makeDoubleRangeFilter(columnName, condition,

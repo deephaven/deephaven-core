@@ -1,6 +1,5 @@
 ---
 title: Handle PyObjects in tables
-sidebar_label: PyObjects
 ---
 
 This guide provides a comprehensive overview of the [`org.jpy.PyObject`](https://jpy.readthedocs.io/en/latest/_static/java-apidocs/index.html) data type, including its appearance in tables, its uses, limitations, and best practices.

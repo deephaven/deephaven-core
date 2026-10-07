@@ -1,6 +1,5 @@
 ---
 title: How do I filter a table by time of day across all dates?
-sidebar_label: How do I filter by time of day across all dates?
 ---
 
 _I have a table with a timestamp column that spans multiple dates. I want to filter rows to only include times between 2:00 PM and 4:00 PM ET, regardless of the date._

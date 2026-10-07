@@ -348,7 +348,6 @@ def generate_page_header(category: str, language: str = "python") -> str:
 
     header = f"""---
 title: {title}
-sidebar_label: {title}
 ---
 
 {description}

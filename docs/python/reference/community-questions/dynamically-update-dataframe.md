@@ -1,6 +1,5 @@
 ---
 title: How do I dynamically update a Python DataFrame from a Deephaven table?
-sidebar_label: How do I dynamically update a DataFrame from a table?
 ---
 
 <em>I have a Python DataFrame that I want to update automatically when my Deephaven table updates. How can I write a query that does this? </em>

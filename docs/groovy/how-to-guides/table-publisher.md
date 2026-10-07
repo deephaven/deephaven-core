@@ -1,6 +1,5 @@
 ---
 title: Write data to an in-memory, real-time table
-sidebar_label: Write data to a real-time table
 ---
 
 This guide covers publishing data to in-memory ticking tables with two classes:

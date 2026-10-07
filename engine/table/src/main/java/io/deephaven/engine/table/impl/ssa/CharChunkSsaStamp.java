@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.util.compare.CharComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -242,7 +243,7 @@ public class CharChunkSsaStamp implements ChunkSsaStamp {
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return Character.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

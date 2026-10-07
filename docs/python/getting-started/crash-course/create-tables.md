@@ -1,6 +1,5 @@
 ---
 title: Create Your First Tables
-sidebar_label: Create Tables
 ---
 
 ## Static tables

@@ -85,7 +85,8 @@ abstract class PageStorePushdownHelper {
                 final long regionFirstKey = region.firstRow(regionFirstIncludedKey);
 
                 // Create a PushdownResult restricted to the "maybe" from this region
-                try (final RowSet shifted = regionRows.asRowSet().shift(-regionFirstKey);
+                try (final RowSet regionRowSet = regionRows.asRowSet();
+                        final RowSet shifted = regionRowSet.shift(-regionFirstKey);
                         final PushdownResult localInput = PushdownResult.allMaybeMatch(shifted);
                         final PushdownResult localResult = region.performPushdownAction(
                                 action,

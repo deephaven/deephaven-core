@@ -1,7 +1,6 @@
 ---
 id: source-setup
 title: Debug built-from-source Deephaven with IntelliJ IDEA
-sidebar_label: Source
 ---
 
 When building Deephaven from source code for development tasks, you can debug both your own Groovy scripts and Deephaven's internal Java and Groovy source. This is useful for:

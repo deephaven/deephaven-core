@@ -2,18 +2,12 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ObjectSsaChecker and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+// ****** Edit CharSsaChecker and run "./gradlew replicateSegmentedSortedArray" to regenerate
 //
 // @formatter:off
 
 
 package io.deephaven.engine.table.impl.ssa;
-
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
@@ -26,6 +20,7 @@ import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.util.compare.ObjectComparisons;
 
 public class ObjectReverseSsaChecker implements SsaChecker {
     static ObjectReverseSsaChecker INSTANCE = new ObjectReverseSsaChecker();
@@ -85,7 +80,7 @@ public class ObjectReverseSsaChecker implements SsaChecker {
 
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return Objects.equals(lhs, rhs);
+        return ObjectComparisons.compareEquals(lhs, rhs);
         // endregion equality function
     }
 }

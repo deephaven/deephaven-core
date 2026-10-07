@@ -1,6 +1,5 @@
 ---
 title: leftOuterJoin
-sidebar_label: leftOuterJoin
 ---
 
 `leftOuterJoin` joins data from a pair of tables - a left table and a right table - based upon one or more match columns (`columnsToMatch`). The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys.

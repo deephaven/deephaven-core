@@ -3,6 +3,8 @@
 //
 package io.deephaven.replicators;
 
+import io.deephaven.replication.ReplicationUtils;
+
 import java.io.IOException;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToByte;
@@ -23,6 +25,8 @@ public class ReplicatePageMaterializers {
     private static final String INT_MATERIALIZER_PATH = MATERIALIZER_DIR + "IntMaterializer.java";
     private static final String LONG_MATERIALIZER_BASE_PATH = MATERIALIZER_DIR + "LongMaterializerBase.java";
     private static final String LONG_MATERIALIZER_PATH = MATERIALIZER_DIR + "LongMaterializer.java";
+    // the Int, Short and Double materializers are themselves generated from the Long materializer
+    private static final String LONG_MATERIALIZER_CLASS_NAME = ReplicationUtils.className(LONG_MATERIALIZER_PATH);
     private static final String LONG_FROM_INT_MATERIALIZER_PATH = MATERIALIZER_DIR + "LongFromIntMaterializer.java";
     private static final String LONG_FROM_UNSIGNED_SHORT_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LongFromUnsignedShortMaterializer.java";
@@ -64,7 +68,9 @@ public class ReplicatePageMaterializers {
                 {"int value", "boolean value"},
                 {"return value", "return value ? 1 : 0"}
         };
-        replaceAll(TASK, INT_MATERIALIZER_PATH, null, new String[] {"IntMaterializerBase"}, pairs);
+        ReplicationUtils.fixupChainedFileHeader(TASK,
+                replaceAll(TASK, INT_MATERIALIZER_PATH, null, new String[] {"IntMaterializerBase"}, pairs),
+                LONG_MATERIALIZER_CLASS_NAME);
 
         // LongBase -> ShortBase
         pairs = new String[][] {
@@ -155,7 +161,9 @@ public class ReplicatePageMaterializers {
                 {"double value", "float value"},
                 {"Double", "Float"}
         };
-        replaceAll(TASK, DOUBLE_MATERIALIZER_PATH, null, new String[] {"DoubleMaterializerBase"}, pairs);
+        ReplicationUtils.fixupChainedFileHeader(TASK,
+                replaceAll(TASK, DOUBLE_MATERIALIZER_PATH, null, new String[] {"DoubleMaterializerBase"}, pairs),
+                LONG_MATERIALIZER_CLASS_NAME);
 
         // Short -> ShortFromBoolean
         pairs = new String[][] {
@@ -164,7 +172,9 @@ public class ReplicatePageMaterializers {
                 {"int value", "boolean value"},
                 {"return \\(short\\) value", "return \\(short\\) (value ? 1 : 0)"}
         };
-        replaceAll(TASK, SHORT_MATERIALIZER_PATH, null, new String[] {"ShortMaterializerBase"}, pairs);
+        ReplicationUtils.fixupChainedFileHeader(TASK,
+                replaceAll(TASK, SHORT_MATERIALIZER_PATH, null, new String[] {"ShortMaterializerBase"}, pairs),
+                LONG_MATERIALIZER_CLASS_NAME);
 
         // LocalTimeFromMicros -> LocalTimeFromMillis
         // We change from Micros to Millis and not the other way since converting from Long to Integer has fewer

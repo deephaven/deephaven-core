@@ -2,7 +2,7 @@
 title: MultiJoinTable
 ---
 
-A `MultiJoinTable` object is a container for the table that results from a [Multi-Join](./multijoin.md) operation.
+A `MultiJoinTable` object is a container for the table that results from a [multi-join](./multijoin.md) operation.
 
 ## Methods
 
@@ -45,5 +45,5 @@ println mtTable.keyColumns()
 ## Related documentation
 
 - [`newTable`](../create/newTable.md)
-- [Multi-Join](./multijoin.md)
+- [Multi-join](./multijoin.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/MultiJoinTable.html)

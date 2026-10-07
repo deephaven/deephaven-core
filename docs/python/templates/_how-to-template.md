@@ -1,6 +1,5 @@
 ---
 title: How to do something
-sidebar_label: Do something
 ---
 
 This guide shows you how to...

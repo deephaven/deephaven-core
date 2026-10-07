@@ -2,7 +2,7 @@
 title: MultiJoinInput
 ---
 
-A `MultiJoinInput` is an object that contains a table and a list of columns to match and add, and is used as an input for a [Multi-Join](./multijoin.md).
+A `MultiJoinInput` is an object that contains a table and a list of columns to match and add, and is used as an input for a [multi-join](./multijoin.md).
 
 ## Methods
 
@@ -87,6 +87,6 @@ result = mjTable.table()
 
 ## Related documentation
 
-- [Multi-Join](./multijoin.md)
+- [Multi-join](./multijoin.md)
 - [`MultiJoinTable`](./MultiJoinTable.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/MultiJoinInput.html)

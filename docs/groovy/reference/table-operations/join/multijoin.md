@@ -1,10 +1,10 @@
 ---
-title: Multi-Join
+title: Multi-join
 ---
 
-The Multi-Join feature joins the unique rows from a set of multiple tables onto a set of common keys.
+The multi-join feature joins the unique rows from a set of multiple tables onto a set of common keys.
 
-Unlike most table operations, Multi-Join is not a constituent method of the `Table` class; instead, it is an external function that takes tables as arguments. Also, unlike most table operations, Multi-Join does not return a table -- it returns a [`MultiJoinTable`](/core/javadoc/io/deephaven/engine/table/MultiJoinTable.html) object, which in turn uses the `table` method to return the underlying table.
+Unlike most table operations, multi-join is not a constituent method of the `Table` class; instead, it is an external function that takes tables as arguments. Also, unlike most table operations, multi-join does not return a table — it returns a [`MultiJoinTable`](/core/javadoc/io/deephaven/engine/table/MultiJoinTable.html) object, which in turn uses the `table` method to return the underlying table.
 
 ## Syntax
 

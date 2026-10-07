@@ -1,6 +1,5 @@
 ---
 title: Configure the Deephaven Docker application
-sidebar_label: Deephaven Docker application
 ---
 
 This guide covers best practices for configuring the Deephaven Docker application. Deephaven can be run from [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). The latter is recommended for customized applications, as it provides a simpler mechanism for orchestrating complex applications with multiple services.

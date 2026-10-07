@@ -1,6 +1,5 @@
 ---
 title: Basic Table Operations
-sidebar_label: Table Operations
 ---
 
 This section will cover some table operations that appear in almost all queries. These table operations use query strings extensively, which are discussed in detail in the [next section](./query-strings.md).

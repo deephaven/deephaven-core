@@ -1,6 +1,5 @@
 ---
 title: Deephaven's Query Strings
-sidebar_label: Query Strings
 ---
 
 Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute. These query strings can contain a mix of Java and Python code and are the entry point to a universe of powerful built-in tools and Python-Java interoperability.

@@ -101,25 +101,30 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish Test Results
-        uses: scacap/action-surefire-report@c38a2d74b9840ae8950a4387ae02b637421d0f39 # v1.13.0
+        uses: ScalableCapital/action-surefire-report@4004a71652495d6ed111f5b717c2cf9aa0f37627 # v2.0.5
         if: ${{ github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
+          # This step only runs for the scheduled build, where the default report_mode of "auto"
+          # would resolve to a workflow summary rather than a check run.
+          report_mode: check-run
           # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
           check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
       - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         id: slack-nightly-failure
         if: ${{ failure() && github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         with:
           webhook-type: webhook-trigger
+          # Fail the step if the alert cannot be delivered; the default hides it.
+          errors: true
           payload: |
             {
-              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.head_ref }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.head_ref || github.ref_name }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}

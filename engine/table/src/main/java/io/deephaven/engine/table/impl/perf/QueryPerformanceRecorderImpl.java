@@ -35,6 +35,18 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     private QueryState state = QueryState.NOT_STARTED;
     private volatile boolean hasSubQueries;
     private QueryPerformanceNugget catchAllNugget;
+    /**
+     * The query that owned the thread when this one was resumed on top of it, to hand the thread back to; null when
+     * this query is not installed on a thread, or took an idle thread. Guarded by this, like the rest of the state.
+     */
+    private QueryPerformanceRecorder outerInstance;
+    /** Counts installations, so that a closeable only ever uninstalls the one it was returned for; guarded by this. */
+    private int installation;
+    /**
+     * Whether another query is resumed on top of this one, with this query's accruing entry (the catch-all, or the top
+     * user nugget) paused for the duration so that the inner query's time is not charged here too. Guarded by this.
+     */
+    private boolean pausedForNestedQuery;
 
     /**
      * Constructs a QueryPerformanceRecorderImpl.
@@ -69,6 +81,10 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             return;
         }
         state = QueryState.INTERRUPTED;
+        if (pausedForNestedQuery) {
+            // a suspended nugget ignores abort(); resume the paused entry so that it closes below
+            resumeAccruingEntry();
+        }
         if (catchAllNugget != null) {
             stopCatchAll(true);
         } else {
@@ -94,7 +110,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         if (state != QueryState.NOT_STARTED) {
             throw new IllegalStateException("Can't resume a query that has already started");
         }
-        return resumeInternal();
+        return resumeInternal(false);
     }
 
     @Override
@@ -106,6 +122,7 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             }
             return false;
         }
+        checkOwnedByThisThread();
         state = QueryState.FINISHED;
         suspendInternal();
 
@@ -125,52 +142,130 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         if (state != QueryState.RUNNING) {
             throw new IllegalStateException("Can't suspend a query that isn't running");
         }
+        checkOwnedByThisThread();
         state = QueryState.SUSPENDED;
         suspendInternal();
         queryNugget.onBaseEntryEnd();
     }
 
-    private void suspendInternal() {
-        final QueryPerformanceRecorder threadLocalInstance = QueryPerformanceRecorderState.getInstance();
-        if (threadLocalInstance != this) {
-            throw new IllegalStateException("Can't suspend a query that doesn't belong to this thread");
+    /**
+     * A running query may only be suspended or ended by the thread it is installed on. Checked before any state
+     * changes, so that a rejected call leaves the query as it was for its owner.
+     */
+    private void checkOwnedByThisThread() {
+        if (QueryPerformanceRecorderState.getInstance() != this) {
+            throw new IllegalStateException("Query doesn't belong to this thread");
         }
+    }
 
+    private void suspendInternal() {
         Assert.neqNull(catchAllNugget, "catchAllNugget");
         stopCatchAll(false);
 
-        // uninstall this instance from the thread local
+        uninstall(installation);
+    }
+
+    /**
+     * Uninstalls this recorder from the current thread and hands the thread back to the query that was running when
+     * this one was resumed on top of it, if any. A no-op unless {@code forInstallation} is the current installation and
+     * it is still on this thread, so that the closeable returned by {@link #resumeInternal} is safe to close after
+     * {@link #endQuery} or {@link #suspendQuery}, and cannot disturb a later installation.
+     */
+    private synchronized void uninstall(final int forInstallation) {
+        if (forInstallation != installation || QueryPerformanceRecorderState.getInstance() != this) {
+            return;
+        }
+        final QueryPerformanceRecorder outer = outerInstance;
+        outerInstance = null;
         QueryPerformanceRecorderState.resetInstance();
+        if (outer != null) {
+            QueryPerformanceRecorderState.setInstance(outer);
+            if (outer instanceof QueryPerformanceRecorderImpl) {
+                ((QueryPerformanceRecorderImpl) outer).onNestedQueryEnd();
+            }
+        }
+    }
+
+    /**
+     * Pauses this query's accruing entry while another query runs on top of it on this thread. An aborted query stays
+     * installed until its scope closes, with its entries already closed, so there is nothing to pause for it.
+     */
+    private synchronized void onNestedQueryBegin() {
+        if (state == QueryState.INTERRUPTED) {
+            return;
+        }
+        Assert.eq(state, "state", QueryState.RUNNING, "QueryState.RUNNING");
+        Assert.eqFalse(pausedForNestedQuery, "pausedForNestedQuery");
+        pausedForNestedQuery = true;
+        accruingEntry().onBaseEntryEnd();
+    }
+
+    /**
+     * Resumes this query's accruing entry once the query that was running on top of it has handed the thread back,
+     * unless this query was aborted meanwhile, which already closed the entry.
+     */
+    private synchronized void onNestedQueryEnd() {
+        if (!pausedForNestedQuery) {
+            return;
+        }
+        resumeAccruingEntry();
+    }
+
+    private void resumeAccruingEntry() {
+        pausedForNestedQuery = false;
+        accruingEntry().onBaseEntryStart();
+    }
+
+    /** The entry currently charged for this query's time: the catch-all, or else the innermost open user nugget. */
+    private QueryPerformanceNugget accruingEntry() {
+        return catchAllNugget != null ? catchAllNugget : userNuggetStack.peekLast();
     }
 
     /**
      * Resumes a suspend query.
      * <p>
-     * It is an error to resume a query while another query is running on this thread.
+     * The query may be resumed on a thread that is already running another query; that outer query gets the thread back
+     * as soon as this one ends or suspends.
      *
-     * @return this
+     * @return a closeable that restores the query that was running on this thread before, if any
      */
     public synchronized SafeCloseable resumeQuery() {
         if (state != QueryState.SUSPENDED) {
             throw new IllegalStateException("Can't resume a query that isn't suspended");
         }
 
-        return resumeInternal();
+        return resumeInternal(true);
     }
 
-    private SafeCloseable resumeInternal() {
-        final QueryPerformanceRecorder threadLocalInstance = QueryPerformanceRecorderState.getInstance();
-        if (threadLocalInstance != QueryPerformanceRecorderState.DUMMY_RECORDER) {
-            throw new IllegalStateException("Can't resume a query while another query is in operation");
+    /**
+     * Installs this recorder on the current thread and marks the query running.
+     *
+     * @param allowNesting whether this query may take over a thread that is already running another query: a resumed
+     *        query may, a newly started one may not
+     * @return a closeable that hands the thread back to the query that was running before, if any
+     */
+    private SafeCloseable resumeInternal(final boolean allowNesting) {
+        final QueryPerformanceRecorder current = QueryPerformanceRecorderState.getInstance();
+        // an installed query is RUNNING, and only a NOT_STARTED or SUSPENDED one gets here; handing the thread back
+        // to ourselves would otherwise leave it owned forever
+        Assert.neq(current, "current", this, "this");
+        if (!allowNesting && current != QueryPerformanceRecorderState.DUMMY_RECORDER) {
+            throw new IllegalStateException("Can't start a query while another query is in operation");
         }
-        QueryPerformanceRecorderState.THE_LOCAL.set(this);
+        outerInstance = current == QueryPerformanceRecorderState.DUMMY_RECORDER ? null : current;
+        if (outerInstance instanceof QueryPerformanceRecorderImpl) {
+            ((QueryPerformanceRecorderImpl) outerInstance).onNestedQueryBegin();
+        }
+        final int thisInstallation = ++installation;
+        QueryPerformanceRecorderState.setInstance(this);
 
         queryNugget.onBaseEntryStart();
         state = QueryState.RUNNING;
         Assert.eqNull(catchAllNugget, "catchAllNugget");
         startCatchAll();
 
-        return QueryPerformanceRecorderState::resetInstance;
+        // ending or suspending the query hands the thread back itself; this covers an exit without either
+        return () -> uninstall(thisInstallation);
     }
 
     private void startCatchAll() {

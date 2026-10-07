@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ByteNoExactReverseStampKernel and run "./gradlew replicateStampKernel" to regenerate
+// ****** Edit CharNoExactStampKernel and run "./gradlew replicateStampKernel" to regenerate
 //
 // @formatter:off
 
@@ -12,6 +12,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.ByteComparisons;
 
 
 public class ByteNoExactReverseStampKernel implements StampKernel {
@@ -80,7 +81,7 @@ public class ByteNoExactReverseStampKernel implements StampKernel {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(byte lhs, byte rhs) {
-        return -1 * Byte.compare(lhs, rhs);
+        return -1 * ByteComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -94,7 +95,7 @@ public class ByteNoExactReverseStampKernel implements StampKernel {
 
     private static boolean eq(byte lhs, byte rhs) {
         // region equality function
-        return lhs == rhs;
+        return ByteComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }
