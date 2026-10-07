@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.api.RawString;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.DataIndexOptions;
@@ -19,6 +20,7 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.junit.Rule;
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
@@ -155,6 +158,134 @@ public class DataIndexPushdownManagerTest {
             assertThat(context.executedFilterCost()).isEqualTo(1234L);
             assertThat(wrappedContext.executedFilterCost()).isEqualTo(1234L);
         }
+    }
+
+    /**
+     * A matcher that reports every row as a maybe match, recording each result it hands out; it fails its call number
+     * {@code failingCall}, counting from zero, if that is set.
+     */
+    private static final class ResultRecordingMatcher implements PushdownFilterMatcher {
+        final List<PushdownResult> results = new ArrayList<>();
+        int failingCall = -1;
+        int calls;
+
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            if (calls++ == failingCall) {
+                onError.accept(new IllegalStateException("injected pushdown failure"));
+                return;
+            }
+            final PushdownResult result = PushdownResult.allMaybeMatch(selection);
+            results.add(result);
+            onComplete.accept(result);
+        }
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            return new BasePushdownFilterContextImpl(filter, filterSources);
+        }
+    }
+
+    private static PushdownResult pushdown(
+            final PushdownFilterMatcher matcher,
+            final WhereFilter filter,
+            final List<ColumnSource<?>> sources,
+            final RowSet selection) {
+        final AtomicReference<PushdownResult> delivered = new AtomicReference<>();
+        try (final PushdownFilterContext context = matcher.makePushdownFilterContext(filter, sources)) {
+            matcher.pushdownFilter(filter, selection, false, context, Long.MAX_VALUE, new ImmediateJobScheduler(),
+                    delivered::set, e -> {
+                        throw new AssertionError(e);
+                    });
+        }
+        assertNotNull("the pushdown must deliver a result", delivered.get());
+        return delivered.get();
+    }
+
+    private static void assertClosed(final PushdownResult result) {
+        assertThat(((WritableRowSetImpl) result.match()).getInnerSet()).as("match closed").isNull();
+        assertThat(((WritableRowSetImpl) result.maybeMatch()).getInnerSet()).as("maybeMatch closed").isNull();
+    }
+
+    /**
+     * When the selection is large enough to use the index, the wrapped matcher's result feeds the index filter and must
+     * then be closed.
+     */
+    @Test
+    public void wrappedResultClosedWhenIndexUsed() {
+        final Table table = indexedTable();
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final WhereFilter filter = initializedFilter(table, "A == 5");
+        final List<ColumnSource<?>> sources = List.of(table.getColumnSource("A"));
+
+        final ResultRecordingMatcher wrapped = new ResultRecordingMatcher();
+        final PushdownFilterMatcher matcher = DataIndexPushdownManager.wrap(dataIndex, wrapped);
+
+        try (final PushdownResult result = pushdown(matcher, filter, sources, table.getRowSet())) {
+            assertThat(result.match().size()).isEqualTo(10);
+            assertThat(result.maybeMatch().isEmpty()).isTrue();
+        }
+        assertThat(wrapped.results).hasSize(1);
+        assertClosed(wrapped.results.get(0));
+    }
+
+    /**
+     * When the selection is too small to use the index, the wrapped matcher runs again on the first result's maybe
+     * rows; the first result must be closed, and the second is the one delivered.
+     */
+    @Test
+    public void wrappedResultClosedWhenIndexSkipped() {
+        final Table table = indexedTable();
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final WhereFilter filter = initializedFilter(table, "A == 5");
+        final List<ColumnSource<?>> sources = List.of(table.getColumnSource("A"));
+
+        final ResultRecordingMatcher wrapped = new ResultRecordingMatcher();
+        final PushdownFilterMatcher matcher = DataIndexPushdownManager.wrap(dataIndex, wrapped);
+
+        try (final RowSet selection = RowSetFactory.flat(100);
+                final PushdownResult result = pushdown(matcher, filter, sources, selection)) {
+            assertThat(wrapped.results).hasSize(2);
+            assertThat(result).isSameAs(wrapped.results.get(1));
+        }
+        assertClosed(wrapped.results.get(0));
+    }
+
+    /**
+     * When the second round of the wrapped matcher fails, the first round's result must still be closed.
+     */
+    @Test
+    public void wrappedResultClosedWhenSecondPushdownFails() {
+        final Table table = indexedTable();
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
+        final WhereFilter filter = initializedFilter(table, "A == 5");
+        final List<ColumnSource<?>> sources = List.of(table.getColumnSource("A"));
+
+        final ResultRecordingMatcher wrapped = new ResultRecordingMatcher();
+        wrapped.failingCall = 1;
+        final PushdownFilterMatcher matcher = DataIndexPushdownManager.wrap(dataIndex, wrapped);
+
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        try (final RowSet selection = RowSetFactory.flat(100);
+                final PushdownFilterContext context = matcher.makePushdownFilterContext(filter, sources)) {
+            matcher.pushdownFilter(filter, selection, false, context, Long.MAX_VALUE, new ImmediateJobScheduler(),
+                    result -> {
+                        throw new AssertionError("the pushdown must fail");
+                    }, error::set);
+        }
+        assertThat(error.get()).hasMessage("injected pushdown failure");
+        assertThat(wrapped.results).hasSize(1);
+        assertClosed(wrapped.results.get(0));
     }
 
     /**

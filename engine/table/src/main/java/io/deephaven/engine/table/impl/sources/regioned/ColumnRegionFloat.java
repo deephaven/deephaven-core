@@ -12,7 +12,6 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.PagingContextHolder;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -160,11 +159,11 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
             if (matches) {
                 // Promote all maybe rows to match.
                 try (final RowSet allMatch = input.match().union(input.maybeMatch())) {
-                    return PushdownResult.of(selection, allMatch, RowSetFactory.empty());
+                    return PushdownResult.exactMatch(selection, allMatch);
                 }
             }
             // None of these rows match, return the original match rows.
-            return PushdownResult.of(selection, input.match(), RowSetFactory.empty());
+            return PushdownResult.exactMatch(selection, input.match());
         }
     }
 
