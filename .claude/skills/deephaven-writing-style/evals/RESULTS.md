@@ -90,3 +90,5 @@ Iteration D: the rule now treats hard-to-read sentences as the defect and punctu
 Iteration E: the rule now calls punctuation a clue to inspect rather than evidence of a defect by itself, and the rewrite ban covers parenthetical asides (review follow-up). Eval 3 scored 29/30 (new skill only, 3 runs, graded blind). The one miss is a rewrite that kept the acronym expansion "(global interpreter lock)" in parentheses, the same miss seen in earlier iterations.
 
 Grader note: the recurring eval 3 miss ("(global interpreter lock)" kept in a rewrite) defines the acronym GIL on first use, which the skill requires, so it is not a parenthetical aside. Expectation 7 now says so. Earlier scores for that expectation were graded under the stricter wording, so treat those misses as a strict grader call; I haven't re-graded them.
+
+Wording note: eval 4 expectation 1 now requires the flag on the section's opening paragraph (the first mention), not a later bullet. Re-graded on the new wording, the scores are unchanged (new 3/3, baseline 0/3, and 3/3 for iteration 2).

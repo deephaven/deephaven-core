@@ -59,7 +59,7 @@
         "../eval-fixtures/parallelization-609b-chip-round2.md"
       ],
       "expectations": [
-        "Flags `with_serial` in the section's opening paragraph or its 'with_serial vs. barriers' bullets as unlinked, even though the page's opening callout already links it, and gives the link target (Selectable.md#with_serial or the update.md serial-execution anchor)",
+        "Flags `with_serial` in the section's opening paragraph (its first mention in the section) as unlinked, even though the page's opening callout already links it, and gives the link target (Selectable.md#with_serial or the update.md serial-execution anchor)",
         "Flags `select` and `update` in the Selectable bullet and `where` in the Filter bullet as unlinked in the section and gives their reference-page targets",
         "States the rule as linking the first mention of an identifier within each major section (or equivalent: readers who land on a section from its heading should find the links there), not only the first mention in the whole file",
         "Does not ask for every later occurrence of an identifier to be linked (no 'link all N mentions of with_serial' recommendation)",
