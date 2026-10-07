@@ -266,7 +266,7 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
   - `LZ4`: **Deprecated.** Use `LZ4_RAW` instead.
 - `max_dictionary_keys`: The maximum number of unique keys the writer should add to a dictionary page before switching to non-dictionary encoding. This is never evaluated for non-string columns. Defaults to 2^20 (1,048,576).
 - `max_dictionary_size`: The maximum number of bytes the writer should add to the dictionary before switching to non-dictionary encoding. This is never evaluated for non-string columns. Defaults to 2^20 (1,048,576).
-- `target_page_size`: The target page size in bytes. Defaults to 2^20 bytes (1 MiB).
+- `target_page_size`: The target page size in bytes. Defaults to 65536 bytes (64 KiB), which you can change with the `Parquet.defaultTargetPageSize` [configuration property](../configuration/configuration-properties.md).
 - `generate_metadata_files`: Whether to generate Parquet `_metadata` and `_common_metadata` files. Defaults to `False`.
 - `row_group_info`: Sets the Row Group type used for writing. Available Row Group types are:
   - `RowGroupInfo.single_group()`: All data is within a single Row Group. This is the default `RowGroupInfo` implementation.

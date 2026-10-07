@@ -76,7 +76,7 @@ After a bit more browsing, we switch to a graphical view for more perspective. W
 svc_use_last4months = svc_use.where(filters=["Date > `2021-05-01`"])
 ```
 
-With the panel for this new table selected, we click on **Table Options** and pick [**Chart Builder**](./user-interface/chart-builder.md) from the menu. A simple line chart will do for now. From the graph, we realize the data has marked seasonality; we believe it may follow a “time of the day - day of the week” pattern. To confirm our guess, we define a derived table adding a few columns:
+With the panel for this new table selected, we click on **Table Options** and pick [**Chart Builder**](./user-interface/chart-builder.md) from the menu. A simple line chart will do for now. From the graph, we realize the data has marked seasonality; we believe it may follow a "time of day, day of week" pattern. To confirm our guess, we define a derived table adding a few columns:
 
 ```python skip-test
 def secs(ts) -> int:

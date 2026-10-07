@@ -258,7 +258,7 @@ The `special_instructions` argument to [`parquet.read`](/core/pydoc/code/deephav
 - `max_concurrent_requests`: The maximum number of concurrent requests to make to S3. The default is 256.
 - `connection_timeout`: Time to wait for a successful S3 connection before timing out. The default is 2 seconds.
 - `write_part_size`: The part size when writing to S3. The default is 10 MiB.
-- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently when writing to S3. The default is 64.
+- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently when writing to S3. The default is 64. This value cannot exceed `max_concurrent_requests`.
 - `profile_name`: The AWS profile name used to configure the default region, credentials, and so on.
 - `config_file_path`: The path to the AWS configuration file.
 - `credentials_file_path`: The path to the AWS credentials file.
