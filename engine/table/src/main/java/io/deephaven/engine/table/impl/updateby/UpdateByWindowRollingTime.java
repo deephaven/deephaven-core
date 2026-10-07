@@ -18,6 +18,7 @@ import io.deephaven.engine.table.iterators.LongColumnIterator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.stream.IntStream;
 
@@ -31,6 +32,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
     private static final int RING_BUFFER_INITIAL_SIZE = 128;
+
+    /** Whether any operator stores its windows as offsets from the row's position among the timestamp-valid rows. */
+    private final boolean operatorsRequirePositions;
 
     public static class UpdateByWindowTimeBucketContext extends UpdateByWindowRollingBucketContext {
         public UpdateByWindowTimeBucketContext(final TrackingRowSet sourceRowSet,
@@ -53,6 +57,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
             long prevUnits,
             long fwdUnits) {
         super(operators, operatorSourceSlots, prevUnits, fwdUnits, timestampColumnName);
+        operatorsRequirePositions = Arrays.stream(operators).anyMatch(UpdateByOperator::requiresRowPositions);
     }
 
     @Override
@@ -194,9 +199,16 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
 
             // consider the modifications only when input or timestamp columns were modified
             if (upstream.modified().isNonempty() && (ctx.timestampsModified || ctx.inputModified)) {
+                // A timestamp modified to or from null shifts the positions of later rows, so operators that store
+                // windows as position offsets must cascade like an add or remove. Math.max corrects the search for
+                // forward-only or backward-only windows.
+                final boolean cascade = ctx.timestampsModified && operatorsRequirePositions;
+                final long modPrev = cascade ? Math.max(0, prevUnits) : prevUnits;
+                final long modFwd = cascade ? Math.max(0, fwdUnits) : fwdUnits;
+
                 // recompute all windows that have the modified rows in their window
                 try (final WritableRowSet modifiedAffected =
-                        computeAffectedRowsTime(ctx, tsContext, upstream.modified(), prevUnits, fwdUnits, false)) {
+                        computeAffectedRowsTime(ctx, tsContext, upstream.modified(), modPrev, modFwd, false)) {
                     tmpAffected.subsume(modifiedAffected);
                 }
 
@@ -204,7 +216,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                     // recompute all windows previously containing the modified rows
                     // after the timestamp modifications
                     try (final WritableRowSet modifiedAffectedPrev =
-                            computeAffectedRowsTime(ctx, tsContext, upstream.getModifiedPreShift(), prevUnits, fwdUnits,
+                            computeAffectedRowsTime(ctx, tsContext, upstream.getModifiedPreShift(), modPrev, modFwd,
                                     true)) {
                         // we used the SSA (post-shift) to get these keys, no need to shift
                         // retain only the rows that still exist in the sourceRowSet

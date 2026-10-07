@@ -19,7 +19,9 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGeneratorWithNulls;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.*;
@@ -1145,6 +1147,77 @@ public class TestRollingGroup extends BaseUpdateByTest {
         for (String col : t.getDefinition().getColumnNamesArray()) {
             assertWithRollingGroupTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
                     summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
+        }
+    }
+
+    @Test
+    public void testStaticTimedNullTimestamp() {
+        final Instant baseTime = DateTimeUtils.parseInstant("2025-01-01T09:30:00 NY");
+        final Table table = TableTools.newTable(
+                TableTools.col("Sym", "a", "b", "a", "a"),
+                TableTools.instantCol("ts", baseTime, baseTime.plusSeconds(10), baseTime.plusSeconds(20), null),
+                intCol("x", 1, 2, 3, 9));
+        final UpdateByOperation op = UpdateByOperation.RollingGroup("ts", Duration.ofSeconds(15), Duration.ZERO, "x");
+
+        assertIntVectors(new int[][] {{1}, {2}, {3}, null}, table.updateBy(op, "Sym"));
+        assertIntVectors(new int[][] {{1}, {1, 2}, {2, 3}, null}, table.updateBy(op));
+    }
+
+    private static void assertIntVectors(final int[][] expected, final Table result) {
+        final IntVector[] actual = ColumnVectors.ofObject(result, "x", IntVector.class).toArray();
+        Assert.eq(actual.length, "actual.length", expected.length, "expected.length");
+        for (int ii = 0; ii < expected.length; ii++) {
+            if (expected[ii] == null) {
+                Assert.eqNull(actual[ii], "actual[" + ii + "]");
+            } else {
+                assertArrayEquals("row " + ii, expected[ii], actual[ii].toArray());
+            }
+        }
+    }
+
+    @Test
+    public void testZeroKeyTickingTimedNullTimestamps() {
+        doTestTickingTimedNullTimestamps(false, false);
+    }
+
+    @Test
+    public void testBucketedTickingTimedNullTimestamps() {
+        doTestTickingTimedNullTimestamps(true, false);
+    }
+
+    @Test
+    public void testBucketedTickingTimedNullTimestampsRedirected() {
+        doTestTickingTimedNullTimestamps(true, true);
+    }
+
+    private void doTestTickingTimedNullTimestamps(final boolean bucketed, final boolean redirected) {
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGeneratorWithNulls(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"),
+                        0.25)});
+        final QueryTable t = result.t;
+
+        final UpdateByControl control = UpdateByControl.builder().useRedirection(redirected).build();
+        final List<UpdateByOperation> ops = List.of(
+                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ZERO, columns),
+                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(-2), Duration.ofMinutes(5),
+                        Arrays.stream(columns).map(col -> col + "Fwd=" + col).toArray(String[]::new)));
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return bucketed
+                                ? t.updateBy(control, ops, ColumnName.from("Sym"))
+                                : t.updateBy(control, ops);
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
+            simulateShiftAwareStep(DYNAMIC_UPDATE_SIZE, billy, t, result.infos, nuggets);
         }
     }
 
