@@ -28,7 +28,7 @@ This guide covers the installation and use of pre-built plugins. For information
 
 First, follow the [Launch Deephaven from pre-built images](../getting-started/docker-install.md) steps from the Docker install guide.
 
-The `server-slim` image runs a Groovy console. The following Dockerfile provides a template for installing JS plugins in that image:
+The `server-slim` image runs a Groovy console. To add JS plugins to it, build a custom image in two stages: the first stage uses the `web-plugin-packager` image to download plugins from npm, and the second copies them into `server-slim`. The following Dockerfile is the general template; replace `<plugins>` with one or more npm package names, separated by spaces:
 
 ```docker title="Dockerfile"
 FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
@@ -42,27 +42,51 @@ COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 
 For more about JS plugin packaging and configuration, see [Configure JS plugins](./configuration/js-plugins.md). Server-side components of a plugin are Java libraries; to add them to the server's classpath, see [Install and use Java packages](./install-and-use-java-packages.md).
 
-You can use Docker to build and run the image:
+#### Example: install the theme pack
 
-```bash
-docker build -t my-deephaven-image .
-docker run --rm -p 10000:10000 my-deephaven-image
-```
+The [theme pack](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/theme-pack) plugin adds UI themes such as Dracula, Night Owl, and Solarized Dark to the Deephaven IDE. It is a JS-only plugin, so it works with a Groovy server without any server-side component.
 
-If you are using [Docker Compose](https://docs.docker.com/compose/), modify the `docker-compose.yml` file to build from a Dockerfile rather than pull the image from the registry:
+1. Create a directory for your deployment and save the following as `Dockerfile` in it:
 
-```yaml title="docker-compose.yml"
-services:
-  deephaven:
-    build:
-      context: .
-```
+   ```docker title="Dockerfile"
+   FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
+   RUN ./pack-plugins.sh @deephaven/js-plugin-theme-pack
 
-From there, you can build and run with a single command:
+   FROM ghcr.io/deephaven/server-slim:latest
+   COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
+   ```
 
-```bash
-docker compose up
-```
+2. Build the image and run it:
+
+   ```bash
+   docker build -t deephaven-groovy-themes .
+   docker run --rm -p 10000:10000 deephaven-groovy-themes
+   ```
+
+   If you use [Docker Compose](https://docs.docker.com/compose/), save the following as `docker-compose.yml` in the same directory, and run `docker compose up --build` instead:
+
+   ```yaml title="docker-compose.yml"
+   services:
+     deephaven:
+       build:
+         context: .
+       ports:
+         - "10000:10000"
+       volumes:
+         - ./data:/data
+   ```
+
+3. Confirm that the server loaded the plugin. The server lists its JS plugins at `http://localhost:10000/js-plugins/manifest.json`:
+
+   ```bash
+   curl http://localhost:10000/js-plugins/manifest.json
+   ```
+
+   The output includes `@deephaven/js-plugin-theme-pack`.
+
+4. Open the IDE at `http://localhost:10000/ide`, log in with the pre-shared key printed in the server log, and pick one of the new themes from the theme selector in the top right corner of the app or from the **Settings** menu.
+
+To install other JS plugins, list their npm package names in the `pack-plugins.sh` command.
 
 ## Available plugins
 
