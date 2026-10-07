@@ -25,6 +25,8 @@ import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateMana
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.TypedKeyIdFactory;
 import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.TypedMultiJoinFactory;
@@ -325,6 +327,19 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::incrementalShiftLeftFound,
                     TypedNaturalJoinFactory::incrementalShiftLeftMissing,
                     modifiedSlotTrackerParam));
+        } else if (baseClass.equals(KeyIdHasherTypedBase.class)) {
+            builder.classPrefix("KeyIdHasher").packageGroup("join").packageMiddle("keyid")
+                    .openAddressedAlternate(false)
+                    .stateType(int.class).mainStateName("mainId")
+                    .emptyStateName("EMPTY_ID")
+                    .includeOriginalSources(false)
+                    .supportRehash(true);
+
+            builder.addBuild(new HasherConfig.BuildSpec("build", "idValue", false, false, false,
+                    TypedKeyIdFactory::found, TypedKeyIdFactory::insert, keyIdsParam()));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
+                    TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam()));
         } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -491,6 +506,12 @@ public class TypedHasherFactory {
         return builder.build();
     }
 
+    private static ParameterSpec keyIdsParam() {
+        return ParameterSpec.builder(
+                ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), ClassName.get(Values.class)),
+                "ids").build();
+    }
+
     private static <T> void configureAggregation(HasherConfig.Builder<T> builder) {
         builder.packageGroup("by");
         builder.stateType(int.class);
@@ -527,6 +548,13 @@ public class TypedHasherFactory {
                     .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenagg.gen.TypedHashDispatcher
+                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass.equals(KeyIdHasherTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.join.typed.keyid.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
