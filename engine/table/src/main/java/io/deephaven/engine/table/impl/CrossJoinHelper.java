@@ -163,8 +163,6 @@ public class CrossJoinHelper {
                     final StaticChunkedCrossJoinStateManager jsm = new StaticChunkedCrossJoinStateManager(
                             bucketingContext.leftSources, control.initialBuildSize(), control, leftTable,
                             leftOuterJoin);
-                    jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
-                    jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
                     // noinspection resource
                     final WritableRowSet resultRowSet = bucketingContext.buildParameters.firstBuildFrom() == LeftInput

@@ -357,7 +357,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             cardinality[i] = i * i;
         }
         testStaticJoin(types, cardinality, types.length, types.length, false, false,
-                TestJoinControl.OVERFLOW_JOIN_CONTROL);
+                TestJoinControl.SMALL_TABLE_JOIN_CONTROL);
     }
 
     // generate a table such that all pairs of types exist and are part of the cross-join
@@ -605,12 +605,12 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
             @Override
             double getMaximumLoadFactor() {
-                return 20;
+                return 0.95;
             }
 
             @Override
             double getTargetLoadFactor() {
-                return 19;
+                return 0.9;
             }
         };
 
@@ -765,12 +765,12 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
             @Override
             double getMaximumLoadFactor() {
-                return 20;
+                return 0.95;
             }
 
             @Override
             double getTargetLoadFactor() {
-                return 19;
+                return 0.9;
             }
         };
 

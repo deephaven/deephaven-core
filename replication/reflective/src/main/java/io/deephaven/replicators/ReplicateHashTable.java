@@ -84,11 +84,6 @@ public class ReplicateHashTable {
                 SOURCE,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/RightIncrementalChunkedCrossJoinStateManager.java",
                 allowMissingDestinations, Arrays.asList("allowUpdateWriteThroughState"));
-        // Left-Only-Incremental Cross Join -> Static Cross Join
-        doReplicate(
-                SOURCE,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/StaticChunkedCrossJoinStateManager.java",
-                allowMissingDestinations, Arrays.asList("prev"));
     }
 
     private static class RegionedFile {
