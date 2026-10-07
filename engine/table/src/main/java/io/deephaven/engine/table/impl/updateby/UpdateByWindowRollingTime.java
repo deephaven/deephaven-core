@@ -18,6 +18,7 @@ import io.deephaven.engine.table.iterators.LongColumnIterator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.stream.IntStream;
 
@@ -31,6 +32,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
     private static final int RING_BUFFER_INITIAL_SIZE = 128;
+
+    /** Whether any operator stores its windows as offsets from the row's position among the timestamp-valid rows. */
+    private final boolean operatorsRequirePositions;
 
     public static class UpdateByWindowTimeBucketContext extends UpdateByWindowRollingBucketContext {
         public UpdateByWindowTimeBucketContext(final TrackingRowSet sourceRowSet,
@@ -53,6 +57,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
             long prevUnits,
             long fwdUnits) {
         super(operators, operatorSourceSlots, prevUnits, fwdUnits, timestampColumnName);
+        operatorsRequirePositions = Arrays.stream(operators).anyMatch(UpdateByOperator::requiresRowPositions);
     }
 
     @Override
@@ -194,10 +199,12 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
 
             // consider the modifications only when input or timestamp columns were modified
             if (upstream.modified().isNonempty() && (ctx.timestampsModified || ctx.inputModified)) {
-                // A timestamp modified to or from null inserts or removes the row from the timestamp-valid rows, so
-                // like an add or remove it can cascade to the rows between it and their windows.
-                final long modPrev = ctx.timestampsModified ? Math.max(0, prevUnits) : prevUnits;
-                final long modFwd = ctx.timestampsModified ? Math.max(0, fwdUnits) : fwdUnits;
+                // A timestamp modified to or from null inserts or removes the row from the timestamp-valid rows, which
+                // changes the positions between nearby rows and their windows. Only operators that store windows as
+                // position offsets depend on those, so only for them does the change cascade like an add or remove.
+                final boolean cascade = ctx.timestampsModified && operatorsRequirePositions;
+                final long modPrev = cascade ? Math.max(0, prevUnits) : prevUnits;
+                final long modFwd = cascade ? Math.max(0, fwdUnits) : fwdUnits;
 
                 // recompute all windows that have the modified rows in their window
                 try (final WritableRowSet modifiedAffected =
