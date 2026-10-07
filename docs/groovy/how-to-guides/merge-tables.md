@@ -55,7 +55,7 @@ t = mergeSorted(keyColumn, tables)
 Where `keyColumn` is the column by which to sort the merged table, and `tables` are the source tables.
 
 > [!NOTE]
-> Each input table must already be sorted by the key column, or the results are undefined. `mergeSorted` does not support refreshing (ticking) tables.
+> Each input table must already be sorted by the key column in ascending order, or the results are undefined. `mergeSorted` does not support refreshing (ticking) tables.
 
 Let's merge our three tables and sort by `Number` with [`mergeSorted`](../reference/table-operations/merge/merge-sorted.md).
 

@@ -53,7 +53,7 @@ t = merge_sorted(tables: List[Table], order_by: str)
 ```
 
 > [!NOTE]
-> Each input table must already be sorted by the key column, or the results are undefined. `merge_sorted` does not support refreshing (ticking) tables.
+> Each input table must already be sorted by the key column in ascending order, or the results are undefined. `merge_sorted` does not support refreshing (ticking) tables.
 
 Let's merge our three tables and sort by `Number` with [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md).
 
