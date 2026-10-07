@@ -146,7 +146,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
     private static void checkEcho(EchoHandler handler, MessageStream<ClientData> toServer, HasTypedTicket tt,
             int times) throws InterruptedException {
         // Ensure we get a message back right away.
-        check(handler.queue.poll(5, TimeUnit.SECONDS), 0);
+        check(handler.take(), 0);
 
         // We'll send all of our messages first
         for (int i = 1; i < times; ++i) {
@@ -157,7 +157,7 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
 
         // Then check we got the correct messages back
         for (int i = 1; i < times; ++i) {
-            check(handler.queue.poll(5, TimeUnit.SECONDS), i);
+            check(handler.take(), i);
         }
 
         toServer.onClose();
@@ -165,7 +165,14 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
     }
 
     private static class EchoHandler implements MessageStream<ServerData> {
-        final BlockingQueue<ServerData> queue = new ArrayBlockingQueue<>(32);
+        /**
+         * Enqueued by {@link #onClose()} so that {@link #take()} wakes immediately. A failed stream reaches the client
+         * as an ordinary close, so without this a caller awaiting a reply that can no longer arrive waits out the full
+         * timeout and then reports only that it got nothing.
+         */
+        private static final Object CLOSED = new Object();
+
+        final BlockingQueue<Object> queue = new ArrayBlockingQueue<>(32);
         final CountDownLatch onClose = new CountDownLatch(1);
 
         @Override
@@ -175,7 +182,19 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
 
         @Override
         public void onClose() {
+            queue.add(CLOSED);
             onClose.countDown();
+        }
+
+        /**
+         * @return the next message from the server; fails rather than waiting if the stream closed first
+         */
+        ServerData take() throws InterruptedException {
+            final Object next = queue.poll(5, TimeUnit.SECONDS);
+            assertThat(next).withFailMessage("timed out waiting for a message from the server").isNotNull();
+            assertThat(next).withFailMessage("server closed the stream while a message was expected")
+                    .isNotSameAs(CLOSED);
+            return (ServerData) next;
         }
     }
 
@@ -203,7 +222,6 @@ public class ObjectServiceTest extends DeephavenSessionTestBase {
     }
 
     private static void check(ServerData data, int index) {
-        assertThat(data).isNotNull();
         try (final ServerData _close = data) {
             assertThat(data.data().remaining()).isEqualTo(index);
             assertThat(data.exports().size()).isEqualTo(index);
