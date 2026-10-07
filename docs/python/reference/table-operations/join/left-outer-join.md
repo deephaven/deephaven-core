@@ -2,7 +2,7 @@
 title: left_outer_join
 ---
 
-`left_outer_join` joins data from a pair of tables - a left table and a right table - based upon one or more match columns. The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys.
+`left_outer_join` joins data from a pair of tables - a left table and a right table - based upon one or more match columns. The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys (custom objects must implement consistent equality and hashCode).
 
 The resultant table contains all rows from the left table (the first given) as well as rows from the right table that have matching keys in the identifier column(s).
 

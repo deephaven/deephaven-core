@@ -2,7 +2,7 @@
 title: fullOuterJoin
 ---
 
-`fullOuterJoin` joins data from a pair of tables - a left table and a right table - based upon one or more match columns (`columnsToMatch`). The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys.
+`fullOuterJoin` joins data from a pair of tables - a left table and a right table - based upon one or more match columns (`columnsToMatch`). The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys (custom objects must implement consistent equality and hashCode).
 
 The resultant table contains all rows from both tables that exist in the key identifier columns. Cells that exist in one table but not the other are filled with null values in the result.
 
