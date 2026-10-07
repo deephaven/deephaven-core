@@ -229,7 +229,21 @@ To see the current date and time on your system, run the following:
 println now()
 ```
 
-This prints the current time as an ISO-8601 string in UTC, such as `2021-09-09T15:58:41.041Z`. Instants always print in UTC, with a trailing `Z`. To show a value in a specific time zone, use [`formatDateTime`](../reference/time/datetime/formatDateTime.md).
+This prints the current time as an ISO-8601 string in UTC, such as `2021-09-09T15:58:41.041Z`. The format consists of the following fields:
+
+`yyyy-MM-ddTHH:mm:ss.fffZ`
+
+- `yyyy` - the year
+- `MM` - the month
+- `dd` - the day
+- `T` - the separator between the date and time
+- `HH` - the hour of the day, from 00 to 23
+- `mm` - the minute of the hour
+- `ss` - the second of the minute
+- `fff` - the fraction of a second, printed with 3, 6, or 9 digits as needed, or omitted when it is zero
+- `Z` - the time zone indicator for UTC
+
+Instants always print in UTC. To show a value in a specific time zone, use [`formatDateTime`](../reference/time/datetime/formatDateTime.md).
 
 Deephaven stores [dates-times](../reference/query-language/types/date-time.md) using the [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) class. Internally, this stores the date-time as a signed 64-bit long, which contains the number of nanoseconds since the Unix epoch (January 1, 1970, 00:00:00 GMT). You can create these directly (like in the code [above](#specific-date-times)) and use dates and times directly in the query language, including adding and subtracting them.
 
