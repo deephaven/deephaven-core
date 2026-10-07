@@ -57,3 +57,34 @@ Most users don't need to change this setting — see [Configuration](#configurat
 ## Configuration
 
 Parallelization needs no configuration. These properties tune it; defaults and full descriptions are in [Query table configuration](../query-table-configuration.md).
+
+<!-- excerpt gap: text between these passages omitted -->
+
+The three mechanisms above apply to operations that compute and store their results when they run:
+
+- Column calculations in [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md).
+- Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
+- [`sort`](../../reference/table-operations/sort/sort.md), once the table is large enough to be worth splitting.
+
+<!-- excerpt gap: text between these passages omitted -->
+
+To fix this, create a `Selectable` object and apply `with_serial`:
+
+```python order=result
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+counter = 0
+
+
+def get_and_increment_counter() -> int:
+    global counter
+    ret = counter
+    counter += 1
+    return ret
+
+
+# Force serial execution - rows processed one at a time, in order
+col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
+result = empty_table(5_000_000).update(col)
+```

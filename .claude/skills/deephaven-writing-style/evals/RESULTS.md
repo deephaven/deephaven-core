@@ -62,3 +62,15 @@ Baseline here is iteration 1 of the new skill, 3 runs each, graded blind.
 The link-target expectation in eval 4 went from 1/3 to 3/3. The remaining miss in eval 3 is the implicit-barriers opener, where one run flagged the paragraph but proposed no split in both iterations.
 
 Fixture note: after review, a stray closing fence was removed from `awk-excerpt.md` and the opening fence was added to the code block in `column-names-excerpt.md`. Evals 3 and 6 were run on the earlier, unbalanced versions (the reviewers read the raw text), so a re-run on the corrected files would confirm the scores.
+
+### Eval 3 negative controls (review follow-up)
+
+Copilot's review pointed out that only the bold-label exemption had a negative control. Eval 3 now has a tenth expectation covering the other exemptions: a colon introducing a list, a colon introducing a code block, and a single dash before a pointer. These ran 3 times per iteration on the new skill only (no baseline), graded blind.
+
+| Iteration | Change | Eval 3 (10 expectations) |
+| --- | --- | --- |
+| A | Control used a sentence with a dash and a colon | 28/30 (control 2/3) |
+| B | Em-dash rule reworded to agree with the colon exemption | 27/30 (control 1/3) |
+| C | Control passages replaced with one-purpose sentences | 30/30 |
+
+In iterations A and B, reviewers flagged the control sentence because it contained both a dash and a colon, which the skill's own em-dash rule allows to be questioned. The em-dash wording now says a colon that introduces a list or code block doesn't count, and the control passages each test one exemption.
