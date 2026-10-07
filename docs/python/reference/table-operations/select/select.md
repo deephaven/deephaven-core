@@ -20,13 +20,13 @@ When using `select`, the entire requested dataset is evaluated and stored in mem
 ## Syntax
 
 ```
-select(formulas: Union[str, Sequence[str]]) -> Table
+select(formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="Union[str, Sequence[str], Selectable, Sequence[Selectable]]">
 
 Formulas to compute columns in the new table:
 
@@ -34,6 +34,7 @@ Formulas to compute columns in the new table:
 - Column from `table`: `"A"` (equivalent to `"A = A"`)
 - Renamed column from `table`: `"X = A"`
 - Calculated column: `"X = A * sqrt(B)"`
+- A [`Selectable`](../../query-language/types/Selectable.md): the same formula plus concurrency controls such as [`with_serial`](../../query-language/types/Selectable.md#with_serial)
 
 </Param>
 </ParamTable>
