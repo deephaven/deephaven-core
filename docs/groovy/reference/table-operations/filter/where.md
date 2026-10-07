@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine does not guarantee it evaluates filters in argument order: when the data source supports pushdown for a stateless filter (the default), the engine estimates its cost and can run a cheaper filter before one that appears earlier in the argument list. Filters without pushdown support, and filters with equal estimated cost, keep their argument order. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or barriers to guarantee it.
+> The engine does not guarantee it evaluates filters in argument order: when the data source supports pushdown for a stateless filter (the default), the engine estimates its cost and can run a cheaper filter before one that appears earlier in the argument list. Filters without pushdown support run after the pushdown-capable filters around them, and filters with equal estimated cost keep their relative argument order. A serial filter is never reordered relative to the filters on either side of it, though the filters after it can still be reordered among themselves. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or barriers to guarantee it.
 
 ## Syntax
 
@@ -141,7 +141,7 @@ Deephaven applies a filter this way even when filters are configured to be state
 
 A filter on partitioning columns is not applied this way if:
 
-- It is marked serial with [`withSerial`](../../query-language/types/Filter.md#withserial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows, in argument order.
+- It is marked serial with [`withSerial`](../../query-language/types/Filter.md#withserial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows instead of on whole partitions. Later stateless filters can still be reordered among themselves by cost.
 - It respects a barrier declared by a filter that isn't applied this way.
 - It uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
 
