@@ -25,7 +25,8 @@ import java.util.*;
  * <li>The declaring class must be fully qualified, except that a class in the {@code java.lang} package may be
  * unqualified. A nested class may be written as {@code java.util.Map.Entry} or {@code java.util.Map$Entry}. Only a name
  * without dots or wildcards is taken to be in {@code java.lang}, so an unqualified nested class must use the binary
- * form, as in {@code Thread$State}; {@code Thread.State} matches nothing.</li>
+ * form, as in {@code Thread$State}; {@code Thread.State} is taken as a fully qualified name, so it does not match
+ * {@code java.lang.Thread.State}.</li>
  * <li>A wildcard character, "*", may be used in the declaring class or method name. In the declaring class it matches
  * within a single package or class name, which includes the binary name of a nested class, so {@code java.util.*}
  * matches {@code java.util.Map$Entry}. "..", as in {@code java..*}, matches any number of intermediate package or
