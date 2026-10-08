@@ -198,11 +198,12 @@ def geoLocate(cityName) -> Location:
 
     # Process the response JSON and look for the City and State (typically locality and administrative_area_level_1)
     localCity = localState = ""
-    resultsEl = geoJson["results"][0]
-    if resultsEl is None:
+    results = geoJson.get("results")
+    if not results:
         raise ValueError(
             "Cannot determine location of " + cityName + " no valid results"
         )
+    resultsEl = results[0]
 
     comps = resultsEl["address_components"]
     if comps is None:
