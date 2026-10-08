@@ -21,8 +21,12 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.CopyOption;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -65,12 +69,54 @@ public class TableDefinitionProtosTest {
     @Test
     void writeThenRead(@TempDir final Path dir) throws IOException {
         final Path path = dir.resolve("definition.bin");
-        TableDefinitionProtos.write(path, TableDefinition.of(ColumnDefinition.ofInt("Old")));
-        // Replaces the existing file, leaving nothing else behind
         TableDefinitionProtos.write(path, EVERYTHING);
         assertThat(TableDefinitionProtos.read(path)).isEqualTo(EVERYTHING);
+        assertOnlyFile(dir, path);
+    }
+
+    @Test
+    void writeDoesNotReplaceByDefault(@TempDir final Path dir) throws IOException {
+        final Path path = dir.resolve("definition.bin");
+        final TableDefinition original = TableDefinition.of(ColumnDefinition.ofInt("Original"));
+        TableDefinitionProtos.write(path, original);
+        assertThatThrownBy(() -> TableDefinitionProtos.write(path, EVERYTHING))
+                .isInstanceOf(FileAlreadyExistsException.class);
+        assertThatThrownBy(() -> TableDefinitionProtos.write(path, EVERYTHING, StandardCopyOption.ATOMIC_MOVE))
+                .isInstanceOf(FileAlreadyExistsException.class);
+        assertThat(TableDefinitionProtos.read(path)).isEqualTo(original);
+        assertOnlyFile(dir, path);
+    }
+
+    @Test
+    void writeReplaceExisting(@TempDir final Path dir) throws IOException {
+        final Path path = dir.resolve("definition.bin");
+        TableDefinitionProtos.write(path, TableDefinition.of(ColumnDefinition.ofInt("Original")));
+        TableDefinitionProtos.write(path, EVERYTHING, StandardCopyOption.REPLACE_EXISTING);
+        assertThat(TableDefinitionProtos.read(path)).isEqualTo(EVERYTHING);
+        // Also creates the file when it does not exist yet
+        final Path other = dir.resolve("other.bin");
+        TableDefinitionProtos.write(other, EVERYTHING, StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.ATOMIC_MOVE);
+        assertThat(TableDefinitionProtos.read(other)).isEqualTo(EVERYTHING);
         try (final var files = Files.list(dir)) {
-            assertThat(files).containsExactly(path);
+            assertThat(files).containsExactlyInAnyOrder(path, other);
+        }
+    }
+
+    @Test
+    void writeUnsupportedOption(@TempDir final Path dir) throws IOException {
+        final Path path = dir.resolve("definition.bin");
+        assertThatThrownBy(() -> TableDefinitionProtos.write(path, EVERYTHING, StandardCopyOption.COPY_ATTRIBUTES))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("COPY_ATTRIBUTES");
+        assertThatThrownBy(() -> TableDefinitionProtos.write(path, EVERYTHING, LinkOption.NOFOLLOW_LINKS))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("NOFOLLOW_LINKS");
+        assertThatThrownBy(() -> TableDefinitionProtos.write(path, EVERYTHING, (CopyOption) null))
+                .isInstanceOf(NullPointerException.class);
+        // Options are checked before anything is written
+        try (final var files = Files.list(dir)) {
+            assertThat(files).isEmpty();
         }
     }
 
@@ -304,6 +350,16 @@ public class TableDefinitionProtosTest {
         return UnknownFieldSet.newBuilder()
                 .addField(UNKNOWN, UnknownFieldSet.Field.newBuilder().addVarint(1).build())
                 .build();
+    }
+
+    /**
+     * Asserts that {@code path} is the only file in {@code dir}; in particular, that no temporary files were left
+     * behind.
+     */
+    private static void assertOnlyFile(final Path dir, final Path path) throws IOException {
+        try (final var files = Files.list(dir)) {
+            assertThat(files).containsExactly(path);
+        }
     }
 
     private static void assertRoundTrip(final TableDefinition definition) {

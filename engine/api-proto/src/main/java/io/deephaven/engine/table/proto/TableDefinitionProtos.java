@@ -16,6 +16,8 @@ import io.deephaven.engine.table.proto.gen.TableDefinitionProto;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.nio.file.CopyOption;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -33,7 +35,7 @@ import java.util.UUID;
  * <p>
  * The file format is the binary protobuf encoding of an internal (non-RPC) message,
  * {@link PersistedTableDefinitionProto}. Reading is exact: {@code read(path).equals(definition)} after
- * {@code write(path, definition)}, provided every class the definition references can be loaded by the reader.
+ * {@code write(path, definition, ...)}, provided every class the definition references can be loaded by the reader.
  * Non-primitive classes are recorded by {@link Class#getName() name}, so the reader needs them on its classpath.
  * Reading is also strict: a file containing fields this version does not know about is rejected rather than partially
  * understood.
@@ -41,23 +43,57 @@ import java.util.UUID;
 public final class TableDefinitionProtos {
 
     /**
-     * Writes {@code definition} to {@code path}, replacing any existing file.
+     * Writes {@code definition} to a new file at {@code path}. By default this fails if {@code path} already exists;
+     * pass {@link StandardCopyOption#REPLACE_EXISTING} to replace it.
      *
      * <p>
-     * The file is written to a temporary sibling first and then atomically moved into place, so concurrent readers see
-     * either the previous definition or the new one, never a partial write.
+     * The file is written to a temporary sibling first and then published at {@code path} in a single atomic step, so
+     * concurrent readers see either no file (or the previous one, when replacing) or the complete new definition, never
+     * a partial write. Publishing always creates a new file: when replacing, the previous file is not modified in
+     * place, so its ownership, permissions, and other links are not carried over, and readers that already have it open
+     * keep seeing the previous definition. A symbolic link at {@code path} is replaced, not followed.
+     *
+     * <p>
+     * Like {@link Files#copy(java.io.InputStream, Path, CopyOption...)}, the supported options are:
+     * <ul>
+     * <li>{@link StandardCopyOption#REPLACE_EXISTING}: replace {@code path} if it exists. The replacement is
+     * atomic.</li>
+     * <li>{@link StandardCopyOption#ATOMIC_MOVE}: accepted, but has no effect, as publishing is always atomic.</li>
+     * </ul>
      *
      * @param path the file to write
      * @param definition the table definition
-     * @throws IOException if the file cannot be written, or the file system cannot atomically replace {@code path}
+     * @param options how to publish the file
+     * @throws FileAlreadyExistsException if {@code path} exists and {@link StandardCopyOption#REPLACE_EXISTING} is not
+     *         specified
+     * @throws UnsupportedOperationException if {@code options} contains an unsupported option, or, when not replacing,
+     *         if the file system does not support hard links, which are used to publish without replacing
+     * @throws IOException if the file cannot be written, or the file system cannot atomically publish {@code path}
      */
-    public static void write(@NotNull final Path path, @NotNull final TableDefinition definition) throws IOException {
+    public static void write(
+            @NotNull final Path path,
+            @NotNull final TableDefinition definition,
+            @NotNull final CopyOption... options) throws IOException {
+        boolean replaceExisting = false;
+        for (final CopyOption option : options) {
+            if (option == StandardCopyOption.REPLACE_EXISTING) {
+                replaceExisting = true;
+            } else if (option != StandardCopyOption.ATOMIC_MOVE) {
+                throw new UnsupportedOperationException(Objects.requireNonNull(option) + " not supported");
+            }
+        }
         final byte[] bytes = serialize(definition);
         final Path target = path.toAbsolutePath();
         final Path temp = target.resolveSibling("." + target.getFileName() + "." + UUID.randomUUID() + ".tmp");
         try {
             Files.write(temp, bytes, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-            Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            if (replaceExisting) {
+                Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
+            } else {
+                // Unlike a move, creating a link fails atomically if target already exists
+                Files.createLink(target, temp);
+                Files.delete(temp);
+            }
         } catch (IOException | RuntimeException e) {
             try {
                 Files.deleteIfExists(temp);
@@ -69,9 +105,9 @@ public final class TableDefinitionProtos {
     }
 
     /**
-     * Reads a table definition from {@code path}, as written by {@link #write(Path, TableDefinition)}. Class names are
-     * resolved against the current thread's context class loader, or, if there is none, the class loader that loaded
-     * this class.
+     * Reads a table definition from {@code path}, as written by {@link #write(Path, TableDefinition, CopyOption...)}.
+     * Class names are resolved against the current thread's context class loader, or, if there is none, the class
+     * loader that loaded this class.
      *
      * @param path the file to read
      * @return the table definition
