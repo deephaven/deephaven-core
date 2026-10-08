@@ -436,14 +436,17 @@ class ExamplePluginClient {
         try {
             // Fetch the exampleObject variable from the server's query scope
             def fetchable = session.fetchable(new TypedTicket("ExampleObject", new ScopeId("exampleObject"))).get()
-            def serverData = fetchable.fetch().get()
             try {
-                def data = serverData.data()
-                def bytes = new byte[data.remaining()]
-                data.get(bytes)
-                println("Fetched object: ${new String(bytes, StandardCharsets.UTF_8)}")
+                def serverData = fetchable.fetch().get()
+                try {
+                    def data = serverData.data()
+                    def bytes = new byte[data.remaining()]
+                    data.get(bytes)
+                    println("Fetched object: ${new String(bytes, StandardCharsets.UTF_8)}")
+                } finally {
+                    serverData.close()
+                }
             } finally {
-                serverData.close()
                 fetchable.close()
             }
         } finally {
@@ -515,16 +518,19 @@ class CompletePluginTest {
                 try {
                     println("\nTesting object: ${name}")
                     def fetchable = session.fetchable(new TypedTicket("ExampleObject", new ScopeId(name))).get()
-                    def serverData = fetchable.fetch().get()
                     try {
-                        def data = serverData.data()
-                        def bytes = new byte[data.remaining()]
-                        data.get(bytes)
-                        println("Successfully fetched: ${new String(bytes, StandardCharsets.UTF_8)}")
+                        def serverData = fetchable.fetch().get()
+                        try {
+                            def data = serverData.data()
+                            def bytes = new byte[data.remaining()]
+                            data.get(bytes)
+                            println("Successfully fetched: ${new String(bytes, StandardCharsets.UTF_8)}")
 
-                        // You can add more specific tests here based on your object type
+                            // You can add more specific tests here based on your object type
+                        } finally {
+                            serverData.close()
+                        }
                     } finally {
-                        serverData.close()
                         fetchable.close()
                     }
                 } catch (Exception e) {

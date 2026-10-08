@@ -28,7 +28,7 @@ This guide covers the installation and use of pre-built plugins. For information
 
 First, follow the [Launch Deephaven from pre-built images](../getting-started/docker-install.md) steps from the Docker install guide.
 
-The `server-slim` image runs a Groovy console. To add JS plugins to it, build a custom image in two stages: the first stage uses the `web-plugin-packager` image to download plugins from npm, and the second copies them into `server-slim`. The following Dockerfile is the general template; replace `<plugins>` with one or more npm package names, separated by spaces:
+The `server-slim` image runs a Groovy console. To add JS plugins to it, build a custom image in two stages. The first stage uses the `web-plugin-packager` image to download plugins from npm. The second stage copies them into `server-slim`. The following Dockerfile is the general template. Replace `<plugins>` with one or more npm package names, separated by spaces:
 
 ```docker title="Dockerfile"
 FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
@@ -183,8 +183,11 @@ try (Bidirectional bidirectional = session.bidirectional(typedTicket).get()) {
     MessageStream<ServerData> fromServer = new MessageStream<>() {
         @Override
         public void onData(ServerData serverData) {
-            // Handle each message from the server; the format depends on the plugin
-            System.out.println("Received " + serverData.data().remaining() + " bytes");
+            // Handle each message from the server; the format depends on the plugin.
+            // Closing the message releases any server objects it exports.
+            try (serverData) {
+                System.out.println("Received " + serverData.data().remaining() + " bytes");
+            }
         }
 
         @Override
