@@ -84,18 +84,18 @@ Subscription statistics are presented in percentiles bucketed over a time period
 
 Here are the various metrics that are recorded by the deephaven-core server:
 
-| Stat Type            | Sender / Receiver | Description                                                                         |
-| -------------------- | ----------------- | ----------------------------------------------------------------------------------- |
-| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle |
-| AggregateNanos       | Sender            | The time it took to aggregate multiple updates within the same interval             |
-| PropagateNanos       | Sender            | The time it took to deliver an aggregated message to all subscribers                |
-| SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                 |
-| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic          |
-| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                         |
-| WriteBytes           | Sender            | The payload size of the update in bytes                                             |
-| DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                   |
-| ProcessUpdateNanos   | Receiver          | The time it took to apply a single update during the update graph cycle             |
-| RefreshNanos         | Receiver          | The time it took to apply all queued updates during a single update graph cycle     |
+| Stat Type            | Sender / Receiver | Description                                                                                  |
+| -------------------- | ----------------- | -------------------------------------------------------------------------------------------- |
+| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle          |
+| AggregateNanos       | Sender            | The time it took to aggregate multiple updates within the same interval                      |
+| PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to |
+| SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                          |
+| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                   |
+| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                                  |
+| WriteBytes           | Sender            | The payload size of the update in bytes                                                      |
+| DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                            |
+| ProcessUpdateNanos   | Receiver          | The time it took to apply a single update during the update graph cycle                      |
+| RefreshNanos         | Receiver          | The time it took to apply all queued updates during a single update graph cycle              |
 
 ### Barrage Snapshot Metrics
 

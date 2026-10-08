@@ -660,6 +660,50 @@ public class TestInvokeParallel {
         assertThat(runs.get()).isZero();
     }
 
+    /**
+     * A context that fails to close while the unstarted invokers are abandoned must not stop the others closing: the
+     * queued helper's context is still closed and its reference released, and the close failure rides on the thrown
+     * failure.
+     */
+    @Test
+    public void testContextCloseFailureStillClosesTheOtherUnstartedInvokers() throws InterruptedException {
+        final List<Runnable> queued = Collections.synchronizedList(new ArrayList<>());
+        final IllegalStateException noContext = new IllegalStateException("no context");
+        final IllegalArgumentException closeFailure = new IllegalArgumentException("close failed");
+        final AtomicInteger made = new AtomicInteger();
+        final AtomicInteger contextsOpen = new AtomicInteger();
+        final AtomicInteger runs = new AtomicInteger();
+
+        withTimeout(() -> {
+            assertThatThrownBy(() -> new ExecutorJobScheduler(queued::add, 4).invokeParallel(
+                    ExecutionContext.getContext(), null,
+                    () -> {
+                        // the caller's own context, which fails to close, then the first helper's; the second fails
+                        final int index = made.incrementAndGet();
+                        if (index > 2) {
+                            throw noContext;
+                        }
+                        contextsOpen.incrementAndGet();
+                        return new JobScheduler.JobThreadContext() {
+                            @Override
+                            public void close() {
+                                contextsOpen.decrementAndGet();
+                                if (index == 1) {
+                                    throw closeFailure;
+                                }
+                            }
+                        };
+                    }, 0, 8, (context, idx, nec) -> runs.incrementAndGet()))
+                    .isSameAs(noContext)
+                    .satisfies(thrown -> assertThat(thrown.getSuppressed()).containsExactly(closeFailure));
+        });
+
+        assertThat(contextsOpen.get()).isZero();
+        assertThat(queued).hasSize(1);
+        queued.forEach(Runnable::run);
+        assertThat(runs.get()).isZero();
+    }
+
     @Test
     public void testFailureOnTheCallingThreadStopsAtTheFailingTask() {
         final List<Integer> ran = new ArrayList<>();

@@ -308,13 +308,13 @@ public interface JobScheduler {
                 }
             } catch (Exception e) {
                 onTaskError(e);
-                abandonUnstarted(invokers);
+                abandonUnstarted(invokers, e);
                 throw e;
             } catch (Error e) {
                 if (exception.get() == null) {
                     onTaskError(asDeliverableException(e));
                 }
-                abandonUnstarted(invokers);
+                abandonUnstarted(invokers, e);
                 throw e;
             } finally {
                 decrementReferenceCount();
@@ -325,12 +325,17 @@ public interface JobScheduler {
          * After a failure to start the iteration, which has already been recorded: close every invoker made for it that
          * has not started, releasing its context and its reference, so that the iteration ends without waiting for jobs
          * a queueing scheduler may start late, or never, if they are queued behind this thread. One that the scheduler
-         * starts later finds itself taken and does nothing.
+         * starts later finds itself taken and does nothing. A context that fails to close still releases its invoker's
+         * reference; its failure is attached to {@code failure}, and the remaining invokers are closed all the same.
          */
-        private void abandonUnstarted(@NotNull final List<TaskInvoker> invokers) {
+        private void abandonUnstarted(@NotNull final List<TaskInvoker> invokers, @NotNull final Throwable failure) {
             for (final TaskInvoker taskInvoker : invokers) {
                 if (taskInvoker.tryStart()) {
-                    taskInvoker.closeIfOpen();
+                    try {
+                        taskInvoker.closeIfOpen();
+                    } catch (Throwable t) {
+                        failure.addSuppressed(t);
+                    }
                 }
             }
         }
