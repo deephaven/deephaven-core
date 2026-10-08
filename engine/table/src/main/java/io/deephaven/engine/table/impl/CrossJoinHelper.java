@@ -389,6 +389,15 @@ public class CrossJoinHelper {
 
                     @Override
                     protected void process() {
+                        try {
+                            processUpdates();
+                        } finally {
+                            // the tracker holds pooled chunks, which must be returned even when processing fails
+                            tracker.clear();
+                        }
+                    }
+
+                    private void processUpdates() {
                         final TableUpdate upstreamLeft = leftRecorder.getUpdate();
                         final TableUpdate upstreamRight = rightRecorder.getUpdate();
                         final boolean leftChanged = upstreamLeft != null;
@@ -867,7 +876,6 @@ public class CrossJoinHelper {
                         resultTable.notifyListeners(downstream);
 
                         jsm.releaseEmptySlots(tracker);
-                        tracker.clear();
                     }
                 };
 
@@ -881,7 +889,18 @@ public class CrossJoinHelper {
                     private final CrossJoinModifiedSlotTracker tracker = new CrossJoinModifiedSlotTracker(jsm);
 
                     @Override
-                    public void onUpdate(TableUpdate upstream) {
+                    public void onUpdate(final TableUpdate upstream) {
+                        try {
+                            processUpdate(upstream);
+                        } finally {
+                            // the tracker holds pooled chunks, which must be returned even when processing fails
+                            if (tracker.clear()) {
+                                jsm.clearCookies();
+                            }
+                        }
+                    }
+
+                    private void processUpdate(final TableUpdate upstream) {
                         tracker.rightShifted = upstream.shifted();
 
                         final TableUpdateImpl downstream = new TableUpdateImpl();
@@ -1030,10 +1049,6 @@ public class CrossJoinHelper {
                         }
                         try (final WritableRowSet add = addToResultRowSet.build()) {
                             resultRowSet.subsume(add);
-                        }
-
-                        if (tracker.clear()) {
-                            jsm.clearCookies();
                         }
 
                         if (downstream.modified().isEmpty()) {

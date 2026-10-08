@@ -15,6 +15,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSet;
@@ -349,6 +350,55 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         assertEquals(i(), listener.update.modified());
         assertEquals(i(5, 6), listener.update.added());
         listener.reset();
+    }
+
+    @Test
+    public void testFailedUpdateReleasesTrackerChunks() {
+        // the joins match on K, which the views below compute from X when the join reads it; reading the key of a row
+        // with X == 99 throws
+        final String throwingKey = "K = X == 99 ? Integer.parseInt(`notAnInt`) : X";
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean failLeft : leftRefreshing ? new boolean[] {false, true} : new boolean[] {false}) {
+                for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+                    final String description = "leftRefreshing=" + leftRefreshing + ", failLeft=" + failLeft
+                            + ", leftOuterJoin=" + leftOuterJoin;
+                    final QueryTable left = leftRefreshing
+                            ? testRefreshingTable(i(1, 2).toTracking(), intCol("X", 1, 2), intCol("A", 10, 20))
+                            : testTable(i(1, 2).toTracking(), intCol("X", 1, 2), intCol("A", 10, 20));
+                    final QueryTable right = testRefreshingTable(i(1, 2, 3).toTracking(), intCol("X", 1, 2, 1),
+                            intCol("Y", 100, 200, 300));
+                    final Table leftKeyed = left.view(throwingKey, "A");
+                    final Table rightKeyed = right.view(throwingKey, "Y");
+                    final Table joined = leftOuterJoin
+                            ? OuterJoinTools.leftOuterJoin(leftKeyed, rightKeyed, "K", "Y", numRightBitsToReserve)
+                            : leftKeyed.join(rightKeyed, "K", "Y", numRightBitsToReserve);
+                    final ErrorListener errorListener = new ErrorListener(joined);
+                    joined.addUpdateListener(errorListener);
+
+                    // the right remove gives the slot tracker pooled chunks before the failing key read
+                    allowingError(() -> ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                            .runWithinUnitTestCycle(() -> {
+                                removeRows(right, i(3));
+                                if (failLeft) {
+                                    // the join processes the right remove, then throws reading the key of the added
+                                    // left row 20
+                                    addToTable(left, i(20), intCol("X", 99), intCol("A", 99));
+                                    left.notifyListeners(i(20), i(), i());
+                                    right.notifyListeners(i(), i(3), i());
+                                } else {
+                                    // the join processes the right remove, then throws reading the key of the added
+                                    // right row 20
+                                    addToTable(right, i(20), intCol("X", 99), intCol("Y", 990));
+                                    right.notifyListeners(i(20), i(3), i());
+                                }
+                            }), errors -> !errors.isEmpty());
+
+                    assertTrue(description, joined.isFailed());
+                    assertNotNull(description, errorListener.originalException());
+                    ChunkPoolReleaseTracking.check();
+                }
+            }
+        }
     }
 
     @Test
