@@ -185,7 +185,7 @@ resultRing = KafkaTools.consumeToTable(
 Let's walk through the arguments in this query.
 
 - The partition filter is `KafkaTools.ALL_PARTITIONS`, which specifies that we want to listen to all partitions. To listen to specific partitions, use `KafkaTools.partitionFilterFromArray(new int[]{1, 3, 5})`.
-- The initial offset is `KafkaTools.ALL_PARTITIONS_DONT_SEEK`, which doesn't seek. The consumer starts from the consumer group's committed offset if one exists; otherwise, Kafka's `auto.offset.reset` property decides, and its default (`latest`) reads only new messages. To always start with new messages only, use `KafkaTools.ALL_PARTITIONS_SEEK_TO_END`.
+- The initial offset is `KafkaTools.ALL_PARTITIONS_DONT_SEEK`, which doesn't seek. The consumer starts from the consumer group's committed offset if one exists. Otherwise, Kafka's `auto.offset.reset` property decides where to start. Its default, `latest`, reads only new messages. To always start with new messages only, use `KafkaTools.ALL_PARTITIONS_SEEK_TO_END`.
 - The key spec is `KafkaTools.Consume.simpleSpec('Symbol', java.lang.String)`, which instructs the consumer to expect messages with a Kafka `key` field, and creates a `Symbol` column of type String to store the information.
 - The value spec is `KafkaTools.Consume.simpleSpec('Price', double)`, which instructs the consumer to expect messages with a Kafka `value` field, and creates a `Price` column of type double to store the information.
 - The table type is `KafkaTools.TableType.append`, which creates an append-only table.
@@ -301,7 +301,7 @@ Run `docker compose exec redpanda rpk topic produce orders -f "%v\n"` in your te
 {"symbol": "TSLA", "price": 730, "qty": 3}
 ```
 
-In this query, the `valueSpec` argument uses [`jsonSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#jsonSpec(io.deephaven.engine.table.ColumnDefinition[])). A JSON parameterization is used for the `KafkaValue` field.
+In the first example, the `valueSpec` argument uses [`jsonSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#jsonSpec(io.deephaven.engine.table.ColumnDefinition[])). A JSON parameterization is used for the `KafkaValue` field.
 
 The first argument to `jsonSpec` is an array of `ColumnDefinition`s that gives each column's name and type in the result table.
 
