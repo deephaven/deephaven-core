@@ -47,10 +47,10 @@ The following aggregations are supported:
 | [`AggCount`](../reference/table-operations/group-and-aggregate/AggCount.md)                 | <Check/>              |
 | [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md)       | <Check/>              |
 | [`AggCountDistinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) | <Check/>              |
-| [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)           | <RedX/>               |
+| [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)           | <Check/>              |
 | [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md)                 | <Check/>              |
-| [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md)             | <RedX/>               |
-| [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md)                 | <RedX/>               |
+| [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md)             | <Check/>              |
+| [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md)                 | <Check/>              |
 | [`AggLast`](../reference/table-operations/group-and-aggregate/AggLast.md)                   | <Check/>              |
 | [`AggMax`](../reference/table-operations/group-and-aggregate/AggMax.md)                     | <Check/>              |
 | [`AggMed`](../reference/table-operations/group-and-aggregate/AggMed.md)                     | <RedX/>               |
@@ -66,7 +66,9 @@ The following aggregations are supported:
 | [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)                   | <Check/>              |
 | [`AggWSum`](../reference/table-operations/group-and-aggregate/AggWSum.md)                   | <Check/>              |
 
-In the case of a rollup table with a single aggregation, that aggregation can be on its own or in a single-element list. When more than one aggregation is used, the aggregations must be in a list. The aggregation(s) can be defined outside of the `rollup` call just like with [combined aggregations](./combined-aggregations.md#syntax).
+`AggFormula` is supported in its formula-string forms, for example `AggFormula("Total = sum(Value)")` or `AggFormula("Total", "sum(Value)")`. The deprecated form that takes a `paramToken` is not supported.
+
+The aggregations must be passed as a collection, such as a Groovy list, even when there is only one aggregation: `[AggAvg("Value")]`. The aggregation list can be defined outside of the `rollup` call just like with [combined aggregations](./combined-aggregations.md#syntax).
 
 2. `includeConstituents`: A boolean to indicate whether or not the table will include an additional level at each leaf that displays the rows from the original table that were aggregated. The default value is `false`, so that no rows from the original table will be included in the result.
 
@@ -78,9 +80,9 @@ In the case of a rollup table with a single aggregation, that aggregation can be
 
 In our [examples repository](https://github.com/deephaven/examples), we have an [insurance dataset](https://github.com/deephaven/examples/tree/main/Insurance) that can show a simple real-world use case of aggregations and hierarchy.
 
-In this example, two rollup tables are created. The first performs zero aggregations, but creates a hierarchy from the `region` and `age` columns. The second calculates an aggregated average of the `bmi` and `expenses` columns. Each rollup table specifies `include_constituents=True` as the second argument to include the rows from the original table that made up each aggregation.
+In this example, two rollup tables are created. The first performs zero aggregations, but creates a hierarchy from the `region` and `age` columns. The second calculates an aggregated average of the `bmi` and `expenses` columns. Each rollup table passes `true` as the second argument (`includeConstituents`) to include the rows from the original table that made up each aggregation.
 
-```groovy order=insurance,insuranceRollup
+```groovy order=insurance,testRollup,insuranceRollup
 import static io.deephaven.csv.CsvTools.readCsv
 import io.deephaven.api.agg.Aggregation
 
