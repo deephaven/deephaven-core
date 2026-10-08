@@ -278,7 +278,7 @@ You can also create foreground heat maps with `heatmapFg` or `heatmapForeground`
 
 ### Advanced row formatting
 
-To format entire rows based on conditions, use `*` as the column name in `format_columns`. `format_row_where` uses the same mechanism internally. Row formatting is useful for creating banded tables or highlighting specific data patterns:
+To format entire rows based on conditions, use `*` as the column name in `format_columns`. [`format_row_where`](../reference/table-operations/format/format-row-where.md) uses the same mechanism internally. Row formatting is useful for creating banded tables or highlighting specific data patterns:
 
 ```python test-set=1 order=students_row_format
 students_row_format = students.format_columns(
