@@ -340,7 +340,7 @@ Or build a distribution with a launch script, and run that:
 
 The generated launch script includes the JVM arguments from `applicationDefaultJvmArgs` and adds anything in the `JAVA_OPTS` environment variable.
 
-When the server is ready, the log shows `Server started on port 10000`. By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) with a random key, and logs a URL that includes the key:
+When the server is ready, the log shows `Server started on port 10000`. By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) with a generated key, and logs a URL that includes the key. The default key comes from `java.util.Random`, which isn't cryptographically secure, so set your own strong key with `-Dauthentication.psk=<key>` (see [Configure the server](#configure-the-server)) or choose another authentication handler before you expose the server beyond your own machine:
 
 ```text
 Connect automatically to Web UI with http://localhost:10000/?psk=<key>
@@ -376,3 +376,4 @@ JAVA_OPTS="-Dauthentication.psk=YOUR_PASSWORD_HERE -Dhttp.port=8080" ./build/ins
 - [Execution context](../../conceptual/execution-context.md)
 - [Pre-shared key authentication](../authentication/auth-psk.md)
 - [Install and use Java packages](../install-and-use-java-packages.md)
+- [What is an UpdateGraphConflictException and how do I fix it?](../../reference/community-questions/update-graph-conflict-exception.md)
