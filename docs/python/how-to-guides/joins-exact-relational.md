@@ -4,7 +4,7 @@ title: Exact and Relational Joins
 
 This guide covers exact and relational joins in Deephaven. Exact and relational join operations combine data from two tables based on one or more related key columns.
 
-- An exact join combines tables and only keeps rows where exact matches occur in the key column(s). The following table operations perform an exact join:
+- An exact join adds columns from the right table to every row of the left table, using at most one matching right row per key. The following table operations perform an exact join:
   - [`exact_join`](../reference/table-operations/join/exact-join.md)
   - [`natural_join`](../reference/table-operations/join/natural-join.md)
 - A relational join primarily combines rows with exact matches across tables, but can also include rows where no exact match exists, depending on the type of join used. The following table operations exemplify different relational joins:
@@ -100,18 +100,15 @@ result = left_table.join_method(
 
 ## Exact joins
 
-The output of an exact join operation appends columns to the left table (from the right table) for rows where an exact key match exists in the right table.
+An exact join keeps every row of the left table and appends columns from the matching row of the right table.
 
 Exact matches fail if multiple matching keys are in the right table for any key in the left table.
 
-There are two available operations to perform an exact match join. They differ based on:
-
-- If all rows from the left table are included.
-- How zero matches are handled.
+There are two available operations to perform an exact match join. They differ in how zero matches are handled.
 
 ### `exact_join`
 
-`Exact_join` requires the distinct key set of the left table to be identical to the full set of key column values in the right table. If there is no matching key in the right table for any value in a left table key column, the `exact_join` will fail. Additionally, the operation will fail if multiple matching keys exist in the right table for any key in the left table.
+`exact_join` requires every row in the left table to have exactly one matching row in the right table: the operation fails if a left-table key has no match or more than one match in the right table. Right-table keys with no match in the left table are allowed and are ignored.
 
 ```python order=result,left,right
 from deephaven import new_table

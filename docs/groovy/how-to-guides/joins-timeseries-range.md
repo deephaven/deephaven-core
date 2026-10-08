@@ -14,7 +14,7 @@ The syntax for performing an as-of join is as follows:
 ```groovy syntax
 result = leftTable.joinMethod(rightTable, "InexactColumnToMatch")
 
-result = leftTable.joinMethod(rightTable, "ExactColumnsToMatch", "InexactColumnToMatch")
+result = leftTable.joinMethod(rightTable, "ExactColumnsToMatch, InexactColumnToMatch")
 
 result = leftTable.joinMethod(rightTable, "ExactColumnsToMatch, InexactColumnToMatch", "ColumnsToJoin")
 ```
@@ -46,18 +46,16 @@ For [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/ta
 
 - `columnsToAdd`: The column(s) in the right table to join to the left table. If not specified, all columns are joined.
 
-For [`rangeJoin`](../reference/table-operations/join/rangeJoin.md), the third argument is also optional:
+For [`rangeJoin`](../reference/table-operations/join/rangeJoin.md), the last argument is required:
 
-- `aggregations`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. If not specified, no aggregations are performed. Currently, only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
+- `aggregations`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. Currently, only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
 
 ### Multiple match columns
 
-Tables can be joined on more than one match column. This is done by listing all of the key columns within the `columnsToMatch` argument as comma-separated values.
-
-For a join with two different `columnsToMatch`, the format would look like this, with each matching column listed and separated by commas within the quotes containing the second argument:
+Tables can be joined on more than one match column. List every match column, including the final inexact one, as comma-separated values in the `columnsToMatch` argument:
 
 ```groovy syntax
-result = leftTable.joinMethod(right_table, "ExactMatchColumn1, ExactMatchColumnN", "InexactMatchColumn")
+result = leftTable.joinMethod(rightTable, "ExactMatchColumn1, ExactMatchColumnN, InexactMatchColumn")
 ```
 
 ### Match columns with different names
@@ -89,9 +87,9 @@ The output table contains all of the rows and columns of the left table plus add
 In an as-of join, [`aj`](../reference/table-operations/join/aj.md), row values equal those from the right table where the keys from the left table most closely match the keys from the right table _without going over_. When using [`aj`](../reference/table-operations/join/aj.md), the first `N - 1` match columns are exact, and the final match column is an inexact match. [`aj`](../reference/table-operations/join/aj.md) uses either `>` or `>=` to relate the match column(s):
 
 - `>` will join on inexact matches only.
-- `>=` will join on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `on=["ColumnToMatch"]`)
+- `>=` will join on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `"ColumnToMatch"`).
 
-The following example uses [`aj`](../reference/table-operations/join/aj.md) to join a `left` and `right` table. The key columns used are identical (`X` in the `left` table and `Y` in the `right` table). The first resultant table, `result_inexact_exact`, uses `>=` to relate the two key columns. As a result, the resultant table contains _all_ data from `right` appended to `left`. The second resultant table, `resultInexactOnly`, uses `>` to relate the two key columns. As a result, the resultant table has `NULL` values appended to the first row, since the first row of `X` in `left` is not greater than any row of `Y` in `right`.
+The following example uses [`aj`](../reference/table-operations/join/aj.md) to join a `left` and `right` table. The key columns used are identical (`X` in the `left` table and `Y` in the `right` table). The first resultant table, `resultInexactExact`, uses `>=` to relate the two key columns. As a result, the resultant table contains _all_ data from `right` appended to `left`. The second resultant table, `resultInexactOnly`, uses `>` to relate the two key columns. As a result, the resultant table has `NULL` values appended to the first row, since the first row of `X` in `left` is not greater than any row of `Y` in `right`.
 
 ```groovy order=resultInexactExact,resultInexactOnly,left,right
 left = emptyTable(10).update("X = i", "LeftVals = randomInt(1, 100)")
@@ -143,10 +141,10 @@ result = trades.aj(
 
 ### `raj`
 
-The reverse as-of join, [`raj`](../reference/table-operations/join/raj.md), is conceptually identical, but instead of seeking a respective row that is "the same or prior to" the left-table's join-value, it seeks the value that is the "the same or just after." Compared to [`aj`](../reference/table-operations/join/aj.md), the syntax and mental model are the same, except, as you'd expect [`raj`](../reference/table-operations/join/raj.md) uses either `<`, `<=`, or `=`:
+The reverse as-of join, [`raj`](../reference/table-operations/join/raj.md), is conceptually identical, but instead of seeking a respective row that is "the same or prior to" the left-table's join-value, it seeks the value that is the "the same or just after." Compared to [`aj`](../reference/table-operations/join/aj.md), the syntax and mental model are the same, except, as you'd expect [`raj`](../reference/table-operations/join/raj.md) uses either `<` or `<=`:
 
-- `>` will join on inexact matches only.
-- `>=` will join on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `on=["ColumnToMatch"]`)
+- `<` will join on inexact matches only.
+- `<=` will join on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `"ColumnToMatch"`).
 
 ```groovy order=resultInexactExact,resultInexactOnly,left,right
 left = emptyTable(10).update("X = i", "LeftVals = randomInt(1, 100)")
@@ -204,7 +202,7 @@ For columns appended to the left table (joins), cell values equal aggregations o
 > [!NOTE]
 > Reminders: (i) [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) currently only supports static tables, not yet live, real-time data; and (ii) the only aggregation currently supported is the `group` operation.
 
-The following example joins two tables with [`rangeJoin`](../reference/table-operations/join/rangeJoin.md). The `right` table is joined to `left` on the `Y` column. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `result` table's `X` column.
+The following example joins two tables with [`rangeJoin`](../reference/table-operations/join/rangeJoin.md). It uses only a range match, with no exact-match columns. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` and less than the corresponding `LeftEndValue`. The [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation groups the right table's `Y` values for each left row into the `Y` column of `result`.
 
 ```groovy test-set=1 order=result,left,right
 left = emptyTable(20).updateView("X = ii", "LeftStartValue = ii / 0.7", "LeftEndValue = ii / 0.1")
