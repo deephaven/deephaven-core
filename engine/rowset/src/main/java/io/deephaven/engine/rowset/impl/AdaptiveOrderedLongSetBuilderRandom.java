@@ -96,7 +96,14 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
         return true;
     }
 
+    private static void checkNonnegative(final long key) {
+        if (key < 0) {
+            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + key);
+        }
+    }
+
     private void newKey(final long key) {
+        checkNonnegative(key);
         newRangeSafe(key, key);
     }
 
@@ -104,6 +111,7 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
         if (firstKey > lastKey) {
             throw new IllegalArgumentException("Illegal range start=" + firstKey + " > end=" + lastKey + ".");
         }
+        checkNonnegative(firstKey);
         newRangeSafe(firstKey, lastKey);
     }
 
@@ -240,6 +248,9 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
             while (++position < end && keyAt.applyAsLong(position) == runEnd + 1) {
                 ++runEnd;
             }
+            // runEnd + 1 wraps at Long.MAX_VALUE, so a run can absorb a negative key after its nonnegative start.
+            checkNonnegative(runStart);
+            checkNonnegative(runEnd);
             newRangeSafe(runStart, runEnd);
         }
     }

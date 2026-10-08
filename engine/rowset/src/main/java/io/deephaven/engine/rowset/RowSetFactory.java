@@ -116,6 +116,10 @@ public abstract class RowSetFactory {
      * @return A new {@link WritableRowSet} containing the specified row key range
      */
     public static WritableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
+        if (firstRowKey < 0 || lastRowKey < 0) {
+            throw new IllegalArgumentException(
+                    "Row keys must be nonnegative: firstRowKey=" + firstRowKey + ", lastRowKey=" + lastRowKey);
+        }
         if (lastRowKey < firstRowKey) {
             return empty();
         }
@@ -124,14 +128,17 @@ public abstract class RowSetFactory {
 
     /**
      * Get a flat {@link WritableRowSet} containing the row key range {@code [0, size)}, or an {@link #empty() empty row
-     * set} if {@code size <= 0}.
+     * set} if {@code size == 0}.
      *
      * @param size The size of the {@link WritableRowSet} to create
      * @return A flat {@link WritableRowSet} containing the row key range {@code [0, size)} or an {@link #empty() empty
-     *         row set} if the {@code size <= 0}
+     *         row set} if the {@code size == 0}
      */
     public static WritableRowSet flat(final long size) {
-        return size <= 0 ? empty() : fromRange(0, size - 1);
+        if (size < 0) {
+            throw new IllegalArgumentException("Size must be nonnegative: size=" + size);
+        }
+        return size == 0 ? empty() : fromRange(0, size - 1);
     }
 
     /**

@@ -3,16 +3,52 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 public class OrderedLongSetBuilderSequentialTest {
+
+    /**
+     * Once the builder holds an {@link io.deephaven.engine.rowset.impl.rsp.RspBitmap}, ordered chunks and shifted sets
+     * go straight into it, past the scalar appends' checks.
+     */
+    @Test
+    public void testNegativeKeysRejectedInBitmapMode() {
+        final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
+        long key = 0;
+        while (builder.rb == null) {
+            builder.appendKey(key);
+            key += 2;
+        }
+        try (final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(2)) {
+            chunk.set(0, -4);
+            chunk.set(1, -2);
+            assertThrows(IllegalArgumentException.class, () -> builder.appendOrderedRowKeysChunk(chunk, 0, 2));
+        }
+        try (final WritableRowSet sparse = RowSetFactory.fromKeys(key, key + 2, key + 100_000)) {
+            final OrderedLongSet inner = ((WritableRowSetImpl) sparse).getInnerSet();
+            final long shift = -key - 1;
+            assertThrows(IllegalArgumentException.class, () -> builder.appendOrderedLongSet(shift, inner));
+        }
+        try (final WritableRowSet high = RowSetFactory.fromKeys(1L << 40, Long.MAX_VALUE)) {
+            final OrderedLongSet inner = ((WritableRowSetImpl) high).getInnerSet();
+            // The first key shifts fine, but the last wraps past Long.MAX_VALUE.
+            assertThrows(IllegalArgumentException.class, () -> builder.appendOrderedLongSet(65536, inner));
+            final RspBitmapBuilderSequential rspBuilder = new RspBitmapBuilderSequential();
+            rspBuilder.appendKey(0);
+            assertThrows(IllegalArgumentException.class, () -> rspBuilder.appendOrderedLongSet(65536, inner));
+        }
+        builder.getOrderedLongSet().ixRelease();
+    }
 
     @Test
     public void testBuildIsSingleUse() {

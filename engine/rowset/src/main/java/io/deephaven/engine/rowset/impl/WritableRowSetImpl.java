@@ -123,6 +123,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insert(final long key) {
         preMutationHook();
+        if (key < 0) {
+            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + key);
+        }
         assign(innerSet.ixInsert(key));
         postMutationHook();
     }
@@ -130,6 +133,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertRange(final long startKey, final long endKey) {
         preMutationHook();
+        if (startKey < 0 || endKey < 0) {
+            throw new IllegalArgumentException(
+                    "Row keys must be nonnegative: startKey=" + startKey + ", endKey=" + endKey);
+        }
         if (endKey >= startKey) {
             assign(innerSet.ixInsertRange(startKey, endKey));
         }
@@ -140,6 +147,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public final void insert(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         preMutationHook();
+        // The keys are ordered, so the first one is the least.
+        if (length > 0 && keys.get(offset) < 0) {
+            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + keys.get(offset));
+        }
         assign(innerSet.ixInsert(keys, offset, length));
         postMutationHook();
     }
@@ -292,6 +303,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void shiftInPlace(final long shiftAmount) {
         preMutationHook();
+        checkShiftNonnegative(this, shiftAmount);
         assign(innerSet.ixShiftInPlace(shiftAmount));
         postMutationHook();
     }
@@ -299,6 +311,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertWithShift(final long shiftAmount, final RowSet other) {
         preMutationHook();
+        checkShiftNonnegative(other, shiftAmount);
         if (other == this) {
             // Applying this to ourselves is not a no-op the way self-insertion is; it unions in a shifted copy of
             // our own keys. The ix* implementations build the result by mutating in place, so the operand being
@@ -426,7 +439,22 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final WritableRowSet shift(final long shiftAmount) {
+        checkShiftNonnegative(this, shiftAmount);
         return new WritableRowSetImpl(innerSet.ixShiftOnNew(shiftAmount));
+    }
+
+    /**
+     * A negative shift can move the first key below zero, and a positive one can carry the last key past
+     * {@link Long#MAX_VALUE}, where it wraps negative.
+     */
+    private static void checkShiftNonnegative(final RowSet rowSet, final long shiftAmount) {
+        if (rowSet.isEmpty()) {
+            return;
+        }
+        if (rowSet.firstRowKey() + shiftAmount < 0 || rowSet.lastRowKey() + shiftAmount < 0) {
+            throw new IllegalArgumentException("Row keys must be nonnegative: [" + rowSet.firstRowKey() + ", "
+                    + rowSet.lastRowKey() + "] shifted by " + shiftAmount);
+        }
     }
 
     @Override

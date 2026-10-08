@@ -112,12 +112,20 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 return;
             }
             flushPendingRange();
+        } else if (rowKey < 0) {
+            // Only the first key needs this check; every later one is order checked against a nonnegative key.
+            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + rowKey);
         }
         pendingStart = pendingEnd = rowKey;
     }
 
     @Override
     public void appendRange(final long rangeFirstRowKey, final long rangeLastRowKey) {
+        // Checked on every call: the order check below looks only at the start of the range.
+        if (rangeFirstRowKey < 0 || rangeLastRowKey < 0) {
+            throw new IllegalArgumentException("Row keys must be nonnegative: start=" + rangeFirstRowKey + ", end="
+                    + rangeLastRowKey);
+        }
         if (RspArray.debug) {
             if (rangeFirstRowKey > rangeLastRowKey) {
                 throw new IllegalArgumentException(
@@ -145,6 +153,11 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (ix.ixIsEmpty()) {
             return;
         }
+        // A positive shift can carry the last key past Long.MAX_VALUE, where it wraps negative.
+        if (ix.ixFirstKey() + shiftAmount < 0 || ix.ixLastKey() + shiftAmount < 0) {
+            throw new IllegalArgumentException("Row keys must be nonnegative: [" + ix.ixFirstKey() + ", "
+                    + ix.ixLastKey() + "] shifted by " + shiftAmount);
+        }
         if (!(ix instanceof RspBitmap) || rb == null) {
             ix.ixForEachLongRange((final long start, final long end) -> {
                 appendRange(start + shiftAmount, end + shiftAmount);
@@ -169,6 +182,10 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     public void appendOrderedRowKeysChunk(LongChunk<OrderedRowKeys> chunk, int offset, int length) {
         if (length == 0) {
             return;
+        }
+        // The keys are ordered, so the first one is the least. Once rb exists they go into it unchecked.
+        if (chunk.get(offset) < 0) {
+            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + chunk.get(offset));
         }
 
         if (rb != null) {

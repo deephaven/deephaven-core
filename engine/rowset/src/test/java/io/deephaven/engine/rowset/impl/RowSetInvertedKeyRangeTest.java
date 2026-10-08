@@ -17,6 +17,7 @@ import static io.deephaven.engine.rowset.impl.RowSetTestCommon.singleRangeOf;
 import static io.deephaven.engine.rowset.impl.RowSetTestCommon.sortedRangesOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -95,19 +96,17 @@ public class RowSetInvertedKeyRangeTest {
         }
     }
 
-    /** {@code insertRange(0, size - 1)} on an empty rowset for an empty table is a common way to arrive at one. */
+    /**
+     * {@code insertRange(0, size - 1)} for an empty table bounds an empty range with a negative key, which is rejected
+     * even though the range holds no keys.
+     */
     @Test
-    public void testInsertingAnEmptyRangeIntoAnEmptyRowSet() {
+    public void testNegativeBoundOfAnEmptyRangeIsRejected() {
         try (final WritableRowSet rs = RowSetFactory.empty()) {
-            rs.insertRange(0, -1);
+            assertThrows(IllegalArgumentException.class, () -> rs.insertRange(0, -1));
             rs.validate();
             assertTrue(rs.isEmpty());
-            assertEquals(0, rs.size());
         }
-        try (final WritableRowSet rs = RowSetFactory.fromRange(0, -1)) {
-            rs.validate();
-            assertTrue(rs.isEmpty());
-            assertEquals(0, rs.size());
-        }
+        assertThrows(IllegalArgumentException.class, () -> RowSetFactory.fromRange(0, -1));
     }
 }

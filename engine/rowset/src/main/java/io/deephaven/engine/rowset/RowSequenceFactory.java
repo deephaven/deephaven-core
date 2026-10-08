@@ -191,13 +191,36 @@ public class RowSequenceFactory {
     }
 
     /**
-     * Create and return a new {@link RowSequence} object from the supplied closed range.
+     * Get a flat {@link RowSequence} covering the row key range {@code [0, size)}, or {@link #EMPTY} if
+     * {@code size == 0}.
+     *
+     * @param size The number of row keys in the sequence
+     * @return A flat {@link RowSequence} covering the row key range {@code [0, size)}, or {@link #EMPTY} if
+     *         {@code size == 0}
+     */
+    public static RowSequence flat(final long size) {
+        if (size < 0) {
+            throw new IllegalArgumentException("Size must be nonnegative: size=" + size);
+        }
+        return size == 0 ? EMPTY : new SingleRangeRowSequence(0, size - 1);
+    }
+
+    /**
+     * Create and return a new {@link RowSequence} object from the supplied closed range, or {@link #EMPTY} if
+     * {@code lastRowKey < firstRowKey}.
      *
      * @param firstRowKey The first row key (inclusive) in the range
      * @param lastRowKey The last row key (inclusive) in the range
      * @return A new {@link RowSequence} object covering the requested range of row keys
      */
     public static RowSequence forRange(final long firstRowKey, final long lastRowKey) {
+        if (firstRowKey < 0 || lastRowKey < 0) {
+            throw new IllegalArgumentException(
+                    "Row keys must be nonnegative: firstRowKey=" + firstRowKey + ", lastRowKey=" + lastRowKey);
+        }
+        if (lastRowKey < firstRowKey) {
+            return EMPTY;
+        }
         return new SingleRangeRowSequence(firstRowKey, lastRowKey);
     }
 }

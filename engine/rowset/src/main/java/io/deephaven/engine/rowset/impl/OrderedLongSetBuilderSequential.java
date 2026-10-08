@@ -87,6 +87,11 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
         if (ix.ixIsEmpty()) {
             return;
         }
+        // A positive shift can carry the last key past Long.MAX_VALUE, where it wraps negative.
+        if (ix.ixFirstKey() + shiftAmount < 0 || ix.ixLastKey() + shiftAmount < 0) {
+            throw new IllegalArgumentException("Row keys must be nonnegative: [" + ix.ixFirstKey() + ", "
+                    + ix.ixLastKey() + "] shifted by " + shiftAmount);
+        }
         if (!(ix instanceof RspBitmap) || rb == null) {
             ix.ixForEachLongRange((final long start, final long end) -> {
                 appendRange(start + shiftAmount, end + shiftAmount);
