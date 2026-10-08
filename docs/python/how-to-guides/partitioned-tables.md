@@ -245,7 +245,7 @@ trades_updated = pt_trades_updated.merge()
 
 The same result can be obtained via a [`PartitionedTableProxy`](/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTableProxy) object. A partitioned table proxy is a proxy for a partitioned table that allows users to call standard table operations on it.
 
-The following code block applies an [`update`](../reference/table-operations/select/update.md) to every constituent of the `pt_quotes` table by creating a proxy rather than applying a [`transform`](#transform).
+The following code block applies an [`update`](../reference/table-operations/select/update.md) to every constituent of the `pt_trades` table by creating a proxy rather than applying a [`transform`](#transform).
 
 ```python test-set=1 order=trades_updated
 pt_trades_proxy = pt_trades.proxy()

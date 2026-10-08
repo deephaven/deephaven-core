@@ -36,7 +36,7 @@ result_combined = source.agg_by(agg.sum_("SumValue=Value"), "Key")
 
 A windowed aggregation is one that only calculates aggregated values over a subset of the table. This subset is defined by a window, which can be specified in terms of rows (ticks) or time. For example, a windowed sum may calculate the aggregated sum over the previous 10 rows in the table. When a new row ticks in, the aggregated value is updated to reflect the new row and the oldest row that is no longer in the window.
 
-To illustrate this, consider the following example, which calculates a cumulative sum and a rolling sum with [`update_by`](../reference/table-operations/update-by-operations/updateBy.md). The rolling sum is applied over the previous 3 rows, so the `SumValue` column differs from its cumulative counterpart:
+To illustrate this, consider the following example, which calculates a cumulative sum and a rolling sum with [`update_by`](../reference/table-operations/update-by-operations/updateBy.md). The rolling sum is applied over the previous 3 rows, so the `RollingSumValue` column differs from `CumSumValue`:
 
 ```python order=result,source
 from deephaven import empty_table
@@ -308,9 +308,6 @@ result_a = result.where(["Letter == `A`"])
 result_b = result.where(["Letter == `B`"])
 ```
 
-> [!NOTE]
-> In tick-based operations, windows are calculated per-group (each group maintains its own window of rows). In time-based operations, windows are defined by timestamps across the entire table regardless of grouping.
-
 ### Simple moving (rolling) aggregations
 
 Simple moving (or rolling) aggregations are statistics computed over a finite, moving window of data. These operations weigh each data point in the window equally, regardless of its distance from the current row. The following simple moving statistics are supported:
@@ -524,7 +521,7 @@ result = source.update_by(
 
 def plot_bollinger(t, ticker):
     d = t.where(f"Ticker=`{ticker}`")
-    plot = (
+    return (
         Figure()
         .plot_xy(series_name="Price", t=d, x="Timestamp", y="Price")
         .plot_xy(series_name="AvgPrice", t=d, x="Timestamp", y="AvgPrice")
@@ -532,7 +529,6 @@ def plot_bollinger(t, ticker):
         .plot_xy(series_name="Lower", t=d, x="Timestamp", y="Lower")
         .show()
     )
-    return d
 
 
 f_abc = plot_bollinger(result, "ABC")
@@ -577,7 +573,7 @@ result = source.update_by(
 
 def plot_bollinger(t, ticker):
     d = t.where(f"Ticker=`{ticker}`")
-    plot = (
+    return (
         Figure()
         .plot_xy(series_name="Price", t=d, x="Timestamp", y="Price")
         .plot_xy(series_name="AvgPrice", t=d, x="Timestamp", y="AvgPrice")
@@ -585,7 +581,6 @@ def plot_bollinger(t, ticker):
         .plot_xy(series_name="Lower", t=d, x="Timestamp", y="Lower")
         .show()
     )
-    return d
 
 
 f_abc = plot_bollinger(result, "ABC")
@@ -630,7 +625,7 @@ result = source.update_by(
 
 def plot_bollinger(t, ticker):
     d = t.where(f"Ticker=`{ticker}`")
-    plot = (
+    return (
         Figure()
         .plot_xy(series_name="Price", t=d, x="Timestamp", y="Price")
         .plot_xy(series_name="AvgPrice", t=d, x="Timestamp", y="EmaPrice")
@@ -638,7 +633,6 @@ def plot_bollinger(t, ticker):
         .plot_xy(series_name="Lower", t=d, x="Timestamp", y="Lower")
         .show()
     )
-    return d
 
 
 f_abc = plot_bollinger(result, "ABC")
@@ -684,7 +678,7 @@ result = source.update_by(
 
 def plot_bollinger(t, ticker):
     d = t.where(f"Ticker=`{ticker}`")
-    plot = (
+    return (
         Figure()
         .plot_xy(series_name="Price", t=d, x="Timestamp", y="Price")
         .plot_xy(series_name="AvgPrice", t=d, x="Timestamp", y="EmaPrice")
@@ -692,7 +686,6 @@ def plot_bollinger(t, ticker):
         .plot_xy(series_name="Lower", t=d, x="Timestamp", y="Lower")
         .show()
     )
-    return d
 
 
 f_abc = plot_bollinger(result, "ABC")
@@ -748,7 +741,7 @@ result = source.update_by(
 
 ##### Rolling formula operations
 
-The following example demonstrates the custom formula operation. It computes the rolling geometric mean of the `X` column, grouped by the `ID` column:
+The following example demonstrates the custom formula operation. It computes the rolling geometric mean of the `X` column, grouped by the `Letter` column:
 
 ```python order=source,result
 from deephaven.updateby import rolling_formula_tick
@@ -1058,7 +1051,6 @@ For more information on splitting temporal data into buckets of time, see [Downs
 ### Performance considerations
 
 - Rolling aggregations are more performant than rolling groups followed by calculations.
-- Tick-based operations maintain separate windows per group, while time-based operations use timestamps across the entire table.
 - Exponential moving aggregations use all historical data but weight recent observations more heavily.
 
 ## Handling erroneous data
