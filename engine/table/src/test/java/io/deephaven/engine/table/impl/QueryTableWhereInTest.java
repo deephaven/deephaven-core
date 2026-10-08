@@ -592,7 +592,7 @@ public class QueryTableWhereInTest {
         }
 
         @Override
-        protected TestUncoalescedTable copy() {
+        protected TestUncoalescedTable copy(final Map<String, Object> attributes) {
             return this;
         }
 
