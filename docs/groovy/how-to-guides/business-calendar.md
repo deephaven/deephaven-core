@@ -27,7 +27,7 @@ We can see from the output that `nyseCal` is an [`io.deephaven.time.calendar.Bus
 
 ### Create data
 
-Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates a month's worth of date-time data spaced 3 minutes apart.
+Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates about three weeks' worth of date-time data spaced 3 minutes apart.
 
 ```groovy test-set=1 order=source
 // Create sample data
@@ -76,13 +76,13 @@ The calendar configuration files can be found [here](https://github.com/deephave
 
 Users can build their own calendars by creating a calendar file using the format described in [this Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html). This section goes over an example of using a custom-built calendar for a hypothetical business for the year 2024.
 
-This example uses a calendar file found in Deephaven's [examples repository](https://github.com/deephaven/examples/tree/main/Calendar). This guide assumes you have the file on your local machine in the [/data mount point](../conceptual/docker-data-volumes.md). This hypothetical business is called "Company Y", and the calendar only covers the year 2024.
+This example is based on a calendar file in Deephaven's [examples repository](https://github.com/deephaven/examples/tree/main/Calendar), corrected as described below. This guide assumes you save the corrected file in the [/data mount point](../conceptual/docker-data-volumes.md). This hypothetical business is called "Company Y", and the calendar only covers the year 2024.
 
 ### The calendar file
 
 A calendar XML file contains top-level information about the calendar itself, business days, business hours, and holidays. While most business calendars have a single business period (e.g., 9am - 5pm), some use two distinct business periods separated by a lunch break. The test calendar file below has two distinct periods: from 8am - 12pm and from 1pm - 5pm. It also specifies a series of holidays over the course of the 2024 calendar year, which includes two half-holidays in which business is open for the first of the two business periods. Calendars typically contain data for more than one year, but this example limits it to 2024 only.
 
-The `TestCalendar_2024.calendar` file can be found [here](https://github.com/deephaven/examples/blob/main/Calendar/TestCalendar_2024.calendar). To see its contents, expand the file below. For the examples that use this calendar, it's placed in the folder `/data/examples/Calendar/` in the [Deephaven Docker container](../conceptual/docker-data-volumes.md).
+The [`TestCalendar_2024.calendar` file](https://github.com/deephaven/examples/blob/main/Calendar/TestCalendar_2024.calendar) in the examples repository puts both periods in a single `businessTime` element. Deephaven reads only the first `open`/`close` pair in each element, so that copy defines only the 8am - 12pm period. The listing below puts each period in its own `businessTime` element, which defines both. Save the listing as `/data/examples/Calendar/TestCalendar_2024.calendar` in the [Deephaven Docker container](../conceptual/docker-data-volumes.md), replacing the examples-repository copy if you have it. The examples below load the calendar from that path. Expand the file below to see its contents.
 
 <details>
 <summary>Test calendar for 2024</summary>
@@ -102,7 +102,8 @@ The `TestCalendar_2024.calendar` file can be found [here](https://github.com/dee
         This calendar file defines standard business hours, weekends, and holidays.
     </description>
         <default>
-        <businessTime><open>08:00</open><close>12:00</close><open>13:00</open><close>17:00</close></businessTime>
+        <businessTime><open>08:00</open><close>12:00</close></businessTime>
+        <businessTime><open>13:00</open><close>17:00</close></businessTime>
         <weekend>Saturday</weekend>
         <weekend>Sunday</weekend>
     </default>
@@ -168,15 +169,17 @@ import static io.deephaven.time.calendar.Calendars.addCalendarFromFile
 addCalendarFromFile("/data/examples/Calendar/TestCalendar_2024.calendar")
 ```
 
-The second way is through the configuration property `Calendar.importPath`. This should point to a text file with line-separated locations of any calendar files to load by default. Say your Docker configuration has a `/data/Calendar` folder that contains three calendar files: `MyCalendar.calendar`, `TestCalendar_2024.calendar`, `CrazyCalendar.calendar`. The text file, which we'll name `calendar_imports.txt` and place in the root of your Deephaven deployment, would look as follows:
+The second way is through the configuration property `Calendar.userImportPath`, which adds calendars to the built-in set when the server starts. It points to a text file with line-separated locations of calendar files to load. Deephaven loads both this text file and each calendar file it lists as classpath resources, not as filesystem paths. The directory that holds them must be on the server's classpath, and each location is relative to that directory.
+
+Say a `calendars` folder next to your `docker-compose.yml` file contains three calendar files: `MyCalendar.calendar`, `TestCalendar_2024.calendar`, `CrazyCalendar.calendar`. The same folder also contains a text file named `calendar_imports.txt`, which looks as follows:
 
 ```txt
-/data/Calendar/MyCalendar.calendar
-/data/Calendar/TestCalendar_2024.calendar
-/data/Calendar/CrazyCalendar.calendar
+/MyCalendar.calendar
+/TestCalendar_2024.calendar
+/CrazyCalendar.calendar
 ```
 
-To make Deephaven load this list of calendars automatically upon startup via [`docker compose`](https://docs.docker.com/compose/), you can set the property directly:
+To make Deephaven load this list of calendars automatically upon startup via [`docker compose`](https://docs.docker.com/compose/), mount the folder, add it to the classpath with `EXTRA_CLASSPATH`, and set the property:
 
 ```yaml
 services:
@@ -186,11 +189,16 @@ services:
       - "${DEEPHAVEN_PORT:-10000}:10000"
     volumes:
       - ./data:/data
+      - ./calendars:/calendars
     environment:
-      - START_OPTS=-Xmx4g -DCalendar.importPath="/calendar_imports.txt"
+      - EXTRA_CLASSPATH=/apps/libs/*:/calendars
+      - START_OPTS=-Xmx4g -DCalendar.userImportPath=/calendar_imports.txt
 ```
 
-Alternatively, a [configuration file](./configuration/config-file.md) could be used to set the property.
+You can also set `Calendar.userImportPath` in a [configuration file](./configuration/config-file.md) instead of `START_OPTS`. The folder must still be on the classpath.
+
+> [!CAUTION]
+> Do not set `Calendar.importPath` to load your own calendars. That property lists the built-in calendars, so overriding it removes `UTC`, `USNYSE_EXAMPLE`, and `USBANK_EXAMPLE`. Because `UTC` is the default value of `Calendar.default`, the default calendar is also lost. Use `Calendar.userImportPath` instead.
 
 ### Get an instance of the new calendar
 

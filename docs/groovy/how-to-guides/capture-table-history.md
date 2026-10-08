@@ -24,11 +24,11 @@ result = source.snapshotWhen(trigger, options)
 > The stamp column(s) from the trigger table appears in the result table. If the source table has a column with the same name as the stamp column, an error will be raised. To avoid this problem, rename the stamp column in the trigger table using [`renameColumns`](../reference/table-operations/select/rename-columns.md).
 
 > [!CAUTION]
-> When using [`snapshot_when`](../reference/table-operations/snapshot/snapshot.md) to capture full table history, a copy of the entire source table is stored for every trigger event. Large source tables or rapidly changing trigger tables can result in intensive memory usage.
+> When using [`snapshotWhen`](../reference/table-operations/snapshot/snapshot-when.md) to capture full table history, a copy of the entire source table is stored for every trigger event. Large source tables or rapidly changing trigger tables can result in intensive memory usage.
 
 ## Include a history
 
-In this example, there are two input tables. The `source` table updates every 0.01 seconds with new data. The `trigger` table updates every second, triggering a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
+In this example, there are two input tables. The `source` table is built from a time table that adds a row for every 0.1-second interval. A time table checks for new rows once per update graph cycle (one second by default) and adds one row for each interval that has elapsed since the last check. A check can add no rows or several, so this time table usually adds about 10 rows at once rather than one row every 0.1 seconds. The `trigger` table is a time table with a two-second period, and each row it adds triggers a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
 
 ```groovy ticking-table order=null
 import io.deephaven.api.snapshot.SnapshotWhenOptions
