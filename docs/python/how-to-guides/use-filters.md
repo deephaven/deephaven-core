@@ -88,7 +88,7 @@ petalwidth_inrange = iris.where(filters=["inRange(PetalWidthCM, 0, 1)"])
 
 ### String filters
 
-Deephaven stores strings as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method you can call on a Java string can filter string data. Methods such as [`startsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)), [`endswith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)), [`contains`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)), and [`matches`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) are particularly useful.
+Deephaven stores strings as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method you can call on a Java string can filter string data. Methods such as [`startsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)), [`endsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)), [`contains`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)), and [`matches`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) are particularly useful.
 
 The following code block applies these methods to filter the `iris` table on its String column, `Class`:
 
@@ -126,7 +126,7 @@ You can combine multiple match and/or conditional statements to filter data in a
 
 ### Conjunctive
 
-Conjunctive filtering returns a table where _all_ conditional filters in a [`where`](../reference/table-operations/filter/where.md) clause return `true`. Achieve conjunctive filtering by passing multiple filters into [`where`](../reference/table-operations/filter/where.md) via multiple parameters, or by using the `&&` operator in a single filter.
+Conjunctive filtering returns a table where _all_ conditional filters in a [`where`](../reference/table-operations/filter/where.md) clause return `true`. Achieve conjunctive filtering by passing a list of filters to the `filters` parameter of [`where`](../reference/table-operations/filter/where.md), or by using the `&&` operator in a single filter.
 
 The following example applies a conjunctive filter to the `iris` table to produce a new table of only Iris setosa flowers with a petal length in a specific range.
 
@@ -140,7 +140,7 @@ conjunctive_filtered_iris = iris.where(
 
 Disjunctive filtering returns a table where _one or more_ of the statements return `true`. You can accomplish this by using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) statement, or by using [`where_one_of`](../reference/table-operations/filter/where-one-of.md) to combine multiple filters.
 
-In the following example, two filters work disjunctively to return a new table where the petal length is greater than 1.9 cm or less than 1.3 cm.
+In the following example, two filters work disjunctively to return a new table where the petal length is greater than 1.9 cm or the petal width is less than 1.3 cm.
 
 ```python test-set=1 order=or_filtered_iris,iris_where_one_of
 or_filtered_iris = iris.where(filters=["PetalLengthCM > 1.9 || PetalWidthCM < 1.3"])
@@ -151,7 +151,7 @@ iris_where_one_of = iris.where_one_of(
 
 ## Filter one table based on another
 
-The [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. ​The following example uses [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica sepal widths that match and do not match Iris versicolor sepal widths:
+The [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. The following example uses [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica petal widths that match and do not match Iris versicolor petal widths:
 
 ```python test-set=1 order=virginica,versicolor,virginica_matching_petal_widths,virginica_non_matching_petal_widths
 virginica = iris.where(filters=["Class in `Iris-virginica`"])
@@ -168,7 +168,7 @@ virginica_non_matching_petal_widths = virginica.where_not_in(
 > [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) are inefficient if the filter table updates frequently.
 
 > [!TIP]
-> Unlike [`natural_join`](../reference/table-operations/join/natural-join.md), [`where_in`](../reference/table-operations/filter/where-in.md) works when more than one value in the right table matches values in the left table. This is true of [`join`](../reference/table-operations/join/join.md) as well, but [`where_in`](../reference/table-operations/filter/where.md) returns matching rows faster than [`join`](../reference/table-operations/join/join.md).
+> Unlike [`natural_join`](../reference/table-operations/join/natural-join.md), [`where_in`](../reference/table-operations/filter/where-in.md) works when more than one value in the right table matches values in the left table. This is true of [`join`](../reference/table-operations/join/join.md) as well, but [`where_in`](../reference/table-operations/filter/where-in.md) returns matching rows faster than [`join`](../reference/table-operations/join/join.md).
 >
 > [`where_in`](../reference/table-operations/filter/where-in.md) only provides filtering and does not allow adding columns from the right table. You may want to use [`where_in`](../reference/table-operations/filter/where-in.md) to filter and then [`join`](../reference/table-operations/join/join.md) to add columns from the right table. This provides similar performance to [`natural_join`](../reference/table-operations/join/natural-join.md) while still allowing matches from the right table.
 
