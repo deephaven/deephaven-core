@@ -150,7 +150,7 @@ Deephaven's performance analysis tools help you dig into an unresponsive query t
 
 The following query totals the update-processing time for each operation in the update performance log and lists the slowest operations first:
 
-```python order=slowest_ops
+```python ticking-table order=slowest_ops
 from deephaven.perfmon import update_performance_log
 
 upl = update_performance_log()
@@ -158,14 +158,19 @@ upl = update_performance_log()
 # Total time each operation has spent processing updates, slowest first
 slowest_ops = (
     upl.view(
-        ["EntryDescription", "UsageMillis = UsageNanos / 1000000.0", "InvocationCount"]
+        [
+            "EntryId",
+            "EntryDescription",
+            "UsageMillis = UsageNanos / 1000000.0",
+            "InvocationCount",
+        ]
     )
-    .sum_by("EntryDescription")
+    .sum_by(["EntryId", "EntryDescription"])
     .sort_descending("UsageMillis")
 )
 ```
 
-At the end of each reporting interval (one minute by default), the log adds a row for each operation that did significant update work during that interval. Operations that did very little work share one combined row. The table is empty until the first interval ends, and `slowest_ops` updates as your queries run.
+At the end of each reporting interval, the log adds a row for each operation that did significant update work during that interval. Operations that did very little work share one combined row. The table is empty until the first interval ends, and `slowest_ops` updates as your queries run.
 
 Common performance bottlenecks include:
 
@@ -191,13 +196,13 @@ from deephaven import agg
 
 live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
 
-# Recomputes the aggregation every time live_data updates
+# Updates the aggregation every time live_data updates
 result = live_data.agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
 ```
 
 Consider:
 
-```python order=result test-set=optimization-example
+```python ticking-table order=result test-set=optimization-example
 from deephaven import time_table
 from deephaven import agg
 

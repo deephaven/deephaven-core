@@ -146,17 +146,17 @@ Deephaven's performance analysis tools help you dig into an unresponsive query t
 
 The following query totals the update-processing time for each operation in the update performance log and lists the slowest operations first:
 
-```groovy order=slowestOps
+```groovy ticking-table order=slowestOps
 upl = updatePerformanceLog()
 
 // Total time each operation has spent processing updates, slowest first
 slowestOps = upl
-    .view("EntryDescription", "UsageMillis = UsageNanos / 1000000.0", "InvocationCount")
-    .sumBy("EntryDescription")
+    .view("EntryId", "EntryDescription", "UsageMillis = UsageNanos / 1000000.0", "InvocationCount")
+    .sumBy("EntryId", "EntryDescription")
     .sortDescending("UsageMillis")
 ```
 
-At the end of each reporting interval (one minute by default), the log adds a row for each operation that did significant update work during that interval. Operations that did very little work share one combined row. The table is empty until the first interval ends, and `slowestOps` updates as your queries run.
+At the end of each reporting interval, the log adds a row for each operation that did significant update work during that interval. Operations that did very little work share one combined row. The table is empty until the first interval ends, and `slowestOps` updates as your queries run.
 
 Common performance bottlenecks include:
 
@@ -181,13 +181,13 @@ import static io.deephaven.api.agg.Aggregation.AggSum
 
 liveData = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
 
-// Recomputes the aggregation every time liveData updates
+// Updates the aggregation every time liveData updates
 result = liveData.aggBy([AggSum("ExpensiveCalc")], "Group")
 ```
 
 Consider:
 
-```groovy order=result test-set=optimization-example
+```groovy ticking-table order=result test-set=optimization-example
 import static io.deephaven.api.agg.Aggregation.AggSum
 
 liveData = timeTable("PT1S").update("Group = ii % 3", "ExpensiveCalc = ii * 2")
