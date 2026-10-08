@@ -626,6 +626,48 @@ public class SessionStateTest {
         Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
     }
 
+    /**
+     * A released export may still be retained by something else (an earlier dependent that has not run yet, or an
+     * export listener inside its callback), so its reference count does not tell a late dependent that it is gone. The
+     * dependency must be rejected by state, not by whether the export can still be managed.
+     */
+    @Test
+    public void testLateDependencyOnReleasedExportStillRetainedElsewhereFails() {
+        final CountingLivenessReferent export = new CountingLivenessReferent();
+
+        final SessionState.ExportObject<CountingLivenessReferent> e1;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            e1 = session.<CountingLivenessReferent>newExport(nextExportId++)
+                    .submit(() -> export);
+        }
+
+        scheduler.runOne();
+        Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.EXPORTED);
+
+        // another holder keeps the released export alive, as a lookup racing the release could observe it
+        Assert.eqTrue(e1.tryRetainReference(), "e1.tryRetainReference()");
+        try {
+            e1.release();
+            Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
+
+            final MutableBoolean errored = new MutableBoolean();
+            final MutableBoolean ran = new MutableBoolean();
+            final SessionState.ExportObject<?> e2 = session.newExport(nextExportId++)
+                    .require(e1)
+                    .onErrorHandler(err -> errored.setTrue())
+                    .submit(() -> {
+                        ran.setTrue();
+                        return null;
+                    });
+            scheduler.runUntilQueueEmpty();
+            Assert.eqFalse(ran.booleanValue(), "ran.booleanValue()");
+            Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+            Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
+        } finally {
+            e1.dropReference();
+        }
+    }
+
     @Test
     public void testNewExportRequiresPositiveId() {
         expectException(IllegalArgumentException.class, () -> session.newExport(0));

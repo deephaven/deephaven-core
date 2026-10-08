@@ -857,7 +857,13 @@ public class SessionState {
             this.parents = parents;
             dependentCount = parents.size();
             for (final ExportObject<?> parent : parents) {
-                if (parent != null && !tryManage(parent)) {
+                if (parent == null) {
+                    continue;
+                }
+                // A released parent may still be retained by something else, so manage succeeding does not mean it is
+                // usable; reject by state as well. A parent that goes terminal after this point was managed while
+                // live, and its result stays valid for this export.
+                if (!tryManage(parent) || isExportStateTerminal(parent.state)) {
                     // we've failed; let's cleanup already managed parents
                     forceReferenceCountToZero();
                     alreadyDeadParent = parent;
