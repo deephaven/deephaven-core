@@ -28,12 +28,12 @@ IllegalArgumentException: Formula '<formula>' uses i, ii, k, or column array var
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                                     | Safe on                                         | Throws error on                                |
-| -------------------------------------------- | ----------------------------------------------- | ---------------------------------------------- |
-| `i`, `ii`                                    | static, append-only, blink                      | other refreshing tables, such as add-only      |
-| `k`                                          | static, add-only (including append-only), blink | other refreshing tables                        |
-| Simple constant offset (`Column_[i-1]`)      | all tables                                      | —                                              |
-| Complex array expressions (`Column_[(i)-1]`) | static, blink                                   | other refreshing tables, including append-only |
+| Variable                                     | Safe on                                         | Throws error on                                                           |
+| -------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------- |
+| `i`, `ii`                                    | static, append-only, blink                      | other refreshing tables, such as add-only tables that are not append-only |
+| `k`                                          | static, add-only (including append-only), blink | other refreshing tables                                                   |
+| Simple constant offset (`Column_[i-1]`)      | all tables                                      | —                                                                         |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink                                   | other refreshing tables, including append-only                            |
 
 > [!NOTE]
 > The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables other than blink tables.
