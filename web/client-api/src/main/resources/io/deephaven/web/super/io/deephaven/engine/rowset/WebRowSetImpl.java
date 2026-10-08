@@ -188,7 +188,10 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
 
     @Override
     public WritableRowSet subSetByKeyRange(long startKey, long endKey) {
-        throw new UnsupportedOperationException("subSetByKeyRange");
+        if (this.isEmpty() || endKey < startKey) {
+            return RowSetFactory.empty();
+        }
+        return new WebRowSetImpl(rangeSet.intersect(RangeSet.ofRange(startKey, endKey)));
     }
 
     @Override

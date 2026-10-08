@@ -623,6 +623,43 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
+    public void testZeroRowTableDoGet() throws Exception {
+        Flight.Ticket zeroRowTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(1);
+        currentSession.newExport(zeroRowTableTicket, "test")
+                .submit(() -> TableTools.emptyTable(0).update("I=i"));
+
+        long totalRowCount = 0;
+        try (FlightStream stream = flightClient.getStream(new Ticket(zeroRowTableTicket.getTicket().toByteArray()))) {
+            assertEquals(1, stream.getSchema().getFields().size());
+            while (stream.next()) {
+                totalRowCount += stream.getRoot().getRowCount();
+            }
+        }
+        assertEquals(0, totalRowCount);
+    }
+
+    @Test
+    public void testZeroRowDoPut() {
+        final int exportId = nextTicket++;
+
+        try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
+                final VectorSchemaRoot root = VectorSchemaRoot.create(createDoubleArraySchema(), allocator)) {
+            final FlightClient.ClientStreamListener stream = flightClient.startPut(
+                    FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
+
+            root.setRowCount(0);
+            stream.putNext();
+            stream.completed();
+            stream.getResult();
+
+            final SessionState.ExportObject<Table> result = currentSession.getExport(exportId);
+            Assert.eq(result.getState(), "result.getState()",
+                    ExportNotification.State.EXPORTED, "ExportNotification.State.EXPORTED");
+            Assert.eq(result.get().size(), "result.get().size()", 0);
+        }
+    }
+
+    @Test
     public void testComplexTypedTable() throws Exception {
         Flight.Ticket simpleTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(1);
         currentSession.newExport(simpleTableTicket, "test")

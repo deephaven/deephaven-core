@@ -460,8 +460,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                             List.of(GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME),
                             INDEX_ROW_SET_COLUMN_NAME,
                             RowSet.class,
-                            (final long rowKey, final ColumnSource<?>[] sources) -> RowSetFactory
-                                    .fromRange(sources[0].getLong(rowKey), sources[1].getLong(rowKey) - 1))));
+                            (final long rowKey, final ColumnSource<?>[] sources) -> {
+                                final long beginPos = sources[0].getLong(rowKey);
+                                final long endPos = sources[1].getLong(rowKey);
+                                // The end position is exclusive, so an empty group's begin and end are equal.
+                                return endPos <= beginPos
+                                        ? RowSetFactory.empty()
+                                        : RowSetFactory.fromRange(beginPos, endPos - 1);
+                            })));
         } else {
             throw new TableDataException(String.format(
                     "Index table %s for table %s was not in the expected format. Expected columns [%s] but encountered [%s]",

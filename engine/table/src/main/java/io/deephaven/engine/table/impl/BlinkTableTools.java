@@ -187,7 +187,7 @@ public class BlinkTableTools {
             }
 
             final RowSet rowSetToUse = usePrev ? parent.getRowSet().prev() : parent.getRowSet();
-            final RowSet initialRowSet = rowSetToUse.isEmpty()
+            final RowSet initialRowSet = rowSetToUse.isEmpty() || sizeLimit == 0
                     ? RowSetFactory.empty()
                     : appendRows(0, rowSetToUse, usePrev);
             resultTable = new QueryTable(initialRowSet.writableCast().toTracking(), resultColumns);
