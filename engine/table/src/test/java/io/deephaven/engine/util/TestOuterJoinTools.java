@@ -13,6 +13,9 @@ import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph;
+import io.deephaven.util.SafeCloseable;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -505,5 +508,27 @@ public class TestOuterJoinTools {
         // than the default, so the result's last key is smaller by a factor of 2^(default - reserveBits).
         final int shift = CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE - reserveBits;
         assertEquals(expected.getRowSet().lastRowKey() >> shift, result.getRowSet().lastRowKey());
+    }
+
+    @Test
+    public void testOuterJoinsUseInputUpdateGraph() {
+        final QueryTable left = TstUtils.testRefreshingTable(i(0, 1).toTracking(), intCol("K", 1, 2),
+                intCol("L", 10, 20));
+        final QueryTable right = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("K", 1), intCol("R", 100));
+
+        final UpdateGraph otherGraph =
+                EventDrivenUpdateGraph.newBuilder("TestOuterJoinToolsOtherGraph").existingOrBuild();
+        final Table leftOuterJoined;
+        final Table fullOuterJoined;
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(otherGraph).open()) {
+            leftOuterJoined = OuterJoinTools.leftOuterJoin(left, right, "K", "R");
+            fullOuterJoined = OuterJoinTools.fullOuterJoin(left, right, "K", "R");
+        }
+        assertEquals(left.getUpdateGraph(), leftOuterJoined.getUpdateGraph());
+        assertEquals(left.getUpdateGraph(), fullOuterJoined.getUpdateGraph());
+        TstUtils.assertTableEquals(newTable(intCol("K", 1, 2), intCol("L", 10, 20), intCol("R", 100, NULL_INT)),
+                leftOuterJoined);
+        TstUtils.assertTableEquals(newTable(intCol("K", 1, 2), intCol("L", 10, 20), intCol("R", 100, NULL_INT)),
+                fullOuterJoined);
     }
 }

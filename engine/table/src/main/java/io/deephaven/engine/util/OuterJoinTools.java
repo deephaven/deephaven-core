@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import com.google.common.collect.Streams;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperationsDefaults;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
@@ -16,6 +17,8 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,6 +84,19 @@ public class OuterJoinTools {
      */
     @ScriptApi
     public static Table fullOuterJoin(
+            @NotNull final Table table1,
+            @NotNull final Table table2,
+            @NotNull final MatchPair[] columnsToMatch,
+            @NotNull final MatchPair[] columnsToAdd,
+            final int numRightBitsToReserve) {
+        // like Table.join, the join runs under its inputs' update graph rather than the caller's
+        final UpdateGraph updateGraph = table1.getUpdateGraph(table2);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return fullOuterJoinImpl(table1, table2, columnsToMatch, columnsToAdd, numRightBitsToReserve);
+        }
+    }
+
+    private static Table fullOuterJoinImpl(
             @NotNull final Table table1,
             @NotNull final Table table2,
             @NotNull final MatchPair[] columnsToMatch,
@@ -212,12 +228,16 @@ public class OuterJoinTools {
             @NotNull final MatchPair[] columnsToAdd,
             final int numRightBitsToReserve) {
         final MatchPair[] useColumnsToAdd = createColumnsToAdd(rightTable, columnsToMatch, columnsToAdd);
-        return CrossJoinHelper.leftOuterJoin(
-                (QueryTable) leftTable.coalesce(),
-                (QueryTable) rightTable.coalesce(),
-                columnsToMatch,
-                useColumnsToAdd,
-                numRightBitsToReserve);
+        // like Table.join, the join runs under its inputs' update graph rather than the caller's
+        final UpdateGraph updateGraph = leftTable.getUpdateGraph(rightTable);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return CrossJoinHelper.leftOuterJoin(
+                    (QueryTable) leftTable.coalesce(),
+                    (QueryTable) rightTable.coalesce(),
+                    columnsToMatch,
+                    useColumnsToAdd,
+                    numRightBitsToReserve);
+        }
     }
 
     /**
