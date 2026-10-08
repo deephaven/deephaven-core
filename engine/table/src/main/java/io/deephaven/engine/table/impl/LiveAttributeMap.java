@@ -444,7 +444,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
                         Collections::unmodifiableMap));
     }
 
-    private void manageIfNeeded(@NotNull final Object object) {
+    private void manageIfNeeded(@Nullable final Object object) {
         if (needsManagement(object)) {
             manage((LivenessReferent) object);
         }
