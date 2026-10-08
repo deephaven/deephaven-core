@@ -1932,7 +1932,9 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final PartitionedTable partitioned =
                     SystemicObjectTracker.executeSystemically(systemic, () -> source.partitionBy("Sym"));
 
-            // Add a new key, making its constituent in a cycle run with the opposite systemic marking
+            // Add a new key in a cycle started with the opposite systemic marking. Its constituent is made on whichever
+            // thread processes the aggregation's notification, and the update graph's worker threads are systemic, so
+            // only a non-systemic creator is guaranteed to differ from the thread that makes it.
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             SystemicObjectTracker.executeSystemically(!systemic, () -> {
                 updateGraph.runWithinUnitTestCycle(() -> {
