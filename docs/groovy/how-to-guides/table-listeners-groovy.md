@@ -122,11 +122,14 @@ A [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) obje
 
 The following methods return a RowSet of the added, removed, or modified data:
 
-- [`acquire`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) - Increments the reference count for the update.
 - [`added`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#added()) - rows added during the current update cycle.
 - [`modified`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#modified()) - rows modified during the current update cycle.
 - [`removed`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#removed()) - rows removed during the current update cycle.
 - [`getModifiedPreShift`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()) - modified rows in their pre-shift row key positions (before any shifts were applied during this update cycle).
+
+These methods return row keys, not column values. To read the values, look up each row key in a [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html), as the examples below do.
+
+To keep a `TableUpdate` after `onUpdate` returns, call [`acquire`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) on it, and call [`release`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#release()) when you are done with it. Acquiring the update keeps it from being cleaned up, but it is still valid only during the updating phase in which it was created; do not use it outside that phase.
 
 The following example listens to added rows during each update cycle. It prints the data as the listener receives it.
 
@@ -317,10 +320,7 @@ new Timer().runAfter(6000) {
 
 ## Error handling
 
-If a listener encounters an error, it should throw an exception rather than catching and suppressing it. When a listener throws an exception:
-
-- In a **Persistent Query**, the exception crashes the query — which is the correct behavior, as it alerts you that something is wrong.
-- In a **Code Studio**, the error appears in the logs.
+If a listener encounters an error, it should throw an exception rather than catching and suppressing it. When `onUpdate` throws an exception, Deephaven logs the error and marks the listener as failed. A failed listener stops receiving updates.
 
 The following example throws a `RuntimeException` if it receives a value greater than 9. The exception propagates and causes the listener to fail, which is the expected behavior for a broken listener.
 
@@ -339,13 +339,12 @@ listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false)
 
     @Override
     void onUpdate(TableUpdate upstream) {
-        def added = upstream.added()
+        def x = source.getColumnSource("X", double.class)
 
-        if (added == null || added.isEmpty()) {
-            return
-        }
-        if (added.any{element -> element > 9}) {
-            throw new RuntimeException("Value exceeds 9")
+        upstream.added().forAllRowKeys { long rowKey ->
+            if (x.getDouble(rowKey) > 9) {
+                throw new RuntimeException("Value exceeds 9")
+            }
         }
     }
 }
@@ -420,16 +419,18 @@ source.addUpdateListener(listener, true)
 
 ## Dependent tables
 
-Listeners can use data from tables other than the one they are listening to if the additional tables are configured as dependencies. When one or more tables are listed as a dependency to a listener, the query engine will wait to call the listener until all dependent tables have been processed. When a table is not listed as a dependency, it may be in an inconsistent state when accessed.
+Listeners can use data from tables other than the one they are listening to if the additional tables are configured as dependencies. When one or more tables are registered as dependencies of a listener, the query engine waits to call the listener until all dependent tables have been processed. When a table is not registered as a dependency, it may be in an inconsistent state when accessed.
 
 > [!WARNING]
 > Don't do table operations inside the listener. While performing operations on the dependent tables in the listener is safe, it is not recommended because reading or operating on the result tables of those operations may not be safe. It is best to perform the operations on the dependent tables beforehand and then add the result tables as dependencies to the listener so that they can be safely read in it.
 
 For example, consider two tables, `sourceA` and `sourceB`, that tick simultaneously but cannot be joined. When listening to `sourceA`, it is not guaranteed that `sourceB` will have its updates processed in full before the listener receives the update from `sourceA`. To guarantee that all data is processed before the listener triggers, `sourceB` must be registered as a dependency for the listener.
 
+To register a dependency, override the listener's [`canExecute`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#canExecute(long)) method so that it also requires each dependency to be satisfied for the current update cycle. The following example makes `sourceB` a dependency of a listener on `sourceA`, then reads `sourceB` directly in `onUpdate`.
+
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
-import io.deephaven.engine.table.impl.BaseTable.ListenerImpl
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
 def letters = ["A", "B", "C", "D"]
 def rng = new Random()
@@ -445,22 +446,29 @@ sourceB = timeTable("PT5s")
     .lastBy("Letter")
 
 
-listener = new ListenerImpl("listener", sourceA, sourceB) {
+listener = new InstrumentedTableUpdateListenerAdapter("listener", sourceA, false) {
+
+    @Override
+    boolean canExecute(long step) {
+        // Wait until sourceB has finished processing the current update cycle
+        return super.canExecute(step) && sourceB.satisfied(step)
+    }
 
     @Override
     void onUpdate(TableUpdate upstream) {
-        added = upstream.added()
-        println "From Source A: ${added}"
-        dependentData = getDependent().select("Y")
-        iterator = dependentData.columnIterator("Y")
-        sourceBdata = ""
+        println "From Source A: ${upstream.added()}"
+        def iterator = sourceB.columnIterator("Y")
+        def sourceBdata = ""
 
-        while (iterator.hasNext()) {
-            sourceBdata = sourceBdata + iterator.next() + ", "
+        try {
+            while (iterator.hasNext()) {
+                sourceBdata = sourceBdata + iterator.next() + ", "
+            }
+        } finally {
+            iterator.close()
         }
 
         println "From Source B: ${sourceBdata}"
-
     }
 }
 
@@ -488,13 +496,13 @@ listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false)
 
     @Override
     void onUpdate(TableUpdate upstream) {
-        added = upstream.added()
+        def x = source.getColumnSource("X", double.class)
 
-        if (added == null) {
-            return
-        }
-        if (added.any{element -> element > 9}) {
-            println "value over 9 detected!"
+        upstream.added().forAllRowKeys { long rowKey ->
+            def value = x.getDouble(rowKey)
+            if (value > 9) {
+                println "value over 9 detected: ${value}"
+            }
         }
     }
 }
