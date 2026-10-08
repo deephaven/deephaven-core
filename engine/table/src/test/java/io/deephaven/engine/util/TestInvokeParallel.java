@@ -704,6 +704,72 @@ public class TestInvokeParallel {
         assertThat(runs.get()).isZero();
     }
 
+    /**
+     * A helper whose context fails to close after every task has completed fails the invocation, rather than letting it
+     * return while the failure goes only to the global reporter.
+     */
+    @Test
+    public void testHelperContextCloseFailureFailsTheInvocation() {
+        final int threadCount = 4;
+        final ExecutorJobScheduler scheduler = newScheduler(threadCount - 1, threadCount);
+        final CyclicBarrier rendezvous = new CyclicBarrier(threadCount);
+        final Thread caller = Thread.currentThread();
+        final IllegalStateException closeFailure = new IllegalStateException("close failed");
+        final AtomicInteger runs = new AtomicInteger();
+
+        assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                () -> new JobScheduler.JobThreadContext() {
+                    @Override
+                    public void close() {
+                        if (Thread.currentThread() != caller) {
+                            throw closeFailure;
+                        }
+                    }
+                }, 0, threadCount,
+                (context, idx, nec) -> {
+                    // one task on each thread, so that every helper closes its own context
+                    await(rendezvous);
+                    runs.incrementAndGet();
+                })).isSameAs(closeFailure);
+
+        assertThat(runs.get()).isEqualTo(threadCount);
+    }
+
+    /**
+     * An Error on the calling thread after another task has already failed is kept, attached to the failure that is
+     * thrown, rather than dropped because some failure was already recorded.
+     */
+    @Test
+    public void testLaterErrorOnTheCallingThreadIsSuppressedOnTheFirstFailure() {
+        final IllegalStateException taskFailure = new IllegalStateException("task failed");
+        final AssertionError closeError = new AssertionError("close error");
+        final AtomicInteger made = new AtomicInteger();
+        // runs the helper inline, so that its task fails before the caller runs its own invoker
+        final Executor inline = Runnable::run;
+
+        assertThatThrownBy(() -> new ExecutorJobScheduler(inline, 4).invokeParallel(ExecutionContext.getContext(),
+                null,
+                () -> {
+                    final boolean callersOwn = made.incrementAndGet() == 1;
+                    return new JobScheduler.JobThreadContext() {
+                        @Override
+                        public void close() {
+                            if (callersOwn) {
+                                throw closeError;
+                            }
+                        }
+                    };
+                }, 0, 2,
+                (context, idx, nec) -> {
+                    if (idx == 1) {
+                        throw taskFailure;
+                    }
+                }))
+                .isSameAs(taskFailure)
+                .satisfies(thrown -> assertThat(thrown.getSuppressed()).hasSize(1)
+                        .allSatisfy(suppressed -> assertThat(suppressed.getCause()).isSameAs(closeError)));
+    }
+
     @Test
     public void testFailureOnTheCallingThreadStopsAtTheFailingTask() {
         final List<Integer> ran = new ArrayList<>();

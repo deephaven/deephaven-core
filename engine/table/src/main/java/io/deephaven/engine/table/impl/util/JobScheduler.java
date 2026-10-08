@@ -231,6 +231,11 @@ public interface JobScheduler {
         private final AtomicInteger nextAvailableTaskIndex;
         private final AtomicInteger remainingTaskCount;
         private final AtomicReference<Exception> exception;
+        /**
+         * Failures to close a task context, kept apart from {@link #exception} because they can arrive after every task
+         * has completed; merged into it once the last reference is released.
+         */
+        private final AtomicReference<Exception> contextCloseFailure;
 
         IterationManager(
                 @Nullable final LogOutputAppendable description,
@@ -251,6 +256,7 @@ public interface JobScheduler {
             nextAvailableTaskIndex = new AtomicInteger(start);
             remainingTaskCount = new AtomicInteger(count);
             exception = new AtomicReference<>();
+            contextCloseFailure = new AtomicReference<>();
         }
 
         /**
@@ -308,13 +314,14 @@ public interface JobScheduler {
                 }
             } catch (Exception e) {
                 onTaskError(e);
-                abandonUnstarted(invokers, e);
+                abandonUnstarted(invokers);
                 throw e;
             } catch (Error e) {
-                if (exception.get() == null) {
+                // a task's Error on this thread, or a context's failure to close, was recorded where it was thrown
+                if (!isRecorded(e)) {
                     onTaskError(asDeliverableException(e));
                 }
-                abandonUnstarted(invokers, e);
+                abandonUnstarted(invokers);
                 throw e;
             } finally {
                 decrementReferenceCount();
@@ -325,19 +332,38 @@ public interface JobScheduler {
          * After a failure to start the iteration, which has already been recorded: close every invoker made for it that
          * has not started, releasing its context and its reference, so that the iteration ends without waiting for jobs
          * a queueing scheduler may start late, or never, if they are queued behind this thread. One that the scheduler
-         * starts later finds itself taken and does nothing. A context that fails to close still releases its invoker's
-         * reference; its failure is attached to {@code failure}, and the remaining invokers are closed all the same.
+         * starts later finds itself taken and does nothing.
          */
-        private void abandonUnstarted(@NotNull final List<TaskInvoker> invokers, @NotNull final Throwable failure) {
+        private void abandonUnstarted(@NotNull final List<TaskInvoker> invokers) {
             for (final TaskInvoker taskInvoker : invokers) {
                 if (taskInvoker.tryStart()) {
                     try {
                         taskInvoker.closeIfOpen();
-                    } catch (Throwable t) {
-                        failure.addSuppressed(t);
+                    } catch (Error e) {
+                        // close() recorded it, and released the reference; the remaining invokers still need closing
                     }
                 }
             }
+        }
+
+        /** @return whether {@code error} was already recorded as a failure of this iteration */
+        private boolean isRecorded(@NotNull final Error error) {
+            return isRecordedIn(exception.get(), error) || isRecordedIn(contextCloseFailure.get(), error);
+        }
+
+        private static boolean isRecordedIn(@Nullable final Exception first, @NotNull final Error error) {
+            if (first == null) {
+                return false;
+            }
+            if (first == UNREPORTABLE_JOB_ERROR || first.getCause() == error) {
+                return true;
+            }
+            for (final Throwable suppressed : first.getSuppressed()) {
+                if (suppressed.getCause() == error) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /**
@@ -389,6 +415,10 @@ public interface JobScheduler {
 
         @Override
         protected void onReferenceCountAtZero() {
+            final Exception closeFailure = contextCloseFailure.get();
+            if (closeFailure != null) {
+                recordFailure(exception, closeFailure);
+            }
             final Exception localException = exception.get();
             if (localException != null) {
                 invokeOnError(localException);
@@ -645,8 +675,15 @@ public interface JobScheduler {
 
             private void close() {
                 Assert.eqFalse(closed, "closed");
-                try (final SafeCloseable ignored = context) {
-                    closed = true;
+                closed = true;
+                try {
+                    context.close();
+                } catch (Exception e) {
+                    // recorded before the reference is released, so that the iteration cannot end without it
+                    recordFailure(contextCloseFailure, e);
+                } catch (Error e) {
+                    recordFailure(contextCloseFailure, asDeliverableException(e));
+                    throw e;
                 } finally {
                     decrementReferenceCount();
                 }

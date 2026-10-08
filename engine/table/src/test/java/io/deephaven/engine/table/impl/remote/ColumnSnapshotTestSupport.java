@@ -94,6 +94,10 @@ final class ColumnSnapshotTestSupport {
         }
 
         private void awaitIntercepted() {
+            if (!QueryTable.ENABLE_PARALLEL_SNAPSHOT) {
+                // a serial snapshot fills the columns in order, so the intercepted fill cannot begin first
+                return;
+            }
             try {
                 interceptedStarted.await(INTERCEPTED_START_WAIT_SECONDS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
