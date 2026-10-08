@@ -204,10 +204,11 @@ In this example:
 - **column_1234**: Invalid characters (`-`, `.`, `/`) are removed, then `column_` is prefixed because the result starts with a number.
 - **column_123**: Numeric value is prefixed with `column_`.
 - **WARN**: Additional standard column name.
-- **Sum_Normal**, **Count_Normal**: Multiple aggregations prefix the column name. The aggregation prefix is added before the name is cleaned up, so `123` becomes `Sum_123`. That name starts with a letter, so it doesn't get the `column_` prefix.
+- **Sum_Normal**, **Count_Normal**: Multiple aggregations prefix the column name.
+- **Sum_123**, **Count_123**: The aggregation prefix is added before the name is cleaned up. The resulting name starts with a letter, so it doesn't get the `column_` prefix.
 - **INFO_10**, **WARN_10**: Multiple column-by values are joined with underscores.
 
-This example does not produce duplicate names. The two `INFO` rows for each `RowKey` are aggregated into a single group before transposing, so they produce one `INFO` column, not two. Duplicate names occur only when two different values clean up to the same name, such as `INFO` and `IN.FO`: the first becomes `INFO` and the second gets a numeric suffix, `INFO2`.
+This example does not produce duplicate names. The two `INFO` rows for each `RowKey` are aggregated into a single group before transposing, so they produce one `INFO` column, not two. Duplicate names occur when two different combinations of values produce the same output name. For example, `INFO` and `IN.FO` both clean up to `INFO`, and the column-by tuples `("A_B", "C")` and `("A", "B_C")` both join to `A_B_C`. The first such column keeps the name and each later one gets a numeric suffix, such as `INFO2`.
 
 ### Sanitize data before transposing
 
