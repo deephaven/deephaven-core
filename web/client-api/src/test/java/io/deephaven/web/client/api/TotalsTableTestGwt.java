@@ -114,11 +114,52 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    // TODO: https://deephaven.atlassian.net/browse/DH-11196
-    public void ignore_testTotalsOnFilteredTable() {
+    public void testTotalsOnFilteredTable() {
         JsTotalsTable[] totalTables = {null, null};
+        filteredTableWithTotals(totalTables)
+                .then(this::finish).catch_(this::report);
+    }
+
+    // TODO (deephaven-core#242): reviving tables after a reconnect is untested, and the totals tables do not come back.
+    public void ignore_testTotalsOnFilteredTableAfterReconnect() {
+        JsTotalsTable[] totalTables = {null, null};
+        filteredTableWithTotals(totalTables)
+                .then(table -> {
+                    // forcibly disconnect the worker and test that the total table come back up, and respond to
+                    // re-filtering.
+                    table.getConnection().forceReconnect();
+                    return Promise.resolve(table);
+                })
+                .then(table -> waitForEvent(table, JsTable.EVENT_RECONNECT, 5001).onInvoke(table))
+                .then(table -> promiseAllThen(table,
+                        waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
+                                checkTotals(totalTables[0], 2, 5, 1, "c1"), 7505),
+                        waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
+                                checkTotals(totalTables[1], 5, 6, 0, "c2"), 7506)))
+                .then(table -> {
+                    // Now... refilter the original table, and assert that the totals tables update.
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    table.setViewport(0, 100, null);// not strictly required, but part of the normal usage
+
+                    return promiseAllThen(table,
+                            waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2003).onInvoke(table),
+                            waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
+                                    checkTotals(totalTables[0], 3, 6.666666, 0.0, "d1"), 2507),
+                            waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
+                                    checkTotals(totalTables[1], 5, 6., 0., "d2"), 2508));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Filters the hasTotals table, creates a totals and a grand totals table from it, then changes the filter and waits
+     * for both totals tables to reflect the change.
+     */
+    private Promise<JsTable> filteredTableWithTotals(JsTotalsTable[] totalTables) {
         Promise[] totalPromises = {null, null};
-        connect(tables)
+        return connect(tables)
                 .then(table("hasTotals"))
                 .then(table -> {
                     delayTestFinish(8000);
@@ -167,34 +208,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                     checkTotals(totalTables[0], 2, 5, 1, "b1"), 2503),
                             totalPromises[1] = waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
                                     checkTotals(totalTables[1], 5, 6, 0, "b2"), 2504));
-                })
-                .then(table -> {
-                    // forcibly disconnect the worker and test that the total table come back up, and respond to
-                    // re-filtering.
-                    table.getConnection().forceReconnect();
-                    return Promise.resolve(table);
-                })
-                .then(table -> waitForEvent(table, JsTable.EVENT_RECONNECT, 5001).onInvoke(table))
-                .then(table -> promiseAllThen(table,
-                        waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                checkTotals(totalTables[0], 2, 5, 1, "c1"), 7505),
-                        waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                checkTotals(totalTables[1], 5, 6, 0, "c2"), 7506)))
-                .then(table -> {
-                    // Now... refilter the original table, and assert that the totals tables update.
-                    table.applyFilter(new FilterCondition[] {
-                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
-                    });
-                    table.setViewport(0, 100, null);// not strictly required, but part of the normal usage
-
-                    return promiseAllThen(table,
-                            waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2003).onInvoke(table),
-                            waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[0], 3, 6.666666, 0.0, "d1"), 2507),
-                            waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[1], 5, 6., 0., "d2"), 2508));
-                })
-                .then(this::finish).catch_(this::report);
+                });
     }
 
     public void testClosingTotalsWhileClearingFilter() {
