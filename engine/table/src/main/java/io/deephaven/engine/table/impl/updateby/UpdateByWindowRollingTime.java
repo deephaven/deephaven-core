@@ -258,7 +258,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                     // timestampValidRowSet is a subset of sourceRowSet, so equal sizes mean the bucket has no null
                     // timestamps; with none before or after this update, no timestamp can have changed to or from null
                     final boolean hadOrHasNulls = ctx.sourceRowSet.size() != ctx.timestampValidRowSet.size()
-                            || ctx.sourceRowSet.prev().size() != ctx.timestampValidRowSet.prev().size();
+                            || ctx.sourceRowSet.sizePrev() != ctx.timestampValidRowSet.sizePrev();
                     if (operatorsRequirePositions && hadOrHasNulls) {
                         // A timestamp modified to or from null shifts the positions of later rows, so operators that
                         // store windows as position offsets must cascade like an add or remove for those rows. Other
