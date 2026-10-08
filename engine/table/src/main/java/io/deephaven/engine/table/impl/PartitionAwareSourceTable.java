@@ -116,12 +116,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 additionalPartitioningColumnFilters.stream())
                 .map(WhereFilter::copy)
                 .toArray(WhereFilter[]::new);
-        final PartitionAwareSourceTable filtered = newInstance(definition,
+        return newInstance(definition,
                 getDescription() + ".where(" + additionalPartitioningColumnFilters + ')',
-                componentFactory, locationProvider, updateSourceRegistrar, null, partitioningColumnDefinitions,
-                resultPartitioningColumnFilters);
-        copyAttributes(filtered, CopyAttributeOperation.Filter);
-        return filtered;
+                componentFactory, locationProvider, updateSourceRegistrar,
+                getAttributesToCopy(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Filter)),
+                partitioningColumnDefinitions, resultPartitioningColumnFilters);
     }
 
     /**

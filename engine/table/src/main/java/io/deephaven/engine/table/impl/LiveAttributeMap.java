@@ -319,6 +319,21 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     }
 
     /**
+     * Get our attributes whose keys satisfy {@code shouldCopy}, for another map to use as its initial attributes.
+     *
+     * @param shouldCopy Should we copy the attribute with this key?
+     * @return Our own published attributes if every key satisfies {@code shouldCopy}, else a new map of those that do,
+     *         which is never mutated, since {@link #ensureAttributes()} replaces initial attributes before any change
+     */
+    protected final Map<String, Object> getAttributesToCopy(@NotNull final Predicate<String> shouldCopy) {
+        final Map<String, Object> localImmutableAttributes = immutableAttributes();
+        if (localImmutableAttributes.keySet().stream().allMatch(shouldCopy)) {
+            return localImmutableAttributes;
+        }
+        return buildAttributes(shouldCopy, Map.of());
+    }
+
+    /**
      * Build the attributes for a copy of {@code this}: our attributes whose keys satisfy {@code shouldKeep}, overlaid
      * with {@code toAdd}.
      *

@@ -245,4 +245,12 @@ public class TestLiveAttributeMap {
         assertEquals(1, value.retained);
         assertEquals(0, value.dropped);
     }
+
+    @Test
+    public void testGetAttributesToCopy() {
+        final AttrMap map = newMap(newScope(), Map.of("a", "1", "b", "2"));
+        assertSame(map.getAttributes(), map.getAttributesToCopy(ak -> true));
+        assertEquals(Map.of("a", "1"), map.getAttributesToCopy("a"::equals));
+        assertTrue(map.getAttributesToCopy(ak -> false).isEmpty());
+    }
 }

@@ -1298,4 +1298,18 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(result.getRowSet().firstRowKey(), "result.getRowSet().firstRowKey()",
                 RegionedColumnSource.getFirstRowKey(0), "first region");
     }
+
+    @Test
+    public void testPartitionWhereCopiesFilterAttributes() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                locationProvider(tds, "A", "B");
+        final Table source = partitionedSource(locationProvider, "filterAttributes").withAttributes(Map.of(
+                Table.SORTABLE_COLUMNS_ATTRIBUTE, "partition",
+                Table.MERGED_TABLE_ATTRIBUTE, true));
+
+        final Table filtered = source.where("partition in `A`");
+        Assert.eq(filtered.getAttribute(Table.SORTABLE_COLUMNS_ATTRIBUTE), "sortable columns", "partition");
+        Assert.eqFalse(filtered.hasAttribute(Table.MERGED_TABLE_ATTRIBUTE), "has merged attribute");
+    }
 }
