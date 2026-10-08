@@ -121,7 +121,7 @@ This configuration limits each snapshot chunk to exactly 1 million cells — wel
 
 ## Compact pending deltas
 
-The server records one delta — the set of changes from a single update graph cycle — for each subscriber, then sends the accumulated deltas when that subscriber's [update interval](#update-interval) elapses. A subscriber served less often than its table ticks therefore holds every intervening cycle's data at once, even though the message it eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with the number of cycles per update interval, not with the size of the update.
+The server records one delta — the set of changes from a single update graph cycle — for each table and update interval that has subscribers. Subscribers that use the same update interval share those deltas, and the server sends the accumulated deltas when the [update interval](#update-interval) elapses. When the table ticks more than once per update interval, the server therefore holds every intervening cycle's data at once, even though the message each subscriber eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with both the size of each cycle's changes and the number of cycles per update interval.
 
 To limit that growth, the server combines the pending deltas in the background, before the interval elapses. Compacting costs processor time and saves memory, so the server pays for it only where there is memory to reclaim. It compares the storage the pending deltas occupy against the storage they would occupy compacted, and compacts when the saving clears both of two thresholds:
 
@@ -133,7 +133,7 @@ held - compacted >= max(compactionFloorBytes, compactionMinFreedFraction * held)
 
 The two thresholds answer different questions. The fraction asks whether compacting is worthwhile at all; the floor asks whether the saving is large enough to be worth the work.
 
-- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts a subscriber's pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
+- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts the pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
 - `-DBarrageMessageProducer.compactionMinFreedFraction`: The fraction of the pending deltas' storage that compacting must release for the server to do it. Default: `0.5`. A higher value copies less data but lets the pending deltas grow larger — at `0.9` the server copies about a ninth as much and holds about ten times the compacted footprint.
 - `-DBarrageMessageProducer.compactionFloorBytes`: The number of bytes compacting must release, whatever fraction of the total that represents. Default: `4194304` (4 MiB). This keeps a stream of very small updates from compacting on every cycle, where the work costs the same as a compaction that reclaims far more.
 - `-DBarrageMessageProducer.deltaChunkSize`: The number of rows in each chunk a delta records. Default: `65536`. A value that is not a power of two rounds up to the next one.
