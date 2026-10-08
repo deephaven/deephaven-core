@@ -34,7 +34,7 @@ dependencies locally with vcpkg (slow, but automatic) only when the image
 cannot be pulled: because you have modified one of those files and CI has not
 published the matching image yet, or because the registry is unreachable.
 Once your change lands on `main`, CI publishes the matching image and everyone
-else gets pulls again.
+else goes back to pulling it.
 
 To run the C++ client unit tests against a Deephaven server, all in Docker:
 
@@ -48,8 +48,8 @@ debugger.
 
 ## Where the logs are
 
-Everything streams to your console live; nothing waits silently. If you need
-to dig after the fact:
+Everything streams to your console live, including the progress of the image
+pull; nothing waits silently. If you need to dig after the fact:
 
 * Dependencies build (only happens on a cache miss): the full vcpkg output is
   written to `cpp-client/build/cppDepsImage-build.log` as it happens. It is

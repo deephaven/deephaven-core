@@ -129,6 +129,10 @@ add_library(deephaven::client ALIAS ${PROJECT_NAME})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Exported (PUBLIC) so that consumers of the installed package inherit the
+# requirement: our public headers include Arrow's, which need C++20.
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+
 if (LINUX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     set(CMAKE_CXX_STANDARD_REQUIRED TRUE)

@@ -120,11 +120,11 @@ if(NOT DHCORE_ONLY)
 
       # Publish our vcpkg manifest next to the CMake package config so that
       # downstream consumers (e.g. the enterprise client) can verify at their
-      # configure time that they build with the same vcpkg baseline and
-      # version overrides. Mismatched pins mean the two projects install
-      # incompatible copies of shared third-party DLLs (abseil, protobuf,
-      # arrow, ...) into the same prefix, which fails at load time with
-      # "Entry Point Not Found".
+      # configure time that they build from the same vcpkg manifest (the same
+      # baseline, hence the same dependency versions). Mismatched pins mean
+      # the two projects install incompatible copies of shared third-party
+      # DLLs (abseil, protobuf, arrow, ...) into the same prefix, which fails
+      # at load time with "Entry Point Not Found".
       install(
         FILES
         vcpkg.json

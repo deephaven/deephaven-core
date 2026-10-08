@@ -88,7 +88,9 @@ abstract class CppDepsImageTask extends DefaultTask {
         String ref = imageRef.get()
         if (tryExec(['docker', 'image', 'inspect', ref])) {
             logger.lifecycle("C++ deps image ${ref} already present locally.")
-        } else if (tryExec(['docker', 'pull', ref])) {
+        } else if (tryExec(['docker', 'manifest', 'inspect', ref])) {
+            logger.lifecycle("Pulling C++ deps image ${ref} (several GB on first use; progress follows).")
+            execOperations.exec { it.commandLine(['docker', 'pull', ref]) }
             logger.lifecycle("C++ deps image ${ref} pulled.")
         } else {
             File logFile = new File(markerFile.get().asFile.parentFile, 'cppDepsImage-build.log')
