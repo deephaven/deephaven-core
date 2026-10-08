@@ -16,13 +16,13 @@ Deephaven provides a suite of tools that makes Kafka integration easy.
 
 <div className="row">
 
-<CoreTutorialCard to="../conceptual/kafka-in-deephaven">
+<CoreTutorialCard to="/core/docs/conceptual/kafka-basic-terms">
 
-## Kafka in Deephaven
+## Kafka basic terms
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="../how-to-guides/data-import-export/kafka-stream">
+<CoreTutorialCard to="/core/docs/how-to-guides/data-import-export/kafka-stream">
 
 ## Connect to a Kafka stream
 
@@ -38,11 +38,11 @@ Event Stream, meet Real-Time Engine
 
 Event-based applications have succeeded in providing a path forward for traditional transactional workloads at scale. Many have replaced monolithic database systems, running business operations instead as event processors connected by pub/sub platforms like Kafka. These platforms provide enough delivery guarantees to absorb transactional semantics and recovery provisions, while enabling unprecedented horizontal scaling.
 
-This transformation has created an opportunity. In monolithic systems, you only get to see the end state, the result of a transaction. The information about “how we got there”, the inputs to the transaction itself, the triggers, are never recorded. In contrast, pub/sub systems capture the triggers (since they are already modeled as events), and not only for the main production systems: at a small incremental cost, another application can see the same events. Diagnostics transformed the practice of medicine in the 20th century as blood tests, imaging, endoscopy and biopsies offered physicians an insider's view of a patient's body. A similar revolution is happening today in business operations as they become informed by live data.
+This transformation has created an opportunity. In monolithic systems, you only get to see the end state, the result of a transaction. The information about "how we got there", the inputs to the transaction itself, the triggers, are never recorded. In contrast, pub/sub systems capture the triggers (since they are already modeled as events), and not only for the main production systems: at a small incremental cost, another application can see the same events. Diagnostics transformed the practice of medicine in the 20th century as blood tests, imaging, endoscopy and biopsies offered physicians an insider's view of a patient's body. A similar revolution is happening today in business operations as they become informed by live data.
 
 But the nature of this analysis challenge is different. Event platforms decouple producers from consumers. Liberated from the need to serialize in front of a single monolithic system door, event flows multiply and adapt much faster to satisfy evolving operational needs. The trend in Kafka deployments is an ever increasing number of operational, system-to-system (1-to-1 or small-n-to-small-n) specific feeds. The problem boundary has moved from how to build scalable processing pipelines that model business operations, to detecting trends, distilling insights, and capturing and disseminating those insights as actionable information via executable models that produce derived feeds in real time. Since trends change quickly, a fast explore-model-deploy cycle is critical.
 
-**Enter Deephaven.** Deephaven was born from the need for fast data-driven R&D cycles for quantitative finance in the capital markets industry. Market trends change quickly. Success is driven not only by the ability to innovate, but by the speed of innovation. It is a handicap to have data exploration, model fitting, backtesting, implementation and deployment done as separate activities by siloed people in languages and tools that don’t mix. Having different representations for streaming and historical data only compounds the problem. The Deephaven engine was developed and has evolved to serve a world where feeds are fundamental and both live and historical data share a common vocabulary. To succeed in that world, Deephaven provides common abstractions for streams and static tables via a unified table operations library, in one’s language of choice, for code running both in-process within the data engine or externally as a client, all while using popular and interoperable data formats.
+**Enter Deephaven.** Deephaven was born from the need for fast data-driven R&D cycles for quantitative finance in the capital markets industry. Market trends change quickly. Success is driven not only by the ability to innovate, but by the speed of innovation. It is a handicap to have data exploration, model fitting, backtesting, implementation and deployment done as separate activities by siloed people in languages and tools that don't mix. Having different representations for streaming and historical data only compounds the problem. The Deephaven engine was developed and has evolved to serve a world where feeds are fundamental and both live and historical data share a common vocabulary. To succeed in that world, Deephaven provides common abstractions for streams and static tables via a unified table operations library, in one's language of choice, for code running both in-process within the data engine or externally as a client, all while using popular and interoperable data formats.
 
 ## A Kafka example in Deephaven
 
@@ -73,28 +73,29 @@ It is important to note that when we execute `readTable` to load the historical 
 After a bit more browsing, we switch to a graphical view for more perspective. We want a line graph for the last 4 months of data. We create a filtered version of the table:
 
 ```groovy skip-test
-svcUseLast4months = svcUse.where("Date > `20210501`")
+svcUseLast4months = svcUse.where("Date > `2021-05-01`")
 ```
 
-With the panel for this new table selected, we click on **Table Options** and pick **Chart Builder** from the menu (alternatively, we can type `svcUseLast4months.plot()`). A simple line chart will do for now. From the graph, we realize the data has marked seasonality; we believe it may follow a “time of the day - day of the week” pattern. To confirm our guess, we define a derived table adding a few columns:
+With the panel for this new table selected, we click on **Table Options** and pick [**Chart Builder**](./user-interface/chart-builder.md) from the menu. A simple line chart will do for now. From the graph, we realize the data has marked seasonality; we believe it may follow a "time of day, day of week" pattern. To confirm our guess, we define a derived table adding a few columns:
 
 ```groovy skip-test
-def secs(ts) {
-    // Note: we round to a 10s period
-    return 10 * ((ts.getMillis() / 10000) as int)
-}
+import java.time.Instant
+
+// Note: we round to a 10s period
+secs = { Instant ts -> 10L * (long) (ts.toEpochMilli() / 10000) }
 
 svcUseDecorated = svcUse.updateView(
-    "OrdinalDay=secs(Timestamp) / (24*60*60)",
-    "SecondsInDay=secs(Timestamp) % (24*60*60)",
-    "OrdinalWeek=OrdinalDay / 7",
+    "Secs=(long) secs(Timestamp)",
+    "OrdinalDay=(long) (Secs / (24*60*60))",
+    "SecondsInDay=Secs % (24*60*60)",
+    "OrdinalWeek=(long) (OrdinalDay / 7)",
     "DayOfWeek=OrdinalDay % 7"
 )
 ```
 
 Similarly to how the loading of data from the partitioned Parquet files does not happen until specific rows are pulled by downstream operations, here column values for the result of `updateView` will be computed and materialized in memory only as needed by some later operation, like a UI view or a chained computation. There is also no additional memory cost in the derived table for the pre-existing columns: they exist only as references to row ranges in the base table.
 
-Note also in the code above, the Groovy native function `secs` is mixed into column expressions. We are giving code to the query engine for future evaluation when calculating query operation results.
+Note also in the code above, the Groovy closure `secs` is mixed into column expressions. We are giving code to the query engine for future evaluation when calculating query operation results.
 
 Some filtering from this new table combined with graphing confirms our intuition about seasonality; exceptions to this rule happen on holidays where the daily pattern resembles the one for Sundays. We make a note for later to incorporate this complexity in our model, and ignore it for now.
 
@@ -111,7 +112,7 @@ We explore the idea by defining several derived tables and looking at graphs and
 - A table to represent the average as defined above as a tentative baseline.
 - A table to compare live samples arriving right now to its baseline.
 
-Creating a table to represent the average for the last four values that match time of day and day of week involves doing aggregations and filtering. As table operations go, these are slightly more complicated and a detailed description is beyond the scope of this document. In general terms, the code below restricts samples to the last 4 weeks, and then aggregates by the `SecondsInDay` column:
+Creating a table to represent the average for the last four values that match time of day and day of week involves doing aggregations and filtering. As table operations go, these are slightly more complicated and a detailed description is beyond the scope of this document. In general terms, the code below restricts samples to the last 4 weeks, and then aggregates by the `DayOfWeek` and `SecondsInDay` columns:
 
 <!--TODO: link to overviews -->
 
@@ -121,18 +122,18 @@ import static io.deephaven.api.agg.Aggregation.AggAvg
 
 
 tz = DateTimeUtils.timeZone("ET") // replace by correct time zone
-lastMidnightSecs = secs(DateTimeUtils.atMidnight(DateTimeUtils.now(), TZ))
-svcUseLast4weeks = svcUseDecorated.where("secs(Timestamp) >= lastMidnightSecs - 4*7*24*60*60")
+lastMidnightSecs = secs(DateTimeUtils.atMidnight(DateTimeUtils.now(), tz))
+svcUseLast4weeks = svcUseDecorated.where("Secs >= lastMidnightSecs - 4*7*24*60*60")
 
 svcUseLast4WeeksAvg = svcUseLast4weeks.aggBy(
     [AggAvg("Last4Avg=Value")],
-    "OrdinalDay", "SecondsInDay"
+    "DayOfWeek", "SecondsInDay"
 )
 ```
 
 We are ready now to get live samples to compare against. Ingesting the Kafka feed to a live Deephaven table is simple, and the result is powerful: _the generated table is a live table that looks and feels like our previous tables for historical data_.
 
-This example assumes we have an Avro schema defined for the Kafka `Value` field in the `ServiceUse` topic, and we are reading it from a schema service under the name `serviceUseRecord`:
+This example assumes we have an Avro schema defined for the Kafka `Value` field in the `ServiceUse` topic, and we are reading it from a schema service under the name `service_use_record`. The record has a `Value` field that holds the request count:
 
 ```groovy skip-test
 import io.deephaven.kafka.KafkaTools
@@ -146,15 +147,14 @@ liveUse = KafkaTools.consumeToTable(
     "ServiceUse",
     KafkaTools.ALL_PARTITIONS,
     KafkaTools.ALL_PARTITIONS_DONT_SEEK,
-    KafkaTools.Consume.IGNORE,
     KafkaTools.Consume.simpleSpec('ServiceName', java.lang.String),
-    KafkaTools.Consume.avroSpec('service_use_record', 'serviceUseRecord'),
+    KafkaTools.Consume.avroSpec('service_use_record'),
     KafkaTools.TableType.append()
 ).where("ServiceName =`MySvcName`")
 ```
 
 > [!NOTE]
-> This query can be written more efficiently by applying the `where` operation before collecting events. As written, `consumeToTable` collects events immediately as they arrive (`KafkaTools.TableType.append()`). The more efficient version requires using `KafkaTools.TableType.blink()`, applying the filter, and then using `.blinkToAppendOnly()` after the filter. For more information, see our reference guide for [`consumeToTable`](../reference/data-import-export/Kafka/consumeToTable.md).
+> This query can be written more efficiently by applying the `where` operation before collecting events. As written, `consumeToTable` collects events immediately as they arrive (`KafkaTools.TableType.append()`). The more efficient version requires using `KafkaTools.TableType.blink()`, applying the filter, and then passing the result to [`BlinkTableTools.blinkToAppendOnly`](../reference/table-operations/create/blink-to-append-only.md). For more information, see our reference guide for [`consumeToTable`](../reference/data-import-export/Kafka/consumeToTable.md).
 
 There are a few important points about live tables that deserve more explanation:
 
@@ -162,11 +162,15 @@ There are a few important points about live tables that deserve more explanation
 2. All table methods, operations and functions work identically on live tables as on static tables. No separate vocabularies or concepts.
 3. Moreover, derived tables defined by queries on live tables are also live. Query operation results are calculated efficiently by considering previous results and state and incrementally applying row adds, modifies and deletes as appropriate for the operation (see our concept guide on the [Deephaven table update model](../conceptual/table-update-model.md) for details). For example, the filtering done by the `where` operation above is implemented by processing added (and more generally, potentially removed or modified) rows to its parent table. Instead of recomputing the result of the whole filter every time the parent table changes, it updates the previous result with the relevant change information (add, modifies and deletes) from the base table.
 
-Now we are ready to decorate the live data with the last 4 samples average we calculated previously:
+Now we are ready to decorate the live data with the last 4 samples average we calculated previously. First, we derive the join-key columns `DayOfWeek` and `SecondsInDay` from the `KafkaTimestamp` column that the consumer adds to the live table:
 
 ```groovy skip-test
-liveUseWithLast4weeksAvg = liveUse.naturalJoin(
-    svcUseLast4WeeksAvg, "SecondsInDay"
+liveUseWithLast4weeksAvg = liveUse.updateView(
+    "Secs=(long) secs(KafkaTimestamp)",
+    "SecondsInDay=Secs % (24*60*60)",
+    "DayOfWeek=((long) (Secs / (24*60*60))) % 7"
+).naturalJoin(
+    svcUseLast4WeeksAvg, "DayOfWeek, SecondsInDay"
 ).updateView("PredictedDiff=Value-Last4Avg", "PredictedPct=100*Value/Last4Avg")
 ```
 
@@ -182,7 +186,7 @@ useAnomalies = liveUseWithLast4weeksAvg.where("abs(PredictedPct-100) > 5")
 
 We have a clear model idea developed now. Naturally, our next step is implementation and deployment of production quality code that can give our organization a feed for the model we just created. Traditionally, this will imply change of language, tools and processes, even perhaps including handing the baton from one person to another in the organization, with all the friction and incremental costs implied. These costs are amplified by any future need to refine the model or bug fixing. Separate codebases for modeling and deployment also open the question for how to ensure they implement the same thing (although seldom any testing is done to this effect).
 
-But what if we could run the same code we developed to model the problem to actually implement the resulting feed? **We can.** The same table definitions we used as a chain of query operations can be saved as a script and executed under Deephaven’s [Application Mode](../how-to-guides/application-mode.md).
+But what if we could run the same code we developed to model the problem to actually implement the resulting feed? **We can.** The same table definitions we used as a chain of query operations can be saved as a script and executed under Deephaven's [Application Mode](../how-to-guides/application-mode.md).
 
 ## Live table (or feed) to action
 
@@ -190,16 +194,16 @@ What can we do with a feed in Deephaven? We can compute derived feeds, we can in
 
 1. Publish a live table as a Kafka topic or make it available for subscription from another Deephaven data engine process. The data engine implements a specialization of the Arrow Flight protocol that allows extending the efficient Deephaven table update model over the network: [Barrage](https://github.com/deephaven/barrage). Read more about this in our [Deephaven Core API concept guide](../conceptual/deephaven-core-api.md).
 2. The Deephaven Code Studio can be scripted to create rich dashboards that include graphs, tabular data, and programmable graphical elements like filter selection widgets and buttons executing arbitrary code. Deephaven has collected significant experience in dashboarding from the complex needs of risk modeling and compliance monitoring in capital markets.
-3. Since code runs in the Deephaven data engine as a library accessible from your language of choice, you can import any libraries in that language to integrate functionality. Define and monitor metrics against tolerance thresholds and trigger alerts in your organization’s Incident Response Platform. Send notifications to a messaging application. Place orders in an automated ordering system.
+3. Since code runs in the Deephaven data engine as a library accessible from your language of choice, you can import any libraries in that language to integrate functionality. Define and monitor metrics against tolerance thresholds and trigger alerts in your organization's Incident Response Platform. Send notifications to a messaging application. Place orders in an automated ordering system.
 
 ## Try Deephaven
 
-1. Try interactively, generate ideas and create models, ship code: prototype Kafka applications quickly, productize even quicker (it’s already done).
+1. Try interactively, generate ideas and create models, ship code: prototype Kafka applications quickly, productize even quicker (it's already done).
 2. Leverage a uniform compute model for live and historical data that enables problem decomposition. Build complex answers from the bottom up from the results of smaller queries. Express intermediate results as tables for the clarity of your model without the memory and computational cost of multiple copies of the data. Move away from explicitly handling batches and time windows for processing streams.
 3. Run code not only between queries, but inline with a query, as part of query result computation. Instead of moving the data to your client application and back, embed your code in the data engine, either by running as a script in the engine itself, or as a Deephaven client application operating on table proxies.
 
 ## Related documentation
 
-- [Kafka in Deephaven](../conceptual/kafka-basic-terms.md)
+- [Kafka basic terms](../conceptual/kafka-basic-terms.md)
 - [Connect to a Kafka stream](./data-import-export/kafka-stream.md)
 - [`consumeToTable`](../reference/data-import-export/Kafka/consumeToTable.md)

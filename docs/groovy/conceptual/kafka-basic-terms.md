@@ -22,7 +22,7 @@ Individual Kafka feeds are called topics. Topics are are identified by a name. W
 
 ### Partition
 
-Partition is a positive integer value used to divide a topic into parts. By selecting individual partitions, subscribers can opt to listen to only a subset of messages from a topic.
+A partition is a part of a topic, identified by an integer starting at zero. By selecting individual partitions, subscribers can opt to listen to only a subset of messages from a topic.
 
 A topic may have a single partition or many. The producer selects the partition for a message when the data is written to the Kafka stream.
 
@@ -112,7 +112,7 @@ Kafka's JSON schema provides ways to encode keys and values as a wide variety of
 
 ### Protobuf
 
-[Protocol Buffers (Protobuf)](https://protobuf.dev/) is a language and platform-neutral mechanism for serializing structured data. Deephaven uses Protobuf in many different ways, including Kafka. Protobuf is a great choice for interoperability, especially when using Deephaven as a Kafka producer. Consumers on basically any other platform and using any other language can consume it with ease.
+[Protocol Buffers (Protobuf)](https://protobuf.dev/) is a language and platform-neutral mechanism for serializing structured data. Deephaven uses Protobuf in many different ways, including Kafka. Deephaven can consume Protobuf-encoded Kafka streams, either fetching the message descriptor from a schema registry or loading a message class from the classpath. Deephaven does not currently produce Protobuf to Kafka.
 
 ## Kafka-specific Deephaven topics
 
@@ -120,7 +120,7 @@ The previous sections introduced Kafka concepts. The following sections describe
 
 ### Key and value specification
 
-A key specification and a value specification, called a `KeyValueSpec` in code, maps between columnar data in tables and key-value pairs in Kafka messages. Deephaven has specifications for all of the [formats](#format) listed above. Key specifications specify the mapping between table columns and Kafka message keys, while value specifications specify the mapping between table columns and Kafka message values.
+Key and value specifications map between columnar data in tables and key-value pairs in Kafka messages. In code, they are `KeyOrValueSpec` objects: `KafkaTools.Consume.KeyOrValueSpec` for consuming and `KafkaTools.Produce.KeyOrValueSpec` for producing. Deephaven has consume specifications for all of the [formats](#format) listed above, and produce specifications for JSON and Avro. Key specifications specify the mapping between table columns and Kafka message keys, while value specifications specify the mapping between table columns and Kafka message values.
 
 ### Table types
 

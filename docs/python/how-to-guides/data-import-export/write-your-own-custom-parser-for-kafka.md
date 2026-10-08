@@ -3,7 +3,7 @@ title: Write your own custom parser for Kafka
 subtitle: Custom parser
 ---
 
-Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Python objects and table columns.
+Kafka topics often contain data that does not fit neatly into Deephaven's built-in formats such as simple, JSON, Avro, or Protobuf. In these cases, you can write your own parser that converts raw bytes from Kafka into Python objects and table columns, or build a key or value spec with [`object_processor_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec), as described in [Alternative: Use an object processor spec](#alternative-use-an-object-processor-spec).
 
 This guide shows how to:
 
@@ -43,7 +43,7 @@ In this guide, you will:
 
 The first step is to consume the Kafka value as a `byte_array`. This preserves the payload exactly as it appears on the wire, letting you apply any parsing you need.
 
-```python docker-config=kafka order=null
+```python docker-config=kafka test-set=1 order=null
 from deephaven.stream.kafka import consumer as kc
 from deephaven import dtypes as dht
 
@@ -64,13 +64,13 @@ In this example:
 - **`Bytes`** is the column that will hold the raw Kafka value as a `byte_array`.
 - **`KeyValueSpec.IGNORE`** skips the Kafka key.
 - **`ALL_PARTITIONS_SEEK_TO_END`** starts reading from the latest offsets only.
-- **`TableType.append()`** creates an append-only table of all messages.
+- **`TableType.append`** creates an append-only table that keeps every message it receives.
 
 ## Step 2: Define a domain object and parser function
 
 Next, you define a Python data class to represent the logical payload, and a parser function that converts raw bytes into that object.
 
-```python docker-config=kafka order=null
+```python docker-config=kafka test-set=1 order=null
 from dataclasses import dataclass
 import json
 
@@ -98,10 +98,10 @@ You can adjust `parse_person` to match any format your topic uses, such as CSV, 
 
 With the raw table and parser in place, you can call [`update`](../../reference/table-operations/select/update.md) to create a column that holds the parsed object, and then project that into regular columns.
 
-```python syntax
-from jpy import PyObject
-
-parsed_table = raw_table.update(["Person = (PyObject) parse_person(Bytes)"]).view(
+```python docker-config=kafka test-set=1 order=parsed_table
+parsed_table = raw_table.update(
+    ["Person = (org.jpy.PyObject) parse_person(Bytes)"]
+).view(
     [
         "Age = (int) Person.age",
         "Name = (String) Person.name",
@@ -119,6 +119,8 @@ The resulting `parsed_table` has the following columns:
 You can still keep the original `Bytes` column or drop it if you no longer need it.
 
 ## Alternative: Use an object processor spec
+
+An object processor spec is a Kafka key or value spec built from an object processor: a component that turns each record's raw bytes into values for one or more named, typed columns. You pass the spec to `consume` as the `key_spec` or `value_spec`, and the processor fills those columns as records arrive, so no parsing step is needed in your query.
 
 For some advanced use cases, you may want to register a reusable parser implementation and reference it via [`object_processor_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec). This is especially useful when:
 
