@@ -124,9 +124,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             @NotNull final Object newValue) {
         manageIfNeeded(newValue);
         ensureAttributes().put(key, newValue);
-        if (currentValue != null && needsManagement(currentValue)) {
-            unmanage((LivenessReferent) currentValue);
-        }
+        unmanageIfNeeded(currentValue);
     }
 
     /**
@@ -435,7 +433,13 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
         }
     }
 
-    private static boolean needsManagement(@NotNull final Object object) {
+    private void unmanageIfNeeded(@Nullable final Object object) {
+        if (needsManagement(object)) {
+            unmanage((LivenessReferent) object);
+        }
+    }
+
+    private static boolean needsManagement(@Nullable final Object object) {
         return object instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(object);
     }
 }
