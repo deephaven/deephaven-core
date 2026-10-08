@@ -105,13 +105,15 @@ public class OuterJoinTools {
         // perform the leftOuterJoin; it's missing right-side only rows
         final Table leftTable = leftOuterJoin(table1, table2, columnsToMatch, columnsToAdd, numRightBitsToReserve);
 
-        // find a sentinel column name to use to identify right-side only rows
+        // find a sentinel column name to use to identify right-side only rows; it is natural joined onto table2, so it
+        // must name neither a result column nor a table2 column
         int numAttempts = 0;
         String sentinelColumnName;
         final Set<String> resultColumns = leftTable.getDefinition().getColumnNameSet();
+        final Set<String> table2Columns = table2.getDefinition().getColumnNameSet();
         do {
             sentinelColumnName = "__sentinel_" + (numAttempts++) + "__";
-        } while (resultColumns.contains(sentinelColumnName));
+        } while (resultColumns.contains(sentinelColumnName) || table2Columns.contains(sentinelColumnName));
 
         // only need match columns from the left; rename to right names and drop remaining to avoid name conflicts
         final List<SelectColumn> leftColumns = Streams.concat(

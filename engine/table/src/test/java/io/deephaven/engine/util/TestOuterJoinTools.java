@@ -531,4 +531,15 @@ public class TestOuterJoinTools {
         TstUtils.assertTableEquals(newTable(intCol("K", 1, 2), intCol("L", 10, 20), intCol("R", 100, NULL_INT)),
                 fullOuterJoined);
     }
+
+    @Test
+    public void testFullOuterJoinTable2ColumnNamedLikeSentinel() {
+        final Table table1 = newTable(intCol("K", 1, 2), intCol("A", 10, 20));
+        final Table table2 = newTable(intCol("K", 2, 3), intCol("B", 200, 300), intCol("__sentinel_0__", 0, 0));
+
+        final Table result = OuterJoinTools.fullOuterJoin(table1, table2, "K", "B");
+
+        TstUtils.assertTableEquals(newTable(intCol("K", 1, 2, 3), intCol("A", 10, 20, NULL_INT),
+                intCol("B", NULL_INT, 200, 300)), result);
+    }
 }
