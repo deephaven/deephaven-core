@@ -26,7 +26,7 @@ A more common use case is to create a ring table from a blink table to preserve 
 ```groovy ticking-table order=null
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools
 
-source = timeTable("PT00:00:01").update("X = i")
+source = timeTableBuilder().period("PT00:00:01").blinkTable(true).build().update("X = i")
 result = RingTableTools.of(source, 5)
 ```
 

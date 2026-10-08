@@ -38,8 +38,8 @@ The data is in memory. We can replay it with the following steps:
 from deephaven.replay import TableReplayer
 from deephaven.time import to_j_instant
 
-start_time = to_j_instant("2019-08-25T15:34:55Z")
-end_time = to_j_instant("2019-08-25T17:10:22Z")
+start_time = to_j_instant("2019-08-25T15:34:56Z")
+end_time = to_j_instant("2019-08-25T21:10:21Z")
 
 replayer = TableReplayer(start_time, end_time)
 replayed_table = replayer.add_table(metric_century, "Time")
