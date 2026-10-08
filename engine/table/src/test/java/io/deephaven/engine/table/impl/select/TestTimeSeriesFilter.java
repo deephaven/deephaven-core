@@ -447,4 +447,75 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final WhereFilter inverted = WhereFilterInvertedImpl.of(timeSeriesFilter);
         assertTrue(inverted instanceof WhereFilterInvertedImpl);
     }
+
+    /**
+     * A caller may ask whether a filter is refreshing before the filter has seen its source table, for example to
+     * decide how to apply it. The time series filter cannot know yet, so it answers conservatively, including through a
+     * composed filter.
+     */
+    public void testIsRefreshingBeforeBeginOperation() {
+        // Rows are one minute apart. At 30 minutes, rows 0 through 24 are older than the five minute window; at 40
+        // minutes, rows 0 through 34 are. The composed filter keeps only even rows.
+        checkIsRefreshingBeforeBeginOperation(false, 17, 12, 0);
+        checkIsRefreshingBeforeBeginOperation(true, 13, 18, 30);
+    }
+
+    private void checkIsRefreshingBeforeBeginOperation(
+            final boolean invert,
+            final int expectedSize,
+            final int expectedSizeAfterTick,
+            final int expectedStaticSize) {
+        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
+
+        final int size = 60;
+        final Instant[] times = new Instant[size];
+        final int[] sentinel = new int[size];
+
+        for (int ii = 0; ii < times.length; ++ii) {
+            sentinel[ii] = ii;
+            times[ii] = DateTimeUtils.epochNanosToInstant(start + (ii * DateTimeUtils.MINUTE));
+        }
+
+        final QueryTable source =
+                testTable(RowSetFactory.flat(size).toTracking(), col("Timestamp", times), intCol("Sentinel", sentinel));
+        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
+
+        final TimeSeriesFilter timeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).invert(invert)
+                        .build();
+        assertTrue(timeSeriesFilter.isRefreshing());
+
+        final WhereFilter composed =
+                ConjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("Sentinel % 2 == 0"));
+        assertTrue(composed instanceof ConjunctiveFilter);
+        assertTrue(composed.isRefreshing());
+
+        final Table filtered = source.where(composed);
+        assertTrue(filtered.isRefreshing());
+        assertEquals(expectedSize, filtered.size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            testClock.setNanos(start + 40 * DateTimeUtils.MINUTE);
+            timeSeriesFilter.runForUnitTests();
+        });
+        assertEquals(expectedSizeAfterTick, filtered.size());
+
+        // Every row is already outside the window, and the source is static, so once the filter has seen the source
+        // it knows nothing will ever change.
+        final TestClock lateClock = new TestClock().setNanos(start + 120 * DateTimeUtils.MINUTE);
+        final TimeSeriesFilter staticTimeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(lateClock).invert(invert)
+                        .build();
+        final WhereFilter staticComposed =
+                ConjunctiveFilter.of(staticTimeSeriesFilter, WhereFilterFactory.getExpression("Sentinel % 2 == 0"));
+        assertTrue(staticTimeSeriesFilter.isRefreshing());
+        assertTrue(staticComposed.isRefreshing());
+
+        final Table staticFiltered = source.where(staticComposed);
+        assertFalse(staticFiltered.isRefreshing());
+        assertEquals(expectedStaticSize, staticFiltered.size());
+        assertFalse(staticTimeSeriesFilter.isRefreshing());
+        assertFalse(staticComposed.isRefreshing());
+    }
 }

@@ -17,7 +17,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.SortedClockFilter;
+import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
@@ -28,6 +30,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.qst.type.Type;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import org.assertj.core.api.Assertions;
 import org.junit.After;
@@ -520,6 +523,59 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(coalesced.size(), "res0.size()", partitionSize * 2);
     }
 
+    /**
+     * A filter on non-partitioning columns is deferred, and the deferred table asks each filter whether it is
+     * refreshing before the filter has seen its source table. Here the window can still move past the rows, so the
+     * filter is refreshing once it has seen the source.
+     */
+    @Test
+    public void testDeferredTimeSeriesFilter() {
+        // the test locations' timestamps are a few nanoseconds after the epoch, so all of them are in the window
+        final TestClock clock = new TestClock().setNanos(DateTimeUtils.MINUTE);
+        checkDeferredTimeSeriesFilter(clock, false, true, 4 * 128);
+        checkDeferredTimeSeriesFilter(clock, true, true, 0);
+    }
+
+    /**
+     * As {@link #testDeferredTimeSeriesFilter()}, but every row is already outside the window and the source is static,
+     * so once the filter has seen the source it knows that nothing will ever change.
+     */
+    @Test
+    public void testDeferredTimeSeriesFilterStatic() {
+        final TestClock clock = new TestClock().setMillis(Instant.now().toEpochMilli());
+        checkDeferredTimeSeriesFilter(clock, false, false, 0);
+        checkDeferredTimeSeriesFilter(clock, true, false, 4 * 128);
+    }
+
+    private void checkDeferredTimeSeriesFilter(
+            final TestClock clock,
+            final boolean invert,
+            final boolean expectRefreshing,
+            final long expectedSize) {
+        // Coalescing applies copies of the deferred filters, so only the coalesced table, not the filters we hold,
+        // learns whether anything can change.
+        final long partitionSize = 128;
+
+        final WhereFilter timeSeriesFilter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT5m").clock(clock).invert(invert).build();
+        assertTrue(timeSeriesFilter.isRefreshing());
+        final Table bare = testStaticFilterSplit(partitionSize, timeSeriesFilter);
+        assertTrue(bare instanceof DeferredViewTable);
+        final Table bareCoalesced = bare.coalesce();
+        assertEquals(expectedSize, bareCoalesced.size());
+        assertEquals(expectRefreshing, bareCoalesced.isRefreshing());
+
+        final WhereFilter composedTimeSeriesFilter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT5m").clock(clock).invert(invert).build();
+        final WhereFilter composed = DisjunctiveFilter.of(
+                composedTimeSeriesFilter, WhereFilter.of(RawString.of("II < 0"))).withDeclaredBarriers(new Object());
+        assertTrue(composed.isRefreshing());
+        final Table viaComposed = testStaticFilterSplit(partitionSize, composed);
+        assertTrue(viaComposed instanceof DeferredViewTable);
+        final Table composedCoalesced = viaComposed.coalesce();
+        assertEquals(expectedSize, composedCoalesced.size());
+        assertEquals(expectRefreshing, composedCoalesced.isRefreshing());
+    }
 
     @Test
     public void testSortedClockFilterReorderingWithAttribute() {
