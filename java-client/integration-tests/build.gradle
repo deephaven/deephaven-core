@@ -5,6 +5,7 @@ import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.github.dockerjava.api.command.InspectContainerResponse
+import io.deephaven.tools.docker.DeephavenInDockerExtension
 import io.deephaven.tools.docker.WaitForHealthyContainer
 
 plugins {
@@ -154,8 +155,9 @@ def waitForTlsPort = tasks.register('waitForTlsPort', DockerInspectContainer) { 
     t.containerId.set tlsContainerName
     t.onNext { Object obj ->
         def inspect = (InspectContainerResponse) obj
-        tlsPort.set(Integer.parseInt(inspect.networkSettings.ports.bindings.values().first()[0].hostPortSpec))
-        tlsHost.set(inspect.networkSettings.ports.bindings.values().first()[0].hostIp)
+        def firstBinding = inspect.networkSettings.ports.bindings.values().first()[0]
+        tlsHost.set(DeephavenInDockerExtension.hostFor(firstBinding))
+        tlsPort.set(Integer.parseInt(firstBinding.hostPortSpec))
     }
 }
 def writeTlsServerLogs = tasks.register('writeTlsServerLogs', DockerLogsContainer) { t ->

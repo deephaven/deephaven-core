@@ -58,7 +58,7 @@ class TlsTest {
 
     private static DeephavenTarget target(boolean secure) {
         return DeephavenTarget.builder()
-                .host("localhost")
+                .host(ExampleRunner.requireProperty("dh.host"))
                 .port(Integer.parseInt(ExampleRunner.requireProperty("dh.tls.port")))
                 .isSecure(secure)
                 .build();

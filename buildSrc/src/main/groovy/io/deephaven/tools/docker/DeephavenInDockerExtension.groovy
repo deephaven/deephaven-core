@@ -10,6 +10,7 @@ import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.network.DockerCreateNetwork
 import com.bmuschko.gradle.docker.tasks.network.DockerRemoveNetwork
 import com.github.dockerjava.api.command.InspectContainerResponse
+import com.github.dockerjava.api.model.Ports
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -49,6 +50,11 @@ public abstract class DeephavenInDockerExtension {
 
     abstract MapProperty<String, String> getEnvVars();
 
+    /**
+     * The host on which the exposed port is reachable, available after the "waitForPort" task is
+     * complete. Taken from the port binding docker reports; a wildcard binding is reported as
+     * localhost, see {@link #hostFor}.
+     */
     abstract Property<String> getHost();
 
     /**
@@ -57,6 +63,20 @@ public abstract class DeephavenInDockerExtension {
      * it here after the "waitForPort" task is complete.
      */
     abstract Property<Integer> getPort();
+
+    /**
+     * The host a client should connect to for a port binding docker reported. Docker reports a
+     * port published without an explicit address as bound to the wildcard address, 0.0.0.0 or ::,
+     * which is not a destination; those become localhost. A daemon configured with a default bind
+     * address reports that address instead, and it is returned as is.
+     */
+    static String hostFor(Ports.Binding binding) {
+        def hostIp = binding.hostIp
+        if (hostIp == null || hostIp.isEmpty() || hostIp == '0.0.0.0' || hostIp == '::') {
+            return 'localhost'
+        }
+        return hostIp
+    }
 
     /**
      * A condition to test to see if server logs should be printed to the build output.
@@ -118,7 +138,7 @@ public abstract class DeephavenInDockerExtension {
             task.onNext { Object obj ->
                 def inspect = (InspectContainerResponse) obj
                 def firstBinding = inspect.getNetworkSettings().ports.bindings.values().first()[0]
-                getHost().set(firstBinding.hostIp)
+                getHost().set(hostFor(firstBinding))
                 getPort().set(Integer.parseInt(firstBinding.hostPortSpec))
             }
         }
