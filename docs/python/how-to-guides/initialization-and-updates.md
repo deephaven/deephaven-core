@@ -16,9 +16,12 @@ This guide explains:
 Consider this code:
 
 ```python syntax
+from deephaven import kafka_consumer
+import deephaven.pandas as dhpd
+
 # This LOOKS sequential, but it's not!
 trades = kafka_consumer.consume(...)  # Create ticking table
-first_price = trades.first_by("Symbol").to_pandas()["Price"][0]  # Get first price
+first_price = dhpd.to_pandas(trades.first_by("Symbol"))["Price"][0]  # Get first price
 print(f"First price: {first_price}")
 ```
 
@@ -78,13 +81,13 @@ For details on how Deephaven processes updates internally, see [Incremental upda
 
 Here's the quick reference. Details follow in the sections below.
 
-| DO                                                                                                                    | DON'T                                                                             |
-| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Use table operations — let the engine handle consistency.                                                             | Extract data to Python immediately after creating a ticking table.                |
-| Wait for data with [`await_update`](../reference/table-operations/table-listeners/await-update.md) before extracting. | Assume data exists just because you created the table.                            |
-| Use [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to get a static copy for Python processing.      | Call [`to_pandas`](../reference/pandas/to-pandas.md) directly on a ticking table. |
-| Use [listeners](./table-listeners-python.md) for reacting to updates.                                                 | Access other tables inside listeners.                                             |
-| Initialize state with `do_replay=True`.                                                                               | Mix data from different update cycles.                                            |
+| DO                                                                                                                    | DON'T                                                              |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Use table operations — let the engine handle consistency.                                                             | Extract data to Python immediately after creating a ticking table. |
+| Wait for data with [`await_update`](../reference/table-operations/table-listeners/await-update.md) before extracting. | Assume data exists just because you created the table.             |
+| Use [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to get a static copy for Python processing.      | Hold the update graph lock during long computations.               |
+| Use [listeners](./table-listeners-python.md) for reacting to updates.                                                 | Access other tables inside listeners.                              |
+| Initialize state with `do_replay=True`.                                                                               | Mix data from different update cycles.                             |
 
 ## Waiting for data: the `await_update` pattern
 
@@ -185,6 +188,9 @@ print(f"Captured {len(df)} rows")
 ```
 
 The snapshot creates a static table that won't change, making it safe to extract and process in Python.
+
+> [!NOTE]
+> [`to_pandas`](../reference/pandas/to-pandas.md) takes its own snapshot of a refreshing table, so calling it directly on a ticking table also returns a consistent DataFrame. Use `snapshot` when you want a static Deephaven table to keep working with.
 
 ### Pattern 3: Use `snapshot_when` for controlled timing
 
@@ -306,9 +312,9 @@ state = initialize_from_table(source)
 handle = listen(source, create_update_handler(state))
 ```
 
-### Pattern 7: Use locking for direct table access (advanced)
+### Pattern 7: Use locking for consistent reads across tables (advanced)
 
-For advanced use cases where you need to read directly from a ticking table, use the update graph lock:
+For advanced use cases where several reads must see the same update cycle, hold the update graph lock around all of them. A single `to_pandas` call doesn't need the lock, because `to_pandas` already snapshots its table. Extracting two tables under one lock guarantees both DataFrames come from the same cycle:
 
 ```python ticking-table order=null
 from deephaven import time_table
@@ -316,19 +322,20 @@ from deephaven.update_graph import shared_lock
 import deephaven.pandas as dhpd
 
 source = time_table("PT0.5s").update("X = ii")
+totals = source.view("X").sum_by()
 
 
 def extract_data_safely():
-    # DO: Use lock for direct access to ticking data
+    # DO: Hold one lock so both extractions see the same update cycle
     with shared_lock(source):
-        # Table is guaranteed consistent while lock is held
         df = dhpd.to_pandas(source)
-        return df
+        totals_df = dhpd.to_pandas(totals)
+    return df, totals_df
 
 
 # Call when needed
-df = extract_data_safely()
-print(f"Extracted {len(df)} rows safely")
+df, totals_df = extract_data_safely()
+print(f"Extracted {len(df)} rows and {len(totals_df)} total row(s) from the same cycle")
 ```
 
 > [!CAUTION]
@@ -336,35 +343,18 @@ print(f"Extracted {len(df)} rows safely")
 
 ## Unsafe patterns
 
-### DON'T read ticking data without synchronization
-
-```python should-fail
-from deephaven import time_table
-import deephaven.pandas as dhpd
-
-source = time_table("PT0.1s").update("X = ii")
-
-# DON'T: Direct extraction from ticking table
-df = dhpd.to_pandas(source)  # May get inconsistent data!
-```
-
-**What can go wrong:**
-
-- The table might be mid-update when you read.
-- Some columns could have new values, others old values.
-- Row keys might have shifted.
-
-**Do instead:** Use `snapshot` first, or use locking.
-
 ### DON'T access other tables inside listeners
 
 ```python should-fail
 from deephaven.table_listener import listen
+import deephaven.pandas as dhpd
 
 
 def bad_listener(update, is_replay):
     # DON'T: Access other tables in listeners
-    other_data = other_table.to_pandas()  # Dangerous - may be inconsistent!
+    other_data = dhpd.to_pandas(
+        other_table
+    )  # Dangerous - may not reflect this update cycle!
 
 
 handle = listen(source, bad_listener)
@@ -447,10 +437,11 @@ import deephaven.pandas as dhpd
 
 # DO: Minimize lock duration
 with shared_lock(source):
-    df = dhpd.to_pandas(source)  # Quick extraction
+    df = dhpd.to_pandas(source)  # Quick extractions only
+    totals_df = dhpd.to_pandas(totals)
 
 # Process OUTSIDE the lock
-result = expensive_ml_training(df)
+result = expensive_ml_training(df, totals_df)
 save_to_database(result)
 ```
 
@@ -464,7 +455,7 @@ save_to_database(result)
 | Aggregate ticking data with custom Python logic | Use table operations (`agg_by`, `update_by`), or Python functions in formulas. |
 | Initialize ML model from table state            | `do_replay=True` in listener, or snapshot before listening.                    |
 | Join ticking data with external database        | Snapshot the ticking table, then join in Python.                               |
-| Debug why data looks inconsistent               | Check if you're reading without synchronization; add logging to listener.      |
+| Debug why data looks inconsistent               | Check for multi-table reads outside one lock or in listeners; add logging.     |
 
 ## Understanding the update cycle
 

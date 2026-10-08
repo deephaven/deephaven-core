@@ -27,9 +27,9 @@ Deephaven table columns support a rich type system built on Java's type system. 
       <td>Numeric calculations, counters, measurements</td>
     </tr>
     <tr>
-      <td scope="row"><a href="#primitive-boolean-and-char">Primitive boolean/char</a></td>
-      <td><code>boolean</code>, <code>char</code></td>
-      <td>✅ (special null values)</td>
+      <td scope="row"><a href="#boolean-and-char">Boolean/char</a></td>
+      <td><code>Boolean</code>, <code>char</code></td>
+      <td>✅ (<code>char</code>: special null value; <code>Boolean</code>: Java <code>null</code>)</td>
       <td>✅</td>
       <td>Flags, single characters</td>
     </tr>
@@ -141,11 +141,11 @@ t5 = emptyTable(3).update(
 )
 ```
 
-### Primitive boolean and char
+### Boolean and char
 
 #### Boolean type
 
-The `boolean` type represents true/false values:
+The `Boolean` type represents true/false values. Boolean columns have the data type `java.lang.Boolean`, and their null value is Java `null` (`NULL_BOOLEAN`). Comparison expressions produce `Boolean` columns:
 
 ```groovy test-set=1 order=t6
 t6 = emptyTable(5).update("Value = ii", "IsEven = ii % 2 == 0", "IsPositive = ii > 2")
@@ -252,7 +252,7 @@ t12 = emptyTable(2).update(
 
 ### String type
 
-The `String` type stores text data. Deephaven automatically interns strings to optimize memory usage for low-cardinality string columns.
+The `String` type stores text data.
 
 #### Creating string columns
 
@@ -284,17 +284,17 @@ t14 = emptyTable(3).update(
 )
 ```
 
-#### String interning and memory
+#### Strings and memory
 
-Deephaven automatically interns strings, which means identical string values share the same memory location. This is very efficient for low-cardinality columns (like categories or symbols) but less beneficial for high-cardinality data (like unique IDs or free-form text).
+Deephaven does not automatically intern strings that formulas produce. A formula that builds strings at runtime, such as by concatenation, creates a new `String` object for each row, even when values repeat. String literals in a formula, such as `` `Active` `` in the example below, are shared across rows. A low-cardinality column built from literals (like categories or symbols) therefore uses less memory than a high-cardinality column (like unique IDs or free-form text).
 
 ```groovy test-set=1 order=t15
-// Low cardinality: memory efficient (only 3 unique strings stored)
+// Low cardinality: only 3 distinct values
 t15 = emptyTable(1000).update(
     "Status = ii % 3 == 0 ? `Active` : (ii % 3 == 1 ? `Pending` : `Closed`)"
 )
 
-// High cardinality: less efficient (many unique strings)
+// High cardinality: many distinct values
 t16 = emptyTable(1000).update(
     "UniqueId = `ID-` + ii" // 1000 unique strings
 )
@@ -549,7 +549,6 @@ sorted_with_nulls = t31.sort("NullableInt")
 - Prefer primitive types over objects (e.g., `int` over `Integer`, `double` over `BigDecimal`).
 - Use appropriate numeric precision (don't use `long` when `int` suffices).
 - Be cautious with high-cardinality strings and object columns.
-- Consider string interning benefits for categorical data.
 
 ### Ensure type safety
 
@@ -560,13 +559,13 @@ sorted_with_nulls = t31.sort("NullableInt")
 
 ### Performance considerations
 
-| Operation            | Fast                            | Slow                           |
-| -------------------- | ------------------------------- | ------------------------------ |
-| Primitive arithmetic | ✅ `int`, `long`, `double`      | ❌ `BigDecimal`                |
-| String operations    | ✅ Low-cardinality strings      | ❌ High-cardinality strings    |
-| Null checks          | ✅ Primitive nulls (`NULL_INT`) | ❌ Complex null checking logic |
-| Aggregations         | ✅ Numeric primitives           | ❌ Complex objects             |
-| Memory usage         | ✅ Primitives, interned strings | ❌ Objects, large arrays       |
+| Operation            | Fast                                    | Slow                           |
+| -------------------- | --------------------------------------- | ------------------------------ |
+| Primitive arithmetic | ✅ `int`, `long`, `double`              | ❌ `BigDecimal`                |
+| String operations    | ✅ Low-cardinality strings              | ❌ High-cardinality strings    |
+| Null checks          | ✅ Primitive nulls (`NULL_INT`)         | ❌ Complex null checking logic |
+| Aggregations         | ✅ Numeric primitives                   | ❌ Complex objects             |
+| Memory usage         | ✅ Primitives, repeated string literals | ❌ Objects, large arrays       |
 
 ## Related documentation
 

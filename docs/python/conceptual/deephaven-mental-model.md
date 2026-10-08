@@ -69,11 +69,11 @@ You _can_ call Python functions from formulas, but understand that this crosses 
 from deephaven import empty_table
 
 
-def my_calculation(x):
+def my_calculation(x: int) -> int:
     return x**2 + 1
 
 
-result = empty_table(10).update("Y = (int)my_calculation(i)")
+result = empty_table(10).update("Y = my_calculation(i)")
 ```
 
 When you reference a Python function in a formula, the engine must cross into Python to evaluate it. When the call is eligible for auto-vectorization — a bare function call with simple column or constant arguments and a supported return type, as in this example — the engine batches it into one Python call per chunk of rows; otherwise, it falls back to one Python call per row. Either way, this is slower than pure-engine formulas. For performance-critical code, prefer engine-native expressions.
@@ -375,8 +375,9 @@ def transform_func(t):
     )
 
 
-# transform() captures the calling execution context and reopens it for every
-# constituent, including ones added later on update-graph threads
+# transform applies transform_func to every constituent, including ones added later.
+# If the function uses query-string formulas or query-scope variables, open an
+# execution context inside it (see Partitioned tables).
 transformed = by_symbol.transform(transform_func)
 ```
 
