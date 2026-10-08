@@ -89,7 +89,7 @@ deniro = read_csv(
 
 #### Tab-delimited data
 
-Deephaven allows you to specify other delimiters as a second argument if your file is not comma-delimited. In the example below, we read a tab-delimited file, which requires a second argument.
+Use the `delimiter` argument if your file is not comma-delimited. The example below reads a tab-delimited file with `delimiter="\t"`.
 
 ```python order=deniro_tsv
 from deephaven import read_csv
@@ -102,7 +102,7 @@ deniro_tsv = read_csv(
 
 #### Pipe-delimited data
 
-Any character can be used as a delimiter. The pipe character (`|`) is common. In the example below, we supply the delimiter `|` as the second argument.
+Any character can be used as a delimiter. The pipe character (`|`) is common. In the example below, we set `delimiter="|"`.
 
 ```python order=deniro_psv
 from deephaven import read_csv
@@ -115,9 +115,9 @@ deniro_psv = read_csv(
 
 #### Trim
 
-By default, quoted values that have leading and trailing white space include the white space when reading the CSV file. For example, if `" Taxi Driver "` is in the CSV file, it will be read as `Taxi Driver`.
+By default, quoted values that have leading and trailing white space include the white space when reading the CSV file. For example, if `" Taxi Driver "` is in the CSV file, the value keeps its leading and trailing spaces instead of being read as `Taxi Driver`.
 
-By setting `trim` to `true` when reading the CSV file, these leading and trailing white space will be removed. So `" Taxi Driver "` will be read as `Taxi Driver`.
+Set `trim` to `True` to remove this leading and trailing white space. Then `" Taxi Driver "` is read as `Taxi Driver`.
 
 ### Using optional arguments
 

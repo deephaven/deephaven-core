@@ -54,7 +54,7 @@ If you are using Docker-installed Deephaven, you can find a `/data` folder insid
 
 ### Null values
 
-Null values are common in tables. How are they handled when exporting data to a CSV? This depends on how you call [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md).
+Null values are common in tables. This section shows how [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md) handles them when exporting data to a CSV.
 
 First, let's create a table with null values. The example below uses the [ternary conditional operator](../ternary-if-how-to.md) to fill the `SinX` column with a large number of nulls.
 
@@ -79,7 +79,16 @@ from deephaven import write_csv
 write_csv(source_with_nulls, "/data/TrigFunctionsWithNulls.csv")
 ```
 
-![The newly written CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
+`write_csv` writes null values as empty fields. The first lines of `TrigFunctionsWithNulls.csv` are:
+
+```text
+X,SinX,CosX,TanX
+0.0,,1.0,0.0
+0.1,0.09983341664682815,0.9950041652780258,0.10033467208545055
+0.2,,0.9800665778412416,0.2027100355086725
+0.30000000000000004,0.2955202066613396,0.955336489125606,0.3093362496096233
+0.4,,0.9210609940028851,0.4227932187381618
+```
 
 ### Column selection
 
