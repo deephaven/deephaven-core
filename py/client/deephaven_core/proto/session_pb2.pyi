@@ -5,260 +5,367 @@ isort:skip_file
 Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import deephaven_core.proto.ticket_pb2
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
+from collections import abc as _abc
+from deephaven_core.proto import ticket_pb2 as _ticket_pb2
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+if sys.version_info >= (3, 13):
+    from warnings import deprecated as _deprecated
+else:
+    from typing_extensions import deprecated as _deprecated
 
-@typing.final
-class WrappedAuthenticationRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-    TYPE_FIELD_NUMBER: builtins.int
-    PAYLOAD_FIELD_NUMBER: builtins.int
-    type: builtins.str
+@_typing.final
+class WrappedAuthenticationRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    TYPE_FIELD_NUMBER: _builtins.int
+    PAYLOAD_FIELD_NUMBER: _builtins.int
+    type: _builtins.str
     """
     The type of the protobuf the auth payload protobuf.
     """
-    payload: builtins.bytes
+    payload: _builtins.bytes
     """
     The serialized payload of the protobuf instance.
     """
     def __init__(
         self,
         *,
-        type: builtins.str = ...,
-        payload: builtins.bytes = ...,
+        type: _builtins.str = ...,
+        payload: _builtins.bytes = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["payload", b"payload", "type", b"type"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["payload", b"payload", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___WrappedAuthenticationRequest: typing_extensions.TypeAlias = WrappedAuthenticationRequest
+Global___WrappedAuthenticationRequest: _TypeAlias = WrappedAuthenticationRequest  # noqa: Y015
 
-@typing.final
-class HandshakeRequest(google.protobuf.message.Message):
+@_typing.final
+class HandshakeRequest(_message.Message):
     """
     The request that a client provides to a server on handshake.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    AUTH_PROTOCOL_FIELD_NUMBER: builtins.int
-    PAYLOAD_FIELD_NUMBER: builtins.int
-    auth_protocol: builtins.int
-    """
-    A defined protocol version.
+    AUTH_PROTOCOL_FIELD_NUMBER: _builtins.int
+    PAYLOAD_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def auth_protocol(self) -> _builtins.int:
+        """
+        A defined protocol version.
 
-    Deephaven's OSS protocols are as follows:
-    - protocol = 0: most recent HandshakeResponse payload
-    - protocol = 1: payload is BasicAuth
-    """
-    payload: builtins.bytes
-    """
-    Arbitrary auth/handshake info.
-    """
+        Deephaven's OSS protocols are as follows:
+        - protocol = 0: most recent HandshakeResponse payload
+        - protocol = 1: payload is BasicAuth
+        """
+
+    @auth_protocol.setter
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def auth_protocol(self, value: _builtins.int) -> None:
+        """
+        A defined protocol version.
+
+        Deephaven's OSS protocols are as follows:
+        - protocol = 0: most recent HandshakeResponse payload
+        - protocol = 1: payload is BasicAuth
+        """
+
+    @_builtins.property
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def payload(self) -> _builtins.bytes:
+        """
+        Arbitrary auth/handshake info.
+        """
+
+    @payload.setter
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def payload(self, value: _builtins.bytes) -> None:
+        """
+        Arbitrary auth/handshake info.
+        """
+
     def __init__(
         self,
         *,
-        auth_protocol: builtins.int = ...,
-        payload: builtins.bytes = ...,
+        auth_protocol: _builtins.int = ...,
+        payload: _builtins.bytes = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["auth_protocol", b"auth_protocol", "payload", b"payload"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["auth_protocol", b"auth_protocol", "payload", b"payload"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HandshakeRequest: typing_extensions.TypeAlias = HandshakeRequest
+Global___HandshakeRequest: _TypeAlias = HandshakeRequest  # noqa: Y015
 
-@typing.final
-class HandshakeResponse(google.protobuf.message.Message):
+@_typing.final
+class HandshakeResponse(_message.Message):
     """
     Servers respond with information needed to make subsequent requests tied to this session.
     The session token should be refreshed prior to the deadline, which is represented as milliseconds since the
     epoch. Clients are encouraged to use the expiration delay and cookie deadline to determine a good time to refresh.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    METADATA_HEADER_FIELD_NUMBER: builtins.int
-    SESSION_TOKEN_FIELD_NUMBER: builtins.int
-    TOKEN_DEADLINE_TIME_MILLIS_FIELD_NUMBER: builtins.int
-    TOKEN_EXPIRATION_DELAY_MILLIS_FIELD_NUMBER: builtins.int
-    metadata_header: builtins.bytes
-    """
-    The metadata header to identify the session. This value is static and defined via configuration.
-    """
-    session_token: builtins.bytes
-    """
-    Arbitrary session_token to assign to the value to the provided metadata header.
-    """
-    token_deadline_time_millis: builtins.int
-    """
-    When this session_token will be considered invalid by the server.
-    """
-    token_expiration_delay_millis: builtins.int
-    """
-    The length of time that this token was intended to live. Note that `refreshSessionToken` may return the
-    existing token to reduce overhead and to prevent denial-of-service caused by refreshing too frequently.
-    """
+    METADATA_HEADER_FIELD_NUMBER: _builtins.int
+    SESSION_TOKEN_FIELD_NUMBER: _builtins.int
+    TOKEN_DEADLINE_TIME_MILLIS_FIELD_NUMBER: _builtins.int
+    TOKEN_EXPIRATION_DELAY_MILLIS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def metadata_header(self) -> _builtins.bytes:
+        """
+        The metadata header to identify the session. This value is static and defined via configuration.
+        """
+
+    @metadata_header.setter
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def metadata_header(self, value: _builtins.bytes) -> None:
+        """
+        The metadata header to identify the session. This value is static and defined via configuration.
+        """
+
+    @_builtins.property
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def session_token(self) -> _builtins.bytes:
+        """
+        Arbitrary session_token to assign to the value to the provided metadata header.
+        """
+
+    @session_token.setter
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def session_token(self, value: _builtins.bytes) -> None:
+        """
+        Arbitrary session_token to assign to the value to the provided metadata header.
+        """
+
+    @_builtins.property
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def token_deadline_time_millis(self) -> _builtins.int:
+        """
+        When this session_token will be considered invalid by the server.
+        """
+
+    @token_deadline_time_millis.setter
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def token_deadline_time_millis(self, value: _builtins.int) -> None:
+        """
+        When this session_token will be considered invalid by the server.
+        """
+
+    @_builtins.property
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def token_expiration_delay_millis(self) -> _builtins.int:
+        """
+        The length of time that this token was intended to live. Note that `refreshSessionToken` may return the
+        existing token to reduce overhead and to prevent denial-of-service caused by refreshing too frequently.
+        """
+
+    @token_expiration_delay_millis.setter
+    @_deprecated("""This field has been marked as deprecated using proto field options.""")
+    def token_expiration_delay_millis(self, value: _builtins.int) -> None:
+        """
+        The length of time that this token was intended to live. Note that `refreshSessionToken` may return the
+        existing token to reduce overhead and to prevent denial-of-service caused by refreshing too frequently.
+        """
+
     def __init__(
         self,
         *,
-        metadata_header: builtins.bytes = ...,
-        session_token: builtins.bytes = ...,
-        token_deadline_time_millis: builtins.int = ...,
-        token_expiration_delay_millis: builtins.int = ...,
+        metadata_header: _builtins.bytes = ...,
+        session_token: _builtins.bytes = ...,
+        token_deadline_time_millis: _builtins.int = ...,
+        token_expiration_delay_millis: _builtins.int = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["metadata_header", b"metadata_header", "session_token", b"session_token", "token_deadline_time_millis", b"token_deadline_time_millis", "token_expiration_delay_millis", b"token_expiration_delay_millis"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["metadata_header", b"metadata_header", "session_token", b"session_token", "token_deadline_time_millis", b"token_deadline_time_millis", "token_expiration_delay_millis", b"token_expiration_delay_millis"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HandshakeResponse: typing_extensions.TypeAlias = HandshakeResponse
+Global___HandshakeResponse: _TypeAlias = HandshakeResponse  # noqa: Y015
 
-@typing.final
-class CloseSessionResponse(google.protobuf.message.Message):
+@_typing.final
+class CloseSessionResponse(_message.Message):
     """Intentionally empty and is here for backwards compatibility should this API change."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___CloseSessionResponse: typing_extensions.TypeAlias = CloseSessionResponse
+Global___CloseSessionResponse: _TypeAlias = CloseSessionResponse  # noqa: Y015
 
-@typing.final
-class ReleaseRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ReleaseRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    ID_FIELD_NUMBER: builtins.int
-    @property
-    def id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def id(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        id: _ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["id", b"id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["id", b"id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["id", b"id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["id", b"id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ReleaseRequest: typing_extensions.TypeAlias = ReleaseRequest
+Global___ReleaseRequest: _TypeAlias = ReleaseRequest  # noqa: Y015
 
-@typing.final
-class ReleaseResponse(google.protobuf.message.Message):
+@_typing.final
+class ReleaseResponse(_message.Message):
     """Intentionally empty and is here for backwards compatibility should this API change."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ReleaseResponse: typing_extensions.TypeAlias = ReleaseResponse
+Global___ReleaseResponse: _TypeAlias = ReleaseResponse  # noqa: Y015
 
-@typing.final
-class ExportRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ExportRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    @property
-    def source_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def source_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        source_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        source_id: _ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ExportRequest: typing_extensions.TypeAlias = ExportRequest
+Global___ExportRequest: _TypeAlias = ExportRequest  # noqa: Y015
 
-@typing.final
-class ExportResponse(google.protobuf.message.Message):
+@_typing.final
+class ExportResponse(_message.Message):
     """Intentionally empty and is here for backwards compatibility should this API change."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ExportResponse: typing_extensions.TypeAlias = ExportResponse
+Global___ExportResponse: _TypeAlias = ExportResponse  # noqa: Y015
 
-@typing.final
-class PublishRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class PublishRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    @property
-    def source_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def source_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        source_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        source_id: _ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___PublishRequest: typing_extensions.TypeAlias = PublishRequest
+Global___PublishRequest: _TypeAlias = PublishRequest  # noqa: Y015
 
-@typing.final
-class PublishResponse(google.protobuf.message.Message):
+@_typing.final
+class PublishResponse(_message.Message):
     """Intentionally empty and is here for backwards compatibility should this API change."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___PublishResponse: typing_extensions.TypeAlias = PublishResponse
+Global___PublishResponse: _TypeAlias = PublishResponse  # noqa: Y015
 
-@typing.final
-class ExportNotificationRequest(google.protobuf.message.Message):
+@_typing.final
+class ExportNotificationRequest(_message.Message):
     """Intentionally empty and is here for backwards compatibility should this API change."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ExportNotificationRequest: typing_extensions.TypeAlias = ExportNotificationRequest
+Global___ExportNotificationRequest: _TypeAlias = ExportNotificationRequest  # noqa: Y015
 
-@typing.final
-class ExportNotification(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ExportNotification(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _State:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _StateEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[ExportNotification._State.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _StateEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[ExportNotification._State.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         UNKNOWN: ExportNotification._State.ValueType  # 0
         """This item is a dependency, but hasn't been registered yet."""
         PENDING: ExportNotification._State.ValueType  # 1
@@ -314,96 +421,108 @@ class ExportNotification(google.protobuf.message.Message):
     DEPENDENCY_RELEASED: ExportNotification.State.ValueType  # 12
     """Dependency was already released, causing a cascading failure that applies to this export."""
 
-    TICKET_FIELD_NUMBER: builtins.int
-    EXPORT_STATE_FIELD_NUMBER: builtins.int
-    CONTEXT_FIELD_NUMBER: builtins.int
-    DEPENDENT_HANDLE_FIELD_NUMBER: builtins.int
+    TICKET_FIELD_NUMBER: _builtins.int
+    EXPORT_STATE_FIELD_NUMBER: _builtins.int
+    CONTEXT_FIELD_NUMBER: _builtins.int
+    DEPENDENT_HANDLE_FIELD_NUMBER: _builtins.int
     export_state: Global___ExportNotification.State.ValueType
-    context: builtins.str
+    context: _builtins.str
     """
     any errors will include an id that can be used to find details of the error in the logs
     """
-    dependent_handle: builtins.str
+    dependent_handle: _builtins.str
     """
     will be set to an identifier of the dependency that cascaded the error if applicable
     """
-    @property
-    def ticket(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    @_builtins.property
+    def ticket(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        ticket: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        ticket: _ticket_pb2.Ticket | None = ...,
         export_state: Global___ExportNotification.State.ValueType = ...,
-        context: builtins.str = ...,
-        dependent_handle: builtins.str = ...,
+        context: _builtins.str = ...,
+        dependent_handle: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["ticket", b"ticket"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["context", b"context", "dependent_handle", b"dependent_handle", "export_state", b"export_state", "ticket", b"ticket"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["ticket", b"ticket"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["context", b"context", "dependent_handle", b"dependent_handle", "export_state", b"export_state", "ticket", b"ticket"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ExportNotification: typing_extensions.TypeAlias = ExportNotification
+Global___ExportNotification: _TypeAlias = ExportNotification  # noqa: Y015
 
-@typing.final
-class TerminationNotificationRequest(google.protobuf.message.Message):
+@_typing.final
+class TerminationNotificationRequest(_message.Message):
     """Intentionally empty and is here for backwards compatibility should this API change."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___TerminationNotificationRequest: typing_extensions.TypeAlias = TerminationNotificationRequest
+Global___TerminationNotificationRequest: _TypeAlias = TerminationNotificationRequest  # noqa: Y015
 
-@typing.final
-class TerminationNotificationResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class TerminationNotificationResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class StackTrace(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class StackTrace(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        TYPE_FIELD_NUMBER: builtins.int
-        MESSAGE_FIELD_NUMBER: builtins.int
-        ELEMENTS_FIELD_NUMBER: builtins.int
-        type: builtins.str
-        message: builtins.str
-        @property
-        def elements(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+        TYPE_FIELD_NUMBER: _builtins.int
+        MESSAGE_FIELD_NUMBER: _builtins.int
+        ELEMENTS_FIELD_NUMBER: _builtins.int
+        type: _builtins.str
+        message: _builtins.str
+        @_builtins.property
+        def elements(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
         def __init__(
             self,
             *,
-            type: builtins.str = ...,
-            message: builtins.str = ...,
-            elements: collections.abc.Iterable[builtins.str] | None = ...,
+            type: _builtins.str = ...,
+            message: _builtins.str = ...,
+            elements: _abc.Iterable[_builtins.str] | None = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["elements", b"elements", "message", b"message", "type", b"type"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["elements", b"elements", "message", b"message", "type", b"type"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    ABNORMAL_TERMINATION_FIELD_NUMBER: builtins.int
-    REASON_FIELD_NUMBER: builtins.int
-    IS_FROM_UNCAUGHT_EXCEPTION_FIELD_NUMBER: builtins.int
-    STACK_TRACES_FIELD_NUMBER: builtins.int
-    abnormal_termination: builtins.bool
+    ABNORMAL_TERMINATION_FIELD_NUMBER: _builtins.int
+    REASON_FIELD_NUMBER: _builtins.int
+    IS_FROM_UNCAUGHT_EXCEPTION_FIELD_NUMBER: _builtins.int
+    STACK_TRACES_FIELD_NUMBER: _builtins.int
+    abnormal_termination: _builtins.bool
     """whether or not this termination is expected"""
-    reason: builtins.str
+    reason: _builtins.str
     """if additional information is available then provide it in this field"""
-    is_from_uncaught_exception: builtins.bool
+    is_from_uncaught_exception: _builtins.bool
     """if this is due to an exception, whether or not it was uncaught"""
-    @property
-    def stack_traces(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___TerminationNotificationResponse.StackTrace]:
+    @_builtins.property
+    def stack_traces(self) -> _containers.RepeatedCompositeFieldContainer[Global___TerminationNotificationResponse.StackTrace]:
         """if applicable, the list of stack traces in reverse causal order"""
 
     def __init__(
         self,
         *,
-        abnormal_termination: builtins.bool = ...,
-        reason: builtins.str = ...,
-        is_from_uncaught_exception: builtins.bool = ...,
-        stack_traces: collections.abc.Iterable[Global___TerminationNotificationResponse.StackTrace] | None = ...,
+        abnormal_termination: _builtins.bool = ...,
+        reason: _builtins.str = ...,
+        is_from_uncaught_exception: _builtins.bool = ...,
+        stack_traces: _abc.Iterable[Global___TerminationNotificationResponse.StackTrace] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["abnormal_termination", b"abnormal_termination", "is_from_uncaught_exception", b"is_from_uncaught_exception", "reason", b"reason", "stack_traces", b"stack_traces"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["abnormal_termination", b"abnormal_termination", "is_from_uncaught_exception", b"is_from_uncaught_exception", "reason", b"reason", "stack_traces", b"stack_traces"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___TerminationNotificationResponse: typing_extensions.TypeAlias = TerminationNotificationResponse
+Global___TerminationNotificationResponse: _TypeAlias = TerminationNotificationResponse  # noqa: Y015
