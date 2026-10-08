@@ -7,7 +7,7 @@ import itertools
 import os
 import pathlib
 import types
-from typing import Dict, Generator, List, Optional
+from typing import Dict, Iterator, List, Optional
 
 from deephaven_internal import jvm
 
@@ -26,7 +26,7 @@ def _default_vmoptions() -> pathlib.Path:
     return _jars_path() / "dh-default.vmoptions"
 
 
-def _jars() -> Generator[pathlib.Path, None, None]:
+def _jars() -> Iterator[pathlib.Path]:
     return _jars_path().glob("*.jar")
 
 
