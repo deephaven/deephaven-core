@@ -65,7 +65,7 @@ result = leftTable.joinMethod(rightTable, "columnToMatchLeft = columnToMatchRigh
 
 ### Multiple match columns
 
-Tables can be joined on more than one match column. Put all of the match columns in a single comma-separated String. The syntax below joins tables on two or more match columns:
+Tables can be joined on more than one match column. Put all of the match columns in a single comma-separated `String`. The syntax below joins tables on two or more match columns:
 
 ```groovy syntax
 result = leftTable.joinMethod(rightTable, "Column1, Column2, Column3Left = Column3Right")
