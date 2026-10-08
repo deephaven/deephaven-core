@@ -172,7 +172,7 @@ result = kc.consume(
 Let's walk through this query, focusing on the new optional arguments we've set.
 
 - `partitions` is set to `None`, which specifies that we want to listen to all partitions. This is the default behavior if `partitions` is not explicitly defined. To listen to specific partitions, we can define them as a list of integers (e.g., `partitions=[1, 3, 5]`).
-- `offsets` is set to `ALL_PARTITIONS_DONT_SEEK`, which only listens to new messages produced after this call is processed.
+- `offsets` is set to `ALL_PARTITIONS_DONT_SEEK`, which doesn't seek. The consumer starts from the consumer group's committed offset if one exists; otherwise, Kafka's `auto.offset.reset` property decides, and its default (`latest`) reads only new messages. To always start with new messages only, use `ALL_PARTITIONS_SEEK_TO_END`.
 - `key_spec` is set to `simple_spec('Symbol', dht.string)`, which instructs the consumer to expect messages with a Kafka `key` field, and creates a `Symbol` column of type String to store the information.
 - `value_spec` is set to `simple_spec('Price', dht.double)`, which instructs the consumer to expect messages with a Kafka `value` field, and creates a `Price` column of type double to store the information.
 - `table_type` is set to `append`, which creates an append-only table.
