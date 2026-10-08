@@ -386,7 +386,7 @@ print(datetime1 - datetime_array)
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | [`Timestamp`](https://pandas.pydata.org/docs/reference/api/pandas.Timestamp.html)           | Singular dates, times, or date-times, optionally includes time zone information             |
 | [`DatetimeIndex`](https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.html)   | Sequences of dates, times, or date-times, optionally includes time zone information         |
-| [`Timedelta`](https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html)           | Singular durations of any length                                                            |
+| [`Timedelta`](https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html)           | Singular durations, including durations longer than one day                                 |
 | [`TimedeltaIndex`](https://pandas.pydata.org/docs/reference/api/pandas.TimedeltaIndex.html) | Sequences of durations                                                                      |
 | [`Period`](https://pandas.pydata.org/docs/reference/api/pandas.Period.html)                 | Singular spans of time with a fixed frequency (for example, a specific day, month, or year) |
 | [`PeriodIndex`](https://pandas.pydata.org/docs/reference/api/pandas.PeriodIndex.html)       | Sequences of such spans                                                                     |

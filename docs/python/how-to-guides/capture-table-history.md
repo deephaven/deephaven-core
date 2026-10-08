@@ -28,7 +28,7 @@ result = source.snapshot_when(
 
 ## Include a history
 
-In this example, there are two input tables. The `source` table is built from a time table that adds a row for every 0.2-second interval. A time table checks for new rows once per update graph cycle, which is one second by default. Each check adds one row for every interval that has elapsed since the previous check, so this time table usually adds about 5 rows at once rather than one row every 0.2 seconds. The `trigger` table is a time table with a two-second period, and each row it adds triggers a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
+In this example, there are two input tables. The `source` table is built from a time table with a 0.2-second period. A time table adds its new rows once per update graph cycle, so `source` updates about once per second, with roughly 5 new time-table rows each time. The `trigger` table is a time table with a two-second period, and each row it adds triggers a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
 
 ```python ticking-table order=null
 from deephaven import time_table
