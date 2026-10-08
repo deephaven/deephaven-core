@@ -6,10 +6,10 @@ package io.deephaven.benchmark.engine.util;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK1V1;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK2V2;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.ReadMode;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps.Shape;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -40,10 +40,10 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * <p>
  * These benchmarks are the fixed yardstick for a series of staged changes to the map implementations. To keep
  * comparisons honest across that series, the measured code is written entirely in terms of chunks
- * ({@link LongChunk}&lt;? extends {@link Any}&gt;), even though the current map API is per-element: the small "glue"
- * methods below iterate over each chunk and call the per-element API. When a later change converts the map API itself
- * to chunk-oriented operations, only the glue methods change; every benchmark method, workload generator, and parameter
- * stays byte-identical, so before/after numbers remain comparable.
+ * ({@link LongChunk}&lt;? extends {@link Any}&gt;). When the series began the map API was per-element and small "glue"
+ * methods bridged the gap; the maps now speak chunks natively and the glue is gone. Every benchmark method, workload
+ * generator, and parameter has stayed identical along the way, so numbers remain comparable across the whole series.
+ * ({@code scalarCursor}, added at part 19, defaults off; the matrix without it is the one every earlier part ran.)
  *
  * <p>
  * Workload notes:
@@ -101,11 +101,20 @@ public class NullableLongLongMapBench {
     }
 
     public enum Impl {
-        // The third constructor argument is the noEntryValue; -1 is the maps' default.
+        // The -1 is the noEntryValue, the maps' default.
+        // K4V4's reads adapt by footprint (array size vs cache); K4V4_WINDOW and K4V4_SERIAL pin each strategy (the
+        // pricing controls). K1V1 is the shape a default map is BORN with: grown (presize=false) at a load factor of
+        // 0.8 or more it widens itself to K4V4 once big enough, so those cells price the transition (in fill) and the
+        // post-morph read path; presized (presize=true) at such a load factor it is built wide from the start; at
+        // lower load factors it stays narrow either way. (A two-key shape, K2V2, was retired: two campaigns found no
+        // scenario in which it was fastest.)
         // @formatter:off
-        K1V1((desiredEntries, loadFactor) -> new HashMapLockFreeK1V1(desiredEntries, loadFactor, -1)),
-        K2V2((desiredEntries, loadFactor) -> new HashMapLockFreeK2V2(desiredEntries, loadFactor, -1)),
-        K4V4((desiredEntries, loadFactor) -> new HashMapLockFreeK4V4(desiredEntries, loadFactor, -1)),
+        K1V1((desiredEntries, loadFactor) -> NullableLongLongMaps.of(Shape.K1V1, desiredEntries, loadFactor, -1)),
+        K4V4((desiredEntries, loadFactor) -> NullableLongLongMaps.of(Shape.K4V4, desiredEntries, loadFactor, -1)),
+        K4V4_WINDOW((desiredEntries, loadFactor) ->
+                NullableLongLongMaps.of(Shape.K4V4, desiredEntries, loadFactor, -1, ReadMode.WINDOW)),
+        K4V4_SERIAL((desiredEntries, loadFactor) ->
+                NullableLongLongMaps.of(Shape.K4V4, desiredEntries, loadFactor, -1, ReadMode.SERIAL)),
         FASTUTIL(FastutilAdapter::new);
         // @formatter:on
 
@@ -116,7 +125,7 @@ public class NullableLongLongMapBench {
         }
     }
 
-    @Param({"K1V1", "K2V2", "K4V4", "FASTUTIL"})
+    @Param({"K1V1", "K4V4", "K4V4_WINDOW", "K4V4_SERIAL", "FASTUTIL"})
     public Impl impl;
 
     /**
@@ -164,11 +173,29 @@ public class NullableLongLongMapBench {
     @Param({"0.5"})
     public double loadFactor;
 
+    /**
+     * When true, every key goes through the map one at a time via {@link NullableLongLongMap.ScalarAccess}, the route a
+     * genuinely scalar caller takes (a redirection index's get(long), Sort's reverse lookup), instead of through
+     * chunks. Requires chunkSize=1, so the same keys are visited in the same order as the one-element-chunk lane it is
+     * compared against. Off by default, which leaves the series' existing parameter matrix untouched.
+     */
+    @Param({"false"})
+    public boolean scalarCursor;
+
     private LongChunk<Any>[] keyChunks;
     private LongChunk<Any>[] valueChunks;
     private LongChunk<Any>[] hitChunks;
     private LongChunk<Any>[] missChunks;
     private WritableLongChunk<Any> scratch;
+    // The same keys as the chunks, for the scalar-cursor lane.
+    private long[] keyArray;
+    private long[] valueArray;
+    private long[] hitArray;
+    private long[] missArray;
+    // One cursor for every scalar-lane invocation, as a genuinely scalar caller keeps one; unbound after each use, so
+    // that this thread-scoped state keeps no map reachable between invocations — the chunked lane holds none, and the
+    // two lanes should differ in nothing but the route through the map.
+    private final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(null);
     private NullableLongLongMap filledMap;
 
     /**
@@ -245,6 +272,13 @@ public class NullableLongLongMapBench {
         for (int ii = 0; ii < size; ++ii) {
             values[ii] = ii;
         }
+        if (scalarCursor && chunkSize != 1) {
+            throw new IllegalArgumentException("scalarCursor requires chunkSize=1");
+        }
+        keyArray = keys;
+        valueArray = values;
+        hitArray = hits;
+        missArray = misses;
         keyChunks = chunkify(keys, chunkSize);
         valueChunks = chunkify(values, chunkSize);
         hitChunks = chunkify(hits, chunkSize);
@@ -400,44 +434,39 @@ public class NullableLongLongMapBench {
     }
 
     private void fill(final NullableLongLongMap map) {
+        if (scalarCursor) {
+            cursor.reset(map);
+            try {
+                for (int ii = 0; ii < keyArray.length; ++ii) {
+                    cursor.put(keyArray[ii], valueArray[ii]);
+                }
+            } finally {
+                cursor.reset(null);
+            }
+            return;
+        }
         for (int ci = 0; ci < keyChunks.length; ++ci) {
-            putAll(map, keyChunks[ci], valueChunks[ci], scratch);
+            map.put(keyChunks[ci], valueChunks[ci], scratch);
         }
     }
-
-    // region glue
-    // Glue between the chunk-oriented benchmark code above/below and the map's current API. As map operations become
-    // chunk-oriented (get already is; put/putIfAbsent/remove are still per-element), only these methods change;
-    // everything the benchmarks measure and generate stays identical. Each output chunk must have capacity >=
-    // keys.size();
-    // element ii of the output corresponds to element ii of keys.
-
-    private static <T extends Any> void putAll(final NullableLongLongMap map, final LongChunk<? extends Any> keys,
-            final LongChunk<T> values, final WritableLongChunk<T> oldValues) {
-        for (int ii = 0; ii < keys.size(); ++ii) {
-            oldValues.set(ii, map.put(keys.get(ii), values.get(ii)));
-        }
-    }
-
-    private static <T extends Any> void putAllIfAbsent(final NullableLongLongMap map,
-            final LongChunk<? extends Any> keys, final LongChunk<T> values, final WritableLongChunk<T> oldValues) {
-        for (int ii = 0; ii < keys.size(); ++ii) {
-            oldValues.set(ii, map.putIfAbsent(keys.get(ii), values.get(ii)));
-        }
-    }
-
-    private static void removeAll(final NullableLongLongMap map, final LongChunk<? extends Any> keys,
-            final WritableLongChunk<? extends Any> oldValues) {
-        for (int ii = 0; ii < keys.size(); ++ii) {
-            oldValues.set(ii, map.remove(keys.get(ii)));
-        }
-    }
-    // endregion glue
 
     /**
-     * The one shared call site for lookups, so getHit and getMiss measure identical code.
+     * The one shared call site for lookups, so getHit and getMiss measure identical code. {@code chunks} and
+     * {@code keys} hold the same keys in the same order; the scalar-cursor lane reads the array.
      */
-    private void sweep(final NullableLongLongMap map, final LongChunk<Any>[] chunks, final Blackhole bh) {
+    private void sweep(final NullableLongLongMap map, final LongChunk<Any>[] chunks, final long[] keys,
+            final Blackhole bh) {
+        if (scalarCursor) {
+            cursor.reset(map);
+            try {
+                for (final long key : keys) {
+                    bh.consume(cursor.get(key));
+                }
+            } finally {
+                cursor.reset(null);
+            }
+            return;
+        }
         for (final LongChunk<Any> chunk : chunks) {
             map.get(chunk, scratch);
             bh.consume(scratch);
@@ -459,7 +488,7 @@ public class NullableLongLongMapBench {
      */
     @Benchmark
     public void getHit(final Blackhole bh) {
-        sweep(filledMap, hitChunks, bh);
+        sweep(filledMap, hitChunks, hitArray, bh);
     }
 
     /**
@@ -467,7 +496,7 @@ public class NullableLongLongMapBench {
      */
     @Benchmark
     public void getMiss(final Blackhole bh) {
-        sweep(filledMap, missChunks, bh);
+        sweep(filledMap, missChunks, missArray, bh);
     }
 
     /**
@@ -476,8 +505,19 @@ public class NullableLongLongMapBench {
     @Benchmark
     public void removeThenReinsert() {
         final NullableLongLongMap map = filledMap;
-        for (final LongChunk<Any> chunk : keyChunks) {
-            removeAll(map, chunk, scratch);
+        if (scalarCursor) {
+            cursor.reset(map);
+            try {
+                for (final long key : keyArray) {
+                    cursor.remove(key);
+                }
+            } finally {
+                cursor.reset(null);
+            }
+        } else {
+            for (final LongChunk<Any> chunk : keyChunks) {
+                map.remove(chunk, scratch);
+            }
         }
         fill(map);
     }
@@ -497,27 +537,65 @@ public class NullableLongLongMapBench {
         }
 
         @Override
-        public long put(final long key, final long value) {
-            return map.put(key, value);
-        }
-
-        @Override
-        public long putIfAbsent(final long key, final long value) {
-            return map.putIfAbsent(key, value);
-        }
-
-        @Override
-        public void get(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> result) {
+        public void put(final LongChunk<? extends Any> keys, final LongChunk<? extends Any> values,
+                final WritableLongChunk<? extends Any> oldValues) {
             final int size = keys.size();
             for (int ii = 0; ii < size; ++ii) {
-                result.set(ii, map.get(keys.get(ii)));
+                oldValues.set(ii, map.put(keys.get(ii), values.get(ii)));
             }
-            result.setSize(size);
+            oldValues.setSize(size);
         }
 
         @Override
-        public long remove(final long key) {
-            return map.remove(key);
+        public void putIfAbsent(final LongChunk<? extends Any> keys, final LongChunk<? extends Any> values,
+                final WritableLongChunk<? extends Any> oldValues) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                oldValues.set(ii, map.putIfAbsent(keys.get(ii), values.get(ii)));
+            }
+            oldValues.setSize(size);
+        }
+
+        @Override
+        public void put(final LongChunk<? extends Any> keys, final LongChunk<? extends Any> values) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                map.put(keys.get(ii), values.get(ii));
+            }
+        }
+
+        @Override
+        public void put(final LongChunk<? extends Any> keys, final long value) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                map.put(keys.get(ii), value);
+            }
+        }
+
+        @Override
+        public int get(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> result) {
+            final int size = keys.size();
+            final long noEntry = map.defaultReturnValue();
+            int found = 0;
+            for (int ii = 0; ii < size; ++ii) {
+                // One compare per key, as the maps under test pay for their count.
+                final long value = map.get(keys.get(ii));
+                result.set(ii, value);
+                if (value != noEntry) {
+                    ++found;
+                }
+            }
+            result.setSize(size);
+            return found;
+        }
+
+        @Override
+        public void remove(final LongChunk<? extends Any> keys, final WritableLongChunk<? extends Any> oldValues) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                oldValues.set(ii, map.remove(keys.get(ii)));
+            }
+            oldValues.setSize(size);
         }
 
         @Override

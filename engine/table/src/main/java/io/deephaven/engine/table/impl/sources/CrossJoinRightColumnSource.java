@@ -13,6 +13,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.CrossJoinStateManager;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
@@ -68,6 +69,14 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
         this.rightIsLive = rightIsLive;
         this.crossJoinManager = crossJoinManager;
         this.innerSource = innerSource;
+    }
+
+    /**
+     * @return the state manager that maps the result's rows to right rows
+     */
+    @TestUseOnly
+    public CrossJoinStateManager getCrossJoinManager() {
+        return crossJoinManager;
     }
 
     @Override

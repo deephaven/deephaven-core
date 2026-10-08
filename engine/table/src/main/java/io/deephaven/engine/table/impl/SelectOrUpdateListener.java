@@ -11,12 +11,10 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
-import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,7 +28,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private final TrackingRowSet resultRowSet;
     private final ModifiedColumnSet.Transformer transformer;
     private final SelectAndViewAnalyzer analyzer;
-    private final SparseArrayColumnSource[] sparseArraysToFree;
+    private final SparseArrayColumnSource<?>[] sparseArraysToFree;
 
     private volatile boolean updateInProgress = false;
     private final boolean enableParallelUpdate;
@@ -62,7 +60,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                 columnsToFree.add((SparseArrayColumnSource<?>) resultSource);
             }
         }
-        sparseArraysToFree = columnsToFree.toArray(SparseArrayColumnSource[]::new);
+        sparseArraysToFree = columnsToFree.toArray(SparseArrayColumnSource<?>[]::new);
         transformer = parent.newModifiedColumnSetTransformer(parentNames, mcss);
         this.analyzer = analyzer;
         this.enableParallelUpdate =
@@ -133,7 +131,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private void completionRoutine(TableUpdate upstream, JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
         try {
-            clearUnusedCurrentBlocks(toClear);
+            SparseArrayColumnSource.clearBlocksWithoutLiveRows(toClear, resultRowSet, sparseArraysToFree);
 
             final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
                     upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
@@ -160,65 +158,6 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             updateInProgress = false;
             decrementReferenceCount();
         }
-    }
-
-    private void clearUnusedCurrentBlocks(final WritableRowSet toClear) {
-        if (sparseArraysToFree.length == 0) {
-            return;
-        }
-
-        try (final RowSet removeBlocks = getLowestLevelRemovedBlocks(toClear);
-                final RowSet removeBlocks2 =
-                        removeBlocks.isNonempty() ? getBlock2RemovedBlock(toClear) : RowSetFactory.empty();
-                final RowSet removeBlocks1 =
-                        removeBlocks2.isNonempty() ? getBlock1RemovedBlock(toClear) : RowSetFactory.empty()) {
-            if (removeBlocks.isEmpty()) {
-                return;
-            }
-            for (final SparseArrayColumnSource<?> cs : sparseArraysToFree) {
-                cs.clearBlocks(removeBlocks, removeBlocks2, removeBlocks1, resultRowSet.isEmpty());
-            }
-        }
-    }
-
-    @NotNull
-    private RowSet getLowestLevelRemovedBlocks(final WritableRowSet toClear) {
-        return getRemovedBlocks(toClear, SparseConstants.LOG_BLOCK_SIZE);
-    }
-
-    @NotNull
-    private RowSet getBlock2RemovedBlock(final WritableRowSet toClear) {
-        return getRemovedBlocks(toClear, SparseConstants.LOG_BLOCK_SIZE + SparseConstants.LOG_BLOCK2_SIZE);
-    }
-
-    @NotNull
-    private RowSet getBlock1RemovedBlock(final WritableRowSet toClear) {
-        return getRemovedBlocks(toClear,
-                SparseConstants.LOG_BLOCK_SIZE + SparseConstants.LOG_BLOCK2_SIZE + SparseConstants.LOG_BLOCK1_SIZE);
-    }
-
-    @NotNull
-    private RowSet getRemovedBlocks(final WritableRowSet toClear, final int logBlockSize) {
-        final long blockSize = 1L << logBlockSize;
-        // if we have anything in our rowset that is clearing out an entire block; it is worth noting those blocks
-        final RowSet.SearchIterator remainingInterator = resultRowSet.searchIterator();
-        final RowSet.SearchIterator clearIterator = toClear.searchIterator();
-
-        final RowSetBuilderSequential removeBlockBuilder = RowSetFactory.builderSequential();
-        long startOfNextBlock = 0;
-        while (clearIterator.advance(startOfNextBlock)) {
-            final long clearValue = clearIterator.currentValue();
-            startOfNextBlock = (clearValue | (blockSize - 1)) + 1;
-
-            // noinspection PointlessBitwiseExpression (Charles understands this version better than -blockSize which
-            // IntelliJ suggests)
-            final long startOfClearingBlock = clearValue & ~(blockSize - 1);
-            if (!remainingInterator.advance(startOfClearingBlock)
-                    || remainingInterator.currentValue() >= startOfNextBlock) {
-                removeBlockBuilder.appendKey(clearValue >> logBlockSize);
-            }
-        }
-        return removeBlockBuilder.build();
     }
 
     @Override

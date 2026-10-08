@@ -4,8 +4,10 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
@@ -18,7 +20,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -578,6 +585,191 @@ public final class TestJobScheduler {
         final Exception error = delivered.get();
         Assert.neqNull(error, "delivered.get()");
         assertTrue("TestError cause, but was " + error.getCause(), error.getCause() instanceof TestError);
+    }
+
+    /**
+     * A scheduler that refuses every submission, as a shut-down pool does, must still end the iteration through
+     * {@code onError}, and must close the context built for the task it could not submit.
+     */
+    @Test
+    public void testParallelSubmitRejected() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(0);
+
+        scheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                50,
+                (context, idx, nec) -> fail("No task should run"),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+
+        observer.assertDidNotCallComplete();
+        assertSame(scheduler.rejection, observer.error());
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * A submission rejected after others were accepted must fail the iteration once the accepted tasks finish, without
+     * running any further tasks.
+     */
+    @Test
+    public void testParallelSubmitRejectedAfterAccepting() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(2);
+        final AtomicInteger tasksRun = new AtomicInteger();
+
+        scheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                50,
+                (context, idx, nec) -> tasksRun.incrementAndGet(),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+
+        Assert.eqNull(observer.error(), "observer.error()");
+        scheduler.runAccepted();
+
+        observer.assertDidNotCallComplete();
+        assertSame(scheduler.rejection, observer.error());
+        observer.assertNoOpenContexts();
+        assertEquals(0, tasksRun.get());
+    }
+
+    @Test
+    public void testSerialSubmitRejected() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(0);
+
+        scheduler.iterateSerial(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                50,
+                (context, idx, nec, resume) -> fail("No task should run"),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+
+        observer.assertDidNotCallComplete();
+        assertSame(scheduler.rejection, observer.error());
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * When more than one task fails, the first failure is delivered, and the later ones must not be lost.
+     */
+    @Test
+    public void testParallelErrorsAreAllReported() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(2);
+        final List<Consumer<Exception>> taskErrorConsumers = new ArrayList<>();
+
+        scheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                2,
+                // Leave each task outstanding, so that both fail.
+                (context, idx, nec, resume) -> taskErrorConsumers.add(nec),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+        scheduler.runAccepted();
+        assertEquals("sanity: both tasks started", 2, taskErrorConsumers.size());
+
+        final Exception first = new IllegalStateException("first");
+        final Exception second = new IllegalStateException("second");
+        taskErrorConsumers.get(0).accept(first);
+        Assert.eqNull(observer.error(), "observer.error()");
+        taskErrorConsumers.get(1).accept(second);
+
+        observer.assertDidNotCallComplete();
+        assertSame(first, observer.error());
+        assertArrayEquals(new Throwable[] {second}, first.getSuppressed());
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * A scheduler that runs a task inline lets an Error thrown by the task escape its {@code submit}. The task has
+     * already delivered the failure and released its resources, so that is not a rejected submission.
+     */
+    @Test
+    public void testImmediateParallelThrownError() {
+        final Observer observer = new Observer(null, null, null);
+
+        final TestError thrown = assertThrows(TestError.class, () -> new ImmediateJobScheduler().iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                50,
+                (context, idx, nec) -> {
+                    if (idx == 10) {
+                        throw new TestError("Test error");
+                    }
+                },
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError));
+
+        assertEquals("Test error", thrown.getMessage());
+        observer.assertDidNotCallComplete();
+        assertTestErrorDelivered(observer);
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * Accepts the first {@code acceptCount} submissions, holding them until {@link #runAccepted()}, and rejects the
+     * rest.
+     */
+    private static final class RejectingJobScheduler implements JobScheduler {
+
+        private final RejectedExecutionException rejection = new RejectedExecutionException("Test rejection");
+        private final Queue<Runnable> accepted = new ArrayDeque<>();
+        private int remainingAccepts;
+
+        private RejectingJobScheduler(final int acceptCount) {
+            remainingAccepts = acceptCount;
+        }
+
+        @Override
+        public void submit(
+                final ExecutionContext executionContext,
+                final Runnable runnable,
+                final LogOutputAppendable description,
+                final Consumer<Exception> onError) {
+            if (remainingAccepts == 0) {
+                throw rejection;
+            }
+            --remainingAccepts;
+            accepted.add(runnable);
+        }
+
+        private void runAccepted() {
+            Runnable runnable;
+            while ((runnable = accepted.poll()) != null) {
+                runnable.run();
+            }
+        }
+
+        @Override
+        public BasePerformanceEntry getAccumulatedPerformance() {
+            return null;
+        }
+
+        @Override
+        public int threadCount() {
+            return 4;
+        }
     }
 
     /**

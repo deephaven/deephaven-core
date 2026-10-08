@@ -43,23 +43,52 @@ public interface NullableLongLongMap {
     long defaultReturnValue();
 
     /**
-     * Add a mapping from key to value. Return the old value of key.
-     * 
-     * @param key the key to add
-     * @param value the value to add
-     * @return the old value of key (or {@link #defaultReturnValue()} if there was no mapping)
+     * For each element ii of {@code keys}: adds a mapping from {@code keys.get(ii)} to {@code values.get(ii)}, writing
+     * the previous value of that key (or {@link #defaultReturnValue()} if there was no mapping) to element ii of
+     * {@code oldValues}. Elements are processed in index order. {@code values} must have at least {@code keys.size()}
+     * elements. On return, the size of {@code oldValues} is set to {@code keys.size()}; its capacity must be at least
+     * that large.
+     *
+     * @param keys the keys to add
+     * @param values the values to add
+     * @param oldValues output: the previous value of each key (or {@link #defaultReturnValue()})
      */
-    long put(long key, long value);
+    void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
+            WritableLongChunk<? extends Any> oldValues);
 
     /**
-     * Add a mapping from key to value, if one does not already exist. Return the old value of key (or
-     * {@link #defaultReturnValue()}) if one does not exist.
-     * 
-     * @param key the key to add
-     * @param value the value to add
-     * @return the old value of key (or {@link #defaultReturnValue()} if there was no mapping)
+     * For each element ii of {@code keys}: adds a mapping from {@code keys.get(ii)} to {@code values.get(ii)} if no
+     * mapping for that key already exists, writing the previous value (or {@link #defaultReturnValue()} if there was
+     * none) to element ii of {@code oldValues}. Elements are processed in index order; a duplicate key within
+     * {@code keys} therefore sees the value established by its own earlier element. Size contracts are as for
+     * {@link #put(LongChunk, LongChunk, WritableLongChunk)}.
+     *
+     * @param keys the keys to add
+     * @param values the values to add
+     * @param oldValues output: the previous value of each key (or {@link #defaultReturnValue()})
      */
-    long putIfAbsent(long key, long value);
+    void putIfAbsent(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
+            WritableLongChunk<? extends Any> oldValues);
+
+    /**
+     * For each element ii of {@code keys}: adds a mapping from {@code keys.get(ii)} to {@code values.get(ii)}, as
+     * {@link #put(LongChunk, LongChunk, WritableLongChunk)} does, without reporting the previous values: the form for a
+     * caller that has no use for them, which then stages no chunk to receive them. Elements are processed in index
+     * order. {@code values} must have at least {@code keys.size()} elements.
+     *
+     * @param keys the keys to add
+     * @param values the values to add
+     */
+    void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values);
+
+    /**
+     * Adds a mapping from every element of {@code keys} to the one {@code value}, without reporting the previous
+     * values. Elements are processed in index order.
+     *
+     * @param keys the keys to add
+     * @param value the value every key maps to
+     */
+    void put(LongChunk<? extends Any> keys, long value);
 
     /**
      * Gets the value associated with each element of {@code keys}, writing it to the corresponding element of
@@ -68,17 +97,22 @@ public interface NullableLongLongMap {
      *
      * @param keys the keys to get
      * @param result output: the value of each key (or {@link #defaultReturnValue()})
+     * @return the number of keys whose result is not {@link #defaultReturnValue()}, so that a caller which must do
+     *         something else about the misses can tell at once whether there were none, or nothing but. (A key mapped
+     *         to the no-entry value reads as absent, here as in every read.)
      */
-    void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result);
+    int get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result);
 
     /**
-     * Remove a mapping for a key. Return the removed value of key (or {@link #defaultReturnValue()}) if one does not
-     * exist.
-     * 
-     * @param key the key to add
-     * @return the removed value of (or {@link #defaultReturnValue()} if there was no mapping)
+     * For each element ii of {@code keys}: removes the mapping for {@code keys.get(ii)}, writing the removed value (or
+     * {@link #defaultReturnValue()} if there was no mapping) to element ii of {@code oldValues}. Elements are processed
+     * in index order; a duplicate key within {@code keys} therefore finds nothing left to remove. On return, the size
+     * of {@code oldValues} is set to {@code keys.size()}; its capacity must be at least that large.
+     *
+     * @param keys the keys to remove
+     * @param oldValues output: the removed value of each key (or {@link #defaultReturnValue()})
      */
-    long remove(long key);
+    void remove(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> oldValues);
 
     /**
      * Empty the map in place, retaining its backing array and capacity. Not safe in the presence of concurrent readers.
@@ -89,28 +123,34 @@ public interface NullableLongLongMap {
 
     /**
      * A reusable cursor for scalar access to a {@link NullableLongLongMap}, for callers whose shape is genuinely
-     * per-element. {@link #reset} binds the cursor to a map and performs (and, in future map implementations, caches)
-     * whatever per-batch setup the map's chunked operations need, so that {@link #get} calls are cheap: callers with a
-     * loop should reset once outside the loop.
+     * per-element. {@link #reset} binds the cursor to a map. Bound to the engine's own map, each call goes straight to
+     * that map's scalar entry point: one volatile read, one dispatch on the array's shape tag, one kernel probe, the
+     * same price a per-element API paid before the maps spoke chunks. Bound to any other implementation, each call
+     * travels as a one-element chunk. Either way the calls are cheap; callers with a loop should still allocate and
+     * reset once, outside the loop.
      *
      * <p>
      * Contract: an instance may be used by only one thread at a time. It is valid from the time of {@link #reset}, with
      * the same semantics as any other read of these maps: a concurrent writer will not make it crash, but readers under
      * a clock discipline must discard their work if the clock tells them to. One footnote for writers reading their own
-     * map: a mutation invalidates that thread's own bindings to the mutated map — reset again before the next scalar
-     * read.
-     *
-     * <p>
-     * Keep one cursor per map you are working with (rather than ping-ponging one cursor between maps): future
-     * implementations memoize per-map state keyed on the map's backing storage, and rebinding churns that cache.
+     * map: a mutation performed through this cursor keeps the cursor's own binding fresh, but a mutation through any
+     * other path (a chunked call on the map, another cursor, {@link NullableLongLongMap#clear},
+     * {@link NullableLongLongMap#resetToNull}) invalidates that thread's bindings to the mutated map — reset again
+     * before the next use.
      */
     class ScalarAccess {
         private NullableLongLongMap map;
+        // Bound at reset when the map is the engine's own implementation: the operations below then go straight to
+        // its scalar entry points, one kernel call per key, with no chunk in between. Any other implementation is
+        // served through the one-element chunks — in practice only the tests' reference map and the benchmark's
+        // fastutil adapter, since every engine map comes from the factory and is the direct kind.
+        private HashMapLockFreeKnVn direct;
         private final WritableLongChunk<Any> keyChunk = WritableLongChunk.writableChunkWrap(new long[1]);
         private final WritableLongChunk<Any> valueChunk = WritableLongChunk.writableChunkWrap(new long[1]);
+        private final WritableLongChunk<Any> resultChunk = WritableLongChunk.writableChunkWrap(new long[1]);
 
         public ScalarAccess(final NullableLongLongMap map) {
-            this.map = map;
+            reset(map);
         }
 
         /**
@@ -123,6 +163,7 @@ public interface NullableLongLongMap {
          */
         public void reset(final NullableLongLongMap map) {
             this.map = map;
+            this.direct = map instanceof HashMapLockFreeKnVn ? (HashMapLockFreeKnVn) map : null;
         }
 
         /**
@@ -130,9 +171,56 @@ public interface NullableLongLongMap {
          * {@link NullableLongLongMap#defaultReturnValue()} if no mapping exists.
          */
         public long get(final long key) {
+            if (direct != null) {
+                return direct.getScalar(key);
+            }
             keyChunk.set(0, key);
-            map.get(keyChunk, valueChunk);
-            return valueChunk.get(0);
+            map.get(keyChunk, resultChunk);
+            return resultChunk.get(0);
+        }
+
+        /**
+         * Adds a mapping from key to value, exactly as {@link NullableLongLongMap#put} would, returning the previous
+         * value (or the bound map's {@link NullableLongLongMap#defaultReturnValue()}). Mutating through the cursor
+         * keeps its own binding fresh; only mutation through any other path invalidates it.
+         */
+        public long put(final long key, final long value) {
+            if (direct != null) {
+                return direct.putScalar(key, value, false);
+            }
+            keyChunk.set(0, key);
+            valueChunk.set(0, value);
+            map.put(keyChunk, valueChunk, resultChunk);
+            return resultChunk.get(0);
+        }
+
+        /**
+         * Adds a mapping from key to value if none exists, exactly as {@link NullableLongLongMap#putIfAbsent} would,
+         * returning the previous value (or the bound map's {@link NullableLongLongMap#defaultReturnValue()}). Mutating
+         * through the cursor keeps its own binding fresh; only mutation through any other path invalidates it.
+         */
+        public long putIfAbsent(final long key, final long value) {
+            if (direct != null) {
+                return direct.putScalar(key, value, true);
+            }
+            keyChunk.set(0, key);
+            valueChunk.set(0, value);
+            map.putIfAbsent(keyChunk, valueChunk, resultChunk);
+            return resultChunk.get(0);
+        }
+
+        /**
+         * Removes the mapping for key, exactly as {@link NullableLongLongMap#remove} would, returning the removed value
+         * (or the bound map's {@link NullableLongLongMap#defaultReturnValue()} if there was no mapping). Mutating
+         * through the cursor keeps its own binding fresh; only mutation through any other path invalidates it.
+         */
+        public long remove(final long key) {
+            if (direct != null) {
+                return direct.removeScalar(key);
+            }
+            keyChunk.set(0, key);
+            map.remove(keyChunk, resultChunk);
+            return resultChunk.get(0);
         }
     }
 

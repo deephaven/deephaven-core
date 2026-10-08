@@ -64,7 +64,7 @@ public class TstColumnRegionDouble {
         }
     }
 
-    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionDouble<Values>> {
+    public static class TestNull extends TstColumnRegionPrimitive<ColumnRegionDouble<Values>> {
 
         @Before
         public void setUp() throws Exception {
@@ -82,7 +82,22 @@ public class TstColumnRegionDouble {
         }
     }
 
-    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionDouble<Values>> {
+    public static class TestConstant extends TstColumnRegionPrimitive.Constant<ColumnRegionDouble<Values>> {
+
+        @Before
+        public void setUp() throws Exception {
+            SUT = new ColumnRegionDouble.Constant<>(Long.MAX_VALUE, (double) 42);
+        }
+
+        @Override
+        @Test
+        public void testGet() {
+            assertEquals((double) 42, SUT.getDouble(0));
+            assertEquals((double) 42, SUT.getDouble(Long.MAX_VALUE));
+        }
+    }
+
+    public static class TestDeferred extends TstColumnRegionPrimitive.Deferred<ColumnRegionDouble<Values>> {
 
         @Before
         public void setUp() throws Exception {
