@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.JoinControl.BuildParameters.From.LeftInput;
 import static io.deephaven.engine.table.impl.MatchPair.matchString;
@@ -215,6 +216,10 @@ public class CrossJoinHelper {
 
             final ModifiedColumnSet rightKeyColumns =
                     rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
+            // a right modification changes the result only through the right key columns or the columns the join adds
+            final ModifiedColumnSet rightUsedColumns = rightTable.newModifiedColumnSet(Stream.concat(
+                    Arrays.stream(MatchPair.getRightColumns(columnsToMatch)),
+                    Arrays.stream(MatchPair.getRightColumns(columnsToAdd))).distinct().toArray(String[]::new));
             final ModifiedColumnSet leftKeyColumns =
                     leftTable.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToMatch));
 
@@ -420,7 +425,8 @@ public class CrossJoinHelper {
                             if (upstreamRight.added().isNonempty()) {
                                 jsm.rightAdd(upstreamRight.added(), tracker);
                             }
-                            if (upstreamRight.modified().isNonempty()) {
+                            if (upstreamRight.modified().isNonempty()
+                                    && upstreamRight.modifiedColumnSet().containsAny(rightUsedColumns)) {
                                 jsm.rightModified(upstreamRight,
                                         upstreamRight.modifiedColumnSet().containsAny(rightKeyColumns), tracker);
                             }
@@ -918,7 +924,8 @@ public class CrossJoinHelper {
                         if (upstream.added().isNonempty()) {
                             jsm.rightAdd(upstream.added(), tracker);
                         }
-                        if (upstream.modified().isNonempty()) {
+                        if (upstream.modified().isNonempty()
+                                && upstream.modifiedColumnSet().containsAny(rightUsedColumns)) {
                             jsm.rightModified(upstream, upstream.modifiedColumnSet().containsAny(rightKeyColumns),
                                     tracker);
                         }

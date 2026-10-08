@@ -272,6 +272,49 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     @Test
+    public void testKeyedRightModifyOfColumnNotAdded() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+                final String description = "leftRefreshing=" + leftRefreshing + ", leftOuterJoin=" + leftOuterJoin;
+                final QueryTable left = leftRefreshing
+                        ? testRefreshingTable(i(1, 5).toTracking(), intCol("K", 1, 2), intCol("A", 1, 5))
+                        : testTable(i(1, 5).toTracking(), intCol("K", 1, 2), intCol("A", 1, 5));
+                final QueryTable right = testRefreshingTable(i(0, 2).toTracking(), intCol("K", 1, 2),
+                        intCol("Y", 10, 12), intCol("Unused", 20, 22));
+                final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+                final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+                final QueryTable joined = (QueryTable) (leftOuterJoin
+                        ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                        : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10));
+                final io.deephaven.engine.table.impl.SimpleListener listener =
+                        new io.deephaven.engine.table.impl.SimpleListener(joined);
+                joined.addUpdateListener(listener);
+
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> {
+                            if (leftRefreshing) {
+                                addToTable(left, i(1), intCol("K", 1), intCol("A", -1));
+                                left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                                        left.newModifiedColumnSet("A")));
+                            }
+                            addToTable(right, i(2), intCol("K", 2), intCol("Y", 12), intCol("Unused", -22));
+                            right.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                                    right.newModifiedColumnSet("Unused")));
+                        });
+
+                // only a left modification changes a result row; left row 5's result row is untouched
+                final RowSet expectedModified = leftRefreshing ? i(1L << 10) : i();
+                if (listener.getCount() > 0) {
+                    assertEquals(description, expectedModified, listener.update.modified());
+                } else {
+                    assertTrue(description, expectedModified.isEmpty());
+                }
+                joined.removeUpdateListener(listener);
+            }
+        }
+    }
+
+    @Test
     public void testZeroKeyRightModifyOfColumnNotAdded() {
         final QueryTable lTable = testRefreshingTable(i(1, 5).toTracking(), intCol("LVal", 1, 5));
         final QueryTable rTable = testRefreshingTable(i(0, 2).toTracking(), intCol("RVal", 10, 12),
