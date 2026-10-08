@@ -513,14 +513,6 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 .append(numTasks).append(" tasks, ").append(requestsPerTask).endl();
 
         final JavaFileManager fileManager = acquireFileManager();
-        final Runnable releaseFileManager = () -> {
-            try {
-                releaseFileManager(fileManager);
-            } catch (Exception e) {
-                // ignore errors here
-            }
-        };
-
         try {
             // This thread compiles alongside the scheduler's threads, and comes back here once every task is done
             jobScheduler.invokeParallel(executionContext, null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
@@ -528,12 +520,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                         final int startInclusive = jobId * requestsPerTask;
                         final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
                         doCompileAndDefine(fileManager, requests, startInclusive, endExclusive);
-                    },
-                    () -> {
-                    },
-                    releaseFileManager,
-                    // cleanup runs only after a success, so a failure releases the file manager here
-                    err -> releaseFileManager.run());
+                    });
         } catch (RuntimeException e) {
             // invokeParallel restores an interrupt that arrived while it waited; cancellation is what the caller asked
             // for, so it takes precedence over a compilation failure, which is kept alongside it
@@ -544,6 +531,12 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             }
             throw e;
         } finally {
+            // every task is done by now, whether the compilation succeeded or failed
+            try {
+                releaseFileManager(fileManager);
+            } catch (Exception e) {
+                // ignore errors here
+            }
             final BasePerformanceEntry perfEntry = jobScheduler.getAccumulatedPerformance();
             if (perfEntry != null) {
                 QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(perfEntry);

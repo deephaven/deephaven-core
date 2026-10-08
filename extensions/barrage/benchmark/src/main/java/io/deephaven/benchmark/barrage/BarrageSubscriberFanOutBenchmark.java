@@ -226,11 +226,7 @@ public class BarrageSubscriberFanOutBenchmark {
                         BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
             schedulerFactory.get().invokeParallel(ExecutionContext.getContext(), null,
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, subscriberList.size(),
-                    (context, si, nec) -> subscriberList.get(si).write(writer),
-                    () -> {
-                    }, () -> {
-                    }, failure -> {
-                    });
+                    (context, si, nec) -> subscriberList.get(si).write(writer));
         }
         long bytes = 0;
         for (final Subscriber subscriber : subscriberList) {

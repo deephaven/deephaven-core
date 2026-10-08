@@ -1965,7 +1965,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 // Each subscription's snapshot is written independently of the others', so they are written in
                 // parallel; the writer is closed only once every one of them has finished.
                 final long startTm = System.nanoTime();
-                writeToSubscribers(snapshotTargets,
+                forEachInParallel(snapshotTargets,
                         subscription -> propagateSnapshotForSubscription(subscription, snapshotGenerator));
                 recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
             }
@@ -2017,8 +2017,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         // Check shared dictionary states for overflow before building any batches. When the cumulative dictionary size
         // exceeds the current live row count, the dictionary has grown larger than the data it encodes; reset it so
         // the next DictionaryBatch is isDelta=false with a compacted set of values. FullSubscriptionDictionaryState
-        // instances detect the reset lazily via the SharedWriterDictionary generation counter. This must happen here,
-        // before the writes start: they run in parallel, and a reset is only safe while none is running.
+        // instances detect the reset lazily via the SharedWriterDictionary generation counter.
         final long fullTableRowCount = propRowSetForMessage.size();
         for (final SharedWriterDictionary sharedState : sharedDictionaryStates.values()) {
             if (sharedState.getTotalSize() > fullTableRowCount) {
@@ -2033,28 +2032,25 @@ public class BarrageMessageProducer extends LivenessArtifact
                 message, chunkWriters, this::recordWriteMetrics)) {
             // Each subscriber's view is written independently of the others', so they are written in parallel; the
             // writer is closed only once every one of them has finished.
-            writeToSubscribers(targets, subscription -> propagateToSubscriber(
+            forEachInParallel(targets, subscription -> propagateToSubscriber(
                     bmw, subscription, propRowSetForMessagePrev, propRowSetForMessage));
         }
     }
 
     /**
-     * Writes to each of {@code targets} through {@code write}, on as many threads as the propagation job scheduler
-     * supplies with this one among them, and returns only once every write has finished, so that the caller may then
-     * release what the writes were reading. Each write handles its own subscriber's failure; what this throws is a
-     * failure none of them handled, once the writes already running have finished.
+     * Runs {@code action} once for each of {@code targets}, in parallel on as many threads as the propagation job
+     * scheduler supplies, and returns only once every run has finished, so that the caller may then release what they
+     * were reading. Runs for different subscriptions happen at the same time, so {@code action} must touch only its own
+     * subscription's state. Each run handles its own subscriber's failure; what this throws is a failure none of them
+     * handled, once the runs already started have finished.
      */
-    private void writeToSubscribers(final List<Subscription> targets, final Consumer<Subscription> write) {
+    private void forEachInParallel(final List<Subscription> targets, final Consumer<Subscription> action) {
         propagationJobSchedulerFactory.get().invokeParallel(
                 ExecutionContext.getContext(),
                 logOutput -> logOutput.append(logPrefix).append("propagation"),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, targets.size(),
-                (context, targetIndex, nestedErrorConsumer) -> write.accept(targets.get(targetIndex)),
-                () -> {
-                }, () -> {
-                }, failure -> {
-                });
+                (context, targetIndex, nestedErrorConsumer) -> action.accept(targets.get(targetIndex)));
     }
 
     /**

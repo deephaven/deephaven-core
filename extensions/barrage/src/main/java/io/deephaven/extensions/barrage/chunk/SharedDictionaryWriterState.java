@@ -122,14 +122,12 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
     @NotNull
     public WritableChunk<Values> buildDeltaChunk() {
         syncGeneration();
-        // Measure and copy under one lock, so the chunk holds exactly the values up to the end that resetDelta() will
-        // advance to.
-        synchronized (shared) {
-            final int deltaEnd = shared.getTotalSize();
-            final WritableChunk<Values> delta = shared.buildDeltaChunk(flushedOffset, deltaEnd);
-            builtDeltaEnd = deltaEnd;
-            return delta;
-        }
+        // The value list only grows between resets, so the range measured here is still exactly what the copy covers,
+        // however many values other subscribers add in between.
+        final int deltaEnd = shared.getTotalSize();
+        final WritableChunk<Values> delta = shared.buildDeltaChunk(flushedOffset, deltaEnd);
+        builtDeltaEnd = deltaEnd;
+        return delta;
     }
 
     /**

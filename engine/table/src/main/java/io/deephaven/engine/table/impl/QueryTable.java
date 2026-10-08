@@ -1845,11 +1845,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 1,
                                         (context, step, nestedErrorConsumer, resume) -> analyzer.applyUpdate(
                                                 fakeUpdate, emptyRowSet, updateHelper, jobScheduler,
-                                                liveResultCapture, resume, nestedErrorConsumer),
-                                        () -> {
-                                        }, () -> {
-                                        }, failure -> {
-                                        });
+                                                liveResultCapture, resume, nestedErrorConsumer));
                             } catch (RuntimeException e) {
                                 // invokeSerial restores an interrupt that arrived while it waited; cancellation is
                                 // what the caller asked for, so it takes precedence over the analyzer's failure

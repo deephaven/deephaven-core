@@ -125,8 +125,9 @@ public interface JobScheduler {
      * Cause runnable to be executed.
      *
      * <p>
-     * A scheduler never drops a job it accepts. One whose threads can all be busy, such as a bounded pool with no
-     * queue, runs the job on the calling thread when no thread is free rather than refusing it.
+     * A scheduler runs every job it accepts: at once, after queuing it, or, when it has no thread free and no queue to
+     * hold the job, on the calling thread. A scheduler that cannot take a job at all throws instead, and the job does
+     * not run.
      * </p>
      *
      * @param executionContext the execution context to run it under
@@ -290,19 +291,13 @@ public interface JobScheduler {
                     if (taskInvoker == null) {
                         break;
                     }
-                    // In the list before it is submitted: should the submission fail, the scheduler may not have taken
-                    // it, and the catch below records the failure and then closes it along with every other invoker
-                    // that has not started. A scheduler that ran it on this thread before failing started it, and it
-                    // closed itself.
                     invokers.add(taskInvoker);
                     scheduler.submit(executionContext, taskInvoker::startAndExecute, description,
                             IterationManager::onUnexpectedJobError);
                 }
                 if (callerParticipates) {
-                    // The caller runs its own invoker first, then any submitted one that has not started yet: a
-                    // blocked caller must never wait on an invoker that has not started, since an executor that
-                    // queues may start one only after the caller has run every other task, or never, if it is queued
-                    // behind the caller's own thread. One the scheduler starts later finds it already taken.
+                    // The caller has to wait, might as well do work rather than idling. Will do its own invoker first,
+                    // then look for a submitted one that has not started yet.
                     try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
                         for (final TaskInvoker taskInvoker : invokers) {
                             if (taskInvoker.tryStart()) {
@@ -316,9 +311,6 @@ public interface JobScheduler {
                 abandonUnstarted(invokers);
                 throw e;
             } catch (Error e) {
-                // An Error from the context factory or the scheduler, OutOfMemoryError when a thread cannot be made in
-                // practice, must end the iteration in onError too. One that a task threw on this thread was already
-                // delivered by its invoker, so only record it when nothing has been.
                 if (exception.get() == null) {
                     onTaskError(asDeliverableException(e));
                 }
@@ -437,51 +429,24 @@ public interface JobScheduler {
                 final int maxThreads,
                 final int start,
                 final int count,
-                @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
-                @NotNull final Runnable onComplete,
-                @NotNull final Runnable cleanup,
-                @NotNull final Consumer<Exception> onError) {
+                @NotNull final IterateResumeAction<CONTEXT_TYPE> action) {
             final Invocation invocation = new Invocation();
-            // The caller's callbacks run exactly as they would for iterateParallel, on the thread that finishes the
-            // iteration; the wrappers only record the outcome and release the caller once the callbacks have returned.
-            // Each terminal path, cleanup after a successful onComplete or onError otherwise, releases the caller once.
+            // The iteration ends in exactly one of: cleanup (after a success), or onError on whichever thread finishes
+            // it; each records the outcome and releases the caller.
             final IterationManager<CONTEXT_TYPE> iterationManager = new IterationManager<>(
                     description, start, count, action,
-                    onComplete,
                     () -> {
-                        try {
-                            cleanup.run();
-                        } catch (Exception e) {
-                            // The callback form reports this as unexpected; here there is a caller to throw it to.
-                            invocation.fail(e);
-                        } catch (Error e) {
-                            // Thrown to the caller as well, and still propagated on this thread, which may be a
-                            // scheduler thread that reports it as fatal.
-                            invocation.fail(asDeliverableException(e));
-                            throw e;
-                        } finally {
-                            invocation.finish();
-                        }
                     },
+                    invocation::finish,
                     e -> {
                         invocation.fail(e);
-                        try {
-                            onError.accept(e);
-                        } catch (Exception handlerFailure) {
-                            // Likewise; the iteration's own failure stays the one thrown.
-                            invocation.fail(handlerFailure);
-                        } catch (Error handlerError) {
-                            invocation.fail(asDeliverableException(handlerError));
-                            throw handlerError;
-                        } finally {
-                            invocation.finish();
-                        }
+                        invocation.finish();
                     });
             Error error = null;
             try {
                 iterationManager.startTasks(scheduler, executionContext, taskThreadContextFactory, maxThreads, true);
             } catch (Exception e) {
-                // startTasks recorded this as the iteration's failure, so onError sees it and it is thrown below
+                // startTasks recorded this as the iteration's failure already; it is thrown below
                 invocation.fail(e);
             } catch (Error e) {
                 // The invoker or startTasks has recorded this already, so the iteration will end. Wait for it before
@@ -490,15 +455,11 @@ public interface JobScheduler {
             }
             invocation.awaitFinished();
             if (error != null && invocation.failedWith(error)) {
-                // the iteration failed with this Error, which a task or a callback threw on this thread
+                // the iteration failed with this Error, which a task threw on this thread
                 throw error;
             }
-            // Otherwise the Error came from onError on this thread, while it handled the iteration's own failure; that
-            // failure stays the one thrown, and the Error is attached to it as suppressed.
+            // Otherwise the iteration had already failed when this thread threw it, and that first failure is thrown.
             invocation.rethrowFailure();
-            if (error != null) {
-                throw error;
-            }
         }
 
         /**
@@ -814,8 +775,8 @@ public interface JobScheduler {
     /**
      * Iterates over a range of values in parallel as {@link #iterateParallel} does, except that the calling thread runs
      * tasks too, and this method returns only once the iteration is over. See the
-     * {@link #invokeParallel(ExecutionContext, LogOutputAppendable, Supplier, int, int, IterateResumeAction, Runnable, Runnable, Consumer)
-     * resume form} for the contract.
+     * {@link #invokeParallel(ExecutionContext, LogOutputAppendable, Supplier, int, int, IterateResumeAction) resume
+     * form} for the contract.
      *
      * @param executionContext the execution context the tasks run under, on every thread that runs them, the calling
      *        thread's included; null to run them under each thread's own
@@ -824,9 +785,7 @@ public interface JobScheduler {
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index is provided as a parameter
-     * @param onComplete this will be called when all iterations are complete
-     * @param cleanup called after onComplete successfully returns
-     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception
+     * @throws UnsupportedOperationException if this scheduler does not allow a thread to block on it
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void invokeParallel(
@@ -835,10 +794,7 @@ public interface JobScheduler {
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
             final int start,
             final int count,
-            @NotNull final IterateAction<CONTEXT_TYPE> action,
-            @NotNull final Runnable onComplete,
-            @NotNull final Runnable cleanup,
-            @NotNull final Consumer<Exception> onError) {
+            @NotNull final IterateAction<CONTEXT_TYPE> action) {
         invokeParallel(executionContext, description, taskThreadContextFactory, start, count,
                 (final CONTEXT_TYPE taskThreadContext,
                         final int taskIndex,
@@ -846,13 +802,15 @@ public interface JobScheduler {
                         final Runnable resume) -> {
                     action.run(taskThreadContext, taskIndex, nestedErrorConsumer);
                     resume.run();
-                }, onComplete, cleanup, onError);
+                });
     }
 
     /**
      * Iterates over a range of values in parallel as {@link #iterateParallel} does, except that the calling thread runs
-     * tasks too, and this method returns only once the iteration is over. Where {@code iterateParallel} reports through
-     * its callbacks and may return first, this holds the calling thread.
+     * tasks too, and this method returns only once the iteration is over. Where {@code iterateParallel} reports its
+     * outcome through callbacks and may return first, this holds the calling thread and reports its outcome by
+     * returning or throwing; whatever a caller would do in {@code onComplete}, {@code cleanup} or {@code onError} it
+     * does after this call, or in a {@code catch} or {@code finally} around it.
      *
      * <p>
      * <b>Participation.</b> Up to {@code min(count, threadCount()) - 1} task invokers are submitted to the scheduler,
@@ -864,24 +822,18 @@ public interface JobScheduler {
      * </p>
      *
      * <p>
-     * <b>Return.</b> This returns only once every task has completed, or the iteration has failed and every task
-     * already running has finished; and every task context has been closed; and the callbacks have run. The callbacks
-     * run exactly as they do for {@code iterateParallel}, on whichever thread finishes the iteration, which may be a
-     * scheduler thread rather than the caller: {@code onComplete} then {@code cleanup} on success, {@code onError}
-     * otherwise. A task may hand its completion to nested asynchronous work through {@code resume}, in which case the
-     * thread that finishes that work carries the iteration on, and the caller waits for it here.
+     * <b>Return.</b> This returns only once every task has completed and every task context has been closed. A task may
+     * hand its completion to nested asynchronous work through {@code resume}, in which case the thread that finishes
+     * that work carries the iteration on, and the caller waits for it here.
      * </p>
      *
      * <p>
-     * <b>Failure.</b> The callbacks are notification; the throw is the result. After the callbacks have run, the
-     * iteration's failure is thrown: the exception delivered to {@code onError}, or the one {@code onComplete} threw,
-     * as itself when it is a {@link RuntimeException} and wrapped in an {@link UncheckedDeephavenException} otherwise.
-     * Later failures are attached to it as suppressed. Where the callback form hands a failure to the global fatal
-     * error reporter because no one is waiting to hear of it, this throws it to the caller instead: a failing
-     * {@code cleanup} is thrown, and a failing {@code onError} is attached as suppressed to the failure it was
-     * handling. An {@link Error} thrown by a task on a scheduler thread is still reported as fatal and rethrown there,
-     * and reaches the caller wrapped, as {@link #asDeliverableException} makes it; one thrown on the calling thread
-     * reaches the caller as itself, once the other tasks have finished.
+     * <b>Failure.</b> A task that throws, or that reports a failure through its nested error consumer, fails the
+     * iteration: no new task starts, and once every task already running has finished, the first failure is thrown, as
+     * itself when it is a {@link RuntimeException} and wrapped in an {@link UncheckedDeephavenException} otherwise.
+     * Later failures are attached to it as suppressed. An {@link Error} thrown by a task on a scheduler thread is still
+     * reported as fatal and rethrown there, and reaches the caller wrapped, as {@link #asDeliverableException} makes
+     * it; one thrown on the calling thread reaches the caller as itself, once the other tasks have finished.
      * </p>
      *
      * <p>
@@ -901,9 +853,6 @@ public interface JobScheduler {
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
-     * @param onComplete this will be called when all iterations are complete
-     * @param cleanup called after onComplete successfully returns
-     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception
      * @throws UnsupportedOperationException if this scheduler does not allow a thread to block on it
      */
     @FinalDefault
@@ -913,13 +862,10 @@ public interface JobScheduler {
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
             final int start,
             final int count,
-            @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
-            @NotNull final Runnable onComplete,
-            @NotNull final Runnable cleanup,
-            @NotNull final Consumer<Exception> onError) {
+            @NotNull final IterateResumeAction<CONTEXT_TYPE> action) {
         checkInvokeSupported();
         IterationManager.invoke(this, executionContext, description, taskThreadContextFactory, count, start, count,
-                action, onComplete, cleanup, onError);
+                action);
     }
 
     /**
@@ -932,9 +878,9 @@ public interface JobScheduler {
      * the whole chain.
      *
      * <p>
-     * In every other respect, the return point, the callbacks, what is thrown, interruption, and which schedulers allow
-     * it, the contract is that of
-     * {@link #invokeParallel(ExecutionContext, LogOutputAppendable, Supplier, int, int, IterateResumeAction, Runnable, Runnable, Consumer)
+     * In every other respect, the return point, what is thrown, interruption, and which schedulers allow it, the
+     * contract is that of
+     * {@link #invokeParallel(ExecutionContext, LogOutputAppendable, Supplier, int, int, IterateResumeAction)
      * invokeParallel}. Nothing is submitted to the scheduler by the iteration itself, only by whatever nested work the
      * steps start, which is why a scheduler that refuses {@code invokeParallel} refuses this too.
      * </p>
@@ -947,9 +893,6 @@ public interface JobScheduler {
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the step to perform, the current iteration index and a resume Runnable are parameters
-     * @param onComplete this will be called when all iterations are complete
-     * @param cleanup called after onComplete successfully returns
-     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception
      * @throws UnsupportedOperationException if this scheduler does not allow a thread to block on it
      */
     @FinalDefault
@@ -959,12 +902,9 @@ public interface JobScheduler {
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
             final int start,
             final int count,
-            @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
-            @NotNull final Runnable onComplete,
-            @NotNull final Runnable cleanup,
-            @NotNull final Consumer<Exception> onError) {
+            @NotNull final IterateResumeAction<CONTEXT_TYPE> action) {
         checkInvokeSupported();
         IterationManager.invoke(this, executionContext, description, taskThreadContextFactory, 1, start, count,
-                action, onComplete, cleanup, onError);
+                action);
     }
 }

@@ -26,10 +26,18 @@ import java.util.function.Consumer;
  * <p>
  * It is meant for a pool shaped like {@link #newHelperPool}, which may be small and shared by many callers, and on
  * which a job may itself invoke a nested iteration; the pool's size bounds the threads a caller adds to its own, never
- * the work it can finish. {@link #invokeParallel} works with any executor, because its caller never waits on a helper
- * that has not started. A task that hands its completion to a nested callback-form iteration through {@code resume}
- * does wait on that iteration's jobs, though, so with an executor that queues, such a task must not run on a thread the
- * queued jobs need: with this pool shape a job either starts at once or runs on its submitter, so that cannot happen.
+ * the work it can finish.
+ * </p>
+ *
+ * <p>
+ * A caller of {@link #invokeParallel} idles only once no task is left for it to claim: it then waits for the tasks that
+ * helpers already started. It never waits on a helper that has not started, since it runs any such helper itself, so
+ * this holds for any executor. A task that itself calls {@code invokeParallel} is such a caller too, and works through
+ * its nested iteration the same way; when the pool has no free thread, its nested helpers run on its own thread and it
+ * does not wait at all. The exception is a task that hands its completion to a nested callback-form iteration through
+ * {@code resume}: its caller waits for that iteration's jobs without running them, so with an executor that queues,
+ * such a task must not run on a thread the queued jobs need. With this pool shape a job either starts at once or runs
+ * on its submitter, so that cannot happen.
  * </p>
  *
  * <p>

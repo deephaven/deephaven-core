@@ -25,10 +25,11 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>
  * Thread-safety: the producer writes to its subscribers in parallel, so full subscribers fill, measure and read this
- * dictionary from different threads at once. Every method holds the dictionary's monitor, so fills register values one
- * at a time; the methods that measure and copy the value list are called once per batch, not per row. Because values
- * are only appended, a range of the list that a subscriber has measured stays valid however many values are added
- * afterwards. {@link #reset()} must be called only while no subscriber is writing.
+ * dictionary from different threads at once. Filling and copying hold the dictionary's monitor, once per chunk filled
+ * and once per batch copied, since a fill may grow the value list while a copy reads it. Measuring does not: the size
+ * is published through a volatile field after the values it counts, so a subscriber that reads it sees those values,
+ * and because values are only appended, a range of the list that a subscriber has measured stays valid however many
+ * values are added afterwards. {@link #reset()} must be called only while no subscriber is writing.
  */
 public final class SharedWriterDictionary {
 
@@ -38,7 +39,9 @@ public final class SharedWriterDictionary {
      * Incremented each time {@link #reset()} is called. {@link SharedDictionaryWriterState} instances detect a reset by
      * comparing their stored generation against this value.
      */
-    private int generation = 0;
+    private volatile int generation = 0;
+    /** The number of values in {@link #map}, published after the values it counts. */
+    private volatile int size = 0;
 
     public SharedWriterDictionary(final long dictId, final ChunkType valuesChunkType) {
         this.dictId = dictId;
@@ -55,12 +58,17 @@ public final class SharedWriterDictionary {
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options,
             @NotNull final WritableIntChunk<Values> out) {
-        map.fillIndexChunk(source, subset, options.useDeephavenNulls(), out);
+        try {
+            map.fillIndexChunk(source, subset, options.useDeephavenNulls(), out);
+        } finally {
+            // a fill that failed part way may still have added values; count them too
+            size = map.size();
+        }
     }
 
     /** Total number of distinct values currently in the dictionary (reset to 0 after {@link #reset()}). */
-    public synchronized int getTotalSize() {
-        return map.size();
+    public int getTotalSize() {
+        return size;
     }
 
     /**
@@ -73,7 +81,7 @@ public final class SharedWriterDictionary {
     }
 
     /** Returns the current generation counter. Increments each time {@link #reset()} is called. */
-    public synchronized int getGeneration() {
+    public int getGeneration() {
         return generation;
     }
 
@@ -83,7 +91,8 @@ public final class SharedWriterDictionary {
      * {@code isDelta=false} DictionaryBatch.
      */
     public synchronized void reset() {
-        generation++;
         map.reset();
+        size = 0;
+        generation++;
     }
 }

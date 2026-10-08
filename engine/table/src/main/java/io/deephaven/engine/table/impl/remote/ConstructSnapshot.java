@@ -1466,11 +1466,7 @@ public class ConstructSnapshot {
                             columnSourceNames,
                             new IntArrayList(new int[] {columnIndices.getInt(colRank)}),
                             columnSources.subList(colRank, colRank + 1),
-                            usePrev, snapshot),
-                    () -> {
-                    }, () -> {
-                    }, failure -> {
-                    });
+                            usePrev, snapshot));
         } catch (final RuntimeException e) {
             jobFailure = e;
         }

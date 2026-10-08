@@ -43,8 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests of {@link JobScheduler#invokeParallel}: the calling thread takes part, the call returns only once the iteration
- * and its callbacks are over, and the outcome is thrown rather than only delivered.
+ * Tests of {@link JobScheduler#invokeParallel} and {@link JobScheduler#invokeSerial}: the calling thread takes part,
+ * the call returns only once the iteration is over, and a failure is thrown to the caller.
  */
 public class TestInvokeParallel {
 
@@ -124,86 +124,47 @@ public class TestInvokeParallel {
         }
     }
 
-    /**
-     * The callbacks of one invocation. Records what ran, checks that each ran at most once, and notes whether any ran
-     * after the invocation had returned, which none may.
-     */
-    private static final class Outcome {
+    /** Records how a callback-form iteration ended, for the tests of what the two forms share. */
+    private static final class Callbacks {
         private final AtomicInteger completeCalls = new AtomicInteger();
         private final AtomicInteger cleanupCalls = new AtomicInteger();
         private final AtomicReference<Exception> error = new AtomicReference<>();
-        private final AtomicBoolean ranAfterReturn = new AtomicBoolean();
-        private volatile boolean returned;
 
-        private final Runnable onComplete = () -> {
-            noteCall();
-            completeCalls.incrementAndGet();
-        };
-        private final Runnable cleanup = () -> {
-            noteCall();
-            cleanupCalls.incrementAndGet();
-        };
+        private final Runnable onComplete = completeCalls::incrementAndGet;
+        private final Runnable cleanup = cleanupCalls::incrementAndGet;
         private final Consumer<Exception> onError = e -> {
-            noteCall();
             if (!error.compareAndSet(null, e)) {
                 throw new IllegalStateException("onError called twice");
             }
         };
-
-        private void noteCall() {
-            if (returned) {
-                ranAfterReturn.set(true);
-            }
-        }
-
-        private void assertCompleted() {
-            assertThat(ranAfterReturn.get()).as("a callback ran after invokeParallel returned").isFalse();
-            assertThat(completeCalls.get()).as("onComplete calls").isEqualTo(1);
-            assertThat(cleanupCalls.get()).as("cleanup calls").isEqualTo(1);
-            assertThat(error.get()).as("onError").isNull();
-        }
-
-        private void assertFailed(final Throwable expected) {
-            assertThat(ranAfterReturn.get()).as("a callback ran after invokeParallel returned").isFalse();
-            assertThat(completeCalls.get()).as("onComplete calls").isZero();
-            assertThat(cleanupCalls.get()).as("cleanup calls").isZero();
-            assertThat(error.get()).as("onError").isSameAs(expected);
-        }
     }
 
-    /** Invokes {@code count} tasks on {@code scheduler} with the default context, and returns the callbacks' record. */
-    private static Outcome invoke(
+    /** Invokes {@code count} tasks on {@code scheduler} with the default context. */
+    private static void invoke(
             final JobScheduler scheduler,
             final int count,
             final JobScheduler.IterateAction<JobScheduler.JobThreadContext> action) {
-        return invoke(scheduler, JobScheduler.DEFAULT_CONTEXT_FACTORY, count, action);
+        invoke(scheduler, JobScheduler.DEFAULT_CONTEXT_FACTORY, count, action);
     }
 
-    private static <CONTEXT_TYPE extends JobScheduler.JobThreadContext> Outcome invoke(
+    private static <CONTEXT_TYPE extends JobScheduler.JobThreadContext> void invoke(
             final JobScheduler scheduler,
             final Supplier<CONTEXT_TYPE> contextFactory,
             final int count,
             final JobScheduler.IterateAction<CONTEXT_TYPE> action) {
-        final Outcome outcome = new Outcome();
-        try {
-            scheduler.invokeParallel(ExecutionContext.getContext(), logOutput -> logOutput.append("TestInvokeParallel"),
-                    contextFactory, 0, count, action, outcome.onComplete, outcome.cleanup, outcome.onError);
-        } finally {
-            outcome.returned = true;
-        }
-        return outcome;
+        scheduler.invokeParallel(ExecutionContext.getContext(), logOutput -> logOutput.append("TestInvokeParallel"),
+                contextFactory, 0, count, action);
     }
 
     @Test
     public void testImmediateRunsEveryTaskInOrderOnTheCallingThread() {
         final List<Integer> order = new ArrayList<>();
         final Set<Thread> threads = ConcurrentHashMap.newKeySet();
-        final Outcome outcome = invoke(new ImmediateJobScheduler(), 20, (context, idx, nec) -> {
+        invoke(new ImmediateJobScheduler(), 20, (context, idx, nec) -> {
             order.add(idx);
             threads.add(Thread.currentThread());
         });
 
-        outcome.assertCompleted();
         assertThat(order).isEqualTo(items(20));
         assertThat(threads).containsExactly(Thread.currentThread());
     }
@@ -218,12 +179,11 @@ public class TestInvokeParallel {
         final ExecutorJobScheduler scheduler = newScheduler(16, threadCount);
         final CyclicBarrier rendezvous = new CyclicBarrier(threadCount);
         final Set<Thread> threads = ConcurrentHashMap.newKeySet();
-        final Outcome outcome = invoke(scheduler, threadCount, (context, idx, nec) -> {
+        invoke(scheduler, threadCount, (context, idx, nec) -> {
             threads.add(Thread.currentThread());
             await(rendezvous);
         });
 
-        outcome.assertCompleted();
         assertThat(threads).hasSize(threadCount).contains(Thread.currentThread());
     }
 
@@ -233,13 +193,12 @@ public class TestInvokeParallel {
         final ExecutorJobScheduler scheduler = newScheduler(16, threadCount);
         final AtomicInteger running = new AtomicInteger();
         final AtomicInteger mostRunning = new AtomicInteger();
-        final Outcome outcome = invoke(scheduler, 64, (context, idx, nec) -> {
+        invoke(scheduler, 64, (context, idx, nec) -> {
             mostRunning.accumulateAndGet(running.incrementAndGet(), Math::max);
             sleep(2);
             running.decrementAndGet();
         });
 
-        outcome.assertCompleted();
         assertThat(mostRunning.get()).isBetween(1, threadCount);
     }
 
@@ -248,25 +207,23 @@ public class TestInvokeParallel {
         final ExecutorJobScheduler scheduler = newScheduler(7, 8);
         for (final int numTasks : new int[] {0, 1, 2, 7, 8, 9, 1000}) {
             final AtomicIntegerArray runs = new AtomicIntegerArray(Math.max(1, numTasks));
-            final Outcome outcome = invoke(scheduler, numTasks, (context, idx, nec) -> runs.incrementAndGet(idx));
-            outcome.assertCompleted();
+            invoke(scheduler, numTasks, (context, idx, nec) -> runs.incrementAndGet(idx));
             for (int ii = 0; ii < numTasks; ++ii) {
                 assertThat(runs.get(ii)).as("runs of task %d of %d", ii, numTasks).isEqualTo(1);
             }
         }
     }
 
-    /** Every task, and then the callbacks, must have finished by the time the invocation returns. */
+    /** Every task must have finished by the time the invocation returns. */
     @Test
-    public void testReturnsOnlyAfterEveryTaskAndCallbackHasRun() {
+    public void testReturnsOnlyAfterEveryTaskHasRun() {
         final ExecutorJobScheduler scheduler = newScheduler(3, 4);
         final AtomicInteger finished = new AtomicInteger();
-        final Outcome outcome = invoke(scheduler, 16, (context, idx, nec) -> {
+        invoke(scheduler, 16, (context, idx, nec) -> {
             sleep(5);
             finished.incrementAndGet();
         });
 
-        outcome.assertCompleted();
         assertThat(finished.get()).isEqualTo(16);
     }
 
@@ -283,12 +240,11 @@ public class TestInvokeParallel {
         };
         final Set<Thread> threads = ConcurrentHashMap.newKeySet();
         final List<Integer> order = Collections.synchronizedList(new ArrayList<>());
-        final Outcome outcome = invoke(new ExecutorJobScheduler(refusing, 8), 20, (context, idx, nec) -> {
+        invoke(new ExecutorJobScheduler(refusing, 8), 20, (context, idx, nec) -> {
             threads.add(Thread.currentThread());
             order.add(idx);
         });
 
-        outcome.assertCompleted();
         assertThat(threads).containsExactly(Thread.currentThread());
         assertThat(order).containsExactlyInAnyOrderElementsOf(items(20));
     }
@@ -299,9 +255,8 @@ public class TestInvokeParallel {
         final ExecutorJobScheduler scheduler = newScheduler(1, 4);
         final AtomicInteger innerRuns = new AtomicInteger();
         withTimeout(() -> {
-            final Outcome outcome = invoke(scheduler, 4, (context, outer, nec) -> invoke(scheduler, 5,
-                    (innerContext, inner, innerNec) -> innerRuns.incrementAndGet()).assertCompleted());
-            outcome.assertCompleted();
+            invoke(scheduler, 4, (context, outer, nec) -> invoke(scheduler, 5,
+                    (innerContext, inner, innerNec) -> innerRuns.incrementAndGet()));
         });
         assertThat(innerRuns.get()).isEqualTo(20);
     }
@@ -316,26 +271,19 @@ public class TestInvokeParallel {
         final ExecutorJobScheduler scheduler = newScheduler(3, 4);
         final AtomicInteger innerRuns = new AtomicInteger();
         final AtomicInteger outerRuns = new AtomicInteger();
-        final Outcome outcome = new Outcome();
         withTimeout(() -> {
-            try {
-                scheduler.invokeParallel(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                        0, 12,
-                        (context, outer, nestedErrorConsumer, resume) -> {
-                            outerRuns.incrementAndGet();
-                            scheduler.iterateParallel(ExecutionContext.getContext(), null,
-                                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 5,
-                                    (innerContext, inner, innerNec) -> innerRuns.incrementAndGet(),
-                                    resume, () -> {
-                                    }, nestedErrorConsumer);
-                        },
-                        outcome.onComplete, outcome.cleanup, outcome.onError);
-            } finally {
-                outcome.returned = true;
-            }
+            scheduler.invokeParallel(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0, 12,
+                    (context, outer, nestedErrorConsumer, resume) -> {
+                        outerRuns.incrementAndGet();
+                        scheduler.iterateParallel(ExecutionContext.getContext(), null,
+                                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 5,
+                                (innerContext, inner, innerNec) -> innerRuns.incrementAndGet(),
+                                resume, () -> {
+                                }, nestedErrorConsumer);
+                    });
         });
 
-        outcome.assertCompleted();
         assertThat(outerRuns.get()).isEqualTo(12);
         assertThat(innerRuns.get()).isEqualTo(60);
     }
@@ -345,27 +293,21 @@ public class TestInvokeParallel {
             throws InterruptedException {
         final ExecutorJobScheduler scheduler = newScheduler(1, 2);
         final IllegalStateException failure = new IllegalStateException("nested task failed");
-        final Outcome outcome = new Outcome();
         withTimeout(() -> {
-            try {
-                assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
-                        JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
-                        (context, outer, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
-                                ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                                (innerContext, inner, innerNec) -> {
-                                    if (outer == 0 && inner == 1) {
-                                        throw failure;
-                                    }
-                                },
-                                resume, () -> {
-                                }, nestedErrorConsumer),
-                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(failure);
-            } finally {
-                outcome.returned = true;
-            }
+            assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
+                    (context, outer, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
+                            ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
+                            (innerContext, inner, innerNec) -> {
+                                if (outer == 0 && inner == 1) {
+                                    throw failure;
+                                }
+                            },
+                            resume, () -> {
+                            }, nestedErrorConsumer)))
+                    .isSameAs(failure);
         });
 
-        outcome.assertFailed(failure);
     }
 
     @Test
@@ -375,12 +317,11 @@ public class TestInvokeParallel {
         final ExecutorJobScheduler scheduler = newScheduler(threadCount - 1, threadCount);
         final CyclicBarrier rendezvous = new CyclicBarrier(threadCount);
         final Set<ExecutionContext> contexts = ConcurrentHashMap.newKeySet();
-        final Outcome outcome = invoke(scheduler, threadCount, (context, idx, nec) -> {
+        invoke(scheduler, threadCount, (context, idx, nec) -> {
             contexts.add(ExecutionContext.getContext());
             await(rendezvous);
         });
 
-        outcome.assertCompleted();
         assertThat(contexts).containsExactly(callerContext);
     }
 
@@ -405,10 +346,6 @@ public class TestInvokeParallel {
                     contexts.add(ExecutionContext.getContext());
                     threads.add(Thread.currentThread());
                     await(rendezvous);
-                },
-                () -> {
-                }, () -> {
-                }, e -> {
                 });
 
         assertThat(threads).contains(Thread.currentThread());
@@ -425,26 +362,19 @@ public class TestInvokeParallel {
         final AtomicInteger started = new AtomicInteger();
         final AtomicInteger finished = new AtomicInteger();
         final IllegalStateException failure = new IllegalStateException("task failed");
-        final Outcome outcome = new Outcome();
 
-        try {
-            assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 100,
-                    (context, idx, nec) -> {
-                        started.incrementAndGet();
-                        await(allStarted);
-                        if (idx == 0) {
-                            throw failure;
-                        }
-                        sleep(50);
-                        finished.incrementAndGet();
-                    },
-                    outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(failure);
-        } finally {
-            outcome.returned = true;
-        }
+        assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 100,
+                (context, idx, nec) -> {
+                    started.incrementAndGet();
+                    await(allStarted);
+                    if (idx == 0) {
+                        throw failure;
+                    }
+                    sleep(50);
+                    finished.incrementAndGet();
+                })).isSameAs(failure);
 
-        outcome.assertFailed(failure);
         // the tasks that were running when task 0 failed all finished; none of the other 96 started
         assertThat(started.get()).isEqualTo(threadCount);
         assertThat(finished.get()).isEqualTo(threadCount - 1);
@@ -456,58 +386,38 @@ public class TestInvokeParallel {
         final CyclicBarrier bothStarted = new CyclicBarrier(2);
         final IllegalStateException first = new IllegalStateException("first");
         final IllegalArgumentException second = new IllegalArgumentException("second");
-        final Outcome outcome = new Outcome();
 
-        try {
-            assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
-                    (context, idx, nec) -> {
-                        await(bothStarted);
-                        if (idx == 0) {
-                            throw first;
-                        }
-                        // fail second, after the first has had time to be recorded
-                        sleep(50);
-                        throw second;
-                    },
-                    outcome.onComplete, outcome.cleanup, outcome.onError))
-                    .isSameAs(first)
-                    .satisfies(thrown -> assertThat(thrown.getSuppressed()).containsExactly(second));
-        } finally {
-            outcome.returned = true;
-        }
-
-        outcome.assertFailed(first);
+        assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
+                (context, idx, nec) -> {
+                    await(bothStarted);
+                    if (idx == 0) {
+                        throw first;
+                    }
+                    // fail second, after the first has had time to be recorded
+                    sleep(50);
+                    throw second;
+                }))
+                .isSameAs(first)
+                .satisfies(thrown -> assertThat(thrown.getSuppressed()).containsExactly(second));
     }
 
-    /**
-     * An Error on the calling thread is delivered wrapped, so that the iteration ends, and is then thrown as itself.
-     */
+    /** An Error on the calling thread ends the iteration, and is thrown as itself. */
     @Test
-    public void testErrorOnTheCallingThreadIsDeliveredThenThrownAsItself() {
+    public void testErrorOnTheCallingThreadIsThrownAsItself() {
         final AssertionError error = new AssertionError("task error");
         final List<Integer> ran = new ArrayList<>();
-        final Outcome outcome = new Outcome();
 
-        try {
-            assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                    (context, idx, nec) -> {
-                        ran.add(idx);
-                        if (idx == 1) {
-                            throw error;
-                        }
-                    },
-                    outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(error);
-        } finally {
-            outcome.returned = true;
-        }
+        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
+                (context, idx, nec) -> {
+                    ran.add(idx);
+                    if (idx == 1) {
+                        throw error;
+                    }
+                })).isSameAs(error);
 
         assertThat(ran).containsExactly(0, 1);
-        assertThat(outcome.completeCalls.get()).isZero();
-        assertThat(outcome.cleanupCalls.get()).isZero();
-        assertThat(outcome.error.get()).isInstanceOf(UncheckedDeephavenException.class);
-        assertThat(outcome.error.get().getCause()).isSameAs(error);
     }
 
     /**
@@ -537,24 +447,17 @@ public class TestInvokeParallel {
                 }
             };
         };
-        final Outcome outcome = new Outcome();
 
         withTimeout(() -> {
-            try {
-                assertThatThrownBy(() -> new ExecutorJobScheduler(failsSecondSubmission, 4).invokeParallel(
-                        ExecutionContext.getContext(), null, countingContexts, 0, 8,
-                        (context, idx, nec) -> {
-                            started.incrementAndGet();
-                            sleep(100);
-                            finished.incrementAndGet();
-                        },
-                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(broken);
-            } finally {
-                outcome.returned = true;
-            }
+            assertThatThrownBy(() -> new ExecutorJobScheduler(failsSecondSubmission, 4).invokeParallel(
+                    ExecutionContext.getContext(), null, countingContexts, 0, 8,
+                    (context, idx, nec) -> {
+                        started.incrementAndGet();
+                        sleep(100);
+                        finished.incrementAndGet();
+                    })).isSameAs(broken);
         });
 
-        outcome.assertFailed(broken);
         // Only the thread that did start can have begun a task before the failure was recorded, and whatever it began
         // had finished by the time the invocation threw. Every context, the stranded invoker's included, is closed.
         assertThat(started.get()).isLessThanOrEqualTo(1);
@@ -564,8 +467,8 @@ public class TestInvokeParallel {
 
     /**
      * An executor that fails a submission with an Error, as one does when it cannot make a thread, fails the invocation
-     * with that Error once the running tasks are done, ends the iteration in onError, and releases the invoker it never
-     * took, rather than leaving the caller waiting forever.
+     * with that Error once the running tasks are done, and releases the invoker it never took, rather than leaving the
+     * caller waiting forever.
      */
     @Test
     public void testExecutorErrorFailsTheInvocationAndReleasesTheInvoker() throws InterruptedException {
@@ -590,54 +493,35 @@ public class TestInvokeParallel {
                 }
             };
         };
-        final Outcome outcome = new Outcome();
 
         withTimeout(() -> {
-            try {
-                assertThatThrownBy(() -> new ExecutorJobScheduler(failsSecondSubmission, 4).invokeParallel(
-                        ExecutionContext.getContext(), null, countingContexts, 0, 8,
-                        (context, idx, nec) -> {
-                            started.incrementAndGet();
-                            sleep(100);
-                            finished.incrementAndGet();
-                        },
-                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(cannotMakeThread);
-            } finally {
-                outcome.returned = true;
-            }
+            assertThatThrownBy(() -> new ExecutorJobScheduler(failsSecondSubmission, 4).invokeParallel(
+                    ExecutionContext.getContext(), null, countingContexts, 0, 8,
+                    (context, idx, nec) -> {
+                        started.incrementAndGet();
+                        sleep(100);
+                        finished.incrementAndGet();
+                    })).isSameAs(cannotMakeThread);
         });
 
-        assertThat(outcome.completeCalls.get()).isZero();
-        assertThat(outcome.cleanupCalls.get()).isZero();
-        assertThat(outcome.error.get()).isInstanceOf(UncheckedDeephavenException.class);
-        assertThat(outcome.error.get().getCause()).isSameAs(cannotMakeThread);
         assertThat(started.get()).isLessThanOrEqualTo(1);
         assertThat(finished.get()).isEqualTo(started.get());
         assertThat(contextsOpen.get()).isZero();
     }
 
-    /** An Error from the context factory ends the iteration in onError, never in onComplete, and is thrown. */
+    /** An Error from the context factory fails the invocation before any task runs, and is thrown. */
     @Test
-    public void testContextFactoryErrorEndsInOnError() throws InterruptedException {
+    public void testContextFactoryErrorIsThrown() throws InterruptedException {
         final AssertionError factoryError = new AssertionError("no context");
         final AtomicInteger runs = new AtomicInteger();
-        final Outcome outcome = new Outcome();
 
         withTimeout(() -> {
-            try {
-                assertThatThrownBy(() -> newScheduler(3, 4).invokeParallel(ExecutionContext.getContext(), null,
-                        () -> {
-                            throw factoryError;
-                        }, 0, 10, (context, idx, nec) -> runs.incrementAndGet(),
-                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(factoryError);
-            } finally {
-                outcome.returned = true;
-            }
+            assertThatThrownBy(() -> newScheduler(3, 4).invokeParallel(ExecutionContext.getContext(), null,
+                    () -> {
+                        throw factoryError;
+                    }, 0, 10, (context, idx, nec) -> runs.incrementAndGet())).isSameAs(factoryError);
         });
 
-        assertThat(outcome.completeCalls.get()).isZero();
-        assertThat(outcome.error.get()).isInstanceOf(UncheckedDeephavenException.class);
-        assertThat(outcome.error.get().getCause()).isSameAs(factoryError);
         assertThat(runs.get()).isZero();
     }
 
@@ -658,7 +542,7 @@ public class TestInvokeParallel {
             final AtomicIntegerArray runs = new AtomicIntegerArray(20);
             final Future<?> done = single.submit(() -> {
                 try (final SafeCloseable ignored = executionContext.open()) {
-                    invoke(scheduler, 20, (context, idx, nec) -> runs.incrementAndGet(idx)).assertCompleted();
+                    invoke(scheduler, 20, (context, idx, nec) -> runs.incrementAndGet(idx));
                 }
             });
             done.get(30, TimeUnit.SECONDS);
@@ -682,7 +566,7 @@ public class TestInvokeParallel {
         final AtomicInteger runs = new AtomicInteger();
         final Set<Thread> threads = ConcurrentHashMap.newKeySet();
 
-        final Outcome outcome = invoke(new ExecutorJobScheduler(deferring, 4),
+        invoke(new ExecutorJobScheduler(deferring, 4),
                 () -> {
                     contextsOpen.incrementAndGet();
                     return new JobScheduler.JobThreadContext() {
@@ -695,7 +579,6 @@ public class TestInvokeParallel {
                     runs.incrementAndGet();
                     threads.add(Thread.currentThread());
                 });
-        outcome.assertCompleted();
         assertThat(runs.get()).isEqualTo(10);
         assertThat(threads).containsExactly(Thread.currentThread());
         assertThat(queued).hasSize(3);
@@ -704,36 +587,6 @@ public class TestInvokeParallel {
         // the late jobs find their invokers already run by the caller, and do nothing
         queued.forEach(Runnable::run);
         assertThat(runs.get()).isEqualTo(10);
-        assertThat(outcome.completeCalls.get()).isEqualTo(1);
-    }
-
-    /** An Error from cleanup, even on a scheduler thread, reaches the invoking caller rather than only that thread. */
-    @Test
-    public void testCleanupErrorReachesTheCaller() throws InterruptedException {
-        final AssertionError cleanupError = new AssertionError("cleanup error");
-        final int threadCount = 4;
-        final ExecutorJobScheduler scheduler = newScheduler(threadCount - 1, threadCount);
-        final CyclicBarrier rendezvous = new CyclicBarrier(threadCount);
-
-        withTimeout(() -> {
-            final Throwable thrown = catchThrowable(() -> scheduler.invokeParallel(ExecutionContext.getContext(),
-                    null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, threadCount,
-                    (context, idx, nec) -> {
-                        await(rendezvous);
-                        if (idx != 0) {
-                            // let a scheduler thread finish last, so that cleanup runs there
-                            sleep(50);
-                        }
-                    },
-                    () -> {
-                    }, () -> {
-                        throw cleanupError;
-                    }, e -> {
-                    }));
-            // as itself when cleanup ran on the calling thread, wrapped when it ran on a scheduler thread
-            assertThat(thrown == cleanupError || thrown.getCause() == cleanupError)
-                    .as("thrown %s", thrown).isTrue();
-        });
     }
 
     /**
@@ -752,28 +605,21 @@ public class TestInvokeParallel {
         };
         final AtomicInteger contextsOpen = new AtomicInteger();
         final AtomicInteger runs = new AtomicInteger();
-        final Outcome outcome = new Outcome();
 
         withTimeout(() -> {
-            try {
-                assertThatThrownBy(() -> new ExecutorJobScheduler(queuesFirstFailsSecond, 4).invokeParallel(
-                        ExecutionContext.getContext(), null,
-                        () -> {
-                            contextsOpen.incrementAndGet();
-                            return new JobScheduler.JobThreadContext() {
-                                @Override
-                                public void close() {
-                                    contextsOpen.decrementAndGet();
-                                }
-                            };
-                        }, 0, 8, (context, idx, nec) -> runs.incrementAndGet(),
-                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(broken);
-            } finally {
-                outcome.returned = true;
-            }
+            assertThatThrownBy(() -> new ExecutorJobScheduler(queuesFirstFailsSecond, 4).invokeParallel(
+                    ExecutionContext.getContext(), null,
+                    () -> {
+                        contextsOpen.incrementAndGet();
+                        return new JobScheduler.JobThreadContext() {
+                            @Override
+                            public void close() {
+                                contextsOpen.decrementAndGet();
+                            }
+                        };
+                    }, 0, 8, (context, idx, nec) -> runs.incrementAndGet())).isSameAs(broken);
         });
 
-        outcome.assertFailed(broken);
         assertThat(contextsOpen.get()).isZero();
         assertThat(runs.get()).isZero();
         // the queued job, started late, finds its invoker taken
@@ -789,32 +635,25 @@ public class TestInvokeParallel {
         final AtomicInteger made = new AtomicInteger();
         final AtomicInteger contextsOpen = new AtomicInteger();
         final AtomicInteger runs = new AtomicInteger();
-        final Outcome outcome = new Outcome();
 
         withTimeout(() -> {
-            try {
-                assertThatThrownBy(() -> new ExecutorJobScheduler(queued::add, 4).invokeParallel(
-                        ExecutionContext.getContext(), null,
-                        () -> {
-                            // the caller's own context, then the first helper's; the second helper's fails
-                            if (made.incrementAndGet() > 2) {
-                                throw noContext;
+            assertThatThrownBy(() -> new ExecutorJobScheduler(queued::add, 4).invokeParallel(
+                    ExecutionContext.getContext(), null,
+                    () -> {
+                        // the caller's own context, then the first helper's; the second helper's fails
+                        if (made.incrementAndGet() > 2) {
+                            throw noContext;
+                        }
+                        contextsOpen.incrementAndGet();
+                        return new JobScheduler.JobThreadContext() {
+                            @Override
+                            public void close() {
+                                contextsOpen.decrementAndGet();
                             }
-                            contextsOpen.incrementAndGet();
-                            return new JobScheduler.JobThreadContext() {
-                                @Override
-                                public void close() {
-                                    contextsOpen.decrementAndGet();
-                                }
-                            };
-                        }, 0, 8, (context, idx, nec) -> runs.incrementAndGet(),
-                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(noContext);
-            } finally {
-                outcome.returned = true;
-            }
+                        };
+                    }, 0, 8, (context, idx, nec) -> runs.incrementAndGet())).isSameAs(noContext);
         });
 
-        outcome.assertFailed(noContext);
         assertThat(contextsOpen.get()).isZero();
         assertThat(queued).hasSize(1);
         queued.forEach(Runnable::run);
@@ -825,111 +664,17 @@ public class TestInvokeParallel {
     public void testFailureOnTheCallingThreadStopsAtTheFailingTask() {
         final List<Integer> ran = new ArrayList<>();
         final IllegalStateException failure = new IllegalStateException("boom");
-        final Outcome outcome = new Outcome();
 
-        try {
-            assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 5,
-                    (context, idx, nec) -> {
-                        ran.add(idx);
-                        if (idx == 2) {
-                            throw failure;
-                        }
-                    },
-                    outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(failure);
-        } finally {
-            outcome.returned = true;
-        }
+        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 5,
+                (context, idx, nec) -> {
+                    ran.add(idx);
+                    if (idx == 2) {
+                        throw failure;
+                    }
+                })).isSameAs(failure);
 
-        outcome.assertFailed(failure);
         assertThat(ran).containsExactly(0, 1, 2);
-    }
-
-    /** The callback form would report a failing cleanup as unexpected; here there is a caller to throw it to. */
-    @Test
-    public void testCleanupFailureIsThrownToTheCaller() {
-        final IllegalStateException cleanupFailure = new IllegalStateException("cleanup failed");
-        final AtomicInteger completeCalls = new AtomicInteger();
-        final AtomicReference<Exception> delivered = new AtomicReference<>();
-
-        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
-                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3, (context, idx, nec) -> {
-                },
-                completeCalls::incrementAndGet,
-                () -> {
-                    throw cleanupFailure;
-                },
-                delivered::set)).isSameAs(cleanupFailure);
-
-        assertThat(completeCalls.get()).isEqualTo(1);
-        assertThat(delivered.get()).isNull();
-    }
-
-    /** A failing onError handler is attached to the failure it was handling, which stays the one thrown. */
-    @Test
-    public void testOnErrorHandlerFailureIsSuppressedOnTheIterationFailure() {
-        final IllegalStateException failure = new IllegalStateException("task failed");
-        final IllegalArgumentException handlerFailure = new IllegalArgumentException("handler failed");
-
-        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
-                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                (context, idx, nec) -> {
-                    throw failure;
-                },
-                () -> {
-                    throw new AssertionError("onComplete must not run");
-                },
-                () -> {
-                    throw new AssertionError("cleanup must not run");
-                },
-                e -> {
-                    throw handlerFailure;
-                }))
-                .isSameAs(failure)
-                .satisfies(thrown -> assertThat(thrown.getSuppressed()).containsExactly(handlerFailure));
-    }
-
-    /**
-     * An Error from onError on the calling thread does not replace the iteration's own failure, which stays the one
-     * thrown, with the Error attached to it as suppressed.
-     */
-    @Test
-    public void testOnErrorErrorOnTheCallingThreadIsSuppressedOnTheIterationFailure() {
-        final IllegalStateException failure = new IllegalStateException("task failed");
-        final AssertionError handlerError = new AssertionError("handler error");
-
-        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
-                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                (context, idx, nec) -> {
-                    throw failure;
-                },
-                () -> {
-                }, () -> {
-                }, e -> {
-                    throw handlerError;
-                }))
-                .isSameAs(failure)
-                .satisfies(thrown -> assertThat(thrown.getSuppressed()).hasSize(1)
-                        .allSatisfy(suppressed -> assertThat(suppressed.getCause()).isSameAs(handlerError)));
-    }
-
-    @Test
-    public void testOnCompleteFailureIsDeliveredToOnErrorAndThrown() {
-        final IllegalStateException completeFailure = new IllegalStateException("onComplete failed");
-        final AtomicInteger cleanupCalls = new AtomicInteger();
-        final AtomicReference<Exception> delivered = new AtomicReference<>();
-
-        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
-                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3, (context, idx, nec) -> {
-                },
-                () -> {
-                    throw completeFailure;
-                },
-                cleanupCalls::incrementAndGet,
-                delivered::set)).isSameAs(completeFailure);
-
-        assertThat(cleanupCalls.get()).isZero();
-        assertThat(delivered.get()).isSameAs(completeFailure);
     }
 
     /** A checked exception reaching onError, as nested work may deliver one, is thrown wrapped. */
@@ -939,34 +684,63 @@ public class TestInvokeParallel {
 
         assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
                 JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
-                (context, idx, nestedErrorConsumer, resume) -> nestedErrorConsumer.accept(checked),
-                () -> {
-                }, () -> {
-                }, e -> {
-                }))
+                (context, idx, nestedErrorConsumer, resume) -> nestedErrorConsumer.accept(checked)))
                 .isInstanceOf(UncheckedDeephavenException.class)
                 .hasCause(checked);
     }
 
-    /** A failure to start the iteration ends it in onError, like any other failure, and is thrown. */
+    /** A failure to start the iteration fails it like any other failure, and is thrown. */
     @Test
-    public void testStartFailureEndsInOnError() {
+    public void testStartFailureIsThrown() {
         final IllegalStateException factoryFailure = new IllegalStateException("no context");
         final AtomicInteger runs = new AtomicInteger();
-        final Outcome outcome = new Outcome();
 
-        try {
-            assertThatThrownBy(() -> newScheduler(3, 4).invokeParallel(ExecutionContext.getContext(), null,
-                    () -> {
-                        throw factoryFailure;
-                    }, 0, 10, (context, idx, nec) -> runs.incrementAndGet(),
-                    outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(factoryFailure);
-        } finally {
-            outcome.returned = true;
-        }
+        assertThatThrownBy(() -> newScheduler(3, 4).invokeParallel(ExecutionContext.getContext(), null,
+                () -> {
+                    throw factoryFailure;
+                }, 0, 10, (context, idx, nec) -> runs.incrementAndGet())).isSameAs(factoryFailure);
 
-        outcome.assertFailed(factoryFailure);
         assertThat(runs.get()).isZero();
+    }
+
+    /**
+     * The callback form shares the iteration's start: a failure to start it, which it throws to its caller, also ends
+     * it in onError, never in onComplete.
+     */
+    @Test
+    public void testCallbackFormStartFailureEndsInOnError() {
+        final IllegalStateException factoryFailure = new IllegalStateException("no context");
+        final Callbacks callbacks = new Callbacks();
+
+        assertThatThrownBy(() -> newScheduler(3, 4).iterateParallel(ExecutionContext.getContext(), null,
+                () -> {
+                    throw factoryFailure;
+                }, 0, 10, (context, idx, nec) -> {
+                },
+                callbacks.onComplete, callbacks.cleanup, callbacks.onError)).isSameAs(factoryFailure);
+
+        assertThat(callbacks.completeCalls.get()).isZero();
+        assertThat(callbacks.cleanupCalls.get()).isZero();
+        assertThat(callbacks.error.get()).isSameAs(factoryFailure);
+    }
+
+    /** The same for an Error from the context factory, which reaches onError wrapped. */
+    @Test
+    public void testCallbackFormStartErrorEndsInOnError() {
+        final AssertionError factoryError = new AssertionError("no context");
+        final Callbacks callbacks = new Callbacks();
+
+        assertThatThrownBy(() -> newScheduler(3, 4).iterateParallel(ExecutionContext.getContext(), null,
+                () -> {
+                    throw factoryError;
+                }, 0, 10, (context, idx, nec) -> {
+                },
+                callbacks.onComplete, callbacks.cleanup, callbacks.onError)).isSameAs(factoryError);
+
+        assertThat(callbacks.completeCalls.get()).isZero();
+        assertThat(callbacks.cleanupCalls.get()).isZero();
+        assertThat(callbacks.error.get()).isInstanceOf(UncheckedDeephavenException.class);
+        assertThat(callbacks.error.get().getCause()).isSameAs(factoryError);
     }
 
     @Test
@@ -980,11 +754,8 @@ public class TestInvokeParallel {
                 () -> {
                     contexts.incrementAndGet();
                     return JobScheduler.DEFAULT_CONTEXT;
-                }, 0, 10, (context, idx, nec) -> runs.incrementAndGet(),
-                () -> {
-                }, () -> {
-                }, e -> {
-                })).isInstanceOf(UnsupportedOperationException.class);
+                }, 0, 10, (context, idx, nec) -> runs.incrementAndGet()))
+                .isInstanceOf(UnsupportedOperationException.class);
 
         assertThat(runs.get()).isZero();
         assertThat(contexts.get()).isZero();
@@ -993,10 +764,9 @@ public class TestInvokeParallel {
     @Test
     public void testOperationInitializerSchedulerRunsTheIteration() {
         final AtomicIntegerArray runs = new AtomicIntegerArray(50);
-        final Outcome outcome = invoke(new OperationInitializerJobScheduler(), 50,
+        invoke(new OperationInitializerJobScheduler(), 50,
                 (context, idx, nec) -> runs.incrementAndGet(idx));
 
-        outcome.assertCompleted();
         for (int ii = 0; ii < 50; ++ii) {
             assertThat(runs.get(ii)).isEqualTo(1);
         }
@@ -1030,11 +800,8 @@ public class TestInvokeParallel {
 
         withTimeout(() -> {
             assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8, (context, idx, nec) -> runs.incrementAndGet(),
-                    () -> {
-                    }, () -> {
-                    }, e -> {
-                    })).isSameAs(cannotMakeThread);
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8, (context, idx, nec) -> runs.incrementAndGet()))
+                    .isSameAs(cannotMakeThread);
             assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
         });
         assertThat(runs.get()).isZero();
@@ -1079,9 +846,9 @@ public class TestInvokeParallel {
         }
     }
 
-    /** One context per invoker, never shared between threads at once, and all closed before onComplete runs. */
+    /** One context per invoker, never shared between threads at once, and all closed before the invocation returns. */
     @Test
-    public void testOneContextPerInvokerClosedBeforeOnComplete() {
+    public void testOneContextPerInvokerClosedBeforeReturning() {
         final int threadCount = 4;
         final ExecutorJobScheduler scheduler = newScheduler(threadCount - 1, threadCount);
 
@@ -1097,36 +864,25 @@ public class TestInvokeParallel {
         }
         final List<CountingContext> contexts = Collections.synchronizedList(new ArrayList<>());
         final AtomicBoolean sharedAtOnce = new AtomicBoolean();
-        final AtomicInteger openAtComplete = new AtomicInteger(-1);
 
-        final Outcome outcome = new Outcome();
-        try {
-            scheduler.invokeParallel(ExecutionContext.getContext(), null,
-                    () -> {
-                        final CountingContext context = new CountingContext();
-                        contexts.add(context);
-                        return context;
-                    }, 0, 100,
-                    (context, idx, nec) -> {
-                        if (context.inUse.incrementAndGet() != 1) {
-                            sharedAtOnce.set(true);
-                        }
-                        context.tasks.incrementAndGet();
-                        sleep(1);
-                        context.inUse.decrementAndGet();
-                    },
-                    () -> {
-                        openAtComplete.set((int) contexts.stream().filter(context -> !context.closed).count());
-                        outcome.onComplete.run();
-                    }, outcome.cleanup, outcome.onError);
-        } finally {
-            outcome.returned = true;
-        }
+        scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                () -> {
+                    final CountingContext context = new CountingContext();
+                    contexts.add(context);
+                    return context;
+                }, 0, 100,
+                (context, idx, nec) -> {
+                    if (context.inUse.incrementAndGet() != 1) {
+                        sharedAtOnce.set(true);
+                    }
+                    context.tasks.incrementAndGet();
+                    sleep(1);
+                    context.inUse.decrementAndGet();
+                });
 
-        outcome.assertCompleted();
         assertThat(contexts).hasSizeBetween(1, threadCount);
         assertThat(sharedAtOnce.get()).as("a context was in use by two tasks at once").isFalse();
-        assertThat(openAtComplete.get()).as("contexts still open when onComplete ran").isZero();
+        assertThat(contexts).as("contexts still open when the invocation returned").allMatch(context -> context.closed);
         assertThat(contexts.stream().mapToInt(context -> context.tasks.get()).sum()).isEqualTo(100);
     }
 
@@ -1136,25 +892,18 @@ public class TestInvokeParallel {
         final List<Integer> order = new ArrayList<>();
         final Set<Thread> threads = ConcurrentHashMap.newKeySet();
         final AtomicInteger contexts = new AtomicInteger();
-        final Outcome outcome = new Outcome();
 
-        try {
-            scheduler.invokeSerial(ExecutionContext.getContext(), null,
-                    () -> {
-                        contexts.incrementAndGet();
-                        return JobScheduler.DEFAULT_CONTEXT;
-                    }, 0, 10,
-                    (context, idx, nestedErrorConsumer, resume) -> {
-                        order.add(idx);
-                        threads.add(Thread.currentThread());
-                        resume.run();
-                    },
-                    outcome.onComplete, outcome.cleanup, outcome.onError);
-        } finally {
-            outcome.returned = true;
-        }
+        scheduler.invokeSerial(ExecutionContext.getContext(), null,
+                () -> {
+                    contexts.incrementAndGet();
+                    return JobScheduler.DEFAULT_CONTEXT;
+                }, 0, 10,
+                (context, idx, nestedErrorConsumer, resume) -> {
+                    order.add(idx);
+                    threads.add(Thread.currentThread());
+                    resume.run();
+                });
 
-        outcome.assertCompleted();
         assertThat(order).isEqualTo(items(10));
         assertThat(threads).containsExactly(Thread.currentThread());
         assertThat(contexts.get()).isEqualTo(1);
@@ -1171,36 +920,29 @@ public class TestInvokeParallel {
         final AtomicInteger activeSteps = new AtomicInteger();
         final AtomicBoolean stepsOverlapped = new AtomicBoolean();
         final AtomicInteger innerRuns = new AtomicInteger();
-        final Outcome outcome = new Outcome();
 
         withTimeout(() -> {
-            try {
-                scheduler.invokeSerial(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                        0, 6,
-                        (context, step, nestedErrorConsumer, resume) -> {
-                            if (activeSteps.incrementAndGet() != 1) {
-                                stepsOverlapped.set(true);
-                            }
-                            order.add(step);
-                            scheduler.iterateParallel(ExecutionContext.getContext(), null,
-                                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 4,
-                                    (innerContext, inner, innerNec) -> {
-                                        sleep(2);
-                                        innerRuns.incrementAndGet();
-                                    },
-                                    () -> {
-                                        activeSteps.decrementAndGet();
-                                        resume.run();
-                                    }, () -> {
-                                    }, nestedErrorConsumer);
-                        },
-                        outcome.onComplete, outcome.cleanup, outcome.onError);
-            } finally {
-                outcome.returned = true;
-            }
+            scheduler.invokeSerial(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0, 6,
+                    (context, step, nestedErrorConsumer, resume) -> {
+                        if (activeSteps.incrementAndGet() != 1) {
+                            stepsOverlapped.set(true);
+                        }
+                        order.add(step);
+                        scheduler.iterateParallel(ExecutionContext.getContext(), null,
+                                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 4,
+                                (innerContext, inner, innerNec) -> {
+                                    sleep(2);
+                                    innerRuns.incrementAndGet();
+                                },
+                                () -> {
+                                    activeSteps.decrementAndGet();
+                                    resume.run();
+                                }, () -> {
+                                }, nestedErrorConsumer);
+                    });
         });
 
-        outcome.assertCompleted();
         assertThat(order).isEqualTo(items(6));
         assertThat(stepsOverlapped.get()).as("two steps were active at once").isFalse();
         assertThat(innerRuns.get()).isEqualTo(24);
@@ -1211,32 +953,25 @@ public class TestInvokeParallel {
         final ExecutorJobScheduler scheduler = newScheduler(1, 2);
         final IllegalStateException failure = new IllegalStateException("step failed");
         final List<Integer> order = Collections.synchronizedList(new ArrayList<>());
-        final Outcome outcome = new Outcome();
 
         withTimeout(() -> {
-            try {
-                assertThatThrownBy(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
-                        JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 6,
-                        (context, step, nestedErrorConsumer, resume) -> {
-                            order.add(step);
-                            // the nested work of step 2 fails, and reports it through the nested error consumer
-                            scheduler.iterateParallel(ExecutionContext.getContext(), null,
-                                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                                    (innerContext, inner, innerNec) -> {
-                                        if (step == 2 && inner == 1) {
-                                            throw failure;
-                                        }
-                                    },
-                                    resume, () -> {
-                                    }, nestedErrorConsumer);
-                        },
-                        outcome.onComplete, outcome.cleanup, outcome.onError)).isSameAs(failure);
-            } finally {
-                outcome.returned = true;
-            }
+            assertThatThrownBy(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 6,
+                    (context, step, nestedErrorConsumer, resume) -> {
+                        order.add(step);
+                        // the nested work of step 2 fails, and reports it through the nested error consumer
+                        scheduler.iterateParallel(ExecutionContext.getContext(), null,
+                                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
+                                (innerContext, inner, innerNec) -> {
+                                    if (step == 2 && inner == 1) {
+                                        throw failure;
+                                    }
+                                },
+                                resume, () -> {
+                                }, nestedErrorConsumer);
+                    })).isSameAs(failure);
         });
 
-        outcome.assertFailed(failure);
         assertThat(order).isEqualTo(items(3));
     }
 
@@ -1251,10 +986,6 @@ public class TestInvokeParallel {
                 (context, idx, nestedErrorConsumer, resume) -> {
                     runs.incrementAndGet();
                     resume.run();
-                },
-                () -> {
-                }, () -> {
-                }, e -> {
                 })).isInstanceOf(UnsupportedOperationException.class);
 
         assertThat(runs.get()).isZero();
