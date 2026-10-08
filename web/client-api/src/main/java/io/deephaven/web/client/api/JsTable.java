@@ -1194,33 +1194,44 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                                         }
                                         downsample[0] = true;
                                         // IDS-2684 - comment out the four lines above to reproduce
-                                        // when ever the main table changes its state, reload the totals table from the
-                                        // new state
-                                        final ClientTableState existing = wrapped.state();
-                                        final ClientTableState nextState =
-                                                workerConnection.newState(totalsFactory, summary);
-                                        JsLog.debug("Rebasing totals table", existing, " -> ", nextState, " for ",
-                                                wrapped);
-                                        wrapped.setState(nextState);
-                                        // If the wrapped table's state has changed (any filter / sort / columns
-                                        // applied),
-                                        // then we'll want to re-apply these conditions on top of the newly set state.
-                                        final boolean needsMutation = !existing.isEqual(ready);
+                                        // The state change fires before the server has produced the new state. The
+                                        // totals factory reads lastVisibleState(), which would still resolve to the
+                                        // old state's rollback, so wait until the new state is running before
+                                        // rebasing. If the table moves on again before then, that change fires its
+                                        // own event and this one is skipped.
+                                        final ClientTableState source = state();
+                                        source.onRunning(running -> {
+                                            if (wrapped.isClosed() || source != state()) {
+                                                return;
+                                            }
+                                            // when ever the main table changes its state, reload the totals table from
+                                            // the new state
+                                            final ClientTableState existing = wrapped.state();
+                                            final ClientTableState nextState =
+                                                    workerConnection.newState(totalsFactory, summary);
+                                            JsLog.debug("Rebasing totals table", existing, " -> ", nextState, " for ",
+                                                    wrapped);
+                                            wrapped.setState(nextState);
+                                            // If the wrapped table's state has changed (any filter / sort / columns
+                                            // applied), then we'll want to re-apply these conditions on top of the
+                                            // newly set state.
+                                            final boolean needsMutation = !existing.isEqual(ready);
 
-                                        final ThenOnFulfilledCallbackFn restoreVp = running -> {
-                                            // now that we've (possibly) updated selection conditions, put back in any
-                                            // viewport.
-                                            result.onSuccess(JsTotalsTable::refreshViewport);
-                                            return null;
-                                        };
-                                        final Promise<ClientTableState> promise =
-                                                nextState.refetch();
-                                        if (needsMutation) { // nextState will be empty, so we might want to test for
-                                                             // isEmpty() instead
-                                            wrapped.batch(b -> b.setConfig(existing)).then(restoreVp);
-                                        } else {
-                                            promise.then(restoreVp);
-                                        }
+                                            final ThenOnFulfilledCallbackFn restoreVp = ignored -> {
+                                                // now that we've (possibly) updated selection conditions, put back in
+                                                // any viewport.
+                                                result.onSuccess(JsTotalsTable::refreshViewport);
+                                                return null;
+                                            };
+                                            final Promise<ClientTableState> promise =
+                                                    nextState.refetch();
+                                            if (needsMutation) { // nextState will be empty, so we might want to test
+                                                                 // for isEmpty() instead
+                                                wrapped.batch(b -> b.setConfig(existing)).then(restoreVp);
+                                            } else {
+                                                promise.then(restoreVp);
+                                            }
+                                        }, JsRunnable.doNothing());
                                         // IDS-2684 - Comment out the two lines below to reproduce
                                     });
                                 }
