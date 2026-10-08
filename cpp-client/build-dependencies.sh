@@ -533,11 +533,6 @@ if [ "$BUILD_ZLIB" = "yes" ]; then
   make -j$NCPUS
   make install
   cd .. && rm -fr "$BUILD_DIR"
-  if [ "$shared" != "yes" ]; then
-    # We want to avoid anything linking against shared libraries,
-    # and there is no way to ask zlib build to not generate shared libraries...
-    rm -f ${PFX}/zlib/lib/libz.so*
-  fi
   if [ "$clean" = "yes" ]; then
     rm -fr "$SRC/zlib"
   fi
