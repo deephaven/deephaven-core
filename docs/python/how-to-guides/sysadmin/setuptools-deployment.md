@@ -12,7 +12,7 @@ A packaged project can work with a Deephaven server in one of two ways:
 
 The packaging tooling is the same for both. What differs is the dependency you declare and, for the embedded server, the order in which modules are imported. This guide shows a library package and a command-line package for each model.
 
-The code in this guide is condensed from the [deephaven-python-packaging](https://github.com/deephaven-examples/deephaven-python-packaging) repository, which contains complete, runnable versions of each package along with sample data and a README for each. Clone it to try the examples or to use one as a starting point:
+The code in this guide is condensed from the [deephaven-python-packaging](https://github.com/deephaven-examples/deephaven-python-packaging) repository, which contains complete, runnable versions of each package along with sample data and a README for each. The repository versions add input validation and error handling, and their commands use [Click](https://click.palletsprojects.com/) rather than `argparse`, so they list `click` as a dependency. Clone it to try the examples or to use one as a starting point:
 
 ```bash
 git clone https://github.com/deephaven-examples/deephaven-python-packaging.git
@@ -171,7 +171,7 @@ my-dh-query data/sample.csv
 python -m my_dh_cli data/sample.csv
 ```
 
-Each process that runs this command starts its own embedded server, which means the command carries JVM startup time and memory cost on every invocation. If another process already uses the selected port, such as a Deephaven server running in Docker, the command fails with `Address already in use`; pass a free port with `--port`.
+Each process that runs this command starts its own embedded server, which means the command carries JVM startup time and memory cost on every invocation. If another process already uses the selected port, such as a Deephaven server running in Docker, the command fails with `Address already in use`; pass a free port with `--port`. The repository's `my-dh-query` does not take a `--port` option and always uses port 10000, so change the port in its source if you hit this.
 
 ## Package a remote Deephaven client
 
@@ -179,7 +179,7 @@ Use `pydeephaven` when the program should connect to a Deephaven server that is 
 
 Because the client has no server to start, the import-ordering rule from the embedded-server examples does not apply. `pydeephaven` can be imported at module scope, including in `__init__.py`, and the package can be structured like any other Python project that talks to a network service.
 
-The trade-off is that the client API is not the same as the server-side `deephaven` API. Client code works with table handles that refer to tables on the server, and operations on those handles are sent to the server for execution. Most common table operations are available, but code written against `deephaven` does not run unchanged against `pydeephaven`. Two differences come up in the examples below: the server cannot read files from the client's machine, so data is uploaded as a [pyarrow](https://arrow.apache.org/docs/python/) table, and column names come from `table.schema.names` rather than `table.columns`.
+The trade-off is that the client API is not the same as the server-side `deephaven` API. Client code works with table handles that refer to tables on the server, and operations on those handles are sent to the server for execution. Most common table operations are available, but code written against `deephaven` does not run unchanged against `pydeephaven`. One difference comes up in the examples below: the server cannot read files from the client's machine, so local data is uploaded as a [pyarrow](https://arrow.apache.org/docs/python/) table. Another shows up in the example repository's client library, where column names come from `table.schema.names` rather than `table.columns`.
 
 The examples connect with anonymous authentication. A Deephaven server started with Docker or `pip` uses a [pre-shared key](../authentication/auth-psk.md) by default; either start it with [anonymous authentication](../authentication/auth-anon.md) enabled, or pass the server's key to `Session` as shown in the client command below.
 
@@ -187,7 +187,7 @@ The examples connect with anonymous authentication. A Deephaven server started w
 
 A client library packages functions that operate on tables through a [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session). Pass the session in from the caller rather than creating one inside the library; this leaves connection details, authentication, and the session's lifetime under the calling program's control, and it lets the same functions be used against different servers. The full example is [`my_dh_client_library`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_client_library) in the example repository.
 
-The `pyproject.toml` is almost identical to the embedded-server library's, except that it declares `pydeephaven` as the dependency instead of `deephaven-server`:
+The `pyproject.toml` is almost identical to the embedded-server library's, except that it declares `pydeephaven` instead of `deephaven-server`. It also declares `pyarrow`, which the library imports directly to read CSV files. `pydeephaven` depends on `pyarrow` already, but a package should declare what it imports rather than rely on a transitive dependency:
 
 ```toml
 [build-system]
@@ -199,13 +199,13 @@ name = "my-dh-client-library"
 version = "0.1.0"
 description = "Reusable functions for a remote Deephaven server"
 requires-python = ">=3.9"
-dependencies = ["pydeephaven"]
+dependencies = ["pydeephaven", "pyarrow"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 ```
 
-The functions in `src/my_dh_client_library/queries.py` take and return client-side [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) handles. The query string is the same one the embedded-server library used, but here the operation runs on the server and only the handle is returned to the client. `upload_csv` gets local data onto the server, and `publish` gives a table a name there:
+The library's functions take and return client-side [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) handles. The query string in `filter_by_threshold` is the same one the embedded-server library used, but here the operation runs on the server and only the handle is returned to the client. `upload_csv` gets local data onto the server, and `publish` gives a table a name there. The snippet below collects them in one module for brevity; the repository keeps `upload_csv` in `utils.py` and the query functions in `queries.py`:
 
 ```python skip-test
 import pyarrow.csv as pacsv
@@ -263,7 +263,7 @@ my_dh_client/
 └── pyproject.toml
 ```
 
-The `pyproject.toml` declares the dependency and the console script, exactly as the embedded-server command did:
+The `pyproject.toml` declares the dependencies and the console script, exactly as the embedded-server command did:
 
 ```toml
 [build-system]
@@ -275,7 +275,7 @@ name = "my-dh-client"
 version = "0.1.0"
 description = "A command-line Deephaven client"
 requires-python = ">=3.9"
-dependencies = ["pydeephaven"]
+dependencies = ["pydeephaven", "pyarrow"]
 
 [project.scripts]
 my-dh-client = "my_dh_client.cli:main"
@@ -284,7 +284,7 @@ my-dh-client = "my_dh_client.cli:main"
 where = ["src"]
 ```
 
-The command below does the same work as the embedded-server command, but on a server it connects to: it uploads a CSV file, adds a column, and binds the result under the file's name. Unlike the embedded-server command, it imports `pydeephaven` at module scope and has no startup step. It uses anonymous authentication by default. For another authentication method, pass its name with `--auth-type`; provide any required token through the `DH_AUTH_TOKEN` environment variable rather than a command-line argument so it does not appear in shell history or process listings.
+The command below does the same work as the embedded-server command, but on a server it connects to: it uploads a CSV file, adds a column, and binds the result under the file's name. That name must be a valid Python identifier; the repository version adds a `--name` option to override it for files whose names are not. Unlike the embedded-server command, it imports `pydeephaven` at module scope and has no startup step. It uses anonymous authentication by default. For another authentication method, pass its name with `--auth-type`; provide any required token through the `DH_AUTH_TOKEN` environment variable rather than a command-line argument so it does not appear in shell history or process listings.
 
 ```python skip-test
 import argparse
