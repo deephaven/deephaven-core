@@ -314,7 +314,7 @@ docker compose up --build
 The `--build` flag tells Docker to build the services specified by the `docker-compose.yml` file. The `Dockerfile` defines the custom installation process of the service.
 
 > [!NOTE]
-> If you've previously run `docker compose up`, add `--pull` to the command above to ensure you have the latest version of the Docker images.
+> If you've previously run `docker compose up`, add `--pull always` to the command above (for example, `docker compose up --build --pull always`) to ensure you have the latest version of the Docker images.
 
 ## Run Deephaven IDE
 

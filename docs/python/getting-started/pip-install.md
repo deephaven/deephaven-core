@@ -126,7 +126,10 @@ deephaven server --port 10000 --jvm-args "-Xmx4g -DAuthHandlers=io.deephaven.aut
 If you're trying to use pip-installed Deephaven on an M2 MacBook, you must add the argument `"-Dprocess.info.system-info.enabled=false"` to the `jvm_args` list, as in:
 
 ```python skip-test
+from deephaven_server import Server
+
 s = Server(port=10000, jvm_args=["-Xmx4g", "-Dprocess.info.system-info.enabled=false"])
+s.start()
 ```
 
 ```bash
@@ -143,6 +146,23 @@ This section contains a couple of scripts that demonstrate how to use Deephaven 
 This script creates three streaming tables. The first table (`t`) steadily increases in size, the second table (`t_last`) contains the most recent timestamp for each label, and the third table (`t_join`) joins the most recent timestamp onto the first table.
 
 ```python ticking-table order=null
+from deephaven import time_table
+
+t = time_table("PT1S").update("A = i%2==0 ? `A` : `B`")
+t_last = t.last_by("A")
+t_join = t.natural_join(t_last, on="A", joins=["LastTime=Timestamp"])
+
+print(t_join)
+```
+
+To run this script from the command line, save it as `example.py` with the server startup code first, so the server starts before any Deephaven packages are imported:
+
+```python skip-test
+from deephaven_server import Server
+
+s = Server(port=10000, jvm_args=["-Xmx4g"])
+s.start()
+
 from deephaven import time_table
 
 t = time_table("PT1S").update("A = i%2==0 ? `A` : `B`")

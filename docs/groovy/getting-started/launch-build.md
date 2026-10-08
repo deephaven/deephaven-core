@@ -47,6 +47,16 @@ You can verify the wrapper is present after cloning:
 ls gradlew
 ```
 
+### Docker
+
+Building Deephaven from source requires [Docker](https://docs.docker.com/get-docker/) version 20.10.8 or later. The Gradle build uses Docker to build the web UI, so the Docker daemon must be running before you run `./gradlew server-jetty-app:run -Pgroovy`. On Windows, enable Docker's WSL 2 integration.
+
+You can check your Docker version with:
+
+```bash
+docker version
+```
+
 ### Version control
 
 Deephaven highly recommends using a version control system to clone the [deephaven-core repository](https://github.com/deephaven/deephaven-core). The most popular and common option is [git](https://git-scm.com/); this guide uses it to clone the repository.
@@ -88,7 +98,7 @@ Once Deephaven is running, you can launch a Deephaven IDE in your web browser. D
 
 ### Authentication
 
-Deephaven, by default, uses [pre-shared key authentication](../how-to-guides/authentication/auth-psk.md). If no key is set, a randomly generated key will be used to log into the server each time it starts. The randomly generated key is printed to the Docker logs like this:
+Deephaven, by default, uses [pre-shared key authentication](../how-to-guides/authentication/auth-psk.md). If no key is set, a randomly generated key will be used to log into the server each time it starts. The randomly generated key is printed to the server log in the terminal where you ran `./gradlew server-jetty-app:run -Pgroovy`, like this:
 
 ![Log readout with randomly generated PSK](../assets/tutorials/default-psk.png)
 
@@ -98,7 +108,7 @@ To set your own pre-shared key, add `-Ppsk=<YourPasswordHere>`:
 ./gradlew server-jetty-app:run -Pgroovy -Ppsk=YOUR_PASSWORD_HERE
 ```
 
-The pre-shared key is printed to the Docker log like this:
+The pre-shared key is printed to the server log like this:
 
 ![Log readout with user-defined PSK](../assets/how-to/custom-psk2.png)
 
