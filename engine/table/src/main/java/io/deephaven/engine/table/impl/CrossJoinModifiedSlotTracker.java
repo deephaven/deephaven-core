@@ -425,19 +425,6 @@ class CrossJoinModifiedSlotTracker {
         return state;
     }
 
-    /**
-     * Move a main table location.
-     *
-     * @param newTableLocation the new hash slot
-     */
-    void moveTableLocation(long cookie, long newTableLocation) {
-        if (isValidCookie(cookie)) {
-            final long pointer = getPointerFromCookie(cookie);
-            final SlotState state = modifiedSlots.get(pointer);
-            state.slotLocation = newTableLocation;
-        }
-    }
-
     long appendChunkAdd(final long cookie, final long slot, final long key) {
         return getSlotState(cookie, slot).appendToChunk(key, FLAG_ADD).cookie;
     }
@@ -484,6 +471,20 @@ class CrossJoinModifiedSlotTracker {
             final SlotState slotState = modifiedSlots.get(ii);
             if (slotState != null) {
                 slotState.doFinalizeRightState();
+                callback.accept(slotState);
+            }
+        }
+    }
+
+    /**
+     * Visit the state of each slot modified this update, without finalizing its right changes.
+     *
+     * @param callback receives each slot's state
+     */
+    void forAllSlotStates(Consumer<SlotState> callback) {
+        for (int ii = 0; ii < pointer; ++ii) {
+            final SlotState slotState = modifiedSlots.get(ii);
+            if (slotState != null) {
                 callback.accept(slotState);
             }
         }
