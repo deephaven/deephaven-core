@@ -452,7 +452,7 @@ trig_plot = trig_fig.show()
 
 ### DynamicTableWriter and the Update Graph
 
-Both the Python interpreter and the [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) require the [Update Graph (UG) lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) to execute. As a result, new rows will not appear in output tables until the next UG cycle. As an example, what would you expect the `print` statement below to produce?
+The [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) does not add rows to its table immediately. Each `write_row` call queues the new row, and the writer's table publishes the queued rows during a later Update Graph (UG) cycle. The Python script session holds the exclusive [UG lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) while a command executes, so that cycle cannot run until the command finishes. As a result, new rows do not appear in output tables while the command that wrote them is still running. As an example, what would you expect the `print` statement below to produce?
 
 ```python order=result test-set=1 reset
 from deephaven import DynamicTableWriter
@@ -468,7 +468,7 @@ table_writer.write_row(4, "Writer")
 print(result.j_table.isEmpty())
 ```
 
-You may be surprised, but the table does not contain rows when the `print` statement is reached. The Python interpreter holds the UG lock while the code block executes, preventing `result` from being updated with the new rows until the next UG cycle. Because `print` is in the code block, it sees the table before rows are added.
+You may be surprised, but the table does not contain rows when the `print` statement is reached. The Python script session holds the exclusive UG lock while the code block executes, preventing the UG cycle that adds the queued rows to `result` from running. Because `print` is in the code block, it sees the table before rows are added.
 
 However, calling the same `print` statement as a second command produces the expected result.
 

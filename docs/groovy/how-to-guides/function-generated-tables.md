@@ -24,7 +24,7 @@ The user-defined `tableGenerator` function can source its data from anywhere - t
 
 ### Execution context
 
-`create` does not accept an [execution context](../conceptual/execution-context.md). When you call it from a console script, the `tableGenerator` function runs under an empty execution context, without the console's query scope, query library, or formula compiler. A `tableGenerator` that runs query operations such as `update` must therefore open a context itself: capture the console's context with `defaultCtx = ExecutionContext.getContext()` and open it inside the function with `try (SafeCloseable ignored = defaultCtx.open())`, as the examples below do.
+`create` does not accept an [execution context](../conceptual/execution-context.md). When you call it from a console script, the `tableGenerator` function runs under a fallback execution context whose query scope, query library, and query compiler are unusable. A `tableGenerator` that needs any of these, for example to compile the `update` formulas shown below, must open a context itself. The examples below capture the console's context with `defaultCtx = ExecutionContext.getContext()` and open it inside the function with `try (SafeCloseable ignored = defaultCtx.open())`.
 
 ### Define a `tableGenerator` function
 
