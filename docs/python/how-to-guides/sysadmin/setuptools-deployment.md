@@ -338,12 +338,18 @@ def main(input_file: str, host: str, port: int, auth_type: str, name: str) -> No
 
 `Session` is a context manager, so the client connection closes when the command finishes. The result table lives on the remote server, not in the client process; its lifetime follows the server's normal session and export rules. Running the command several times does not start additional servers, so there is no port to choose and no risk of an `Address already in use` error. The command starts quickly because there is no JVM to launch, which makes the client model a good fit for small utilities that are run often.
 
-Once installed, run it against a server on the default host and port, or point it elsewhere. For a server that uses a pre-shared key, pass the handler's class name and put the key in the environment:
+Once installed, run it against a server on the default host and port, or point it elsewhere:
 
 ```bash
 my-dh-client data/sample.csv
 my-dh-client data/sample.csv --host dh.example.com --port 10000
-DH_AUTH_TOKEN=my-key my-dh-client data/sample.csv --auth-type io.deephaven.authentication.psk.PskAuthenticationHandler
+```
+
+For a server that uses a pre-shared key, set `DH_AUTH_TOKEN` in the environment without typing the key into a command. For example, read it from a file that is not checked into version control, or use `read -s` to enter it at a hidden prompt. Then pass the handler's class name:
+
+```bash
+read -s DH_AUTH_TOKEN && export DH_AUTH_TOKEN
+my-dh-client data/sample.csv --auth-type io.deephaven.authentication.psk.PskAuthenticationHandler
 ```
 
 The install and distribution steps that follow apply equally to embedded-server and client packages. Nothing about the build process depends on which Deephaven package the project uses.
