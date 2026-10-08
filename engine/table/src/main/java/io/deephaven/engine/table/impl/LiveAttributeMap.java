@@ -324,7 +324,8 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
      *
      * @param shouldKeep Should we keep our attribute with this key?
      * @param toAdd Attributes to add, replacing any of ours with the same keys
-     * @return An unmodifiable map of the resulting attributes
+     * @return A new map of the resulting attributes, which only the copy's constructor receives and which is never
+     *         mutated, since {@link #ensureAttributes()} replaces initial attributes before any change
      */
     private Map<String, Object> buildAttributes(
             @NotNull final Predicate<String> shouldKeep,
@@ -337,7 +338,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
             }
         });
         result.putAll(toAdd);
-        return result.isEmpty() ? EMPTY_ATTRIBUTES : Collections.unmodifiableMap(result);
+        return result.isEmpty() ? EMPTY_ATTRIBUTES : result;
     }
 
     /**
@@ -385,7 +386,8 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
     /**
      * Create a copy of {@code this} that is constructed with {@code attributes} as its initial attributes.
      *
-     * @param attributes The unmodifiable attributes for the copy
+     * @param attributes The attributes for the copy, which implementations must pass to its constructor without
+     *        modifying
      * @return The copy
      */
     protected abstract IMPL_TYPE copy(@NotNull Map<String, Object> attributes);
