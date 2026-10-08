@@ -102,7 +102,7 @@ deniro_tsv = read_csv(
 
 #### Pipe-delimited data
 
-Any character can be used as a delimiter. The pipe character (`|`) is common. In the example below, we set `delimiter="|"`.
+Any single 7-bit ASCII character can be used as a delimiter. The pipe character (`|`) is common. In the example below, we set `delimiter="|"`.
 
 ```python order=deniro_psv
 from deephaven import read_csv

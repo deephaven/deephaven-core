@@ -106,7 +106,7 @@ deniroTSV = readCsv("https://raw.githubusercontent.com/deephaven/examples/main/D
 
 #### Pipe-delimited data
 
-Any character can be used as a delimiter. The pipe character (`|`) is common. In the example below, we supply a `CsvSpecs` with the delimiter set to `|`.
+Any single 7-bit ASCII character can be used as a delimiter. The pipe character (`|`) is common. In the example below, we supply a `CsvSpecs` with the delimiter set to `|`.
 
 ```groovy order=deniroPSV
 import static io.deephaven.csv.CsvTools.readCsv
