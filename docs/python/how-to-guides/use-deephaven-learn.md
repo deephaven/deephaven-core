@@ -125,11 +125,11 @@ Deephaven has a submodule for gathering data called `learn.gather`. This submodu
 
 The function `table_to_numpy_2d` can take up to four inputs:
 
-- `row_set`: The rows that will be copied into the `ndarray`.
-- `col_set`: The column sources that will be copied into the `ndarray`.
+- `row_set`: The rows to copy into the `ndarray`.
+- `col_set`: The column sources to copy into the `ndarray`.
 - `order`: How the array is stored in memory. Can be either column-major or row-major.
   - The default value is row-major.
-  - Specifying the memory layout is done with an enumeration called `gather.MemoryLayout`. There are four accepted values:
+  - The `gather.MemoryLayout` enumeration specifies the memory layout. There are four accepted values:
     - `gather.MemoryLayout.ROW_MAJOR`: row-major order.
     - `gather.MemoryLayout.COLUMN_MAJOR`: column-major order.
     - `gather.MemoryLayout.C`: C memory layout (row-major).

@@ -2,7 +2,7 @@
 title: Systemic object marking
 ---
 
-In Deephaven, a **systemic object** is an object whose failure the engine reports to the server, in addition to putting the failed table and the tables that depend on it into a failed state. Failures of non-systemic objects only fail the affected tables.
+In Deephaven, a **systemic object** is an object whose failure the engine reports to the server. The engine logs every failure, but it reports only failures of systemic objects. Reporting is separate from failure propagation: when a table fails, the tables that depend on it also fail, whether or not they are systemic.
 
 What happens after a systemic failure depends on the server. Deephaven Community Core logs the error, and the worker keeps running. Deephaven Core+ (Enterprise) terminates the worker.
 
