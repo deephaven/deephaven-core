@@ -8,11 +8,11 @@ Table operations are integral to the Deephaven Query Language (DQL). The previou
 
 - [`update_view`](../../reference/table-operations/select/update-view.md), which adds columns to or modifies existing columns in a table.
 - [`sum_by`](../../reference/table-operations/group-and-aggregate/sumBy.md), which computes the sum of all columns in a table by a grouping column.
-- [`drop_columns`](../../reference/table-operations/select/drop-columns.md), which drops columns from a table.
+- [`rename_columns`](../../reference/table-operations/select/rename-columns.md), which renames columns in a table.
 - [`sort`](../../reference/table-operations/sort/sort.md), which sorts a table by the given columns from least to greatest.
 - [`sort_descending`](../../reference/table-operations/sort/sort-descending.md), which sorts a table by the given columns from greatest to least.
 
-Table operations are an integral component of DQL. You've already seen several: [`update_view`](../../reference/table-operations/select/update-view.md), [`sum_by`](../../reference/table-operations/group-and-aggregate/sumBy.md), [`drop_columns`](../../reference/table-operations/select/drop-columns.md), [`sort`](../../reference/table-operations/sort/sort.md) and [`sort_descending`](../../reference/table-operations/sort/sort-descending.md). You can think of these as different transformations being applied to the data in the table. This section will outline some basic table operations that make up the backbones of the most common queries.
+Table operations are an integral component of DQL. You've already seen several: [`update_view`](../../reference/table-operations/select/update-view.md), [`sum_by`](../../reference/table-operations/group-and-aggregate/sumBy.md), [`rename_columns`](../../reference/table-operations/select/rename-columns.md), [`sort`](../../reference/table-operations/sort/sort.md) and [`sort_descending`](../../reference/table-operations/sort/sort-descending.md). You can think of these as different transformations being applied to the data in the table. This section will outline some basic table operations that make up the backbones of the most common queries.
 
 Many of the code blocks in this notebook use the following table, `t`, as the root table. This is a simple table with 100 rows and contains only a `Timestamp` column.
 
@@ -295,7 +295,7 @@ t_cum_sum = t.view("X").update_by(cum_sum(cols="SumX = X"))
 
 Aggregations with [`update_by`](../../reference/table-operations/update-by-operations/updateBy.md) show the running total as it progresses through the table.
 
-[`update_by`](../../reference/table-operations/update-by-operations/updateBy.md) can also limit these summary statistics to subsets of table data defined by a number of rows or amount of time backward, forward, or both. The following code block calculates the sum of the prior 10 rows in column `X` of table `t`.
+[`update_by`](../../reference/table-operations/update-by-operations/updateBy.md) can also limit these summary statistics to subsets of table data defined by a number of rows or amount of time backward, forward, or both. The following code block calculates the sum of the current row and the previous 9 rows in column `X` of table `t`.
 
 ```python test-set=2
 from deephaven.updateby import rolling_sum_tick
@@ -349,7 +349,7 @@ See the [`update_by` user guide](../../how-to-guides/rolling-aggregations.md) to
 
 ## Combine tables
 
-There are two different ways to combine tables in Deephaven: merging and joining. Merging tables can be visualized as a vertical stacking of tables, whereas joining is more horizontal in nature, appending rows from one table to another based on common columns.
+There are two different ways to combine tables in Deephaven: merging and joining. Merging tables can be visualized as a vertical stacking of tables, whereas joining is more horizontal in nature, appending columns from matching rows of another table, based on values in key columns.
 
 Each subsection below defines its own tables to demonstrate merging and joining tables in Deephaven.
 

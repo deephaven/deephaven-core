@@ -9,7 +9,7 @@ To follow along, ensure you have [Docker](https://docs.docker.com/engine/install
 Once [Docker](https://docs.docker.com/engine/install/) is installed, execute this [Docker command](../../getting-started/docker-install.md#the-simplest-possible-installation):
 
 ```bash skip-test
-docker run --rm --name deephaven -p 10000:10000 -v data:/data --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-slim:latest
+docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-slim:latest
 ```
 
 > [!CAUTION]
@@ -19,6 +19,6 @@ Open the Deephaven IDE at `http://localhost:10000/ide/`, enter your password in 
 
 Once you're in, the **Console** on the left is where you write and run code. Results — tables, plots, and more — open as panels in the workspace to the right. The **Tables** dropdown at the top lists everything in your session. See [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md) for a full tour of the interface.
 
-The Docker command above creates a directory in your local working directory called `data`. Any files that you save in Deephaven will be stored there, ensuring you won't lose any valuable work. To learn more about mounting directories in Docker, check out [this guide](../../conceptual/docker-data-volumes.md).
+The Docker command above creates a directory in your local working directory called `data`. Files you save in the Deephaven IDE, and any other files written to `/data` in the container, are stored there, ensuring you won't lose any valuable work. To learn more about mounting directories in Docker, see [Docker data volumes](../../conceptual/docker-data-volumes.md).
 
 Deephaven can be configured and run in many different ways. More information on configuration options are discussed at the [end of this crash course](./configure.md).

@@ -223,7 +223,7 @@ time_functions = empty_table(10).update(
         "CurrentTime = now()",
         "Timestamp = CurrentTime + (ii * DAY)",
         # Many time functions require timezone information, typically provided as literals
-        "DayOfWeek = dayOfWeek(Timestamp, 'ET')",
+        "DayOfWeek = dayOfWeekValue(Timestamp, 'ET')",
         "DayOfMonth = dayOfMonth(Timestamp, 'ET')",
         "Weekend = DayOfWeek == 6 || DayOfWeek == 7 ? true : false",
         "SecondsSinceY2K = nanosToSeconds(Timestamp - '2000-01-01T00:00:00 ET')",
@@ -430,7 +430,7 @@ column_as_array = empty_table(10).update(
 )
 ```
 
-This functionality is only supported for static and append-only ticking tables. See [working with arrays](../../how-to-guides/work-with-arrays.md) for more information.
+Simple constant-offset access such as `X_[ii-2]` works on all tables. Other uses of column arrays, such as `sum(X_)` or `X_.subVector(i, i+3)`, are supported only for static and blink tables; on other ticking tables, append-only ones included, the engine throws an error. See [working with arrays](../../how-to-guides/work-with-arrays.md) and the [special variables reference](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for more information.
 
 ## Python in query strings
 

@@ -47,7 +47,7 @@ Note that Pandas DataFrames are inherently static. Converting a ticking Deephave
 
 ## NumPy
 
-[NumPy](https://numpy.org/) is one of Python's most popular packages. It implements arrays and array operations. Deephaven's [`deephaven.numpy`](../../how-to-guides/use-numpy.md) package, like the Pandas package, contains only two functions, [`to_numpy`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy) and [`to_table`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy), for converting to and from NumPy arrays and Deephaven tables, respectively.
+[NumPy](https://numpy.org/) is one of Python's most popular packages. It implements arrays and array operations. Deephaven's [`deephaven.numpy`](../../how-to-guides/use-numpy.md) package provides [`to_numpy`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy) and [`to_table`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_table) for converting to and from NumPy arrays and Deephaven tables, respectively.
 
 ```python test-set=2 order=t,t_transposed
 from deephaven import numpy as dhnp

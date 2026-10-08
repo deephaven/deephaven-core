@@ -234,7 +234,7 @@ dash_custom_layout = ui.dashboard(
 
 Obviously, dashboards are much more interesting when they contain components with real data, plots, widgets, and information.
 
-Dashboards combine multiple components into a single user experience. Dashboards are built with rows and columns of previously created components. Below is a full example creating a dashboard that displays a picker for Iris species, a heatmap, and some other custom components:
+Dashboards combine multiple components into a single user experience. Dashboards are built with rows and columns of previously created components. Below is a full example that builds a dashboard with a table, a scatter plot, two histograms, and a Markdown panel describing the Iris dataset:
 
 <!-- TODO: Unskip this test once the snapshots bug is fixed (related to dh-express) -->
 
@@ -284,8 +284,8 @@ iris_dashboard = ui.dashboard(
             ui.panel(sepal_flex_column, title="Sepal flex column"),
         ),
         ui.row(
-            ui.panel(sepal_length_hist, "Sepal Length Histogram"),
-            ui.panel(sepal_width_hist, "Sepal Width Histogram"),
+            ui.panel(sepal_length_hist, title="Sepal Length Histogram"),
+            ui.panel(sepal_width_hist, title="Sepal Width Histogram"),
         ),
     )
 )

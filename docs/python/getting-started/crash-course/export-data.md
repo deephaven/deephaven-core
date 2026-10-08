@@ -146,7 +146,7 @@ deephaven_table = my_iceberg_table_adapter.table(
 # Now 'deephaven_table' can be used like any other Deephaven table.
 ```
 
-Similarly, this code writes a Deephaven table to an Iceberg table. If the target table does not exist, it will be created.
+Similarly, this code creates a new Iceberg table and writes a Deephaven table to it. [`create_table`](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergCatalogAdapter.create_table) fails if the table already exists; use [`load_table`](../../reference/iceberg/iceberg-catalog-adapter.md) to write to an existing table.
 
 ```python docker-config=iceberg order=null
 from deephaven.experimental import iceberg
@@ -173,8 +173,7 @@ my_deephaven_table = new_table(
     ]
 )
 
-# Create or load an Iceberg table adapter.
-# If 'crash_course_db.output_table' doesn't exist, it will be created.
+# Create a new Iceberg table. This fails if 'crash_course_db.output_table' already exists.
 iceberg_target_adapter = iceberg_catalog_adapter.create_table(
     table_identifier="crash_course_db.output_table",
     table_definition=my_deephaven_table.definition,

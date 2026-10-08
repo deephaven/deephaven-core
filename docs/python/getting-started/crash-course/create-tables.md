@@ -27,7 +27,8 @@ static_table2 = empty_table(5).update_view(
 )
 ```
 
-> **_NOTE:_** The variables `i` and `ii` correspond to `int` and `long` row indices, respectively. They are only supported in [append-only tables](../../conceptual/table-types.md#specialization-1-append-only).
+> [!NOTE]
+> The [special variables](../../reference/query-language/variables/special-variables.md) `i` and `ii` hold each row's position as an `int` and a `long`, respectively. They are safe in static tables like this one. In ticking tables, they are only supported in [append-only](../../conceptual/table-types.md#specialization-1-append-only) and [blink](../../conceptual/table-types.md#specialization-3-blink) tables, because a row's position can change between updates in other ticking tables.
 
 The two tables look identical but are created differently.
 
@@ -36,7 +37,7 @@ The two tables look identical but are created differently.
 
 ## Ticking tables
 
-You can create ticking tables to get a feel for live data in Deephaven. The [`time_table`](../../reference/table-operations/create/timeTable.md) method works similarly to [`empty_table`](../../reference/table-operations/create/emptyTable.md) in that DQL is used to populate the table with more data. It creates a table with just a `Timestamp` column. The resultant table ticks at a regular interval specified by the input argument.
+You can create ticking tables to get a feel for live data in Deephaven. The [`time_table`](../../reference/table-operations/create/timeTable.md) method works similarly to [`empty_table`](../../reference/table-operations/create/emptyTable.md) in that DQL is used to populate the table with more data. It creates a table with just a `Timestamp` column. The resultant table adds rows at a regular interval specified by the input argument.
 
 ```python test-set=2 ticking-table order=null
 from deephaven import time_table
@@ -46,7 +47,7 @@ ticking_table = time_table("PT1s")
 
 ![A GIF showing the creation and updating of a ticking table in Deephaven](../../assets/tutorials/crash-course/crash-course-3.gif)
 
-The `PT1s` argument is an [ISO-8641 formatted duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that indicates the table will tick once every second.
+The `PT1s` argument is an [ISO 8601 duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that sets the period between rows: the table adds one row for each second that elapses.
 
 New ticking tables can be derived from existing ones using DQL, just as in the static case.
 

@@ -63,6 +63,7 @@ The example below reads a Parquet file from S3. This example uses [MinIO](https:
 
 ```groovy skip-test
 import io.deephaven.parquet.table.ParquetTools
+import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.extensions.s3.S3Instructions
 import io.deephaven.extensions.s3.Credentials
 
@@ -71,13 +72,15 @@ credentials = Credentials.basic("example_username", "example_password")
 
 grades = ParquetTools.readTable(
     "s3://example-bucket/grades/grades.parquet",
-    ParquetTools.readInstructions(
-        S3Instructions.builder()
-            .regionName("us-east-1")
-            .endpointOverride("http://minio.example.com:9000")
-            .credentials(credentials)
-            .build()
-    )
+    ParquetInstructions.builder()
+        .setSpecialInstructions(
+            S3Instructions.builder()
+                .regionName("us-east-1")
+                .endpointOverride("http://minio.example.com:9000")
+                .credentials(credentials)
+                .build()
+        )
+        .build()
 )
 ```
 
@@ -158,7 +161,7 @@ deephavenTable = myIcebergTableAdapter.table(staticInstructions)
 // Now 'deephavenTable' can be used like any other Deephaven table.
 ```
 
-Similarly, this code writes a Deephaven table to an Iceberg table. If the target table does not exist, it will be created.
+Similarly, this code creates a new Iceberg table and writes a Deephaven table to it. [`createTable`](../../reference/data-import-export/Iceberg/iceberg-catalog-adapter.md) fails if the table already exists; use [`loadTable`](../../reference/data-import-export/Iceberg/iceberg-catalog-adapter.md) to write to an existing table.
 
 ```groovy docker-config=iceberg order=null
 import io.deephaven.iceberg.util.IcebergToolsS3
@@ -183,8 +186,7 @@ myDeephavenTable = newTable(
     intCol("Value", 100, 200, 300)
 )
 
-// Create or load an Iceberg table adapter.
-// If 'crashCourseDb.outputTable' doesn't exist, it will be created.
+// Create a new Iceberg table. This fails if 'crashCourseDb.outputTable' already exists.
 icebergTargetAdapter = icebergCatalogAdapter.createTable(
     "crashCourseDb.outputTable",
     myDeephavenTable.getDefinition()
@@ -202,7 +204,7 @@ icebergWriter.append(IcebergWriteInstructions.builder().addTables(myDeephavenTab
 
 ## HTML
 
-Deephaven tables can be converted into an HTML representation using the `toHtml` method from the `io.deephaven.engine.util.TableTools` class. This is useful for displaying tables in web pages or for creating simple HTML reports.
+Deephaven tables can be converted into an HTML representation using the [`html`](/core/javadoc/io/deephaven/engine/util/TableTools.html#html(io.deephaven.engine.table.Table)) method from the `io.deephaven.engine.util.TableTools` class. This is useful for displaying tables in web pages or for creating simple HTML reports.
 
 ```groovy
 import io.deephaven.engine.util.TableTools

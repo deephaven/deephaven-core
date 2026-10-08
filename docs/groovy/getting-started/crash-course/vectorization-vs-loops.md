@@ -124,7 +124,7 @@ source = emptyTable(10).update("X = i")
 
 // NEVER do this!
 resultData = []
-for (x in source.getColumnSource("X")) {
+for (x in source.integerColumnIterator("X")) {
     resultData.add(x * 2)  // ❌ Use .update() instead!
 }
 ```
@@ -140,7 +140,7 @@ source = emptyTable(10).update("X = i")
 
 // Don't do this!
 values = []
-for (x in source.getColumnSource("X")) {
+for (x in source.integerColumnIterator("X")) {
     values.add(x * x)
 }
 // Now what? How do you get this back into a table?
