@@ -120,6 +120,7 @@ deephavenDocker.shouldLogIfTaskFails tasks.named('test')
 def devCerts = rootProject.file('server/dev-certs')
 def tlsContainerName = "dh-server-tls-for-java-client-${randomSuffix}"
 def tlsPort = project.objects.property(Integer)
+def tlsHost = project.objects.property(String)
 // http.port is explicit because the server defaults to 443 once an SSL identity is configured
 def tlsStartOpts = serverStartOpts + ' -Dhttp.port=10000 ' +
         '-Dssl.identity.type=privatekey -Dssl.identity.certChainPath=/dev-certs/server.chain.crt ' +
@@ -154,6 +155,7 @@ def waitForTlsPort = tasks.register('waitForTlsPort', DockerInspectContainer) { 
     t.onNext { Object obj ->
         def inspect = (InspectContainerResponse) obj
         tlsPort.set(Integer.parseInt(inspect.networkSettings.ports.bindings.values().first()[0].hostPortSpec))
+        tlsHost.set(inspect.networkSettings.ports.bindings.values().first()[0].hostIp)
     }
 }
 def writeTlsServerLogs = tasks.register('writeTlsServerLogs', DockerLogsContainer) { t ->
@@ -187,6 +189,7 @@ def testTls = tasks.register('testTls', Test) { t ->
     t.dependsOn waitForTlsPort
     t.finalizedBy writeTlsServerLogs, stopTlsServer
     t.doFirst {
+        t.systemProperty 'dh.host', tlsHost.get()
         t.systemProperty 'dh.tls.port', tlsPort.get()
     }
 }
