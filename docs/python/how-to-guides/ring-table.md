@@ -21,7 +21,7 @@ result = ring_table(parent=source, capacity=3)
 
 ![Animated GIF showing a ring table with 3-row capacity where only the most recent three timestamps are kept](../assets/how-to/ring-table-1.gif)
 
-A more common use case is to create a ring table from a blink table to preserve some data history. The following example creates a ring table from a blink time table. In `source`, old data is removed from memory as soon as new data enters the table. In `result`, 5 rows are kept, which preserves 4 more rows than `source`.
+A more common use case is to create a ring table from a blink table to preserve some data history. The following example creates a ring table from a blink time table. In `source`, rows are removed at the start of the next update cycle, so it holds only the rows added in the latest cycle. In `result`, up to the 5 most recent rows are kept.
 
 ```python ticking-table order=null
 from deephaven import time_table, ring_table
@@ -30,7 +30,7 @@ source = time_table(period="PT00:00:01", start_time=None, blink_table=True)
 result = ring_table(parent=source, capacity=5)
 ```
 
-![Animated GIF comparing blink source table (single current row) to ring table preserving the last five rows](../assets/how-to/ring-table.gif)
+![Animated GIF comparing a blink source table, which holds only the latest cycle's rows, to a ring table that keeps up to the five most recent rows](../assets/how-to/ring-table.gif)
 
 The following example creates a ring table from a time table that starts with 5 rows. The `initialize` argument is not set, and so is `True` by default. This means the ring table initially starts with all 5 rows populated.
 
