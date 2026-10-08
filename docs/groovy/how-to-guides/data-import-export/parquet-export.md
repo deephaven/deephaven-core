@@ -199,7 +199,7 @@ ParquetTools.writeTables(
 )
 ```
 
-To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.md) to a flat partitioned Parquet directory, the table must first be broken into a list of constituent tables, such as by calling `PartitionedTable.constituents()`. Then [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) can be used to write all of the resulting constituent tables to Parquet.
+To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.md) to a flat partitioned Parquet directory, the table must first be broken into a list of constituent tables, such as by calling `PartitionedTable.constituents`. Then [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) can be used to write all of the resulting constituent tables to Parquet.
 
 ```groovy test-set=1
 ParquetTools.writeTables(
