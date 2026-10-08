@@ -6,13 +6,13 @@ title: Think like a Deephaven ninja
 
 The Deephaven Query Language (DQL) uses three types of quotes:
 
-- ‘ (single quote)
+- ' (single quote)
 - " (double quote)
 - ` (backtick)
 
 Choosing the right quote can be confusing. Let’s explore where each should be used.
 
-DQL query strings are [strings](../reference/query-language/types/strings.md). In Python, strings can be defined with either a single quote or a double quote. Both yield valid query strings, as illustrated in this example.
+DQL query strings are [strings](../reference/query-language/types/strings.md). In Groovy, strings can be defined with either a single quote or a double quote. Both yield valid query strings, as illustrated in this example.
 
 ```groovy order=result
 result = emptyTable(10).update("X = i", 'Y = X*X')
@@ -36,7 +36,7 @@ Times, time periods, and characters are the most complex quoting case. Similar t
 result = emptyTable(10).update("X = '2019-01-23T12:15 ET'", "Y = X + 'PT00:10:00'", "Z=X + YEAR_365", "A='C'")
 ```
 
-In this example, column X is created and is set equal to a [date-time](../reference/query-language/types/date-time.md). Column Y is also a [date-time](../reference/query-language/types/date-time.md) and is set equal to 10 minutes after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column Z is a [date-time](../reference/query-language/types/date-time.md) and is set equal to one year after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column A is a character. A single quote is used both to surround the [date-time](../reference/query-language/types/date-time.md), the time difference, the [time period](../reference/query-language/types/periods.md), and the character.
+In this example, column X is created and is set equal to a [date-time](../reference/query-language/types/date-time.md). Column Y is also a [date-time](../reference/query-language/types/date-time.md) and is set equal to 10 minutes after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column Z is a [date-time](../reference/query-language/types/date-time.md) and is set equal to one year after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column A is a character. Single quotes surround the [date-time](../reference/query-language/types/date-time.md), the time difference, and the character.
 
 > [!TIP]
 > Date columns are frequently stored as strings, which use backticks.
@@ -112,7 +112,7 @@ For most use cases, [`where`](../reference/table-operations/filter/where.md) is 
 > This query allocates a billion row table in memory. To see the distinction between each table's load time, run the queries separately.
 
 ```groovy skip-test
-t = emptyTable(1_000_000_000).update("X = i", “Y = X*X”)
+t = emptyTable(1_000_000_000).update("X = i", "Y = X*X")
 
 t1 = t.where("X > 2").where("X < 6")
 

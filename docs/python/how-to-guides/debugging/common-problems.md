@@ -5,7 +5,7 @@ title: Common problems when debugging Deephaven
 
 This guide describes common Deephaven-specific issues you may encounter when debugging.
 
-The examples shown use PyCharm with pip-installed Deephaven, but these problems and solutions apply to all IDEs and installation methods.
+The examples shown use PyCharm with pip-installed Deephaven, but these problems and solutions apply to all IDEs and, except where noted, all installation methods.
 
 > [!NOTE]
 > These issues are specific to how Deephaven works and are not related to your debugger setup.
@@ -22,13 +22,15 @@ In this case, the breakpoint will not be reached, because [`update_view`](../../
 
 ## Ticking tables and the main thread
 
-Currently, Deephaven only notifies Python debuggers of its main thread. However, ticking Deephaven tables spawn new Java threads where evaluation actually happens. If the main thread is not explicitly kept alive, it will shut down before the debugger can reach operations that happen on the other thread. Again, this is particularly relevant with user-defined functions:
+Ticking Deephaven tables are updated on Deephaven's own update threads, not on your script's main thread. Deephaven registers those threads with the debugger. However, when your script starts the server itself, as in the [pip-installed setup](./pip-setup.md) with `deephaven_server.Server`, the Python process exits when the script reaches its last line. That stops the server before any updates run. This is particularly relevant with user-defined functions:
 
 ![img](../../assets/how-to/debugging/prob-3.png)
 
-The main thread here shuts down before the UDF is reached. To remedy this, explicitly keep the main thread alive with a call to [`time.sleep`](https://docs.python.org/3/library/time.html#time.sleep):
+The script ends before the UDF is ever called. To remedy this in a script that starts its own server, keep the process alive with a call to [`time.sleep`](https://docs.python.org/3/library/time.html#time.sleep):
 
 ![img](../../assets/how-to/debugging/prob-4.png)
+
+This problem does not affect code run in the web console of a separately running server, such as one in Docker, because the server keeps running after the code finishes.
 
 ## Related documentation
 
