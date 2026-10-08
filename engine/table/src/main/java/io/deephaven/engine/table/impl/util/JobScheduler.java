@@ -39,6 +39,15 @@ import java.util.function.Supplier;
  * thread can finish it first. {@link #invokeParallel} and {@link #invokeSerial} hold the calling thread, which runs
  * tasks alongside the scheduler's threads, and return or throw only once the iteration is over.
  * </p>
+ *
+ * <p>
+ * An iteration fails when a task throws or reports a failure through its nested error consumer, when a task context
+ * fails to close, or when it cannot be started because the context factory or {@link #submit} throws. No new task
+ * starts once it has failed. The callback forms then call {@code onError} with the first failure, and neither
+ * {@code onComplete} nor {@code cleanup}; a failure to start is also thrown from the call that started the iteration.
+ * The invoke forms throw the first failure, as {@link #invokeParallel} describes. Later failures are suppressed on the
+ * first.
+ * </p>
  */
 public interface JobScheduler {
 
@@ -55,10 +64,11 @@ public interface JobScheduler {
     /**
      * Delivered when a job fails with an {@link Error} and even the wrapper for it cannot be allocated, which is to say
      * when the heap is exhausted — the very failure this path exists for. Allocated once, when this interface is
-     * initialized, so that delivering a failure never depends on being able to allocate.
+     * initialized, so that delivering a failure never depends on being able to allocate. Being shared, it takes no
+     * suppressed exceptions.
      */
     Exception UNREPORTABLE_JOB_ERROR = new UncheckedDeephavenException(
-            "Scheduled job failed with an Error that could not be wrapped for delivery", null, true, false);
+            "Scheduled job failed with an Error that could not be wrapped for delivery", null, false, false);
 
     /**
      * Convert a Throwable that escaped a scheduled job into something the {@code Consumer<Exception>} error handlers
@@ -88,10 +98,12 @@ public interface JobScheduler {
     }
 
     /**
-     * Run a submitted job the way every scheduler must, on whatever thread the scheduler has chosen for it: under
-     * {@code executionContext} when one is given; with an {@link Exception} it throws delivered to {@code onError}; and
-     * with an {@link Error} delivered as {@link #asDeliverableException} makes it, then reported to the global fatal
-     * error reporter, then rethrown. Implementations wrap this in whatever performance accounting they keep.
+     * Run a submitted job on whatever thread the scheduler has chosen for it: under {@code executionContext} when one
+     * is given; with an {@link Exception} it throws delivered to {@code onError}; and with an {@link Error} delivered
+     * as {@link #asDeliverableException} makes it, then reported to the global fatal error reporter, then rethrown.
+     * Implementations wrap this in whatever performance accounting they keep. {@link ImmediateJobScheduler}, which runs
+     * every job on the submitting thread, does not use it: an Error from one of its jobs propagates to that thread
+     * undelivered and unreported.
      *
      * @param executionContext the execution context to run the job under, or null to run it under the thread's own
      * @param runnable the job
@@ -145,8 +157,8 @@ public interface JobScheduler {
      * Confirm that a thread may block in {@link #invokeParallel} or {@link #invokeSerial} on this scheduler, waiting
      * for the jobs submitted there, by the iteration itself or by nested work its tasks start. That is safe only when
      * every job this scheduler accepts is sure to start on some thread while the caller waits. The default allows it. A
-     * scheduler whose jobs run on the very threads that might be the ones waiting, such as the update graph's,
-     * overrides this to throw.
+     * scheduler whose jobs run on the very threads that might be the ones waiting overrides this to throw: the update
+     * graph's always, and the immediate scheduler's for the thread running its jobs.
      *
      * @throws UnsupportedOperationException if a thread must not block on this scheduler
      */
@@ -175,9 +187,15 @@ public interface JobScheduler {
     int threadCount();
 
     /**
-     * Helper interface for {@code iterateSerial()} and {@code iterateParallel()}. This provides a functional interface
-     * with {@code index} indicating which iteration to perform. When this returns, the scheduler will automatically
-     * schedule the next iteration.
+     * Helper interface for {@link JobScheduler#iterateParallel} and {@link JobScheduler#invokeParallel}. This provides
+     * a functional interface with {@code index} indicating which iteration to perform. When this returns, the scheduler
+     * will automatically schedule the next iteration.
+     *
+     * <p>
+     * A task in this form fails by throwing, and should not call its nested error consumer: since the iteration moves
+     * on as soon as the task returns, a failure reported there is fatal unless the task then throws that same failure.
+     * Nested work that completes asynchronously needs {@link IterateResumeAction}.
+     * </p>
      */
     @FunctionalInterface
     interface IterateAction<CONTEXT_TYPE extends JobThreadContext> {
@@ -186,19 +204,21 @@ public interface JobScheduler {
          *
          * @param taskThreadContext The context, unique to this task-thread
          * @param index The iteration number
-         * @param nestedErrorConsumer A consumer to pass to directly-nested iterative jobs
+         * @param nestedErrorConsumer A consumer that a task in this form should not call; see {@link IterateAction}
          */
         void run(CONTEXT_TYPE taskThreadContext, int index, Consumer<Exception> nestedErrorConsumer);
     }
 
     /**
-     * Helper interface for {@link #iterateSerial} and {@link #iterateParallel}. This provides a functional interface
-     * with {@code index} indicating which iteration to perform and {@link Runnable resume} providing a mechanism to
-     * inform the scheduler that the current task is complete. When {@code resume} is called, the scheduler will
-     * automatically schedule the next iteration.
+     * Helper interface for {@link #iterateSerial}, {@link #iterateParallel}, {@link #invokeSerial} and
+     * {@link #invokeParallel}. This provides a functional interface with {@code index} indicating which iteration to
+     * perform and {@link Runnable resume} providing a mechanism to inform the scheduler that the current task is
+     * complete. When {@code resume} is called, the scheduler will automatically schedule the next iteration.
      * <p>
-     * NOTE: failing to call {@code resume} will result in the scheduler not scheduling all remaining iterations. This
-     * will not block the scheduler, but the {@code completeAction} {@link Runnable} will never be called.
+     * NOTE: failing to call {@code resume} will result in the scheduler not scheduling all remaining iterations. That
+     * does not block the scheduler, but the iteration never ends: in the callback forms neither {@code onComplete} nor
+     * {@code onError} is ever called, and {@link JobScheduler#invokeParallel} or {@link JobScheduler#invokeSerial}
+     * never returns, even when its caller is interrupted.
      */
     @FunctionalInterface
     interface IterateResumeAction<CONTEXT_TYPE extends JobThreadContext> {
@@ -261,14 +281,17 @@ public interface JobScheduler {
 
         /**
          * Start the iteration: make up to {@code min(maxThreads, scheduler.threadCount())} task invokers, each with a
-         * context of its own, and submit them to the scheduler. When {@code callerParticipates}, the last of them runs
-         * on the calling thread inside this call instead, so that the caller does its share of the work, and so that at
-         * least one invoker runs even if the scheduler has no thread to spare.
+         * context of its own, and submit them to the scheduler. When {@code callerParticipates}, the first of them is
+         * reserved for the calling thread before any is submitted, and is not submitted; the caller runs it inside this
+         * call, then any submitted invoker the scheduler has not started yet. So the caller does its share of the work,
+         * at least one invoker runs even if the scheduler has no thread to spare, and the caller never waits on an
+         * invoker that has not started.
          *
          * <p>
-         * A failure to start, from the context factory or from the scheduler refusing a submission, is recorded as the
-         * iteration's failure before it propagates, so that the iteration ends in {@code onError} rather than in
-         * {@code onComplete}. The invokers already submitted still finish the tasks they hold.
+         * A failure to start, from the context factory or from a submission the scheduler fails, is recorded as the
+         * iteration's failure before it is thrown, so that the iteration ends in {@code onError} rather than in
+         * {@code onComplete}. Invokers that have not started are closed, and do nothing if the scheduler starts them
+         * later; those already running finish the tasks they hold.
          * </p>
          */
         private void startTasks(
@@ -346,24 +369,33 @@ public interface JobScheduler {
             }
         }
 
-        /** @return whether {@code error} was already recorded as a failure of this iteration */
-        private boolean isRecorded(@NotNull final Error error) {
-            return isRecordedIn(exception.get(), error) || isRecordedIn(contextCloseFailure.get(), error);
+        /**
+         * @return whether {@code failure} was already recorded as a failure of this iteration: itself, or for an
+         *         {@link Error}, the wrapper delivering it
+         */
+        private boolean isRecorded(@NotNull final Throwable failure) {
+            return isRecordedIn(exception.get(), failure) || isRecordedIn(contextCloseFailure.get(), failure);
         }
 
-        private static boolean isRecordedIn(@Nullable final Exception first, @NotNull final Error error) {
+        private static boolean isRecordedIn(@Nullable final Exception first, @NotNull final Throwable failure) {
             if (first == null) {
                 return false;
             }
-            if (first == UNREPORTABLE_JOB_ERROR || first.getCause() == error) {
+            if (delivers(first, failure)) {
                 return true;
             }
             for (final Throwable suppressed : first.getSuppressed()) {
-                if (suppressed.getCause() == error) {
+                if (delivers(suppressed, failure)) {
                     return true;
                 }
             }
             return false;
+        }
+
+        /** @return whether {@code recorded} is {@code failure}, or the wrapper delivering it when it is an Error */
+        private static boolean delivers(@NotNull final Throwable recorded, @NotNull final Throwable failure) {
+            return recorded == failure || (failure instanceof Error
+                    && (recorded.getCause() == failure || recorded == UNREPORTABLE_JOB_ERROR));
         }
 
         /**
@@ -407,8 +439,7 @@ public interface JobScheduler {
                 return;
             }
             final Exception first = holder.get();
-            // UNREPORTABLE_JOB_ERROR is shared by every iteration, so it must not collect suppressed exceptions
-            if (first != e && first != UNREPORTABLE_JOB_ERROR) {
+            if (first != e) {
                 first.addSuppressed(e);
             }
         }
@@ -445,7 +476,10 @@ public interface JobScheduler {
             try {
                 onError.accept(exception);
             } catch (Exception e) {
-                e.addSuppressed(exception);
+                if (e != exception) {
+                    // an onError that rethrows what it was given cannot suppress it on itself
+                    e.addSuppressed(exception);
+                }
                 onUnexpectedJobError(e);
             }
         }
@@ -481,8 +515,8 @@ public interface JobScheduler {
             try {
                 iterationManager.startTasks(scheduler, executionContext, taskThreadContextFactory, maxThreads, true);
             } catch (Exception e) {
-                // startTasks recorded this as the iteration's failure already; it is thrown below
-                invocation.fail(e);
+                // startTasks recorded this as the iteration's failure; onError delivers it, after any failure recorded
+                // before it, once the running tasks finish, and it is thrown below
             } catch (Error e) {
                 // The invoker or startTasks has recorded this already, so the iteration will end. Wait for it before
                 // letting the error go: it is about to unwind past whatever the tasks still running are using.
@@ -491,6 +525,7 @@ public interface JobScheduler {
             invocation.awaitFinished();
             if (error != null && invocation.failedWith(error)) {
                 // the iteration failed with this Error, which a task threw on this thread
+                invocation.addLaterFailuresTo(error);
                 throw error;
             }
             // Otherwise the iteration had already failed when this thread threw it, and that first failure is thrown.
@@ -536,6 +571,26 @@ public interface JobScheduler {
             private boolean failedWith(@NotNull final Error error) {
                 final Exception first = failure.get();
                 return first == null || first.getCause() == error || first == UNREPORTABLE_JOB_ERROR;
+            }
+
+            /**
+             * Attach to {@code error}, the iteration's first failure, the failures recorded after it, which are
+             * suppressed on the wrapper that delivered it.
+             */
+            private void addLaterFailuresTo(@NotNull final Error error) {
+                final Exception first = failure.get();
+                if (first == null) {
+                    return;
+                }
+                try {
+                    for (final Throwable later : first.getSuppressed()) {
+                        if (later.getCause() != error) {
+                            error.addSuppressed(later);
+                        }
+                    }
+                } catch (Throwable t) {
+                    // best effort: with the heap exhausted, the Error is thrown with whatever it carries
+                }
             }
 
             private void rethrowFailure() {
@@ -630,7 +685,7 @@ public interface JobScheduler {
                         // the IterationManager outstanding, so that the reference count never reaches zero and
                         // neither onComplete nor onError ever runs. Rethrow once it has been delivered, so that the
                         // scheduler still reports it as fatal and it reaches the thread running this job.
-                        deliverTaskFailure(asDeliverableException(e));
+                        deliverTaskFailure(e);
                         throw e;
                     } finally {
                         running = false;
@@ -638,16 +693,18 @@ public interface JobScheduler {
                 } while (runningTaskIndex != acquiredTaskIndex && !closed);
             }
 
-            private void deliverTaskFailure(@NotNull final Exception e) {
-                if (closed) {
+            private void deliverTaskFailure(@NotNull final Throwable failure) {
+                if (!closed) {
+                    // Something went wrong, but no completion or error was delivered yet. Report the error.
+                    reportError(asDeliverableException(failure));
+                } else if (!isRecorded(failure)) {
                     // The task threw an error while trying to deliver another error or complete the iteration.
                     // We cannot safely deliver this error, but we don't want to allow incorrect operation, so
                     // we report it to the global error reporter.
-                    onUnexpectedJobError(e);
-                } else {
-                    // Something went wrong, but no completion or error was delivered yet. Report the error.
-                    reportError(e);
+                    onUnexpectedJobError(asDeliverableException(failure));
                 }
+                // Otherwise it was delivered before it was thrown: through the nested error consumer, as a nested
+                // iteration that fails to start does, or by close().
             }
 
             private synchronized void reportTaskCompleteAndResumeIteration() {
@@ -668,8 +725,18 @@ public interface JobScheduler {
             }
 
             private synchronized void reportError(@NotNull final Exception e) {
+                Objects.requireNonNull(e);
+                if (closed) {
+                    // The same failure arriving a second way, as when a nested iteration that failed to start both
+                    // throws it and ends in onError, is dropped; any other means the task reported a failure after it
+                    // had finished.
+                    if (!isRecorded(e)) {
+                        onUnexpectedJobError(e);
+                    }
+                    return;
+                }
                 try (final SafeCloseable ignored = this::close) {
-                    onTaskError(Objects.requireNonNull(e));
+                    onTaskError(e);
                 }
             }
 
@@ -725,7 +792,8 @@ public interface JobScheduler {
      * @param onComplete this will be called when all iterations are complete
      * @param cleanup called after onComplete successfully returns. If the invocation of the cleanup throws an
      *        exception, onError will <em>not</em> be called.
-     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception.
+     * @param onError error handler for the scheduler to use when the iteration fails, as {@link JobScheduler}
+     *        describes, or if onComplete throws an exception
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
@@ -763,7 +831,8 @@ public interface JobScheduler {
      * @param onComplete this will be called when all iterations are complete
      * @param cleanup called after onComplete successfully returns. If the invocation of the cleanup throws an
      *        exception, onError will <em>not</em> be called.
-     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception.
+     * @param onError error handler for the scheduler to use when the iteration fails, as {@link JobScheduler}
+     *        describes, or if onComplete throws an exception
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
@@ -796,7 +865,8 @@ public interface JobScheduler {
      * @param onComplete this will be called when all iterations are complete
      * @param cleanup called after onComplete successfully returns. If the invocation of the cleanup throws an
      *        exception, onError will <em>not</em> be called.
-     * @param onError error handler for the scheduler to use while iterating, or if onComplete throws an exception.
+     * @param onError error handler for the scheduler to use when the iteration fails, as {@link JobScheduler}
+     *        describes, or if onComplete throws an exception
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateSerial(
@@ -818,7 +888,7 @@ public interface JobScheduler {
      * Iterates over a range of values in parallel as {@link #iterateParallel} does, except that the calling thread runs
      * tasks too, and this method returns only once the iteration is over. See the
      * {@link #invokeParallel(ExecutionContext, LogOutputAppendable, Supplier, int, int, IterateResumeAction) resume
-     * form} for the contract.
+     * form} for the contract, except that a task in this form fails by throwing, as {@link IterateAction} describes.
      *
      * @param executionContext the execution context the tasks run under, on every thread that runs them, the calling
      *        thread's included; null to run them under each thread's own
@@ -866,16 +936,21 @@ public interface JobScheduler {
      * <p>
      * <b>Return.</b> This returns only once every task has completed and every task context has been closed. A task may
      * hand its completion to nested asynchronous work through {@code resume}, in which case the thread that finishes
-     * that work carries the iteration on, and the caller waits for it here.
+     * that work carries the iteration on, and the caller waits for it here. A task that neither calls {@code resume}
+     * nor fails holds the caller here forever.
      * </p>
      *
      * <p>
      * <b>Failure.</b> A task that throws, or that reports a failure through its nested error consumer, fails the
-     * iteration: no new task starts, and once every task already running has finished, the first failure is thrown, as
-     * itself when it is a {@link RuntimeException} and wrapped in an {@link UncheckedDeephavenException} otherwise.
-     * Later failures are attached to it as suppressed. An {@link Error} thrown by a task on a scheduler thread is still
-     * reported as fatal and rethrown there, and reaches the caller wrapped, as {@link #asDeliverableException} makes
-     * it; one thrown on the calling thread reaches the caller as itself, once the other tasks have finished.
+     * iteration, as does a task context that fails to close, or a failure to start the iteration: no new task starts,
+     * and once every task already running has finished, the first failure is thrown, as itself when it is a
+     * {@link RuntimeException} and wrapped in an {@link UncheckedDeephavenException} otherwise. Later failures are
+     * attached to it as suppressed. An {@link Error} thrown by a task on a scheduler thread is still reported as fatal
+     * and rethrown there, and reaches the caller wrapped, as {@link #asDeliverableException} makes it; one thrown on
+     * the calling thread reaches the caller as itself, carrying the later failures, once the other tasks have finished.
+     * A submitted invoker that the scheduler runs on the calling thread, as {@link ExecutorJobScheduler} does with a
+     * job its executor refuses, is still the scheduler's job, and an Error from its tasks is reported as fatal as it
+     * would be on a scheduler thread.
      * </p>
      *
      * <p>

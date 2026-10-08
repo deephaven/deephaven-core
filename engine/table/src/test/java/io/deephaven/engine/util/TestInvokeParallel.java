@@ -11,17 +11,22 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -94,6 +99,52 @@ public class TestInvokeParallel {
         } catch (final Exception e) {
             throw new RuntimeException("the tasks did not all run at once", e);
         }
+    }
+
+    private static void await(final CountDownLatch latch) {
+        try {
+            assertThat(latch.await(30, TimeUnit.SECONDS)).as("latch released in time").isTrue();
+        } catch (final InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Fails if a fatal report reached {@code thrown}. The unit test reporter throws in place of ending the process, so
+     * a report made on the calling thread surfaces among the causes and suppressed exceptions of what is thrown.
+     */
+    private static void assertNoFatalReport(final Throwable thrown) {
+        final Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Deque<Throwable> pending = new ArrayDeque<>();
+        pending.push(thrown);
+        while (!pending.isEmpty()) {
+            final Throwable next = pending.pop();
+            if (!seen.add(next)) {
+                continue;
+            }
+            assertThat(next).as("a fatal report, in %s", thrown)
+                    .isNotInstanceOf(FakeProcessEnvironment.FakeFatalException.class);
+            if (next.getCause() != null) {
+                pending.push(next.getCause());
+            }
+            for (final Throwable suppressed : next.getSuppressed()) {
+                pending.push(suppressed);
+            }
+        }
+    }
+
+    /**
+     * Runs each job through {@code executor}, recording whatever escapes it, as a fatal report made on a scheduler
+     * thread does.
+     */
+    private static Executor recordingEscapes(final Executor executor, final List<Throwable> escaped) {
+        return command -> executor.execute(() -> {
+            try {
+                command.run();
+            } catch (final Throwable t) {
+                escaped.add(t);
+            }
+        });
     }
 
     /**
@@ -1099,6 +1150,310 @@ public class TestInvokeParallel {
                 })).isInstanceOf(UnsupportedOperationException.class);
 
         assertThat(runs.get()).isZero();
+    }
+
+    /**
+     * A step that hands resume and its nested error consumer to a nested iteration that fails to start fails the
+     * invocation with that failure. The nested iteration both throws it and delivers it to its onError, and the second
+     * delivery is the same failure, not a fatal one.
+     */
+    @Test
+    public void testNestedStartFailureIsNotFatal() throws InterruptedException {
+        final ExecutorJobScheduler scheduler = newScheduler(2, 3);
+        final IllegalStateException noContext = new IllegalStateException("nested context factory failed");
+        final AtomicInteger innerRuns = new AtomicInteger();
+
+        withTimeout(() -> assertThatThrownBy(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
+                (context, step, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
+                        ExecutionContext.getContext(), null,
+                        () -> {
+                            throw noContext;
+                        }, 0, 4, (innerContext, inner, innerNec) -> innerRuns.incrementAndGet(),
+                        resume, () -> {
+                        }, nestedErrorConsumer)))
+                .isSameAs(noContext)
+                .satisfies(TestInvokeParallel::assertNoFatalReport)
+                .satisfies(thrown -> assertThat(thrown.getSuppressed()).isEmpty()));
+
+        assertThat(innerRuns.get()).isZero();
+    }
+
+    /** The same in the callback form, whose step runs on a scheduler thread, which a fatal report would escape. */
+    @Test
+    public void testNestedStartFailureEndsTheCallbackFormInOnErrorWithoutAFatalReport() throws InterruptedException {
+        final ThreadPoolExecutor pool = newPool(2);
+        final List<Throwable> escaped = Collections.synchronizedList(new ArrayList<>());
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(recordingEscapes(pool, escaped), 3);
+        final IllegalStateException noContext = new IllegalStateException("nested context factory failed");
+        final Callbacks callbacks = new Callbacks();
+        final CountDownLatch ended = new CountDownLatch(1);
+
+        scheduler.iterateSerial(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
+                (context, step, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
+                        ExecutionContext.getContext(), null,
+                        () -> {
+                            throw noContext;
+                        }, 0, 4, (innerContext, inner, innerNec) -> {
+                        }, resume, () -> {
+                        }, nestedErrorConsumer),
+                callbacks.onComplete, callbacks.cleanup, e -> {
+                    callbacks.onError.accept(e);
+                    ended.countDown();
+                });
+        await(ended);
+        pool.shutdown();
+        assertThat(pool.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+
+        assertThat(callbacks.error.get()).isSameAs(noContext);
+        assertThat(callbacks.completeCalls.get()).isZero();
+        assertThat(callbacks.cleanupCalls.get()).isZero();
+        assertThat(escaped).isEmpty();
+    }
+
+    /**
+     * The other order: the nested start failure is thrown first, failing the step and closing its invoker, while a
+     * nested job is still running. That job, finishing, ends the nested iteration in onError, which delivers the same
+     * failure to the closed invoker; that is not fatal either, on the thread that finishes the job.
+     */
+    @Test
+    public void testNestedFailureDeliveredAfterTheStepFailedIsNotFatal() throws InterruptedException {
+        final ThreadPoolExecutor pool = newPool(1);
+        final List<Throwable> escaped = Collections.synchronizedList(new ArrayList<>());
+        final IllegalStateException submitFailure = new IllegalStateException("cannot start a thread");
+        final CountDownLatch nestedJobStarted = new CountDownLatch(1);
+        final CountDownLatch stepClosed = new CountDownLatch(1);
+        final AtomicInteger submissions = new AtomicInteger();
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(recordingEscapes(command -> {
+            if (submissions.incrementAndGet() > 1) {
+                // fail only once the first nested job is running, so that it outlasts the failure
+                await(nestedJobStarted);
+                throw submitFailure;
+            }
+            pool.execute(command);
+        }, escaped), 3);
+        final Supplier<JobScheduler.JobThreadContext> stepContext = () -> new JobScheduler.JobThreadContext() {
+            @Override
+            public void close() {
+                stepClosed.countDown();
+            }
+        };
+
+        withTimeout(() -> assertThatThrownBy(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
+                stepContext, 0, 1,
+                (context, step, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
+                        ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 4,
+                        (innerContext, inner, innerNec) -> {
+                            nestedJobStarted.countDown();
+                            // hold on until the step has failed and closed its invoker
+                            await(stepClosed);
+                        },
+                        resume, () -> {
+                        }, nestedErrorConsumer)))
+                .isSameAs(submitFailure)
+                .satisfies(TestInvokeParallel::assertNoFatalReport));
+        // the nested job delivers the failure again as it finishes
+        pool.shutdown();
+        assertThat(pool.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+
+        assertThat(escaped).isEmpty();
+    }
+
+    /**
+     * A task that reports its failure through the nested error consumer and then throws it fails the invocation once.
+     */
+    @Test
+    public void testFailureReportedThenThrownIsNotFatal() {
+        final IllegalStateException failure = new IllegalStateException("reported, then thrown");
+
+        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
+                (context, idx, nestedErrorConsumer, resume) -> {
+                    nestedErrorConsumer.accept(failure);
+                    throw failure;
+                }))
+                .isSameAs(failure)
+                .satisfies(TestInvokeParallel::assertNoFatalReport)
+                .satisfies(thrown -> assertThat(thrown.getSuppressed()).isEmpty());
+    }
+
+    /**
+     * A context that fails to close with an Error on the calling thread, after every task succeeded, fails the
+     * invocation with that Error, thrown as itself like any Error on the calling thread, not as a fatal report.
+     */
+    @Test
+    public void testCallerContextCloseErrorAfterSuccessIsThrownAsItself() {
+        final AssertionError closeError = new AssertionError("close error");
+        final AtomicInteger runs = new AtomicInteger();
+
+        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
+                () -> new JobScheduler.JobThreadContext() {
+                    @Override
+                    public void close() {
+                        throw closeError;
+                    }
+                }, 0, 3, (context, idx, nec) -> runs.incrementAndGet()))
+                .isSameAs(closeError)
+                .satisfies(TestInvokeParallel::assertNoFatalReport);
+
+        assertThat(runs.get()).isEqualTo(3);
+    }
+
+    /**
+     * An Error on the calling thread is thrown as itself once the helpers have finished, carrying the failures they
+     * reported after it.
+     */
+    @Test
+    public void testErrorOnTheCallingThreadCarriesLaterFailures() {
+        final ExecutorJobScheduler scheduler = newScheduler(1, 2);
+        final Thread caller = Thread.currentThread();
+        final AssertionError error = new AssertionError("caller's task error");
+        final IllegalStateException later = new IllegalStateException("helper's later failure");
+        final CountDownLatch helperStarted = new CountDownLatch(1);
+        final CountDownLatch errorRecorded = new CountDownLatch(1);
+        final AtomicBoolean helperDone = new AtomicBoolean();
+        final AtomicInteger made = new AtomicInteger();
+
+        assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                () -> {
+                    // the caller's own context is made first, and closed once its task's Error is recorded
+                    final boolean callersOwn = made.incrementAndGet() == 1;
+                    return new JobScheduler.JobThreadContext() {
+                        @Override
+                        public void close() {
+                            if (callersOwn) {
+                                errorRecorded.countDown();
+                            }
+                        }
+                    };
+                }, 0, 2,
+                (context, idx, nec) -> {
+                    if (Thread.currentThread() == caller) {
+                        await(helperStarted);
+                        throw error;
+                    }
+                    helperStarted.countDown();
+                    await(errorRecorded);
+                    helperDone.set(true);
+                    throw later;
+                }))
+                .isSameAs(error)
+                .satisfies(thrown -> assertThat(thrown.getSuppressed()).containsExactly(later));
+
+        assertThat(helperDone.get()).as("the helper's task had finished when the Error was thrown").isTrue();
+    }
+
+    /**
+     * A submission that fails after a helper has already failed does not displace that first failure, whether or not
+     * another helper is still running when it fails: the helper's failure is thrown, carrying the submission's failure
+     * once, and nothing is suppressed on the submission's failure in turn.
+     */
+    @Test
+    public void testStartFailureAfterAHelperFailedIsSuppressedOnTheFirstFailure() throws InterruptedException {
+        final ThreadPoolExecutor pool = newPool(2);
+        final IllegalStateException helperFailure = new IllegalStateException("helper's task failed");
+        final IllegalArgumentException submitFailure = new IllegalArgumentException("cannot start a thread");
+        final CountDownLatch thirdSubmitting = new CountDownLatch(1);
+        final CountDownLatch helperFailed = new CountDownLatch(1);
+        final CountDownLatch callersContextClosed = new CountDownLatch(1);
+        final AtomicInteger submissions = new AtomicInteger();
+        final Executor failsThirdSubmission = command -> {
+            if (submissions.incrementAndGet() == 3) {
+                // fail once the first helper's failure has been recorded
+                thirdSubmitting.countDown();
+                await(helperFailed);
+                throw submitFailure;
+            }
+            pool.execute(command);
+        };
+        final AtomicInteger made = new AtomicInteger();
+        final AtomicInteger contextsOpen = new AtomicInteger();
+        final Supplier<JobScheduler.JobThreadContext> contexts = () -> {
+            // the caller's own, then those of the first, second and third helpers
+            final int index = made.incrementAndGet();
+            contextsOpen.incrementAndGet();
+            return new JobScheduler.JobThreadContext() {
+                @Override
+                public void close() {
+                    contextsOpen.decrementAndGet();
+                    if (index == 1) {
+                        callersContextClosed.countDown();
+                    } else if (index == 2) {
+                        helperFailed.countDown();
+                    }
+                }
+            };
+        };
+
+        withTimeout(() -> assertThatThrownBy(() -> new ExecutorJobScheduler(failsThirdSubmission, 4).invokeParallel(
+                ExecutionContext.getContext(), null, contexts, 0, 8,
+                (context, idx, nec) -> {
+                    if (idx == 1) {
+                        // fail only once every helper has been made, so that the third submission is attempted
+                        await(thirdSubmitting);
+                        throw helperFailure;
+                    }
+                    if (idx == 2) {
+                        // run on until the caller, failing to start, abandons its own unstarted invoker
+                        await(callersContextClosed);
+                    }
+                }))
+                .isSameAs(helperFailure)
+                .satisfies(thrown -> assertThat(thrown.getSuppressed()).containsExactly(submitFailure))
+                .satisfies(thrown -> assertThat(submitFailure.getSuppressed()).isEmpty()));
+
+        assertThat(contextsOpen.get()).isZero();
+    }
+
+    /**
+     * An onError that rethrows the failure it was given is reported as fatal with that failure, rather than with the
+     * IllegalArgumentException that suppressing it on itself would throw.
+     */
+    @Test
+    public void testOnErrorRethrowingItsFailureReportsThatFailure() {
+        final IllegalStateException failure = new IllegalStateException("task failed");
+
+        assertThatThrownBy(() -> new ImmediateJobScheduler().iterateParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
+                (context, idx, nec) -> {
+                    throw failure;
+                },
+                () -> {
+                }, () -> {
+                }, e -> {
+                    throw (RuntimeException) e;
+                }))
+                .isInstanceOf(FakeProcessEnvironment.FakeFatalException.class)
+                .satisfies(thrown -> assertThat(thrown.getCause()).isSameAs(failure));
+    }
+
+    /**
+     * A thread running an immediate scheduler's jobs may not block on that scheduler, since a job submitted while it
+     * waited would be queued behind the wait; it may still invoke on a scheduler of its own.
+     */
+    @Test
+    public void testImmediateSchedulerRefusesToBlockTheThreadRunningItsJobs() throws InterruptedException {
+        final ImmediateJobScheduler scheduler = new ImmediateJobScheduler();
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        final AtomicInteger nestedRuns = new AtomicInteger();
+        final AtomicInteger ownRuns = new AtomicInteger();
+
+        withTimeout(() -> scheduler.submit(ExecutionContext.getContext(), () -> {
+            thrown.set(catchThrowable(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
+                    (context, step, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
+                            ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
+                            (innerContext, inner, innerNec) -> nestedRuns.incrementAndGet(),
+                            resume, () -> {
+                            }, nestedErrorConsumer))));
+            invoke(new ImmediateJobScheduler(), 3, (context, idx, nec) -> ownRuns.incrementAndGet());
+        }, null, e -> {
+            throw new AssertionError("unexpected failure", e);
+        }));
+
+        assertThat(thrown.get()).isInstanceOf(UnsupportedOperationException.class);
+        assertThat(nestedRuns.get()).isZero();
+        assertThat(ownRuns.get()).isEqualTo(3);
     }
 
     private static Throwable catchThrowable(final Runnable runnable) {

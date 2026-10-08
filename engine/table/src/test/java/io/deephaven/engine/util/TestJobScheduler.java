@@ -609,6 +609,16 @@ public final class TestJobScheduler {
     }
 
     /**
+     * The wrapper delivered when an Error cannot be wrapped is shared, and is thrown to callers whose own cleanup may
+     * try to suppress a failure on it, so it takes none.
+     */
+    @Test
+    public void testUnreportableJobErrorTakesNoSuppressed() {
+        JobScheduler.UNREPORTABLE_JOB_ERROR.addSuppressed(new IllegalStateException("a caller's close failure"));
+        assertEquals(0, JobScheduler.UNREPORTABLE_JOB_ERROR.getSuppressed().length);
+    }
+
+    /**
      * An Error cannot be handed to a {@code Consumer<Exception>}, so the scheduler wraps it; what matters is that the
      * failure arrives at all, with the original Error intact.
      */
