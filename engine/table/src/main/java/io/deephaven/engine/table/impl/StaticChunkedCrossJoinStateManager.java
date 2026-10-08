@@ -53,7 +53,7 @@ class StaticChunkedCrossJoinStateManager
             @NotNull final QueryTable rightTable,
             @NotNull final ColumnSource<?>[] rightKeys) {
         hasher.build(rightTable.getRowSet(), rightKeys,
-                (rows, ids) -> rightRowSets.add(rows, ids, hasher.idCapacity()));
+                (rows, ids, statuses) -> rightRowSets.add(rows, ids, hasher.idCapacity()));
         rightRowSets.build(hasher.idCapacity());
 
         // We can now validate key-space after all of our right rows have been aggregated into groups, which determined
@@ -62,7 +62,7 @@ class StaticChunkedCrossJoinStateManager
         validateKeySpaceSize(leftTable);
 
         final RowSetBuilderSequential resultRowSet = RowSetFactory.builderSequential();
-        hasher.probe(leftTable.getRowSet(), leftKeys, false, (rows, ids) -> {
+        hasher.probe(leftTable.getRowSet(), leftKeys, false, (rows, ids, statuses) -> {
             final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
             for (int ii = 0; ii < rowKeys.size(); ++ii) {
                 final long rowKey = rowKeys.get(ii);
@@ -87,7 +87,7 @@ class StaticChunkedCrossJoinStateManager
             @NotNull final ColumnSource<?>[] leftKeys,
             @NotNull final QueryTable rightTable,
             @NotNull final ColumnSource<?>[] rightKeys) {
-        hasher.build(leftTable.getRowSet(), leftKeys, (rows, ids) -> {
+        hasher.build(leftTable.getRowSet(), leftKeys, (rows, ids, statuses) -> {
             final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
             for (int ii = 0; ii < rowKeys.size(); ++ii) {
                 leftRowSetToSlot.put(rowKeys.get(ii), ids.get(ii));
@@ -96,7 +96,7 @@ class StaticChunkedCrossJoinStateManager
 
         // only the keys that are on the left need right rows
         hasher.probe(rightTable.getRowSet(), rightKeys, false,
-                (rows, ids) -> rightRowSets.add(rows, ids, hasher.idCapacity()));
+                (rows, ids, statuses) -> rightRowSets.add(rows, ids, hasher.idCapacity()));
         rightRowSets.build(hasher.idCapacity());
 
         // We can now validate key-space after all of our right rows have been aggregated into groups, which determined

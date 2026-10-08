@@ -404,7 +404,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             return;
         }
         try (final PrevRowKeys prevRowKeys = new PrevRowKeys(rows, prevRows)) {
-            final KeyIdHasher.IdChunkConsumer consumer = (chunkRows, slots) -> {
+            final KeyIdHasher.IdChunkConsumer consumer = (chunkRows, slots, statuses) -> {
                 ensureSlotCapacity();
                 final LongChunk<OrderedRowKeys> rowKeys = chunkRows.asRowKeyChunk();
                 final LongChunk<OrderedRowKeys> prevKeys = prevRowKeys.next(chunkRows);
@@ -440,7 +440,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             return;
         }
         try (final PrevRowKeys prevRowKeys = new PrevRowKeys(rows, prevRows)) {
-            hasher.probe(rows, sources, usePrev, (chunkRows, slots) -> {
+            hasher.probe(rows, sources, usePrev, (chunkRows, slots, statuses) -> {
                 final LongChunk<OrderedRowKeys> rowKeys = chunkRows.asRowKeyChunk();
                 final LongChunk<OrderedRowKeys> prevKeys = prevRowKeys.next(chunkRows);
                 for (int ii = 0; ii < rowKeys.size(); ++ii) {

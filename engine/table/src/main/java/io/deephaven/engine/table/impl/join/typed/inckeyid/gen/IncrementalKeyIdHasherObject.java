@@ -12,10 +12,10 @@ import static io.deephaven.util.compare.ObjectComparisons.eq;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.join.IncrementalKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
@@ -44,8 +44,8 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
         return (tableLocation + 1) & (alternateTableSize - 1);
     }
 
-    protected void build(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            WritableIntChunk<Values> ids) {
+    protected void build(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
+            WritableByteChunk<Values> statuses) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -71,6 +71,7 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                                 break;
                             }
                             ids.set(chunkPosition, idValue);
+                            statuses.set(chunkPosition, FOUND);
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
@@ -89,6 +90,7 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                     final int id = allocateId(tableLocation);
                     mainId.set(tableLocation, id);
                     ids.set(chunkPosition, id);
+                    statuses.set(chunkPosition, ADDED);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (isStateDeleted(idValue)) {
@@ -98,9 +100,11 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                         final int id = allocateId(tableLocation);
                         mainId.set(tableLocation, id);
                         ids.set(chunkPosition, id);
+                        statuses.set(chunkPosition, ADDED);
                         break;
                     }
                     ids.set(chunkPosition, idValue);
+                    statuses.set(chunkPosition, FOUND);
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -112,8 +116,8 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
         }
     }
 
-    protected void probe(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            WritableIntChunk<Values> ids) {
+    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
+            WritableByteChunk<Values> statuses) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -131,6 +135,7 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                         break;
                     }
                     ids.set(chunkPosition, idValue);
+                    statuses.set(chunkPosition, FOUND);
                     found = true;
                     break;
                 }
@@ -142,6 +147,7 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
             if (!found) {
                 if (!searchAlternate) {
                     ids.set(chunkPosition, NULL_ID);
+                    statuses.set(chunkPosition, MISSING);
                 } else {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     boolean alternateFound = false;
@@ -153,6 +159,7 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                                     break;
                                 }
                                 ids.set(chunkPosition, idValue);
+                                statuses.set(chunkPosition, FOUND);
                                 alternateFound = true;
                                 break;
                             }
@@ -164,6 +171,7 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                     }
                     if (!alternateFound) {
                         ids.set(chunkPosition, NULL_ID);
+                        statuses.set(chunkPosition, MISSING);
                     }
                 }
             }

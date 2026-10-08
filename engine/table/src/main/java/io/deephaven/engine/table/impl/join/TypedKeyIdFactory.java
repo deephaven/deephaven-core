@@ -13,16 +13,19 @@ import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 public class TypedKeyIdFactory {
     public static void found(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
         builder.addStatement("ids.set(chunkPosition, idValue)");
+        builder.addStatement("statuses.set(chunkPosition, FOUND)");
     }
 
     public static void insert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
         builder.addStatement("final int id = allocateId(tableLocation)");
         builder.addStatement("mainId.set(tableLocation, id)");
         builder.addStatement("ids.set(chunkPosition, id)");
+        builder.addStatement("statuses.set(chunkPosition, ADDED)");
     }
 
     public static void probeMissing(CodeBlock.Builder builder) {
         builder.addStatement("ids.set(chunkPosition, NULL_ID)");
+        builder.addStatement("statuses.set(chunkPosition, MISSING)");
     }
 
     public static void moveMain(CodeBlock.Builder builder) {

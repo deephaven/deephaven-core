@@ -34,6 +34,10 @@ public class HasherConfig<T> {
     final boolean includeOriginalSources;
     final boolean supportRehash;
     /**
+     * Whether the generated build and probe methods take the {@code RowSequence} of the chunk as their first parameter.
+     */
+    final boolean includeRowSequence;
+    /**
      * If non-null, a reference to a static {@code int} constant: a partial rehash examines up to that many alternate
      * slots for each entry it is asked to rehash, rather than continuing until that many live entries have moved. If
      * null, it moves live entries. The generated code refers to the constant, so that the hasher and the code that
@@ -52,6 +56,7 @@ public class HasherConfig<T> {
             boolean alwaysMoveMain,
             boolean includeOriginalSources,
             boolean supportRehash,
+            boolean includeRowSequence,
             CodeBlock rehashSlotsPerEntry,
             String mainStateName,
             String overflowOrAlternateStateName,
@@ -75,6 +80,7 @@ public class HasherConfig<T> {
         this.alwaysMoveMain = alwaysMoveMain;
         this.includeOriginalSources = includeOriginalSources;
         this.supportRehash = supportRehash;
+        this.includeRowSequence = includeRowSequence;
         this.rehashSlotsPerEntry = rehashSlotsPerEntry;
         this.mainStateName = mainStateName;
         this.overflowOrAlternateStateName = overflowOrAlternateStateName;
@@ -184,6 +190,7 @@ public class HasherConfig<T> {
         private CodeBlock rehashSlotsPerEntry = null;
         private boolean includeOriginalSources = false;
         private boolean supportRehash = true;
+        private boolean includeRowSequence = true;
         private String mainStateName;
         private String overflowOrAlternateStateName;
         private String emptyStateName;
@@ -253,6 +260,11 @@ public class HasherConfig<T> {
 
         public Builder<T> supportRehash(boolean supportRehash) {
             this.supportRehash = supportRehash;
+            return this;
+        }
+
+        public Builder<T> includeRowSequence(boolean includeRowSequence) {
+            this.includeRowSequence = includeRowSequence;
             return this;
         }
 
@@ -334,7 +346,7 @@ public class HasherConfig<T> {
 
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle,
                     openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash,
-                    rehashSlotsPerEntry, mainStateName,
+                    includeRowSequence, rehashSlotsPerEntry, mainStateName,
                     overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
                     stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
                     builds, extraMethods, extraConstructorParameters);

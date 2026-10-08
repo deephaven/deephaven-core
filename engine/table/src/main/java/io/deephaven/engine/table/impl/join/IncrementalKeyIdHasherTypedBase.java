@@ -66,8 +66,6 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
 
     // whether the current build rehashes all at once
     private boolean fullRehash = false;
-    // the rehash work the current build has done beyond what its insertions required, in entries
-    private int rehashCredits = 0;
 
     protected IncrementalKeyIdHasherTypedBase(ColumnSource<?>[] tableKeySources, int tableSize,
             double maximumLoadFactor) {
@@ -150,22 +148,17 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
     }
 
     @Override
-    protected void startBuild() {
-        rehashCredits = 0;
-    }
-
-    @Override
-    protected void prepareForChunk(final int nextChunkSize) {
-        while (doRehash(nextChunkSize)) {
+    protected void prepareForChunk(final Context context, final int nextChunkSize) {
+        while (doRehash(context, nextChunkSize)) {
             migrateFront();
         }
         idToSlot.ensureCapacity((long) nextId + nextChunkSize);
     }
 
     @Override
-    protected void onChunkBuilt(final long entriesAdded) {
+    protected void onChunkBuilt(final Context context, final long entriesAdded) {
         // building takes away from the credit we have built up rehashing; a chunk that adds nothing does not pay
-        rehashCredits -= Math.toIntExact(entriesAdded);
+        context.rehashCredits -= Math.toIntExact(entriesAdded);
     }
 
     @Override
@@ -176,18 +169,19 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
     }
 
     /**
+     * @param context the context of the build, which holds its rehash credits
      * @param nextChunkSize the size of the chunk about to be built
      * @return true if a front migration is required
      */
-    private boolean doRehash(final int nextChunkSize) {
+    private boolean doRehash(final Context context, final int nextChunkSize) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits;
+            final int requiredRehash = nextChunkSize - context.rehashCredits;
             if (requiredRehash <= 0) {
                 return false;
             }
 
             // before building, we need to do at least as much rehash work as we would do build work
-            rehashCredits += rehashInternalPartial(requiredRehash);
+            context.rehashCredits += rehashInternalPartial(requiredRehash);
             if (rehashPointer == 0) {
                 clearAlternate();
             }
@@ -201,8 +195,8 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
         tableSize = computeTableSize(nextChunkSize, oldTableSize);
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
-        if (rehashCredits > 0) {
-            rehashCredits = 0;
+        if (context.rehashCredits > 0) {
+            context.rehashCredits = 0;
         }
 
         if (fullRehash) {

@@ -334,13 +334,14 @@ public class TypedHasherFactory {
                     .stateType(int.class).mainStateName("mainId")
                     .emptyStateName("EMPTY_ID")
                     .includeOriginalSources(false)
+                    .includeRowSequence(false)
                     .supportRehash(true);
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "idValue", false, false, false,
-                    TypedKeyIdFactory::found, TypedKeyIdFactory::insert, keyIdsParam()));
+                    TypedKeyIdFactory::found, TypedKeyIdFactory::insert, keyIdsParam(), keyStatusesParam()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
-                    TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam()));
+                    TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam(), keyStatusesParam()));
         } else if (baseClass.equals(IncrementalKeyIdHasherTypedBase.class)) {
             builder.classPrefix("IncrementalKeyIdHasher").packageGroup("join").packageMiddle("inckeyid")
                     .openAddressedAlternate(true)
@@ -350,6 +351,7 @@ public class TypedHasherFactory {
                     .emptyStateName("EMPTY_ID")
                     .tombstoneStateName("TOMBSTONE_ID")
                     .includeOriginalSources(false)
+                    .includeRowSequence(false)
                     .supportRehash(true)
                     .rehashSlotsPerEntry(IncrementalKeyIdHasherTypedBase.class, "REHASH_SLOTS_PER_ENTRY")
                     .moveMainFull(TypedKeyIdFactory::moveMain)
@@ -357,10 +359,10 @@ public class TypedHasherFactory {
                     .alwaysMoveMain(true);
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "idValue", false, true, true,
-                    TypedKeyIdFactory::found, TypedKeyIdFactory::insert, keyIdsParam()));
+                    TypedKeyIdFactory::found, TypedKeyIdFactory::insert, keyIdsParam(), keyStatusesParam()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
-                    TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam()));
+                    TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam(), keyStatusesParam()));
         } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -531,6 +533,12 @@ public class TypedHasherFactory {
         return ParameterSpec.builder(
                 ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), ClassName.get(Values.class)),
                 "ids").build();
+    }
+
+    private static ParameterSpec keyStatusesParam() {
+        return ParameterSpec.builder(
+                ParameterizedTypeName.get(ClassName.get(WritableByteChunk.class), ClassName.get(Values.class)),
+                "statuses").build();
     }
 
     private static <T> void configureAggregation(HasherConfig.Builder<T> builder) {
@@ -1170,6 +1178,7 @@ public class TypedHasherFactory {
         }
         builder.addStatement("final int chunkSize = keyChunk0.size()");
         if (buildSpec.requiresRowKeyChunk) {
+            Assert.eqTrue(hasherConfig.includeRowSequence, "hasherConfig.includeRowSequence");
             builder.addStatement("final $T rowKeyChunk = rowSequence.asRowKeyChunk()",
                     ParameterizedTypeName.get(LongChunk.class, OrderedRowKeys.class));
         }
@@ -1184,9 +1193,8 @@ public class TypedHasherFactory {
 
         builder.endControlFlow();
 
-        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(buildSpec.name)
-                .addParameter(RowSequence.class, "rowSequence")
-                .addParameter(Chunk[].class, "sourceKeyChunks");
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(buildSpec.name);
+        addChunkParameters(hasherConfig, methodBuilder);
         for (final ParameterSpec param : buildSpec.params) {
             methodBuilder.addParameter(param);
         }
@@ -1194,6 +1202,17 @@ public class TypedHasherFactory {
                 .returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build())
                 // .addAnnotation(Override.class)
                 .build();
+    }
+
+    /**
+     * Add the parameters every build and probe method takes before its spec's own: the row sequence, if the hasher
+     * includes it, and the key chunks.
+     */
+    private static void addChunkParameters(HasherConfig<?> hasherConfig, MethodSpec.Builder methodBuilder) {
+        if (hasherConfig.includeRowSequence) {
+            methodBuilder.addParameter(RowSequence.class, "rowSequence");
+        }
+        methodBuilder.addParameter(Chunk[].class, "sourceKeyChunks");
     }
 
     private static void doBuildSearch(HasherConfig<?> hasherConfig, HasherConfig.BuildSpec buildSpec,
@@ -1324,6 +1343,7 @@ public class TypedHasherFactory {
         }
 
         if (ps.requiresRowKeyChunk) {
+            Assert.eqTrue(hasherConfig.includeRowSequence, "hasherConfig.includeRowSequence");
             builder.addStatement("final $T rowKeyChunk = rowSequence.asRowKeyChunk()",
                     ParameterizedTypeName.get(LongChunk.class, OrderedRowKeys.class));
         }
@@ -1340,9 +1360,8 @@ public class TypedHasherFactory {
 
         builder.endControlFlow();
 
-        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(ps.name)
-                .addParameter(RowSequence.class, "rowSequence")
-                .addParameter(Chunk[].class, "sourceKeyChunks");
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(ps.name);
+        addChunkParameters(hasherConfig, methodBuilder);
 
         for (final ParameterSpec param : ps.params) {
             methodBuilder.addParameter(param);
