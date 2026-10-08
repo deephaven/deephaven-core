@@ -203,6 +203,9 @@ The included modules supply the server:
 | `ClientChannelFactoryModule`       | Outgoing connections from this server to other Deephaven servers. It requires the `@UserAgent` string.     |
 | `SslConfigModule`                  | The TLS configuration for those outgoing connections.                                                      |
 
+> [!WARNING]
+> `CommunityAuthorizationModule` binds `CommunityAuthorizationProvider`, which installs "allow all" authorization wiring for every service it covers: consoles, tables, input tables, storage, partitioned and hierarchical tables, applications, and more. Authentication alone only controls who can connect; with this module included, every authenticated user can do everything on the server. Deployments that need restricted or least-privilege access must replace `CommunityAuthorizationModule` with their own `AuthorizationProvider` binding, as described below, rather than relying on authentication alone to restrict access.
+
 To change a part of the server, replace the module that provides it. For example, the `jetty-app-custom` example leaves out `CommunityAuthorizationModule` and binds its own `AuthorizationProvider`, which disables the input table service. Don't include both: Dagger rejects two bindings for the same type.
 
 To add an optional integration that registers its own services, such as Flight SQL, add its module to the `@Module(includes = {...})` list. For example, include `io.deephaven.server.flightsql.FlightSqlModule` from `deephaven-extensions-flight-sql` to enable Flight SQL, or `io.deephaven.server.console.NoConsoleSessionModule` from the `deephaven-server` artifact to support `-Ddeephaven.console.type=none`, since `CommunityDefaultsModule` only registers the Python and Groovy console bindings.
