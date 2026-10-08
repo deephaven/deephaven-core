@@ -1312,4 +1312,20 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(filtered.getAttribute(Table.SORTABLE_COLUMNS_ATTRIBUTE), "sortable columns", "partition");
         Assert.eqFalse(filtered.hasAttribute(Table.MERGED_TABLE_ATTRIBUTE), "has merged attribute");
     }
+
+    @Test
+    public void testCopyKeepsReplacedColumnSourceManagerAttribute() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final Table source = partitionedSource(locationProvider(tds, "A", "B"), "csmAttributes");
+        final String csmAttribute = source.hasAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE)
+                ? Table.APPEND_ONLY_TABLE_ATTRIBUTE
+                : Table.ADD_ONLY_TABLE_ATTRIBUTE;
+        Assert.equals(source.getAttribute(csmAttribute), "source " + csmAttribute, Boolean.TRUE);
+
+        final Table replaced = source.withAttributes(Map.of(csmAttribute, Boolean.FALSE));
+        Assert.equals(replaced.getAttribute(csmAttribute), "replaced " + csmAttribute, Boolean.FALSE);
+        final Table copied = replaced.withAttributes(Map.of("Other", "o"));
+        Assert.equals(copied.getAttribute(csmAttribute), "copied " + csmAttribute, Boolean.FALSE);
+        Assert.equals(copied.getAttribute("Other"), "copied Other", "o");
+    }
 }

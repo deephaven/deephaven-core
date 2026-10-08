@@ -137,10 +137,15 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
 
         setRefreshing(isRefreshing);
-        // Given the location provider's update modes, retrieve and set applicable table attributes from the CSM
+        // Given the location provider's update modes, retrieve and set applicable table attributes from the CSM. The
+        // supplied attributes take precedence, so that a copy keeps the values of the table it was copied from.
         columnSourceManager.getTableAttributes(
                 locationProvider.getUpdateMode(),
-                locationProvider.getLocationUpdateMode()).forEach(this::setAttribute);
+                locationProvider.getLocationUpdateMode()).forEach((ak, av) -> {
+                    if (attributes == null || !attributes.containsKey(ak)) {
+                        setAttribute(ak, av);
+                    }
+                });
     }
 
     /**
