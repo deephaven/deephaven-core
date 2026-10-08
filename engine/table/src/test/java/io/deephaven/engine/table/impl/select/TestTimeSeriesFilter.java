@@ -525,5 +525,22 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             timeSeriesFilter.runForUnitTests();
         });
         assertEquals(18, filtered.size());
+
+        // Every row is already outside the window, and the source is static, so once the filter has seen the source
+        // it knows nothing will ever change.
+        final TestClock lateClock = new TestClock().setNanos(start + 120 * DateTimeUtils.MINUTE);
+        final TimeSeriesFilter staticTimeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(lateClock).invert(true)
+                        .build();
+        final WhereFilter staticComposed =
+                ConjunctiveFilter.of(staticTimeSeriesFilter, WhereFilterFactory.getExpression("Sentinel % 2 == 0"));
+        assertTrue(staticTimeSeriesFilter.isRefreshing());
+        assertTrue(staticComposed.isRefreshing());
+
+        final Table staticFiltered = source.where(staticComposed);
+        assertFalse(staticFiltered.isRefreshing());
+        assertEquals(30, staticFiltered.size());
+        assertFalse(staticTimeSeriesFilter.isRefreshing());
+        assertFalse(staticComposed.isRefreshing());
     }
 }
