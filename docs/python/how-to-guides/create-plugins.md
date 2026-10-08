@@ -419,7 +419,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "example_plugin_client"
 version = "0.0.1"
-dependencies = ["pydeephaven>=0.37.0", "pandas"]
+dependencies = ["pydeephaven>=0.39.1", "pandas"]
 ```
 
 > [!NOTE]
