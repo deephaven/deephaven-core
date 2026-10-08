@@ -27,7 +27,7 @@ The following table shows the mapping between Java primitive types, Java primiti
 | `long`              | 8 bytes                  | `int`       | `np.int_`   |
 | `float`             | 4 bytes                  | N/A         | `np.single` |
 | `double`            | 8 bytes                  | `float`     | `np.double` |
-| `char`              | 2 bytes                  | N/A         | N/A         |
+| `char`              | 2 bytes                  | N/A         | `np.uint16` |
 
 ### Object types
 
@@ -42,7 +42,7 @@ The following table shows a mapping between some of the most commonly used Java 
 | [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html)   | [`str`](https://docs.python.org/3/library/stdtypes.html#text-sequence-type-str)          | [`np.str_`](https://numpy.org/devdocs/reference/arrays.scalars.html#numpy.str_)                |
 | [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) | [`datetime.datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime) | [`np.datetime64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.datetime64) |
 | [Array](https://docs.oracle.com/javase/specs/jls/se7/html/jls-10.html)                                     | [`Sequence`](https://docs.python.org/3/glossary.html#term-sequence)                      | [`np.ndarray`](https://numpy.org/devdocs/reference/arrays.html)                                |
-| [`java.lang.Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html)   | [`Object`](https://docs.python.org/3/glossary.html#term-object)                          | [`np.object_`](https://numpy.org/doc/stable/reference/arrays.dtypes.html)                      |
+| [`java.lang.Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html)   | [`object`](https://docs.python.org/3/glossary.html#term-object)                          | [`np.object_`](https://numpy.org/doc/stable/reference/arrays.dtypes.html)                      |
 
 ### Array types
 

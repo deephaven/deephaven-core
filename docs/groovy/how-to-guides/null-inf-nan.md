@@ -145,17 +145,20 @@ source = emptyTable(10).update(
 
 ### Remove values
 
-[Built-in methods](./built-in-functions.md) can also be used to [filter](./use-filters.md) out null and NaN values. There is no built-in method specifically to remove infinity values.
+[Built-in methods](./built-in-functions.md) can also be used to [filter](./use-filters.md) out null, NaN, and infinite values. Use [`isInf`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isInf(double)) to filter out infinite values, or [`isFinite`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isFinite(double)) to remove null, NaN, and infinite values from a column with a single check.
 
-```groovy order=source,resultNoNulls,resultNoNans,resultNoNullsNans
+```groovy order=source,resultNoNulls,resultNoNans,resultNoNullsNans,resultNoInfs,resultFinite
 source = emptyTable(10).update(
     "HasNulls = (ii % 3 == 0) ? NULL_DOUBLE : randomDouble(0, 1)",
     "HasNaNs = (ii % 4 == 2) ? NAN_DOUBLE : randomDouble(5, 10)",
+    "HasInfs = (ii % 5 == 4) ? POS_INFINITY_DOUBLE : randomDouble(10, 15)",
 )
 
 resultNoNulls = source.where("!isNull(HasNulls)")
 resultNoNans = source.where("!isNaN(HasNaNs)")
 resultNoNullsNans = source.where("!isNull(HasNulls)", "!isNaN(HasNaNs)")
+resultNoInfs = source.where("!isInf(HasInfs)")
+resultFinite = source.where("isFinite(HasNulls)", "isFinite(HasNaNs)", "isFinite(HasInfs)")
 ```
 
 ### User-defined functions

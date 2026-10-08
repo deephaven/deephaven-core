@@ -38,14 +38,14 @@ Deephaven supports many of the data types found in [java.time](https://docs.orac
 
 ### Instant
 
-A [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) is a moment in time with nanosecond precision. It is represented as a string in [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601#) format, which includes the date and time, plus an optional time zone string.
+A [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) is a moment in time with nanosecond precision. It is a date and time followed by a required time zone, such as `2023-10-01T09:30:00Z` or `2025-01-23T15:21:48 ET`. Write `Z` or an [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601#) offset such as `-05:00` directly after the time. Write a time zone name or alias, such as `ET` or `America/New_York`, after a space.
 
-In the UI, date-times are displayed in the local time zone. You can specify a desired time zone in the date-time literal itself. The following example creates two columns using instant literals with different time zone suffixes:
+In the UI, date-times are displayed in the time zone selected in the [**Settings** menu](./set-date-time-format.md), regardless of the time zone written in the literal. The following example creates two columns using instant literals with different time zones:
 
 ```groovy order=source,sourceMeta
 source = emptyTable(1).update(
     "InstantLiteral_UTC = '2023-10-01T09:30:00Z'",  // UTC (GMT+0)
-    "InstantLiteral_NYC = '2025-01-23T15:21:48 ET'",  // Eastern Time (GMT-5 or GMT-6 depending on DST)
+    "InstantLiteral_NYC = '2025-01-23T15:21:48 ET'",  // Eastern Time (GMT-5, or GMT-4 during DST)
 )
 sourceMeta = source.meta()
 ```

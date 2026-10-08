@@ -11,8 +11,6 @@ t2 = t.update(["Y = a * X"])
 
 This guide will walk you through Python's scoping rules and the process for adding variables and using functions in Python query strings. There are many reasons to use variables: more understandable code, better reusability, and in some cases, improved efficiency.
 
-If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../how-to-guides/query-scope.md).
-
 > [!NOTE]
 > Variable names and function names are case-sensitive.
 
