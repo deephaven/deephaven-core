@@ -231,7 +231,7 @@ println now()
 
 This prints the current time as an ISO-8601 string in UTC, such as `2021-09-09T15:58:41.041Z`. The format consists of the following fields:
 
-`yyyy-MM-ddTHH:mm:ss.fffZ`
+`yyyy-MM-ddTHH:mm:ss[.fff]Z`
 
 - `yyyy` - the year
 - `MM` - the month
@@ -240,7 +240,7 @@ This prints the current time as an ISO-8601 string in UTC, such as `2021-09-09T1
 - `HH` - the hour of the day, from 00 to 23
 - `mm` - the minute of the hour
 - `ss` - the second of the minute
-- `fff` - the fraction of a second, printed with 3, 6, or 9 digits as needed, or omitted when it is zero
+- `[.fff]` - the optional fraction of a second, printed with 3, 6, or 9 digits as needed, or omitted when it is zero
 - `Z` - the time zone indicator for UTC
 
 Instants always print in UTC. To show a value in a specific time zone, use [`formatDateTime`](../reference/time/datetime/formatDateTime.md).
@@ -259,7 +259,7 @@ println timeDiff
 
 ### Periods and Durations
 
-Periods and durations represent spans of time that can be either positive or negative. A period is a date-based amount of time (years, months, weeks, and days) — the spans you count on a calendar. A duration is a time-based amount of time (days of exactly 24 hours, hours, minutes, seconds, and fractions of a second down to the nanosecond) — the spans you count on a clock. Deephaven uses Java's [`Period`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html) and [`Duration`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html) classes.
+Periods and durations represent spans of time that can be either positive or negative. A period is a date-based amount of time, measured in years, months, and days. Periods are the spans you count on a calendar. A duration is a time-based amount of time, measured in hours, minutes, seconds, and fractions of a second down to the nanosecond. Durations are the spans you count on a clock, and a day in a duration is always exactly 24 hours. Deephaven uses Java's [`Period`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html) and [`Duration`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html) classes.
 
 Durations are prefixed by a `PT`, whereas Periods are prefixed by the letter `P`.
 

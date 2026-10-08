@@ -28,7 +28,7 @@ result = source.snapshotWhen(trigger, options)
 
 ## Include a history
 
-In this example, there are two input tables. The `source` table is built from a time table that adds a row for every 0.1-second interval. A time table checks for new rows once per update graph cycle (one second by default) and adds one row for each interval that has elapsed since the last check. A check can add no rows or several, so this time table usually adds about 10 rows at once rather than one row every 0.1 seconds. The `trigger` table is a time table with a two-second period, and each row it adds triggers a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
+In this example, there are two input tables. The `source` table is built from a time table that adds a row for every 0.1-second interval. A time table checks for new rows once per update graph cycle, which is one second by default. Each check adds one row for every interval that has elapsed since the previous check, so this time table usually adds about 10 rows at once rather than one row every 0.1 seconds. The `trigger` table is a time table with a two-second period, and each row it adds triggers a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
 
 ```groovy ticking-table order=null
 import io.deephaven.api.snapshot.SnapshotWhenOptions
