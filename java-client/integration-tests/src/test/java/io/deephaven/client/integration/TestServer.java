@@ -19,7 +19,7 @@ final class TestServer {
 
     static DeephavenTarget target() {
         return DeephavenTarget.builder()
-                .host("localhost")
+                .host(ExampleRunner.requireProperty("dh.host"))
                 .port(Integer.parseInt(ExampleRunner.requireProperty("dh.port")))
                 .isSecure(false)
                 .build();

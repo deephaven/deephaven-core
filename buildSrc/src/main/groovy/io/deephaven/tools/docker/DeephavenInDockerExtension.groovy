@@ -49,6 +49,8 @@ public abstract class DeephavenInDockerExtension {
 
     abstract MapProperty<String, String> getEnvVars();
 
+    abstract Property<String> getHost();
+
     /**
      * Makes the exposed port available to other docker tasks. Rather than hardcode a particular
      * port, docker will select one (allowing for multiple parallel running instances), and expose
@@ -115,7 +117,9 @@ public abstract class DeephavenInDockerExtension {
             task.containerId.set containerName.get()
             task.onNext { Object obj ->
                 def inspect = (InspectContainerResponse) obj
-                getPort().set(Integer.parseInt(inspect.getNetworkSettings().ports.bindings.values().first()[0].hostPortSpec))
+                def firstBinding = inspect.getNetworkSettings().ports.bindings.values().first()[0]
+                getHost().set(firstBinding.hostIp)
+                getPort().set(Integer.parseInt(firstBinding.hostPortSpec))
             }
         }
 

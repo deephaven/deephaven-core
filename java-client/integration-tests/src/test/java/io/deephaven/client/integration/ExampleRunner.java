@@ -70,7 +70,7 @@ final class ExampleRunner {
 
     /** The server target accepted by every example's {@code --target} option. */
     static String target() {
-        return "dh+plain://localhost:" + requireProperty("dh.port");
+        return "dh+plain://%s:%s".formatted(requireProperty("dh.host"), requireProperty("dh.port"));
     }
 
     static String requireProperty(String name) {

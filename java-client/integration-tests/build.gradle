@@ -104,6 +104,7 @@ test {
     finalizedBy deephavenDocker.endTask
     doFirst {
         // The host port is only known once the container is up
+        systemProperty 'dh.host', deephavenDocker.host.get()
         systemProperty 'dh.port', deephavenDocker.port.get()
         configurations.examples.files.each { File install ->
             systemProperty "dh.examples.${install.name}.bin", new File(install, 'bin').absolutePath
