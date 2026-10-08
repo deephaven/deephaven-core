@@ -45,7 +45,7 @@ source = emptyTable(100).update("X = 0.1 * ii", "Y = sine(X)")
 ```
 
 > [!TIP]
-> Declare the expected argument types when defining a closure that will be called from the query language. This documents the input the closure expects. For instance, the `sine` closure above declares its argument as `Double X` rather than just `X`.
+> Declare the expected argument types when defining a closure that query strings call. This documents the input the closure expects. For instance, the `sine` closure above declares its argument as `Double X` rather than just `X`.
 
 > [!NOTE]
 > Closures used in query strings should perform null checks on their arguments, e.g., with `isNull`. If null values are not handled, closures may yield undesirable results when nulls are encountered.
