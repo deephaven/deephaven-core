@@ -22,7 +22,7 @@ In this case, the breakpoint will not be reached, because [`update_view`](../../
 
 ## Ticking tables and the main thread
 
-Ticking Deephaven tables are updated on Deephaven's own update threads, not on your script's main thread. Deephaven registers those threads with the debugger. However, when your script starts the server itself, as in the [pip-installed setup](./pip-setup.md) with `deephaven_server.Server`, the Python process exits when the script reaches its last line. That stops the server before any updates run. This is particularly relevant with user-defined functions:
+Ticking Deephaven tables are updated on Deephaven's own update threads, not on your script's main thread. Deephaven registers those threads with the debugger. However, when your script starts the server itself, as in the [pip-installed setup](./pip-setup.md) with `deephaven_server.Server`, the Python process exits when the script reaches its last line, and that stops the server. If the script ends before an update reaches your code, that code never runs. This is particularly relevant with user-defined functions:
 
 ![img](../../assets/how-to/debugging/prob-3.png)
 

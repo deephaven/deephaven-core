@@ -239,7 +239,7 @@ This compiled code:
 - Can be vectorized by the CPU.
 - Runs at native speed.
 
-A formula whose entire right-hand side is the name of an existing column, such as `Y = X`, skips parsing and code generation: Deephaven treats it as a column reference and compiles no code. Any other expression, even one that uses only that column, such as `Y = X * 2`, is compiled.
+A formula whose entire right-hand side is the name of an existing column, such as `Y = X`, skips formula parsing and code generation: Deephaven recognizes it as a column reference and compiles no code. Any other expression, even one that uses only that column, such as `Y = X * 2`, is compiled.
 
 ## Real-time processing: The killer feature
 
