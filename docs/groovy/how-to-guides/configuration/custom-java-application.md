@@ -346,6 +346,9 @@ When the server is ready, the log shows `Server started on port 10000`. By defau
 Connect automatically to Web UI with http://localhost:10000/?psk=<key>
 ```
 
+> [!WARNING]
+> The pre-shared key is a superuser credential: anyone who presents it is authenticated as a superuser. The log line above, including the key and the clickable URL, goes to both stdout and the log buffer that the web UI's **Log** panel reads from (see [Configure logging](#configure-logging)). Restrict access to these logs, whether on disk, in a collection system, or in the running server's own UI, to avoid leaking superuser access.
+
 Open that URL to use the web UI. The Groovy console works as it does in any Deephaven server, and the **Panels** menu lists the `ticking` and `staticTable` fields from `MyApplication`.
 
 ## Configure the server
