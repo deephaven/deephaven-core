@@ -12,7 +12,7 @@ A packaged project can work with a Deephaven server in one of two ways:
 
 The packaging tooling is the same for both. What differs is the dependency you declare and, for the embedded server, the order in which modules are imported. This guide shows a library package and a command-line package for each model.
 
-The code in this guide is condensed from the [deephaven-python-packaging](https://github.com/deephaven-examples/deephaven-python-packaging) repository, which contains complete, runnable versions of each package along with sample data and a README for each. The repository versions add input validation and error handling, and their commands use [Click](https://click.palletsprojects.com/) rather than `argparse`, so they list `click` as a dependency. Clone it to try the examples or to use one as a starting point:
+The code in this guide is condensed from the [deephaven-python-packaging](https://github.com/deephaven-examples/deephaven-python-packaging) repository, which contains complete, runnable versions of each package along with sample data and a README for each. The repository versions add input validation and error handling; the snippets here leave those out to stay focused on packaging. Clone it to try the examples or to use one as a starting point:
 
 ```bash
 git clone https://github.com/deephaven-examples/deephaven-python-packaging.git
@@ -37,11 +37,13 @@ my_project/
 
 ## Package code for an embedded server
 
-Use `deephaven-server` when the Python program needs to start a Deephaven server itself. This is the right fit for a self-contained tool, a batch job, or a script that should run without any other infrastructure in place. Two constraints follow from running the server in-process. The server and the code that uses `deephaven` must run in the same Python process, and `deephaven` cannot be imported until that server has started. Both constraints shape how embedded-server packages are written, and the examples below call out where they matter.
+Use `deephaven-server` when the Python program needs to start a Deephaven server itself. This is the right fit for a self-contained tool, a batch job, or a script that should run without any other infrastructure in place.
+
+One rule shapes every embedded-server package: **`deephaven` cannot be imported until a server has started in the same process.** The `deephaven` module binds to a running JVM at import time, so an import that happens too early fails. In practice this means that a library's modules can import `deephaven` freely, because they are only imported after the calling program has started a server, but a package that defines commands must keep `deephaven` out of module scope in `__init__.py` and in the command modules themselves, and import it inside the function that runs after `server.start()`. The examples below show both cases.
 
 ### Embedded-server library
 
-A library package provides functions for another program to import. It does not start a server itself; the importing program must start one before importing any module that depends on `deephaven`. This keeps the library flexible, because the calling program decides how the server is configured, which port it uses, and how much memory the JVM gets. The full example is [`my_dh_library`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_library) in the example repository.
+A library package provides functions for another program to import. It does not start a server itself; that is the calling program's job, which keeps the library flexible, because the caller decides how the server is configured, which port it uses, and how much memory the JVM gets. The full example is [`my_dh_library`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_library) in the example repository.
 
 Declare `deephaven-server` as a dependency. It supplies the `deephaven` module through its `deephaven-core` dependency, so the library does not need to list `deephaven-core` separately. The following configuration uses setuptools and its [automatic package discovery](https://setuptools.pypa.io/en/latest/userguide/package_discovery.html) to find the import package under `src/`:
 
@@ -66,7 +68,7 @@ where = ["src"]
 
 Set the Python version and dependency constraints to versions you test and support. A lower bound such as `deephaven-server>=0.35` declares compatibility; it does not lock the environment to a repeatable set of versions. If you need that, use a lock file or a pinned requirements file alongside the package. The syntax for these constraints is defined by the [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) and [version specifiers](https://packaging.python.org/en/latest/specifications/version-specifiers/) specifications.
 
-The library's modules can import `deephaven` at the top level, as any other Deephaven script would. For example, `src/my_dh_library/queries.py` might contain:
+Because a library is only imported after the caller has started a server, its modules can import `deephaven` at the top level. For example, `src/my_dh_library/queries.py` might contain:
 
 ```python skip-test
 from deephaven.table import Table
@@ -77,7 +79,7 @@ def filter_by_threshold(table: Table, column: str, threshold: float) -> Table:
     return table.where([f"{column} > {threshold}"])
 ```
 
-A program that uses the library is responsible for starting the server first. Only after `server.start()` returns is it safe to import the library, because that import pulls in `deephaven`:
+The calling program starts the server, then imports the library:
 
 ```python skip-test
 from deephaven_server import Server
@@ -94,7 +96,7 @@ high_scores = filter_by_threshold(scores, "Score", 75.0)
 
 ### Embedded-server command
 
-A command-line program that uses the embedded server is a complete, standalone application: when a user runs it, it starts a server, does its work, and exits. Because the command owns the process, it is also responsible for the import ordering described above. It must start the server before importing the `deephaven` API. The full example is [`my_dh_cli`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_cli) in the example repository. Here is a minimal package layout:
+A command-line program that uses the embedded server is a complete, standalone application: when a user runs it, it starts a server, does its work, and exits. The full example is [`my_dh_cli`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_cli) in the example repository. Here is a minimal package layout:
 
 ```
 my_dh_cli/
@@ -106,7 +108,7 @@ my_dh_cli/
 └── pyproject.toml
 ```
 
-The package metadata declares both the runtime dependency and the installed command. The `[project.scripts]` table defines a [console script entry point](https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts); `pip` generates an executable with the given name when the package is installed. The entry point must name a callable that exists in the package:
+The package metadata declares the runtime dependencies and the installed command. The examples use [Click](https://click.palletsprojects.com/) for argument parsing, so it is listed alongside `deephaven-server`. The `[project.scripts]` table defines a [console script entry point](https://setuptools.pypa.io/en/latest/userguide/entry_point.html#console-scripts); `pip` generates an executable with the given name when the package is installed. The entry point must name a callable that exists in the package:
 
 ```toml
 [build-system]
@@ -118,7 +120,7 @@ name = "my-dh-cli"
 version = "0.1.0"
 description = "A command-line Deephaven CSV query"
 requires-python = ">=3.9"
-dependencies = ["deephaven-server"]
+dependencies = ["deephaven-server", "click"]
 
 [project.scripts]
 my-dh-query = "my_dh_cli.cli:main"
@@ -127,33 +129,35 @@ my-dh-query = "my_dh_cli.cli:main"
 where = ["src"]
 ```
 
-Keep `__init__.py` empty or limited to imports that do not depend on Deephaven. Python imports the package before it resolves the console-script entry point, so an import of `deephaven` at package or command-module scope would happen before the server starts, and every command in the package would fail at launch. This matters most for a package that provides both a library and commands, because the library's own modules import `deephaven` too. The example repository's [`my_dh_toolkit`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_toolkit) shows that case: its `__init__.py` contains no imports, its commands import the library modules only after starting the server, and Python users import from the submodules (`my_dh_toolkit.queries`) rather than the package.
-
-The same reasoning applies inside `cli.py`. Parse arguments first, start the server, and only then import Deephaven modules. Placing the Deephaven imports inside `main()` rather than at the top of the file is what makes this ordering possible:
+Python imports the package before it resolves the console-script entry point, so `__init__.py` and `cli.py` must not import `deephaven` at module scope; if they did, every command in the package would fail at launch. Keep `__init__.py` empty or limited to imports that do not depend on Deephaven, and in `cli.py` import `Server` and `deephaven` inside `main()`, after argument parsing:
 
 ```python skip-test
-import argparse
-from pathlib import Path
+import click
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("csv_file", type=Path)
-    parser.add_argument("--port", type=int, default=10000)
-    args = parser.parse_args()
-
+@click.command()
+@click.argument("input_file", type=click.Path(exists=True))
+@click.option(
+    "--port", default=10000, show_default=True, help="Port for the embedded server"
+)
+def main(input_file: str, port: int) -> None:
+    """Read a CSV file and add a computed column."""
     from deephaven_server import Server
 
-    server = Server(port=args.port)
+    server = Server(port=port)
     server.start()
 
     from deephaven import read_csv
 
-    table = read_csv(str(args.csv_file))
-    print(table)
+    table = read_csv(input_file)
+    result = table.update(["DoubleScore = Score * 2"])
+    click.echo(f"Processed {result.size} rows")
 ```
 
-The import of `Server` is safe before startup; import the `deephaven` API only after `server.start()`. The process owns the server and JVM for as long as it runs. If you want a command that works against a server you already have running, see [Package a remote Deephaven client](#package-a-remote-deephaven-client) instead.
+`Server` itself can be imported at any time; only `deephaven` has to wait for `server.start()`. The process owns the server and JVM for as long as it runs. If you want a command that works against a server you already have running, see [Package a remote Deephaven client](#package-a-remote-deephaven-client) instead.
+
+> [!NOTE]
+> A package that provides both a library and commands has to be more careful, because the library's own modules import `deephaven`. The repository's [`my_dh_toolkit`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_toolkit) shows that case: its `__init__.py` imports nothing, its commands import the library modules only after starting the server, and Python users import from the submodules (`my_dh_toolkit.queries`) rather than from the package.
 
 Add a [`__main__.py`](https://docs.python.org/3/library/__main__.html#main-py-in-python-packages) if you also want to support `python -m my_dh_cli`. This is useful when the package is installed but its console script is not on the `PATH`, or when you want to be explicit about which Python interpreter runs the command:
 
@@ -171,15 +175,15 @@ my-dh-query data/sample.csv
 python -m my_dh_cli data/sample.csv
 ```
 
-Each process that runs this command starts its own embedded server, which means the command carries JVM startup time and memory cost on every invocation. If another process already uses the selected port, such as a Deephaven server running in Docker, the command fails with `Address already in use`; pass a free port with `--port`. The repository's `my-dh-query` does not take a `--port` option and always uses port 10000, so change the port in its source if you hit this.
+Each process that runs this command starts its own embedded server, which means the command carries JVM startup time and memory cost on every invocation. If another process already uses the selected port, such as a Deephaven server running in Docker, the command fails with `Address already in use`; pass a free port with `--port`.
 
 ## Package a remote Deephaven client
 
 Use `pydeephaven` when the program should connect to a Deephaven server that is already running. This is a regular Python client application: it does not need `deephaven-server`, a local JVM, or a startup step before imports. The server runs elsewhere, so many client processes can connect to it at once, and the client process stays lightweight.
 
-Because the client has no server to start, the import-ordering rule from the embedded-server examples does not apply. `pydeephaven` can be imported at module scope, including in `__init__.py`, and the package can be structured like any other Python project that talks to a network service.
+Because the client has no server to start, the embedded-server import rule does not apply. `pydeephaven` can be imported at module scope, including in `__init__.py`, and the package can be structured like any other Python project that talks to a network service.
 
-The trade-off is that the client API is not the same as the server-side `deephaven` API. Client code works with table handles that refer to tables on the server, and operations on those handles are sent to the server for execution. Most common table operations are available, but code written against `deephaven` does not run unchanged against `pydeephaven`. One difference comes up in the examples below: the server cannot read files from the client's machine, so local data is uploaded as a [pyarrow](https://arrow.apache.org/docs/python/) table. Another shows up in the example repository's client library, where column names come from `table.schema.names` rather than `table.columns`.
+The trade-off is that the client API is not the same as the server-side `deephaven` API. Client code works with table handles that refer to tables on the server, and operations on those handles are sent to the server for execution. Most common table operations are available, but code written against `deephaven` does not run unchanged against `pydeephaven`. One difference comes up in the examples below: the server cannot read files from the client's machine, so local data is uploaded as a [pyarrow](https://arrow.apache.org/docs/python/) table. Others are smaller, such as reading column names from `table.schema.names` rather than `table.columns`.
 
 The examples connect with anonymous authentication. A Deephaven server started with Docker or `pip` uses a [pre-shared key](../authentication/auth-psk.md) by default; either start it with [anonymous authentication](../authentication/auth-anon.md) enabled, or pass the server's key to `Session` as shown in the client command below.
 
@@ -205,7 +209,7 @@ dependencies = ["pydeephaven", "pyarrow"]
 where = ["src"]
 ```
 
-The library's functions take and return client-side [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) handles. The query string in `filter_by_threshold` is the same one the embedded-server library used, but here the operation runs on the server and only the handle is returned to the client. `upload_csv` gets local data onto the server, and `publish` gives a table a name there. The snippet below collects them in one module for brevity; the repository keeps `upload_csv` in `utils.py` and the query functions in `queries.py`:
+The library's functions take and return client-side [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) handles. `src/my_dh_client_library/utils.py` holds `upload_csv`, which gets local data onto the server:
 
 ```python skip-test
 import pyarrow.csv as pacsv
@@ -215,6 +219,12 @@ from pydeephaven import Session, Table
 def upload_csv(session: Session, path: str) -> Table:
     """Read a local CSV file and upload it to the server as a table."""
     return session.import_table(pacsv.read_csv(path))
+```
+
+`src/my_dh_client_library/queries.py` holds the query functions. The query string in `filter_by_threshold` is the same one the embedded-server library used, but here the operation runs on the server and only the handle is returned to the client. `publish` gives a table a name on the server:
+
+```python skip-test
+from pydeephaven import Session, Table
 
 
 def filter_by_threshold(table: Table, column: str, threshold: float) -> Table:
@@ -227,10 +237,11 @@ def publish(session: Session, name: str, table: Table) -> None:
     session.bind_table(name, table)
 ```
 
-Because `__init__.py` has no import-ordering concerns, it can re-export the public functions so that callers import them directly from the package name:
+Because `pydeephaven` can be imported at module scope, `__init__.py` can re-export the public functions so that callers import them directly from the package name:
 
 ```python skip-test
-from my_dh_client_library.queries import filter_by_threshold, publish, upload_csv
+from my_dh_client_library.queries import filter_by_threshold, publish
+from my_dh_client_library.utils import upload_csv
 
 __all__ = ["filter_by_threshold", "publish", "upload_csv"]
 ```
@@ -252,13 +263,14 @@ with Session(host="localhost", port=10000) as session:
 
 ### Client command
 
-A client package can expose a command in the same way as an embedded-server package, but it depends on `pydeephaven` and uses `pydeephaven.Session`. The full example is [`my_dh_client`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_client) in the example repository. The layout below omits `__main__.py` for brevity; add one in the same way as the embedded-server command if you want `python -m my_dh_client` to work. The example's source file is `src/my_dh_client/cli.py`:
+A client package can expose a command in the same way as an embedded-server package, but it depends on `pydeephaven` and uses `pydeephaven.Session`. The full example is [`my_dh_client`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_client) in the example repository. The layout is the same as the embedded-server command's, and `__main__.py` is the same two lines with the package name changed:
 
 ```
 my_dh_client/
 ├── src/
 │   └── my_dh_client/
 │       ├── __init__.py
+│       ├── __main__.py
 │       └── cli.py
 └── pyproject.toml
 ```
@@ -275,7 +287,7 @@ name = "my-dh-client"
 version = "0.1.0"
 description = "A command-line Deephaven client"
 requires-python = ">=3.9"
-dependencies = ["pydeephaven", "pyarrow"]
+dependencies = ["pydeephaven", "pyarrow", "click"]
 
 [project.scripts]
 my-dh-client = "my_dh_client.cli:main"
@@ -284,34 +296,44 @@ my-dh-client = "my_dh_client.cli:main"
 where = ["src"]
 ```
 
-The command below does the same work as the embedded-server command, but on a server it connects to: it uploads a CSV file, adds a column, and binds the result under the file's name. That name must be a valid Python identifier; the repository version adds a `--name` option to override it for files whose names are not. Unlike the embedded-server command, it imports `pydeephaven` at module scope and has no startup step. It uses anonymous authentication by default. For another authentication method, pass its name with `--auth-type`; provide any required token through the `DH_AUTH_TOKEN` environment variable rather than a command-line argument so it does not appear in shell history or process listings.
+The command below does the same work as the embedded-server command, but on a server it connects to: it uploads a CSV file, adds a column, and binds the result under a name. The name defaults to the file's stem and must be a valid Python identifier, so `--name` lets the user choose a different one. Unlike the embedded-server command, it imports `pydeephaven` at module scope and has no startup step. It uses anonymous authentication by default. For another authentication method, pass its name with `--auth-type`; provide any required token through the `DH_AUTH_TOKEN` environment variable rather than a command-line argument so it does not appear in shell history or process listings.
 
 ```python skip-test
-import argparse
 import os
 from pathlib import Path
 
+import click
 import pyarrow.csv as pacsv
 from pydeephaven import Session
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("csv_file", type=Path)
-    parser.add_argument("--host", default="localhost")
-    parser.add_argument("--port", type=int, default=10000)
-    parser.add_argument("--auth-type", default="Anonymous")
-    args = parser.parse_args()
+@click.command()
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "--host", default="localhost", show_default=True, help="Deephaven server host"
+)
+@click.option("--port", default=10000, show_default=True, help="Deephaven server port")
+@click.option(
+    "--auth-type", default="Anonymous", show_default=True, help="Authentication type"
+)
+@click.option(
+    "--name", default=None, help="Name to bind the result under [default: file stem]"
+)
+def main(input_file: str, host: str, port: int, auth_type: str, name: str) -> None:
+    """Upload a CSV file to a running Deephaven server and process it there."""
+    name = name or Path(input_file).stem
 
     with Session(
-        host=args.host,
-        port=args.port,
-        auth_type=args.auth_type,
+        host=host,
+        port=port,
+        auth_type=auth_type,
         auth_token=os.environ.get("DH_AUTH_TOKEN", ""),
     ) as session:
-        table = session.import_table(pacsv.read_csv(str(args.csv_file)))
+        table = session.import_table(pacsv.read_csv(input_file))
         result = table.update(["DoubleScore = Score * 2"])
-        session.bind_table(args.csv_file.stem, result)
+        session.bind_table(name, result)
+
+    click.echo(f"Bound result table '{name}' on {host}:{port}")
 ```
 
 `Session` is a context manager, so the client connection closes when the command finishes. The result table lives on the remote server, not in the client process; its lifetime follows the server's normal session and export rules. Running the command several times does not start additional servers, so there is no port to choose and no risk of an `Address already in use` error. The command starts quickly because there is no JVM to launch, which makes the client model a good fit for small utilities that are run often.
@@ -338,7 +360,7 @@ python -m pip install -e .
 
 To install a project normally from its source directory, use `python -m pip install .`. This copies the package into the environment's `site-packages`, so later source changes are not picked up until you reinstall.
 
-Projects often have dependencies that only some users need, such as plotting libraries or test tooling. Rather than requiring them for everyone, declare them as optional dependency groups in [`[project.optional-dependencies]`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#dependencies-optional-dependencies) in `pyproject.toml`:
+Projects often have dependencies that only some users need, such as plotting libraries or test tooling. Rather than requiring them for everyone, declare them as **extras** in [`[project.optional-dependencies]`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#dependencies-optional-dependencies) in `pyproject.toml`:
 
 ```toml
 [project.optional-dependencies]
@@ -346,12 +368,14 @@ visualization = ["matplotlib>=3.7"]
 dev = ["pytest>=7"]
 ```
 
-Users then request a group by name when installing. Quote the requirement so shells such as zsh do not treat the square brackets as filename patterns:
+Users then request extras by name in square brackets after the project. When installing from the source directory, the project is `.`, with or without `-e`. Quote the requirement so shells such as zsh do not treat the square brackets as filename patterns:
 
 ```bash
-python -m pip install "my-dh-library[visualization]"
-python -m pip install "my-dh-library[visualization,dev]"
+python -m pip install ".[visualization]"
+python -m pip install -e ".[visualization,dev]"
 ```
+
+The same syntax works for a published project, for example `python -m pip install "my-dh-library[visualization]"`, in which case `pip` resolves the distribution from its configured package index rather than the local directory.
 
 To distribute the project, use [`build`](https://build.pypa.io/en/stable/) to produce a wheel and source distribution from the project directory. The first command installs `build` itself; the second runs it:
 
