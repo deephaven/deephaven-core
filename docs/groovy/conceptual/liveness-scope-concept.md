@@ -22,7 +22,7 @@ When a table is live in Deephaven, the update propagation graph accumulates pare
 
 Before we demonstrate liveness scopes in action, let's demonstrate the problem that liveness scopes solve.
 
-This query creates a simple tree table grouped by `Instrument`. Two tables remain in the console: `crypto` and `comboTree`.
+This query creates a simple tree table grouped by Sym. Two tables will open: `crypto` and `data`.
 
 ```groovy order=null
 import static io.deephaven.csv.CsvTools.readCsv
@@ -89,17 +89,14 @@ LivenessScopeStack.push(scope)
 
 // Your query here
 
-// Remove the scope from the stack. This does not release anything the scope manages.
+// Release the scope from the stack. This will release the scope's references to the Liveness Referents it manages.
 LivenessScopeStack.pop(scope)
-
-// Release the query artifacts the scope manages.
-scope.release()
 ```
 
 > [!NOTE]
 > This example is intended to illustrate how the LivenessScopeStack manages LivenessScopes. In practice, you should use try-with-resources blocks to manage scopes.
 
-In the example above, we first import the `liveness` package, and then create a new [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html). Next, we push the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) onto the [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html). This automatically opens the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html), and it will manage any query artifacts created when the scope is open. After we have run our query (or queries) in the console, we use `LivenessScopeStack.pop(scope)` to remove the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) from the stack, then call `scope.release()` to release the query artifacts it manages.
+In the example above, we first import the `liveness` package, and then create a new [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html). Next, we push the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) onto the [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html). This automatically opens the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html), and it will manage any query artifacts created when the scope is open. After we have run our query (or queries) in the console, we use `LivenessScopeStack.pop(scope)` to remove the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) from the stack, making the query artifacts it was managing eligible for garbage collection.
 
 You can also enclose a scope in a try-with-resources block using the `LivenessScopeStack.open(LivenessScope, boolean)` method. Setting the second parameter to `true` will automatically release the scope when the block is exited.
 

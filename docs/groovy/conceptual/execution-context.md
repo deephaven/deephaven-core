@@ -146,9 +146,7 @@ For most applications where a single user runs Deephaven, the systemic execution
 
 ### Multiple execution contexts
 
-The previous examples in this guide have only shown the use of the systemic execution context. You can create additional execution contexts with [`makeExecutionContext`](https://deephaven.io/core/javadoc/io/deephaven/engine/context/ExecutionContext.html#makeExecutionContext(boolean)) or the [`ExecutionContext` builder](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html). `ExecutionContext.makeExecutionContext(false)` returns a non-systemic execution context that shares the current query scope, query library, query compiler, and update graph. To isolate variables, use the builder's `captureQueryScopeVars` method (shown below). To isolate the update graph, [create an execution context from scratch](#creating-execution-contexts-from-scratch).
-
-The following code block writes to a [table publisher](../reference/table-operations/create/TablePublisher.md) in the systemic execution context, then uses a user execution context to perform a [partitioned table transform](../how-to-guides/partitioned-tables.md#transform):
+The previous examples in this guide have only shown the use of the systemic execution context. In applications where it's beneficial or even necessary to isolate workflows from one another, multiple execution contexts can be created. Any execution context outside the systemic one must be created with [`makeExecutionContext`](https://deephaven.io/core/javadoc/io/deephaven/engine/context/ExecutionContext.html#makeExecutionContext(boolean)). The following code block writes to a [table publisher](../reference/table-operations/create/TablePublisher.md) in the systemic execution context, then uses a separate user execution context to perform a [partitioned table transform](../how-to-guides/partitioned-tables.md#transform):
 
 ```groovy skip-test
 import io.deephaven.engine.context.ExecutionContext
@@ -188,7 +186,7 @@ thread = Thread.start(addTables)
 
 userCtx = ExecutionContext.makeExecutionContext(false)
 
-maxDate = { t ->
+maxDate = { ->
     try (SafeCloseable ignored = userCtx.open()) {
         return t.updateBy(cumMax("MaxTimestamp=Timestamp"))
             .updateView("Date=formatDate(MaxTimestamp, timeZone(`PT`))")
@@ -201,7 +199,7 @@ myPartitionedTable = consumeToPartitionedTable(
 ).transform(maxDate)
 ```
 
-To give the new execution context its own query scope that holds only selected variables from the current one, build it with `captureQueryScopeVars`. For instance, this query captures the variables `value1`, `value2`, and `value3` in the new execution context:
+When instantiating a new execution context, you may also initialize its new query scope with values from the current execution context. To do so, you'll need to use the [`ExecutionContext` builder](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html). For instance, this query captures the variables `value1`, `value2`, and `value3` in the new execution context:
 
 ```groovy skip-test
 import io.deephaven.engine.context.ExecutionContext
