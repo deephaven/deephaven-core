@@ -55,7 +55,7 @@ grades = parquet.read(
 
 Deephaven supports reading partitioned Parquet directories. A partitioned Parquet directory organizes data into subdirectories based on one or more partition columns. This structure allows for more efficient data querying by pruning irrelevant partitions, leading to faster read times than a single Parquet file. Parquet data can be read into Deephaven tables from a _flat_ partitioned directory or a _key-value_ partitioned directory. Deephaven can also use Parquet metadata files, which boosts performance significantly.
 
-When a partitioned Parquet directory is read into a Deephaven table, Deephaven represents the ingested data as a [partitioned table](/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable). Deephaven's partitioned tables are efficient representations of partitioned datasets and provide many useful methods for working with such data. See the [guide on partitioned tables](../../how-to-guides/partitioned-tables.md) for more information.
+When a partitioned Parquet directory is read, Deephaven returns a single table that contains the data from every file. For a key-value partitioned directory, each partitioning key becomes a column. To work with each partition as a separate table, call [`partition_by`](../../reference/table-operations/group-and-aggregate/partitionBy.md) on the result. See the [guide on partitioned tables](../../how-to-guides/partitioned-tables.md) for more information.
 
 ## Read a key-value partitioned Parquet directory
 
@@ -63,7 +63,7 @@ Key-value partitioned Parquet directories extend partitioning by organizing data
 
 ### From local storage
 
-Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a key-value partitioned Parquet directory into a Deephaven partitioned table. The directory structure may be automatically inferred by [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read). Alternatively, provide the appropriate directory structure to the `file_layout` argument using [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED). Providing this argument will boost performance, as no computation is required to infer the directory layout.
+Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a key-value partitioned Parquet directory into a Deephaven table. The directory structure may be automatically inferred by [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read). Alternatively, provide the appropriate directory structure to the `file_layout` argument using [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED). Providing this argument will boost performance, as no computation is required to infer the directory layout.
 
 ```python test-set=3 order=grades_inferred,grades_provided
 from deephaven import parquet
@@ -96,14 +96,17 @@ Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.r
 from deephaven import parquet
 from deephaven.experimental import s3
 
+credentials = s3.Credentials.basic(
+    access_key_id="example_username", secret_access_key="example_password"
+)
+
 # directory layout may be inferred
 grades_inferred = parquet.read(
     path="s3://example-bucket/grades_kv/",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
         endpoint_override="http://minio.example.com:9000",
-        access_key_id="example_username",
-        secret_access_key="example_password",
+        credentials=credentials,
     ),
 )
 
@@ -114,8 +117,7 @@ grades_provided = parquet.read(
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
         endpoint_override="http://minio.example.com:9000",
-        access_key_id="example_username",
-        secret_access_key="example_password",
+        credentials=credentials,
     ),
 )
 ```
@@ -218,7 +220,7 @@ grades_metadata = parquet.read(
 The [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) function takes many optional arguments, many of which were not included in these examples. Here are all of the arguments that [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) accepts:
 
 - `path`: The Parquet file or directory to read. This is typically a string containing a local file path or directory, or an endpoint for an S3 bucket.
-- `col_instructions`: Instructions for customizations while reading particular columns, provided as a [`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction) or a list of [`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction)s. The default is `None`, which means no specialization for any column.
+- `col_instructions`: Instructions for customizations while reading particular columns, provided as a list of [`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction) objects. The default is `None`, which means no specialization for any column.
 - `is_legacy_parquet`: `True` or `False` indicating if the Parquet data is in legacy Parquet format.
 - `is_refreshing`: `True` or `False` indicating if the Parquet data represents a refreshing source.
 - `file_layout`: The Parquet file or directory layout, provided as a [`ParquetFileLayout`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout). Default is `None`, which means the layout is inferred.
@@ -229,25 +231,16 @@ The [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.r
 
 ### Column instructions
 
-The `col_instructions` argument to [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) must be an instance of the [`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction) class. This class maps specific columns in the Parquet data to specific columns in the Deephaven table, as well as specifies the method of compression used for that column.
+The `col_instructions` argument to [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) takes a list of [`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction) objects. Each `ColumnInstruction` maps a column in the Parquet data to a column in the Deephaven table.
 
 [`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction) has the following arguments:
 
 - `column_name`: The column name in the Deephaven table to apply these instructions.
 - `parquet_column_name`: The name of the corresponding column in the Parquet dataset.
-- `codec_name`: The name of the [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-hadoop/1.8.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use.
-- `codec_args`: An implementation-specific string that maps types to/from bytes. It is typically used in cases where there is no obvious language-agnostic representation in Parquet.
+- `codec_name`: The fully qualified name of an `ObjectCodec` class that serializes the column's values to and from bytes, for types with no language-agnostic Parquet representation (for example, `io.deephaven.util.codec.LocalDateCodec`). This is not a compression codec.
+- `codec_args`: An implementation-specific argument string passed to the codec named by `codec_name`.
 - `use_dictionary`: `True` or `False` indicating whether or not to use [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for string columns.
-
-Of particular interest is the `codec_name` argument. This defines the particular type of compression used for the given column and can have significant implications for the speed of reading data. The options are:
-
-- `SNAPPY`: (default) Aims for high speed and a reasonable amount of compression. Based on [Google](https://github.com/google/snappy/blob/main/format_description.txt)'s Snappy compression format.
-- `UNCOMPRESSED`: The output will not be compressed.
-- `LZ4_RAW`: A codec based on the [LZ4 block format](https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md). Should always be used instead of `LZ4`.
-- `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
-- `GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
-- `ZSTD`: Compression codec with the highest compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-- `LZ4`: **Deprecated** Compression codec loosely based on the [LZ4 compression algorithm](https://github.com/lz4/lz4), but with an additional undocumented framing scheme. The framing is part of the original Hadoop compression library and was historically copied first in parquet-mr, then emulated with mixed results by parquet-cpp. Note that `LZ4` is deprecated; use `LZ4_RAW` instead.
+- `unsigned_long_target`: The Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as, provided as a [`parquet.UnsignedLongTarget`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.UnsignedLongTarget). The default is `None`, which reads such columns as `BigInteger`.
 
 ### Special instructions (S3 only)
 
@@ -256,17 +249,22 @@ The `special_instructions` argument to [`parquet.read`](/core/pydoc/code/deephav
 [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) has the following arguments:
 
 - `region_name`: The region name of the AWS S3 bucket where the Parquet data exists. If not provided, the region name is picked by the AWS SDK from the 'aws.region' system property, the "AWS_REGION" environment variable, the \{user.home}/.aws/credentials, \{user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
-- `credentials` : The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `None`.
-- `endpoint_override`: The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs. The default is `None`
-- `anonymous_access`: `True` or `False` indicating the use of anonymous credentials. The default is `False`.
-- `read_ahead_count`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is `1`.
-- `fragment_size`: The maximum size of each fragment to read in bytes. The default is 5 MB.
+- `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `None`, which uses [`Credentials.resolving`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.resolving).
+- `endpoint_override`: The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs. The default is `None`.
+- `read_ahead_count`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is `32`.
+- `fragment_size`: The maximum size of each fragment to read in bytes. The default is 65536 bytes (64 KiB).
 - `read_timeout`: The amount of time it takes to time out while reading a fragment. The default is 2 seconds.
-- `max_concurrent_requests`: The maximum number of concurrent requests to make to S3. The default is 50.
-- `max_cache_size`: The maximum number of fragments to cache in memory while reading. The default is 32.
+- `write_timeout`: The amount of time it takes to time out while writing a fragment. The default is 2 seconds.
+- `max_concurrent_requests`: The maximum number of concurrent requests to make to S3. The default is 256.
 - `connection_timeout`: Time to wait for a successful S3 connection before timing out. The default is 2 seconds.
-- `access_key_id`: The access key for reading files. If set, `secret_access_key` must also be set.
-- `secret_access_key`: The secret access key for reading files.
+- `write_part_size`: The part size when writing to S3. The default is 10 MiB.
+- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently when writing to S3. The default is 64. This value cannot exceed `max_concurrent_requests`.
+- `profile_name`: The AWS profile name used to configure the default region, credentials, and so on.
+- `config_file_path`: The path to the AWS configuration file.
+- `credentials_file_path`: The path to the AWS credentials file.
+- `access_key_id`: **Deprecated.** The access key for reading files. Use `credentials=Credentials.basic(access_key_id, secret_access_key)` instead.
+- `secret_access_key`: **Deprecated.** The secret access key for reading files. Use `credentials=Credentials.basic(access_key_id, secret_access_key)` instead.
+- `anonymous_access`: **Deprecated.** `True` or `False` indicating the use of anonymous credentials. The default is `False`. Use `credentials=Credentials.anonymous()` instead.
 
 ## Related documentation
 

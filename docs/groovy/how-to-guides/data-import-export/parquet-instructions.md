@@ -6,14 +6,14 @@ All of the specific, detailed instructions for reading Parquet files into Deepha
 
 ## ParquetInstructions
 
-A `ParquetInstructions` instance is created using the `ParquetInstructions.builder()` method, which returns a [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) instance. Instructions are specified by calling the builder's methods, and then the `build` method to create the `ParquetInstructions` instance. For example, to specify the layout of the Parquet files as key-value partitioned, use the following code:
+A `ParquetInstructions` instance is created using the `ParquetInstructions.builder()` method, which returns a [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) instance. Instructions are specified by calling the builder's methods, and then the `build` method to create the `ParquetInstructions` instance. For example, to specify that the source is a single Parquet file, use the following code:
 
 ```groovy order=taxi
 import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout
 
-// create ParquetInstructions instance with key-value partitioned layout
+// create ParquetInstructions instance with single-file layout
 instructionsInstance = ParquetInstructions.builder().setFileLayout(ParquetFileLayout.valueOf("SINGLE_FILE")).build()
 
 // pass instructionsInstance to readTable
@@ -32,10 +32,6 @@ The `ParquetInstructions` class has the following methods:
 - `getColumnNameFromParquetColumnName(parquetColumnName)`: Returns the column name in the Deephaven table corresponding to the specified Parquet column name.
 - `getColumnNameFromParquetColumnNameOrDefault(parquetColumnName)`: Returns the column name in the Deephaven table corresponding to the specified Parquet column name, or the Parquet column name if no mapping exists.
 - `getCompressionCodecName`: Returns the compression codec name.
-- `getDefaultCompressionCodecName`: Returns the default compression codec name.
-- `getDefaultMaximumDictionaryKeys`: Returns the default maximum dictionary keys.
-- `getDefaultMaximumDictionarySize`: Returns the default maximum dictionary size.
-- `getDefaultTargetPageSize`: Returns the default target page size.
 - `getFileLayout`: Returns the Parquet file layout.
 - `getIndexColumns`: Returns the index columns.
 - `getMaximumDictionaryKeys`: Returns the maximum dictionary keys.
@@ -49,13 +45,19 @@ The `ParquetInstructions` class has the following methods:
 - `isLegacyParquet`: Returns a boolean indicating whether the Parquet data is in legacy format.
 - `isRefreshing`: Returns a boolean indicating whether the Parquet data represents a refreshing source.
 - `sameColumnNamesAndCodecMappings(i1, i2)`: Returns a boolean indicating whether the two `ParquetInstructions` instances have the same column names and codec mappings.
-- `setDefaultMaximumDictionaryKeys(maximumDictionaryKeys)`: Sets the default maximum dictionary keys.
-- `setDefaultMaximumDictionarySize(maximumDictionarySize)`: Sets the default maximum dictionary size.
-- `setDefaultTargetPageSize(newDefaultSizeBytes)`: Sets the default target page size.
 - `useDictionary(columnName)`: Returns a boolean indicating whether the specified column uses dictionary encoding.
 - `withLayout(fileLayout)`: Returns a new `ParquetInstructions` instance with the supplied `ParquetFileLayout`.
 - `withTableDefinition(tableDefinition)`: Returns a new `ParquetInstructions` instance with the supplied table definition.
 - `withTableDefinitionAndLayout(tableDefinition, fileLayout)`: Returns a new `ParquetInstructions` instance with the supplied table definition and `ParquetFileLayout`.
+
+### `ParquetInstructions` default values
+
+`ParquetInstructions` defines the following default values as constants:
+
+- `DEFAULT_COMPRESSION_CODEC_NAME`: `SNAPPY`.
+- `DEFAULT_MAXIMUM_DICTIONARY_KEYS`: 1048576.
+- `DEFAULT_MAXIMUM_DICTIONARY_SIZE`: 1048576.
+- `DEFAULT_TARGET_PAGE_SIZE`: 65536. Override it with the `Parquet.defaultTargetPageSize` [configuration property](../configuration/configuration-properties.md).
 
 ### `ParquetInstructions.Builder` methods
 
@@ -94,7 +96,7 @@ The `ParquetInstructions.Builder` class has the following methods:
   - [`RowGroupInfo.maxGroups(numRowGroups)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#maxGroups(long)): Splits evenly into a pre-defined number of Row Groups, each of which contains the same number of rows. If the input table size is not evenly divisible but the number of Row Groups requested, then some Row Groups will contain one fewer row.
   - [`RowGroupInfo.byGroups(groups)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#byGroups(java.lang.String...)): Splits each unique group into a Row Group. If the input table does not have all values for the group(s) contiguously, then an exception will be thrown during the `writeTable(...)` call.
   - [`RowGroupInfo.byGroups(maxRows, groups)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#byGroups(long,java.lang.String...)): Splits each unique group into a Row Group. If the input table does not have all values for the group(s) contiguously, then an exception will be thrown during the `writeTable(...)` call. If a given Row Group yields a row count greater than `maxRows`, then it will be split further using the same logic as `RowGroupInfo.maxRows(maxRows)`.
-- `setSpecialInstructions(specialInstructions)`: Special instructions for reading Parquet files, useful when reading files from a non-local S3 server. These instructions are provided as an instance of [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions).
+- `setSpecialInstructions(specialInstructions)`: Special instructions for reading Parquet files, useful when reading files from a non-local S3 server. These instructions are provided as an instance of [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html).
 - `setTableDefinition(tableDefinition)`: Sets the table definition.
 - `setTargetPageSize(targetPageSize)`: Sets the target page size.
 - `setUnsignedLongTarget(columnName, target)`: Sets the Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as. This applies only to reads, and only to columns that carry the `UINT_64` logical type; it is ignored when writing because Deephaven never writes `UINT_64`. Setting two different targets for one column name is not allowed. A table definition supplied with `setTableDefinition` governs the column type instead, and a definition that disagrees with this target is rejected by `build`. The available targets are:
@@ -117,8 +119,8 @@ The `S3Instructions` class has the following methods:
 - `endpointOverride`: The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs. The default is `None`
 - `fragmentSize`: The maximum byte size of each fragment to read from S3. Defaults to 65536; must be larger than 8192.
 - `maxConcurrentRequests`: The maximum number of concurrent requests to make to S3. Defaults to 256.
-- `numConcurrentWriterParts`: The maximum number of parts that can be uploaded concurrently when writing to S3 without blocking.
-- `readAheadCount`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is `1`.
+- `numConcurrentWriteParts`: The maximum number of parts that can be uploaded concurrently when writing to S3 without blocking. Defaults to 64; must be no greater than `maxConcurrentRequests`.
+- `readAheadCount`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is 32.
 - `readTimeout`: The amount of time it takes to time out while reading a fragment. The default is 2 seconds.
 - `regionName`: The region name of the AWS S3 bucket where the Parquet data exists. If this is not set, it is picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the `{user.home}/.aws/credentials` or `{user.home}/.aws/config` files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
 - `writePartSize`: The size of each part (in bytes) to upload when writing to S3. Default is 10485760.
