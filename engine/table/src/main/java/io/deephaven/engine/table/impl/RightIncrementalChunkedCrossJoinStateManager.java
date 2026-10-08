@@ -410,7 +410,10 @@ class RightIncrementalChunkedCrossJoinStateManager
                 final LongChunk<OrderedRowKeys> prevKeys = prevRowKeys.next(chunkRows);
                 for (int ii = 0; ii < rowKeys.size(); ++ii) {
                     final int slot = slots.get(ii);
-                    ensureSlotExists(slot);
+                    if (statuses.get(ii) == KeyIdHasher.ADDED) {
+                        // a new or reused slot starts with no right rows
+                        rightRowSetSource.set(slot, RowSetFactory.empty().toTracking());
+                    }
                     invokeTrackingCallback(trackingCallback, slot, rowKeys.get(ii),
                             prevKeys == null ? RowSequence.NULL_ROW_KEY : prevKeys.get(ii));
                 }
@@ -504,13 +507,6 @@ class RightIncrementalChunkedCrossJoinStateManager
             rightRowSetSource.ensureCapacity(capacity);
             modifiedTrackerCookieSource.ensureCapacity(capacity);
             slotCapacity = capacity;
-        }
-    }
-
-    private void ensureSlotExists(final long slot) {
-        final RowSet rowSet = rightRowSetSource.getUnsafe(slot);
-        if (rowSet == null) {
-            rightRowSetSource.set(slot, RowSetFactory.empty().toTracking());
         }
     }
 
