@@ -1,11 +1,15 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.client.examples;
+package io.deephaven.client.examples.tools;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
+import io.deephaven.client.examples.AuthenticationOptions;
+import io.deephaven.client.examples.BatchOrSerialOptions;
+import io.deephaven.client.examples.ConnectOptions;
 import io.deephaven.client.impl.Session;
+import io.deephaven.client.impl.SessionFactoryConfig;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableHandleManager;
@@ -21,20 +25,27 @@ import picocli.CommandLine.Option;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * Protocol tool: builds a small query graph in stages through a {@link TableHandleManager}, showing how batch and
+ * serial modes change the number of round trips to the server. Table logic is written once against
+ * {@link TableOperations}, so it is independent of whether it runs client-side or server-side.
+ */
 @Command(name = "table-manager", mixinStandardHelpOptions = true,
         description = "Table Manager example code", version = "0.1.0")
-class TableManagerExample extends SingleSessionExampleBase {
+class TableManagerExample implements Callable<Void> {
 
-    static class Mode {
-        @Option(names = {"-b", "--batch"}, required = true, description = "Batch mode")
-        boolean batch;
-        @Option(names = {"-s", "--serial"}, required = true, description = "Serial mode")
-        boolean serial;
-    }
+    @ArgGroup(exclusive = false)
+    ConnectOptions connectOptions;
 
     @ArgGroup(exclusive = true)
-    Mode mode;
+    AuthenticationOptions authenticationOptions;
+
+    @ArgGroup(exclusive = true)
+    BatchOrSerialOptions mode;
 
     @Option(names = {"--one-stage"}, description = "Use one-stage mode")
     boolean oneStage;
@@ -45,8 +56,31 @@ class TableManagerExample extends SingleSessionExampleBase {
     @Option(names = {"--line-numbers"}, description = "Mixin stacktrace line numbers")
     boolean lineNumbers;
 
-    private TableHandleManager manager(Session session) {
-        return mode == null ? session : mode.batch ? session.batch(lineNumbers) : session.serial();
+    @Override
+    public Void call() throws Exception {
+        final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
+        final SessionFactoryConfig.Factory factory = SessionFactoryConfig.builder()
+                .clientConfig(ConnectOptions.options(connectOptions).config())
+                .sessionConfig(AuthenticationOptions.sessionConfig(authenticationOptions))
+                .scheduler(scheduler)
+                .build()
+                .factory();
+        try (final Session session = factory.newSession()) {
+            showExpectations();
+            // Batch mode can optionally record line numbers for better error messages
+            final TableHandleManager manager = mode != null && mode.isBatch()
+                    ? session.batch(lineNumbers)
+                    : BatchOrSerialOptions.manager(mode, session);
+            if (oneStage) {
+                executeOneStage(manager);
+            } else {
+                executeFourStages(manager);
+            }
+        } finally {
+            factory.managedChannel().shutdownNow();
+            scheduler.shutdownNow();
+        }
+        return null;
     }
 
     /**
@@ -138,18 +172,6 @@ class TableManagerExample extends SingleSessionExampleBase {
         System.out.printf("Stage 4 %nt4=%s%n%n", t4.export().toReadableString());
     }
 
-
-    @Override
-    protected void execute(Session session) throws Exception {
-        showExpectations();
-        final TableHandleManager manager = manager(session);
-        if (oneStage) {
-            executeOneStage(manager);
-        } else {
-            executeFourStages(manager);
-        }
-    }
-
     /**
      * batch: 1 message, serial: 22 messages
      */
@@ -167,34 +189,18 @@ class TableManagerExample extends SingleSessionExampleBase {
     }
 
     private void showExpectations() {
-        if (oneStage) {
-            if (mode == null) {
-                System.out
-                        .println("Executing in default mode, in 1 stages. (1 | 22) messages expected.");
-            } else if (mode.batch) {
-                System.out
-                        .println("Executing in explicit batch mode, in 1 stages. 1 message expected.");
-            } else {
-                System.out.println(
-                        "Executing in explicit serial mode, in 1 stages. 22 messages expected.");
-            }
+        final String stages = oneStage ? "1 stages" : "4 stages";
+        if (mode == null) {
+            System.out.println("Executing in default mode, in " + stages + ". (1 | 22) messages expected.");
+        } else if (mode.isBatch()) {
+            System.out.println("Executing in explicit batch mode, in " + stages + ". 1 message expected.");
         } else {
-            if (mode == null) {
-                System.out
-                        .println("Executing in default mode, in 4 stages. (1 | 22) messages expected.");
-            } else if (mode.batch) {
-                System.out
-                        .println("Executing in explicit batch mode, in 4 stages. 1 message expected.");
-            } else {
-                System.out.println(
-                        "Executing in explicit serial mode, in 4 stages. 22 messages expected.");
-            }
+            System.out.println("Executing in explicit serial mode, in " + stages + ". 22 messages expected.");
         }
         System.out.println();
     }
 
     public static void main(String[] args) {
-        int execute = new CommandLine(new TableManagerExample()).execute(args);
-        System.exit(execute);
+        System.exit(new CommandLine(new TableManagerExample()).execute(args));
     }
 }
