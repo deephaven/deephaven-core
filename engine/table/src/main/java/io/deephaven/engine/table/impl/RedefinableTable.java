@@ -22,10 +22,6 @@ import java.util.stream.Stream;
 public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_TYPE>>
         extends UncoalescedTableImpl<IMPL_TYPE> {
 
-    protected RedefinableTable(@NotNull final TableDefinition definition, @NotNull final String description) {
-        this(definition, description, null);
-    }
-
     /**
      * @param definition The definition for this table
      * @param description A description of this table
