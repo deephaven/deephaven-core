@@ -184,7 +184,7 @@ These Aggregations can be re-ordered, edited, or deleted from the **Aggregate Co
 
 ### Select Distinct Values
 
-The **Select Distinct Values** feature modifies a table to show unique values from a selected column. This produces the same result as the query method [`select_distinct`](../../reference/table-operations/select/select-distinct.md). A Select Distinct table is often used to trigger filters on other tables in a workspace.
+The **Select Distinct Values** feature modifies a table to show unique values from a selected column. This produces the same result as the query method [`selectDistinct`](../../reference/table-operations/select/select-distinct.md). A Select Distinct table is often used to trigger filters on other tables in a workspace.
 
 From the options menu of the table you'd like to reduce, choose **Select Distinct Values**. Pick a column from which to display unique values.
 

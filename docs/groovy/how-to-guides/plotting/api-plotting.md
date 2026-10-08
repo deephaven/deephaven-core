@@ -32,10 +32,7 @@ You can create XY Series plots using data from Deephaven tables with the followi
 - `"yCol"` is the name of the column of data to be used for the Y value.
 - `show` tells Deephaven to draw the plot in the console.
 
-The example query below will create an XY series plot that shows the high of Bitcoin for September 8, 2021.
-
-> [!NOTE]
-> Python users must import the appropriate module: `from deephaven import Plot` or `from deephaven import Plot as plt`
+The example below creates an XY series plot of distance traveled over time during a metric-century bike ride.
 
 ```groovy test-set=1 order=source,plotSingle default=plotSingle
 import static io.deephaven.csv.CsvTools.readCsv
@@ -87,7 +84,7 @@ plotSharedTwinX = plot("Altitude", source, "Time", "AltitudeMeters")\
     .show()
 ```
 
-The value range for the high value is shown on the left axis and the value range for the low value is shown on the right axis.
+The value range for altitude is shown on the left Y axis, and the value range for speed is shown on the right Y axis.
 
 #### `twinY`
 
@@ -102,12 +99,12 @@ The `twinY` method enables you to use one X axis for one set of the values being
 
 Multiple plot methods can be used within the same query to produce a chart with multiple series. However, the `plotBy` methods include an additional argument that enables users to specify the grouping column to be used to plot multiple series. This greatly simplifies and shortens the query structure:
 
-```syntax
+```groovy syntax
 .plotBy("Series1", source, "xCol", "yCol", "groupByCol").show()
 
 .catPlotBy("SeriesName", source, "CategoryCol", "ValueCol", "groupByCol").show()
 
-.ohlcPlotBy("SeriesName", source, "Time", "Open", "High", "Low", "Close" "groupByCol").show()
+.ohlcPlotBy("SeriesName", source, "Time", "Open", "High", "Low", "Close", "groupByCol").show()
 ```
 
 ```groovy test-set=2 order=source,plotBy default=plotBy
@@ -401,7 +398,7 @@ This query plots the OHLC chart as follows:
 - `tOHLC` is the table from which our data is being pulled.
 - `TimestampBin` is the name of the column to be used for the X axis.
 - `"Open"`, `"High"`, `"Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
-- `lineStyle` and `chartTitle` provide component formatting to the table. `2` refers to line width.
+- `chartTitle` sets the chart's title.
 
 ### Shared axes
 
@@ -438,15 +435,13 @@ This query plots the OHLC chart as follows:
 - `plotOHLC` is the name of the variable that will hold the chart.
   - `ohlcPlot` plots the first series.
   - `"BTC"` is the name of the first series to be used in the chart.
-  - `btcOHLC` is the table from which the data is being pulled.
-  - ``where("Instrument=`BTC/USD`")`` filters the table to only the AAPL Ticker.
+  - `btcOHLC` is the table from which the data is being pulled. It is built from `btcBin`, which filters `cryptoTrades` to the `BTC/USD` instrument.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, "`Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
 - `twinX` is used to show different Y axes.
 - `ohlcPlot` plots the second series.
   - `"ETH"` is the name of the second series to be used in the chart.
-  - `ethOHLC` is the table from which the data is being pulled.
-  - ``where("Instrument=`ETH/USD`")`` filters the table to only the MSFT Ticker.
+  - `ethOHLC` is the table from which the data is being pulled. It is built from `ethBin`, which filters `cryptoTrades` to the `ETH/USD` instrument.
   - `TimestampBin` is the name of the column to be used for the X axis.
   - `"Open"`, `"High"`, `"Low"`, and `"Close"`, are the names of the columns containing the four respective data points to be plotted on the Y axis.
 - `chartTitle` provides the title for the chart.
@@ -498,7 +493,7 @@ oneClick(t, byColumns...)
 - `pTable` is a partitioned table containing the data.
 - `t` is the table containing the data.
 - `byColumns` is a list of strings, where each string is the name of a column to be made available for input filtering.
-- `requireAllFiltersToDisplay`, when set to `true`, will display a prompt explaining that filter controls must be added to the resulting plot. By default (`false`), this message will not be displayed.
+- `requireAllFiltersToDisplay`: when `true`, the plot only displays data once the appropriate one-click filters are selected. When `false`, data displays before all filters are selected. Overloads that omit this argument use `true`.
 
 ```groovy skip-test
 import static io.deephaven.csv.CsvTools.readCsv

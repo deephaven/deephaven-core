@@ -127,13 +127,13 @@ The details of this sub-problem, including [Deephaven’s approach to incrementa
 The subset of `BarrageUpdateMetadata`’s fields aimed at solving this sub-problem are:
 
 ```flatbuffer
-num_add_batches: ushort;
-num_mod_batches: ushort;
+added_rows_included: [byte];
+mod_column_nodes: [BarrageModColumnMetadata];
 ```
 
 Flight’s `DoGet` and `DoExchange` RPCs are structured as a stream of `FlightData`. `FlightData` that contains an Arrow payload will be referred to as a `RecordBatch`. The ordering of `RecordBatch`es is not necessarily meaningful at Flight’s service definition layer, but it isn’t unreasonable for integrations to define and declare an explicit ordering. `DoGet` and `DoExchange` return a stream of `FlightData` to enable partitioning large data sets into smaller working sets. Barrage uses this feature in order to support sending multiple record batches, initially for snapshots, and subsequently for updated data.
 
-Barrage breaks each periodic incremental update payload into a sequence of `RecordBatch`es. The first `RecordBatch` contains the `BarrageUpdateMetadata` payload. This metadata contains `num_add_batches` and `num_mod_batches`, which are needed to reconstruct and apply the incremental update. This count includes the payload attached to the provided metadata. All added row `RecordBatch`es are sent prior to modified row `RecordBatch`es. Both of these counts may be zero depending on what the server is trying to communicate.
+Barrage breaks each periodic incremental update payload into a sequence of `RecordBatch`es. The first `RecordBatch` contains the `BarrageUpdateMetadata` payload. The client learns how many added rows to expect from `added_rows_included` and how many modified rows to expect from `mod_column_nodes`, then keeps reading `RecordBatch`es until it has received them all. If `added_rows_included` is absent, every row in `added_rows` is included. All added row `RecordBatch`es are sent prior to modified row `RecordBatch`es. Either row count may be zero depending on what the server is trying to communicate.
 
 ### Data view framing
 
@@ -159,7 +159,9 @@ A common problem with IPC transports is the asynchronous nature of client-reques
 
 When a client initiates or changes its subscription, the server sends a payload with the metadata parameter `is_snapshot` set to `true`. Only when this parameter is true are `effective_viewport` and `effective_column_set` included on the payload. This enables the client to keep track of all data that is within the server-respected viewport. A snapshot will be sent whether or not it includes additional Arrow content (e.g., reducing the size of the requested viewport). The server will not resend Arrow content that overlaps between the previous viewport and the new viewport.
 
-Often there is a different granularity of incremental updates that are desired when sending payloads over the network compared to within the same process. We typically prefer many small updates over any alternative; however, busily-updated data sets may be a source of performance issues. When transporting updates over a network, the frequency and size of updates become an even more immediate concern: machine-to-machine communication is more limited than CPU to RAM communication. Barrage subscriptions aggregate incremental updates to help reduce this noise. This update interval can be tuned by default (via JVM property `barrage.updateInterval`), just as the Deephaven internal engine’s tick frequency can be tuned (via JVM property [`PeriodicUpdateGraph.targetCycleDurationMillis`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html)), as well as explicitly configured on the initial subscription request (via flatbuffer field `BarrageSubscriptionRequest.update_interval_ms`).
+Often there is a different granularity of incremental updates that are desired when sending payloads over the network compared to within the same process. We typically prefer many small updates over any alternative; however, busily-updated data sets may be a source of performance issues. When transporting updates over a network, the frequency and size of updates become an even more immediate concern: machine-to-machine communication is more limited than CPU to RAM communication. Barrage subscriptions aggregate incremental updates to help reduce this noise.
+
+The JVM property `barrage.minUpdateInterval` sets the server-wide default update interval, which is 1000 ms if unset. This is similar to how the JVM property [`PeriodicUpdateGraph.targetCycleDurationMillis`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) tunes the engine's tick frequency. A client can override the default on its initial subscription request with the `min_update_interval_ms` field of the request's `BarrageSubscriptionOptions`. A value of 0 uses the server default.
 
 The payload parameters `first_seq` and `last_seq` can be a useful aid to those who attempt to reconcile differences between server and client state (an uncommon task, but useful for client implementation debugging).
 
@@ -203,7 +205,7 @@ If you have an existing Flight Client:
 
 We intend to [integrate with Flight’s Auth](https://github.com/deephaven/deephaven-core/issues/997), but at this time you will need to integrate with the session management as described by the [gRPC definition](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/session.proto).
 
-`DoPut`, as of this writing, requires providing an Arrow Schema metadata tag with the key `deephaven:type` for each uploaded column. Nested columns are not yet supported. Note that we do not yet support the entire suite of Arrow data types. At this time, we refer you to the [source](https://github.com/deephaven/deephaven-core/blob/34b368cec1d1fb932c94a0048ddbf4874b52015a/grpc-api/src/main/java/io/deephaven/grpc_api/barrage/util/BarrageSchemaUtil.java#L212) to describe what the server expects and supports. These details will change as we improve our overall support for Apache Arrow, so please search for this metadata key in the source to find the most up-to-date details.
+`DoPut` maps each uploaded Arrow column to a Deephaven column type based on its Arrow type. To request a specific Java type, set the optional Arrow field metadata key `deephaven:type`. Not every Arrow type is supported; see [`BarrageUtil`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/src/main/java/io/deephaven/extensions/barrage/util/BarrageUtil.java) for the current mapping.
 
 `DoExchange` requires that you understand our [update model](./table-update-model.md) as well as the wire formats of the metadata required to materialize the resulting state after applying incremental updates. If this interests you, the [Barrage](/barrage/docs) documentation is the most appropriate place to dip your feet.
 
