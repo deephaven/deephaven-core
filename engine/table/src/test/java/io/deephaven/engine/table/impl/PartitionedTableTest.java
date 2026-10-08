@@ -1924,4 +1924,28 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             assertEquals(0, reportCount.get());
         }
     }
+
+    @Test
+    public void testPartitionByConstituentsFollowCreatorSystemicMarking() {
+        for (final boolean systemic : new boolean[] {true, false}) {
+            final QueryTable source = testRefreshingTable(i(1).toTracking(), col("Sym", "aa"), col("intCol", 10));
+            final PartitionedTable partitioned =
+                    SystemicObjectTracker.executeSystemically(systemic, () -> source.partitionBy("Sym"));
+
+            // Add a new key, making its constituent in a cycle run with the opposite systemic marking
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            SystemicObjectTracker.executeSystemically(!systemic, () -> {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(source, i(2), col("Sym", "bb"), col("intCol", 20));
+                    source.notifyListeners(i(2), i(), i());
+                });
+                return null;
+            });
+
+            assertEquals(2, partitioned.table().size());
+            for (final Table constituent : partitioned.constituents()) {
+                assertEquals(systemic, Boolean.TRUE.equals(constituent.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE)));
+            }
+        }
+    }
 }
