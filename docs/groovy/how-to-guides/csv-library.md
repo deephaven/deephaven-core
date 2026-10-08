@@ -101,7 +101,7 @@ There are five arguments to `write`:
 
 #### Sample
 
-Here is a sample implementation of `MyIntSink`, using a growable `int[]` as the underlying data structure. Each sink class needs a constructor that takes an `int` column index, because the factory methods accept `IntFunction` suppliers:
+Here is a sample implementation of `MyIntSink`, using a growable `int[]` as the underlying data structure. The `SinkFactory` factory methods, described in [Create a SinkFactory](#create-a-sinkfactory), accept `IntFunction` suppliers that receive the column index. This example passes constructor references such as `MyIntSink::new`, so each sink class has a constructor that takes an `int` column index:
 
 ```
 private static final class MyIntSink implements Sink<int[]> {
