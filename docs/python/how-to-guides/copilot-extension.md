@@ -93,7 +93,7 @@ Copilot is a great tool for learning about core concepts. For example, ask Deeph
 
 ### Natural language queries
 
-Have it write entire queries for you based on natural language descriptions. For example, ask it to write code that creates a ticking table with sine and cosine waves. Not only do you get the code, you also get an explanation and plot code to show that it works as intended:
+Have it write entire queries for you based on natural language descriptions. For example, ask it to write code that creates a ticking table with sine and cosine waves. Not only do you get the code, you also get an explanation of what it does. Always review generated code before you run it.
 
 ![Natural language query](../assets/how-to/copilot/nat-lang-query.png)
 

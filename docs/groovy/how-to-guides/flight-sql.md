@@ -239,10 +239,10 @@ middleware_factory = CookieMiddlewareFactory()
 
 # Create the client with the middleware
 client = FlightSQLClient(
-    host=host,
+    host="localhost",
     port=10000,
     insecure=True,
-    token=f"io.deephaven.authentication.psk.PskAuthenticationHandler deephaven",
+    token="io.deephaven.authentication.psk.PskAuthenticationHandler deephaven",
     metadata={"x-deephaven-auth-cookie-request": "true"},
     middleware=[middleware_factory],
 )
@@ -263,40 +263,34 @@ client.close()
 Try experimenting with other queries once you have these simple examples running.
 For example, create some named Deephaven tables on the server via the Web UI:
 
-```python skip-test
-from deephaven import time_table
-
-my_table_1 = (
-    time_table("PT1s").view(["Timestamp1=Timestamp", "Id=ii % 11"]).last_by(["Id"])
-)
-my_table_2 = (
-    time_table("PT5s").view(["Timestamp2=Timestamp", "Id=ii % 11"]).last_by(["Id"])
-)
+```groovy skip-test
+myTable1 = timeTable("PT1s").view("Timestamp1 = Timestamp", "Id = ii % 11").lastBy("Id")
+myTable2 = timeTable("PT5s").view("Timestamp2 = Timestamp", "Id = ii % 11").lastBy("Id")
 ```
 
 And execute the Flight SQL commands:
 
 ```sql
-SELECT * FROM my_table_1
+SELECT * FROM myTable1
 ```
 
 ```sql
 SELECT
   *
 FROM
-  my_table_2
+  myTable2
 ORDER BY
   Timestamp2
 ```
 
 ```sql
 SELECT
-  my_table_1.Id,
-  my_table_1.Timestamp1,
-  my_table_2.Timestamp2
+  myTable1.Id,
+  myTable1.Timestamp1,
+  myTable2.Timestamp2
 FROM
-  my_table_1
-  INNER JOIN my_table_2 ON my_table_1.Id = my_table_2.Id
+  myTable1
+  INNER JOIN myTable2 ON myTable1.Id = myTable2.Id
 ```
 
 ## What's next
