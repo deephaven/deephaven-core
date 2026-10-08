@@ -337,12 +337,12 @@ void StreamValue(std::ostream &os, const T &value) {
 // A char16_t is a UTF-16 code unit, which a char stream cannot print directly
 // (C++20 deleted that operator<<). Print it as UTF-8, so a char column shows
 // the same glyphs a string column would. Two kinds of value have no readable
-// UTF-8 form and are shown as 0xABCD instead: control characters, and
-// surrogates (one half of a character outside the BMP, which a single code
-// unit cannot represent).
+// UTF-8 form and are shown as 0xABCD instead: control characters (the C0
+// block, DEL, and the C1 block), and surrogates (one half of a character
+// outside the BMP, which a single code unit cannot represent).
 void StreamValue(std::ostream &os, char16_t value) {
   const auto v = static_cast<uint32_t>(value);
-  const bool is_control = v < 0x20 || v == 0x7F;
+  const bool is_control = v < 0x20 || (v >= 0x7F && v <= 0x9F);
   const bool is_surrogate = v >= 0xD800 && v <= 0xDFFF;
   if (is_control || is_surrogate) {
     char buf[8];
