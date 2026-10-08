@@ -141,4 +141,58 @@ public class GrpcTransportTestGwt extends AbstractAsyncGwtTestCase {
                     .then(ignore2 -> Promise.resolve(coreClient));
         }).then(this::finish).catch_(this::report);
     }
+
+    /**
+     * Dummy transport that never delivers headers and simply ends the stream, as happens when the server is unreachable
+     * during a (re)connect attempt - the socket closes before any response is received.
+     */
+    private native GrpcTransportFactory makeEndsBeforeHeadersTransportFactory() /*-{
+        return {
+            create: function(options) {
+                return {
+                    start: function(metadata) {
+                        // never call onHeaders; end the stream as if the server was never reached
+                        $wnd.setTimeout(function() { options.onEnd(); }, 0);
+                    },
+                    sendMessage: function(msgBytes) {
+                        // no-op
+                    },
+                    finishSend: function() {
+                        // no-op
+                    },
+                    cancel: function() {
+                        // no-op
+                    }
+                };
+            },
+            supportsClientStreaming: true
+        };
+    }-*/;
+
+    /**
+     * Regression test: when a transport's stream ends before any headers arrive, the channel must report a clean
+     * failure rather than throwing while computing the closing status. Previously the status was derived from the
+     * (never received) headers, throwing a TypeError before the failure was delivered - so callers such as the
+     * reconnect logic never learned the attempt failed and hung indefinitely.
+     */
+    public void testTransportEndsBeforeHeaders() {
+        // The failure path logs the resulting error; judge the test on whether login rejects, not on the logs.
+        errorLogsDontFail();
+        setupDhInternal().then(ignore -> {
+            delayTestFinish(7103);
+            ConnectOptions connectOptions = new ConnectOptions();
+            connectOptions.transportFactory = makeEndsBeforeHeadersTransportFactory();
+            CoreClient coreClient = new CoreClient(localServer, connectOptions);
+            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS));
+        }).then(success -> {
+            // The stream ended before headers, so login must not succeed.
+            reportUncaughtException(new AssertionError(
+                    "Expected login to fail when the transport ends before headers, but it succeeded"));
+            return Promise.resolve((Object) success);
+        }, failure -> {
+            // Expected: a clean rejection instead of an uncaught error or an indefinite hang.
+            finishTest();
+            return Promise.resolve((Object) failure);
+        });
+    }
 }
