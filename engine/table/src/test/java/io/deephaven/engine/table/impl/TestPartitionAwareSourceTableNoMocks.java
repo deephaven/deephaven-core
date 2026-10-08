@@ -540,7 +540,8 @@ public class TestPartitionAwareSourceTableNoMocks {
     public void testDeferredTimeSeriesFilter() {
         // the test locations' timestamps are a few nanoseconds after the epoch, so all of them are in the window
         final TestClock clock = new TestClock().setNanos(DateTimeUtils.MINUTE);
-        checkDeferredTimeSeriesFilter(clock, true, 0);
+        checkDeferredTimeSeriesFilter(clock, false, true, 4 * 128);
+        checkDeferredTimeSeriesFilter(clock, true, true, 0);
     }
 
     /**
@@ -550,11 +551,13 @@ public class TestPartitionAwareSourceTableNoMocks {
     @Test
     public void testDeferredTimeSeriesFilterStatic() {
         final TestClock clock = new TestClock().setMillis(Instant.now().toEpochMilli());
-        checkDeferredTimeSeriesFilter(clock, false, 4 * 128);
+        checkDeferredTimeSeriesFilter(clock, false, false, 0);
+        checkDeferredTimeSeriesFilter(clock, true, false, 4 * 128);
     }
 
     private void checkDeferredTimeSeriesFilter(
             final TestClock clock,
+            final boolean invert,
             final boolean expectRefreshing,
             final long expectedSize) {
         // Coalescing applies copies of the deferred filters, so only the coalesced table, not the filters we hold,
@@ -562,7 +565,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         final long partitionSize = 128;
 
         final WhereFilter timeSeriesFilter = TimeSeriesFilter.newBuilder()
-                .columnName("Timestamp").period("PT5m").clock(clock).invert(true).build();
+                .columnName("Timestamp").period("PT5m").clock(clock).invert(invert).build();
         assertTrue(timeSeriesFilter.isRefreshing());
         final Table bare = testStaticFilterSplit(partitionSize, timeSeriesFilter);
         assertTrue(bare instanceof DeferredViewTable);
@@ -571,7 +574,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         assertEquals(expectRefreshing, bareCoalesced.isRefreshing());
 
         final WhereFilter composedTimeSeriesFilter = TimeSeriesFilter.newBuilder()
-                .columnName("Timestamp").period("PT5m").clock(clock).invert(true).build();
+                .columnName("Timestamp").period("PT5m").clock(clock).invert(invert).build();
         final WhereFilter composed = DisjunctiveFilter.of(
                 composedTimeSeriesFilter, WhereFilter.of(RawString.of("II < 0"))).withDeclaredBarriers(new Object());
         assertTrue(composed.isRefreshing());
