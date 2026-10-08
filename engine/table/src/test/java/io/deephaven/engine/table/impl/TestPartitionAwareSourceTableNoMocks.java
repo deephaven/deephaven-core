@@ -17,7 +17,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.SortedClockFilter;
+import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
@@ -526,6 +528,31 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
         Assert.eq(coalesced.size(), "res0.size()", partitionSize * 2);
+    }
+
+    /**
+     * A filter on non-partitioning columns is deferred, and the deferred table asks each filter whether it is
+     * refreshing before the filter has seen its source table.
+     */
+    @Test
+    public void testDeferredTimeSeriesFilter() {
+        final long partitionSize = 128;
+        final TestClock clock = new TestClock();
+        clock.setMillis(Instant.now().toEpochMilli());
+
+        final WhereFilter timeSeriesFilter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT5m").clock(clock).invert(true).build();
+        final Table bare = testStaticFilterSplit(partitionSize, timeSeriesFilter);
+        assertTrue(bare instanceof DeferredViewTable);
+        assertEquals(4 * partitionSize, bare.coalesce().size());
+
+        final WhereFilter composedTimeSeriesFilter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT5m").clock(clock).invert(true).build();
+        final WhereFilter composed = DisjunctiveFilter.of(
+                composedTimeSeriesFilter, WhereFilter.of(RawString.of("II < 0"))).withDeclaredBarriers(new Object());
+        final Table viaComposed = testStaticFilterSplit(partitionSize, composed);
+        assertTrue(viaComposed instanceof DeferredViewTable);
+        assertEquals(4 * partitionSize, viaComposed.coalesce().size());
     }
 
     @Test

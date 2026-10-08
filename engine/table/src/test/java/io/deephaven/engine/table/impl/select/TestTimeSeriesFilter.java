@@ -482,4 +482,48 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         });
         assertEquals(5, result.where("M").size());
     }
+
+    /**
+     * A caller may ask whether a filter is refreshing before the filter has seen its source table, for example to
+     * decide how to apply it. The time series filter cannot know yet, so it answers conservatively, including through a
+     * composed filter.
+     */
+    @Test
+    public void testIsRefreshingBeforeBeginOperation() {
+        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
+
+        final int size = 60;
+        final Instant[] times = new Instant[size];
+        final int[] sentinel = new int[size];
+
+        for (int ii = 0; ii < times.length; ++ii) {
+            sentinel[ii] = ii;
+            times[ii] = DateTimeUtils.epochNanosToInstant(start + (ii * DateTimeUtils.MINUTE));
+        }
+
+        final QueryTable source =
+                testTable(RowSetFactory.flat(size).toTracking(), col("Timestamp", times), intCol("Sentinel", sentinel));
+        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
+
+        final TimeSeriesFilter timeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).invert(true)
+                        .build();
+        assertTrue(timeSeriesFilter.isRefreshing());
+
+        final WhereFilter composed =
+                ConjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("Sentinel % 2 == 0"));
+        assertTrue(composed instanceof ConjunctiveFilter);
+        assertTrue(composed.isRefreshing());
+
+        final Table filtered = source.where(composed);
+        assertTrue(filtered.isRefreshing());
+        assertEquals(13, filtered.size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            testClock.setNanos(start + 40 * DateTimeUtils.MINUTE);
+            timeSeriesFilter.runForUnitTests();
+        });
+        assertEquals(18, filtered.size());
+    }
 }
