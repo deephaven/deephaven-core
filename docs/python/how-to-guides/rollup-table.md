@@ -4,17 +4,19 @@ title: Create a hierarchical rollup table programmatically
 
 <!-- TODO: Link to conceptual guide on hierarchy https://github.com/deephaven/deephaven.io/issues/2079 -->
 
-This guide shows you how to create a hierarchical rollup table programmatically. A rollup table combines Deephaven's aggregations with an easy-to-navigate hierarchical structure.
+This guide shows you how to create a hierarchical rollup table programmatically.
 
-![A diagram displaying the structure of a rollup table](../assets/how-to/rollup-diagram.png)
-
-A rollup table aggregates values using increasing levels of grouping to produce a hierarchical table that shows the value for each aggregation at each level. For example, the `insurance_rollup` table from the [Static data](#static-data) example groups data by `region`, and then by `age`:
+A rollup table combines Deephaven's aggregations with a hierarchical structure: it aggregates values using increasing levels of grouping and shows the value of each aggregation at each level. For example, the `insurance_rollup` table from the [Static data](#static-data) example groups data by `region` and then by `age`:
 
 ![A rollup table grouped by region and age](../assets/how-to/rollup-example.png)
 
-The `Group` column contains the rollup table's hierarchy and has UI controls for expanding and collapsing individual groups. Click the right-facing arrow to expand a row, and the down-facing arrow to collapse it.
+The web UI adds a `Group` column that shows the rollup table's hierarchy. Click the right-facing arrow in the `Group` column to expand a row, and the down-facing arrow to collapse it.
 
 The topmost row, which contains all of the groups, is known as the _root node_. The lowest-level nodes are known as _leaf nodes_. The rows from the source table that each leaf node aggregates are known as _constituents_. If you set `include_constituents=True`, the constituents appear one level below each leaf node.
+
+![A diagram displaying the structure of a rollup table](../assets/how-to/rollup-diagram.png)
+
+In this diagram, `Root` is the root node, the `A` rows are the first level of grouping, and the `B` rows are the leaf nodes.
 
 > [!NOTE]
 > A column that is no longer part of the aggregation key is replaced with a null value on each level.
