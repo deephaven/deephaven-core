@@ -161,7 +161,7 @@ These properties yield the following consequences:
 
 Blink tables keep only the set of rows received during the current update cycle. Users can create blink tables when ingesting [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md), creating [time tables](../how-to-guides/time-table.md), or using [Table Publishers](../how-to-guides/table-publisher.md#table-publisher). They have the following key properties:
 
-- The table only consists of rows added in the previous update cycle.
+- The table only consists of rows added in the current update cycle.
 - No rows persist for more than one update cycle.
 - The table's size is bounded by the size of the largest update it receives.
 
@@ -240,7 +240,7 @@ Attempting to use the following operations on a blink table will raise an error:
 - [`slice`](../reference/table-operations/filter/slice.md)
 - [`slice_pct`](../reference/table-operations/filter/slice-pct.md)
 - [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) if either `group` or `partition` is used.
-- [`rollup`](../reference/table-operations/create/rollup.md) if `includeConstituents=true`.
+- [`rollup`](../reference/table-operations/create/rollup.md) if `include_constituents=True`.
 - [`tree`](../reference/table-operations/create/tree.md)
 
 ### Create an append-only table from a blink table

@@ -83,7 +83,7 @@ Static tables can be created by reading from a static data source, such as [CSV]
 t = emptyTable(10).update("IntIdx = i", "LongIdx = ii")
 ```
 
-Check whether a table is a static table with the [`isRefreshing`](../reference/table-operations/metadata/isRefreshing.md) property. This property will be `False` for static tables:
+Check whether a table is a static table with the [`isRefreshing`](../reference/table-operations/metadata/isRefreshing.md) method, which returns `false` for static tables:
 
 ```groovy test-set=1 order=:log
 println t.isRefreshing()
@@ -157,7 +157,7 @@ These properties yield the following consequences:
 
 Blink tables keep only the set of rows received during the current update cycle. Users can create blink tables when ingesting [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md), creating [time tables](../how-to-guides/time-table.md), or using [Table Publishers](../how-to-guides/table-publisher.md#table-publisher). They have the following key properties:
 
-- The table only consists of rows added in the previous update cycle.
+- The table only consists of rows added in the current update cycle.
 - No rows persist for more than one update cycle.
 - The table's size is bounded by the size of the largest update it receives.
 
@@ -167,7 +167,7 @@ These properties have the following consequences:
 2. The entire table changes every update cycle, so preserving row order from cycle to cycle is irrelevant.
 3. Blink tables can only cause memory problems if a single update receives more data than fits in available RAM. This is unusual, but not impossible.
 
-Blink tables are the default table type for Kafka ingestion within Deephaven because they use little memory. They are most useful for low-memory aggregations, deriving downstream tables, or using programmatic listeners to react to data.
+Blink tables are a common choice for Kafka ingestion because they use little memory. To get one, pass `KafkaTools.TableType.blink()` as the table type when you consume a topic. They are most useful for low-memory aggregations, deriving downstream tables, or using programmatic listeners to react to data.
 
 Check whether a table is a blink table with the [`isBlink`](../reference/table-operations/metadata/isBlink.md) method:
 
@@ -194,6 +194,8 @@ Aggregation operations such as [`aggBy`](../reference/table-operations/group-and
 Here is an example that demonstrates a blink table's specialized aggregation semantics:
 
 ```groovy test-set=4 ticking-table order=null
+import io.deephaven.engine.table.impl.TimeTable.Builder
+
 // create blink table with two groups of data to sum
 builder = new Builder().period("PT0.1s").blinkTable(true)
 
@@ -345,8 +347,8 @@ import io.deephaven.engine.table.impl.sources.ring.RingTableTools
 // t is an append-only table
 t = timeTable("PT0.5s")
 
-// get ring table from t that holds last three rows
-tRing = RingTableTools.of(t, 3)
+// get ring table from t that holds last five rows
+tRing = RingTableTools.of(t, 5)
 ```
 
 ![An append-only time table and a 5-row ring table](../assets/conceptual/table-types/table-types-7.gif)

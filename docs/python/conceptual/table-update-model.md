@@ -120,7 +120,7 @@ Now imagine an updating table where data can be removed. To keep the discussion 
 
 Take the result row set from the previous section as our initial row set:
 
-`{[0 .. m+9], [s .. s+n+1], [2s .. 2s+o+9]}`
+`{[0 .. m+9], [s .. s+n+9], [2s .. 2s+o+9]}`
 
 If the first 100 rows from each partition became unavailable, the removed row set would be:
 
@@ -128,7 +128,7 @@ If the first 100 rows from each partition became unavailable, the removed row se
 
 The result row set would then be:
 
-`{[100 .. m+9], [s+100 .. s+n+1], [2s+100 .. 2s+o+9]}`
+`{[100 .. m+9], [s+100 .. s+n+9], [2s+100 .. 2s+o+9]}`
 
 ### Modifies
 

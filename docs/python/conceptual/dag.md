@@ -101,7 +101,7 @@ Most users never interact directly with update notifications, but it is possible
 
 Here's a practical example of a custom listener that monitors disk usage:
 
-```python order=disk_monitor,critical_alerts
+```python ticking-table order=disk_monitor,critical_alerts
 from deephaven import time_table
 from deephaven.table_listener import listen
 
@@ -122,10 +122,8 @@ def handle_alert(update, is_replay):
     if is_replay:
         return  # Skip historical data
 
-    added_rows = update.added()
-    for row in added_rows:
-        server = row["Server"]
-        usage = row["DiskUsagePct"]
+    added = update.added()
+    for server, usage in zip(added["Server"], added["DiskUsagePct"]):
         print(f"ALERT: {server} disk usage at {usage:.1f}%")
         # In production: send_email() or post_to_slack()
 
@@ -148,14 +146,31 @@ Thinking in terms of DAGs, UG cycles, and update notifications can be insightful
 
 ### Identifying bottlenecks
 
-Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the Update Graph Processor (UGP) metrics to identify problems:
+Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as the update performance log from `deephaven.perfmon.update_performance_log`, to see how much time each operation spends processing updates in each reporting interval. The update performance ancestors log, from `update_performance_ancestors_log`, shows which upstream operations feed each one. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
 
-```python syntax
-# from deephaven.ugp import exclusive_lock_metrics
+The following query totals the update-processing time for each operation in the update performance log and lists the slowest operations first:
 
-# View which operations take the most time
-# metrics = exclusive_lock_metrics()
+```python ticking-table order=slowest_ops
+from deephaven.perfmon import update_performance_log
+
+upl = update_performance_log()
+
+# Total time each operation has spent processing updates, slowest first
+slowest_ops = (
+    upl.view(
+        [
+            "EntryId",
+            "EntryDescription",
+            "UsageMillis = UsageNanos / 1000000.0",
+            "InvocationCount",
+        ]
+    )
+    .sum_by(["EntryId", "EntryDescription"])
+    .sort_descending("UsageMillis")
+)
 ```
+
+At the end of each reporting interval, the log adds a row for each operation that did significant update work during that interval. Operations that did very little work share one combined row. The table is empty until the first interval ends, and `slowest_ops` updates as your queries run.
 
 Common performance bottlenecks include:
 
@@ -168,34 +183,36 @@ Common performance bottlenecks include:
 
 Once you understand what operations are slow, you can optimize your query:
 
-- **Use `coalesce`**: Reduce update frequency by batching changes.
-- **Add `snapshot`**: Create periodic snapshots instead of continuous updates.
+- **Use [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md)**: Update results periodically by snapshotting on a slower trigger table instead of on every change. See [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md).
 - **Restructure dependencies**: Break long dependency chains into parallel branches.
 - **Pre-aggregate data**: Move expensive aggregations upstream in the DAG.
 - **Filter early**: Apply `where` clauses before expensive operations.
 
 For example, instead of:
 
-```python order=live_data,result
+```python ticking-table order=null
 from deephaven import time_table
 from deephaven import agg
 
 live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
 
-# Expensive: recalculates complex aggregation on every update
+# Updates the aggregation every time live_data updates
 result = live_data.agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
 ```
 
 Consider:
 
-```python order=result test-set=optimization-example
+```python ticking-table order=result test-set=optimization-example
 from deephaven import time_table
 from deephaven import agg
 
 live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
 
-# Optimized: snapshot reduces update frequency
-result = live_data.snapshot().agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
+# Optimized: snapshot_when updates the aggregation every 10 seconds
+trigger = time_table("PT10S").rename_columns(["TriggerTimestamp = Timestamp"])
+result = live_data.snapshot_when(trigger).agg_by(
+    [agg.sum_("ExpensiveCalc")], by=["Group"]
+)
 ```
 
 ## Related documentation

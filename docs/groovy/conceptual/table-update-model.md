@@ -120,7 +120,7 @@ Now imagine an updating table where data can be removed. To keep the discussion 
 
 Take the result row set from the previous section as our initial row set:
 
-`{[0 .. m+9], [s .. s+n+1], [2s .. 2s+o+9]}`
+`{[0 .. m+9], [s .. s+n+9], [2s .. 2s+o+9]}`
 
 If the first 100 rows from each partition became unavailable, the removed row set would be:
 
@@ -128,7 +128,7 @@ If the first 100 rows from each partition became unavailable, the removed row se
 
 The result row set would then be:
 
-`{[100 .. m+9], [s+100 .. s+n+1], [2s+100 .. 2s+o+9]}`
+`{[100 .. m+9], [s+100 .. s+n+9], [2s+100 .. 2s+o+9]}`
 
 ### Modifies
 
@@ -166,23 +166,22 @@ Sum′ = Sum
 
 For all cells, the previous value is the value as of the beginning of the current update cycle, which implies that unchanged cells have the same value for previous and current. In order to provide this capability, all Deephaven column sources are required to be able to provide the previous values of removed or modified cells, and to recognize which cells are unchanged. This requirement only holds for the duration of the update phase of a cycle; the necessary data structures are released as part of intra-cycle cleanup, and accessing previous values outside of an updating phase produces undefined results, including the possibility of exceptions or inconsistent data.
 
-In Groovy, you access these values through the [`TableUpdate`](../how-to-guides/table-listeners-groovy.md) object passed to listeners:
+In Groovy, a [listener](../how-to-guides/table-listeners-groovy.md) receives a `TableUpdate` that describes which row keys changed; read previous values from the table's column sources with `getPrev` methods:
 
 ```groovy syntax
 import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
-def listener = { TableUpdate update ->
-    // Access added, removed, and modified row sets
-    def added = update.added()
-    def removed = update.removed()
-    def modified = update.modified()
+listener = new InstrumentedTableUpdateListenerAdapter(myTable, false) {
+    @Override
+    public void onUpdate(TableUpdate update) {
+        def valueSource = myTable.getColumnSource("Value")
 
-    // Access pre-shift modified row set for before/after comparisons
-    // (only valid during update processing)
-    def modifiedPreShift = update.getModifiedPreShift()
-    if (!modified.isEmpty()) {
-        // Use modifiedPreShift with column sources for previous values
-        println "Modified ${modified.size()} rows"
+        // Previous values of modified rows are keyed by pre-shift row keys
+        // (only valid during update processing)
+        update.getModifiedPreShift().forAllRowKeys { long preShiftKey ->
+            println "Previous value: ${valueSource.getPrev(preShiftKey)}"
+        }
     }
 }
 
