@@ -1,6 +1,5 @@
 ---
 title: Package a Deephaven Python project
-sidebar_label: Package Python projects
 ---
 
 [Python packaging](https://packaging.python.org/en/latest/) turns a project containing Python code into a distribution that can be installed with `pip`. A distribution can provide an importable library, command-line tools, or both. This guide shows how to package Python projects that use Deephaven. It follows the conventions of the [Python Packaging User Guide](https://packaging.python.org/en/latest/tutorials/packaging-projects/) and uses [setuptools](https://setuptools.pypa.io/en/latest/) as the build backend.
