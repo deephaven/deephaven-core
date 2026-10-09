@@ -100,7 +100,7 @@ Most of the time, no. When you pass a string condition to [`where`](../../table-
 - Only examines values in the current row (e.g., `"Price > 100"`).
 - Has no side effects — it does not modify global variables, write to files, or depend on evaluation order.
 
-If both of those are true, use string conditions directly. There is no benefit to constructing a `Filter` object.
+If both of those are true, string conditions are usually all you need. The cases below are the exceptions.
 
 ### When you need explicit control
 

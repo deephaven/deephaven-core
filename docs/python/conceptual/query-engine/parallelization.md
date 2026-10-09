@@ -88,7 +88,7 @@ Separately, the update graph never updates a table before the tables it depends 
 
 Queries execute in two phases, and Deephaven uses a separate thread pool for each.
 
-**Initialization**: Every table operation is computed once when you call it, whether at the top of a script or later in a running console. Deephaven computes the initial result from all existing data, splitting the rows across cores as described above. This work runs on the operation initialization thread pool.
+**Initialization**: Every table operation runs once when you call it, whether at the top of a script or later in a running console. Deephaven computes the initial result from all existing data, splitting the rows across cores as described above. This work runs on the operation initialization thread pool.
 
 For live (refreshing) tables, Deephaven also registers the result in the [update graph](../dag.md) during initialization so it receives future updates.
 
@@ -231,7 +231,7 @@ When a `Selectable` is serial, Deephaven evaluates every row in order, starting 
 
 #### Serial filters
 
-Deephaven parallelizes string-based filters in [`where`](../../reference/table-operations/filter/where.md) by default. When a filter has stateful side effects, construct a [`Filter`](../../reference/query-language/types/Filter.md) object and mark it serial:
+Deephaven parallelizes string-based filters in [`where`](../../reference/table-operations/filter/where.md) by default. When a filter has stateful side effects, construct a [`Filter`](../../reference/query-language/types/Filter.md) object and mark it serial. The example below shows the syntax with simple null-check filters, which would not need it in practice:
 
 ```python order=result
 from deephaven import empty_table
