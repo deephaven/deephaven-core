@@ -12,7 +12,7 @@ See [A Kafka introduction: basic terms](../../conceptual/kafka-basic-terms.md) f
 
 Each Kafka record has a key and a value. Kafka writes each record to a partition at an offset, with a timestamp. For example, a list of Kafka messages might have a stock ticker as the key and its price as the value.
 
-The key and value are similar in that they can be nearly any sequence of bytes. The primary difference is that Kafka's default partitioner hashes a non-null key to choose a partition, so all records with the same key go to the same partition.
+The key and value are similar in that they can be nearly any sequence of bytes. The primary difference is that Kafka's default partitioner hashes a non-null key to choose a partition, so all records with the same key go to the same partition as long as the topic's partition count doesn't change.
 
 A _key spec_ and a _value spec_ tell Deephaven how to turn the key and the value into table columns.
 

@@ -113,7 +113,7 @@ svc_use_decorated = svc_use.update_view(
 )
 ```
 
-Like the Parquet read, [`update_view`](../reference/table-operations/select/update-view.md) does not compute its new columns up front. It computes a value only when a later operation, like a UI view or a chained computation, reads it. The derived table also adds no memory cost for the pre-existing columns, because it reads them from the base table instead of copying their data.
+Like the Parquet read, [`update_view`](../reference/table-operations/select/update-view.md) does not compute its new columns up front. It computes a value only when a later operation, like a UI view or a chained computation, reads it. The derived table also doesn't copy the data in the pre-existing columns: it reads them from the base table.
 
 The code above also calls the Python function `secs` inside column expressions. Because `update_view` doesn't store results, the query engine calls `secs` again every time an operation reads a `Secs` value, including when it computes `OrdinalDay`.
 

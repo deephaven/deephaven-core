@@ -47,10 +47,10 @@ An offset is an integer, starting at zero, that identifies each message ever pro
 
 When a consumer subscribes to a topic, it can specify the offset at which to start listening. A consumer can start at:
 
-- a defined offset value.
-- the oldest available offset (seek to the beginning).
-- the end of the partition, in which case the consumer receives only newly produced messages (seek to the end).
-- the last offset committed for the consumer's group, without seeking.
+- a defined offset value
+- the oldest available offset (seek to the beginning)
+- the end of the partition, in which case the consumer receives only newly produced messages (seek to the end)
+- the last offset committed for the consumer's group, without seeking
 
 A consumer group is a set of consumers that share a group ID, set by the `group.id` Kafka property. Kafka records a committed offset for each group and partition, which marks where that group left off. If no offset has been committed, the consumer's Kafka configuration decides where it starts.
 
