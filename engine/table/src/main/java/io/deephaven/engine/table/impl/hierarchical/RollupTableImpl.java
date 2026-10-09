@@ -10,7 +10,10 @@ import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -261,13 +264,29 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final QueryTable filteredBaseLevel = (QueryTable) levelTables[numLevels - 1].where(Filter.and(whereFilters));
         final AggregationRowLookup baseLevelRowLookup = levelRowLookups[numLevels - 1];
         final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
-        final AggregationRowLookup filteredBaseLevelRowLookup = nodeKey -> {
-            final int unfilteredRowKey = baseLevelRowLookup.get(nodeKey);
-            // NB: Rollup snapshot patterns allow us to safely always use current, here.
-            if (filteredBaseLevelRowSet.find(unfilteredRowKey) >= 0) {
-                return unfilteredRowKey;
+        // NB: Rollup snapshot patterns allow us to safely always use current, here.
+        final AggregationRowLookup filteredBaseLevelRowLookup = new AggregationRowLookup() {
+            @Override
+            public int get(@Nullable final Object nodeKey) {
+                final int unfilteredRowKey = baseLevelRowLookup.get(nodeKey);
+                if (filteredBaseLevelRowSet.find(unfilteredRowKey) >= 0) {
+                    return unfilteredRowKey;
+                }
+                return DEFAULT_UNKNOWN_ROW;
             }
-            return DEFAULT_UNKNOWN_ROW;
+
+            @Override
+            public void get(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys) {
+                baseLevelRowLookup.get(keyChunks, rowKeys);
+                final int size = rowKeys.size();
+                for (int ii = 0; ii < size; ++ii) {
+                    if (filteredBaseLevelRowSet.find(rowKeys.get(ii)) < 0) {
+                        rowKeys.set(ii, DEFAULT_UNKNOWN_ROW);
+                    }
+                }
+            }
         };
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, filteredBaseLevel);
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);

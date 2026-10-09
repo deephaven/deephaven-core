@@ -47,8 +47,15 @@ public class DataIndexPushdownManagerTest {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
+    private static final int KEYS = 100;
+    /**
+     * Twice the rows per key at which the index threshold is reached, so that a full selection uses the index and the
+     * threshold falls inside the table.
+     */
+    private static final int ROWS_PER_KEY = 2 * (int) Math.ceil(1 / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+
     private static Table indexedTable() {
-        return TableTools.emptyTable(1000).update("A = ii % 100");
+        return TableTools.emptyTable((long) KEYS * ROWS_PER_KEY).update("A = ii % " + KEYS);
     }
 
     private static WhereFilter initializedFilter(final Table table, final String expression) {
@@ -232,7 +239,7 @@ public class DataIndexPushdownManagerTest {
         final PushdownFilterMatcher matcher = DataIndexPushdownManager.wrap(dataIndex, wrapped);
 
         try (final PushdownResult result = pushdown(matcher, filter, sources, table.getRowSet())) {
-            assertThat(result.match().size()).isEqualTo(10);
+            assertThat(result.match().size()).isEqualTo(ROWS_PER_KEY);
             assertThat(result.maybeMatch().isEmpty()).isTrue();
         }
         assertThat(wrapped.results).hasSize(1);

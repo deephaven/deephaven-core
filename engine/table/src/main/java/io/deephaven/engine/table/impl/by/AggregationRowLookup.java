@@ -3,6 +3,16 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
+import io.deephaven.util.SafeCloseableArray;
+import org.jetbrains.annotations.NotNull;
+
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 /**
@@ -32,7 +42,8 @@ public interface AggregationRowLookup {
      * <dl>
      * <dt>No group-by columns</dt>
      * <dd>"Empty" keys are signified by the {@link AggregationRowLookup#EMPTY_KEY} object, or any zero-length
-     * {@code Object[]}</dd>
+     * {@code Object[]}, and are looked up one at a time; the chunked {@link #get(Chunk[], WritableLongChunk) get} needs
+     * a group-by column to give the number of keys</dd>
      * <dt>One group-by column</dt>
      * <dd>Singular keys are (boxed, if needed) objects</dd>
      * <dt>Multiple group-by columns</dt>
@@ -53,5 +64,56 @@ public interface AggregationRowLookup {
      */
     default int noEntryValue() {
         return DEFAULT_UNKNOWN_ROW;
+    }
+
+    /**
+     * Gets the row key for each of a chunk of keys, given one chunk per group-by column, each reinterpreted to the
+     * appropriate primitive value as for {@link #get(Object)}. The aggregation must have at least one group-by column,
+     * whose chunk gives the number of keys.
+     *
+     * @param keyChunks The keys, one chunk per group-by column, at least one, all the same size
+     * @param rowKeys Receives the row key of each key, or {@link #noEntryValue()} for a key that is not found; its size
+     *        is set to the number of keys
+     */
+    void get(@NotNull Chunk<? extends Values>[] keyChunks, @NotNull WritableLongChunk<RowKeys> rowKeys);
+
+    /**
+     * Implement {@link #get(Chunk[], WritableLongChunk)} by boxing each key and calling {@link #get(Object)} on
+     * {@code lookup}, for implementations that cannot search a chunk of keys at once.
+     *
+     * @param lookup The lookup to call for each key
+     * @param keyChunks The keys, one chunk per group-by column, at least one, all the same size
+     * @param rowKeys Receives the row key of each key; its size is set to the number of keys
+     */
+    static void boxedGet(
+            @NotNull final AggregationRowLookup lookup,
+            @NotNull final Chunk<? extends Values>[] keyChunks,
+            @NotNull final WritableLongChunk<RowKeys> rowKeys) {
+        Require.gtZero(keyChunks.length, "keyChunks.length");
+        final int size = keyChunks[0].size();
+        rowKeys.setSize(size);
+        // noinspection unchecked
+        final ObjectChunk<?, ? extends Values>[] boxedKeys = new ObjectChunk[keyChunks.length];
+        final ChunkBoxer.BoxerKernel[] boxers = new ChunkBoxer.BoxerKernel[keyChunks.length];
+        try (final SafeCloseableArray<ChunkBoxer.BoxerKernel> ignored = new SafeCloseableArray<>(boxers)) {
+            for (int ci = 0; ci < keyChunks.length; ++ci) {
+                boxers[ci] = ChunkBoxer.getBoxer(keyChunks[ci].getChunkType(), size);
+                boxedKeys[ci] = boxers[ci].box(keyChunks[ci]);
+            }
+            if (keyChunks.length == 1) {
+                for (int ii = 0; ii < size; ++ii) {
+                    rowKeys.set(ii, lookup.get(boxedKeys[0].get(ii)));
+                }
+                return;
+            }
+            for (int ii = 0; ii < size; ++ii) {
+                // A fresh array per key, since a lookup may keep the key it is given.
+                final Object[] key = new Object[keyChunks.length];
+                for (int ci = 0; ci < keyChunks.length; ++ci) {
+                    key[ci] = boxedKeys[ci].get(ii);
+                }
+                rowKeys.set(ii, lookup.get(key));
+            }
+        }
     }
 }
