@@ -60,13 +60,24 @@ Also within a single table, when you compute multiple columns in the same operat
 
 ### What is and isn't parallelized
 
-The three mechanisms above apply to operations that compute and store their results when they run:
+Deephaven parallelizes work at two levels: across tables and within one operation.
 
-- Column calculations in [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md).
-- Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
-- [`sort`](../../reference/table-operations/sort/sort.md), once the table is large enough to be worth splitting.
+**Across tables.** The update graph updates independent tables at the same time, as described in [Concurrent table updates](#concurrent-table-updates). Every operation benefits from this.
 
-Two other cases look like exceptions but work differently:
+**Within one operation.** These operations split their own work across cores:
+
+- Column calculations in [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md). Independent columns run at the same time, and the rows of a large column are split into groups.
+- Filters in [`where`](../../reference/table-operations/filter/where.md) and [`where_one_of`](../../reference/table-operations/filter/where-one-of.md), and the filters that [`where_in`](../../reference/table-operations/filter/where-in.md) and [`where_not_in`](../../reference/table-operations/filter/where-not-in.md) build.
+- [`update_by`](../../reference/table-operations/update-by-operations/updateBy.md): the calculations for each group of rows that share key values.
+- [`sort`](../../reference/table-operations/sort/sort.md): the first sort of a large table. When a live sorted table updates, Deephaven sorts the changed rows on one thread.
+- [`range_join`](../../reference/table-operations/join/range-join.md): each group of matching rows.
+- [`transform`](../../reference/table-operations/partitioned-tables/transform.md) and [`proxy`](../../reference/table-operations/partitioned-tables/proxy.md) operations on a [partitioned table](../../how-to-guides/partitioned-tables.md): each constituent table is a separate task.
+
+Joins other than `range_join`, aggregations, [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), [`head`](../../reference/table-operations/filter/head.md), [`tail`](../../reference/table-operations/filter/tail.md), [`merge`](../../reference/table-operations/merge/merge.md), and [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) don't split their own work.
+
+**What you can control.** [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and [barriers](#barriers) apply only to formulas and filters, which is where your code usually runs. `where_in`, `sort`, `update_by`, and `range_join` run only Deephaven's own code, which is always safe to run in parallel, so they have no per-call control. A `transform` function is your own code, but Deephaven runs it on several constituents at once and offers no per-call control, so make it thread-safe.
+
+Two other cases work differently:
 
 - **Deferred evaluation**: [`view`](../../reference/table-operations/select/view.md), [`update_view`](../../reference/table-operations/select/update-view.md), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) don't compute anything when you call them. They store the formula and evaluate it whenever a cell is read, on whichever thread reads it. That evaluation can itself happen in parallel, for example when a downstream `update` that reads the column is split across cores, and a row can be evaluated more than once. This is also why `view` and `update_view` reject [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). There is no single evaluation pass to serialize.
 - **Serialization you request**: an expression marked with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) always runs one row at a time. See [Controlling execution order](#controlling-execution-order).
