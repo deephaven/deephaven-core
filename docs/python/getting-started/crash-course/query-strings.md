@@ -22,7 +22,7 @@ Query strings often use [literals](https://en.wikipedia.org/wiki/Literal_(comput
 
 - Literals not encapsulated by any special characters are interpreted as booleans, numeric values, column names, or variables.
 - Literals encapsulated in backticks (`` ` ``) are interpreted as strings.
-- Literals encapsulated in single quotes (`'`) are interpreted as date-time values.
+- Literals encapsulated in single quotes (`'`) are interpreted as date-time values (including dates, times, durations, periods, and time zones), except single characters, which are interpreted as `char`s.
 
 ```python test-set=1
 literals = empty_table(10).update(
@@ -68,7 +68,7 @@ special_meta = special_vars.meta_table
 ```
 
 > [!NOTE]
-> The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
+> The special variables `i` and `ii` are safe to use on static tables and on [append-only](../../conceptual/table-types.md#specialization-1-append-only) and blink tables. On other ticking tables, the engine throws an error.
 
 Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
@@ -90,7 +90,7 @@ null_values = empty_table(1).update(
 null_values_meta = null_values.meta_table
 ```
 
-These are useful for representing and handling null values of a specific type. Built-in query language functions handle null values. For example, `sqrt(NULL_DOUBLE)` returns `NULL_DOUBLE`. Custom functions need to handle null values appropriately.
+These are useful for representing and handling null values of a specific type. Built-in numeric functions generally handle null values. For example, `sqrt(NULL_DOUBLE)` returns `NULL_DOUBLE`. Custom functions need to handle null values appropriately.
 
 ## Common operations
 
@@ -121,8 +121,8 @@ time_ops = empty_table(10).update(
     [
         # Times in nanoseconds can be added or subtracted from date-times
         "Timestamp = '2021-07-11T12:00:00.000Z' + (ii * HOUR)",
-        # Durations or Periods can be added or subtracted from date-times
-        "TimestampPlusOneYear = Timestamp + 'P365d'",
+        # Durations or day-based Periods can be added or subtracted from date-times
+        "TimestampPlus365Days = Timestamp + 'P365d'",
         "TimestampMinusOneHour = Timestamp - 'PT1h'",
         # Timestamps can be subtracted to get their difference in nanoseconds
         # Use constants for unit conversion
@@ -153,8 +153,8 @@ conditional = empty_table(10).update(
         "Parity = ii % 2 == 0 ? `Even!` : `Odd...`",
         # Any logical expression is a valid condition
         "IsDivisibleBy6 = ((ii % 2 == 0) && (ii % 3 == 0)) ? true : false",
-        # In-line conditionals can be chained together
         "RandomNumber = randomGaussian(0.0, 1.0)",
+        # In-line conditionals can be chained together
         "Score = RandomNumber < -1.282 ? `Bottom 10%` : RandomNumber > 1.282 ? `Top 10%` : `Middle of the pack`",
     ]
 )
@@ -208,8 +208,8 @@ fake_data = empty_table(100).update(
         "Group = randomInt(1, 4)",
         "GroupIntercept = Group == 1 ? 0 : Group == 2 ? 5 : 10",
         "GroupSlope = abs(GroupIntercept * randomGaussian(0, 1))",
-        "GroupVariance = pow(sin(Group), 2)",
-        "Data = GroupIntercept + GroupSlope * ii + randomGaussian(0.0, GroupVariance)",
+        "GroupStdDev = pow(sin(Group), 2)",
+        "Data = GroupIntercept + GroupSlope * ii + randomGaussian(0.0, GroupStdDev)",
     ]
 )
 ```
@@ -293,7 +293,7 @@ call_methods = empty_table(1).update("Timestamp = '2024-03-03T15:00:00.000 UTC'"
 call_methods_meta = call_methods.meta_table
 ```
 
-This column is a Java [Instant](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html). Java's [documentation](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html) provides all of the available [methods](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html#method.summary) that can be called. Here are just a few.
+This column is a Java [Instant](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Java's [documentation](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) provides all of the available [methods](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method.summary) that can be called. Here are just a few.
 
 ```python test-set=1
 call_methods = call_methods.update(
@@ -305,9 +305,9 @@ call_methods = call_methods.update(
 )
 ```
 
-Some basic understanding of [how to read Javadocs](../../how-to-guides/read-javadocs.md) will help you make the most of these built-in methods.
+A basic understanding of [how to read Javadocs](../../how-to-guides/read-javadocs.md) helps you make the most of these built-in methods.
 
-Additionally, there are several ways to create Java objects for use in query strings. The following example uses (1) the `new` keyword and (2) the Python [jpy](../../how-to-guides/use-jpy.md) package to create new instances of Java's [URL](https://docs.oracle.com/javase/7/docs/api/java/net/URL.html) class.
+Additionally, there are several ways to create Java objects for use in query strings. The following example uses (1) the `new` keyword and (2) the Python [jpy](../../how-to-guides/use-jpy.md) package to create new instances of Java's [URL](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) class.
 
 ```python test-set=1 order=t1,m1,t2,m2,t3,m3
 import jpy
@@ -385,14 +385,14 @@ t_array_funcs = t_grouped.update(
 )
 ```
 
-These results can then be ungrouped with [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), which is essentially the inverse of [`group_by`](../../reference/table-operations/group-and-aggregate/groupBy.md).
+These results can then be ungrouped with [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), which expands array columns back into separate rows.
 
 ```python test-set=1
 t_array_funcs_ungrouped = t_array_funcs.ungroup()
 ```
 
 > [!NOTE]
-> Aggregations are more performant when done with [`deephaven.agg`](../../how-to-guides/combined-aggregations.md) than with array functions.
+> On ticking tables, aggregations with [`deephaven.agg`](../../how-to-guides/combined-aggregations.md) are more performant than `group_by` followed by array functions.
 
 Deephaven provides array indexing and slicing operations.
 
@@ -406,7 +406,7 @@ t_indexed = t_grouped.update(
         "MiddleThree = X.subVector(1, 4)",
         # Indexing outside the range returns null
         "OffTheFront = X[-1]",
-        "OffTheEnd = X.subVector(3,6)",
+        "OffTheEnd = X[5]",
     ]
 )
 ```
@@ -467,7 +467,7 @@ class MyMathClass:
         return self.x + y
 
     @classmethod
-    def class_sum(self, x, y):
+    def class_sum(cls, x, y):
         return x + y
 
     @staticmethod
@@ -496,7 +496,7 @@ add_vars_func_meta = add_vars_func.meta_table
 add_vars_class_meta = add_vars_class.meta_table
 ```
 
-This isn't ideal, as neither of these data types support many of the DQL features we've covered. To rectify this, Python functions should utilize [type hints](https://docs.python.org/3/library/typing.html). The engine will infer the correct column types for functions that use type hints. Class methods don't support type hints yet, so a typecast in the query string is required.
+This isn't ideal, as neither of these data types support many of the DQL features we've covered. To rectify this, Python functions should utilize [type hints](https://docs.python.org/3/library/typing.html). The engine infers the correct column types for functions that use type hints. Class methods don't support type hints yet, so a typecast in the query string is required.
 
 ```python test-set=2 order=add_vars_func_meta,add_vars_func,add_vars_class_meta,add_vars_class
 from deephaven import empty_table
@@ -510,15 +510,15 @@ class MyMathClass:
     def __init__(self, x):
         self.x = x
 
-    def sum(self, y) -> int:
+    def sum(self, y):
         return self.x + y
 
     @classmethod
-    def class_sum(self, x, y) -> int:
+    def class_sum(cls, x, y):
         return x + y
 
     @staticmethod
-    def static_sum(x, y) -> int:
+    def static_sum(x, y):
         return x + y
 
 
@@ -528,7 +528,7 @@ class_instance = MyMathClass(a)
 
 add_vars_func = empty_table(1).update(["Sum1 = my_sum(1, 2)", "Sum2 = my_sum(a, b)"])
 
-# Note the (int) casts
+# Class methods can't use type hints, so note the (int) casts
 add_vars_class = empty_table(1).update(
     [
         "Sum1 = (int) class_instance.sum(b)",
@@ -543,7 +543,7 @@ add_vars_class_meta = add_vars_class.meta_table
 
 To learn more about using Python in query strings, see [Python in query strings](../../how-to-guides/query-string-overview.md#python).
 
-Scoping in Deephaven follows Python's [LEGB](https://realpython.com/python-scope-legb-rule/) scoping rules. Functions that return tables or otherwise make use of query strings should pay careful attention to scoping details.
+Scoping in Deephaven follows rules similar to Python's [LEGB](https://realpython.com/python-scope-legb-rule/) rules, with some distinctions. Functions that return tables or otherwise make use of query strings should pay careful attention to scoping details.
 
 ```python test-set=2 order=source,result1,result2
 def f(a, b) -> int:
@@ -560,9 +560,9 @@ result1 = compute(source, 10)
 result2 = compute(source, 3)
 ```
 
-For more information, see [scoping rules](../../how-to-guides/query-scope.md).
+For more information, including those distinctions, see [scoping rules](../../how-to-guides/query-scope.md).
 
-Be mindful of whether or not Python functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+Be mindful of whether or not Python functions are stateless or stateful. Generally, stateless functions have no side effects — they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
 
 ```python test-set=2
 my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -575,9 +575,9 @@ def get_element_stateless(idx) -> int:
 t_stateless = empty_table(10).update("X = get_element_stateless(ii)")
 ```
 
-`get_element` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
+`get_element_stateless` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
 
-Stateful functions modify objects outside their local scope - they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
+Stateful functions modify objects outside their local scope — they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
 
 ```python test-set=2
 my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -599,10 +599,10 @@ Print `idx` to verify it's been changed.
 print(idx)
 ```
 
-Now that `get_element` is stateful, it must be evaluated in the correct order to give the correct result.
+Because `get_element_stateful` is stateful, it must be evaluated in the correct order to give the correct result. The engine assumes functions in query strings are stateless unless told otherwise, so mark stateful ones with [`with_serial`](../../conceptual/query-engine/parallelization.md). In this small example, rows happen to be evaluated in order.
 
 Queries should use stateless functions whenever possible because:
 
 - They minimize side effects when called.
 - They are deterministic.
-- They can be efficiently parallelized.
+- They can be evaluated in parallel where the engine supports it.

@@ -6,7 +6,7 @@ Now that you're more familiar with the table API and visualizing data, it's time
 
 ## What is deephaven.ui?
 
-[`deephaven.ui`](/core/ui/docs/) is a [react](https://react.dev/)-like framework for building user experiences in Python. No front-end development, JavaScript, or CSS experience is required to hit the ground running. Key features include:
+[`deephaven.ui`](/core/ui/docs/) is a [React](https://react.dev/)-like framework for building user experiences in Python. No front-end development, JavaScript, or CSS experience is required to hit the ground running. Key features include:
 
 - **Components**: Create user interfaces from components defined entirely with Python.
 - **Live dataframe integration**: Components are live dataframe aware and can use Deephaven tables as a data source.
@@ -41,7 +41,7 @@ button = ui.button(
 
 ![Button click](../../assets/tutorials/crash-course/dh-ui/button_clicked.png)
 
-The example above is more useful than the first, but a real user experience doesn't print raw data to a console. With `deephaven.ui`, you can decorate functions with `@ui.component` to define components with custom behavior. The following example is a simple component that builds off the button example.
+With `deephaven.ui`, you can decorate functions with `@ui.component` to define components that combine several elements and have custom behavior. The following example is a simple component that builds off the button example.
 
 ```python test-set=1 order=null
 @ui.component
@@ -59,7 +59,7 @@ foo_bar = ui_foo_bar()
 
 ![Better button click](../../assets/tutorials/crash-course/dh-ui/button_clicked_2.png)
 
-Simple enough. But once again, the example above isn't all that useful for any real-world scenarios. `deephaven.ui` also offers the [`use_state`](/core/ui/docs/hooks/use_state/) hook, which allows you to manage state within components. For instance, you can track how many times a button has been clicked. Each component has its own state, as shown by clicking on `c1` and `c2` separately:
+Simple enough. To make components more useful, `deephaven.ui` also offers the [`use_state`](/core/ui/docs/hooks/use_state/) hook, which allows you to manage state within components. For instance, you can track how many times a button has been clicked. Each component has its own state, as shown by clicking on `c1` and `c2` separately:
 
 ```python test-set=1 order=null
 @ui.component
@@ -74,7 +74,7 @@ c2 = ui_counter()
 
 ![Buttons with state](../../assets/tutorials/crash-course/dh-ui/button_state.gif)
 
-Buttons and text boxes are only two of the many components available in `deephaven.ui`. The following code shows off a few more components including a [picker](/core/ui/docs/components/picker/), [slider](/core/ui/docs/components/slider/), and [combo box](/core/ui/docs/components/combo_box/):
+Buttons are only one of the many components available in `deephaven.ui`. The following code shows off a few more components including a [picker](/core/ui/docs/components/picker/), [slider](/core/ui/docs/components/slider/), and [combo box](/core/ui/docs/components/combo_box/):
 
 ```python order=null
 from deephaven import ui
@@ -131,7 +131,6 @@ Things get a lot more interesting when you source components from Deephaven tabl
 Components can be passed tables as input to display data. Take the picker example above. What if you want to choose from the available values in a column of a table?
 
 ```python order=null
-from deephaven import empty_table
 from deephaven import read_csv
 from deephaven import ui
 
@@ -150,19 +149,16 @@ species_picker_panel = species_panel()
 
 ![Picker sourced from table](../../assets/tutorials/crash-course/dh-ui/picker_from_iris.png)
 
-You can take this a step further and utilize the selected value to produce a filtered table and generate a [Deephaven Plotly Express](/core/plotly/docs/) [heatmap](/core/plotly/docs/density_heatmap/) showing the joint density of sepal length and sepal width for the selected species.
-
-What if you want to utilize state from a component? The following example utilizes state from the component to show the joint density of sepal length and sepal width for the selected species:
+You can take this a step further and use the selected value to filter a table. The following example stores the selected species in component state and uses it to produce a [Deephaven Express](/core/plotly/docs/) [heatmap](/core/plotly/docs/density_heatmap/) showing the joint density of sepal length and sepal width for that species:
 
 ```python order=null
 from deephaven.plot import express as dx
-from deephaven import empty_table
 from deephaven import read_csv
 from deephaven import ui
 
 
 @ui.component
-def species_panel():
+def species_explorer():
     species, set_species = ui.use_state()
     iris = ui.use_memo(
         lambda: read_csv(
@@ -190,7 +186,7 @@ def species_panel():
     )
 
 
-species_picker_panel = species_panel()
+species_explorer_panel = species_explorer()
 ```
 
 ![Species heatmap from picker](../../assets/tutorials/crash-course/dh-ui/species_picker_panel.gif)
@@ -199,7 +195,7 @@ species_picker_panel = species_panel()
 
 Dashboards are collections of components arranged in a grid layout. These grids are arranged into rows and columns, allowing you to create simple and complex layouts depending on your application's needs. They are a great way to present data and visualizations in a single view.
 
-The following example creates a simple 2x2 dashboards with components that don't have much use. This shows how the grid layout of a dashboard is created programmatically.
+The following example creates a simple 2x2 dashboard with components that don't have much use. This shows how the grid layout of a dashboard is created programmatically.
 
 ```python order=null
 from deephaven import ui

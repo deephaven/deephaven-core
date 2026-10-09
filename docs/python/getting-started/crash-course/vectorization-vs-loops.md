@@ -2,13 +2,13 @@
 title: Recipes, not loops!
 ---
 
-If you're coming from pandas, traditional Python, or other data processing tools, you're likely accustomed to writing loops to transform data. **Stop!** Deephaven works fundamentally differently, and understanding this difference early will save you countless hours of frustration and help you write better, faster code.
+If you're accustomed to writing loops to transform data, **stop!** Deephaven works fundamentally differently, and understanding this difference early saves you frustration and helps you write better, faster code.
 
 ## The fundamental paradigm shift: recipes, not loops
 
 ### How you might be thinking
 
-In pandas or traditional Python, you tell the computer **exactly how** to process each row:
+In traditional Python, you tell the computer **exactly how** to process each row:
 
 ```python skip-test
 # A loop applied to data — common habit, but wrong for Deephaven!
@@ -42,9 +42,9 @@ Notice:
 
 Even for static, one-time calculations, the recipe approach has advantages:
 
-1. **Clearer code** - Declarative recipes are easier to read than imperative loops.
-2. **Faster execution** - The engine can optimize vectorized operations.
-3. **Less error-prone** - No manual loop management or index tracking.
+1. **Clearer code** — Declarative recipes are easier to read than imperative loops.
+2. **Faster execution** — The engine evaluates formulas over batches of rows in compiled code.
+3. **Less error-prone** — No manual loop management or index tracking.
 
 ### For real-time data
 
@@ -53,20 +53,20 @@ This is the critical difference. **Loops execute once and stop. Recipes update a
 ```python ticking-table order=null test-set=ticking-demo
 from deephaven import time_table
 
-# This table adds a new row every second
+# This table adds roughly one new row every second
 source = time_table("PT1s").update(["X = i", "XSquared = X * X", "XCubed = X * X * X"])
 ```
 
 Watch what happens:
 
-- The table **keeps updating** - new rows appear every second.
+- The table **keeps updating** — new rows appear about every second.
 - Your **recipe runs automatically** on every new row.
-- You wrote it **once**, but it executes **forever**.
+- You wrote it **once**, but it keeps executing as the table updates.
 
 With a loop approach:
 
 ```python skip-test
-# This would only work ONCE and never update!
+# This runs once, blocks table updates while it iterates, and never reacts to new rows!
 for row in source.iter_tuple():
     x = row.X
     x_squared = x * x  # ❌ Where would this even go?
@@ -104,9 +104,9 @@ The engine decides:
 
 ### The engine is smart about updates
 
-1. **Tracks dependencies** - It knows that `Y` depends on `X`.
-2. **Computes incrementally** - Only new or changed rows are processed.
-3. **Updates automatically** - Results update without you doing anything.
+1. **Tracks dependencies** — It knows that `Y` depends on `X`.
+2. **Computes incrementally** — Only new rows, and rows whose input values changed, are processed.
+3. **Updates automatically** — Results update without you doing anything.
 
 This requires significant additional infrastructure with loops — a loop executes once and stops, so you would need to build your own subscription and recomputation logic.
 
@@ -155,7 +155,7 @@ print("Result DataFrame:")
 print(df2)
 ```
 
-**Key principle:** Once you're in Deephaven, think in recipes. Save loops for when you convert back to pandas.
+**Key principle:** Once you're in Deephaven, think in recipes.
 
 ## When loops ARE appropriate
 
@@ -286,7 +286,7 @@ result = empty_table(10).update("X = i").update_by(cum_sum("SumX = X"))
 
 | pandas/Python Pattern          | Deephaven Recipe                    |
 | ------------------------------ | ----------------------------------- |
-| `df.apply(func)`               | `.update("Y = func(X)")`            |
+| `df['X'].apply(func)`          | `.update("Y = func(X)")`            |
 | `for row in df.iterrows():`    | ❌ Don't! Use `.update()`           |
 | `df['Y'] = df['X'] * 2`        | `.update("Y = X * 2")`              |
 | `df[df['X'] > 5]`              | `.where("X > 5")`                   |

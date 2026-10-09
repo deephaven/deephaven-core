@@ -2,7 +2,7 @@
 title: Configure your Deephaven Instance
 ---
 
-This last section covers configuration details needed to take your Deephaven instance beyond the defaults.
+This section covers configuration details needed to take your Deephaven instance beyond the defaults.
 
 ## Authentication
 
@@ -16,7 +16,7 @@ It is advised that you change the password from a randomly generated string to y
 docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-slim:latest
 ```
 
-To learn more about PSK authentication, see the [user guide](../../how-to-guides/authentication/auth-psk.md) on the topic.
+To learn more about PSK authentication, see the [PSK authentication guide](../../how-to-guides/authentication/auth-psk.md).
 
 In addition to PSK authentication, Deephaven supports the following types of authentication:
 
@@ -45,7 +45,7 @@ Even with a standard deployment, you may need to install new Java packages at so
 
 Large datasets require significant memory. Unless you set `-Xmx`, the JVM picks a maximum heap size based on the memory available, which is often too small for large data. Fortunately, it's easy to give Deephaven more memory.
 
-If you're using Docker-installed Deephaven, Docker itself imposes memory constraints on processes it runs - you can raise this ceiling in [Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources) by going to `Settings > Resources` and raising the memory parameter. Then, you can specify the memory allocated to Deephaven with the `-Xmx` flag. Here's the command to pull and run the latest version of the Deephaven server with 16G of RAM:
+If you're using Docker-installed Deephaven on Docker Desktop, Docker Desktop limits the memory available to containers. You can raise this limit in `Settings > Resources` (see the [Docker Desktop settings](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources)). Then, set the maximum Java heap size for Deephaven with the `-Xmx` flag. Here's the command to run the Deephaven server with a 16 GB maximum heap:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 --env START_OPTS=-Xmx16g ghcr.io/deephaven/server-slim:latest
@@ -57,10 +57,10 @@ The [memory guide](../../how-to-guides/heap-size.md) explains more about allocat
 
 The data world is ever-evolving, and so is Deephaven. It's easy to keep your instance up-to-date, taking advantage of the latest features and bug fixes.
 
-If you're running Deephaven with Docker, simply use `docker pull` to pull the latest version of the image from the repository:
+If you're running Deephaven with Docker, use `docker pull` to download the latest image, then start a new container from it:
 
 ```bash
 docker pull ghcr.io/deephaven/server-slim:latest
 ```
 
-Users with custom Docker installations should check out [this guide](../../how-to-guides/configuration/updating-deephaven.md#update-deephaven) for information on updating custom instances.
+Users with custom Docker installations should see [updating Deephaven](../../how-to-guides/configuration/updating-deephaven.md#update-deephaven) for information on updating custom instances.
