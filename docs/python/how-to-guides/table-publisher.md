@@ -256,7 +256,7 @@ def create_matches(
 
     def on_flush(tp: TablePublisher):
         # Copy and clear under the lock so no match arrives between the two steps.
-        # Converting the copy to a table happens outside the lock, in Java, where the GIL is dropped.
+        # Build the table after releasing the lock, so the event loop isn't blocked.
         with my_matches_lock:
             my_matches_copy = my_matches.copy()
             my_matches.clear()
