@@ -10,6 +10,7 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
@@ -101,7 +102,7 @@ public class SchedulerModule {
             final ThreadInitializationFactory initializationFactory) {
         final int threads = BarrageMessageProducer.PROPAGATION_THREADS;
         if (threads <= 1) {
-            return BarrageMessageProducer.SEQUENTIAL_PROPAGATION;
+            return ImmediateJobScheduler::new;
         }
         final Executor helperPool = ExecutorJobScheduler.newHelperPool(threads - 1,
                 new ThreadFactory("Barrage-Propagation", updateGraph, initializationFactory));

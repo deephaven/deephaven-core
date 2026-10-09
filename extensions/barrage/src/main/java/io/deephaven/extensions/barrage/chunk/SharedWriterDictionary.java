@@ -20,16 +20,17 @@ import org.jetbrains.annotations.Nullable;
  * subscriber) delegate their index lookups here, so all full subscribers observe the same index assignments.
  *
  * <p>
- * The value list grows monotonically and is never compacted here. Each per-subscriber wrapper tracks an independent
+ * The value list only grows, until {@link #reset()} discards it. Each per-subscriber wrapper tracks an independent
  * {@code flushedOffset} into this list so it knows which values have already been sent to that subscriber.
  *
  * <p>
  * Thread-safety: the producer writes to its subscribers in parallel, so full subscribers fill, measure and read this
  * dictionary from different threads at once. Filling and copying hold the dictionary's monitor, once per chunk filled
- * and once per batch copied, since a fill may grow the value list while a copy reads it. Measuring does not: the size
- * is published through a volatile field after the values it counts, so a subscriber that reads it sees those values,
- * and because values are only appended, a range of the list that a subscriber has measured stays valid however many
- * values are added afterwards. {@link #reset()} must be called only while no subscriber is writing.
+ * and once per batch copied, since a fill may grow the value list while a copy reads it; the values are read only under
+ * the monitor. Measuring does not hold it: the size is a volatile field, so {@link #getTotalSize()} gives the
+ * subscribers' {@code hasDelta()} and {@code totalSize()} checks an up-to-date count without blocking, and because
+ * values are only appended, a range of the list that a subscriber has measured stays valid however many values are
+ * added afterwards. {@link #reset()} must be called only while no subscriber is writing.
  */
 public final class SharedWriterDictionary {
 

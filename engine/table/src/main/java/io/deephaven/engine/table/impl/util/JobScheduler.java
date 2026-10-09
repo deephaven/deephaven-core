@@ -282,6 +282,14 @@ public interface JobScheduler {
          * else will run it; see {@link #abandon} for the others. A submission that throws after its job already ran on
          * this thread did not refuse it, and its exception is the caller's.
          * </p>
+         *
+         * @param scheduler the scheduler to submit the invokers to
+         * @param executionContext the execution context the tasks run under, or null to run them under each thread's
+         *        own
+         * @param taskThreadContextFactory makes each invoker's task context, on the calling thread
+         * @param maxThreads the most invokers to make, further capped by the scheduler's thread count
+         * @param callerParticipates true for {@code invokeParallel}, whose caller runs the first invoker itself; false
+         *        for the callback forms, which submit every invoker
          */
         private void startTasks(
                 @NotNull final JobScheduler scheduler,
@@ -951,8 +959,10 @@ public interface JobScheduler {
      * on whatever thread it runs on. The invocation completes as long as every task's own work does and no task waits
      * on other work submitted to the scheduler, such as a callback-form iteration, which the caller cannot run on its
      * behalf. The update graph's scheduler accepts jobs only during an update cycle, so with more than one update
-     * thread this must be called during one; on the refresh thread, which alone dispatches those jobs, the caller runs
-     * every task itself.
+     * thread this must be called during an update cycle. Its parallelism comes from the update graph's pool threads.
+     * Called from an update thread, as listener code is, the other tasks are dispatched to the remaining pool threads
+     * by the update graph's refresh thread. Called from the refresh thread itself, nothing is dispatched while it
+     * waits, so it runs every task itself, one after another.
      * </p>
      *
      * @param executionContext the execution context the tasks run under, on every thread that runs them, the calling

@@ -107,7 +107,10 @@ public class BarrageSubscriberFanOutBenchmark {
     @Param({"1", "2", "4", "8", "16"})
     private int subscribers;
 
-    /** The most threads that write at once, the calling thread included; one writes sequentially. */
+    /**
+     * The most threads that write at once, counting the calling thread. With a single thread, the calling thread writes
+     * to the subscribers in turn.
+     */
     @Param({"1", "2", "4", "8"})
     private int threads;
 

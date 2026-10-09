@@ -3,7 +3,6 @@
 //
 package io.deephaven.server.arrow;
 
-import dagger.BindsOptionalOf;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
@@ -33,22 +32,11 @@ import java.util.stream.Collectors;
  *
  * <p>
  * The marshallers are also given the {@code Supplier<JobScheduler>} bound as
- * {@value BarrageMessageProducer#PROPAGATION_JOB_SCHEDULER} when the component has one, and
- * {@link BarrageMessageProducer#SEQUENTIAL_PROPAGATION} when it does not.
+ * {@value BarrageMessageProducer#PROPAGATION_JOB_SCHEDULER}, which a component that includes this module must provide.
  * </p>
  */
-@Module(includes = ExchangeMarshallerModule.PropagationJobSchedulerModule.class)
+@Module
 public class ExchangeMarshallerModule {
-    /**
-     * Declares the propagation job scheduler optional, so that a component without one still builds; its producers then
-     * write to their subscribers in turn.
-     */
-    @Module
-    public interface PropagationJobSchedulerModule {
-        @BindsOptionalOf
-        @Named(BarrageMessageProducer.PROPAGATION_JOB_SCHEDULER)
-        Supplier<JobScheduler> propagationJobScheduler();
-    }
 
     /**
      * Multiple modules could have injected a marshaller, we must sort the complete list by priority.
@@ -68,9 +56,7 @@ public class ExchangeMarshallerModule {
     public static Set<ExchangeMarshaller> provideExchangeMarshallers(final Scheduler scheduler,
             final SessionService.ErrorTransformer errorTransformer,
             final BarrageMessageWriter.Factory streamGeneratorFactory,
-            @Named(BarrageMessageProducer.PROPAGATION_JOB_SCHEDULER) final Optional<Supplier<JobScheduler>> propagationJobScheduler) {
-        final Supplier<JobScheduler> propagationJobSchedulerFactory =
-                propagationJobScheduler.orElse(BarrageMessageProducer.SEQUENTIAL_PROPAGATION);
+            @Named(BarrageMessageProducer.PROPAGATION_JOB_SCHEDULER) final Supplier<JobScheduler> propagationJobSchedulerFactory) {
         return ServiceLoader.load(ExchangeMarshallerModule.Factory.class)
                 .stream()
                 .map(factory -> factory.get().create(scheduler, errorTransformer, streamGeneratorFactory,
@@ -82,25 +68,14 @@ public class ExchangeMarshallerModule {
      * To add an additional {@link ExchangeMarshaller}, implement this Factory and add it as a service.
      */
     public interface Factory {
+        /**
+         * Creates the marshaller. Any {@link BarrageMessageProducer} it makes writes each propagation phase to its
+         * subscribers on a scheduler from {@code propagationJobSchedulerFactory}.
+         */
         ExchangeMarshaller create(final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageMessageWriter.Factory streamGeneratorFactory);
-
-        /**
-         * Creates the marshaller, given also the supplier of the job scheduler that its
-         * {@link BarrageMessageProducer}s, if it makes any, should write to their subscribers on. The module calls this
-         * one; the default ignores the supplier and calls
-         * {@link #create(Scheduler, SessionService.ErrorTransformer, BarrageMessageWriter.Factory)}.
-         *
-         * @param propagationJobSchedulerFactory supplies the scheduler each propagation phase's writes to subscribers
-         *        run on, in parallel when it can
-         */
-        default ExchangeMarshaller create(final Scheduler scheduler,
-                final SessionService.ErrorTransformer errorTransformer,
                 final BarrageMessageWriter.Factory streamGeneratorFactory,
-                final Supplier<JobScheduler> propagationJobSchedulerFactory) {
-            return create(scheduler, errorTransformer, streamGeneratorFactory);
-        }
+                final Supplier<JobScheduler> propagationJobSchedulerFactory);
     }
 
     @Provides

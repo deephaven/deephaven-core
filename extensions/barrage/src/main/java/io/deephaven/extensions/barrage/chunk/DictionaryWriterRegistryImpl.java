@@ -45,9 +45,9 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     /**
      * Creates a shared-backed registry for full subscriptions and growing subscriptions targeting a full subscription.
      * The {@code sharedDictionaries} map is owned by the {@code io.deephaven.server.barrage.BarrageMessageProducer} and
-     * lives for the lifetime of the table's producer; it is never cleared. Registries over the same map may be used
-     * from different threads at once; they add to it only while holding its monitor, and anyone iterating it must do so
-     * while none of them is in use.
+     * lives for the lifetime of the table's producer; it is never cleared. Registries over the same map are used by
+     * different subscribers simultaneously, and add to it only while holding its lock. The producer resets dictionaries
+     * that have outgrown the table *before* a propagation phase's writes begin, when no registry is adding to it.
      */
     public DictionaryWriterRegistryImpl(
             @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries) {

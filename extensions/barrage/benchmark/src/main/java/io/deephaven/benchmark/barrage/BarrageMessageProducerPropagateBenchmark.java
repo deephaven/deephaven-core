@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
@@ -87,10 +88,10 @@ public class BarrageMessageProducerPropagateBenchmark {
         int subscribers;
 
         /**
-         * Writer threads per propagation phase, counting the job's own thread. Zero builds the producer with the
-         * constructor that predates parallel writes, which writes to subscribers in turn.
+         * Writer threads per propagation phase, counting the propagation job's own thread. With a single writer thread,
+         * the job writes to the subscribers in turn.
          */
-        @Param({"0", "4", "8"})
+        @Param({"1", "4", "8"})
         int threads;
 
         /** {@code full} subscribes everyone to the whole table; {@code mixed} alternates full and viewport. */
@@ -142,14 +143,9 @@ public class BarrageMessageProducerPropagateBenchmark {
             final BarrageMessageWriter.Factory writerFactory = new BarrageMessageWriterImpl.Factory();
             final SessionService.ErrorTransformer errorTransformer =
                     new SessionService.ObfuscatingErrorTransformer();
-            if (threads == 0) {
-                // the constructor every producer used before writes could run in parallel
-                return new BarrageMessageProducer.Operation(scheduler, errorTransformer, writerFactory, table,
-                        UPDATE_INTERVAL_MS);
-            }
             final Supplier<JobScheduler> propagationJobSchedulerFactory;
             if (threads == 1) {
-                propagationJobSchedulerFactory = BarrageMessageProducer.SEQUENTIAL_PROPAGATION;
+                propagationJobSchedulerFactory = ImmediateJobScheduler::new;
             } else {
                 // the pool the server makes, but one this benchmark can shut down
                 final AtomicInteger threadCount = new AtomicInteger();

@@ -211,7 +211,7 @@ public class TestInvokeParallel {
 
     @Test
     public void testImmediateRunsEveryTaskInOrderOnTheCallingThread() {
-        final List<Integer> order = new ArrayList<>();
+        final List<Integer> order = Collections.synchronizedList(new ArrayList<>());
         final Set<Thread> threads = ConcurrentHashMap.newKeySet();
         invoke(new ImmediateJobScheduler(), 20, (context, idx, nec) -> {
             order.add(idx);

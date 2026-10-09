@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
@@ -173,12 +172,6 @@ public class BarrageMessageProducer extends LivenessArtifact
      */
     public static final String PROPAGATION_JOB_SCHEDULER = "BarrageMessageProducer.propagationJobScheduler";
 
-    /**
-     * Supplies the scheduler that writes to every subscriber in turn on the propagation job's own thread: a new
-     * {@link ImmediateJobScheduler} for each phase, as one of those serves a single thread at a time.
-     */
-    public static final Supplier<JobScheduler> SEQUENTIAL_PROPAGATION = ImmediateJobScheduler::new;
-
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
 
@@ -196,31 +189,6 @@ public class BarrageMessageProducer extends LivenessArtifact
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
         private final Supplier<JobScheduler> propagationJobSchedulerFactory;
-
-        /**
-         * Makes an operation whose producer writes to its subscribers in turn, on its propagation job's thread.
-         */
-        public Operation(
-                final Scheduler scheduler,
-                final SessionService.ErrorTransformer errorTransformer,
-                final BarrageMessageWriter.Factory streamGeneratorFactory,
-                final BaseTable<?> parent,
-                final long updateIntervalMs) {
-            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null,
-                    SEQUENTIAL_PROPAGATION);
-        }
-
-        @VisibleForTesting
-        public Operation(
-                final Scheduler scheduler,
-                final SessionService.ErrorTransformer errorTransformer,
-                final BarrageMessageWriter.Factory streamGeneratorFactory,
-                final BaseTable<?> parent,
-                final long updateIntervalMs,
-                @Nullable final Runnable onGetSnapshot) {
-            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot,
-                    SEQUENTIAL_PROPAGATION);
-        }
 
         /**
          * Makes an operation whose producer writes to its subscribers on the schedulers that
@@ -422,17 +390,6 @@ public class BarrageMessageProducer extends LivenessArtifact
     private boolean onGetSnapshotIsPreSnap;
 
     private final boolean parentIsRefreshing;
-
-    public BarrageMessageProducer(
-            final Scheduler scheduler,
-            final SessionService.ErrorTransformer errorTransformer,
-            final BarrageMessageWriter.Factory streamGeneratorFactory,
-            final BaseTable<?> parent,
-            final long updateIntervalMs,
-            final Runnable onGetSnapshot) {
-        this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot,
-                SEQUENTIAL_PROPAGATION);
-    }
 
     public BarrageMessageProducer(
             final Scheduler scheduler,
@@ -2017,9 +1974,9 @@ public class BarrageMessageProducer extends LivenessArtifact
             final RowSet propRowSetForMessagePrev,
             final RowSet propRowSetForMessage) {
         // Check shared dictionary states for overflow before building any batches. When the cumulative dictionary size
-        // exceeds the current live row count, the dictionary has grown larger than the data it encodes; reset it so
-        // the next DictionaryBatch is isDelta=false with a compacted set of values. FullSubscriptionDictionaryState
-        // instances detect the reset lazily via the SharedWriterDictionary generation counter.
+        // exceeds the current live row count, the dictionary has grown larger than the data it encodes; reset it so the
+        // next DictionaryBatch is isDelta=false with a compacted set of values. SharedDictionaryWriterState instances
+        // detect the reset lazily via the SharedWriterDictionary generation counter.
         final long fullTableRowCount = propRowSetForMessage.size();
         for (final SharedWriterDictionary sharedState : sharedDictionaryStates.values()) {
             if (sharedState.getTotalSize() > fullTableRowCount) {

@@ -162,14 +162,6 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
         @Override
         public ExchangeMarshaller create(final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageMessageWriter.Factory streamGeneratorFactory) {
-            return create(scheduler, errorTransformer, streamGeneratorFactory,
-                    BarrageMessageProducer.SEQUENTIAL_PROPAGATION);
-        }
-
-        @Override
-        public ExchangeMarshaller create(final Scheduler scheduler,
-                final SessionService.ErrorTransformer errorTransformer,
                 final BarrageMessageWriter.Factory streamGeneratorFactory,
                 final Supplier<JobScheduler> propagationJobSchedulerFactory) {
             final BarrageMessageProducer.Operation.Factory factory =

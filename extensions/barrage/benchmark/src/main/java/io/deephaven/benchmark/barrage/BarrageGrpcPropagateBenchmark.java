@@ -15,6 +15,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
@@ -243,7 +244,10 @@ public class BarrageGrpcPropagateBenchmark {
         @Param({"1", "2", "3", "4", "8", "16"})
         int subscribers;
 
-        /** Writer threads per propagation phase, counting the job's own thread; one writes to subscribers in turn. */
+        /**
+         * Writer threads per propagation phase, counting the propagation job's own thread. With a single writer thread,
+         * the job writes to the subscribers in turn.
+         */
         @Param({"1", "8"})
         int threads;
 
@@ -329,7 +333,7 @@ public class BarrageGrpcPropagateBenchmark {
                     new SessionService.ObfuscatingErrorTransformer();
             final Supplier<JobScheduler> propagationJobSchedulerFactory;
             if (threads <= 1) {
-                propagationJobSchedulerFactory = BarrageMessageProducer.SEQUENTIAL_PROPAGATION;
+                propagationJobSchedulerFactory = ImmediateJobScheduler::new;
             } else {
                 // the pool the server makes, but one this benchmark can shut down
                 final AtomicInteger threadCount = new AtomicInteger();

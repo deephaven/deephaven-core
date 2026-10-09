@@ -24,6 +24,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
 import io.deephaven.engine.testutil.*;
@@ -151,7 +152,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
             final ThreadPoolExecutor pool = propagationPool;
             propagationJobSchedulerFactory = () -> new ExecutorJobScheduler(pool, threads);
         } else {
-            propagationJobSchedulerFactory = BarrageMessageProducer.SEQUENTIAL_PROPAGATION;
+            propagationJobSchedulerFactory = ImmediateJobScheduler::new;
         }
     }
 
