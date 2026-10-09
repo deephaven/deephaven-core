@@ -28,7 +28,7 @@ New subscriptions and subscription changes require initializing table state buil
 
 4. Propagation to gRPC listeners
 
-Each delta and snapshot is then propagated to its subscribers. When a message goes to more than one subscriber and `BarrageMessageProducer.propagationThreads` is greater than `1`, several of them are written at once (see [Write to subscribers in parallel](../how-to-guides/performance/barrage-performance.md#write-to-subscribers-in-parallel)). Barrage records `PropagateNanos`, the time it took to pass the message to the list of listeners.
+Each delta and snapshot is then propagated to its subscribers. When a message goes to more than one subscriber, the server can write it to several of them at once (see [Write to subscribers in parallel](../how-to-guides/performance/barrage-performance.md#write-to-subscribers-in-parallel)). Barrage records `PropagateNanos`, the time it took to pass the message to the list of listeners.
 
 > [!NOTE]
 > Barrage also records `UpdateJobNanos`, the aggregate time it took to coalesce deltas, fetch the snapshot, propagate, and housekeep.
