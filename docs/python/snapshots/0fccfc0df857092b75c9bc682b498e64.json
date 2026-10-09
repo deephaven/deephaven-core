@@ -1,0 +1,1 @@
+{"file":"how-to-guides/new-and-empty-table.md","objects":{"name_total":{"type":"Table","data":{"columns":[{"name":"Name","type":"java.lang.String"},{"name":"Total","type":"int"}],"rows":[[{"value":"James"},{"value":"285"}],[{"value":"Lauren"},{"value":"242"}],[{"value":"Zoey"},{"value":"294"}]]}}}}

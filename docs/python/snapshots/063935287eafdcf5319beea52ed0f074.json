@@ -1,0 +1,1 @@
+{"file":"how-to-guides/input-tables.md","objects":{"my_input_table":{"type":"Table","data":{"columns":[{"name":"Key","type":"java.lang.String"},{"name":"Value","type":"int"}],"rows":[[{"value":"A"},{"value":"10"}],[{"value":"B"},{"value":"2"}],[{"value":"C"},{"value":"3"}],[{"value":"D"},{"value":"4"}]]}}}}

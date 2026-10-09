@@ -5,34 +5,34 @@ title: Create and use input tables
 > [!TIP]
 > This guide covers input tables created and used directly on the Deephaven server. To stream data from an external Java application, see [Java client input tables](./java-client-input-tables.md).
 
-Input tables allow users to enter new data into tables in two ways: programmatically, and manually through the UI.
+Input tables allow users to enter new data into tables in two ways: programmatically and manually through the UI.
 
-In the first case, data is added to a table with `add`, an input table-specific method similar to [`merge`](../reference/table-operations/merge/merge.md). In the second case, data is added to a table through the UI by clicking on cells and typing in the contents, similar to a spreadsheet program like [MS Excel](https://www.microsoft.com/en-us/microsoft-365/excel).
+In the first case, you add data with the [`add`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#add(io.deephaven.engine.table.Table)) method of the table's [`InputTableUpdater`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html), which works similarly to [`merge`](../reference/table-operations/merge/merge.md). In the second case, you click cells in the UI and type their contents, as in a spreadsheet program like [Microsoft Excel](https://www.microsoft.com/en-us/microsoft-365/excel).
 
 Input tables come in two flavors:
 
-- [append-only](../conceptual/table-types.md#specialization-1-append-only)
-  - An append-only input table puts any entered data at the bottom.
+- [append-only](#create-an-input-table)
+  - An append-only input table puts any entered data at the bottom. It is an [append-only table](../conceptual/table-types.md#specialization-1-append-only).
 - [keyed](#create-a-keyed-input-table)
-  - A keyed input table supports modification/deletion of contents, and allows access to rows by key.
+  - A keyed input table has one or more key columns whose values identify each row. You can replace or delete existing rows by key.
 
-We'll show you how to create and use both types in this guide.
+This guide shows how to create and use both types.
 
 ## Create an input table
 
-First, you need to import the `AppendOnlyArrayBackedInputTable` class:
+Append-only input tables use the [`AppendOnlyArrayBackedInputTable`](/core/javadoc/io/deephaven/engine/table/impl/util/AppendOnlyArrayBackedInputTable.html) class, and keyed input tables use the [`KeyedArrayBackedInputTable`](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedArrayBackedInputTable.html) class. To create an append-only input table, first import `AppendOnlyArrayBackedInputTable`:
 
 ```groovy
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable
 ```
 
-An input table can be constructed from a pre-existing table _or_ a list of column definitions. In either case, one or more key columns can be specified, which turns the table from an append-only input table to a keyed input table.
+You can create an input table from a pre-existing table _or_ from a set of column definitions. Either source also works for a keyed input table. A key column holds values that identify each row, so no two rows share the same key value. With several key columns, no two rows share the same combination of values. The next two sections create append-only input tables, and [Create a keyed input table](#create-a-keyed-input-table) shows how to add key columns.
 
 ### From a pre-existing table
 
-Here, we will create an input table from a table that already exists in memory. In this case, we'll create one with [`emptyTable`](/core/docs/reference/table-operations/create/emptyTable/).
+Here, we create an input table from a table that already exists in memory. The example creates that source table with [`emptyTable`](../reference/table-operations/create/emptyTable.md).
 
-```groovy test-set-1 order=source,result
+```groovy test-set=1 order=source,result
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable
 
 source = emptyTable(10).update("X = i")
@@ -40,11 +40,11 @@ source = emptyTable(10).update("X = i")
 result = AppendOnlyArrayBackedInputTable.make(source)
 ```
 
-### From scratch
+### From column definitions
 
-Here, we will create an input table from a list of column definitions. Column definitions must be defined in a [TableDefinition](/core/javadoc/io/deephaven/engine/table/TableDefinition.html).
+Here, we create an input table from a set of column definitions. Pass the columns as a [`TableDefinition`](/core/javadoc/io/deephaven/engine/table/TableDefinition.html) built from [`ColumnDefinition`](/core/javadoc/io/deephaven/engine/table/ColumnDefinition.html) objects.
 
-```groovy test-set=1 order=null
+```groovy test-set=1 order=result
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.table.ColumnDefinition
@@ -54,11 +54,11 @@ definition = TableDefinition.of(ColumnDefinition.ofInt("X"))
 result = AppendOnlyArrayBackedInputTable.make(definition)
 ```
 
-The resulting table is initially empty, and ready to receive data.
+The resulting table is initially empty and ready to receive data.
 
 ### Create a keyed input table
 
-To create a keyed input table, import [`KeyedArrayBackedInputTable`](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedArrayBackedInputTable.html) and call [`make`](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedArrayBackedInputTable.html), using a source table and at least one key column as arguments.
+To create a keyed input table, import [`KeyedArrayBackedInputTable`](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedArrayBackedInputTable.html) and call [`make`](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedArrayBackedInputTable.html#make(io.deephaven.engine.table.Table,java.lang.String...)) with a source table or a [`TableDefinition`](/core/javadoc/io/deephaven/engine/table/TableDefinition.html), followed by one or more key column names.
 
 Let's first specify one key column.
 
@@ -79,26 +79,28 @@ In the case of multiple key columns, pass each column name as a separate argumen
 result = KeyedArrayBackedInputTable.make(source, "Strings", "Doubles")
 ```
 
-When creating a keyed input table from a pre-existing table, the key column(s) must satisfy uniqueness criteria. Each row or combination of rows in the initial table must not have repeating values. Take, for instance, the following table:
+When you create a keyed input table from a pre-existing table, the input table keeps one row per key. If several rows of the initial table share a key, the input table keeps the values from the last of those rows. With multiple key columns, a key is a combination of values. Take, for instance, the following table:
 
 ```groovy test-set=2 order=source
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable
+
 source = emptyTable(10).update(
-        "Sym = (i % 2 == 0) ? `A` : `B`",
-        "Marker = (i % 3 == 2) ? `J` : `K`",
-        "X = i",
-        "Y = sin(0.1 * X)",
+    "Sym = (i % 2 == 0) ? `A` : `B`",
+    "Marker = (i % 3 == 2) ? `J` : `K`",
+    "X = i",
+    "Y = sin(0.1 * X)"
 )
 ```
 
-A keyed input table _can_ be created from the `X` and `Y` columns, since they have no repeating values, and are thus unique:
+No two rows share the same combination of `X` and `Y` values, so a keyed input table with `X` and `Y` as key columns keeps all 10 rows:
 
 ```groovy test-set=2 order=inputSource
 inputSource = KeyedArrayBackedInputTable.make(source, "X", "Y")
 ```
 
-A keyed input table _cannot_ be created from the `Sym` _or_ `Marker` columns, since they have repeating values and combinations, and are thus _not_ unique:
+`Sym` and `Marker` together take only four distinct combinations of values, so a keyed input table with `Sym` and `Marker` as key columns has four rows. Each row holds the values from the last source row with that combination:
 
-```groovy test-set=2 should-fail
+```groovy test-set=2 order=inputSource
 inputSource = KeyedArrayBackedInputTable.make(source, "Sym", "Marker")
 ```
 
@@ -106,13 +108,15 @@ inputSource = KeyedArrayBackedInputTable.make(source, "Sym", "Marker")
 
 ### Programmatically
 
-To add data to an input table programmatically, you will need to create a `InputTableUpdater` object using your input table's `INPUT_TABLE_ATTRIBUTE`. This object can be used to add or remove data from the associated table.
+To add data to an input table programmatically, get its [`InputTableUpdater`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html) with [`InputTableUpdater.from(table)`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#from(io.deephaven.engine.table.Table)). This object adds data to and removes data from the input table.
+
+An append-only input table adds new rows to the end of the table. In a keyed input table, an added row whose key already exists replaces the existing row with that key, and the other added rows become new rows.
 
 > [!NOTE]
-> To programmatically add data to an input table, the table schemas (column definitions) must match. These column definitions comprise the names and data types of every column in the table.
+> To add data to an input table programmatically, the table you add must have the same column names and data types as the input table.
 
-```groovy order=source,result
-// import the needed InputTableUpdater classes
+```groovy test-set=3 order=source,result
+// import the needed classes
 import io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable
 import io.deephaven.engine.util.input.InputTableUpdater
 
@@ -130,33 +134,68 @@ table2 = newTable(
 // create a keyed input table
 result = KeyedArrayBackedInputTable.make(source, "Strings")
 
-// create a InputTableUpdater object with the result table's input table attribute
-mit = (InputTableUpdater)result.getAttribute(Table.INPUT_TABLE_ATTRIBUTE)
+// get the InputTableUpdater for the result table
+updater = InputTableUpdater.from(result)
 
 // add the second table to the input table
-mit.add(table2)
+updater.add(table2)
+```
+
+[`add`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#add(io.deephaven.engine.table.Table)) blocks until Deephaven finishes adding the data. To add data without blocking, use [`addAsync`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#addAsync(io.deephaven.engine.table.Table,io.deephaven.engine.util.input.InputTableStatusListener)).
+
+[`addAsync`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#addAsync(io.deephaven.engine.table.Table,io.deephaven.engine.util.input.InputTableStatusListener)) takes an [`InputTableStatusListener`](/core/javadoc/io/deephaven/engine/util/input/InputTableStatusListener.html), which Deephaven notifies when the queued addition succeeds or fails. [`InputTableStatusListener.DEFAULT`](/core/javadoc/io/deephaven/engine/util/input/InputTableStatusListener.html#DEFAULT) does nothing on success and logs the failure to the server log. Problems that Deephaven detects before it queues the addition, such as a table whose column names or types don't match the input table, throw an exception from `addAsync` immediately instead of reaching the listener.
+
+Deephaven processes asynchronous calls from the same thread in the order you make them, but it doesn't guarantee an order across threads. The following code block asynchronously adds a row with a new key, `Jjj`, and replaces the row with the existing key `Aaa`:
+
+```groovy test-set=3 order=null
+import io.deephaven.engine.util.input.InputTableStatusListener
+
+table3 = newTable(
+    doubleCol("Doubles", 7.5, 0.25),
+    stringCol("Strings", "Jjj", "Aaa")
+)
+
+updater.addAsync(table3, InputTableStatusListener.DEFAULT)
 ```
 
 ### Manually
 
-To manually add data to an input table, simply click on the cell in which you wish to enter data. Type the value into the cell, hit enter, and it will appear.
+To manually add data to an input table, click the cell in which you wish to enter data, type the value, and press **Enter**.
 
-![A user manually adds values to an input table](../assets/how-to/input-table-keyed-edit-existing.gif)
+A [`KeyedArrayBackedInputTable`](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedArrayBackedInputTable.html) allows you to edit existing rows, while an [`AppendOnlyArrayBackedInputTable`](/core/javadoc/io/deephaven/engine/table/impl/util/AppendOnlyArrayBackedInputTable.html) only allows you to add new rows. In a keyed input table, adding a row whose key already exists replaces the existing row with that key.
 
-Note that a `KeyedArrayBackedInputTable` will allow you to edit existing rows, while an `AppendOnlyArrayBackedInputTable` will only allow you to add new rows.
+![A user edits an existing row in a keyed input table](../assets/how-to/input-table-keyed-edit-existing.gif)
 
 > [!IMPORTANT]
-> Added rows aren't final until you hit the **Commit** button. If you edit an existing row in a keyed input table, the result is immediate.
+> Added rows aren't final until you click the **Commit** button. If you edit an existing row in a keyed input table, the result is immediate.
 
 Here are some things to consider when manually entering data into an input table:
 
-- Manually entered data in a table will not be final until the **Commit** button at the bottom right of the console is clicked.
-- Data added manually to a table must be of the correct type for its column. For instance, attempting to add a string value to an int column will fail.
-- Entering data in between populated cells and hitting **Enter** will add the data to the bottom of the column.
+- Data added manually to a table must be of the correct type for its column. For instance, attempting to add a string value to an `int` column fails.
+- Entering data in between populated cells and pressing **Enter** adds the data to the bottom of the column.
 
-## Clickable links
+## Delete data from a table
 
-Any string column in Deephaven can contain a clickable link — the string just has to be formatted correctly.
+You can delete data only from a keyed input table. Calling [`delete`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#delete(io.deephaven.engine.table.Table)) or [`deleteAsync`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#deleteAsync(io.deephaven.engine.table.Table,io.deephaven.engine.util.input.InputTableStatusListener)) on an append-only input table throws an `UnsupportedOperationException`. To delete data from a keyed input table, use one of the following [`InputTableUpdater`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html) methods:
+
+- [`delete`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#delete(io.deephaven.engine.table.Table)): Synchronous deletion.
+- [`deleteAsync`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#deleteAsync(io.deephaven.engine.table.Table,io.deephaven.engine.util.input.InputTableStatusListener)): Asynchronous deletion.
+
+To delete table data, supply a table that contains only the key columns, with the key values of the rows you wish to delete. For instance, the example in [Programmatically](#programmatically) creates a keyed input table whose key column is `Strings`, and gets its `updater`. The following code deletes the row with the key value `Bbb`:
+
+```groovy test-set=3 order=null
+updater.delete(newTable(stringCol("Strings", "Bbb")))
+```
+
+To delete data asynchronously, use [`deleteAsync`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#deleteAsync(io.deephaven.engine.table.Table,io.deephaven.engine.util.input.InputTableStatusListener)), which takes an [`InputTableStatusListener`](/core/javadoc/io/deephaven/engine/util/input/InputTableStatusListener.html) and follows the same ordering rules as [`addAsync`](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html#addAsync(io.deephaven.engine.table.Table,io.deephaven.engine.util.input.InputTableStatusListener)). The following code block asynchronously deletes the row with the key value `Ccc`:
+
+```groovy test-set=3 order=null
+updater.deleteAsync(newTable(stringCol("Strings", "Ccc")), InputTableStatusListener.DEFAULT)
+```
+
+## Enter clickable links in an input table
+
+Input tables are a convenient way to try out clickable links, because you can type links directly into their cells. Any string column in Deephaven can contain a clickable link if the string is formatted correctly. See [Add clickable links](./user-interface/add-clickable-links.md) for examples of strings that are and aren't displayed as links.
 
 ![An input table contains both valid and invalid links, with valid links underlined and highlighted in blue](../assets/how-to/ui/invalid_links.png)
 
@@ -255,7 +294,8 @@ stringListValidator = StringListValidatingInputTable.make(
 
 ## Related documentation
 
-- [Input Table](../reference/table-operations/create/InputTable.md)
+- [Input table reference](../reference/table-operations/create/InputTable.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [Table types](../conceptual/table-types.md)
-- [InputTableUpdater](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html)
+- [Add clickable links](./user-interface/add-clickable-links.md)
+- [`InputTableUpdater` Javadoc](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html)
