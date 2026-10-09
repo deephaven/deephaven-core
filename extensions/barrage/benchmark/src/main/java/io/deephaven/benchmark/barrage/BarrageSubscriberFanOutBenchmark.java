@@ -207,13 +207,16 @@ public class BarrageSubscriberFanOutBenchmark {
     }
 
     @TearDown(Level.Trial)
-    public void tearDown() {
+    public void tearDown() throws InterruptedException {
         for (final Subscriber subscriber : subscriberList) {
             subscriber.close();
         }
         message.close();
         if (pool != null) {
             pool.shutdownNow();
+            if (!pool.awaitTermination(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("the helper pool did not terminate");
+            }
         }
         executionContext.close();
     }

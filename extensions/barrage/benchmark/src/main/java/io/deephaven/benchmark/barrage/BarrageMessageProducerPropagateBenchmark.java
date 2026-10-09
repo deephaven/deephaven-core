@@ -200,10 +200,13 @@ public class BarrageMessageProducerPropagateBenchmark {
             sinks.clear();
         }
 
-        void tearDownProducer() {
+        void tearDownProducer() throws InterruptedException {
             livenessScope.close();
             if (fanOutPool != null) {
                 fanOutPool.shutdownNow();
+                if (!fanOutPool.awaitTermination(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("the helper pool did not terminate");
+                }
             }
             executionContext.close();
         }
@@ -227,7 +230,7 @@ public class BarrageMessageProducerPropagateBenchmark {
         }
 
         @TearDown(Level.Trial)
-        public void tearDownTrial() {
+        public void tearDownTrial() throws InterruptedException {
             tearDownProducer();
         }
     }
@@ -271,7 +274,7 @@ public class BarrageMessageProducerPropagateBenchmark {
         }
 
         @TearDown(Level.Trial)
-        public void tearDownTrial() {
+        public void tearDownTrial() throws InterruptedException {
             unsubscribe();
             tearDownProducer();
         }

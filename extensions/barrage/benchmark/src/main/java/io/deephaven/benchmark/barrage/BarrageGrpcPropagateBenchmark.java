@@ -429,6 +429,9 @@ public class BarrageGrpcPropagateBenchmark {
             livenessScope.close();
             if (helperPool != null) {
                 helperPool.shutdownNow();
+                if (!helperPool.awaitTermination(STREAM_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("the helper pool did not terminate");
+                }
             }
             executionContext.close();
         }
