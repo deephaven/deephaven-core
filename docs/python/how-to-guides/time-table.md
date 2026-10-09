@@ -65,7 +65,7 @@ The example calls [`reverse`](../reference/table-operations/sort/reverse.md) onl
 
 By default, the result of [`time_table`](../reference/table-operations/create/timeTable.md) is [append-only](../conceptual/table-types.md#specialization-1-append-only). Set the `blink_table` parameter to `True` to create a [blink](../conceptual/table-types.md#specialization-3-blink) table, which retains only the rows from the most recent [update cycle](../conceptual/table-update-model.md).
 
-In the following example, a new row arrives every two seconds. By default, the engine runs an update cycle about once per second, so only about every other cycle adds a row. After a cycle that adds a row, the table holds just that row. After a cycle that adds no row, the table is empty:
+In the following example, a new row arrives every two seconds. By default, the engine runs an update cycle about once per second, so only about every other cycle adds a row. After a cycle that adds a row, the table holds only the rows added in that cycle, usually one. A slow cycle can add more than one. After a cycle that adds no row, the table is empty:
 
 ```python ticking-table order=null
 from deephaven import time_table

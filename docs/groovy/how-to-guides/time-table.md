@@ -64,7 +64,7 @@ To create a blink time table, call [`timeTableBuilder`](/core/javadoc/io/deephav
 2. Pass `true` to [`blinkTable`](/core/javadoc/io/deephaven/engine/table/impl/TimeTable.Builder.html#blinkTable(boolean)).
 3. Call [`build`](/core/javadoc/io/deephaven/engine/table/impl/TimeTable.Builder.html#build()).
 
-In the following example, a new row arrives every two seconds. By default, the engine runs an update cycle about once per second, so only about every other cycle adds a row. After a cycle that adds a row, the table holds just that row. After a cycle that adds no row, the table is empty:
+In the following example, a new row arrives every two seconds. By default, the engine runs an update cycle about once per second, so only about every other cycle adds a row. After a cycle that adds a row, the table holds only the rows added in that cycle, usually one. A slow cycle can add more than one. After a cycle that adds no row, the table is empty:
 
 ```groovy ticking-table order=null
 result = timeTableBuilder().period("PT2S").blinkTable(true).build()
