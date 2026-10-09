@@ -104,3 +104,17 @@ Method: "main" is the skill on `main`; "new" is the PR branch. Each trial read t
 | 9 (new) | `order=` tags list tables their block didn't create | 4/6 | 6/6 |
 
 One `main` run also flagged the setup block's `order=` tag or the shared `test-set`, which the control expectation rules out.
+
+### Chip Kent's 2026-10-09 review of #7457 (linking and readability)
+
+Chip's third review of the parallelization concept guide flagged bare API names that the per-`##`-section linking rule allows (later mentions in a new paragraph, bold lead terms in a contrast list, every name in Key takeaways), a "wall of text" section, and a qualifier with no concrete meaning. He asked twice for these real cases to become evals. Changes: the linking unit is now each paragraph, list, and table, with every API name linked in summary blocks; new **Walls of text** and **Qualifiers with no concrete referent** rules, each with a search step; the example identifiers were removed from the rule text so the new eval stays held out. Eval 10 uses the page exactly as Chip reviewed it (#7457 at bf296eeffa); eval 4's expectations moved from the per-section rule to the per-paragraph rule.
+
+| Eval | main | new (first rule text) | new (with search steps) |
+| --- | --- | --- | --- |
+| 10 (Chip's cases, 6 expectations) | 4/12 | 8/12 | 10/12 |
+| 4 (regression, new only) | - | 10/10 | - |
+
+- Both `main` runs missed the per-paragraph bare names (line 139, the bold lead terms at 143-144); every new run caught them.
+- The wall-of-text check passed in 1 of 2 runs before its search step and 2 of 2 after.
+- No run, in either configuration, flagged "with no Deephaven configuration". After the search step, both new runs found the phrase and judged it a checkable fact ("there is no property to set"), which is what the rule asks for; Chip read it as unclear. This stays a judgment call; not tuned further.
+
