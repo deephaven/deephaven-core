@@ -54,7 +54,7 @@
     },
     {
       "prompt": "Do a style review of the section 'Controlling execution order' (through the end of 'Serial filters') of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md when judging links. Report only \u2014 don't edit anything.",
-      "expected_output": "Finds identifiers in the section's opening that are bare even though the page links them earlier, recommends a bounded per-section linking rule, and does not ask for every occurrence to be linked or touch code blocks.",
+      "expected_output": "Finds identifiers in the section's opening paragraph and bullets that are bare even though the page links them earlier, states the per-paragraph and per-list-item linking rule, and does not ask for every occurrence within one sentence or paragraph to be linked or touch code blocks.",
       "files": [
         "../eval-fixtures/parallelization-609b-chip-round2.md"
       ],
@@ -141,7 +141,7 @@
       "prompt": "Do a style review of this deephaven-core concept guide, focusing on links to reference pages and readability: .claude/skills/eval-fixtures/parallelization-bf29-chip-round3.md. Treat it as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
       "expected_output": "Flags the bare API mentions a reviewer flagged on this text: Filter and Selectable in the 'works the same way' sentence, with_serial and Barriers as bold lead terms in the contrast bullets, and select/update/where/view/update_view (and bare with_serial) in Key takeaways, each with a link target. Flags the Implicit barriers section as a wall of text and proposes a definition plus short lists. Flags 'with no Deephaven configuration' as a qualifier with no concrete meaning.",
       "files": [
-        "eval-fixtures/parallelization-bf29-chip-round3.md"
+        "../eval-fixtures/parallelization-bf29-chip-round3.md"
       ],
       "expectations": [
         "Flags `Filter` and `Selectable` as unlinked in the sentence 'Concurrency control works the same way for a `Filter` as for a `Selectable`.' (around line 139), even though the bullets just above link them, and gives the link targets",

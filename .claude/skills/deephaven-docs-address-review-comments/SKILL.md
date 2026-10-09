@@ -135,7 +135,8 @@ If the user asked for edits:
    the code. Treat its facts as authoritative: keep your restructure where it helps, but carry
    every one of its corrections into the merged text. After resolving, list every line the other
    change added (`git show <commit> -- <file>`) and confirm each is in the merged page, word for
-   word or in substance. Compare whole sentences, not openings, and treat a line the other change rewrote as
+   word or in substance. Check its removals too: a line the other change deleted, and didn't
+   replace, must stay out of the merged page. Compare whole sentences, not openings, and treat a line the other change rewrote as
    added in full, even where it kept your branch's opening words; read the diff's `-` and `+` lines
    together to see what the other change actually changed: a merged sentence that starts with
    the other change's words but drops its last clause or a qualifier has lost that correction. A line that only changed a link still needs the new

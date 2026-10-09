@@ -52,7 +52,8 @@ too; make the repair, and put the bigger change in the report.
 docs audit (for example a DOC-1560 page issue) or to overhaul a page, the request covers the whole
 page, and the fix-not-rewrite limit above does not apply:
 
-- Start from the complete list of recorded findings for the page. This skill can't read Jira, so
+- For audit-driven work, start from the complete list of recorded findings for the page (a standalone
+  overhaul of an unaudited page starts from the whole-page review instead). This skill can't read Jira, so
   the caller supplies the list: the page issue's checklist plus any readability or "Found during"
   comments and linked readability issues. If you weren't given it, ask for it before editing; a
   fresh review is not a substitute, because it won't reproduce every recorded minor and readability
