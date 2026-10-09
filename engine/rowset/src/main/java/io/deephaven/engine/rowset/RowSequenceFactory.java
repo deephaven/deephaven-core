@@ -205,8 +205,8 @@ public class RowSequenceFactory {
     }
 
     /**
-     * Create and return a new {@link RowSequence} object from the supplied closed range, or {@link #EMPTY} if
-     * {@code lastRowKey < firstRowKey}.
+     * Create and return a new {@link RowSequence} object from the supplied closed range. The range must hold at least
+     * one row key: {@code 0 <= firstRowKey <= lastRowKey}.
      *
      * @param firstRowKey The first row key (inclusive) in the range
      * @param lastRowKey The last row key (inclusive) in the range
@@ -214,10 +214,7 @@ public class RowSequenceFactory {
      */
     public static RowSequence forRange(final long firstRowKey, final long lastRowKey) {
         Assert.geqZero(firstRowKey, "firstRowKey");
-        Assert.geqZero(lastRowKey, "lastRowKey");
-        if (lastRowKey < firstRowKey) {
-            return EMPTY;
-        }
+        Assert.leq(firstRowKey, "firstRowKey", lastRowKey, "lastRowKey");
         return new SingleRangeRowSequence(firstRowKey, lastRowKey);
     }
 }

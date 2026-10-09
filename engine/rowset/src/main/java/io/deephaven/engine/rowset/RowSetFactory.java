@@ -109,8 +109,8 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Create a {@link WritableRowSet} containing the continuous range [firstRowKey, lastRowKey], or an {@link #empty()
-     * empty row set} if {@code lastRowKey < firstRowKey}.
+     * Create a {@link WritableRowSet} containing the continuous range [firstRowKey, lastRowKey]. The range must hold at
+     * least one row key: {@code 0 <= firstRowKey <= lastRowKey}.
      *
      * @param firstRowKey The first row key in the continuous range
      * @param lastRowKey The last row key in the continuous range
@@ -118,10 +118,7 @@ public abstract class RowSetFactory {
      */
     public static WritableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
         Assert.geqZero(firstRowKey, "firstRowKey");
-        Assert.geqZero(lastRowKey, "lastRowKey");
-        if (lastRowKey < firstRowKey) {
-            return empty();
-        }
+        Assert.leq(firstRowKey, "firstRowKey", lastRowKey, "lastRowKey");
         return new WritableRowSetImpl(SingleRange.make(firstRowKey, lastRowKey));
     }
 

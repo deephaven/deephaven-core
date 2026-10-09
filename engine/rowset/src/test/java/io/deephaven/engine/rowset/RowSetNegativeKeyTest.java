@@ -15,8 +15,8 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Row keys are nonnegative. Every way of constructing a row set or row sequence rejects a negative key, even as the
- * bound of an empty range; an empty range between nonnegative keys still yields an empty result.
+ * Row keys are nonnegative. Every way of constructing a row set or row sequence rejects a negative key, and the range
+ * factories reject an inverted range.
  */
 public class RowSetNegativeKeyTest {
 
@@ -29,9 +29,7 @@ public class RowSetNegativeKeyTest {
         assertThrows(AssertionFailure.class, () -> RowSetFactory.fromRange(-1, Long.MAX_VALUE));
         assertThrows(AssertionFailure.class, () -> RowSetFactory.fromRange(0, -1));
         assertThrows(AssertionFailure.class, () -> RowSetFactory.fromRange(-1, -2));
-        try (final WritableRowSet rs = RowSetFactory.fromRange(5, 4)) {
-            assertTrue(rs.isEmpty());
-        }
+        assertThrows(AssertionFailure.class, () -> RowSetFactory.fromRange(5, 4));
     }
 
     @Test
@@ -39,7 +37,7 @@ public class RowSetNegativeKeyTest {
         assertThrows(AssertionFailure.class, () -> RowSequenceFactory.forRange(-1, 5));
         assertThrows(AssertionFailure.class, () -> RowSequenceFactory.forRange(0, -1));
         assertThrows(AssertionFailure.class, () -> RowSequenceFactory.forRange(-1, -2));
-        assertSame(RowSequenceFactory.EMPTY, RowSequenceFactory.forRange(5, 4));
+        assertThrows(AssertionFailure.class, () -> RowSequenceFactory.forRange(5, 4));
         final RowSequence seq = RowSequenceFactory.forRange(3, 5);
         assertEquals(3, seq.size());
         try (final RowSet rs = seq.asRowSet()) {
