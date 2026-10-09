@@ -12,6 +12,7 @@ public class DataDir {
     @Deprecated
     private static final String WORKSPACE_PROPERTY = "workspace";
     public static final String ENV_VAR = "DEEPHAVEN_DATA_DIR";
+    public static final String WINDOWS_SEPARATOR = "\\";
 
     private static final String DEFAULT_DATA_DIR = ".";
 
