@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Check the parallelization concept guide at .claude/skills/eval-fixtures/parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "prompt": "Check the parallelization concept guide at .claude/skills/eval-fixtures/parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "An accuracy report that catches the deferred-evaluation misclassification of view/update_view/lazy_update, cites the engine's stateful-column guard, and treats the inline config properties as a placement problem rather than proposing more of them.",
       "files": [
         "../eval-fixtures/parallelization-pre-review.md"
@@ -18,7 +18,7 @@
     },
     {
       "id": 2,
-      "prompt": "Check the parallelization chapter of the Crash Course at .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "prompt": "Check the parallelization chapter of the Crash Course at .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "Held-out doc (not used to write the skill changes). The report flags that 'use with_serial any time your formula depends on shared state' is insufficient when several columns share the state, treats the inline QueryTable.minimumParallelSelectRows as a Tutorial placement problem, and corrects the threshold semantics.",
       "files": [
         "../eval-fixtures/crash-course-parallelization-pre-review.md"
@@ -28,6 +28,64 @@
         "Treats the inline QueryTable.minimumParallelSelectRows mention in the broken-counter narrative as a placement problem for a Tutorial (recommends removing it from the narrative or linking to the configuration reference), rather than proposing more precise inline configuration detail",
         "Corrects the threshold description: the comparison is against the rows processed in that pass (the whole table at initialization, added plus modified rows on update) using >=, not the table's size (control expectation: tests ordinary verification, not a new rule)"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "Check the Create Your First Tables page of the Crash Course at .claude/skills/eval-fixtures/crash-course-create-tables-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/create-tables.md from main before the DOC-1940 fixes; treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "expected_output": "Held-out doc: the skill names the defect patterns, not these defects. The report reaches past the edited lines: it flags the wrong 'time_table works similarly to empty_table in that DQL populates the table' comparison, the i/ii note that says 'only append-only' when the engine allows other table types, and the unsourced marketing claims. It reports how many claims it checked.",
+      "files": [
+        "../eval-fixtures/crash-course-create-tables-pre-review.md"
+      ],
+      "expectations": [
+        "Flags the sentence saying time_table works similarly to empty_table in that DQL is used to populate the table as wrong, citing TimeTable (it supplies its own Timestamp column and adds rows itself) rather than only confirming that both functions exist",
+        "Flags the i/ii NOTE that says they are only supported in append-only tables, and states the full condition from AbstractFormulaColumn.validateSafeForRefresh: safe on static, append-only, and blink tables; throws on other refreshing tables, and that the check is skipped for test-source tables and when the allowUnsafeRefreshingFormulas override is set, so the restriction is the default behavior rather than unconditional",
+        "Flags the unsourced marketing claims about the Kafka integration (such as first-in-class) as unverifiable rather than accepting them",
+        "Flags the DAG paragraph's statement that only the updated rows are re-evaluated with each update cycle as an overstatement of incremental evaluation, a claim well away from any edited sentence, which shows the whole page was inventoried and not only the lines near the obvious defects",
+        "The report includes the claim ledger as a table with one row per claim giving its location, a verdict, and the source checked, states the row count, and lists the claims it could not verify as author queries rather than hedging them"
+      ]
+    },
+    {
+      "prompt": "Check the Groovy Docker install guide at .claude/skills/eval-fixtures/groovy-docker-install-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/groovy/getting-started/docker-install.md from main; treat it as that path when judging category and links. Review this file only. Report only — don't edit anything.",
+      "expected_output": "Treats claims about what the published ghcr.io/deephaven images contain or default to as needing evidence from deephaven/deephaven-server-docker, and doesn't flag the Compose examples that set START_OPTS=-Xmx4g as losing the Groovy console on the strength of this repo's docker/ Dockerfiles.",
+      "files": [
+        "../eval-fixtures/groovy-docker-install-pre-review.md"
+      ],
+      "expectations": [
+        "Does not report that setting START_OPTS (for example START_OPTS=-Xmx4g in the Compose examples) drops the Groovy console or makes server-slim start Python; in the published server-slim image the console type comes from its deephaven.prop, not START_OPTS",
+        "For any claim about what a published ghcr.io/deephaven image contains or defaults to, either cites deephaven/deephaven-server-docker (for example contexts/server-slim/Dockerfile or deephaven.prop) or records an author query; it never cites this repo's docker/ directory as the evidence",
+        "Control: still checks the page's other claims (ports, volume mounts, image names and tags, or the pre-shared key and authentication properties) against source rather than skipping them"
+      ],
+      "id": 4
+    },
+    {
+      "prompt": "Check the rollup tables how-to guide at .claude/skills/eval-fixtures/rollup-table-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/how-to-guides/rollup-table.md from main; treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "expected_output": "Flags the aggregations table's unsupported marks for group (and distinct and formula) as wrong from the engine's rollup converters and tests, doesn't treat the Python Table.rollup docstring's unsupported list as evidence, reports that docstring as stale follow-up work, and flags the TODO's deephaven.io issue link for a state check without recommending its deletion.",
+      "files": [
+        "../eval-fixtures/rollup-table-pre-review.md"
+      ],
+      "expectations": [
+        "Flags `group` marked as unsupported (RedX) in the aggregations table as wrong, citing the engine (AggregationProcessor's rollup converters handle AggSpecGroup, or TestRollupTable builds rollups with AggGroup) rather than the Python docstring",
+        "Does not cite the Python Table.rollup docstring's list of unsupported aggregations as evidence that group or weighted_avg is unsupported; where it mentions that docstring, it reports it as stale or as follow-up work on the source",
+        "Also flags at least one of `distinct` or `formula` marked unsupported as wrong (rollup supports both; formula only in its formula-string form), citing source",
+        "Treats the TODO comment's link to deephaven.io issue 2079 as needing a check of the issue's state (or reports its state), and does not recommend simply deleting the TODO",
+        "Control: confirms the genuinely unsupported aggregations (partition, median, pct) as unsupported rather than flagging them"
+      ],
+      "id": 5
+    },
+    {
+      "prompt": "Check the exact and relational joins how-to guide at .claude/skills/eval-fixtures/joins-exact-relational-pre-review.md for technical accuracy against the source, including its figures. The file is a snapshot of docs/python/how-to-guides/joins-exact-relational.md from main; treat it as that path when judging category and links. The flowchart it embeds (`../assets/conceptual/joins3.svg`) is at .claude/skills/eval-fixtures/joins3-pre-redesign.svg. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "expected_output": "Reads the flowchart and reports that it has no path to multi_join although the page teaches multi_join for three or more tables, alongside the page's other accuracy findings.",
+      "files": [
+        "../eval-fixtures/joins-exact-relational-pre-review.md",
+        "../eval-fixtures/joins3-pre-redesign.svg"
+      ],
+      "expectations": [
+        "Reads the flowchart's content (its labels or branches), not just the fact that an image is embedded",
+        "Reports that the flowchart has no path to multi_join even though the page has a 'Join three or more tables' section that teaches it",
+        "Notes that the same SVG is shared with other pages (such as the inexact-joins guide or the Groovy page), so a fix to it changes them too, or otherwise checks where else it is used",
+        "Control: does not report the flowchart's existing branches (exact join on no match raising an error, natural join filling nulls, left and full outer joins, as-of and reverse as-of joins, range join) as wrong"
+      ],
+      "id": 6
     }
   ]
 }
