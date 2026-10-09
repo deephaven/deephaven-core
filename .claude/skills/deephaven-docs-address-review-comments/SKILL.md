@@ -2,7 +2,7 @@
 name: deephaven-docs-address-review-comments
 description: >
   Work through reviewer comments on a deephaven-core (Community) documentation PR — GitHub Copilot or other bot reviews, or human reviewers — without letting a stream of individually-correct suggestions degrade the page. **Use this skill when:** someone asks to "address," "respond to," "fix," "resolve," "go through," or "handle" review comments, Copilot comments, bot suggestions, or PR feedback on a doc, or pastes review comments and asks what to do with them. It verifies every comment against source, triages each one (apply / redirect / decline / ask) before any edit, applies only what belongs at the page's level of abstraction, re-reads the changed sections as a whole, and drafts a reply for every comment. **Do NOT use for:** a fresh review with no comments (use deephaven-docs-review-full), review comments on code rather than docs, or Enterprise/deephaven-ent docs.
-allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(git log *), Bash(gh pr view *), Bash(gh api *)
+allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(git log *), Bash(git show *), Bash(gh pr view *), Bash(gh api *)
 ---
 
 # Addressing review comments on deephaven-core docs
@@ -134,9 +134,10 @@ If the user asked for edits:
    the code. Treat its facts as authoritative: keep your restructure where it helps, but carry
    every one of its corrections into the merged text. After resolving, list every line the other
    change added (`git show <commit> -- <file>`) and confirm each is in the merged page, word for
-   word or in substance. Compare whole sentences, not openings: a merged sentence that starts with
-   the other change's words but drops its last clause ("…, so `natural_join` should be preferred in
-   most places") has lost that correction. A line that only changed a link still needs the new
+   word or in substance. Compare whole sentences, not openings, and treat a line the other change rewrote as
+   added in full, even where it kept your branch's opening words; read the diff's `-` and `+` lines
+   together to see what the other change actually changed: a merged sentence that starts with
+   the other change's words but drops its last clause or a qualifier has lost that correction. A line that only changed a link still needs the new
    link. Restore what is missing, in the other author's wording, before you push. Leave a correction
    that survived in substance as it is; don't rewrite it back to their wording just to match. Restoring a correction doesn't exempt it from
    verification: check each restored claim against current source like any other claim (the code may

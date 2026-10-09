@@ -53,7 +53,8 @@ docs audit (for example a DOC-1560 page issue) or to overhaul a page, the reques
 page, and the fix-not-rewrite limit above does not apply:
 
 - Apply every recorded finding, of every severity: wrong, misleading, hard to follow, minor, and
-  readability. Don't fix one severity now and leave the rest for a later pass; a page that is
+  readability. Verify each finding first, as for any other claim: an audit can be stale or wrong,
+  so record a disproved finding as not a problem, with the source, rather than applying it. Don't fix one severity now and leave the rest for a later pass; a page that is
   patched in one place and wrong two paragraphs down still sends readers the wrong way, and every
   later reviewer re-finds the open items.
 - Restructure, replace an example, or rewrite a section where the findings cluster or the
@@ -64,12 +65,14 @@ page, and the fix-not-rewrite limit above does not apply:
   organized, not rewording everything. Leave correct sentences, simple lists, accurate bullets and
   notes, needed vocabulary, correct code comments, and TODOs for work you didn't do as the author
   wrote them. Every change should trace to a finding or a verified problem, so a reviewer can see
-  why it was made.
+  why it was made. Don't rename variables, tables, or headings, or reword a correct note into a
+  different form, unless a finding calls for it; in the report, give the reason for every change you
+  list.
 - Keep the terms readers search for. A word the API, its parameters, or its developers use (for
-  example "include" for the columns a join adds, or "constituent tables" for a multi-join's inputs)
+  example "include" for the columns a join adds)
   is how readers find the page and match it to the code. Define such a term where it first
   appears rather than replacing it with a plainer synonym. A term the page itself defines (often in
-  italics, such as _root node_ or _constituents_) stays word for word, even when you correct its
+  italics) stays word for word, even when you correct its
   definition.
 - Edit only the pages in scope. When a wrong claim lives on another page, in a reference page
   that a different PR or ticket owns, or in source code such as a docstring, don't edit it there:

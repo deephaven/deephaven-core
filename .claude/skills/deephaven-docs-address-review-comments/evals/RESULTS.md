@@ -39,3 +39,13 @@ Method: "main" is the skill on `main`; "new" is the PR branch. Each trial read t
 - Eval 2, first try: every run in both configurations saw that the join TIP started with #8798's sentence and missed that its last clause ("so `natural_join` should be preferred in most places") was gone, and one new run rewrote a correction that had survived in substance (new 8/12, main 10/12). The merge rule now says to compare whole sentences and to leave surviving corrections alone. Rerun: new 12/12, main 8/12; both new runs restored the TIP clause and the "required" marking and changed nothing else.
 - Eval 1: a single new run first scored 6/8 (it declined C9 and deleted the C10 clause). The two-run rerun against `main` scored 14/16 against 15/16, so that was noise, not a regression.
 - Eval 2 answers the open request for an edit-mode eval.
+
+### Rerun after removing eval answers from the skill text
+
+Copilot pointed out that several worked examples in the skills named the exact defects these evals look for, so an agent could pass by repeating the example. The examples are now general, and the new-skill runs were repeated (2 runs each; `main` is unchanged, so its scores carry over). These rows replace the ones above as the measure of the rules themselves.
+
+| Eval | main | new, examples named the answer | new, general examples |
+| --- | --- | --- | --- |
+| 2 | 8/12 | 12/12 | 10/12, then 9/12 |
+
+- Without the example, no run restored the join TIP's lost conclusion. The merged TIP ends with a conditional ("if each left row needs at most one right match, use `natural_join` instead"), which every run judged to have kept #8798's point in substance. Rewording the rule to read the diff's `-` and `+` lines together didn't change that, and one rerun also missed the `aggs` "required" marking. The remaining gain over `main` is in marking `aggs` required and in not rewriting surviving corrections; catching a weakened conclusion still depends on judgment. Not tuned further, to avoid fitting the rule to this one fixture.

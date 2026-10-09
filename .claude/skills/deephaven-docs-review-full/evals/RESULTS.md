@@ -56,3 +56,13 @@ Second round:
 - Eval 2's two misses match earlier rounds: the unreleased `LivenessScope` demo was only recommended, not fixed, and the report didn't say passages were re-verified after editing. Eval 2 still expects targeted edits, which shows the audit exception doesn't leak into ordinary reviews.
 - Eval 3, first try: one new run replaced the defined term "root node" with a synonym (new 11/12, main 12/12). The keep-terms rule now says terms the page defines stay word for word. Rerun: new 11/12, main 12/12, with "root node" kept in every run; the one miss renamed a heading and a variable without a stated reason.
 - Eval 3 doesn't separate the configurations well: the `main` skill's default fix-not-rewrite limit already keeps edits small. The eval guards the audit exception's "keep what is accurate" and "edit only in-scope pages" rules against regressions.
+
+### Rerun after removing eval answers from the skill text
+
+Copilot pointed out that several worked examples in the skills named the exact defects these evals look for, so an agent could pass by repeating the example. The examples are now general, and the new-skill runs were repeated (2 runs each; `main` is unchanged, so its scores carry over). These rows replace the ones above as the measure of the rules themselves.
+
+| Eval | main | new, examples named the answer | new, general examples |
+| --- | --- | --- | --- |
+| 3 | 12/12 | 11/12 | 10/12, then 12/12 |
+
+- With general examples, both runs renamed variables and headings or reworded a correct note without a reason. The keep-accurate rule now says not to rename variables, tables, or headings or recast a correct note unless a finding calls for it, and to give a reason for every listed change. The rerun scored 12/12.

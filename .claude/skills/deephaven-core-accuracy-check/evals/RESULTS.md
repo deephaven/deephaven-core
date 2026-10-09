@@ -57,3 +57,15 @@ Second round (checks from the DOC-1560 overhaul pilots), new evals 4-6:
 - Eval 5: both configurations flagged `group` from the engine, so the stale-docstring rule doesn't separate them here. The difference was the TODO: `main` didn't check issue 2079's state.
 - Eval 6: `main` read the chart but missed the missing multi-join path or that the SVG is shared.
 - Regression, new skill only (1 run): eval 1 5/5, eval 2 3/3, eval 3 4/5. The eval 3 miss is the test-source condition in the `i`/`ii` restriction, which no run has stated.
+
+### Rerun after removing eval answers from the skill text
+
+Copilot pointed out that several worked examples in the skills named the exact defects these evals look for, so an agent could pass by repeating the example. The examples are now general, and the new-skill runs were repeated (2 runs each; `main` is unchanged, so its scores carry over). These rows replace the ones above as the measure of the rules themselves.
+
+| Eval | main | new, examples named the answer | new, general examples |
+| --- | --- | --- | --- |
+| 4 | 4/6 | 6/6 | 5/6 |
+| 5 | 7/10 | 10/10 | 10/10 |
+| 6 | 5/8 | 8/8 | 8/8 |
+
+- Eval 4: one run still raised the `START_OPTS` concern as a hedged finding with an author query; the other took the console type from the published image's property file.
