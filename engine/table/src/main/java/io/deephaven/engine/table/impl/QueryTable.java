@@ -21,6 +21,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -3412,6 +3413,23 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
         if (first.isRefreshing() || second.isRefreshing()) {
             first.getUpdateGraph(second).checkInitiateSerialTableOperation();
+        }
+    }
+
+    /**
+     * Refuse a join of a failed input, as a failed table refuses a listener, even when the other input would make the
+     * result static.
+     *
+     * @param leftTable the left input of the join
+     * @param rightTable the right input of the join
+     * @throws TableAlreadyFailedException if either input has failed
+     */
+    public static void checkJoinInputsNotFailed(@NotNull final Table leftTable, @NotNull final Table rightTable) {
+        if (leftTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed left table " + leftTable.getDescription());
+        }
+        if (rightTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed right table " + rightTable.getDescription());
         }
     }
 

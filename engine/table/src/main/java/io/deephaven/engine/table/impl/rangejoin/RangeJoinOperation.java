@@ -109,6 +109,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
         memoizedOperationKey = MemoizedOperationKey.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
 
+        QueryTable.checkJoinInputsNotFailed(leftTable, rightTable);
         if (leftTable.isRefreshing() || rightTable.isRefreshing()) {
             throw new UnsupportedOperationException(String.format(
                     "%s: rangeJoin only supports static (not refreshing) inputs at this time: left table is %s, right table is %s",

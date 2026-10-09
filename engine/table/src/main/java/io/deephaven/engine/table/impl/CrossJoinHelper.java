@@ -199,6 +199,7 @@ public class CrossJoinHelper {
             throw new IllegalArgumentException("reserveBits must be between " + MIN_NUM_RIGHT_BITS_TO_RESERVE
                     + " and " + MAX_NUM_RIGHT_BITS_TO_RESERVE + " (inclusive), but was " + numRightBitsToReserve);
         }
+        QueryTable.checkJoinInputsNotFailed(leftTable, rightTable);
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         try (final BucketingContext bucketingContext = new BucketingContext(leftOuterJoin ? "leftOuterJoin" : "join",

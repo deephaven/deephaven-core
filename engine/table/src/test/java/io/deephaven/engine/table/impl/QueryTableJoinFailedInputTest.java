@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -13,11 +14,16 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.OuterJoinTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BinaryOperator;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -113,6 +119,58 @@ public class QueryTableJoinFailedInputTest {
     public void testFullOuterJoin() {
         checkFailedInputLeavesNoListeners("keyed fullOuterJoin",
                 (left, right) -> OuterJoinTools.fullOuterJoin(left, right, "K", "RV"));
+    }
+
+    @Test
+    public void testJoinsWithFailedAndStaticInputs() {
+        final Map<String, BinaryOperator<Table>> operations = new LinkedHashMap<>();
+        operations.put("keyed join", (left, right) -> left.join(right, "K", "RV"));
+        operations.put("zero-key join", (left, right) -> left.join(right, "", "RV"));
+        operations.put("keyed leftOuterJoin", (left, right) -> OuterJoinTools.leftOuterJoin(left, right, "K", "RV"));
+        operations.put("zero-key leftOuterJoin",
+                (left, right) -> OuterJoinTools.leftOuterJoin(left, right, "", "RV"));
+        operations.put("keyed fullOuterJoin",
+                (left, right) -> OuterJoinTools.fullOuterJoin(left, right, "K", "RV"));
+        operations.put("keyed naturalJoin", (left, right) -> left.naturalJoin(right, "K", "RV"));
+        operations.put("zero-key naturalJoin", (left, right) -> left.naturalJoin(right, "", "RV"));
+        operations.put("keyed exactJoin", (left, right) -> left.exactJoin(right, "K", "RV"));
+        operations.put("zero-key exactJoin", (left, right) -> left.exactJoin(right, "", "RV"));
+        operations.put("keyed aj", (left, right) -> left.aj(right, "K,S", "RV"));
+        operations.put("zero-key aj", (left, right) -> left.aj(right, "S", "RV"));
+        operations.put("keyed raj", (left, right) -> left.raj(right, "K,S", "RV"));
+        operations.put("zero-key raj", (left, right) -> left.raj(right, "S", "RV"));
+        operations.put("keyed rangeJoin", (left, right) -> left.rangeJoin(right, List.of("K", "S <= RV <= LV"),
+                List.of(Aggregation.AggGroup("RV"))));
+        operations.put("zero-key rangeJoin", (left, right) -> left.rangeJoin(right, List.of("S <= RV <= LV"),
+                List.of(Aggregation.AggGroup("RV"))));
+        final List<String> accepted = new ArrayList<>();
+        for (final Map.Entry<String, BinaryOperator<Table>> entry : operations.entrySet()) {
+            for (final boolean failLeft : new boolean[] {false, true}) {
+                for (final boolean otherEmpty : new boolean[] {false, true}) {
+                    // a static input, particularly an empty one, can make a result that never changes
+                    final String description = entry.getKey() + (failLeft ? " with a failed left and a static "
+                            : " with a failed right and a static ") + (otherEmpty ? "empty " : "")
+                            + (failLeft ? "right" : "left");
+                    final QueryTable failed = failLeft ? makeLeft() : makeRight();
+                    markFailed(failed);
+                    final Table staticOther = otherEmpty
+                            ? TableTools.newTable(intCol("K"), intCol("S"), intCol(failLeft ? "RV" : "LV"))
+                            : TableTools.newTable(intCol("K", 1), intCol("S", 1), intCol(failLeft ? "RV" : "LV", 1));
+                    final Table left = failLeft ? failed : staticOther;
+                    final Table right = failLeft ? staticOther : failed;
+                    try {
+                        final Table result = entry.getValue().apply(left, right);
+                        accepted.add(description + " returned a " + (result.isRefreshing() ? "refreshing" : "static")
+                                + " result");
+                    } catch (final RuntimeException failure) {
+                        if (ExceptionUtils.indexOfThrowable(failure, TableAlreadyFailedException.class) < 0) {
+                            accepted.add(description + " threw " + failure);
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue(String.join("\n", accepted), accepted.isEmpty());
     }
 
     @Test

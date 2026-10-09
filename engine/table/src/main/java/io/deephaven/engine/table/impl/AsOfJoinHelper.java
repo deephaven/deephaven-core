@@ -78,6 +78,7 @@ public class AsOfJoinHelper {
 
     private static QueryTable asOfJoinInternal(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
+        QueryTable.checkJoinInputsNotFailed(leftTable, rightTable);
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         if (columnsToMatch.length == 0) {
