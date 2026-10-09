@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
@@ -96,22 +97,14 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
         return true;
     }
 
-    private static void checkNonnegative(final long key) {
-        if (key < 0) {
-            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + key);
-        }
-    }
-
     private void newKey(final long key) {
-        checkNonnegative(key);
+        Assert.geqZero(key, "key");
         newRangeSafe(key, key);
     }
 
     private void newRange(final long firstKey, final long lastKey) {
-        if (firstKey > lastKey) {
-            throw new IllegalArgumentException("Illegal range start=" + firstKey + " > end=" + lastKey + ".");
-        }
-        checkNonnegative(firstKey);
+        Assert.leq(firstKey, "firstKey", lastKey, "lastKey");
+        Assert.geqZero(firstKey, "firstKey");
         newRangeSafe(firstKey, lastKey);
     }
 
@@ -249,8 +242,8 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
                 ++runEnd;
             }
             // runEnd + 1 wraps at Long.MAX_VALUE, so a run can absorb a negative key after its nonnegative start.
-            checkNonnegative(runStart);
-            checkNonnegative(runEnd);
+            Assert.geqZero(runStart, "runStart");
+            Assert.geqZero(runEnd, "runEnd");
             newRangeSafe(runStart, runEnd);
         }
     }

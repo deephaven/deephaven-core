@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset;
 
 import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
@@ -116,10 +117,8 @@ public abstract class RowSetFactory {
      * @return A new {@link WritableRowSet} containing the specified row key range
      */
     public static WritableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
-        if (firstRowKey < 0 || lastRowKey < 0) {
-            throw new IllegalArgumentException(
-                    "Row keys must be nonnegative: firstRowKey=" + firstRowKey + ", lastRowKey=" + lastRowKey);
-        }
+        Assert.geqZero(firstRowKey, "firstRowKey");
+        Assert.geqZero(lastRowKey, "lastRowKey");
         if (lastRowKey < firstRowKey) {
             return empty();
         }
@@ -135,9 +134,7 @@ public abstract class RowSetFactory {
      *         row set} if the {@code size == 0}
      */
     public static WritableRowSet flat(final long size) {
-        if (size < 0) {
-            throw new IllegalArgumentException("Size must be nonnegative: size=" + size);
-        }
+        Assert.geqZero(size, "size");
         return size == 0 ? empty() : fromRange(0, size - 1);
     }
 

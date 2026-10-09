@@ -123,9 +123,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insert(final long key) {
         preMutationHook();
-        if (key < 0) {
-            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + key);
-        }
+        Assert.geqZero(key, "key");
         assign(innerSet.ixInsert(key));
         postMutationHook();
     }
@@ -133,13 +131,8 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertRange(final long startKey, final long endKey) {
         preMutationHook();
-        if (startKey < 0) {
-            throw new IllegalArgumentException(
-                    "Row keys must be nonnegative: startKey=" + startKey + ", endKey=" + endKey);
-        }
-        if (endKey < startKey) {
-            throw new IllegalArgumentException("Inverted range: startKey=" + startKey + " > endKey=" + endKey);
-        }
+        Assert.geqZero(startKey, "startKey");
+        Assert.leq(startKey, "startKey", endKey, "endKey");
         assign(innerSet.ixInsertRange(startKey, endKey));
         postMutationHook();
     }
@@ -149,8 +142,8 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         preMutationHook();
         // The keys are ordered, so the first one is the least.
-        if (length > 0 && keys.get(offset) < 0) {
-            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + keys.get(offset));
+        if (length > 0) {
+            Assert.geqZero(keys.get(offset), "keys.get(offset)");
         }
         assign(innerSet.ixInsert(keys, offset, length));
         postMutationHook();
@@ -304,7 +297,6 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void shiftInPlace(final long shiftAmount) {
         preMutationHook();
-        checkShiftNonnegative(this, shiftAmount);
         assign(innerSet.ixShiftInPlace(shiftAmount));
         postMutationHook();
     }
@@ -440,7 +432,6 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final WritableRowSet shift(final long shiftAmount) {
-        checkShiftNonnegative(this, shiftAmount);
         return new WritableRowSetImpl(innerSet.ixShiftOnNew(shiftAmount));
     }
 
@@ -453,17 +444,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
             return;
         }
         if (shiftAmount < 0) {
-            final long firstRowKey = rowSet.firstRowKey();
-            if (firstRowKey + shiftAmount < 0) {
-                throw new IllegalArgumentException("Shifting first row key " + firstRowKey + " by " + shiftAmount
-                        + " would make it negative");
-            }
+            Assert.geqZero(rowSet.firstRowKey() + shiftAmount, "firstRowKey() + shiftAmount");
         } else {
-            final long lastRowKey = rowSet.lastRowKey();
-            if (lastRowKey + shiftAmount < 0) {
-                throw new IllegalArgumentException("Shifting last row key " + lastRowKey + " by " + shiftAmount
-                        + " would overflow past Long.MAX_VALUE");
-            }
+            Assert.geqZero(rowSet.lastRowKey() + shiftAmount, "lastRowKey() + shiftAmount");
         }
     }
 

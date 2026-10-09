@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -72,10 +73,10 @@ public class RowSetInvertedKeyRangeTest {
 
     @Test
     public void testBuildersRejectInvertedRanges() {
-        assertThrows(IllegalArgumentException.class, () -> RowSetFactory.builderRandom().addRange(5, 3));
-        assertThrows(IllegalArgumentException.class, () -> RowSetFactory.builderSequential().appendRange(5, 3));
+        assertThrows(AssertionFailure.class, () -> RowSetFactory.builderRandom().addRange(5, 3));
+        assertThrows(AssertionFailure.class, () -> RowSetFactory.builderSequential().appendRange(5, 3));
         // Adjacent to the pending range, so the order check alone would accept it.
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(AssertionFailure.class, () -> {
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             builder.appendKey(4);
             builder.appendRange(5, 4);
@@ -101,7 +102,7 @@ public class RowSetInvertedKeyRangeTest {
                         assertEquals(what + " retainRange size", 0, retained.size());
                     }
                     try (final WritableRowSet inserted = rs.copy()) {
-                        assertThrows(what + " insertRange", IllegalArgumentException.class,
+                        assertThrows(what + " insertRange", AssertionFailure.class,
                                 () -> inserted.insertRange(range[0], range[1]));
                         inserted.validate();
                         assertEquals(what + " insertRange", keysOf(rs), keysOf(inserted));
@@ -118,10 +119,10 @@ public class RowSetInvertedKeyRangeTest {
     @Test
     public void testNegativeBoundOfAnEmptyRangeIsRejected() {
         try (final WritableRowSet rs = RowSetFactory.empty()) {
-            assertThrows(IllegalArgumentException.class, () -> rs.insertRange(0, -1));
+            assertThrows(AssertionFailure.class, () -> rs.insertRange(0, -1));
             rs.validate();
             assertTrue(rs.isEmpty());
         }
-        assertThrows(IllegalArgumentException.class, () -> RowSetFactory.fromRange(0, -1));
+        assertThrows(AssertionFailure.class, () -> RowSetFactory.fromRange(0, -1));
     }
 }

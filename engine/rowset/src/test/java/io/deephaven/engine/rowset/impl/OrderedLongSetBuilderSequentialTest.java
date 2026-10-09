@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -32,20 +33,20 @@ public class OrderedLongSetBuilderSequentialTest {
         try (final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(2)) {
             chunk.set(0, -4);
             chunk.set(1, -2);
-            assertThrows(IllegalArgumentException.class, () -> builder.appendOrderedRowKeysChunk(chunk, 0, 2));
+            assertThrows(AssertionFailure.class, () -> builder.appendOrderedRowKeysChunk(chunk, 0, 2));
         }
         try (final WritableRowSet sparse = RowSetFactory.fromKeys(key, key + 2, key + 100_000)) {
             final OrderedLongSet inner = ((WritableRowSetImpl) sparse).getInnerSet();
             final long shift = -key - 1;
-            assertThrows(IllegalArgumentException.class, () -> builder.appendOrderedLongSet(shift, inner));
+            assertThrows(AssertionFailure.class, () -> builder.appendOrderedLongSet(shift, inner));
         }
         try (final WritableRowSet high = RowSetFactory.fromKeys(1L << 40, Long.MAX_VALUE)) {
             final OrderedLongSet inner = ((WritableRowSetImpl) high).getInnerSet();
             // The first key shifts fine, but the last wraps past Long.MAX_VALUE.
-            assertThrows(IllegalArgumentException.class, () -> builder.appendOrderedLongSet(65536, inner));
+            assertThrows(AssertionFailure.class, () -> builder.appendOrderedLongSet(65536, inner));
             final RspBitmapBuilderSequential rspBuilder = new RspBitmapBuilderSequential();
             rspBuilder.appendKey(0);
-            assertThrows(IllegalArgumentException.class, () -> rspBuilder.appendOrderedLongSet(65536, inner));
+            assertThrows(AssertionFailure.class, () -> rspBuilder.appendOrderedLongSet(65536, inner));
         }
         builder.getOrderedLongSet().ixRelease();
     }

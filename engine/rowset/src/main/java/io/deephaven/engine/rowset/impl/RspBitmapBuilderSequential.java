@@ -112,9 +112,9 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 return;
             }
             flushPendingRange();
-        } else if (rowKey < 0) {
+        } else {
             // Only the first key needs this check; every later one is order checked against a nonnegative key.
-            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + rowKey);
+            Assert.geqZero(rowKey, "rowKey");
         }
         pendingStart = pendingEnd = rowKey;
     }
@@ -123,14 +123,8 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     public void appendRange(final long rangeFirstRowKey, final long rangeLastRowKey) {
         // Checked on every call: the order check below looks only at the start of the range. Together these also keep
         // the end nonnegative.
-        if (rangeFirstRowKey < 0) {
-            throw new IllegalArgumentException("Row keys must be nonnegative: start=" + rangeFirstRowKey + ", end="
-                    + rangeLastRowKey);
-        }
-        if (rangeFirstRowKey > rangeLastRowKey) {
-            throw new IllegalArgumentException(
-                    "start (= " + rangeFirstRowKey + ") > end (= " + rangeLastRowKey + ")");
-        }
+        Assert.geqZero(rangeFirstRowKey, "rangeFirstRowKey");
+        Assert.leq(rangeFirstRowKey, "rangeFirstRowKey", rangeLastRowKey, "rangeLastRowKey");
         if (pendingStart != -1) {
             if (check && rangeFirstRowKey <= pendingEnd) {
                 throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
@@ -152,14 +146,11 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (ix.ixIsEmpty()) {
             return;
         }
+        // A negative shift can move the first key below zero; a positive one can carry the last past Long.MAX_VALUE.
         if (shiftAmount < 0) {
-            if (ix.ixFirstKey() + shiftAmount < 0) {
-                throw new IllegalArgumentException("Shifting first row key " + ix.ixFirstKey() + " by " + shiftAmount
-                        + " would make it negative");
-            }
-        } else if (ix.ixLastKey() + shiftAmount < 0) {
-            throw new IllegalArgumentException("Shifting last row key " + ix.ixLastKey() + " by " + shiftAmount
-                    + " would overflow past Long.MAX_VALUE");
+            Assert.geqZero(ix.ixFirstKey() + shiftAmount, "ix.ixFirstKey() + shiftAmount");
+        } else {
+            Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
         }
         if (!(ix instanceof RspBitmap) || rb == null) {
             ix.ixForEachLongRange((final long start, final long end) -> {
@@ -187,9 +178,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             return;
         }
         // The keys are ordered, so the first one is the least. Once rb exists they go into it unchecked.
-        if (chunk.get(offset) < 0) {
-            throw new IllegalArgumentException("Row keys must be nonnegative: key=" + chunk.get(offset));
-        }
+        Assert.geqZero(chunk.get(offset), "chunk.get(offset)");
 
         if (rb != null) {
             appendKeyChunkRb(chunk, offset, length);

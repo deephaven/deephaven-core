@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.RowSequenceKeyRangesChunkImpl;
@@ -199,9 +200,7 @@ public class RowSequenceFactory {
      *         {@code size == 0}
      */
     public static RowSequence flat(final long size) {
-        if (size < 0) {
-            throw new IllegalArgumentException("Size must be nonnegative: size=" + size);
-        }
+        Assert.geqZero(size, "size");
         return size == 0 ? EMPTY : new SingleRangeRowSequence(0, size - 1);
     }
 
@@ -214,10 +213,8 @@ public class RowSequenceFactory {
      * @return A new {@link RowSequence} object covering the requested range of row keys
      */
     public static RowSequence forRange(final long firstRowKey, final long lastRowKey) {
-        if (firstRowKey < 0 || lastRowKey < 0) {
-            throw new IllegalArgumentException(
-                    "Row keys must be nonnegative: firstRowKey=" + firstRowKey + ", lastRowKey=" + lastRowKey);
-        }
+        Assert.geqZero(firstRowKey, "firstRowKey");
+        Assert.geqZero(lastRowKey, "lastRowKey");
         if (lastRowKey < firstRowKey) {
             return EMPTY;
         }
