@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Builds a small table client-side with one column of every primitive type, uploads it with DoPut, and publishes it
@@ -64,18 +65,23 @@ class DoPutTable implements Callable<Void> {
                 .factory();
         // A FlightSession pairs a Session (tables, consoles, publishing) with an Arrow Flight client (bulk data)
         try (final FlightSession flight = factory.newFlightSession()) {
-            switch (method) {
-                case HANDLE:
-                    handle(flight, allocator);
-                    break;
-                case TICKET:
-                    ticket(flight, allocator);
-                    break;
-                case DIRECT:
-                    direct(flight, allocator);
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected method " + method);
+            try {
+                switch (method) {
+                    case HANDLE:
+                        handle(flight, allocator);
+                        break;
+                    case TICKET:
+                        ticket(flight, allocator);
+                        break;
+                    case DIRECT:
+                        direct(flight, allocator);
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected method " + method);
+                }
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                flight.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
         } finally {
             factory.managedChannel().shutdownNow();

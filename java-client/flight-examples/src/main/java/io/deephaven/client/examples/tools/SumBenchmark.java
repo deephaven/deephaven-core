@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Benchmark tool: sums the integers below a count on the server with a single aggregation, reads the one-row result
@@ -72,17 +73,22 @@ class SumBenchmark implements Callable<Void> {
                 .build()
                 .factory();
         try (final FlightSession flight = factory.newFlightSession()) {
-            final TableHandleManager manager = BatchOrSerialOptions.manager(mode, flight.session());
-            final long start = System.nanoTime();
-            try (
-                    final TableHandle handle = manager.executeLogic((TableCreationLogic) this::create);
-                    final FlightStream stream = flight.stream(handle)) {
-                System.out.println(stream.getSchema());
-                while (stream.next()) {
-                    System.out.println(stream.getRoot().contentToTSVString());
+            try {
+                final TableHandleManager manager = BatchOrSerialOptions.manager(mode, flight.session());
+                final long start = System.nanoTime();
+                try (
+                        final TableHandle handle = manager.executeLogic((TableCreationLogic) this::create);
+                        final FlightStream stream = flight.stream(handle)) {
+                    System.out.println(stream.getSchema());
+                    while (stream.next()) {
+                        System.out.println(stream.getRoot().contentToTSVString());
+                    }
                 }
+                System.out.printf("%s duration%n", Duration.ofNanos(System.nanoTime() - start));
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                flight.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
-            System.out.printf("%s duration%n", Duration.ofNanos(System.nanoTime() - start));
         } finally {
             factory.managedChannel().shutdownNow();
             scheduler.shutdownNow();

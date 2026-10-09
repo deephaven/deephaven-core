@@ -15,6 +15,7 @@ import picocli.CommandLine.Command;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Reads a server table by ticket over Arrow Flight, printing its schema and the number of rows in each batch.
@@ -47,17 +48,20 @@ class GetDirectTable implements Callable<Void> {
                 .factory();
         // A FlightSession pairs a Session (tables, consoles, publishing) with an Arrow Flight client (bulk data).
         // DoGet by ticket streams the current rows of a table the server already holds, as Arrow record batches.
-        try (
-                final FlightSession flight = factory.newFlightSession();
-                final FlightStream stream = flight.stream(ticket)) {
-            System.out.println(stream.getSchema());
-            long tableRows = 0L;
-            while (stream.next()) {
-                int batchRows = stream.getRoot().getRowCount();
-                System.out.println("    batch received: " + batchRows + " rows");
-                tableRows += batchRows;
+        try (final FlightSession flight = factory.newFlightSession()) {
+            try (final FlightStream stream = flight.stream(ticket)) {
+                System.out.println(stream.getSchema());
+                long tableRows = 0L;
+                while (stream.next()) {
+                    int batchRows = stream.getRoot().getRowCount();
+                    System.out.println("    batch received: " + batchRows + " rows");
+                    tableRows += batchRows;
+                }
+                System.out.println("Table received: " + tableRows + " rows");
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                flight.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
-            System.out.println("Table received: " + tableRows + " rows");
         } finally {
             factory.managedChannel().shutdownNow();
             scheduler.shutdownNow();

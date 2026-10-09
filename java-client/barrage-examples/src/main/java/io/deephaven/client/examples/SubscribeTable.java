@@ -35,6 +35,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -98,7 +99,12 @@ class SubscribeTable implements Callable<Void> {
         try (
                 final SafeCloseable ignored = executionContext.open();
                 final BarrageSession client = factory.newBarrageSession()) {
-            subscribe(client);
+            try {
+                subscribe(client);
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                client.session().closeFuture().get(5, TimeUnit.SECONDS);
+            }
         } finally {
             factory.managedChannel().shutdownNow();
             scheduler.shutdownNow();
@@ -140,7 +146,9 @@ class SubscribeTable implements Callable<Void> {
             TableTools.show(subscriptionTable);
             System.out.println();
 
-            subscriptionTable.addUpdateListener(new InstrumentedTableUpdateListener("example-listener") {
+            // The table holds its listeners weakly, so this local is what keeps the listener alive until the wait
+            // below returns
+            final InstrumentedTableUpdateListener listener = new InstrumentedTableUpdateListener("example-listener") {
                 @ReferentialIntegrity
                 final Table tableRef = subscriptionTable;
                 {
@@ -171,12 +179,14 @@ class SubscribeTable implements Callable<Void> {
                         done.countDown();
                     }
                 }
-            });
+            };
+            subscriptionTable.addUpdateListener(listener);
 
             if (updatesToReceive == 0) {
                 done.countDown();
             }
             done.await();
+            subscriptionTable.removeUpdateListener(listener);
         }
     }
 

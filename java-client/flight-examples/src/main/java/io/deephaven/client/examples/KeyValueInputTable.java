@@ -76,13 +76,18 @@ class KeyValueInputTable implements Callable<Void> {
                 .factory();
         // A FlightSession pairs a Session (tables, consoles, publishing) with an Arrow Flight client (bulk data)
         try (final FlightSession flight = factory.newFlightSession()) {
-            if (!checkExists(flight)) {
-                createKeyBackedInputTable(flight);
-            }
-            if (value.isEmpty()) {
-                deleteFromInputTable(flight, allocator);
-            } else {
-                addToInputTable(flight, allocator);
+            try {
+                if (!checkExists(flight)) {
+                    createKeyBackedInputTable(flight);
+                }
+                if (value.isEmpty()) {
+                    deleteFromInputTable(flight, allocator);
+                } else {
+                    addToInputTable(flight, allocator);
+                }
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                flight.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
         } finally {
             factory.managedChannel().shutdownNow();

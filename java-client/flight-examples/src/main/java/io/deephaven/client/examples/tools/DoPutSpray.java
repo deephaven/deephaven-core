@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Operations tool: copies a table from one server to one or more others. Reads it from the first connection with DoGet
@@ -44,20 +45,27 @@ class DoPutSpray implements Callable<Void> {
         final BufferAllocator allocator = new RootAllocator();
         final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         final FlightSessionFactoryConfig.Factory sourceFactory = factory(connects.get(0), allocator, scheduler);
-        try (
-                final FlightSession source = sourceFactory.newFlightSession();
-                final TableHandle sourceHandle =
-                        source.session().execute(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)))) {
-            for (ConnectOptions other : connects.subList(1, connects.size())) {
-                final FlightSessionFactoryConfig.Factory destFactory = factory(other, allocator, scheduler);
-                try (
-                        final FlightSession dest = destFactory.newFlightSession();
-                        final FlightStream in = source.stream(sourceHandle);
-                        final TableHandle destHandle = dest.putExport(in)) {
-                    dest.session().publish(variableName, destHandle).get();
-                } finally {
-                    destFactory.managedChannel().shutdownNow();
+        try (final FlightSession source = sourceFactory.newFlightSession()) {
+            try (final TableHandle sourceHandle =
+                    source.session().execute(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)))) {
+                for (ConnectOptions other : connects.subList(1, connects.size())) {
+                    final FlightSessionFactoryConfig.Factory destFactory = factory(other, allocator, scheduler);
+                    try (final FlightSession dest = destFactory.newFlightSession()) {
+                        try (
+                                final FlightStream in = source.stream(sourceHandle);
+                                final TableHandle destHandle = dest.putExport(in)) {
+                            dest.session().publish(variableName, destHandle).get();
+                        } finally {
+                            // Wait for the server to acknowledge the close before its channel goes away below
+                            dest.session().closeFuture().get(5, TimeUnit.SECONDS);
+                        }
+                    } finally {
+                        destFactory.managedChannel().shutdownNow();
+                    }
                 }
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                source.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
         } finally {
             sourceFactory.managedChannel().shutdownNow();

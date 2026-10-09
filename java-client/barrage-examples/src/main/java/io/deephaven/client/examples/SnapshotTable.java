@@ -31,6 +31,7 @@ import java.util.BitSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Takes Barrage snapshots of a server table into client-side engine tables, in several shapes: every row and column, a
@@ -83,7 +84,12 @@ class SnapshotTable implements Callable<Void> {
         try (
                 final SafeCloseable ignored = executionContext.open();
                 final BarrageSession client = factory.newBarrageSession()) {
-            snapshots(client);
+            try {
+                snapshots(client);
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                client.session().closeFuture().get(5, TimeUnit.SECONDS);
+            }
         } finally {
             factory.managedChannel().shutdownNow();
             scheduler.shutdownNow();

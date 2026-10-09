@@ -16,6 +16,7 @@ import picocli.CommandLine.Option;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Fetches the Arrow schema of a server table by its flight path, without reading any data.
@@ -57,17 +58,22 @@ class GetDirectSchema implements Callable<Void> {
                 .factory();
         // A FlightSession pairs a Session (tables, consoles, publishing) with an Arrow Flight client (bulk data)
         try (final FlightSession flight = factory.newFlightSession()) {
-            // A path names a table by scope variable or application field, the same way Flight lists it
-            final Schema schema = flight.schema(path);
-            switch (format) {
-                case DEFAULT:
-                    System.out.println(schema);
-                    break;
-                case JSON:
-                    System.out.println(schema.toJson());
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected format " + format);
+            try {
+                // A path names a table by scope variable or application field, the same way Flight lists it
+                final Schema schema = flight.schema(path);
+                switch (format) {
+                    case DEFAULT:
+                        System.out.println(schema);
+                        break;
+                    case JSON:
+                        System.out.println(schema.toJson());
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected format " + format);
+                }
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                flight.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
         } finally {
             factory.managedChannel().shutdownNow();

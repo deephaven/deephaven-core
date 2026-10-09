@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Prints a server object as TSV. A {@code Table} is read directly; any other object type is fetched through the object
@@ -59,13 +60,18 @@ class ConvertToTable implements Callable<Void> {
                 .factory();
         // A FlightSession pairs a Session (tables, consoles, publishing) with an Arrow Flight client (bulk data)
         try (final FlightSession flight = factory.newFlightSession()) {
-            // A table can be read directly; any other plugin object is fetched first to find the table it exports
-            if ("Table".equals(type)) {
-                showTable(flight, ticket);
-            } else {
-                try (final TableObject tableExport = fetchTableExport(flight)) {
-                    showTable(flight, tableExport);
+            try {
+                // A table can be read directly; any other plugin object is fetched first to find the table it exports
+                if ("Table".equals(type)) {
+                    showTable(flight, ticket);
+                } else {
+                    try (final TableObject tableExport = fetchTableExport(flight)) {
+                        showTable(flight, tableExport);
+                    }
                 }
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                flight.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
         } finally {
             factory.managedChannel().shutdownNow();

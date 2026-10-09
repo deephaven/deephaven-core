@@ -58,68 +58,73 @@ class AddToBlinkTable implements Callable<Void> {
                 .factory();
         // A FlightSession pairs a Session (tables, consoles, publishing) with an Arrow Flight client (bulk data)
         try (final FlightSession flight = factory.newFlightSession()) {
-            addAndPublish(flight, allocator, "Boolean", Type.booleanType(), null, true, false);
-            addAndPublish(flight, allocator, "Byte", Type.byteType(), null, (byte) 42);
-            addAndPublish(flight, allocator, "Char", Type.charType(), null, 'a');
-            addAndPublish(flight, allocator, "Short", Type.shortType(), null, (short) 42);
-            addAndPublish(flight, allocator, "Int", Type.intType(), null, 42);
-            addAndPublish(flight, allocator, "Long", Type.longType(), null, 42L);
-            addAndPublish(flight, allocator, "Float", Type.floatType(), null, 42.24f);
-            addAndPublish(flight, allocator, "Double", Type.doubleType(), null, 42.24);
+            try {
+                addAndPublish(flight, allocator, "Boolean", Type.booleanType(), null, true, false);
+                addAndPublish(flight, allocator, "Byte", Type.byteType(), null, (byte) 42);
+                addAndPublish(flight, allocator, "Char", Type.charType(), null, 'a');
+                addAndPublish(flight, allocator, "Short", Type.shortType(), null, (short) 42);
+                addAndPublish(flight, allocator, "Int", Type.intType(), null, 42);
+                addAndPublish(flight, allocator, "Long", Type.longType(), null, 42L);
+                addAndPublish(flight, allocator, "Float", Type.floatType(), null, 42.24f);
+                addAndPublish(flight, allocator, "Double", Type.doubleType(), null, 42.24);
 
-            addAndPublish(flight, allocator, "BoxedBoolean", Type.booleanType().boxedType(), null, true, false);
-            addAndPublish(flight, allocator, "BoxedByte", Type.byteType().boxedType(), null, (byte) 42);
-            addAndPublish(flight, allocator, "BoxedChar", Type.charType().boxedType(), null, 'a');
-            addAndPublish(flight, allocator, "BoxedShort", Type.shortType().boxedType(), null, (short) 42);
-            addAndPublish(flight, allocator, "BoxedInt", Type.intType().boxedType(), null, 42);
-            addAndPublish(flight, allocator, "BoxedLong", Type.longType().boxedType(), null, 42L);
-            addAndPublish(flight, allocator, "BoxedFloat", Type.floatType().boxedType(), null, 42.24f);
-            addAndPublish(flight, allocator, "BoxedDouble", Type.doubleType().boxedType(), null, 42.24);
+                addAndPublish(flight, allocator, "BoxedBoolean", Type.booleanType().boxedType(), null, true, false);
+                addAndPublish(flight, allocator, "BoxedByte", Type.byteType().boxedType(), null, (byte) 42);
+                addAndPublish(flight, allocator, "BoxedChar", Type.charType().boxedType(), null, 'a');
+                addAndPublish(flight, allocator, "BoxedShort", Type.shortType().boxedType(), null, (short) 42);
+                addAndPublish(flight, allocator, "BoxedInt", Type.intType().boxedType(), null, 42);
+                addAndPublish(flight, allocator, "BoxedLong", Type.longType().boxedType(), null, 42L);
+                addAndPublish(flight, allocator, "BoxedFloat", Type.floatType().boxedType(), null, 42.24f);
+                addAndPublish(flight, allocator, "BoxedDouble", Type.doubleType().boxedType(), null, 42.24);
 
-            addAndPublish(flight, allocator, "String", Type.stringType(), null, "", "Hello");
-            addAndPublish(flight, allocator, "Instant", Type.instantType(), null, Instant.now());
+                addAndPublish(flight, allocator, "String", Type.stringType(), null, "", "Hello");
+                addAndPublish(flight, allocator, "Instant", Type.instantType(), null, Instant.now());
 
-            addAndPublish(flight, allocator, "BooleanArray", Type.booleanType().arrayType(),
-                    null,
-                    new boolean[] {true},
-                    new boolean[] {true, false});
-            addAndPublish(flight, allocator, "ByteArray", Type.byteType().arrayType(),
-                    null,
-                    new byte[] {},
-                    new byte[] {(byte) 42, (byte) 43});
-            addAndPublish(flight, allocator, "CharArray", Type.charType().arrayType(),
-                    null,
-                    new char[] {},
-                    new char[] {'a', 'b'});
-            addAndPublish(flight, allocator, "ShortArray", Type.shortType().arrayType(),
-                    null,
-                    new short[] {},
-                    new short[] {(short) 42, (short) 43});
-            addAndPublish(flight, allocator, "IntArray", Type.intType().arrayType(),
-                    null,
-                    new int[] {},
-                    new int[] {42, 43});
-            addAndPublish(flight, allocator, "LongArray", Type.longType().arrayType(),
-                    null,
-                    new long[] {},
-                    new long[] {42L, 43L});
-            addAndPublish(flight, allocator, "FloatArray", Type.floatType().arrayType(),
-                    null,
-                    new float[] {},
-                    new float[] {42.42f, 43.43f});
-            addAndPublish(flight, allocator, "DoubleArray", Type.doubleType().arrayType(),
-                    null,
-                    new double[] {},
-                    new double[] {42.42, 43.43});
+                addAndPublish(flight, allocator, "BooleanArray", Type.booleanType().arrayType(),
+                        null,
+                        new boolean[] {true},
+                        new boolean[] {true, false});
+                addAndPublish(flight, allocator, "ByteArray", Type.byteType().arrayType(),
+                        null,
+                        new byte[] {},
+                        new byte[] {(byte) 42, (byte) 43});
+                addAndPublish(flight, allocator, "CharArray", Type.charType().arrayType(),
+                        null,
+                        new char[] {},
+                        new char[] {'a', 'b'});
+                addAndPublish(flight, allocator, "ShortArray", Type.shortType().arrayType(),
+                        null,
+                        new short[] {},
+                        new short[] {(short) 42, (short) 43});
+                addAndPublish(flight, allocator, "IntArray", Type.intType().arrayType(),
+                        null,
+                        new int[] {},
+                        new int[] {42, 43});
+                addAndPublish(flight, allocator, "LongArray", Type.longType().arrayType(),
+                        null,
+                        new long[] {},
+                        new long[] {42L, 43L});
+                addAndPublish(flight, allocator, "FloatArray", Type.floatType().arrayType(),
+                        null,
+                        new float[] {},
+                        new float[] {42.42f, 43.43f});
+                addAndPublish(flight, allocator, "DoubleArray", Type.doubleType().arrayType(),
+                        null,
+                        new double[] {},
+                        new double[] {42.42, 43.43});
 
-            addAndPublish(flight, allocator, "StringArray", Type.stringType().arrayType(),
-                    null,
-                    new String[] {},
-                    new String[] {null, "", "Hello World"});
-            addAndPublish(flight, allocator, "InstantArray", Type.instantType().arrayType(),
-                    null,
-                    new Instant[] {},
-                    new Instant[] {null, Instant.now()});
+                addAndPublish(flight, allocator, "StringArray", Type.stringType().arrayType(),
+                        null,
+                        new String[] {},
+                        new String[] {null, "", "Hello World"});
+                addAndPublish(flight, allocator, "InstantArray", Type.instantType().arrayType(),
+                        null,
+                        new Instant[] {},
+                        new Instant[] {null, Instant.now()});
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                flight.session().closeFuture().get(5, TimeUnit.SECONDS);
+            }
         } finally {
             factory.managedChannel().shutdownNow();
             scheduler.shutdownNow();

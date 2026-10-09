@@ -100,7 +100,12 @@ class AggregateAllExample implements Callable<Void> {
                 .build()
                 .factory();
         try (final FlightSession flight = factory.newFlightSession()) {
-            run(flight, allocator);
+            try {
+                run(flight, allocator);
+            } finally {
+                // Wait for the server to acknowledge the close; close() only starts it, and the channel goes away below
+                flight.session().closeFuture().get(5, TimeUnit.SECONDS);
+            }
         } finally {
             factory.managedChannel().shutdownNow();
             scheduler.shutdownNow();

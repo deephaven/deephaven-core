@@ -91,7 +91,8 @@ The words the examples use without introducing them. The comments in the example
 phrasing.
 
 - **Session**: one authenticated login on a connection. Everything it exports on the server is
-  released when it closes. `Session.close()` blocks until that has happened.
+  released when it closes. `Session.close()` blocks until the server has acknowledged that, or
+  until the configured close timeout passes, in which case it logs a warning and returns.
 - **Factory**: holds the connection (a gRPC channel) and a scheduler, and opens sessions on it.
   The examples make one factory, open one session, and shut both down in `finally`.
 - **Scheduler**: a thread pool the client uses for background work, such as refreshing the
@@ -162,7 +163,9 @@ One file per example, no abstract base classes. Top to bottom:
    `BatchOrSerialOptions`, `ScriptTypeOptions`, `Ticket`, `Path`, `SharedField`.
 4. The example's own options and parameters.
 5. `call()`: build the factory, open the session in a try-with-resources, do the interesting thing,
-   shut the channel and scheduler down in `finally`.
+   shut the channel and scheduler down in `finally`. A Flight or Barrage session's `close()` only
+   starts the close, so those examples wait on `session().closeFuture()` in an inner `finally`
+   before the channel goes away; a plain `Session.close()` waits by itself.
 6. `main`: `System.exit(new CommandLine(new X()).execute(args))`.
 
 The factory and session setup is about ten lines and is repeated in every file on purpose. It is
@@ -182,7 +185,9 @@ SessionFactoryConfig.builder()
 //          DEFAULT PeriodicUpdateGraph (see SnapshotTable or SubscribeTable)
 ```
 
-There are no shutdown hooks; Ctrl-C drops the connection and the server expires the session itself.
+There are no connection-cleanup shutdown hooks; Ctrl-C drops the connection and the server expires
+the session itself. `SubscribeToFields` and `CreateSharedId` register hooks of their own, to cancel
+the subscription and to release the shared id.
 
 ### Duplication, and what goes where
 
