@@ -2,7 +2,7 @@
 title: Generate tables with Python functions
 ---
 
-This guide covers [function-generated tables](../reference/table-operations/create/function_generated_table.md), which create ticking tables from a Python function. A ticking table is one whose rows update over time. The function runs once when the table is created, and again whenever:
+This guide covers [function-generated tables](../reference/table-operations/create/function_generated_table.md), which create a table from a Python function. With a trigger table or a refresh interval, the result is a ticking table, one whose rows update over time. The function runs once when the table is created, and again whenever:
 
 - One or more trigger tables tick.
 - A refresh interval is reached.

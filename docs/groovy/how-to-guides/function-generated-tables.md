@@ -2,7 +2,7 @@
 title: Generate tables with Groovy functions
 ---
 
-This guide shows you how to create and use function-generated tables. A function-generated table is a ticking table whose contents come from a user-defined Groovy function. A ticking table is one whose rows update over time. The [`create`](../reference/table-operations/create/create.md) method of [`FunctionGeneratedTableFactory`](/core/javadoc/io/deephaven/engine/table/impl/util/FunctionGeneratedTableFactory.html) creates a function-generated table from a Groovy function.
+This guide shows you how to create and use function-generated tables. A function-generated table is a table whose contents come from a user-defined Groovy function. With a source table or a refresh interval, the result is a ticking table, one whose rows update over time. The [`create`](../reference/table-operations/create/create.md) method of [`FunctionGeneratedTableFactory`](/core/javadoc/io/deephaven/engine/table/impl/util/FunctionGeneratedTableFactory.html) creates a function-generated table from a Groovy function.
 
 Use a function-generated table to bring data from external sources into a ticking table. Each refresh replaces the whole result, so when the input is already a Deephaven table, use regular table operations, which update incrementally.
 
