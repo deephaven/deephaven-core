@@ -29,6 +29,17 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    itself is the exception to that exception — see `ref-deephaven-doc-categories` — and stays on
    the normal enumerable-reference path).
 
+3a. **Set the scope: the whole page, not the diff.** When asked to review a page, or when the
+   ticket is an audit or rewrite, every sentence on the page is in scope. That includes unchanged
+   sentences next to an edited one: an edit often rewords one clause and leaves the clause before
+   it, which is where the wrong claim sits. Build a claim ledger before verifying. List every
+   sentence that makes a factual or behavioral claim (what an API does, how the engine works, when
+   something is allowed, a comparison between two things, a status like "legacy" or "recommended"),
+   then mark each one verified with a source citation or recorded as an author query. Identifier
+   and signature checks do not clear a sentence; its claim has to be traced to the implementation.
+   State the ledger's size and the number of unverified entries in the report so a reader can see
+   the coverage.
+
 4. **Technical accuracy review:**
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.
      - Engine/server code: `engine/`, `server/`, `extensions/`
@@ -88,6 +99,12 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - **Listener attachment conditions:** `WhereListener` can exist for static sources with refreshing filter dependencies, not just refreshing parent tables.
    - **Incremental evaluation claims:** Filters can trigger broader re-evaluation (refilter path), not just changed rows. Avoid overstating "only changed rows."
    - **Update-cycle framing:** Avoid "instant" or claims of no micro-batching — the update cycle is effectively micro-batching. Avoid a blanket "work proportional to what changed" too: that holds for simple incremental paths, but operations like refilter can force broader or full-table re-evaluation. Frame it per-operation instead of with one universal claim.
+   - **How-it-works and comparison sentences:** A sentence of the form "X works similarly to Y in that…", "under the hood Deephaven does Z," or "this is faster because…" makes two claims, one about each side, and neither is checked by confirming the names exist. Read the implementation of both sides. Case in point: "`time_table` works like `empty_table` in that DQL populates the table" survived several reviews because both functions exist; `TimeTable` supplies its own `Timestamp` column and no DQL is involved.
+   - **Restrictions: derive the full condition from the check that enforces it.** For "only works on X" and "can't be used with Y," find the validator or guard and state its whole condition, including static versus refreshing, add-only versus append-only versus blink. A paraphrase that sounds right usually drops one dimension. Cases: `i`/`ii` are safe on static, append-only, and blink tables and throw on other refreshing tables (`AbstractFormulaColumn.validateSafeForRefresh`), not "only append-only tables"; `deephaven.learn` builds a row-key formula, so it needs add-only or blink tables when the input is ticking and works on any static table.
+   - **Deprecated APIs in examples:** For every API an example calls, check the source for `@Deprecated`, a "Deprecated" docstring, or "Use X instead." A deprecated call still runs, so a run-and-see check passes, but the example teaches the superseded way. Cases: `S3Instructions` `access_key_id` and `secret_access_key` (use `Credentials.basic`), and the `adapter_s3_rest` and `createS3Rest` helpers (use `adapter` and `createAdapter`).
+   - **Counterexamples live on other pages:** For a thesis or universal claim ("queries are indifferent to static or streaming data," "works on real-time tables," "the native plotting library"), search the corpus for a restriction before accepting it: the reference pages for that operation family, restriction tables such as `special-variables.md`, and status notes such as "no longer under active development." The self-contradiction check below covers only the same paragraph; this one covers the whole docs tree. When a rule is stated on more than one page, the pages must agree: grep the corpus for its key terms and report any page that disagrees, even if it is outside the files under review.
+   - **Trace the example's data against its prose:** When the text says what an example shows (a rolling window, a filter, "early trading," a round trip through pandas), carry the actual input values through the code. Check window length against row spacing, a filter against the dates it keeps (a holiday can empty the output), columns or indexes dropped on conversion, and variable scope (a Groovy closure that assigns an undeclared name writes a global). An example can run cleanly and still show nothing.
+   - **Enumerated rules above an example:** When prose lists what a construct can be or do (what a quoted literal is interpreted as, which Parquet layouts exist), derive the complete set from the parser or enum rather than from the example, then compare it with the prose.
    - **Repo scope:** Flag any feature described as available in deephaven-core if it's actually Enterprise-only (Persistent Query lifecycle, Controller/Worker/Dispatcher model, kv store/etcd config) — those live in deephaven-ent, not here.
    - **Duplicate claim propagation:** A wrong claim is rarely stated only once. When you find and correct one, grep the whole file — and its cross-language sibling — for every other place asserting the same fact: quick-reference tables, "operation pattern" summaries, cheat-sheet bullets, a one-line callout that restates the prose above it in different words, or an inline comment inside a fenced code block that gives the same (now-outdated) rationale for a line of code. Code comments are prose too, and are easy to forget precisely because they read as "just code" — treat them as a first-class sweep target, not an afterthought. The same wrong claim two screens below the paragraph you just fixed is a near-certainty, not a hypothetical; leaving it is what turns one review round into three.
    - **Self-contradiction radius:** After writing or reviewing any absolute claim ("all", "every", "only", "always", "never", "produces X"), scan the rest of its paragraph and section for an exception the doc's own text already names — e.g., asserting "transformations preserve refreshing behavior" right before describing `snapshot`, which deliberately returns a static result. An absolute claim sitting next to its own counterexample is a defect even when each sentence is individually defensible in isolation.
@@ -159,5 +176,11 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 - [ ] Every classification (supported/unsupported, parallelized/not parallelized, incremental/recomputed) verified member-by-member under every evaluation mode, including deferred evaluation on the reader's thread
 - [ ] Every prescriptive row (quick-reference Scenario → Solution tables, "Choosing an approach," "Use X when…" takeaways) checked for whether the remedy's documented contract is actually sufficient for that scenario
 - [ ] Every proposed fix that adds a property name, default, or threshold to Concept-guide or Tutorial narrative redirected to a Configuration section or reference link instead; a non-configuration caveat the reader needs at that point kept as its own sentence, and any other caveat cut
+- [ ] Claim ledger built for the whole page (unchanged sentences next to edits included), each entry verified with a citation or recorded as an author query, with its size reported
+- [ ] Every "X works like Y" or "under the hood" sentence verified against the implementation of both sides
+- [ ] Every restriction ("only," "can't") traced to the check that enforces it, and its full condition stated
+- [ ] Every API called in an example checked for deprecation
+- [ ] Every universal or thesis claim searched for counterexamples across the docs tree, and every other page stating the same rule compared
+- [ ] Every example's data traced through the code to confirm it shows what the prose says
 - [ ] Every claim you couldn't verify recorded as an author query, not hedged
 - [ ] No style or structure comments included (those are out of scope), except the destination for a fix that would otherwise inject configuration detail

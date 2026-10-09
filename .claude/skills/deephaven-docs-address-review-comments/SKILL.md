@@ -123,6 +123,12 @@ If the user asked for edits:
    parentheticals, property names, or repeated pointers to the same setting have accumulated —
    from this round or earlier ones — consolidate before finishing. If a Python or Groovy page
    changed, check whether its sibling in the other language needs the same Apply fixes (and only those).
+5. **Sweep before you push.** A bot reviewer such as Copilot re-reads the whole page after every
+   push and reports things in text no one touched, so each push can produce new comments that were
+   always there. Before pushing a round of fixes, run the claim ledger from
+   `deephaven-core-accuracy-check` over each page you changed (sentences next to your edits
+   included) and fix what it finds in the same push. Batch the round into one push rather than one
+   per comment, since every push starts another review.
 
 ## 4a. Check your own proposed text
 

@@ -19,6 +19,11 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    that skill's "Technical accuracy review" step for the full path list). Search source first;
    never correct an example from memory.
 
+   **Verify the whole sentence, not just the changed words.** If the edit rewords one clause of a
+   sentence or one sentence of a paragraph, check the claims in the clauses around it too. They are
+   not in the diff, but a reader takes the sentence as one claim, and the unchanged clause is often
+   the wrong one.
+
    **Placement gate:** a verified-true fix can still be the wrong fix. This applies only to
    narrative pages: Concept guides (`conceptual/`) and Tutorials (`getting-started/crash-course/`).
    On Reference pages and configuration pages (such as `conceptual/query-table-configuration.md`),

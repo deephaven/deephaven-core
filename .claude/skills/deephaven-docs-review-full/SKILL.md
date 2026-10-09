@@ -96,7 +96,7 @@ specific organizational patterns; this pass asks whether the page is doing the r
 ## 2. Accuracy
 
 Invoke `deephaven-core-accuracy-check` on the doc, starting from the core claims the
-developmental pass wrote down. Facts before reorganizing: there's no point building a clean
+developmental pass wrote down. Review the whole page, not the diff: unchanged sentences next to an edit are in scope, and the accuracy check builds a claim ledger so coverage is visible. Facts before reorganizing: there's no point building a clean
 structure around a wrong claim, and it's easier to verify claims against source while they're
 still in their original location and context. Per the report-by-default rule above, this step
 reports issues; only apply the fixes it finds if the user asked for edits. Claims the accuracy
@@ -190,6 +190,11 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
 - **Is every major concept shown, not just described?** Flag long conceptual stretches with no
   example, and concepts that would be clearer as a wrong-then-right pair (the unsafe query and its
   corrected form, with both outputs).
+- **Does the data produce what the prose says?** Run the example's input values through the code
+  by hand: window length against row spacing, a filter against the dates it keeps, columns dropped
+  on conversion. An example can run cleanly and demonstrate nothing.
+- **Do blocks that share a `test-set` have compatible settings?** A block with a `docker-config`
+  sharing a set with one without it will fail or be tested under the wrong setup.
 - **Is it executable and tested?** A `syntax` or `skip-test` block where a runnable one would work
   isn't validated by the docs snapshotter; flag it unless the page has a reason.
 - **Is it readable in one view?** Short enough to follow, with realistic names, and with comments
@@ -271,6 +276,11 @@ only for findings that aren't part of a pattern.
 ## Author queries
 Questions the review couldn't resolve from source — mostly technical claims that need an SME.
 Format: AQ1 [heading, para N or line N]: question
+
+## Coverage
+Sentences with factual or behavioral claims (the accuracy check's claim ledger), how many were
+verified against source, and how many are author queries. A page with no ledger was not fully
+reviewed.
 
 ## Strengths
 1–3 specific things that work and should be kept, so a revision doesn't remove them.

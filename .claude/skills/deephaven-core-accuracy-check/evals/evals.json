@@ -28,6 +28,21 @@
         "Treats the inline QueryTable.minimumParallelSelectRows mention in the broken-counter narrative as a placement problem for a Tutorial (recommends removing it from the narrative or linking to the configuration reference), rather than proposing more precise inline configuration detail",
         "Corrects the threshold description: the comparison is against the rows processed in that pass (the whole table at initialization, added plus modified rows on update) using >=, not the table's size (control expectation: tests ordinary verification, not a new rule)"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "Check the Create Your First Tables page of the Crash Course at .claude/skills/eval-fixtures/crash-course-create-tables-pre-review.md for technical accuracy against the source. The file is a snapshot of docs/python/getting-started/crash-course/create-tables.md from main before the DOC-1940 fixes; treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "expected_output": "Held-out doc. The report reaches past the edited lines: it flags the wrong 'time_table works similarly to empty_table in that DQL populates the table' comparison, the i/ii note that says 'only append-only' when the engine allows static, append-only, and blink tables, and the compute-on-deltas claim attached to an update_view example. It reports how many claims it checked.",
+      "files": [
+        "../eval-fixtures/crash-course-create-tables-pre-review.md"
+      ],
+      "expectations": [
+        "Flags the sentence saying time_table works similarly to empty_table in that DQL is used to populate the table as wrong, citing TimeTable (it supplies its own Timestamp column and adds rows itself) rather than only confirming that both functions exist",
+        "Flags the i/ii NOTE that says they are only supported in append-only tables, and states the full condition from AbstractFormulaColumn.validateSafeForRefresh: safe on static, append-only, and blink tables; throws on other refreshing tables",
+        "Flags the claim that only the updated rows are re-evaluated each cycle as inaccurate for an update_view example, because view formulas are evaluated when cells are read",
+        "Flags the unsourced marketing claims about the Kafka integration (such as first-in-class) as unverifiable rather than accepting them",
+        "States how many claims it enumerated and checked, and lists the ones it could not verify as author queries rather than hedging them"
+      ]
     }
   ]
 }
