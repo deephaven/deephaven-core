@@ -381,6 +381,15 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 [ct for ct in joined_pt_proxy.target.constituent_tables if ct.size < 5]
             )
 
+        with self.subTest("zero reserve_bits"):
+            pt_proxy = (
+                self.test_table.drop_columns(cols=["d", "e"]).partition_by("c").proxy()
+            )
+            right_table = self.test_table.drop_columns(cols=["b", "c"])
+            with self.assertRaises(DHError) as cm:
+                pt_proxy.join(right_table, on="a", joins=["d", "e"], reserve_bits=0)
+            self.assertIn("reserveBits must be between 1 and 62", str(cm.exception))
+
     def test_as_of_join(self):
         with self.subTest("Join with a Table"):
             pt_proxy = (

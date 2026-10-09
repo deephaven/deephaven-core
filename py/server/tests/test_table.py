@@ -531,6 +531,13 @@ class TableTestCase(BaseTestCase):
         with self.subTest("with no join keys"):
             result_table = left_table.join(right_table, joins="e", reserve_bits=2)
             self.assertTrue(result_table.size > left_table.size)
+        for reserve_bits in [0, 63]:
+            with self.subTest("out of range reserve_bits", reserve_bits=reserve_bits):
+                with self.assertRaises(DHError) as cm:
+                    left_table.join(
+                        right_table, on="a", joins="e", reserve_bits=reserve_bits
+                    )
+                self.assertIn("reserveBits must be between 1 and 62", str(cm.exception))
 
     def test_as_of_join(self):
         left_table = self.test_table.drop_columns(["d", "e"])

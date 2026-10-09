@@ -1953,9 +1953,8 @@ class Table(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
-            reserve_bits = (
-                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-            )
+            if reserve_bits is None:
+                reserve_bits = _default_cross_join_reserve_bits()
             with auto_locking_ctx(self, table):
                 return Table(
                     j_table=table_op.join(
@@ -4094,9 +4093,8 @@ class PartitionedTableProxy(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
-            reserve_bits = (
-                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-            )
+            if reserve_bits is None:
+                reserve_bits = _default_cross_join_reserve_bits()
 
             with auto_locking_ctx(self, table):
                 return PartitionedTableProxy(
