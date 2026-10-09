@@ -1,54 +1,68 @@
 ---
-title: Exact and Relational Joins
+title: Exact and relational joins
 ---
 
-This guide covers exact and relational joins in Deephaven. Exact and relational join operations combine data from two tables based on one or more related key columns.
+This guide covers exact and relational joins in Deephaven. Both kinds of join combine data from two tables by matching values in one or more key columns. This guide calls the table that receives data the _left table_ and the table that supplies it the _right table_.
 
-- An exact join adds columns from the right table to every row of the left table, using at most one matching right row per key. The following table operations perform an exact join:
+- An exact join adds columns from the right table to every row of the left table, using at most one matching right row per key. The result has the same rows as the left table. These table operations perform an exact join:
   - [`exact_join`](../reference/table-operations/join/exact-join.md)
   - [`natural_join`](../reference/table-operations/join/natural-join.md)
-- A relational join primarily combines rows with exact matches across tables, but can also include rows where no exact match exists, depending on the type of join used. The following table operations exemplify different relational joins:
+- A relational join pairs each left row with every matching right row, so one key can produce several result rows. Depending on the operation, the result can also include rows that have no match. These table operations perform a relational join:
   - [`join`](../reference/table-operations/join/join.md)
   - [`left_outer_join`](../reference/table-operations/join/left-outer-join.md)
   - [`full_outer_join`](../reference/table-operations/join/full-outer-join.md)
 
-Exact and relational joins differ from time-series and range joins. For a detailed guide, see [Joins: time-series and range](./joins-timeseries-range.md).
+To join three or more tables on matching key values in one operation, use [`multi_join`](../reference/table-operations/join/multi-join.md), described in [Join three or more tables](#join-three-or-more-tables). The key columns can have different names in each table.
 
-To join three or more table operations with one operation, see the [`multi_join`](../reference/table-operations/join/multi-join.md) operation documented in a [later section](#join-three-or-more-tables) of this article.
+Exact and relational joins match key values exactly. To match on the nearest value or on a range of values, see [Inexact, time-series, and range joins](./joins-timeseries-range.md).
+
+## Which method should you use?
+
+Answer these questions to choose a join method:
+
+- What should happen when the right table has more than one match for a key?
+  - [`exact_join`](../reference/table-operations/join/exact-join.md) raises an error.
+  - [`natural_join`](../reference/table-operations/join/natural-join.md) raises an error by default. It can instead [keep the first or last matching row](#natural_join).
+  - [`join`](../reference/table-operations/join/join.md), [`left_outer_join`](../reference/table-operations/join/left-outer-join.md), and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) include a result row for every match.
+- What should happen to a left-table row with no match?
+  - [`exact_join`](../reference/table-operations/join/exact-join.md) raises an error.
+  - [`natural_join`](../reference/table-operations/join/natural-join.md), [`left_outer_join`](../reference/table-operations/join/left-outer-join.md), and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) keep the row and fill the right table's columns with null values.
+  - [`join`](../reference/table-operations/join/join.md) leaves the row out of the result.
+- Should the result include right-table rows that match nothing in the left table?
+  - Only [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) includes them, with null values in the left table's columns.
+- Are you joining three or more tables on the same keys, even if the key column names differ, with at most one row per key in each table?
+  - Use [`multi_join`](../reference/table-operations/join/multi-join.md).
+
+The following flowchart walks through the same choices for two tables, including the inexact joins described in [Inexact, time-series, and range joins](./joins-timeseries-range.md).
+
+<Svg src='../assets/conceptual/joins3.svg' style={{height: 'auto', maxWidth: '100%'}} />
 
 ## Syntax
 
-Following convention, the tables being joined together will be referred to as the "left table" and the "right table":
-
-- The left table is the base table to which data is added.
-- The right table is the source of data added to the left table.
-
-One or more columns will be used as keys to match data between the left and right tables. This format is fundamental for writing join statements in Deephaven. However, the syntax can vary depending on the circumstances.
-
-The basic syntax for [`join`](../reference/table-operations/join/join.md), [`exact_join`](../reference/table-operations/join/exact-join.md), and [`natural_join`](../reference/table-operations/join/natural-join.md) is as follows:
+[`join`](../reference/table-operations/join/join.md), [`exact_join`](../reference/table-operations/join/exact-join.md), and [`natural_join`](../reference/table-operations/join/natural-join.md) are methods of the left table:
 
 ```python syntax
-# Include all non-key columns
+# Add all non-key columns from the right table
 result = left_table.join_method(table=right_table, on=["ColumnsToMatch"])
 
-# Include only some non-key columns (ColumnsToAdd)
+# Add only some non-key columns from the right table
 result = left_table.join_method(
     table=right_table, on=["ColumnsToMatch"], joins=["ColumnsToAdd"]
 )
 ```
 
-Where `right_table` is the table to join with, and `on` and `joins` are the String names for columns to match and add, respectively.
-
-The basic syntax for [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are as follows:
+[`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are functions in the `deephaven.experimental.outer_joins` module that take both tables as arguments:
 
 ```python syntax
-# Port all non-key columns
-result = outer_join_method(
+from deephaven.experimental.outer_joins import left_outer_join, full_outer_join
+
+# Add all non-key columns from the right table
+result = outer_join_function(
     l_table=left_table, r_table=right_table, on=["ColumnsToMatch"]
 )
 
-# Port only some non-key columns (ColumnsToAdd)
-result = outer_join_method(
+# Add only some non-key columns from the right table
+result = outer_join_function(
     l_table=left_table,
     r_table=right_table,
     on=["ColumnsToMatch"],
@@ -56,210 +70,150 @@ result = outer_join_method(
 )
 ```
 
-> [!NOTE]
-> [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are currently experimental. The API may change in the future.
+Besides the two tables, these operations take two main arguments. Each is a column name or expression, or a list of them:
 
-Outside of the left and right tables, exact and relational joins take up to two more arguments. The first is required, while the second is optional:
+- `on`: The key columns to match. Required for `exact_join` and `natural_join`. Optional for `join` and the outer joins, which pair every left row with every right row when `on` is omitted.
+- `joins` (optional): The columns from the right table to add to the left table. If omitted, the join adds all non-key columns from the right table.
 
-- `on`: The key column(s) on which to look for exact matches. Columns of any data type can be used as key columns, but corresponding match columns in the left and right table _must_ be of the same data type.
-- `joins` (Optional): The column(s) in the right table to join to the left table. If not specified, all columns are joined.
+A key column can be of any data type, but each pair of matched columns in the left and right tables _must_ have the same data type.
 
 ### Match columns with different names
 
-When two tables can be joined, their match column(s) often don't have identical names. The syntax below joins `left_table` and `right_table` on `ColumnToMatchLeft` and `ColumnToMatchRight`:
+The key columns in two tables often have different names. The syntax below joins `left_table` and `right_table` on `ColumnToMatchLeft` and `ColumnToMatchRight`:
 
 ```python syntax
 result = left_table.join_method(
     table=right_table,
-    on=["ColumnToMatchLeft=ColumnToMatchRight"],
+    on=["ColumnToMatchLeft = ColumnToMatchRight"],
     joins=["ColumnsToAdd"],
 )
 ```
 
 ### Multiple match columns
 
-Tables can be joined on more than one match column. The syntax below joins tables on two or more match columns:
+To join tables on more than one key column, list each one in `on`:
 
 ```python syntax
 result = left_table.join_method(
-    table=right_table, on=["Column1", "Column2", "Column3Left = Column3Right", ...]
+    table=right_table, on=["Column1", "Column2", "Column3Left = Column3Right"]
 )
 ```
 
 ### Rename joined columns
 
-Columns being joined from the right table that have the same name as existing columns in the left table will cause a name conflict error. To avoid this, the `joins` argument can be renamed as a column from the right table. The following example renames the right table's `OldColumnName` column to `NewColumnName`:
+If a column added from the right table has the same name as a column in the left table, the join fails with a name conflict. To avoid this, rename the column in the `joins` argument. The following example adds the right table's `OldColumnName` column to the result as `NewColumnName`:
 
 ```python syntax
 result = left_table.join_method(
     table=right_table,
-    on=["ColumnToMatchLeft=ColumnToMatchRight"],
-    joins=["NewColumnName=OldColumnName"],
+    on=["ColumnToMatchLeft = ColumnToMatchRight"],
+    joins=["NewColumnName = OldColumnName"],
+)
+```
+
+## Example tables
+
+The examples in the [Exact joins](#exact-joins) and [Relational joins](#relational-joins) sections use two tables. `employees` lists employees and the ID of the department each one works in. Rogers works in department 36, which doesn't exist, and DelaCruz has no department. `departments` lists departments by ID. No employee works in Marketing (department 35).
+
+```python test-set=1 order=employees,departments
+from deephaven import new_table
+from deephaven.column import string_col, int_col
+from deephaven.constants import NULL_INT
+
+employees = new_table(
+    [
+        string_col(
+            "LastName",
+            ["Rafferty", "Jones", "Steiner", "Robins", "Smith", "Rogers", "DelaCruz"],
+        ),
+        int_col("DeptID", [31, 33, 33, 34, 34, 36, NULL_INT]),
+        string_col(
+            "Telephone",
+            [
+                "(303) 555-0162",
+                "(303) 555-0149",
+                "(303) 555-0184",
+                "(303) 555-0125",
+                "",
+                "",
+                "(303) 555-0160",
+            ],
+        ),
+    ]
+)
+
+departments = new_table(
+    [
+        int_col("DeptID", [31, 33, 34, 35]),
+        string_col("DeptName", ["Sales", "Engineering", "Clerical", "Marketing"]),
+        string_col(
+            "DeptTelephone",
+            ["(303) 555-0136", "(303) 555-0162", "(303) 555-0175", "(303) 555-0171"],
+        ),
+    ]
 )
 ```
 
 ## Exact joins
 
-An exact join keeps every row of the left table and appends columns from the matching row of the right table.
-
-Exact matches fail if multiple matching keys are in the right table for any key in the left table.
-
-There are two available operations to perform an exact match join. They differ in how zero matches are handled.
+An exact join keeps every row of the left table and appends columns from the matching row of the right table. [`exact_join`](../reference/table-operations/join/exact-join.md) and [`natural_join`](../reference/table-operations/join/natural-join.md) differ in how they handle a left-table row with no match, and in whether they can keep one of several matching right rows.
 
 ### `exact_join`
 
-`exact_join` requires every row in the left table to have exactly one matching row in the right table: the operation fails if a left-table key has no match or more than one match in the right table. Right-table keys with no match in the left table are allowed and are ignored.
+[`exact_join`](../reference/table-operations/join/exact-join.md) requires every row in the left table to have exactly one matching row in the right table. The operation fails if a left-table key has no match or more than one match in the right table. The operation ignores right-table keys that have no match in the left table.
 
-```python order=result,left,right
-from deephaven import new_table
-from deephaven.column import string_col, int_col
-from deephaven.constants import NULL_INT
+Calling `exact_join` on the whole [`employees`](#example-tables) table fails because Rogers and DelaCruz have no matching department. This example first keeps only the employees whose department exists, and then adds the department columns:
 
-left = new_table(
-    [
-        string_col("LastName", ["Rafferty", "Jones", "Steiner", "Robins", "Smith"]),
-        int_col("DeptID", [31, 33, 33, 34, 34]),
-        string_col(
-            "Telephone",
-            [
-                "(303) 555-0162",
-                "(303) 555-0149",
-                "(303) 555-0184",
-                "(303) 555-0125",
-                "",
-            ],
-        ),
-    ]
-)
+```python test-set=1 order=result,assigned
+assigned = employees.where("DeptID in 31, 33, 34")
 
-right = new_table(
-    [
-        int_col("DeptID", [31, 33, 34, 35]),
-        string_col("DeptName", ["Sales", "Engineering", "Clerical", "Marketing"]),
-        string_col(
-            "DeptTelephone",
-            ["(303) 555-0136", "(303) 555-0162", "(303) 555-0175", "(303) 555-0171"],
-        ),
-    ]
-)
-
-result = left.exact_join(table=right, on=["DeptID"])
+result = assigned.exact_join(table=departments, on=["DeptID"])
 ```
 
 ### `natural_join`
 
-`Natural_join` allows for cases when there are no matching keys in the right table for particular values in the key column of the left table. If no matching key exists in the right table, appended column values are simply `NULL`. Similarly to `exact_join`, if there are multiple key matches in the right table, the operation will fail.
+[`natural_join`](../reference/table-operations/join/natural-join.md) allows left-table rows that have no match in the right table. The appended columns in those rows are null. In this example, Rogers and DelaCruz get null department columns:
 
-```python test-set=1 order=result,left,right
-from deephaven import new_table
-from deephaven.column import string_col, int_col
-from deephaven.constants import NULL_INT
+```python test-set=1 order=result
+result = employees.natural_join(table=departments, on=["DeptID"])
+```
 
-left = new_table(
-    [
-        string_col(
-            "LastName",
-            ["Rafferty", "Jones", "Steiner", "Robins", "Smith", "Rogers", "DelaCruz"],
-        ),
-        int_col("DeptID", [31, 33, 33, 34, 34, 36, NULL_INT]),
-        string_col(
-            "Telephone",
-            [
-                "(303) 555-0162",
-                "(303) 555-0149",
-                "(303) 555-0184",
-                "(303) 555-0125",
-                "",
-                "",
-                "(303) 555-0160",
-            ],
-        ),
-    ]
+By default, `natural_join` fails if the right table has more than one row for a key. To keep one of the matching rows instead, set `type` to [`NaturalJoinType`](/core/pydoc/code/deephaven.table.html#deephaven.table.NaturalJoinType) `.FIRST_MATCH` or `NaturalJoinType.LAST_MATCH`. The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
+
+```python test-set=1 order=result
+from deephaven.table import NaturalJoinType
+
+result = departments.natural_join(
+    table=employees, on=["DeptID"], type=NaturalJoinType.FIRST_MATCH
 )
-
-right = new_table(
-    [
-        int_col("DeptID", [31, 33, 34, 35]),
-        string_col("DeptName", ["Sales", "Engineering", "Clerical", "Marketing"]),
-        string_col(
-            "DeptTelephone",
-            ["(303) 555-0136", "(303) 555-0162", "(303) 555-0175", "(303) 555-0171"],
-        ),
-    ]
-)
-
-result = left.natural_join(table=right, on=["DeptID"])
 ```
 
 ## Relational joins
 
-In contrast to exact joins, relational joins provide operations where multiple key matches in the right table will not result in an error.
-
-The three relational join methods differ in how zero exact matches are handled.
+Unlike exact joins, which use at most one matching right row per key, relational joins keep every matching right row. Each left row appears in the result once for every matching right row. The three relational joins differ in which unmatched rows they keep. The examples in this section use `departments` as the left table and `employees` as the right table, so a department with several employees produces several result rows.
 
 ### `join`
 
-The output table from a `join` operation contains rows with matching values in both tables. Rows without matching values are not included in the result.
+The output table from a [`join`](../reference/table-operations/join/join.md) contains a row for every pair of matching left and right rows. The result leaves out rows that have no match in the other table. In this example, the Engineering and Clerical departments each appear twice, once per employee. Marketing doesn't appear because no employee works there:
 
-```python order=result,left,right
-from deephaven import new_table
-from deephaven.column import string_col, int_col
-from deephaven.constants import NULL_INT
-
-left = new_table(
-    [
-        string_col(
-            "LastName",
-            ["Rafferty", "Jones", "Steiner", "Robins", "Smith", "Rogers", "DelaCruz"],
-        ),
-        int_col("DeptID", [31, 33, 33, 34, 34, 36, NULL_INT]),
-        string_col(
-            "Telephone",
-            [
-                "(303) 555-0162",
-                "(303) 555-0149",
-                "(303) 555-0184",
-                "(303) 555-0125",
-                "",
-                "",
-                "(303) 555-0160",
-            ],
-        ),
-    ]
-)
-
-right = new_table(
-    [
-        int_col("DeptID", [31, 33, 34, 35]),
-        string_col("DeptName", ["Sales", "Engineering", "Clerical", "Marketing"]),
-        string_col(
-            "DeptTelephone",
-            ["(303) 555-0136", "(303) 555-0162", "(303) 555-0175", "(303) 555-0171"],
-        ),
-    ]
-)
-
-result = left.join(table=right, on=["DeptID"])
+```python test-set=1 order=result
+result = departments.join(table=employees, on=["DeptID"])
 ```
 
 > [!TIP]
-> [`join`](../reference/table-operations/join/join.md) computes the cross product of the left and right tables and subsets the rows based on the arguments. This means it is slow relative to [`natural_join`](../reference/table-operations/join/natural-join.md), so [`natural_join`](../reference/table-operations/join/natural-join.md) should be preferred in most places.
+> Because `join` includes every matching combination of left and right rows, its output can be much larger than either input. A large result also costs more to maintain on [ticking tables](../conceptual/table-update-model.md), whose rows change over time. If each left row needs at most one right match, use [`natural_join`](../reference/table-operations/join/natural-join.md) instead. It is faster, and its result has the same number of rows as the left table.
 
 ### `left_outer_join`
 
 > [!NOTE]
 > This table operation is currently experimental. The API may change in the future.
 
-The output table from a [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) operation contains _all_ rows from the left table as well as rows from the right table that have matching keys in the match column(s).
+The output table from a [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) contains every row that `join` would produce, plus each left-table row that has no match, with null values in the right table's columns. In this example, Marketing appears with null employee columns:
 
-```python order=result,left,right
+```python test-set=1 order=result
 from deephaven.experimental.outer_joins import left_outer_join
-from deephaven import empty_table
 
-left = empty_table(5).update(["I = ii", "A = `left`"])
-right = empty_table(5).update(["I = ii * 2", "B = `right`", "C = Math.sin(I)"])
-
-result = left_outer_join(l_table=left, r_table=right, on=["I"])
+result = left_outer_join(l_table=departments, r_table=employees, on=["DeptID"])
 ```
 
 ### `full_outer_join`
@@ -267,43 +221,39 @@ result = left_outer_join(l_table=left, r_table=right, on=["I"])
 > [!NOTE]
 > This table operation is currently experimental. The API may change in the future.
 
-The output table from a [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) operation contains all rows in the key identifier columns from both tables. Keys that exist in one table but not the other project null values into the respective non-key columns for the unmatched row.
+The output table from a [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) contains every row that `left_outer_join` would produce, plus each right-table row that has no match, with null values in the left table's columns. In this example, Marketing appears with null employee columns, and Rogers and DelaCruz appear with null department names:
 
-```python order=result,left,right
+```python test-set=1 order=result
 from deephaven.experimental.outer_joins import full_outer_join
-from deephaven import empty_table
 
-left = empty_table(5).update(["I = ii", "A = `left`"])
-right = empty_table(5).update(["I = ii * 2", "B = `right`", "C = Math.sin(I)"])
-
-result = full_outer_join(l_table=left, r_table=right, on=["I"])
+result = full_outer_join(l_table=departments, r_table=employees, on=["DeptID"])
 ```
 
 ## Join three or more tables
 
-The [`multi_join`](../reference/table-operations/join/multi-join.md) operation joins three or more tables. It was developed to improve the join speed by taking advantage of the potential to share a single hash table and exploit concurrency.
+[`multi_join`](../reference/table-operations/join/multi-join.md) joins any number of tables on a common set of key columns in a single operation. The result has one row for each distinct key found in any input table. Each input table adds its columns to that row. As with [`natural_join`](../reference/table-operations/join/natural-join.md) in its default mode, an input table can have at most one row per key, and `multi_join` fails if an input has duplicate keys. An input table with no row for a key contributes null values.
 
-[`multi_join`](../reference/table-operations/join/multi-join.md) joins three or more tables together in the same way that [`natural_join`](../reference/table-operations/join/natural-join.md) joins two tables together. The result of [`multi_join`](../reference/table-operations/join/multi-join.md) is not a typical table, but rather a `MultiJoinTable` object, so calling the `table` method is necessary for most use cases.
+`multi_join` returns a [`MultiJoinTable`](/core/pydoc/code/deephaven.table.html#deephaven.table.MultiJoinTable) object rather than a table. To get the result table, use its `table` property.
 
-There are two ways to use [`multi_join`](../reference/table-operations/join/multi-join.md): with constituent tables or with one or more `MultiJoinInput` objects.
+There are two ways to call `multi_join`:
 
-### With constituent tables
+- Pass the tables directly. Every table must use the same key column names, and the result includes every non-key column from every table.
+- Pass a list of [`MultiJoinInput`](/core/pydoc/code/deephaven.table.html#deephaven.table.MultiJoinInput) objects. Each `MultiJoinInput` specifies one table, the mapping from its key columns to the result's key columns, and the columns to add from it. The columns to add are optional.
 
-Using constituent tables is syntactically simple. The syntax is as follows:
+### Pass the tables directly
+
+To join the tables directly, pass them as a list in `input`, and pass a key column name or a list of key column names in `on`:
 
 ```python syntax
-multi_table = multi_join(input=[t1, t2, t3], on="CommonKeyColumn")
-multi_table = multi_join(input=[t1, t2, t3], on=["CommonKeyCol1", "CommonKeyCol2"])
+multi_table = multi_join(input=[table1, table2, table3], on="CommonKeyColumn")
+multi_table = multi_join(
+    input=[table1, table2, table3], on=["CommonKeyCol1", "CommonKeyCol2"]
+)
 ```
 
-- `input` is any number of tables to merge; for example, `table1, table2, table3`.
-- `on` is a String or list of String key column names; for example, `["key1", "key2"]`.
+The following example joins three tables of letter grades for students in grades 5, 6, and 7. Not every student appears in every table, so some grades in the result are null:
 
-Using constituent tables requires that all tables have identical key column names and that _all_ of the tables' output rows are desired.
-
-The following example joins three tables that correspond to letter grades for students at three different grade levels.
-
-```python order=result,grade5,grade6,grade7
+```python test-set=2 order=result,grade5,grade6,grade7
 from deephaven.table import multi_join
 from deephaven import new_table
 from deephaven.column import string_col
@@ -329,99 +279,58 @@ grade7 = new_table(
     ]
 )
 
-# create a MultiJoinTable object and join the three tables
 multijoin_table = multi_join(input=[grade5, grade6, grade7], on=["Name"])
 
-# access the multijoin object's internal table
 result = multijoin_table.table
 ```
 
-### With `MultiJoinInput` objects
+### Pass `MultiJoinInput` objects
 
-Using `MultiJoinInput` objects as inputs for [`multi_join`](../reference/table-operations/join/multi-join.md) is syntactically more complex than using [constituent tables](#with-constituent-tables), but allows for more flexibility. The syntax for creating a `MultiJoinInput` object is as follows:
+Use `MultiJoinInput` objects when the key columns have different names in different tables, or when you want only some of a table's columns in the result. Create one `MultiJoinInput` per table, and then pass the list to `multi_join` without the `on` argument:
 
 ```python syntax
+from deephaven.table import MultiJoinInput, multi_join
+
 multijoin_input = [
-    MultiJoinInput(table=t1, on="KeyColumn"),  # All columns added
-    MultiJoinInput(
-        table=t2, on="KeyColumn", joins=["Column1", "Column2"]
-    ),  # Specific columns added
+    # Add all non-key columns from t1
+    MultiJoinInput(table=t1, on="KeyColumn"),
+    # Match t2's OtherKey column to KeyColumn, and add only Column1 and Column2
+    MultiJoinInput(table=t2, on="KeyColumn = OtherKey", joins=["Column1", "Column2"]),
 ]
-```
 
-Then, the syntax for using the `multijoin_input` object in a [`multi_join`](../reference/table-operations/join/multi-join.md) is simple:
-
-```python syntax
 multi_table = multi_join(input=multijoin_input)
 ```
 
-The following example demonstrates the use of [`multi_join`](../reference/table-operations/join/multi-join.md) to join three tables via a `MultiJoinInput` object.
+The following example adds each student's club to the grades from the [previous example](#pass-the-tables-directly). The `clubs` table names its key column `Student` instead of `Name`, and the result includes only its `Club` column:
 
-```python order=result,grade5,grade6,grade7
-# import multijoin classes
-from deephaven.table import MultiJoinInput, MultiJoinTable, multi_join
+```python test-set=2 order=result,clubs
+from deephaven.table import MultiJoinInput, multi_join
 from deephaven import new_table
 from deephaven.column import string_col
 
-grade5 = new_table(
+clubs = new_table(
     [
-        string_col("Name", ["Mark", "Austin", "Sandra", "Andy", "Caleb"]),
-        string_col("Grade5", ["A", "A", "C", "B", "A"]),
+        string_col("Student", ["Andy", "Kathy", "Mark", "June"]),
+        string_col("Club", ["Chess", "Drama", "Robotics", "Chess"]),
+        string_col("Advisor", ["Lee", "Ortiz", "Patel", "Lee"]),
     ]
 )
 
-grade6 = new_table(
-    [
-        string_col("Name", ["Sandra", "Andy", "Kathy", "June", "Caleb"]),
-        string_col("Grade6", ["B", "C", "D", "A", "A"]),
+multijoin_table = multi_join(
+    input=[
+        MultiJoinInput(table=grade5, on="Name"),
+        MultiJoinInput(table=grade6, on="Name"),
+        MultiJoinInput(table=grade7, on="Name"),
+        MultiJoinInput(table=clubs, on="Name = Student", joins="Club"),
     ]
 )
 
-grade7 = new_table(
-    [
-        string_col("Name", ["Austin", "Kathy", "Sandra", "Mark", "Caleb"]),
-        string_col("Grade7", ["C", "B", "A", "C", "B"]),
-    ]
-)
-
-# create a MultiJoinInput array
-mji_arr = [
-    MultiJoinInput(table=grade5, on="Key=Name"),
-    MultiJoinInput(table=grade6, on="Key=Name"),
-    MultiJoinInput(table=grade7, on="Key=Name"),
-]
-
-# create a MultiJoinTable object
-multijoin_table = multi_join(input=mji_arr)
-
-# retrieve the underlying table
 result = multijoin_table.table
 ```
 
-## Which method should you use?
-
-Choosing the right join method can be tricky, so here are some things to consider when choosing between what's available:
-
-- How should multiple exact matches be handled?
-  - [`exact_join`](../reference/table-operations/join/exact-join.md) and [`natural_join`](../reference/table-operations/join/natural-join.md) raise an error.
-  - [`join`](../reference/table-operations/join/join.md), [`left_outer_join`](../reference/table-operations/join/left-outer-join.md), and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) do not raise an error.
-- How should zero exact matches be handled?
-  - [`exact_join`](../reference/table-operations/join/exact-join.md) raises an error.
-  - [`natural_join`](../reference/table-operations/join/natural-join.md) joins a null value.
-- What data should be included in the result?
-  - [`join`](../reference/table-operations/join/join.md) includes only rows that have matching values in _both_ tables.
-  - [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) includes all rows from the left table, and only rows from the right table that match those in the left table.
-  - [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) includes all rows from _both_ tables.
-
-For help in choosing a method that uses inexact matches to join tables, see [here](./joins-timeseries-range.md).
-
-The following figure presents a flowchart to help choose the right join method for your query.
-
-<Svg src='../assets/conceptual/joins3.svg' style={{height: 'auto', maxWidth: '100%'}} />
-
 ## Related documentation
 
-- [Time series and range joins](./joins-timeseries-range.md)
+- [Inexact, time-series, and range joins](./joins-timeseries-range.md)
 - [`exact_join`](../reference/table-operations/join/exact-join.md)
 - [`full_outer_join`](../reference/table-operations/join/full-outer-join.md)
 - [`join`](../reference/table-operations/join/join.md)

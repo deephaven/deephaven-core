@@ -2,14 +2,29 @@
 title: Inexact, time-series, and range joins
 ---
 
-This guide covers as-of, reverse-as-of, and range joins in Deephaven. As-of joins are often referred to as time-series joins because they provide a mechanism for joining tables based on time columns, largely with the assumption that the match will often be inexact. All of these joins combine columns from two tables based on either 1) a single inexact key, like an ordered timestamp column, or 2) one or more exact, relational keys and a single inexact key.
+This guide covers the joins in Deephaven that don't require an exact match on every key: [`aj`](../reference/table-operations/join/aj.md), [`raj`](../reference/table-operations/join/raj.md), and [`rangeJoin`](../reference/table-operations/join/rangeJoin.md). It shows how to use each one and when to choose it.
 
-- As-of joins ([`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/table-operations/join/raj.md)) use inexact matches to join the data by looking for the closest match in the respective join-key column if no exact match exists. Think: "Go grab data from (i) the row in the right table that has a timestamp equal to the timestamp in this row of the left table, or (ii) the best candidate row from the right table with the timestamp closest to this timestamp.
-- A [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) de facto finds all of the rows from the right table matching the range criteria. One can imagine a range join performing an `aj` and an `raj` at the same time and providing all of the rows in between. This is often a set up for an aggregation: Sum all the records in Column XYZ in the right table between the Time1 and Time2 in this row of the left table.
+## Which method should you use?
 
-## Syntax
+You typically use the as-of joins, [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/table-operations/join/raj.md), to compare time-series data.
 
-The syntax for performing an as-of join is as follows:
+- Use `aj` to find the closest match _before_ or at an event.
+- Use `raj` to find the closest match _after_ or at an event.
+- Use [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) when your tables are static and you want to group the right-table data that falls in a range defined by each left-table row, such as all events in each left-table time window.
+
+The following flowchart helps you choose among the [exact joins](./joins-exact-relational.md), the as-of joins, and the range joins.
+
+<Svg src='../assets/conceptual/joins3.svg' style={{height: 'auto', maxWidth: '100%'}} />
+
+## As-of (time-series) joins
+
+As-of joins, also called time-series joins, are common when no exact match between key values is guaranteed, such as when you join two tables on event timestamps.
+
+The output table contains all of the rows and columns of the left table, plus additional columns that contain data from the right table. If a left-table row has no match in the right table, the appended columns hold null values in that row.
+
+### As-of join syntax
+
+The syntax for performing an as-of join is as follows, where `joinMethod` is [`aj`](../reference/table-operations/join/aj.md) or [`raj`](../reference/table-operations/join/raj.md):
 
 ```groovy syntax
 result = leftTable.joinMethod(rightTable, "InexactColumnToMatch")
@@ -19,77 +34,41 @@ result = leftTable.joinMethod(rightTable, "ExactColumnsToMatch, InexactColumnToM
 result = leftTable.joinMethod(rightTable, "ExactColumnsToMatch, InexactColumnToMatch", "ColumnsToJoin")
 ```
 
-When using an as-of join, it's important to remember that though there can be many exact match columns, the list of join keys _must_ end in a single inexact match column.
+An as-of join matches on zero or more exact match columns, whose values must be equal, followed by exactly one inexact match column. The inexact match column must have an ordered type, such as a numeric, date-time, or other sortable (`Comparable`) column. The join matches it to the closest value in one direction: `aj` looks at or below the left-table value, and `raj` looks at or above it. The list of match columns _must_ end in that single inexact match column.
 
-The syntax for performing a range join is as follows:
+As-of joins take the following parameters:
 
-```groovy syntax
-result = leftTable.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations)
-```
+- `rightTable`: The right table, which supplies the data the join adds to the left table.
+- `columnsToMatch`: The column(s) on which to join the two tables, as a comma-separated `String`.
 
-Where:
+The third argument is optional:
 
-- `rightTable` is the table to join with.
-- `exactMatches` is a collection of [`JoinMatch`](/core/javadoc/io/deephaven/api/JoinMatch.html) objects that dictate exact-match criteria.
-- `rangeMatch` specifies the range match criteria for determining the responsive rows from `rightTable` for each row from the left table.
-- `aggregations` are the aggregations to perform over the responsive ranges from `rightTable` for each row from the left table.
+- `columnsToAdd`: The column(s) in the right table to join to the left table. If you omit it, the join adds every right-table column except those with the same name as a left-table match column.
 
-> [!NOTE]
-> [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) only supports static tables and the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation. `null` and `NaN` values in the right range column are discarded. For all rows that are not discarded, the right table must be sorted according to the right range column for all rows within a group.
+#### Match columns with different names
 
-The two types of joins have some common parameters:
-
-- `table`: The right table, which is the source of data to be added to the left table.
-- `columnsToMatch/exactMatches`: The key column(s) on which to join the two tables.
-
-For [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/table-operations/join/raj.md), the third argument is optional:
-
-- `columnsToAdd`: The column(s) in the right table to join to the left table. If not specified, all columns are joined.
-
-For [`rangeJoin`](../reference/table-operations/join/rangeJoin.md), the last argument is required:
-
-- `aggregations`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. Currently, only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
-
-### Multiple match columns
-
-Tables can be joined on more than one match column. List every match column, including the final inexact one, as comma-separated values in the `columnsToMatch` argument:
+The match columns of two tables often don't have identical names. The following example joins the left and right tables on `ColumnToMatchLeft` and `ColumnToMatchRight`:
 
 ```groovy syntax
-result = leftTable.joinMethod(rightTable, "ExactMatchColumn1, ExactMatchColumnN, InexactMatchColumn")
+result = leftTable.joinMethod(rightTable, "ColumnToMatchLeft = ColumnToMatchRight", "ColumnsToJoin")
 ```
 
-### Match columns with different names
+#### Rename joined columns
 
-When two tables can be joined, their match column(s) often don't have identical names. The following example joins the left and right tables on `ColumnToMatchLeft` and `ColumnToMatchRight`:
-
-```groovy syntax
-result = leftTable.joinMethod(right_table, "ColumnToMatchLeft = ColumnToMatchRight", "ColumnsToJoin")
-```
-
-### Rename joined columns
-
-If two tables are joined with matching column names that are _not_ one of the supplied key columns, a name conflict will raise an error. In such a case, [aj](../reference/table-operations/join/aj.md) and [raj](../reference/table-operations/join/raj.md) allow you to rename joined columns. The following example renames `OldColumnName` from the right table to `NewColumnName` as it joins it to and adds it as a column in the left table.
+If you join a right-table column that has the same name as a left-table column, the join raises a name conflict error. This includes a match column such as `Timestamp` when you list it under its own name. In such a case, `aj` and `raj` let you rename joined columns. The following example renames `OldColumnName` from the right table to `NewColumnName` as it adds the column to the left table:
 
 ```groovy syntax
 result = leftTable.joinMethod(rightTable, "ColumnsToMatch", "NewColumnName = OldColumnName")
 ```
 
-## As-of (time-series) joins
-
-As-of (time series) joins combine data from a pair of tables - a left and right table - based on one or more match columns. The match columns establish key identifiers in the left table that will be used to find data in the right table. The last key column in the list will provide the contemplated inexact match; all other keys are exact matches. Columns of any data type can be chosen as a key column.
-
-These joins are _inexact_ joins. Instead of looking for a precise match in the right table, the operation looks for 1) the exact match if it exists, then 2) if no exact match exists, the best candidate before the exact match for [`aj`](../reference/table-operations/join/aj.md) (and the opposite for [`raj`](../reference/table-operations/join/raj.md)). These are commonly used in cases where no exact match between key column row values is guaranteed, such as when joining two tables based on the timestamp of events.
-
-The output table contains all of the rows and columns of the left table plus additional columns containing data from the right table. If no matching key exists in the right table, appended row values are `NULL`.
-
 ### `aj`
 
-In an as-of join, [`aj`](../reference/table-operations/join/aj.md), row values equal those from the right table where the keys from the left table most closely match the keys from the right table _without going over_. When using [`aj`](../reference/table-operations/join/aj.md), the first `N - 1` match columns are exact, and the final match column is an inexact match. [`aj`](../reference/table-operations/join/aj.md) uses either `>` or `>=` to relate the match column(s):
+The as-of join, `aj`, joins each left-table row to the right-table row whose inexact match value is closest to the left-table value _without going over_. `aj` relates the inexact match columns with `>` or `>=`:
 
-- `>` will join on inexact matches only.
-- `>=` will join on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `"ColumnToMatch"`).
+- `>` joins on inexact matches only.
+- `>=` joins on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `"ColumnToMatch"`).
 
-The following example uses [`aj`](../reference/table-operations/join/aj.md) to join a `left` and `right` table. The key columns used are identical (`X` in the `left` table and `Y` in the `right` table). The first resultant table, `resultInexactExact`, uses `>=` to relate the two key columns. As a result, the resultant table contains _all_ data from `right` appended to `left`. The second resultant table, `resultInexactOnly`, uses `>` to relate the two key columns. As a result, the resultant table has `NULL` values appended to the first row, since the first row of `X` in `left` is not greater than any row of `Y` in `right`.
+The following example uses `aj` to join the `left` and `right` tables. The match columns `X` (in `left`) and `Y` (in `right`) contain identical values. The first result table, `resultInexactExact`, uses `>=` to relate the two match columns, so every row of `left` gets the `right` row with the same value. The second result table, `resultInexactOnly`, uses `>`. Its first row has null values in the appended columns because the first value of `X` isn't greater than any value of `Y`.
 
 ```groovy order=resultInexactExact,resultInexactOnly,left,right
 left = emptyTable(10).update("X = i", "LeftVals = randomInt(1, 100)")
@@ -99,9 +78,11 @@ resultInexactExact = left.aj(right, "X >= Y")
 resultInexactOnly = left.aj(right, "X > Y")
 ```
 
-The following example uses [`aj`](../reference/table-operations/join/aj.md) to join two tables first on the `Ticker` column (as an exact match), then on `Timestamp`. The operation finds the quote (from a proverbial right table) at the time of a trade event (as recorded with a `Timestamp` in the left table).
+The next example uses market data. Quotes are the published prices and sizes at which people are willing to trade a security. Trades record the prices and sizes at which trades actually executed.
 
-```groovy order=result,trades,quotes
+The example uses `aj` to join the `quotes` table to the `trades` table, first on the `Ticker` column as an exact match, then on `Timestamp` as the inexact match. For each trade, it finds the most recent quote at or before the trade's `Timestamp`. The `columnsToAdd` argument renames the right table's `Timestamp` column to `QuoteTime`, because the left table already has a `Timestamp` column.
+
+```groovy test-set=1 order=result,trades,quotes
 trades = newTable(
         stringCol("Ticker", "AAPL", "AAPL", "AAPL", "IBM", "IBM"),
         instantCol(
@@ -132,19 +113,17 @@ quotes = newTable(
         intCol("AskSize", 83, 33, 47, 15, 5),
 )
 
-result = trades.aj(
-    quotes,
-    "Ticker, Timestamp",
-    "Quote_Time = Timestamp, Bid, Ask",
-)
+result = trades.aj(quotes, "Ticker, Timestamp", "QuoteTime = Timestamp, Bid, Ask")
 ```
 
 ### `raj`
 
-The reverse as-of join, [`raj`](../reference/table-operations/join/raj.md), is conceptually identical, but instead of seeking a respective row that is "the same or prior to" the left-table's join-value, it seeks the value that is "the same or just after." Compared to [`aj`](../reference/table-operations/join/aj.md), the syntax and mental model are the same, except, as you'd expect [`raj`](../reference/table-operations/join/raj.md) uses either `<` or `<=`:
+The reverse as-of join, `raj`, works like `aj` in the opposite direction. By default, `aj` takes the right-table row with the same or the closest lower value. `raj` takes the right-table row with the same or the closest higher value. The syntax is the same as for `aj`, but `raj` relates the inexact match columns with `<` or `<=`:
 
-- `<` will join on inexact matches only.
-- `<=` will join on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `"ColumnToMatch"`).
+- `<` joins on inexact matches only.
+- `<=` joins on an exact or inexact match. This is the implied relation when no relation is specified (e.g., `"ColumnToMatch"`).
+
+The following example uses `raj` with `<=` (exact or inexact) and `<` (inexact only). In `resultInexactOnly`, the last row has null values in the appended columns because no value of `Y` is greater than the last value of `X`.
 
 ```groovy order=resultInexactExact,resultInexactOnly,left,right
 left = emptyTable(10).update("X = i", "LeftVals = randomInt(1, 100)")
@@ -154,118 +133,95 @@ resultInexactExact = left.raj(right, "X <= Y")
 resultInexactOnly = left.raj(right, "X < Y")
 ```
 
-The following example uses [`raj`](../reference/table-operations/join/raj.md) to join two tables on a `Timestamp` and `Ticker` column. The operation finds the quote immediately after a trade. Quotes are the published prices and sizes at which people are willing to trade a security, while trades are the actual prices and sizes of trades.
+The following example joins the `trades` and `quotes` tables from the `aj` example with `raj`. For each trade, it finds the first quote at or after the trade's `Timestamp`.
 
-```groovy order=result,trades,quotes
-trades = newTable(
-        stringCol("Ticker", "AAPL", "AAPL", "AAPL", "IBM", "IBM"),
-        instantCol(
-            "Timestamp",
-            parseInstant("2021-04-05T09:10:00 ET"),
-            parseInstant("2021-04-05T09:31:00 ET"),
-            parseInstant("2021-04-05T16:00:00 ET"),
-            parseInstant("2021-04-05T16:00:00 ET"),
-            parseInstant("2021-04-05T16:30:00 ET"),
-        ),
-        doubleCol("Price", 2.5, 3.7, 3.0, 100.50, 110),
-        intCol("Size", 52, 14, 73, 11, 6),
-)
-
-quotes = newTable(
-        stringCol("Ticker", "AAPL", "AAPL", "IBM", "IBM", "IBM"),
-        instantCol(
-            "Timestamp",
-            parseInstant("2021-04-05T09:11:00 ET"),
-            parseInstant("2021-04-05T09:30:00 ET"),
-            parseInstant("2021-04-05T16:00:00 ET"),
-            parseInstant("2021-04-05T16:30:00 ET"),
-            parseInstant("2021-04-05T17:00:00 ET"),
-        ),
-        doubleCol("Bid", 2.45, 3.2, 97, 102, 108),
-        intCol("BidSize", 10, 20, 5, 13, 23),
-        doubleCol("Ask", 2.5, 3.4, 105, 110, 111),
-        intCol("AskSize", 83, 33, 47, 15, 5),
-)
-
-result = trades.raj(quotes, "Ticker, Timestamp", "Quote_Time = Timestamp, Bid, Ask")
+```groovy test-set=1 order=result
+result = trades.raj(quotes, "Ticker, Timestamp", "QuoteTime = Timestamp, Bid, Ask")
 ```
 
-## `rangeJoin`
+## Range joins
 
 [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) creates a new table containing _all_ of the rows and columns of the left table, plus additional columns containing aggregated data from the right table. It is a join plus an aggregation that:
 
 - Joins arrays of data from the right table onto the left table.
 - Aggregates over the joined data.
 
-For columns appended to the left table (joins), cell values equal aggregations over vectors of values from the right table. These vectors are formed from all values in the right table where the right table keys fall within the ranges of keys defined by the left table (responsive ranges).
+Each cell in an appended column aggregates the right-table rows that fall in the range its left-table row defines. This set of rows is the row's _responsive range_.
+
+### Range join syntax
+
+The syntax for performing a range join is as follows:
+
+```groovy syntax
+result = leftTable.rangeJoin(
+    rightTable,
+    List.of("ExactColumnsToMatch", "LeftStartColumn < RightRangeColumn < LeftEndColumn"),
+    List.of(AggGroup("ColumnsToGroup")),
+)
+```
+
+The last entry in the second argument, `columnsToMatch`, is a range match expression of the form `LeftStartColumn < RightRangeColumn < LeftEndColumn`.
+
+`rangeJoin` takes the following parameters:
+
+- `rightTable`: The right table, which supplies the data the join adds to the left table.
+- `columnsToMatch`: A `Collection<String>` that holds zero or more exact match columns followed by one range match expression.
+- `aggregations`: The aggregation(s) to perform over each left-table row's responsive range. `rangeJoin` currently supports only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
+
+The [match expressions](../reference/table-operations/join/rangeJoin.md#match-expressions) section of the reference page describes the full range match syntax, including the optional `<-` marker before the expression and `->` marker after it. Each marker requires `<=` on its side of the range. When no right-table value equals the left-table row's start value, `<-` also includes the closest right-table row before the start. When no right-table value equals the end value, `->` also includes the closest right-table row after the end.
 
 > [!NOTE]
-> Reminders: (i) [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) currently only supports static tables, not yet live, real-time data; and (ii) the only aggregation currently supported is the `group` operation.
+> The _right range column_ is the right-table column that the range match compares against. `rangeJoin` has the following restrictions:
+>
+> - It supports only static tables.
+> - It discards right-table rows whose right range column holds `null` or `NaN`.
+> - You must sort the remaining right-table rows by the right range column within each set of rows that share the same exact-match key values.
 
-The following example joins two tables with [`rangeJoin`](../reference/table-operations/join/rangeJoin.md). It uses only a range match, with no exact-match columns. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` and less than the corresponding `LeftEndValue`. The [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation groups the right table's `Y` values for each left row into the `Y` column of `result`.
+`rangeJoin` also has an overload that takes the exact and range matches as objects instead of strings:
 
-```groovy test-set=1 order=result,left,right
+```groovy syntax
+result = leftTable.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations)
+```
+
+Where:
+
+- `exactMatches` is a collection of [`JoinMatch`](/core/javadoc/io/deephaven/api/JoinMatch.html) objects that dictate exact-match criteria.
+- `rangeMatch` is a [`RangeJoinMatch`](/core/javadoc/io/deephaven/api/RangeJoinMatch.html) that specifies the range match criteria.
+
+### Range join examples
+
+The following example joins two tables with `rangeJoin`. It uses only a range match, with no exact-match columns. The range match expression matches each left-table row to the right-table rows whose `RightValue` is greater than that row's `LeftStartValue` and less than its `LeftEndValue`. The `AggGroup` aggregation groups the right table's `Y` values for each left-table row into the `Y` column of `result`.
+
+```groovy test-set=2 order=result,left,right
 left = emptyTable(20).updateView("X = ii", "LeftStartValue = ii / 0.7", "LeftEndValue = ii / 0.1")
 right = emptyTable(20).updateView("X = ii", "RightValue = ii / 0.3", "Y = X % 5")
 
 result = left.rangeJoin(right, List.of("LeftStartValue < RightValue < LeftEndValue"), List.of(AggGroup("Y")))
 ```
 
-For a detailed explanation of this example, see [`rangeJoin`](../reference/table-operations/join/rangeJoin.md#examples).
+For a similar example that adds an exact-match column, with a row-by-row explanation of its output, see the [`rangeJoin` reference examples](../reference/table-operations/join/rangeJoin.md#examples).
 
-Queries often follow up a [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that calls a Groovy closure that operates on the result. The following code block updates the `result` table from the previous example with a [user-defined function](./groovy-closures.md).
+Queries often follow a `rangeJoin` with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that processes the grouped column. The following code block uses the built-in [`sum`](../reference/query-language/query-library/auto-imported/math.md) function to sum each group in the `result` table from the previous example.
 
-```groovy test-set=1 order=resultSummed
-sumGroup = { arr ->
-    if (!arr) {
-        return 0
-    } else {
-        return arr.sum()
-    }
-}
-
-resultSummed = result.update("SumY = sumGroup(Y)")
+```groovy test-set=2 order=resultSummed
+resultSummed = result.update("SumY = sum(Y)")
 ```
 
-The following example uses [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed.
+The following example uses `rangeJoin` with date-time columns as the range columns. This is a common use case, since it groups all of the events that happened in each time window. As in the previous example, the built-in `sum` function then sums each group.
 
 ```groovy order=resultSummed,result,left,right
 left = emptyTable(20).update(
         "StartTime = '2024-01-01T08:00:00 ET' + i * SECOND",
         "EndTime = StartTime + 5 * SECOND",
         "X = ii",
-        "Y = X % 5",
 )
 
 right = emptyTable(20).update("Timestamp = '2024-01-01T08:00:03 ET' + i * SECOND", "X = ii", "Y = X % 6")
 
 result = left.rangeJoin(right, List.of("StartTime < Timestamp < EndTime"), List.of(AggGroup("Y")))
 
-sumArr = { arr ->
-    if (!arr) {
-        return 0
-    } else {
-        return arr.sum()
-    }
-}
-
-resultSummed = result.update("SumY = sumArr(Y)")
+resultSummed = result.update("SumY = sum(Y)")
 ```
-
-## Which method should you use?
-
-Inexact join methods like [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/table-operations/join/raj.md) are typically used when comparing time series data.
-
-- Use [`aj`](../reference/table-operations/join/aj.md) to find the closest match _before_ or at an event.
-- Use [`raj`](../reference/table-operations/join/raj.md) to find the closest match _after_ or at an event.
-
-A [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) currently only supports static tables and the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
-
-- Use [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) when data is static, and you want to group data that falls in a range between values in each table.
-
-The following figure presents a flowchart to help choose the right join method for your query.
-
-<Svg src='../assets/conceptual/joins3.svg' style={{height: 'auto', maxWidth: '100%'}} />
 
 ## Related documentation
 
