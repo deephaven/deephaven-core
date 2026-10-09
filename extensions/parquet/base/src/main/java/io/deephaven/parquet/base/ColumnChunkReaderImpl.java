@@ -9,6 +9,7 @@ import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import io.deephaven.util.datastructures.SoftCachingFunction;
 import org.apache.parquet.bytes.BytesInput;
@@ -22,6 +23,7 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -146,12 +148,23 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @Override
     public boolean usesDictionaryOnEveryPage() {
-        final ColumnMetaData columnMeta = columnChunk.getMeta_data();
-        if (columnMeta.encoding_stats == null) {
+        return usesDictionaryOnEveryPage(columnChunk.getMeta_data().encoding_stats);
+    }
+
+    /**
+     * Whether {@code encodingStats} show that every data page is dictionary-encoded. A {@code true} answer lets a
+     * filter that no dictionary entry satisfies exclude the whole column chunk, so it requires positive evidence: at
+     * least one dictionary-encoded data page and no other data pages. Missing or empty statistics, or statistics that
+     * describe no data pages, are no evidence either way.
+     */
+    @VisibleForTesting
+    static boolean usesDictionaryOnEveryPage(@Nullable final List<PageEncodingStats> encodingStats) {
+        if (encodingStats == null) {
             // We don't know, so we bail out to "false"
             return false;
         }
-        for (final PageEncodingStats encodingStat : columnMeta.encoding_stats) {
+        boolean sawDictionaryDataPage = false;
+        for (final PageEncodingStats encodingStat : encodingStats) {
             if (encodingStat.page_type != PageType.DATA_PAGE
                     && encodingStat.page_type != PageType.DATA_PAGE_V2) {
                 // Not a data page, skip
@@ -162,8 +175,28 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                     && encodingStat.encoding != RLE_DICTIONARY) {
                 return false;
             }
+            sawDictionaryDataPage = true;
         }
-        return true;
+        return sawDictionaryDataPage;
+    }
+
+    @Override
+    public boolean mayHaveDictionaryPage() {
+        return mayHaveDictionaryPage(columnChunk.getMeta_data());
+    }
+
+    /**
+     * Whether {@code columnMeta} allows for a dictionary page. Some writers leave the dictionary page offset unset even
+     * when there is a dictionary page (see {@link #getDictionary(SeekableChannelContext)}), but its data pages are then
+     * dictionary-encoded, and the chunk's encodings say so.
+     */
+    @VisibleForTesting
+    static boolean mayHaveDictionaryPage(@NotNull final ColumnMetaData columnMeta) {
+        if (columnMeta.isSetDictionary_page_offset()) {
+            return true;
+        }
+        final List<org.apache.parquet.format.Encoding> encodings = columnMeta.getEncodings();
+        return encodings == null || encodings.contains(PLAIN_DICTIONARY) || encodings.contains(RLE_DICTIONARY);
     }
 
     @Override

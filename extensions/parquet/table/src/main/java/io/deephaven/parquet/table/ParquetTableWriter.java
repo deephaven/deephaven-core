@@ -142,8 +142,10 @@ public class ParquetTableWriter {
                             .getOrCreateDataIndex(t, info.indexColumnNames)
                             .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                     final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
+                    // Like the rest of the footer metadata, sorting columns are recorded by parquet column name; the
+                    // index table is written with the same column names as the table it indexes.
                     final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
-                            info.indexColumnNames.stream()
+                            Arrays.stream(info.parquetColumnNames)
                                     .map(cn -> SortColumnInfo.of(cn, SortColumnInfo.SortDirection.Ascending))
                                     .toArray(SortColumnInfo[]::new));
 
@@ -172,9 +174,17 @@ public class ParquetTableWriter {
         // SortedColumnsAttribute effectively only stores (zero or more) individual columns by which the table is
         // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
         // a single column sort in the metadata at this time.
+        // Like the rest of the footer metadata, it is recorded by parquet column name, which is what a reader sees in
+        // the
+        // file whatever renames it applies.
         final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
         if (!sortedColumns.isEmpty()) {
-            tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
+            final SortColumn sortedColumn = sortedColumns.get(0);
+            tableInfoBuilder.addSortingColumns(SortColumnInfo.of(
+                    writeInstructions.getParquetColumnNameFromColumnNameOrDefault(sortedColumn.column().name()),
+                    sortedColumn.isAscending()
+                            ? SortColumnInfo.SortDirection.Ascending
+                            : SortColumnInfo.SortDirection.Descending));
         }
         final long numBytes = write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
                 tableInfoBuilder, metadataFileWriter, computedCache);

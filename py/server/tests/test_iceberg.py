@@ -43,6 +43,23 @@ class IcebergTestCase(BaseTestCase):
             iceberg_read_instructions.j_object.snapshotId().getAsLong() == 12345
         )
 
+    def test_instruction_create_with_ignore_sorted_columns(self):
+        iceberg_read_instructions = iceberg.IcebergReadInstructions(
+            ignore_sorted_columns=["Sym", "Price"]
+        )
+        ignored = {
+            str(name)
+            for name in j_list_to_list(
+                jpy.get_type("java.util.ArrayList")(
+                    iceberg_read_instructions.j_object.ignoreSortedColumns()
+                )
+            )
+        }
+        self.assertEqual(ignored, {"Sym", "Price"})
+        self.assertTrue(
+            iceberg.IcebergReadInstructions().j_object.ignoreSortedColumns().isEmpty()
+        )
+
     def test_writer_options_create_default(self):
         writer_options = iceberg.TableParquetWriterOptions(
             table_definition={"x": dtypes.int32}
