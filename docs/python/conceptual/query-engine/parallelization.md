@@ -104,7 +104,7 @@ t = empty_table(1_000_000).update(
 )
 ```
 
-Deephaven's default behavior is to treat both `A` and `B` statefully, therefore the table is equivalent to:
+By default, Deephaven treats both `A` and `B` as stateless, so the engine can evaluate the two columns concurrently (and, in free-threaded Python builds, evaluate the rows of each column in any order), potentially causing race conditions. If you set `QueryTable.statelessSelectByDefault` to `false`, Deephaven treats both columns as stateful, and the table is equivalent to:
 
 ```python order=null
 from deephaven import empty_table
@@ -112,7 +112,7 @@ from deephaven import empty_table
 t = empty_table(1_000_000).update(["A=i", "B=1_000_000 + i"])
 ```
 
-However, if the columns were marked as stateless (e.g., if `QueryTable.statelessSelectByDefault` were `true`), the rows from either column could be evaluated in any order, potentially causing race conditions. To ensure that all rows of `A` are evaluated before any rows of `B` begin evaluation, use a barrier:
+To ensure that all rows of `A` are evaluated before any rows of `B` begin evaluation, use a barrier:
 
 ```python order=null
 from deephaven.concurrency_control import Barrier
