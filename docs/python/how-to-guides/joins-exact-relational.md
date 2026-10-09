@@ -42,10 +42,10 @@ The following flowchart walks through the same choices for two tables, including
 [`join`](../reference/table-operations/join/join.md), [`exact_join`](../reference/table-operations/join/exact-join.md), and [`natural_join`](../reference/table-operations/join/natural-join.md) are methods of the left table:
 
 ```python syntax
-# Add all non-key columns from the right table
+# Include all non-key columns from the right table
 result = left_table.join_method(table=right_table, on=["ColumnsToMatch"])
 
-# Add only some non-key columns from the right table
+# Include only some non-key columns from the right table
 result = left_table.join_method(
     table=right_table, on=["ColumnsToMatch"], joins=["ColumnsToAdd"]
 )
@@ -56,12 +56,12 @@ result = left_table.join_method(
 ```python syntax
 from deephaven.experimental.outer_joins import left_outer_join, full_outer_join
 
-# Add all non-key columns from the right table
+# Include all non-key columns from the right table
 result = outer_join_function(
     l_table=left_table, r_table=right_table, on=["ColumnsToMatch"]
 )
 
-# Add only some non-key columns from the right table
+# Include only some non-key columns from the right table
 result = outer_join_function(
     l_table=left_table,
     r_table=right_table,
@@ -201,7 +201,7 @@ result = departments.join(table=employees, on=["DeptID"])
 ```
 
 > [!TIP]
-> Because `join` includes every matching combination of left and right rows, its output can be much larger than either input. A large result also costs more to maintain on [ticking tables](../conceptual/table-update-model.md), whose rows change over time. If each left row needs at most one right match, use [`natural_join`](../reference/table-operations/join/natural-join.md) instead. It is faster, and its result has the same number of rows as the left table.
+> Because [`join`](../reference/table-operations/join/join.md) includes every matching combination of left and right rows, its output can be much larger than either input. A large result also costs more to maintain on [ticking tables](../conceptual/table-update-model.md), whose rows change over time. If each left row needs at most one right match, use [`natural_join`](../reference/table-operations/join/natural-join.md) instead. It is faster, and its result has the same number of rows as the left table.
 
 ### `left_outer_join`
 
@@ -237,12 +237,12 @@ result = full_outer_join(l_table=departments, r_table=employees, on=["DeptID"])
 
 There are two ways to call `multi_join`:
 
-- Pass the tables directly. Every table must use the same key column names, and the result includes every non-key column from every table.
-- Pass a list of [`MultiJoinInput`](/core/pydoc/code/deephaven.table.html#deephaven.table.MultiJoinInput) objects. Each `MultiJoinInput` specifies one table, the mapping from its key columns to the result's key columns, and the columns to add from it. The columns to add are optional.
+- **With constituent tables**: Pass the tables to join directly. These input tables are called _constituent tables_. Every constituent table must use the same key column names, and the result includes every non-key column from every constituent table.
+- **With `MultiJoinInput` objects**: Pass a list of [`MultiJoinInput`](/core/pydoc/code/deephaven.table.html#deephaven.table.MultiJoinInput) objects. Each `MultiJoinInput` specifies one table, the mapping from its key columns to the result's key columns, and the columns to add from it. The columns to add are optional.
 
-### Pass the tables directly
+### With constituent tables
 
-To join the tables directly, pass them as a list in `input`, and pass a key column name or a list of key column names in `on`:
+To use constituent tables, pass them as a list in `input`, and pass a key column name or a list of key column names in `on`:
 
 ```python syntax
 multi_table = multi_join(input=[table1, table2, table3], on="CommonKeyColumn")
@@ -284,7 +284,7 @@ multijoin_table = multi_join(input=[grade5, grade6, grade7], on=["Name"])
 result = multijoin_table.table
 ```
 
-### Pass `MultiJoinInput` objects
+### With `MultiJoinInput` objects
 
 Use `MultiJoinInput` objects when the key columns have different names in different tables, or when you want only some of a table's columns in the result. Create one `MultiJoinInput` per table, and then pass the list to `multi_join` without the `on` argument:
 
@@ -292,16 +292,16 @@ Use `MultiJoinInput` objects when the key columns have different names in differ
 from deephaven.table import MultiJoinInput, multi_join
 
 multijoin_input = [
-    # Add all non-key columns from t1
+    # Include all non-key columns from t1
     MultiJoinInput(table=t1, on="KeyColumn"),
-    # Match t2's OtherKey column to KeyColumn, and add only Column1 and Column2
+    # Match t2's OtherKey column to KeyColumn, and include only Column1 and Column2
     MultiJoinInput(table=t2, on="KeyColumn = OtherKey", joins=["Column1", "Column2"]),
 ]
 
 multi_table = multi_join(input=multijoin_input)
 ```
 
-The following example adds each student's club to the grades from the [previous example](#pass-the-tables-directly). The `clubs` table names its key column `Student` instead of `Name`, and the result includes only its `Club` column:
+The following example adds each student's club to the grades from the [previous example](#with-constituent-tables). The `clubs` table names its key column `Student` instead of `Name`, and the result includes only its `Club` column:
 
 ```python test-set=2 order=result,clubs
 from deephaven.table import MultiJoinInput, multi_join

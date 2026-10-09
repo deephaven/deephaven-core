@@ -42,10 +42,10 @@ The following flowchart walks through the same choices for two tables, including
 [`join`](../reference/table-operations/join/join.md), [`exactJoin`](../reference/table-operations/join/exact-join.md), and [`naturalJoin`](../reference/table-operations/join/natural-join.md) are methods of the left table:
 
 ```groovy syntax
-// Add all non-key columns from the right table
+// Include all non-key columns from the right table
 result = leftTable.joinMethod(rightTable, columnsToMatch)
 
-// Add only some non-key columns from the right table
+// Include only some non-key columns from the right table
 result = leftTable.joinMethod(rightTable, columnsToMatch, columnsToAdd)
 ```
 
@@ -54,10 +54,10 @@ result = leftTable.joinMethod(rightTable, columnsToMatch, columnsToAdd)
 ```groovy syntax
 import io.deephaven.engine.util.OuterJoinTools
 
-// Add all non-key columns from the right table
+// Include all non-key columns from the right table
 result = OuterJoinTools.outerJoinMethod(leftTable, rightTable, columnsToMatch)
 
-// Add only some non-key columns from the right table
+// Include only some non-key columns from the right table
 result = OuterJoinTools.outerJoinMethod(leftTable, rightTable, columnsToMatch, columnsToAdd)
 ```
 
@@ -155,7 +155,7 @@ result = departments.join(employees, "DeptID")
 ```
 
 > [!TIP]
-> Because `join` includes every matching combination of left and right rows, its output can be much larger than either input. A large result also costs more to maintain on [ticking tables](../conceptual/table-update-model.md), whose rows change over time. If each left row needs at most one right match, use [`naturalJoin`](../reference/table-operations/join/natural-join.md) instead. It is faster, and its result has the same number of rows as the left table.
+> Because [`join`](../reference/table-operations/join/join.md) includes every matching combination of left and right rows, its output can be much larger than either input. A large result also costs more to maintain on [ticking tables](../conceptual/table-update-model.md), whose rows change over time. If each left row needs at most one right match, use [`naturalJoin`](../reference/table-operations/join/natural-join.md) instead. It is faster, and its result has the same number of rows as the left table.
 
 ### `leftOuterJoin`
 
@@ -191,12 +191,12 @@ result = OuterJoinTools.fullOuterJoin(departments, employees, "DeptID")
 
 There are two ways to call `MultiJoinFactory.of`:
 
-- Pass the tables directly. Every table must use the same key column names, and the result includes every non-key column from every table.
-- Pass [`MultiJoinInput`](../reference/table-operations/join/MultiJoinInput.md) objects. Each `MultiJoinInput` specifies one table, the mapping from its key columns to the result's key columns, and the columns to add from it. The columns to add are optional.
+- **With constituent tables**: Pass the tables to join directly. These input tables are called _constituent tables_. Every constituent table must use the same key column names, and the result includes every non-key column from every constituent table.
+- **With `MultiJoinInput` objects**: Pass [`MultiJoinInput`](../reference/table-operations/join/MultiJoinInput.md) objects. Each `MultiJoinInput` specifies one table, the mapping from its key columns to the result's key columns, and the columns to add from it. The columns to add are optional.
 
-### Pass the tables directly
+### With constituent tables
 
-To join the tables directly, pass a `String` of comma-separated key column names, such as `"Key1, Key2"`, followed by the tables:
+To use constituent tables, pass a `String` of comma-separated key column names, such as `"Key1, Key2"`, followed by the tables:
 
 ```groovy syntax
 MultiJoinTable mjTable = MultiJoinFactory.of(columnsToMatch, tables...)
@@ -228,7 +228,7 @@ MultiJoinTable multiJoinTable = MultiJoinFactory.of("Name", grade5, grade6, grad
 result = multiJoinTable.table()
 ```
 
-### Pass `MultiJoinInput` objects
+### With `MultiJoinInput` objects
 
 Use `MultiJoinInput` objects when the key columns have different names in different tables, or when you want only some of a table's columns in the result. Create one `MultiJoinInput` per table with `MultiJoinInput.of`, and then pass them all to `MultiJoinFactory.of`:
 
@@ -237,15 +237,15 @@ import io.deephaven.engine.table.MultiJoinFactory
 import io.deephaven.engine.table.MultiJoinInput
 import io.deephaven.engine.table.MultiJoinTable
 
-// Add all non-key columns from t1
+// Include all non-key columns from t1
 input1 = MultiJoinInput.of(t1, "KeyColumn")
-// Match t2's OtherKey column to KeyColumn, and add only Column1 and Column2
+// Match t2's OtherKey column to KeyColumn, and include only Column1 and Column2
 input2 = MultiJoinInput.of(t2, "KeyColumn = OtherKey", "Column1, Column2")
 
 MultiJoinTable mjTable = MultiJoinFactory.of(input1, input2)
 ```
 
-The following example adds each student's club to the grades from the [previous example](#pass-the-tables-directly). The `clubs` table names its key column `Student` instead of `Name`, and the result includes only its `Club` column:
+The following example adds each student's club to the grades from the [previous example](#with-constituent-tables). The `clubs` table names its key column `Student` instead of `Name`, and the result includes only its `Club` column:
 
 ```groovy test-set=2 order=result,clubs
 import io.deephaven.engine.table.MultiJoinFactory
