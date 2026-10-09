@@ -124,7 +124,7 @@ The consumer starts at the latest offsets, so the table stays empty until new me
 
 - **Keep your domain model stable**.
 
-  - Prefer mapping changing payloads into a stable `Person` or similar class.
+  - When the payload format changes over time, map each payload explicitly into a stable `Person` or similar class.
   - Add new fields in a backward-compatible way when possible.
 
 - **Avoid heavy work in the parser**.
