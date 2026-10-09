@@ -1682,6 +1682,17 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
         }
 
+        // complete the subscriptions removed above now; the early return below would otherwise skip them
+        if (deletedSubscriptions != null) {
+            for (final Subscription subscription : deletedSubscriptions) {
+                try {
+                    subscription.listener.onCompleted();
+                } catch (final Exception ignored) {
+                    // ignore races on cancellation
+                }
+            }
+        }
+
         BarrageMessage preSnapshot = null;
         BarrageMessage blinkTableFlushPreSnapshot = null;
         RowSet preSnapRowSetPrev = null;
@@ -1977,16 +1988,6 @@ public class BarrageMessageProducer extends LivenessArtifact
             propagateToSubscribers(postSnapshot, postSnapRowSetPrev, propagationRowSet);
             recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
             postSnapRowSetPrev.close();
-        }
-
-        if (deletedSubscriptions != null) {
-            for (final Subscription subscription : deletedSubscriptions) {
-                try {
-                    subscription.listener.onCompleted();
-                } catch (final Exception ignored) {
-                    // ignore races on cancellation
-                }
-            }
         }
 
         // propagate any error notifying listeners there are no more updates incoming

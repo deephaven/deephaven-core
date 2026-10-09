@@ -373,9 +373,6 @@ public class BarrageGrpcPropagateBenchmark {
             }
             scheduler.runUntilQueueEmpty();
             for (final Client client : clients) {
-                // A run of the producer that has nothing to propagate returns before completing the subscriptions it
-                // removed, so the stream may still be open; close it here in that case so that the client sees its end.
-                client.subscription.completeIfOpen();
                 client.awaitClosed();
             }
         }
