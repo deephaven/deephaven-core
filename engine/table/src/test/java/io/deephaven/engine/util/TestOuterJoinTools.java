@@ -542,4 +542,29 @@ public class TestOuterJoinTools {
         TstUtils.assertTableEquals(newTable(intCol("K", 1, 2, 3), intCol("A", 10, 20, NULL_INT),
                 intCol("B", NULL_INT, 200, 300)), result);
     }
+
+    @Test
+    public void testFullOuterJoinBlinkTable1() {
+        for (final boolean keyed : new boolean[] {true, false}) {
+            final QueryTable table1 = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("K", 1),
+                    intCol("A", 10));
+            table1.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+            final Table table2 = newTable(intCol("K", 1, 2), intCol("B", 100, 200));
+            final String columnsToMatch = keyed ? "K" : "";
+            final String columnsToAdd = keyed ? "B" : "K2=K,B";
+            final Table result = OuterJoinTools.fullOuterJoin(table1, table2, columnsToMatch, columnsToAdd);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                // the blink table removes the previous cycle's row and adds none
+                removeRows(table1, i(0));
+                table1.notifyListeners(i(), i(0), i());
+            });
+
+            // table1 holds no rows this cycle, so every table2 row is unmatched
+            final Table expected = OuterJoinTools.fullOuterJoin(TstUtils.testTable(intCol("K"), intCol("A")), table2,
+                    columnsToMatch, columnsToAdd);
+            TstUtils.assertTableEquals("keyed=" + keyed, expected, result);
+        }
+    }
 }

@@ -124,7 +124,9 @@ public class OuterJoinTools {
         final List<SelectColumn> leftMatchColumns = Arrays.stream(columnsToMatch)
                 .map(mp -> new SourceColumn(mp.leftColumn()))
                 .collect(Collectors.toList());
+        // the groups of table1's current rows; a blink table1's selectDistinct would keep every group it has ever seen
         final Table uniqueLeftGroups = table1.coalesce()
+                .removeBlink()
                 .selectDistinct(leftMatchColumns)
                 .view(leftColumns);
 
