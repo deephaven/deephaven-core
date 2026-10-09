@@ -1189,7 +1189,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                                 if (downsample[0]) {
                                     downsample[0] = false;
                                     LazyPromise.runLater(() -> {
-                                        if (wrapped.isClosed()) {
+                                        if (wrapped.isClosed() || isClosed()) {
+                                            // a closed source leaves the totals table on its retained state
                                             return;
                                         }
                                         downsample[0] = true;
@@ -1201,7 +1202,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                                         // own event and this one is skipped.
                                         final ClientTableState source = state();
                                         source.onRunning(running -> {
-                                            if (wrapped.isClosed() || source != state()) {
+                                            if (wrapped.isClosed() || isClosed() || source != state()) {
                                                 return;
                                             }
                                             // when ever the main table changes its state, reload the totals table from

@@ -170,6 +170,40 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    /**
+     * Changes the source table and closes it before the totals table's deferred rebase can run. The totals table must
+     * stay usable on its last good state, and nothing may throw.
+     */
+    public void testCloseSourceWhileTotalsRebasePending() {
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    delayTestFinish(5000);
+                    return table.getTotalsTable(null)
+                            .then(totals -> {
+                                totals.setViewport(0, 100, null, null, null);
+                                return waitForEvent(totals, JsTable.EVENT_UPDATED,
+                                        checkTotals(totals, 5, 6., 0., "a1"), 2501);
+                            })
+                            .then(totals -> {
+                                table.applyFilter(new FilterCondition[] {
+                                        table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                                });
+                                table.close();
+                                return Promise.resolve(totals);
+                            })
+                            // let the deferred rebase callbacks run; an exception there fails the test
+                            .then(waitFor(500))
+                            .then(totals -> {
+                                assertFalse(totals.isClosed());
+                                assertEquals(1, totals.getSize(), DELTA);
+                                totals.close();
+                                return Promise.resolve(totals);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testClosingTotalsWhileClearingFilter() {
         JsTotalsTable[] totalTables = {null};
         connect(tables)
