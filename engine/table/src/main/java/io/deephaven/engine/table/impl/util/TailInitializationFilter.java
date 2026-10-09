@@ -266,7 +266,10 @@ public class TailInitializationFilter {
             } else {
                 source.getRowSet().forEachRowKeyRange((startRow, lastRow) -> {
                     final long firstRow = Math.max(startRow, lastRow - rowCount + 1);
-                    builder.appendRange(firstRow, lastRow);
+                    // With rowCount <= 0 the tail is empty, and firstRow lands past lastRow.
+                    if (firstRow <= lastRow) {
+                        builder.appendRange(firstRow, lastRow);
+                    }
                     return true;
                 });
             }
