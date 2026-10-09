@@ -133,13 +133,14 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertRange(final long startKey, final long endKey) {
         preMutationHook();
-        if (startKey < 0 || endKey < 0) {
+        if (startKey < 0) {
             throw new IllegalArgumentException(
                     "Row keys must be nonnegative: startKey=" + startKey + ", endKey=" + endKey);
         }
-        if (endKey >= startKey) {
-            assign(innerSet.ixInsertRange(startKey, endKey));
+        if (endKey < startKey) {
+            throw new IllegalArgumentException("Inverted range: startKey=" + startKey + " > endKey=" + endKey);
         }
+        assign(innerSet.ixInsertRange(startKey, endKey));
         postMutationHook();
     }
 
@@ -451,9 +452,18 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         if (rowSet.isEmpty()) {
             return;
         }
-        if (rowSet.firstRowKey() + shiftAmount < 0 || rowSet.lastRowKey() + shiftAmount < 0) {
-            throw new IllegalArgumentException("Row keys must be nonnegative: [" + rowSet.firstRowKey() + ", "
-                    + rowSet.lastRowKey() + "] shifted by " + shiftAmount);
+        if (shiftAmount < 0) {
+            final long firstRowKey = rowSet.firstRowKey();
+            if (firstRowKey + shiftAmount < 0) {
+                throw new IllegalArgumentException("Shifting first row key " + firstRowKey + " by " + shiftAmount
+                        + " would make it negative");
+            }
+        } else {
+            final long lastRowKey = rowSet.lastRowKey();
+            if (lastRowKey + shiftAmount < 0) {
+                throw new IllegalArgumentException("Shifting last row key " + lastRowKey + " by " + shiftAmount
+                        + " would overflow past Long.MAX_VALUE");
+            }
         }
     }
 

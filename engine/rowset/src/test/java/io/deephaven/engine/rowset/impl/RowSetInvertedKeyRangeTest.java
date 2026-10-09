@@ -22,7 +22,8 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * A key range whose end precedes its start holds no keys. {@code [start, start + n - 1]} with {@code n == 0} is the
- * natural way to arrive at one, so every operation must treat it as empty rather than walk it as if it ran forward.
+ * natural way to arrive at one, so queries and removals must treat it as empty rather than walk it as if it ran
+ * forward. Inserting one is rejected.
  */
 public class RowSetInvertedKeyRangeTest {
 
@@ -87,7 +88,8 @@ public class RowSetInvertedKeyRangeTest {
                         assertEquals(what + " retainRange size", 0, retained.size());
                     }
                     try (final WritableRowSet inserted = rs.copy()) {
-                        inserted.insertRange(range[0], range[1]);
+                        assertThrows(what + " insertRange", IllegalArgumentException.class,
+                                () -> inserted.insertRange(range[0], range[1]));
                         inserted.validate();
                         assertEquals(what + " insertRange", keysOf(rs), keysOf(inserted));
                     }
