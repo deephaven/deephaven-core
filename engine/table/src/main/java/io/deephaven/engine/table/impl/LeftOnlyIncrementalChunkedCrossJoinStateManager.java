@@ -17,16 +17,16 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This is our JoinStateManager for cross join when right is static and left is ticking.
  * <p>
- * Each distinct right key has an id from a {@link KeyIdHasherTypedBase}, which serves as the key's slot: the right rows
- * with that key are collected into {@link CrossJoinRightRowSets}, and each left row whose key is on the right is
- * redirected to the slot. Left rows only probe, so the table holds exactly the right keys.
+ * Each distinct right key has an id from a {@link StaticKeyIdHasherTypedBase}, which serves as the key's slot: the
+ * right rows with that key are collected into {@link CrossJoinRightRowSets}, and each left row whose key is on the
+ * right is redirected to the slot. Left rows only probe, so the table holds exactly the right keys.
  */
 class LeftOnlyIncrementalChunkedCrossJoinStateManager
         extends CrossJoinShiftState
@@ -59,7 +59,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     private static final TrackingRowSet EMPTY_ROWSET = RowSetFactory.empty().toTracking();
 
-    private final KeyIdHasherTypedBase hasher;
+    private final StaticKeyIdHasherTypedBase hasher;
 
     // the right rows of each key, by slot
     private final CrossJoinRightRowSets rightRowSets = new CrossJoinRightRowSets();
@@ -76,7 +76,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             int numRightBitsToReserve,
             boolean leftOuterJoin) {
         super(numRightBitsToReserve, leftOuterJoin);
-        this.hasher = KeyIdHasherTypedBase.make(tableKeySources, tableSize, maximumLoadFactor);
+        this.hasher = StaticKeyIdHasherTypedBase.make(tableKeySources, tableSize, maximumLoadFactor);
         this.leftRowToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
         this.leftKeySources = tableKeySources;
         this.leftTable = leftTable;
@@ -217,7 +217,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     private static long toStateSlot(final int id) {
-        return id == KeyIdHasherTypedBase.NULL_ID ? RowSet.NULL_ROW_KEY : id;
+        return id == StaticKeyIdHasherTypedBase.NULL_ID ? RowSet.NULL_ROW_KEY : id;
     }
 
     /**

@@ -159,7 +159,7 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
         final ColumnSource<?>[] prototypeSources = sources(prototype);
         final KeyIdHasher hasher = incremental
                 ? IncrementalKeyIdHasherTypedBase.make(prototypeSources, 16, 0.75)
-                : KeyIdHasherTypedBase.make(prototypeSources, 16, 0.75);
+                : StaticKeyIdHasherTypedBase.make(prototypeSources, 16, 0.75);
         final MutableBoolean sawPartialRehash = new MutableBoolean();
 
         final Map<List<Object>, Integer> expected = new HashMap<>();

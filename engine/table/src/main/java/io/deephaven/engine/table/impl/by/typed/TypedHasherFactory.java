@@ -24,7 +24,7 @@ import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBa
 import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.join.IncrementalKeyIdHasherTypedBase;
-import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.join.TypedKeyIdFactory;
 import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
@@ -102,8 +102,8 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
                     true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
-        } else if (baseClass.equals(KeyIdHasherTypedBase.class)) {
-            builder.classPrefix("KeyIdHasher").packageGroup("join").packageMiddle("keyid")
+        } else if (baseClass.equals(StaticKeyIdHasherTypedBase.class)) {
+            builder.classPrefix("StaticKeyIdHasher").packageGroup("join").packageMiddle("statickeyid")
                     .openAddressedAlternate(false)
                     .stateType(int.class).mainStateName("mainId")
                     .emptyStateName("EMPTY_ID")
@@ -355,9 +355,9 @@ public class TypedHasherFactory {
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }
-            } else if (hasherConfig.baseClass.equals(KeyIdHasherTypedBase.class)) {
+            } else if (hasherConfig.baseClass.equals(StaticKeyIdHasherTypedBase.class)) {
                 // noinspection unchecked
-                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.join.typed.keyid.gen.TypedHashDispatcher
+                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.join.typed.statickeyid.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;

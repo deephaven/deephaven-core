@@ -13,7 +13,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.JoinControl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.join.KeyIdHasher;
-import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
@@ -24,8 +24,8 @@ import java.util.function.LongUnaryOperator;
 /**
  * The natural join state manager when the right table is static, and the left table is static or refreshing.
  * <p>
- * Each distinct key has an id from a {@link KeyIdHasherTypedBase}, and its right state is kept by id: the right row
- * key, {@link #NO_RIGHT_STATE_VALUE} for a key with no right row, or {@link #DUPLICATE_RIGHT_STATE} for a key with
+ * Each distinct key has an id from a {@link StaticKeyIdHasherTypedBase}, and its right state is kept by id: the right
+ * row key, {@link #NO_RIGHT_STATE_VALUE} for a key with no right row, or {@link #DUPLICATE_RIGHT_STATE} for a key with
  * several. A build from the left records each left row's id rather than a hash slot, so the table may grow while it is
  * built.
  */
@@ -35,7 +35,7 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
     // errorOnDuplicates recognizes duplicate keys by comparing the stored state against DUPLICATE_RIGHT_VALUE
     public static final long DUPLICATE_RIGHT_STATE = DUPLICATE_RIGHT_VALUE;
 
-    private final KeyIdHasherTypedBase hasher;
+    private final StaticKeyIdHasherTypedBase hasher;
 
     // the right state of each key, by id; one flat array, since the probe of each left row reads it
     private final ImmutableLongArraySource rightState = new ImmutableLongArraySource();
@@ -56,7 +56,7 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
             final NaturalJoinType joinType,
             final boolean addOnly) {
         super(keySourcesForErrorMessages, joinType, addOnly);
-        hasher = KeyIdHasherTypedBase.make(tableKeySources, tableSize, maximumLoadFactor);
+        hasher = StaticKeyIdHasherTypedBase.make(tableKeySources, tableSize, maximumLoadFactor);
     }
 
     private void ensureIdCapacity() {

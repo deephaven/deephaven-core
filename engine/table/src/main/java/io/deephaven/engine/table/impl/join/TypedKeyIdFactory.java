@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 
 /**
  * The code fragments {@link io.deephaven.engine.table.impl.by.typed.TypedHasherFactory} uses to generate the
- * {@link KeyIdHasherTypedBase} and {@link IncrementalKeyIdHasherTypedBase} implementations.
+ * {@link StaticKeyIdHasherTypedBase} and {@link IncrementalKeyIdHasherTypedBase} implementations.
  */
 public class TypedKeyIdFactory {
     public static void found(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {

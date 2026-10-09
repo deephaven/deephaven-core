@@ -5,30 +5,31 @@
 // ****** Run ReplicateTypedHashers or ./gradlew replicateTypedHashers to regenerate
 //
 // @formatter:off
-package io.deephaven.engine.table.impl.join.typed.keyid.gen;
+package io.deephaven.engine.table.impl.join.typed.statickeyid.gen;
 
-import static io.deephaven.util.compare.IntComparisons.eq;
+import static io.deephaven.util.compare.CharComparisons.eq;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.hashing.IntChunkHasher;
+import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
 import java.lang.Override;
 import java.util.Arrays;
 
-final class KeyIdHasherInt extends KeyIdHasherTypedBase {
-    private final ImmutableIntArraySource mainKeySource0;
+final class StaticKeyIdHasherChar extends StaticKeyIdHasherTypedBase {
+    private final ImmutableCharArraySource mainKeySource0;
 
-    public KeyIdHasherInt(ColumnSource[] tableKeySources, ColumnSource[] originalTableKeySources,
-            int tableSize, double maximumLoadFactor, double targetLoadFactor) {
+    public StaticKeyIdHasherChar(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
-        this.mainKeySource0 = (ImmutableIntArraySource) super.mainKeySources[0];
+        this.mainKeySource0 = (ImmutableCharArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }
 
@@ -38,10 +39,10 @@ final class KeyIdHasherInt extends KeyIdHasherTypedBase {
 
     protected void build(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
             WritableByteChunk<Values> statuses) {
-        final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
+        final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
-            final int k0 = keyChunk0.get(chunkPosition);
+            final char k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
@@ -71,10 +72,10 @@ final class KeyIdHasherInt extends KeyIdHasherTypedBase {
 
     protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
             WritableByteChunk<Values> statuses) {
-        final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
+        final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
-            final int k0 = keyChunk0.get(chunkPosition);
+            final char k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
@@ -99,8 +100,8 @@ final class KeyIdHasherInt extends KeyIdHasherTypedBase {
         }
     }
 
-    private static int hash(int k0) {
-        int hash = IntChunkHasher.hashInitialSingle(k0);
+    private static int hash(char k0) {
+        int hash = CharChunkHasher.hashInitialSingle(k0);
         return hash;
     }
 
@@ -110,10 +111,10 @@ final class KeyIdHasherInt extends KeyIdHasherTypedBase {
 
     @Override
     protected void rehashInternalFull(final int oldSize) {
-        final int[] destKeyArray0 = new int[tableSize];
+        final char[] destKeyArray0 = new char[tableSize];
         final int[] destState = new int[tableSize];
         Arrays.fill(destState, EMPTY_ID);
-        final int [] originalKeyArray0 = mainKeySource0.getArray();
+        final char [] originalKeyArray0 = mainKeySource0.getArray();
         mainKeySource0.setArray(destKeyArray0);
         final int [] originalStateArray = mainId.getArray();
         mainId.setArray(destState);
@@ -122,7 +123,7 @@ final class KeyIdHasherInt extends KeyIdHasherTypedBase {
             if (isStateEmpty(currentStateValue)) {
                 continue;
             }
-            final int k0 = originalKeyArray0[sourceBucket];
+            final char k0 = originalKeyArray0[sourceBucket];
             final int hash = hash(k0);
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;

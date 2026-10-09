@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -21,8 +21,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * The cross join state manager when both inputs are static.
  * <p>
- * Each distinct key has an id from a {@link KeyIdHasherTypedBase}; the right rows with that key are collected into
- * {@link CrossJoinRightRowSets}, and each left row is redirected to the id of its key.
+ * Each distinct key has an id from a {@link StaticKeyIdHasherTypedBase}; the right rows with that key are collected
+ * into {@link CrossJoinRightRowSets}, and each left row is redirected to the id of its key.
  */
 class StaticChunkedCrossJoinStateManager
         extends CrossJoinShiftState
@@ -30,7 +30,7 @@ class StaticChunkedCrossJoinStateManager
 
     static final TrackingRowSet EMPTY_ROWSET = RowSetFactory.empty().toTracking();
 
-    private final KeyIdHasherTypedBase hasher;
+    private final StaticKeyIdHasherTypedBase hasher;
 
     // the right rows of each key, by id
     private final CrossJoinRightRowSets rightRowSets = new CrossJoinRightRowSets();
@@ -43,7 +43,7 @@ class StaticChunkedCrossJoinStateManager
         // on a static build, we can use minimum number of right bits since we compute the largest right RowSet on
         // construction and the left doesn't tick; so we will do RowSet related work exactly once
         super(1, leftOuterJoin);
-        hasher = KeyIdHasherTypedBase.make(tableKeySources, tableSize, control.getMaximumLoadFactor());
+        hasher = StaticKeyIdHasherTypedBase.make(tableKeySources, tableSize, control.getMaximumLoadFactor());
         leftRowSetToSlot = JoinRowRedirection.makeRowRedirection(control, leftTable);
     }
 
@@ -68,7 +68,7 @@ class StaticChunkedCrossJoinStateManager
                 final long rowKey = rowKeys.get(ii);
                 final int id = ids.get(ii);
                 final long regionStart = rowKey << getNumShiftBits();
-                if (id != KeyIdHasherTypedBase.NULL_ID) {
+                if (id != StaticKeyIdHasherTypedBase.NULL_ID) {
                     final RowSet rightRowSet = getRightRowSetForSlot(rightRowSets, id);
                     Assert.assertion(rightRowSet.isNonempty(), "rightRowSet.nonEmpty()");
                     leftRowSetToSlot.put(rowKey, id);

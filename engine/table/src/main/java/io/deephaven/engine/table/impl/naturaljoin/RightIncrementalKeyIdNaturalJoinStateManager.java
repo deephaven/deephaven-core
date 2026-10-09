@@ -27,7 +27,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.join.KeyIdHasher;
-import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -44,13 +44,13 @@ import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
 /**
  * The natural join state manager when the right table refreshes and the left table is static.
  * <p>
- * The left table's keys are built into a {@link KeyIdHasherTypedBase} once; a right key that is not on the left can
- * never match, so right rows only probe and the table never changes afterward. Each key's state is kept by id: its left
- * rows, its right state, and its modified slot tracker cookie. The tracker's slots are these ids.
+ * The left table's keys are built into a {@link StaticKeyIdHasherTypedBase} once; a right key that is not on the left
+ * can never match, so right rows only probe and the table never changes afterward. Each key's state is kept by id: its
+ * left rows, its right state, and its modified slot tracker cookie. The tracker's slots are these ids.
  */
 public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrementalNaturalJoinStateManager {
 
-    private final KeyIdHasherTypedBase hasher;
+    private final StaticKeyIdHasherTypedBase hasher;
 
     // the left rows of each key, by id
     private final ObjectArraySource<WritableRowSet> leftRowSet = new ObjectArraySource<>(WritableRowSet.class);
@@ -80,7 +80,7 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
             final NaturalJoinType joinType,
             final boolean addOnly) {
         super(keySourcesForErrorMessages, joinType, addOnly);
-        hasher = KeyIdHasherTypedBase.make(tableKeySources, tableSize, maximumLoadFactor);
+        hasher = StaticKeyIdHasherTypedBase.make(tableKeySources, tableSize, maximumLoadFactor);
         changedKeyRows = new ChangedKeyRows(
                 Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new));
     }

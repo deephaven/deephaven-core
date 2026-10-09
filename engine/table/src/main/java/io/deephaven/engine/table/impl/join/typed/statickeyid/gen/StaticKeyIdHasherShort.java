@@ -5,7 +5,7 @@
 // ****** Run ReplicateTypedHashers or ./gradlew replicateTypedHashers to regenerate
 //
 // @formatter:off
-package io.deephaven.engine.table.impl.join.typed.keyid.gen;
+package io.deephaven.engine.table.impl.join.typed.statickeyid.gen;
 
 import static io.deephaven.util.compare.ShortComparisons.eq;
 
@@ -17,16 +17,17 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ShortChunkHasher;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableShortArraySource;
 import java.lang.Override;
 import java.util.Arrays;
 
-final class KeyIdHasherShort extends KeyIdHasherTypedBase {
+final class StaticKeyIdHasherShort extends StaticKeyIdHasherTypedBase {
     private final ImmutableShortArraySource mainKeySource0;
 
-    public KeyIdHasherShort(ColumnSource[] tableKeySources, ColumnSource[] originalTableKeySources,
-            int tableSize, double maximumLoadFactor, double targetLoadFactor) {
+    public StaticKeyIdHasherShort(ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         super(tableKeySources, tableSize, maximumLoadFactor);
         this.mainKeySource0 = (ImmutableShortArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);

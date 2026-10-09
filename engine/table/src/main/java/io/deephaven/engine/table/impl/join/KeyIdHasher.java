@@ -37,8 +37,9 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
  * {@link #probe(RowSequence, ColumnSource[], boolean, IdChunkConsumer)}, or from key chunks the caller already holds,
  * through {@link #build(Context, Chunk[])} and {@link #probe(Context, Chunk[])}.
  * <p>
- * {@link KeyIdHasherTypedBase} only adds keys. {@link IncrementalKeyIdHasherTypedBase} also removes them, reusing their
- * ids, and grows incrementally.
+ * {@link StaticKeyIdHasherTypedBase} is built once and then only probed, so it only adds keys.
+ * {@link IncrementalKeyIdHasherTypedBase} serves keys that tick: it also removes them, reusing their ids, and grows
+ * incrementally.
  */
 public abstract class KeyIdHasher {
     /**

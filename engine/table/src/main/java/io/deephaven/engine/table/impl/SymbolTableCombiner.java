@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 
@@ -26,14 +26,14 @@ class SymbolTableCombiner {
     private static final int MINIMUM_INITIAL_HASH_SIZE = CHUNK_SIZE;
     private static final double MAXIMUM_LOAD_FACTOR = 0.75;
 
-    private final KeyIdHasherTypedBase hasher;
+    private final StaticKeyIdHasherTypedBase hasher;
 
     /**
      * @param tableKeySources a single source with the symbol type
      * @param tableSize the initial hash table size, a power of two
      */
     SymbolTableCombiner(ColumnSource<?>[] tableKeySources, int tableSize) {
-        hasher = KeyIdHasherTypedBase.make(tableKeySources, tableSize, MAXIMUM_LOAD_FACTOR);
+        hasher = StaticKeyIdHasherTypedBase.make(tableKeySources, tableSize, MAXIMUM_LOAD_FACTOR);
     }
 
     void addSymbols(final Table symbolTable, IntegerSparseArraySource symbolMapper) {
@@ -89,7 +89,7 @@ class SymbolTableCombiner {
         for (int ii = 0; ii < ids.size(); ++ii) {
             final int uniqueId = uniqueIds.get(ii);
             symbolMapper.set(ids.get(ii),
-                    uniqueId == KeyIdHasherTypedBase.NULL_ID ? irrelevantSymbolValue : uniqueId);
+                    uniqueId == StaticKeyIdHasherTypedBase.NULL_ID ? irrelevantSymbolValue : uniqueId);
         }
     }
 
