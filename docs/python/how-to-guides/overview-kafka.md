@@ -135,7 +135,7 @@ Graphing the weekly totals in `by_week`, either with the Chart Builder or in cod
 
 A complete baseline could overlay two simple models: one that captures the seasonality and one that captures the growth trend. This example builds only the seasonality model.
 
-We build the seasonality model as a derived table that averages the last four samples matching the same time of day and day of week, as a tentative baseline. After we consume the live feed, we compare each live sample to this baseline in [Compare live data to the baseline](#compare-live-data-to-the-baseline).
+We build the seasonality model as a derived table that averages the samples from the last four weeks that match the same time of day and day of week (usually four samples, one per week), as a tentative baseline. After we consume the live feed, we compare each live sample to this baseline in [Compare live data to the baseline](#compare-live-data-to-the-baseline).
 
 Creating this table involves doing [aggregations](./combined-aggregations.md) and [filtering](./use-filters.md). This page doesn't cover these operations in detail. In general terms, the code below restricts samples to the four weeks before the last midnight, and then aggregates by the `DayOfWeek` and `SecondsInDay` columns:
 

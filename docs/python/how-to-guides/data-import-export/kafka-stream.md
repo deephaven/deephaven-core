@@ -21,7 +21,7 @@ When a single-column key spec doesn't name its column, the name comes from the `
 Deephaven chooses the column type in this order:
 
 1. The type set in the spec, if there is one.
-2. The `deephaven.key.column.type` or `deephaven.value.column.type` property. It accepts `short`, `int`, `long`, `float`, `double`, `byte[]`, or `String`.
+2. The `deephaven.key.column.type` or `deephaven.value.column.type` property. It accepts `short`, `int`, `long`, `float`, `double`, `byte[]`, or `String` (also accepted as `string`).
 3. The Kafka deserializer set in the `key.deserializer` or `value.deserializer` consumer property. Deephaven recognizes the numeric, byte-array, `UUID`, `ByteBuffer`, and `Bytes` deserializers.
 
 For a `String` column, set the type property or pass the type to the spec.
