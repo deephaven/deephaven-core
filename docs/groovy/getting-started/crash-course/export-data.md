@@ -234,7 +234,7 @@ htmlString = TableTools.html(sourceTable)
 
 [Function generated tables](../../how-to-guides/function-generated-tables.md) are tables populated by a Groovy function. The function is reevaluated when source tables change or at a regular interval. The following example re-generates data in a table once per second.
 
-```groovy test-set=6 order=fgt
+```groovy test-set=6 ticking-table order=fgt
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.util.SafeCloseable
 import io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory

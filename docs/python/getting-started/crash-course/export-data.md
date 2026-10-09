@@ -268,7 +268,7 @@ deephaven_table_from_df = to_table(sample_df)
 
 [Function generated tables](../../how-to-guides/function-generated-tables.md) are tables populated by a Python function. The function is reevaluated when source tables change or at a regular interval. The following example re-generates data in a table once per second.
 
-```python test-set=6 order=fgt
+```python test-set=6 ticking-table order=fgt
 from deephaven import empty_table, function_generated_table
 
 

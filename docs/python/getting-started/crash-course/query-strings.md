@@ -580,6 +580,8 @@ t_stateless = empty_table(10).update("X = get_element_stateless(ii)")
 Stateful functions modify objects outside their local scope — they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
 
 ```python test-set=2
+from deephaven.table import Selectable
+
 my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 idx = 0
 
@@ -590,7 +592,9 @@ def get_element_stateful() -> int:
     return my_list[idx - 1]
 
 
-t_stateful = empty_table(10).update("X = get_element_stateful()")
+t_stateful = empty_table(10).update(
+    Selectable.parse("X = get_element_stateful()").with_serial()
+)
 ```
 
 Print `idx` to verify it's been changed.
@@ -599,7 +603,7 @@ Print `idx` to verify it's been changed.
 print(idx)
 ```
 
-Because `get_element_stateful` is stateful, it must be evaluated in the correct order to give the correct result. The engine assumes functions in query strings are stateless unless told otherwise, so mark stateful ones with [`with_serial`](../../conceptual/query-engine/parallelization.md). In this small example, rows happen to be evaluated in order.
+Because `get_element_stateful` is stateful, it must be evaluated in the correct order to give the correct result. The engine assumes functions in query strings are stateless unless told otherwise, so mark stateful ones with [`with_serial`](../../conceptual/query-engine/parallelization.md), as the example above does. Without it, nothing guarantees the rows are evaluated in order.
 
 Queries should use stateless functions whenever possible because:
 

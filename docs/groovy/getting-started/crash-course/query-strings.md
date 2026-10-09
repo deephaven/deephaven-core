@@ -522,7 +522,9 @@ getElementStateful = {
     return myList[idx - 1]
 }
 
-tStateful = emptyTable(10).update("X = getElementStateful()")
+tStateful = emptyTable(10).update(
+    List.of(Selectable.parse("X = getElementStateful()").withSerial())
+)
 ```
 
 Print `idx` to verify it's been changed.
@@ -531,7 +533,7 @@ Print `idx` to verify it's been changed.
 println idx
 ```
 
-Because `getElementStateful` is stateful, it must be evaluated in the correct order to give the correct result. The engine assumes functions in query strings are stateless unless told otherwise, so mark stateful ones with [`withSerial`](../../conceptual/query-engine/parallelization.md). This example works because the table is small.
+Because `getElementStateful` is stateful, it must be evaluated in the correct order to give the correct result. The engine assumes functions in query strings are stateless unless told otherwise, so mark stateful ones with [`withSerial`](../../conceptual/query-engine/parallelization.md), as the example above does. Without it, nothing guarantees the rows are evaluated in order.
 
 Queries should use stateless functions whenever possible because:
 
