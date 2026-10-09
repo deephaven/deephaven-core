@@ -68,7 +68,9 @@ page, and the fix-not-rewrite limit above does not apply:
 - Keep the terms readers search for. A word the API, its parameters, or its developers use (for
   example "include" for the columns a join adds, or "constituent tables" for a multi-join's inputs)
   is how readers find the page and match it to the code. Define such a term where it first
-  appears rather than replacing it with a plainer synonym.
+  appears rather than replacing it with a plainer synonym. A term the page itself defines (often in
+  italics, such as _root node_ or _constituents_) stays word for word, even when you correct its
+  definition.
 - Edit only the pages in scope. When a wrong claim lives on another page, in a reference page
   that a different PR or ticket owns, or in source code such as a docstring, don't edit it there:
   other work may be in flight on that page, and source changes need their own review. List it as

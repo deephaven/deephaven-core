@@ -3,8 +3,8 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
-      "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries \u2014 and it catches the view/update_view deferred-evaluation error.",
+      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries — and it catches the view/update_view deferred-evaluation error.",
       "files": [
         "../eval-fixtures/parallelization-pre-review.md"
       ],
@@ -17,7 +17,7 @@
         "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
         "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
         "Includes at least one example-quality finding from the examples pass: an example that doesn't illustrate the concept its lead-in names, or a concept that is described but never shown",
-        "The report has a Coverage section stating how many factual or behavioral claims the accuracy pass enumerated, how many were verified against source, and how many are author queries"
+        "The report has a Coverage section with the claim ledger as a table (one row per claim with its location, verdict, and source checked), and states how many claims were enumerated, how many were verified against source, and how many are author queries"
       ]
     },
     {
@@ -43,6 +43,22 @@
         "The edited files are well-formed: code fences balanced, no duplicated or leftover text from moved sections",
         "Keeps the edits targeted: doesn't retitle the page, replace the existing demo examples with new ones, or reorder its sections, and puts any restructuring it recommends in the report instead (added in iteration 4 after iteration 3 showed wholesale rewrites)"
       ]
+    },
+    {
+      "prompt": "This is a DOC-1560 audit fix: overhaul the Groovy rollup tables how-to guide and apply the fixes. Work on the copy at .claude/skills/deephaven-docs-review-full/evals/files/rollup/groovy-rollup-table.md, which stands for docs/groovy/how-to-guides/rollup-table.md (resolve relative links from that path). Edit only that copy, never the files under docs/. When you're done, tell me what you changed and anything you couldn't resolve.",
+      "expected_output": "Fixes the page's wrong claims, including the aggregations marked unsupported that rollup supports, while keeping accurate content: the TODO (or retargets it), the root node / leaf node / constituent vocabulary, and the null-value NOTE. Lists problems found on other pages, such as the rollup reference page, as follow-up instead of editing them.",
+      "files": [
+        "evals/files/rollup/groovy-rollup-table.md"
+      ],
+      "expectations": [
+        "Corrects the aggregations table where it marks as unsupported an aggregation rollup supports (for example AggGroup), against source",
+        "Keeps the TODO comment about a hierarchy concept guide (unchanged, or retargeted to a live ticket), rather than deleting it",
+        "Keeps the vocabulary the page defines: root node, leaf nodes, and constituents all still appear and are defined (a corrected definition passes)",
+        "Keeps the NOTE that a column no longer part of the aggregation key is replaced with null on each level (verbatim or with the same meaning)",
+        "Does not edit any file other than the copy, and lists problems it found on other pages (such as the rollup reference page) or in source as follow-up work",
+        "Every change the report lists traces to a stated problem; the report doesn't describe rewording correct sentences without a reason"
+      ],
+      "id": 3
     }
   ]
 }

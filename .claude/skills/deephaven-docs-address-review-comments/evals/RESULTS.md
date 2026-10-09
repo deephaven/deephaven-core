@@ -26,3 +26,16 @@ Both arms chose their own skills from a directory. The baseline had the existing
 - Runs are small, so treat pass counts as evidence that a behavior appears, not as stable rates.
 - Both iterations were 3 runs per configuration. Iteration 2 was scored blind by an independent grader agent (reports shuffled and unlabeled).
 - Judgment-call expectations can vary between graders; the notes say where.
+
+## DOC-1560 (PR #8860): whole-page accuracy and audit fixes
+
+Method: "main" is the skill on `main`; "new" is the PR branch. Each trial read the skill from its configuration's folder and verified against the same checkout. A separate grader scored each eval's reports blind (shuffled, unlabeled) against the expectations. Two to three runs per cell unless noted, so treat counts as direction, not rates.
+
+| Eval | What it tests | main | new |
+| --- | --- | --- | --- |
+| 1 (regression) | Copilot triage on the Crash Course parallelization page | 15/16 | 14/16 |
+| 2 (new) | After a merge with #8798, find and restore the corrections the resolution dropped (edit mode) | 8/12 | 12/12 |
+
+- Eval 2, first try: every run in both configurations saw that the join TIP started with #8798's sentence and missed that its last clause ("so `natural_join` should be preferred in most places") was gone, and one new run rewrote a correction that had survived in substance (new 8/12, main 10/12). The merge rule now says to compare whole sentences and to leave surviving corrections alone. Rerun: new 12/12, main 8/12; both new runs restored the TIP clause and the "required" marking and changed nothing else.
+- Eval 1: a single new run first scored 6/8 (it declined C9 and deleted the C10 clause). The two-run rerun against `main` scored 14/16 against 15/16, so that was noise, not a regression.
+- Eval 2 answers the open request for an edit-mode eval.

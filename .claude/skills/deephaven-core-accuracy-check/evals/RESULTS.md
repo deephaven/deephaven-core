@@ -32,3 +32,28 @@ Change tested: the "Prescriptive rows claim sufficiency" pitfall. Eval 2 is held
 - Runs are small, so treat pass counts as evidence that a behavior appears, not as stable rates.
 - Iteration 1 was 1 run per configuration, graded inline. Iteration 2 was 3 runs per configuration, scored blind by an independent grader agent (reports shuffled and unlabeled).
 - Judgment-call expectations can vary between graders; the notes say where.
+
+## DOC-1560 (PR #8860): whole-page accuracy and audit fixes
+
+Method: "main" is the skill on `main`; "new" is the PR branch. Each trial read the skill from its configuration's folder and verified against the same checkout. A separate grader scored each eval's reports blind (shuffled, unlabeled) against the expectations. Two to three runs per cell unless noted, so treat counts as direction, not rates.
+
+First round (claim ledger, one row per clause, shown in the report), scored by the session that wrote it:
+
+| Eval | main | Final |
+| --- | --- | --- |
+| 1 | 10/10 (2 runs) | 5/5 (1) |
+| 2 | 4/6 (2) | 3/3 (1) |
+| 3 (new) | 3/10 (2) | 11/15 (3) |
+
+Second round (checks from the DOC-1560 overhaul pilots), new evals 4-6:
+
+| Eval | What it tests | main | new |
+| --- | --- | --- | --- |
+| 4 (new) | Published Docker images: evidence comes from deephaven-server-docker, not `docker/` | 4/6 | 6/6 |
+| 5 (new) | Rollup table marks supported aggregations unsupported; stale `Table.rollup` docstring; TODO linking a closed issue | 7/10 | 10/10 |
+| 6 (new) | Join flowchart has no multi-join path although the page teaches one | 5/8 | 8/8 |
+
+- Eval 4: one `main` run cited this repo's `docker/server-slim` Dockerfile and raised the false concern that `START_OPTS` drops the Groovy console. Every new run cited deephaven-server-docker.
+- Eval 5: both configurations flagged `group` from the engine, so the stale-docstring rule doesn't separate them here. The difference was the TODO: `main` didn't check issue 2079's state.
+- Eval 6: `main` read the chart but missed the missing multi-join path or that the SVG is shared.
+- Regression, new skill only (1 run): eval 1 5/5, eval 2 3/3, eval 3 4/5. The eval 3 miss is the test-source condition in the `i`/`ii` restriction, which no run has stated.

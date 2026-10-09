@@ -94,3 +94,13 @@ Grader note: the recurring eval 3 miss ("(global interpreter lock)" kept in a re
 Wording note: eval 4 expectation 1 now requires the flag on the section's opening paragraph (the first mention), not a later bullet. Re-graded on the new wording, the scores are unchanged (new 3/3, baseline 0/3, and 3/3 for iteration 2).
 
 Eval 6 extension (review follow-up): the column-name sweep now also searches the prose for names the page defines, used alone or in a coordinated phrase ("A and B run in parallel"). The fixture gained that passage and eval 6 gained a fifth expectation. New skill only, 3 runs, graded blind: 14/15, and the new expectation passed in all 3 runs. The one miss stated the backtick rule without citing the corpus count or the skill.
+
+## DOC-1560 (PR #8860): whole-page accuracy and audit fixes
+
+Method: "main" is the skill on `main`; "new" is the PR branch. Each trial read the skill from its configuration's folder and verified against the same checkout. A separate grader scored each eval's reports blind (shuffled, unlabeled) against the expectations. Two to three runs per cell unless noted, so treat counts as direction, not rates.
+
+| Eval | What it tests | main | new |
+| --- | --- | --- | --- |
+| 9 (new) | `order=` tags list tables their block didn't create | 4/6 | 6/6 |
+
+One `main` run also flagged the setup block's `order=` tag or the shared `test-set`, which the control expectation rules out.

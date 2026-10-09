@@ -122,6 +122,19 @@
         "Treats the type names as needing the same first-mention link as method names (does not limit the finding to method-shaped identifiers like with_serial)",
         "Control: does not ask for `Selectable` in the fenced code block (the import line or `Selectable.parse`) to be linked"
       ]
+    },
+    {
+      "prompt": "Check the code example tags in this excerpt of a deephaven-core how-to guide: .claude/skills/deephaven-writing-style/evals/files/order-tags-excerpt.md. Treat it as docs/python/how-to-guides/joins-exact-relational.md. Report only — don't edit anything.",
+      "expected_output": "Flags the two later blocks whose order= tags list employees and departments, which those blocks don't create (the setup block does), and says to list only result there.",
+      "files": [
+        "evals/files/order-tags-excerpt.md"
+      ],
+      "expectations": [
+        "Flags the natural_join and exact_join blocks' order= tags for listing employees and departments, which those blocks don't create",
+        "Recommends listing only the tables each block creates (result), leaving employees and departments in the setup block's order= tag",
+        "Control: does not flag the setup block's order=employees,departments tag or the shared test-set=1 tag"
+      ],
+      "id": 9
     }
   ]
 }

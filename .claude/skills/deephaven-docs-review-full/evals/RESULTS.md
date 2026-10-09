@@ -38,3 +38,21 @@ Fixture: copies of the liveness-scope concept guide in both languages (each run 
 - Runs are small, so treat pass counts as evidence that a behavior appears, not as stable rates.
 - Iteration 1 was 1 run per configuration, graded inline. Iterations 2 to 5 were 3 runs per configuration, scored blind by independent grader agents.
 - Judgment-call expectations can vary between graders; the notes say where.
+
+## DOC-1560 (PR #8860): whole-page accuracy and audit fixes
+
+Method: "main" is the skill on `main`; "new" is the PR branch. Each trial read the skill from its configuration's folder and verified against the same checkout. A separate grader scored each eval's reports blind (shuffled, unlabeled) against the expectations. Two to three runs per cell unless noted, so treat counts as direction, not rates.
+
+First round, scored by the session that wrote it: eval 1 main 8/9, final 9/9 (1 run each); eval 2 main 10/12, first version 9/12, not rerun.
+
+Second round:
+
+| Eval | What it tests | main | new |
+| --- | --- | --- | --- |
+| 1 (regression, new only, 1 run) | Report mode, now with the ledger table in Coverage | - | 9/9 |
+| 2 (regression, new only, 1 run) | Edit mode, ordinary review | - | 10/12 |
+| 3 (new) | Audit-mode overhaul keeps accurate content and stays in scope | 12/12 | 11/12 |
+
+- Eval 2's two misses match earlier rounds: the unreleased `LivenessScope` demo was only recommended, not fixed, and the report didn't say passages were re-verified after editing. Eval 2 still expects targeted edits, which shows the audit exception doesn't leak into ordinary reviews.
+- Eval 3, first try: one new run replaced the defined term "root node" with a synonym (new 11/12, main 12/12). The keep-terms rule now says terms the page defines stay word for word. Rerun: new 11/12, main 12/12, with "root node" kept in every run; the one miss renamed a heading and a variable without a stated reason.
+- Eval 3 doesn't separate the configurations well: the `main` skill's default fix-not-rewrite limit already keeps edits small. The eval guards the audit exception's "keep what is accurate" and "edit only in-scope pages" rules against regressions.
