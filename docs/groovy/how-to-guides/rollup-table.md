@@ -36,7 +36,7 @@ result = source.rollup(aggregations, includeConstituents, groupByColumns...)
 
 The `rollup` method takes up to three parameters. Only `aggregations` is required.
 
-1. `aggregations`: A collection, such as a Groovy list, of the aggregations to compute at each level. Pass a list even for a single aggregation, for example `[AggAvg("Value")]`. As with [combined aggregations](./combined-aggregations.md#syntax), you can define the list before the `rollup` call. Pass an empty list (`[]`) to build the hierarchy without computing any values. See [Supported aggregations](#supported-aggregations).
+1. `aggregations`: A collection, such as a Groovy list, of the aggregations to compute at each level. Pass a list even for a single aggregation - for example `[AggAvg("Value")]`. As with [combined aggregations](./combined-aggregations.md#syntax), you can define the list before the `rollup` call. Pass an empty list (`[]`) to build the hierarchy without computing any values. See [Supported aggregations](#supported-aggregations).
 2. `includeConstituents` (optional): Whether to show each leaf node's constituents one level below it. The default is `false`. Not supported when the source is a [blink table](../conceptual/table-types.md#specialization-3-blink).
 3. `groupByColumns` (optional): The columns that define the table's hierarchy, passed as separate arguments (varargs), so you can pass any number of them. Each column adds one level, from left to right. For example, with `"ColumnOne", "ColumnTwo"`, each unique value in `ColumnOne` expands to show the `ColumnTwo` values that belong to it. With no grouping columns, the rollup aggregates all rows into a single root node.
 
