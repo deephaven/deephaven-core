@@ -123,7 +123,8 @@ matter regardless of structure), but report structure and style findings as patt
 or two examples each rather than line by line — line-level edits on text that's about to be
 reorganized are wasted effort for the author. In edit mode, the verdict doesn't license a
 rewrite: apply the targeted fixes and put the restructuring plan in the report (see **"Apply the
-fixes" means fix, not rewrite** above).
+fixes" means fix, not rewrite** above). Audit and overhaul fixes are the exception: restructure as
+**Audit and overhaul fixes are the explicit exception** above describes.
 
 This pass is report-only. It doesn't replace `deephaven-doc-structure-review`: that skill checks
 specific organizational patterns; this pass asks whether the page is doing the right job at all.
@@ -153,7 +154,8 @@ this workflow's re-verify and style steps instead, so don't expect or trigger th
 here. In a report, this step may recommend moving, merging, cutting, reordering, or renaming sections.
 When applying fixes, make only the targeted structural fixes allowed under **"Apply the fixes" means
 fix, not rewrite** above (for example, delete a duplicate or move one paragraph), and report larger
-restructuring instead, unless the user asked for a rewrite. Either way, content verified in the accuracy
+restructuring instead, unless the user asked for a rewrite or the task is an audit or overhaul fix
+(see **Audit and overhaul fixes are the explicit exception** above). Either way, content verified in the accuracy
 step can change here, which is why the re-verify step exists.
 Note everywhere content was moved, merged, cut, reordered, renamed, **or reworded in place**
 (rewritten without changing location) — the re-verify step needs the complete list, since a rewrite that

@@ -138,7 +138,10 @@ If the user asked for edits:
    the other change's words but drops its last clause ("…, so `natural_join` should be preferred in
    most places") has lost that correction. A line that only changed a link still needs the new
    link. Restore what is missing, in the other author's wording, before you push. Leave a correction
-   that survived in substance as it is; don't rewrite it back to their wording just to match. Also check renamed or moved files from that change: links to the
+   that survived in substance as it is; don't rewrite it back to their wording just to match. Restoring a correction doesn't exempt it from
+   verification: check each restored claim against current source like any other claim (the code may
+   have changed since that change merged), and if the source now contradicts it, raise that with the
+   other author rather than dropping or rewriting their correction silently. Also check renamed or moved files from that change: links to the
    old paths break even when the merge reports no conflict.
 
 ## 4a. Check your own proposed text
