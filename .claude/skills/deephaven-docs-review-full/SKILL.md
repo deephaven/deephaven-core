@@ -60,6 +60,11 @@ page, and the fix-not-rewrite limit above does not apply:
   section can't be made clear by patching. Keep every accurate fact. This skill doesn't run
   examples: list each new or changed example as needing a snapshot run (`docs/updateSnapshots`), or
   run it yourself if the caller's environment allows, and fix any failure.
+- Keep what is accurate. Full scope means fixing everything that is wrong, unclear, or badly
+  organized, not rewording everything. Leave correct sentences, simple lists, accurate bullets and
+  notes, needed vocabulary, correct code comments, and TODOs for work you didn't do as the author
+  wrote them. Every change should trace to a finding or a verified problem, so a reviewer can see
+  why it was made.
 - Treat the recorded findings as a floor, not the scope. The audit missed things; fix what you
   find while working through the page, in the sibling language's page too unless the caller
   limited the task to one language or file.
