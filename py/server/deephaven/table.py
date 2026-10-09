@@ -1931,7 +1931,9 @@ class Table(JObjectWrapper):
         To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless
         specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all the
         right rows, the table will shift a bit from the left side to the right side. The default of 10 bits was
-        carefully chosen because it results in an efficient implementation to process live updates.
+        carefully chosen because it results in an efficient implementation to process live updates. A join whose
+        result can never change, such as a join of two static tables, ignores reserve_bits and uses just enough bits
+        for its right rows.
 
         Args:
             table (Table): the right-table of the join
