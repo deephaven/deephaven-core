@@ -30,7 +30,7 @@ The two tables hold the same data but are created differently.
 
 ## Ticking tables
 
-You can create ticking tables to get a feel for live data in Deephaven. The [`timeTable`](../../reference/table-operations/create/timeTable.md) method creates a ticking table. Unlike [`emptyTable`](../../reference/table-operations/create/emptyTable.md), whose columns you add with DQL, `timeTable` supplies its own `Timestamp` column and adds rows to represent a regular interval set by the input argument.
+You can create ticking tables to get a feel for live data in Deephaven. The [`timeTable`](../../reference/table-operations/create/timeTable.md) method creates a ticking table. Unlike [`emptyTable`](../../reference/table-operations/create/emptyTable.md), whose columns you add with DQL, `timeTable` supplies its own `Timestamp` column and adds rows as time passes.
 
 ```groovy test-set=2 ticking-table order=null
 tickingTable = timeTable("PT1s")

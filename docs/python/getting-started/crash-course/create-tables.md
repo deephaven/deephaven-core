@@ -37,7 +37,7 @@ The two tables hold the same data but are created differently.
 
 ## Ticking tables
 
-You can create ticking tables to get a feel for live data in Deephaven. The [`time_table`](../../reference/table-operations/create/timeTable.md) method creates a ticking table. Unlike [`empty_table`](../../reference/table-operations/create/emptyTable.md), whose columns you add with DQL, `time_table` supplies its own `Timestamp` column and adds rows to represent a regular interval set by the input argument.
+You can create ticking tables to get a feel for live data in Deephaven. The [`time_table`](../../reference/table-operations/create/timeTable.md) method creates a ticking table. Unlike [`empty_table`](../../reference/table-operations/create/emptyTable.md), whose columns you add with DQL, `time_table` supplies its own `Timestamp` column and adds rows as time passes.
 
 ```python test-set=2 ticking-table order=null
 from deephaven import time_table
