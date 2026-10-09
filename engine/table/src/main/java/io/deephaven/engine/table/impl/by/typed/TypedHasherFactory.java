@@ -19,8 +19,6 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker;
-import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
-import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.join.IncrementalKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
@@ -152,36 +150,6 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("probeChunk", "value", false,
                     TypedKeyValueFactory::probeFound, TypedKeyValueFactory::probeMissing, probeValuesParam(),
                     ParameterSpec.builder(long.class, "missingValue").build()));
-        } else if (baseClass.equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
-            final ParameterSpec sequentialBuilders =
-                    ParameterSpec.builder(ObjectArraySource.class, "sequentialBuilders").build();
-
-            builder.classPrefix("RightIncrementalAsOfJoinHasher").packageGroup("asofjoin")
-                    .packageMiddle("rightincopen")
-                    .openAddressedAlternate(true)
-                    .supportTombstones(true)
-                    .stateType(byte.class).mainStateName("stateSource")
-                    .overflowOrAlternateStateName("alternateStateSource")
-                    .emptyStateName("ENTRY_EMPTY_STATE")
-                    .tombstoneStateName("ENTRY_TOMBSTONE_STATE")
-                    .includeOriginalSources(true)
-                    .supportRehash(true)
-                    .moveMainFull(TypedAsOfJoinFactory::rightIncrementalMoveMainFull)
-                    .moveMainAlternate(TypedAsOfJoinFactory::rightIncrementalMoveMainAlternate)
-                    .alwaysMoveMain(true)
-                    .rehashFullSetup(TypedAsOfJoinFactory::rightIncrementalRehashSetup);
-
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rowState",
-                    true, true, true, TypedAsOfJoinFactory::rightIncrementalBuildLeftFound,
-                    TypedAsOfJoinFactory::rightIncrementalBuildLeftInsert, sequentialBuilders));
-
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rowState", true,
-                    true, true, TypedAsOfJoinFactory::rightIncrementalRightFound,
-                    TypedAsOfJoinFactory::rightIncrementalRightInsert, sequentialBuilders));
-
-            builder.addProbe(new HasherConfig.ProbeSpec("probeRightSide", "rowState",
-                    true, TypedAsOfJoinFactory::rightIncrementalProbeDecorateRightFound, null,
-                    sequentialBuilders));
         } else if (baseClass.equals(UpdateByStateManagerTypedBase.class)) {
             final ClassName rowKeyType = ClassName.get(RowKeys.class);
             final ParameterizedTypeName chunkType =
@@ -373,16 +341,6 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.join.typed.statickeylongvalue.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
-                                        targetLoadFactor);
-                if (pregeneratedHasher != null) {
-                    return pregeneratedHasher;
-                }
-            } else if (hasherConfig.baseClass
-                    .equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
-                // noinspection unchecked
-                T pregeneratedHasher =
-                        (T) io.deephaven.engine.table.impl.asofjoin.typed.rightincopen.gen.TypedHashDispatcher
                                 .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
                                         targetLoadFactor);
                 if (pregeneratedHasher != null) {

@@ -67,8 +67,8 @@ public abstract class RightIncrementalHashedAsOfJoinStateManager extends RightIn
     public abstract void addTombstoneCandidate(int slot);
 
     /**
-     * Release every candidate bucket whose left and right sides are both empty, replacing it with a tombstone that a
-     * later build may reuse. The slot numbers reported by this cycle's builds and probes must no longer be in use, as a
+     * Release every candidate bucket whose left and right sides are both empty, removing its key so that a later build
+     * may reuse its slot. The slot numbers reported by this cycle's builds and probes must no longer be in use, as a
      * released slot may hold a different key after the next build.
      */
     public abstract void releaseEmptyBuckets();
@@ -152,5 +152,8 @@ public abstract class RightIncrementalHashedAsOfJoinStateManager extends RightIn
 
     public abstract byte getState(int slot);
 
-    public abstract int getTableSize();
+    /**
+     * @return one more than the largest slot a build or probe reports; every slot is in {@code [0, getSlotCapacity())}
+     */
+    public abstract int getSlotCapacity();
 }

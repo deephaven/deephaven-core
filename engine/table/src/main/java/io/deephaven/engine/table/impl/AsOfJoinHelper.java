@@ -15,11 +15,10 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.asofjoin.ChunkedAjUtils;
-import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalKeyIdAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.asofjoin.StaticKeyIdAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
-import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.asofjoin.BucketedChunkedAjMergedListener;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.exceptions.MismatchedJoinKeyException;
@@ -603,9 +602,10 @@ public class AsOfJoinHelper {
         }
         // endregion This block is mostly copied from rightStaticAj
 
-        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = TypedHasherFactory.make(
-                RightIncrementalAsOfJoinStateManagerTypedBase.class, leftSources, originalLeftSources,
-                buildParameters.hashTableSize(), control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager =
+                new RightIncrementalKeyIdAsOfJoinStateManager(
+                        leftSources, originalLeftSources, buildParameters.hashTableSize(),
+                        control.getMaximumLoadFactor());
         final IntegerArraySource slots = new IntegerArraySource();
 
         final int slotCount = asOfJoinStateManager.buildFromLeftSide(leftRowSetToUse, leftSourcesToUse, slots);
@@ -618,7 +618,7 @@ public class AsOfJoinHelper {
             asOfJoinStateManager.populateRightRowSetsFromIndexTable(slots, slotCount, rightDataIndex.rowSetColumn());
         }
 
-        final ArrayValuesCache leftValuesCache = new ArrayValuesCache(asOfJoinStateManager.getTableSize());
+        final ArrayValuesCache leftValuesCache = new ArrayValuesCache(asOfJoinStateManager.getSlotCapacity());
         final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> sortContext =
                 new SizedSafeCloseable<>(size -> LongSortKernel.makeContext(stampChunkType, order, size, true));
         final SizedSafeCloseable<ChunkSource.FillContext> leftStampFillContext =
@@ -1075,9 +1075,10 @@ public class AsOfJoinHelper {
         }
         // endregion This block is mostly copied from rightStaticAj
 
-        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager = TypedHasherFactory.make(
-                RightIncrementalAsOfJoinStateManagerTypedBase.class, leftSources, originalLeftSources,
-                buildParameters.hashTableSize(), control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+        final RightIncrementalHashedAsOfJoinStateManager asOfJoinStateManager =
+                new RightIncrementalKeyIdAsOfJoinStateManager(
+                        leftSources, originalLeftSources, buildParameters.hashTableSize(),
+                        control.getMaximumLoadFactor());
         final IntegerArraySource slots = new IntegerArraySource();
 
         int slotCount = asOfJoinStateManager.buildFromLeftSide(leftRowSetToUse, leftSourcesToUse, slots);

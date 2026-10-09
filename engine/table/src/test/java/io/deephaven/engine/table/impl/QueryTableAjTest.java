@@ -16,9 +16,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalKeyIdAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
-import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.PartitionedTable;
@@ -2428,7 +2427,8 @@ public class QueryTableAjTest {
 
     /**
      * A right incremental as-of join state manager releases buckets that lose all of their rows, so a stream of keys
-     * that each live for a single cycle occupies a hash table sized to the live keys rather than to every key seen.
+     * that each live for a single cycle reuses the slots of released keys rather than taking a new slot for every key
+     * seen.
      */
     @Test
     public void testAjStateManagerReleasesEmptyBuckets() {
@@ -2437,8 +2437,8 @@ public class QueryTableAjTest {
         final Table keyTable = TableTools.newTable(intCol("Key", IntStream.range(0, keysPerCycle * cycles).toArray()));
         final ColumnSource<?>[] keySources = new ColumnSource<?>[] {keyTable.getColumnSource("Key")};
 
-        final RightIncrementalHashedAsOfJoinStateManager stateManager = TypedHasherFactory.make(
-                RightIncrementalAsOfJoinStateManagerTypedBase.class, keySources, keySources, 1 << 3, 0.75, 0.7);
+        final RightIncrementalHashedAsOfJoinStateManager stateManager =
+                new RightIncrementalKeyIdAsOfJoinStateManager(keySources, keySources, 1 << 3, 0.75);
         final IntegerArraySource slots = new IntegerArraySource();
         final ObjectArraySource<RowSetBuilderSequential> builders =
                 new ObjectArraySource<>(RowSetBuilderSequential.class);
@@ -2476,7 +2476,7 @@ public class QueryTableAjTest {
 
             stateManager.releaseEmptyBuckets();
             assertEquals(keysPerCycle, stateManager.getNumEntries());
-            assertTrue("tableSize=" + stateManager.getTableSize(), stateManager.getTableSize() <= 64);
+            assertTrue("slotCapacity=" + stateManager.getSlotCapacity(), stateManager.getSlotCapacity() <= 64);
         }
     }
 
