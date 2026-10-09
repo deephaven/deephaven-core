@@ -63,7 +63,7 @@ class StaticChunkedCrossJoinStateManager
         validateKeySpaceSize(leftTable);
 
         final RowSetBuilderSequential resultRowSet = RowSetFactory.builderSequential();
-        hasher.probe(leftTable.getRowSet(), leftKeys, false, (rows, ids, statuses) -> {
+        hasher.probe(leftTable.getRowSet(), leftKeys, false, (rows, ids) -> {
             final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
             for (int ii = 0; ii < rowKeys.size(); ++ii) {
                 final long rowKey = rowKeys.get(ii);
@@ -98,7 +98,7 @@ class StaticChunkedCrossJoinStateManager
 
         // only the keys that are on the left need right rows
         hasher.probe(rightTable.getRowSet(), rightKeys, false,
-                (rows, ids, statuses) -> rightRowSets.add(rows, ids, hasher.idCapacity()));
+                (rows, ids) -> rightRowSets.add(rows, ids, hasher.idCapacity()));
         rightRowSets.build(hasher.idCapacity());
 
         // We can now validate key-space after all of our right rows have been aggregated into groups, which determined

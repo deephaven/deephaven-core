@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.naturaljoin;
 
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -442,17 +441,17 @@ public class IncrementalKeyIdNaturalJoinStateManager extends StaticNaturalJoinSt
             return;
         }
         ((KeyIdJoinContext) pc).probe(rightRowSet, rightSources, true,
-                (rowKeys, ids, statuses) -> removeRight(rowKeys, ids, statuses, modifiedSlotTracker));
+                (rowKeys, ids) -> removeRight(rowKeys, ids, modifiedSlotTracker));
         removeDeadIds();
     }
 
     private void removeRight(final LongChunk<OrderedRowKeys> rowKeys, final IntChunk<Values> ids,
-            final ByteChunk<Values> statuses, final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         for (int ii = 0; ii < ids.size(); ++ii) {
-            if (statuses.get(ii) != KeyIdHasher.FOUND) {
+            final int id = ids.get(ii);
+            if (id == KeyIdHasher.NULL_ID) {
                 throw Assert.statementNeverExecuted("Could not find existing state for removed right row");
             }
-            final int id = ids.get(ii);
             final long inputKey = rowKeys.get(ii);
             final long existingRightRowKey = rightState.getUnsafe(id);
             if (existingRightRowKey <= FIRST_DUPLICATE) {
@@ -497,7 +496,7 @@ public class IncrementalKeyIdNaturalJoinStateManager extends StaticNaturalJoinSt
                     changedPostShift,
                     (changedRows, previousKeys) -> KeyIdJoinContext.probeChunk(hasher, context, changedRows,
                             previousKeys,
-                            (rowKeys, ids, statuses) -> removeRight(rowKeys, ids, statuses, modifiedSlotTracker)));
+                            (rowKeys, ids) -> removeRight(rowKeys, ids, modifiedSlotTracker)));
         }
         removeDeadIds();
     }
@@ -508,12 +507,12 @@ public class IncrementalKeyIdNaturalJoinStateManager extends StaticNaturalJoinSt
         if (modified.isEmpty()) {
             return;
         }
-        ((KeyIdJoinContext) pc).probe(modified, rightSources, false, (rowKeys, ids, statuses) -> {
+        ((KeyIdJoinContext) pc).probe(modified, rightSources, false, (rowKeys, ids) -> {
             for (int ii = 0; ii < ids.size(); ++ii) {
-                if (statuses.get(ii) != KeyIdHasher.FOUND) {
+                final int id = ids.get(ii);
+                if (id == KeyIdHasher.NULL_ID) {
                     throw Assert.statementNeverExecuted("Could not find existing state for modified right row");
                 }
-                final int id = ids.get(ii);
                 final long existingRightRowKey = rightState.getUnsafe(id);
                 // a key with several right rows redirects its left rows to just one of them, so a modification of any
                 // other duplicate row leaves the left rows' values unchanged
@@ -537,12 +536,12 @@ public class IncrementalKeyIdNaturalJoinStateManager extends StaticNaturalJoinSt
         }
         final KeyIdJoinContext jc = (KeyIdJoinContext) pc;
         jc.startShifts(shiftDelta);
-        jc.probe(shiftedRowSet, rightSources, false, (rowKeys, ids, statuses) -> {
+        jc.probe(shiftedRowSet, rightSources, false, (rowKeys, ids) -> {
             for (int ii = 0; ii < ids.size(); ++ii) {
-                if (statuses.get(ii) != KeyIdHasher.FOUND) {
+                final int id = ids.get(ii);
+                if (id == KeyIdHasher.NULL_ID) {
                     throw Assert.statementNeverExecuted("Could not find existing state for shifted right row");
                 }
-                final int id = ids.get(ii);
                 final long existingRightRowKey = rightState.getUnsafe(id);
                 final long keyToShift = rowKeys.get(ii);
                 if (existingRightRowKey == keyToShift - shiftDelta) {
@@ -629,18 +628,18 @@ public class IncrementalKeyIdNaturalJoinStateManager extends StaticNaturalJoinSt
             return;
         }
         ((KeyIdJoinContext) pc).probe(leftRows, leftSources, true,
-                (rowKeys, ids, statuses) -> removeLeft(rowKeys, ids, statuses, modifiedSlotTracker));
+                (rowKeys, ids) -> removeLeft(rowKeys, ids, modifiedSlotTracker));
         applyLeftRemovals(modifiedSlotTracker);
         removeDeadIds();
     }
 
     private void removeLeft(final LongChunk<OrderedRowKeys> rowKeys, final IntChunk<Values> ids,
-            final ByteChunk<Values> statuses, final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         for (int ii = 0; ii < ids.size(); ++ii) {
-            if (statuses.get(ii) != KeyIdHasher.FOUND) {
+            final int id = ids.get(ii);
+            if (id == KeyIdHasher.NULL_ID) {
                 throw Assert.statementNeverExecuted("Could not find existing state for removed left row");
             }
-            final int id = ids.get(ii);
             final long rightRowKeyForState = rightState.getUnsafe(id);
             final WritableRowSet left = leftRowSet.getUnsafe(id);
             if (left.size() == 1) {
@@ -691,7 +690,7 @@ public class IncrementalKeyIdNaturalJoinStateManager extends StaticNaturalJoinSt
                     changedPostShift,
                     (changedRows, previousKeys) -> KeyIdJoinContext.probeChunk(hasher, context, changedRows,
                             previousKeys,
-                            (rowKeys, ids, statuses) -> removeLeft(rowKeys, ids, statuses, modifiedSlotTracker)));
+                            (rowKeys, ids) -> removeLeft(rowKeys, ids, modifiedSlotTracker)));
         }
         // Perform the accumulated removals from each key's left row set in a single bulk remove per key.
         applyLeftRemovals(modifiedSlotTracker);
@@ -707,12 +706,12 @@ public class IncrementalKeyIdNaturalJoinStateManager extends StaticNaturalJoinSt
         // Accumulate each shifted row's post-shift key into its key's builder in the tracker; the left row sets are
         // then moved in bulk, one remove of the pre-shift keys and one insert of the post-shift keys per key, rather
         // than one key at a time.
-        ((KeyIdJoinContext) pc).probe(shiftedRowSet, leftSources, false, (rowKeys, ids, statuses) -> {
+        ((KeyIdJoinContext) pc).probe(shiftedRowSet, leftSources, false, (rowKeys, ids) -> {
             for (int ii = 0; ii < ids.size(); ++ii) {
-                if (statuses.get(ii) != KeyIdHasher.FOUND) {
+                final int id = ids.get(ii);
+                if (id == KeyIdHasher.NULL_ID) {
                     throw Assert.statementNeverExecuted("Could not find existing state for shifted left row");
                 }
-                final int id = ids.get(ii);
                 modifiedTrackerCookieSource.set(id, modifiedSlotTracker.addLeftShift(
                         modifiedTrackerCookieSource.getUnsafe(id), id, rowKeys.get(ii), rightState.getUnsafe(id)));
             }

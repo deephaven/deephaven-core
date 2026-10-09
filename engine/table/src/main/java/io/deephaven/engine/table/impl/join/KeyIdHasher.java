@@ -31,11 +31,11 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
  * Ids start at zero and stay with their key; moving entries during a rehash does not change them. Callers therefore
  * keep per-key state in their own arrays indexed by id, and never need to update it when the table grows.
  * <p>
- * Keys are built or probed a chunk at a time. Each row's result is its key's id and a status: {@link #FOUND} or
- * {@link #ADDED} for a build, {@link #FOUND} or {@link #MISSING} for a probe. The rows can come from a row sequence and
- * column sources, through {@link #build(RowSequence, ColumnSource[], IdChunkConsumer)} and
- * {@link #probe(RowSequence, ColumnSource[], boolean, IdChunkConsumer)}, or from key chunks the caller already holds,
- * through {@link #build(Context, Chunk[])} and {@link #probe(Context, Chunk[])}.
+ * Keys are built or probed a chunk at a time. A build reports each row's key id and a status, {@link #ADDED} or
+ * {@link #FOUND}; a probe reports only the id, which is {@link #NULL_ID} for a key that is not in the table. The rows
+ * can come from a row sequence and column sources, through {@link #build(RowSequence, ColumnSource[], IdChunkConsumer)}
+ * and {@link #probe(RowSequence, ColumnSource[], boolean, ProbeChunkConsumer)}, or from key chunks the caller already
+ * holds, through {@link #build(Context, Chunk[])} and {@link #probe(Context, Chunk[])}.
  * <p>
  * {@link StaticKeyIdHasherTypedBase} is built once and then only probed, so it only adds keys.
  * {@link IncrementalKeyIdHasherTypedBase} serves keys that tick: it also removes them, reusing their ids, and grows
@@ -47,17 +47,15 @@ public abstract class KeyIdHasher {
      */
     public static final int NULL_ID = QueryConstants.NULL_INT;
 
-    /** The status of a row whose key was already in the table. */
+    /** The status of a built row whose key was already in the table. */
     public static final byte FOUND = 0;
-    /** The status of a row whose key a build added to the table, with a new or reused id. */
+    /** The status of a built row whose key the build added to the table, with a new or reused id. */
     public static final byte ADDED = 1;
-    /** The status of a probed row whose key is not in the table; its id is {@link #NULL_ID}. */
-    public static final byte MISSING = 2;
 
     protected static final int EMPTY_ID = NULL_ID;
 
     /**
-     * Receives the ids for one chunk of rows.
+     * Receives the ids and statuses for one chunk of built rows.
      */
     @FunctionalInterface
     public interface IdChunkConsumer {
@@ -67,6 +65,19 @@ public abstract class KeyIdHasher {
          * @param statuses the status of each row, parallel to {@code rows}
          */
         void accept(RowSequence rows, IntChunk<Values> ids, ByteChunk<Values> statuses);
+    }
+
+    /**
+     * Receives the ids for one chunk of probed rows.
+     */
+    @FunctionalInterface
+    public interface ProbeChunkConsumer {
+        /**
+         * @param rows the rows of this chunk
+         * @param ids the id of each row's key, or {@link #NULL_ID} for a key that is not in the table, parallel to
+         *        {@code rows}
+         */
+        void accept(RowSequence rows, IntChunk<Values> ids);
     }
 
     /**
@@ -94,16 +105,20 @@ public abstract class KeyIdHasher {
         }
 
         /**
-         * @return the statuses from the last build or probe with this context
+         * @return the statuses from the last build with this context; a probe does not set them
          */
         public ByteChunk<Values> statuses() {
             return statuses;
         }
 
-        private void setSize(final int size) {
+        private void setBuildSize(final int size) {
+            setProbeSize(size);
+            statuses.setSize(size);
+        }
+
+        private void setProbeSize(final int size) {
             Require.leq(size, "size", capacity, "capacity");
             ids.setSize(size);
-            statuses.setSize(size);
         }
 
         @Override
@@ -164,7 +179,7 @@ public abstract class KeyIdHasher {
      */
     public void build(@NotNull final Context context, @NotNull final Chunk<? extends Values>[] keyChunks) {
         final int size = keyChunks[0].size();
-        context.setSize(size);
+        context.setBuildSize(size);
         if (size == 0) {
             return;
         }
@@ -176,18 +191,18 @@ public abstract class KeyIdHasher {
 
     /**
      * Find the id of each key in {@code keyChunks}, reporting {@link #NULL_ID} for a key that is not in the table. The
-     * results are in the context's {@link Context#ids() ids} and {@link Context#statuses() statuses}.
+     * results are in the context's {@link Context#ids() ids}.
      *
      * @param context a context from {@link #makeContext}
      * @param keyChunks one chunk per key column, all the same size, at most the context's capacity
      */
     public void probe(@NotNull final Context context, @NotNull final Chunk<? extends Values>[] keyChunks) {
         final int size = keyChunks[0].size();
-        context.setSize(size);
+        context.setProbeSize(size);
         if (size == 0) {
             return;
         }
-        probe(keyChunks, context.ids, context.statuses);
+        probe(keyChunks, context.ids);
     }
 
     /**
@@ -195,13 +210,16 @@ public abstract class KeyIdHasher {
      *
      * @param rows the rows to build
      * @param sources the key sources
-     * @param consumer receives the ids, one chunk of rows at a time
+     * @param consumer receives the ids and statuses, one chunk of rows at a time
      */
     public void build(
             @NotNull final RowSequence rows,
             @NotNull final ColumnSource<?>[] sources,
             @NotNull final IdChunkConsumer consumer) {
-        forEachChunk(rows, sources, false, true, consumer);
+        forEachChunk(rows, sources, false, (chunkRows, keyChunks, context) -> {
+            build(context, keyChunks);
+            consumer.accept(chunkRows, context.ids, context.statuses);
+        });
     }
 
     /**
@@ -216,16 +234,23 @@ public abstract class KeyIdHasher {
             @NotNull final RowSequence rows,
             @NotNull final ColumnSource<?>[] sources,
             final boolean usePrev,
-            @NotNull final IdChunkConsumer consumer) {
-        forEachChunk(rows, sources, usePrev, false, consumer);
+            @NotNull final ProbeChunkConsumer consumer) {
+        forEachChunk(rows, sources, usePrev, (chunkRows, keyChunks, context) -> {
+            probe(context, keyChunks);
+            consumer.accept(chunkRows, context.ids);
+        });
+    }
+
+    @FunctionalInterface
+    private interface ChunkAction {
+        void apply(RowSequence chunkRows, Chunk<Values>[] keyChunks, Context context);
     }
 
     private void forEachChunk(
             @NotNull final RowSequence rows,
             @NotNull final ColumnSource<?>[] sources,
             final boolean usePrev,
-            final boolean build,
-            @NotNull final IdChunkConsumer consumer) {
+            @NotNull final ChunkAction action) {
         if (rows.isEmpty()) {
             return;
         }
@@ -242,12 +267,7 @@ public abstract class KeyIdHasher {
                 } else {
                     getKeyChunks(sources, bc.getContexts, sourceKeyChunks, chunkOk);
                 }
-                if (build) {
-                    build(context, sourceKeyChunks);
-                } else {
-                    probe(context, sourceKeyChunks);
-                }
-                consumer.accept(chunkOk, context.ids, context.statuses);
+                action.apply(chunkOk, sourceKeyChunks, context);
                 bc.resetSharedContexts();
             }
         }
@@ -288,8 +308,7 @@ public abstract class KeyIdHasher {
     protected abstract void build(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
             WritableByteChunk<Values> statuses);
 
-    protected abstract void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
-            WritableByteChunk<Values> statuses);
+    protected abstract void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids);
 
     protected abstract void rehashInternalFull(int oldSize);
 }

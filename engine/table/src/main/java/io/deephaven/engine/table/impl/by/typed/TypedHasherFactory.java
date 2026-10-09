@@ -118,7 +118,7 @@ public class TypedHasherFactory {
                     TypedKeyIdFactory::found, TypedKeyIdFactory::staticInsert, keyIdsParam(), keyStatusesParam()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
-                    TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam(), keyStatusesParam()));
+                    TypedKeyIdFactory::probeFound, TypedKeyIdFactory::probeMissing, keyIdsParam()));
         } else if (baseClass.equals(IncrementalKeyIdHasherTypedBase.class)) {
             builder.classPrefix("IncrementalKeyIdHasher").packageGroup("join").packageMiddle("inckeyid")
                     .openAddressedAlternate(true)
@@ -139,7 +139,7 @@ public class TypedHasherFactory {
                     TypedKeyIdFactory::found, TypedKeyIdFactory::insert, keyIdsParam(), keyStatusesParam()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
-                    TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam(), keyStatusesParam()));
+                    TypedKeyIdFactory::probeFound, TypedKeyIdFactory::probeMissing, keyIdsParam()));
         } else if (baseClass.equals(StaticKeyLongValueHasherTypedBase.class)) {
             builder.classPrefix("StaticKeyLongValueHasher").packageGroup("join").packageMiddle("statickeylongvalue")
                     .openAddressedAlternate(false)

@@ -443,7 +443,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             return;
         }
         try (final PrevRowKeys prevRowKeys = new PrevRowKeys(rows, prevRows)) {
-            hasher.probe(rows, sources, usePrev, (chunkRows, slots, statuses) -> {
+            hasher.probe(rows, sources, usePrev, (chunkRows, slots) -> {
                 final LongChunk<OrderedRowKeys> rowKeys = chunkRows.asRowKeyChunk();
                 final LongChunk<OrderedRowKeys> prevKeys = prevRowKeys.next(chunkRows);
                 for (int ii = 0; ii < rowKeys.size(); ++ii) {

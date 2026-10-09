@@ -71,8 +71,7 @@ final class StaticKeyIdHasherFloat extends StaticKeyIdHasherTypedBase {
         }
     }
 
-    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
-            WritableByteChunk<Values> statuses) {
+    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids) {
         final FloatChunk<Values> keyChunk0 = sourceKeyChunks[0].asFloatChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -85,7 +84,6 @@ final class StaticKeyIdHasherFloat extends StaticKeyIdHasherTypedBase {
             while (!isStateEmpty(idValue = mainId.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     ids.set(chunkPosition, idValue);
-                    statuses.set(chunkPosition, FOUND);
                     found = true;
                     break;
                 }
@@ -96,7 +94,6 @@ final class StaticKeyIdHasherFloat extends StaticKeyIdHasherTypedBase {
             }
             if (!found) {
                 ids.set(chunkPosition, NULL_ID);
-                statuses.set(chunkPosition, MISSING);
             }
         }
     }

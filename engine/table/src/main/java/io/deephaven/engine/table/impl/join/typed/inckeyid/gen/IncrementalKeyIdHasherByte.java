@@ -115,8 +115,7 @@ final class IncrementalKeyIdHasherByte extends IncrementalKeyIdHasherTypedBase {
         }
     }
 
-    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
-            WritableByteChunk<Values> statuses) {
+    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids) {
         final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -134,7 +133,6 @@ final class IncrementalKeyIdHasherByte extends IncrementalKeyIdHasherTypedBase {
                         break;
                     }
                     ids.set(chunkPosition, idValue);
-                    statuses.set(chunkPosition, FOUND);
                     found = true;
                     break;
                 }
@@ -146,7 +144,6 @@ final class IncrementalKeyIdHasherByte extends IncrementalKeyIdHasherTypedBase {
             if (!found) {
                 if (!searchAlternate) {
                     ids.set(chunkPosition, NULL_ID);
-                    statuses.set(chunkPosition, MISSING);
                 } else {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     boolean alternateFound = false;
@@ -158,7 +155,6 @@ final class IncrementalKeyIdHasherByte extends IncrementalKeyIdHasherTypedBase {
                                     break;
                                 }
                                 ids.set(chunkPosition, idValue);
-                                statuses.set(chunkPosition, FOUND);
                                 alternateFound = true;
                                 break;
                             }
@@ -170,7 +166,6 @@ final class IncrementalKeyIdHasherByte extends IncrementalKeyIdHasherTypedBase {
                     }
                     if (!alternateFound) {
                         ids.set(chunkPosition, NULL_ID);
-                        statuses.set(chunkPosition, MISSING);
                     }
                 }
             }

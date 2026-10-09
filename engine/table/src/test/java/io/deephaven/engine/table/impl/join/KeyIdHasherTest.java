@@ -65,7 +65,7 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
 
         final Table missing = newTable(longCol("K", 16));
         hasher.probe(missing.getRowSet(), sources(missing), false,
-                (rows, ids, statuses) -> assertEquals(KeyIdHasher.NULL_ID, ids.get(0)));
+                (rows, ids) -> assertEquals(KeyIdHasher.NULL_ID, ids.get(0)));
     }
 
     @Test
@@ -111,13 +111,12 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
                 hasher.probe(context, keyChunks);
                 for (int ii = 0; ii < keys.length; ++ii) {
                     assertEquals((int) expected.get(keys[ii]), context.ids().get(ii));
-                    assertEquals(KeyIdHasher.FOUND, context.statuses().get(ii));
                 }
             }
             // noinspection unchecked
             hasher.probe(context, new Chunk[] {LongChunk.chunkWrap(new long[] {-1, -2})});
             assertEquals(KeyIdHasher.NULL_ID, context.ids().get(0));
-            assertEquals(KeyIdHasher.MISSING, context.statuses().get(1));
+            assertEquals(KeyIdHasher.NULL_ID, context.ids().get(1));
         }
         assertEquals(expected.size(), hasher.size());
     }
@@ -172,7 +171,7 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
         hasher.complete();
 
         // probes are unaffected
-        hasher.probe(keys.getRowSet(), sources(keys), false, (rows, ids, statuses) -> {
+        hasher.probe(keys.getRowSet(), sources(keys), false, (rows, ids) -> {
             assertEquals(0, ids.get(0));
             assertEquals(1, ids.get(1));
             assertEquals(0, ids.get(2));
@@ -275,20 +274,18 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
             }
 
             // every key that was built or removed probes to its id, or to NULL_ID once removed
-            hasher.probe(toBuild.getRowSet(), sources, false, (rows, ids, statuses) -> {
+            hasher.probe(toBuild.getRowSet(), sources, false, (rows, ids) -> {
                 final int[] position = {0};
                 rows.forAllRowKeys(rowKey -> {
                     final Integer id = expected.get(keyOf(sources, rowKey));
-                    assertEquals(id == null ? KeyIdHasher.MISSING : KeyIdHasher.FOUND, statuses.get(position[0]));
                     assertEquals(id == null ? KeyIdHasher.NULL_ID : (int) id, ids.get(position[0]++));
                 });
             });
             if (!removed.isEmpty()) {
                 final Table removedKeys = keysTable(prototype, removed);
-                hasher.probe(removedKeys.getRowSet(), sources(removedKeys), false, (rows, ids, statuses) -> {
+                hasher.probe(removedKeys.getRowSet(), sources(removedKeys), false, (rows, ids) -> {
                     for (int ii = 0; ii < ids.size(); ++ii) {
                         assertEquals(KeyIdHasher.NULL_ID, ids.get(ii));
-                        assertEquals(KeyIdHasher.MISSING, statuses.get(ii));
                     }
                 });
             }

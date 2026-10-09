@@ -15,21 +15,23 @@ import io.deephaven.engine.table.impl.join.KeyIdHasher;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 
+import java.util.function.Consumer;
+
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 /**
  * The context of one natural join operation over a {@link KeyIdHasher}: it reads the key chunks of the rows, builds or
- * probes them, and hands each chunk's ids to a {@link ChunkHandler}. One context serves every chunk of an operation, so
- * an incremental hasher's rehash credits carry from chunk to chunk.
+ * probes them, and hands each chunk's ids to a {@link ChunkHandler} or a {@link ProbeChunkHandler}. One context serves
+ * every chunk of an operation, so an incremental hasher's rehash credits carry from chunk to chunk.
  * <p>
  * It also holds the right duplicate shifts that must wait until every shifted row of a positive shift has been probed.
  */
 final class KeyIdJoinContext extends BuildOrProbeContext {
 
     /**
-     * Receives the ids of one chunk of rows.
+     * Receives the ids and statuses of one chunk of built rows.
      */
     @FunctionalInterface
     interface ChunkHandler {
@@ -39,6 +41,19 @@ final class KeyIdJoinContext extends BuildOrProbeContext {
          * @param statuses the status of each row, parallel to {@code rowKeys}
          */
         void accept(LongChunk<OrderedRowKeys> rowKeys, IntChunk<Values> ids, ByteChunk<Values> statuses);
+    }
+
+    /**
+     * Receives the ids of one chunk of probed rows.
+     */
+    @FunctionalInterface
+    interface ProbeChunkHandler {
+        /**
+         * @param rowKeys the row keys of the chunk
+         * @param ids the id of each row's key, or {@link KeyIdHasher#NULL_ID} for a key that is not in the table,
+         *        parallel to {@code rowKeys}
+         */
+        void accept(LongChunk<OrderedRowKeys> rowKeys, IntChunk<Values> ids);
     }
 
     private final KeyIdHasher hasher;
@@ -61,19 +76,25 @@ final class KeyIdJoinContext extends BuildOrProbeContext {
      * Build the keys of {@code rows}, adding the keys that are not yet in the table.
      */
     void build(final RowSequence rows, final ColumnSource<?>[] sources, final ChunkHandler handler) {
-        forEachChunk(rows, sources, false, true, handler);
+        forEachChunk(rows, sources, false, chunkOk -> {
+            hasher.build(hasherContext, keyChunks);
+            handler.accept(chunkOk.asRowKeyChunk(), hasherContext.ids(), hasherContext.statuses());
+        });
     }
 
     /**
      * Probe the keys of {@code rows}.
      */
     void probe(final RowSequence rows, final ColumnSource<?>[] sources, final boolean usePrev,
-            final ChunkHandler handler) {
-        forEachChunk(rows, sources, usePrev, false, handler);
+            final ProbeChunkHandler handler) {
+        forEachChunk(rows, sources, usePrev, chunkOk -> {
+            hasher.probe(hasherContext, keyChunks);
+            handler.accept(chunkOk.asRowKeyChunk(), hasherContext.ids());
+        });
     }
 
     private void forEachChunk(final RowSequence rows, final ColumnSource<?>[] sources, final boolean usePrev,
-            final boolean build, final ChunkHandler handler) {
+            final Consumer<RowSequence> chunkAction) {
         try (final RowSequence.Iterator rsIt = rows.getRowSequenceIterator()) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(chunkSize);
@@ -82,12 +103,7 @@ final class KeyIdJoinContext extends BuildOrProbeContext {
                 } else {
                     getKeyChunks(sources, getContexts, keyChunks, chunkOk);
                 }
-                if (build) {
-                    hasher.build(hasherContext, keyChunks);
-                } else {
-                    hasher.probe(hasherContext, keyChunks);
-                }
-                handler.accept(chunkOk.asRowKeyChunk(), hasherContext.ids(), hasherContext.statuses());
+                chunkAction.accept(chunkOk);
                 resetSharedContexts();
             }
         }
@@ -103,9 +119,9 @@ final class KeyIdJoinContext extends BuildOrProbeContext {
      * @param handler receives the ids
      */
     static void probeChunk(final KeyIdHasher hasher, final KeyIdHasher.Context context, final RowSequence rows,
-            final Chunk<Values>[] keyChunks, final ChunkHandler handler) {
+            final Chunk<Values>[] keyChunks, final ProbeChunkHandler handler) {
         hasher.probe(context, keyChunks);
-        handler.accept(rows.asRowKeyChunk(), context.ids(), context.statuses());
+        handler.accept(rows.asRowKeyChunk(), context.ids());
     }
 
     /**

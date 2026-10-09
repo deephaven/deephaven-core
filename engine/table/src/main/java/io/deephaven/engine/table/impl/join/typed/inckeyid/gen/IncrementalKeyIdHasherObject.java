@@ -116,8 +116,7 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
         }
     }
 
-    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
-            WritableByteChunk<Values> statuses) {
+    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -135,7 +134,6 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                         break;
                     }
                     ids.set(chunkPosition, idValue);
-                    statuses.set(chunkPosition, FOUND);
                     found = true;
                     break;
                 }
@@ -147,7 +145,6 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
             if (!found) {
                 if (!searchAlternate) {
                     ids.set(chunkPosition, NULL_ID);
-                    statuses.set(chunkPosition, MISSING);
                 } else {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     boolean alternateFound = false;
@@ -159,7 +156,6 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                                     break;
                                 }
                                 ids.set(chunkPosition, idValue);
-                                statuses.set(chunkPosition, FOUND);
                                 alternateFound = true;
                                 break;
                             }
@@ -171,7 +167,6 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                     }
                     if (!alternateFound) {
                         ids.set(chunkPosition, NULL_ID);
-                        statuses.set(chunkPosition, MISSING);
                     }
                 }
             }

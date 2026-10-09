@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.naturaljoin;
 
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -143,13 +142,13 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
             return;
         }
         try (final KeyIdJoinContext pc = new KeyIdJoinContext(hasher, rightSources, rightRowSet.size())) {
-            pc.probe(rightRowSet, rightSources, false, (rowKeys, ids, statuses) -> {
+            pc.probe(rightRowSet, rightSources, false, (rowKeys, ids) -> {
                 for (int ii = 0; ii < ids.size(); ++ii) {
-                    if (statuses.get(ii) != KeyIdHasher.FOUND) {
+                    final int id = ids.get(ii);
+                    if (id == KeyIdHasher.NULL_ID) {
                         // a right key that is not on the left matches nothing
                         continue;
                     }
-                    final int id = ids.get(ii);
                     final long inputKey = rowKeys.get(ii);
                     final long rightRowKeyForState = rightRowKey.getUnsafe(id);
                     if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
@@ -198,13 +197,13 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
         if (rightRowSet.isEmpty()) {
             return;
         }
-        ((KeyIdJoinContext) pc).probe(rightRowSet, rightSources, false, (rowKeys, ids, statuses) -> {
+        ((KeyIdJoinContext) pc).probe(rightRowSet, rightSources, false, (rowKeys, ids) -> {
             for (int ii = 0; ii < ids.size(); ++ii) {
-                if (statuses.get(ii) != KeyIdHasher.FOUND) {
+                final int id = ids.get(ii);
+                if (id == KeyIdHasher.NULL_ID) {
                     // a right key that is not on the left matches nothing
                     continue;
                 }
-                final int id = ids.get(ii);
                 final long inputKey = rowKeys.get(ii);
                 final long rightRowKeyForState = rightRowKey.getUnsafe(id);
                 if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
@@ -257,17 +256,17 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
             return;
         }
         ((KeyIdJoinContext) pc).probe(rightRowSet, rightSources, true,
-                (rowKeys, ids, statuses) -> removeRight(rowKeys, ids, statuses, modifiedSlotTracker));
+                (rowKeys, ids) -> removeRight(rowKeys, ids, modifiedSlotTracker));
     }
 
     private void removeRight(final LongChunk<OrderedRowKeys> rowKeys, final IntChunk<Values> ids,
-            final ByteChunk<Values> statuses, final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         for (int ii = 0; ii < ids.size(); ++ii) {
-            if (statuses.get(ii) != KeyIdHasher.FOUND) {
+            final int id = ids.get(ii);
+            if (id == KeyIdHasher.NULL_ID) {
                 // a right key that is not on the left was never recorded
                 continue;
             }
-            final int id = ids.get(ii);
             final long inputKey = rowKeys.get(ii);
             final long rightRowKeyForState = rightRowKey.getUnsafe(id);
             if (rightRowKeyForState <= FIRST_DUPLICATE) {
@@ -309,7 +308,7 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
                     changedPostShift,
                     (changedRows, previousKeys) -> KeyIdJoinContext.probeChunk(hasher, context, changedRows,
                             previousKeys,
-                            (rowKeys, ids, statuses) -> removeRight(rowKeys, ids, statuses, modifiedSlotTracker)));
+                            (rowKeys, ids) -> removeRight(rowKeys, ids, modifiedSlotTracker)));
         }
     }
 
@@ -319,12 +318,12 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
         if (modified.isEmpty()) {
             return;
         }
-        ((KeyIdJoinContext) pc).probe(modified, rightSources, false, (rowKeys, ids, statuses) -> {
+        ((KeyIdJoinContext) pc).probe(modified, rightSources, false, (rowKeys, ids) -> {
             for (int ii = 0; ii < ids.size(); ++ii) {
-                if (statuses.get(ii) != KeyIdHasher.FOUND) {
+                final int id = ids.get(ii);
+                if (id == KeyIdHasher.NULL_ID) {
                     continue;
                 }
-                final int id = ids.get(ii);
                 final long oldRightRow = rightRowKey.getUnsafe(id);
                 // a key with several right rows redirects its left rows to just one of them, so a modification of any
                 // other duplicate row leaves the left rows' values unchanged
@@ -347,12 +346,12 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
         }
         final KeyIdJoinContext jc = (KeyIdJoinContext) pc;
         jc.startShifts(shiftDelta);
-        jc.probe(shiftedRowSet, rightSources, false, (rowKeys, ids, statuses) -> {
+        jc.probe(shiftedRowSet, rightSources, false, (rowKeys, ids) -> {
             for (int ii = 0; ii < ids.size(); ++ii) {
-                if (statuses.get(ii) != KeyIdHasher.FOUND) {
+                final int id = ids.get(ii);
+                if (id == KeyIdHasher.NULL_ID) {
                     continue;
                 }
-                final int id = ids.get(ii);
                 final long existingRightRowKey = rightRowKey.getUnsafe(id);
                 final long keyToShift = rowKeys.get(ii);
                 if (existingRightRowKey == keyToShift - shiftDelta) {

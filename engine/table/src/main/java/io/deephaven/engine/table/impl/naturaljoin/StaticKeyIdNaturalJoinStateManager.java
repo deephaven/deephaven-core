@@ -121,15 +121,15 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
         if (rightTable.isEmpty()) {
             return;
         }
-        hasher.probe(rightTable.getRowSet(), rightSources, false, (rows, ids, statuses) -> {
+        hasher.probe(rightTable.getRowSet(), rightSources, false, (rows, ids) -> {
             final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
             final int size = ids.size();
             for (int ii = 0; ii < size; ++ii) {
-                if (statuses.get(ii) != KeyIdHasher.FOUND) {
+                final int id = ids.get(ii);
+                if (id == KeyIdHasher.NULL_ID) {
                     // a right key that is not on the left matches nothing
                     continue;
                 }
-                final int id = ids.get(ii);
                 if (rightState.getUnsafe(id) == NO_RIGHT_STATE_VALUE) {
                     rightState.set(id, rowKeys.get(ii));
                 } else if (joinType == NaturalJoinType.LAST_MATCH) {

@@ -115,7 +115,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     void removeLeft(final RowSet leftToRemove, final StateTrackingCallback trackingCallback) {
         final boolean usePrev = true;
-        hasher.probe(leftToRemove, leftKeySources, usePrev, (rows, slots, statuses) -> {
+        hasher.probe(leftToRemove, leftKeySources, usePrev, (rows, slots) -> {
             final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
             for (int ii = 0; ii < rowKeys.size(); ++ii) {
                 final long leftKey = rowKeys.get(ii);
@@ -127,7 +127,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     void addLeft(final RowSet leftToAdd, final StateTrackingCallbackWithRightIndex trackingCallback) {
         final boolean usePrev = false;
-        hasher.probe(leftToAdd, leftKeySources, usePrev, (rows, slots, statuses) -> {
+        hasher.probe(leftToAdd, leftKeySources, usePrev, (rows, slots) -> {
             final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
             for (int ii = 0; ii < rowKeys.size(); ++ii) {
                 final long rowKey = rowKeys.get(ii);
@@ -159,7 +159,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         final RowSetBuilderSequential modBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential rmResultBuilder = RowSetFactory.builderSequential();
         try (final RowSet.Iterator pit = upstream.getModifiedPreShift().iterator()) {
-            hasher.probe(upstream.modified(), leftKeySources, usePrev, (rows, slots, statuses) -> {
+            hasher.probe(upstream.modified(), leftKeySources, usePrev, (rows, slots) -> {
                 final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
                 for (int ii = 0; ii < rowKeys.size(); ++ii) {
                     final long currKey = rowKeys.get(ii);

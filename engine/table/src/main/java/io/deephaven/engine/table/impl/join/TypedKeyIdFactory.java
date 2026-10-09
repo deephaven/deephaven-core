@@ -31,9 +31,12 @@ public class TypedKeyIdFactory {
         builder.addStatement("growIfFull()");
     }
 
+    public static void probeFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
+        builder.addStatement("ids.set(chunkPosition, idValue)");
+    }
+
     public static void probeMissing(CodeBlock.Builder builder) {
         builder.addStatement("ids.set(chunkPosition, NULL_ID)");
-        builder.addStatement("statuses.set(chunkPosition, MISSING)");
     }
 
     public static void moveMain(CodeBlock.Builder builder) {

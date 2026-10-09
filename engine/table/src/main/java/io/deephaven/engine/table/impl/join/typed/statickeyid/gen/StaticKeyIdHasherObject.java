@@ -72,8 +72,7 @@ final class StaticKeyIdHasherObject extends StaticKeyIdHasherTypedBase {
         }
     }
 
-    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
-            WritableByteChunk<Values> statuses) {
+    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -86,7 +85,6 @@ final class StaticKeyIdHasherObject extends StaticKeyIdHasherTypedBase {
             while (!isStateEmpty(idValue = mainId.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     ids.set(chunkPosition, idValue);
-                    statuses.set(chunkPosition, FOUND);
                     found = true;
                     break;
                 }
@@ -97,7 +95,6 @@ final class StaticKeyIdHasherObject extends StaticKeyIdHasherTypedBase {
             }
             if (!found) {
                 ids.set(chunkPosition, NULL_ID);
-                statuses.set(chunkPosition, MISSING);
             }
         }
     }
