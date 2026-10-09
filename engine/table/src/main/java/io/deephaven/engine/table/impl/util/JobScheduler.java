@@ -280,7 +280,8 @@ public interface JobScheduler {
          * iteration's failure, so that the iteration ends in {@code onError} rather than in {@code onComplete}. It is
          * not thrown, though an {@link Error} is rethrown once recorded. The refused invoker is closed, since nothing
          * else will run it; see {@link #abandon} for the others. A submission that throws after its job already ran on
-         * this thread did not refuse it, and its exception is the caller's.
+         * this thread did not refuse it, and its exception is the caller's, thrown once {@link #abandon} has closed the
+         * invokers that have not started.
          * </p>
          *
          * @param scheduler the scheduler to submit the invokers to
@@ -340,7 +341,8 @@ public interface JobScheduler {
                 if (submitting != null && !submitting.tryStart()) {
                     // The invoker started before submit threw, so the scheduler ran its job inline and did not refuse
                     // it. A started invoker owns its own lifecycle and delivered any failure of its tasks itself, so
-                    // this exception belongs to the caller.
+                    // this exception belongs to the caller, who would otherwise wait on its own unstarted invoker.
+                    abandon(null, invokers, callerParticipates);
                     throw e;
                 }
                 onTaskError(e);
@@ -359,11 +361,11 @@ public interface JobScheduler {
         }
 
         /**
-         * After a failure to start the iteration, which has already been recorded: close {@code refused}, which nothing
-         * else will run. When the caller takes part, also close every other invoker that has not started, so that the
-         * caller does not wait for jobs a queueing scheduler may start late, or never, if they are queued behind this
-         * thread; one the scheduler starts later finds itself taken and does nothing. Otherwise the scheduler starts
-         * the invokers it accepted, and they find the failure and close.
+         * After the iteration failed to start, or a submission threw after running its job on this thread: close
+         * {@code refused}, which nothing else will run. When the caller takes part, also close every other invoker that
+         * has not started, so that the caller does not wait for jobs a queueing scheduler may start late, or never, if
+         * they are queued behind this thread; one the scheduler starts later finds itself taken and does nothing.
+         * Otherwise the scheduler starts the invokers it accepted, which close at once if the iteration has failed.
          *
          * @param refused the invoker whose submission the scheduler refused, already taken by this thread, or null
          */

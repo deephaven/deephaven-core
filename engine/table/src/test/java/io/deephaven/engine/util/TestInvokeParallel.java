@@ -774,6 +774,26 @@ public class TestInvokeParallel {
                         .allSatisfy(suppressed -> assertThat(suppressed.getCause()).isSameAs(closeError)));
     }
 
+    /**
+     * A submission that runs its job inline and then throws does not fail the iteration; its exception is the caller's,
+     * thrown once the iteration is over. The caller's own invoker, which nothing has started, is closed rather than
+     * waited on forever.
+     */
+    @Test
+    public void testSubmitThatThrowsAfterRunningInlineIsThrownWithoutHanging() {
+        final IllegalStateException afterRunning = new IllegalStateException("thrown after running the job");
+        final Executor runsThenThrows = command -> {
+            command.run();
+            throw afterRunning;
+        };
+
+        assertThatThrownBy(() -> withTimeout(() -> invoke(new ExecutorJobScheduler(runsThenThrows, 2), 2,
+                (context, idx, nec) -> {
+                })))
+                .isSameAs(afterRunning)
+                .satisfies(TestInvokeParallel::assertNoFatalReport);
+    }
+
     @Test
     public void testFailureOnTheCallingThreadStopsAtTheFailingTask() {
         final List<Integer> ran = new ArrayList<>();
