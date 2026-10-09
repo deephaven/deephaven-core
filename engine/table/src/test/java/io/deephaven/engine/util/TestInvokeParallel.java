@@ -1007,9 +1007,9 @@ public class TestInvokeParallel {
     }
 
     /**
-     * A nested iteration whose later submission is refused while one of its jobs is still running ends in onError
-     * once that job finishes, and through the step's nested error consumer ends the outer iteration in onError once,
-     * with no fatal report on any thread.
+     * A nested iteration whose later submission is refused while one of its jobs is still running ends in onError once
+     * that job finishes, and through the step's nested error consumer ends the outer iteration in onError once, with no
+     * fatal report on any thread.
      */
     @Test
     public void testNestedSubmitRefusalEndsTheOuterIterationInOnErrorOnce() {

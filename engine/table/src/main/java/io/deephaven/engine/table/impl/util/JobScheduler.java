@@ -279,8 +279,8 @@ public interface JobScheduler {
          * A failure to start, from the context factory or from the scheduler refusing a submission, is recorded as the
          * iteration's failure, so that the iteration ends in {@code onError} rather than in {@code onComplete}. It is
          * not thrown, though an {@link Error} is rethrown once recorded. The refused invoker is closed, since nothing
-         * else will run it; see {@link #abandon} for the others. A submission that throws after its job already ran
-         * on this thread did not refuse it, and its exception is the caller's.
+         * else will run it; see {@link #abandon} for the others. A submission that throws after its job already ran on
+         * this thread did not refuse it, and its exception is the caller's.
          * </p>
          */
         private void startTasks(
