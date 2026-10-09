@@ -2,40 +2,42 @@
 title: Create a hierarchical rollup table programmatically
 ---
 
-<!-- TODO: Link to conceptual guide on hierarchy https://github.com/deephaven/deephaven.io/issues/2079 -->
+This guide shows you how to create a hierarchical rollup table programmatically.
 
-This guide will show you how to create a hierarchical rollup table programmatically. A rollup table combines Deephaven's powerful aggregations with an easy-to-navigate hierarchical structure.
-
-![A diagram displaying the structure of a rollup table](../assets/how-to/rollup-diagram.png)
-
-A rollup table aggregates values using increasing levels of grouping to produce a hierarchical table that shows the value for each aggregation at each level. For example, the following rollup table contains data that is grouped by `region`, and then by `age`:
+A rollup table combines Deephaven's aggregations with a hierarchical structure: it aggregates values using increasing levels of grouping and shows the value of each aggregation at each level. For example, the `insurance_rollup` table from the [Static data](#static-data) example groups data by `region` and then by `age`:
 
 ![A rollup table grouped by region and age](../assets/how-to/rollup-example.png)
 
-The `Group` column contains the rollup table's hierarchy and has UI controls for expanding and collapsing individual groups.
+The web UI adds a `Group` column that shows the rollup table's hierarchy. Click the right-facing arrow in the `Group` column to expand a row, and the down-facing arrow to collapse it.
 
-Groupings are clearly represented and easy to navigate in a rollup table. The topmost row, which contains all of the groups, is known as the _root node_. Members of groups are known as _constituents_, and the lowest-level nodes are _leaf nodes_.
+The topmost row, which aggregates all rows, is the _root node_. The rows at the lowest aggregated level are the _leaf nodes_. The original source rows that each leaf node aggregates are its _constituents_. If you set `include_constituents=True`, the constituents appear one level below the leaf node.
 
-> [!NOTE]
-> A column that is no longer part of the aggregation key is replaced with a null value on each level.
+![A diagram displaying the structure of a rollup table](../assets/how-to/rollup-diagram.png)
+
+In this diagram, `Root` is the root node, the `A` rows are the first level of grouping, and the `B` rows are the leaf nodes.
+
+If each row instead names its parent row by ID, and you want to show that parent/child hierarchy rather than aggregate groups of rows, use a [tree table](./tree-table.md).
 
 ## `rollup`
 
-Rollup tables are created with the [`rollup`](../reference/table-operations/create/rollup.md) method.
+Create a rollup table with the [`rollup`](../reference/table-operations/create/rollup.md) method:
 
-The basic syntax is as follows:
-
-```syntax
+```python syntax
 result = source.rollup(aggs=agg_list, by=by_list, include_constituents=False)
 ```
 
-In the result table, only the first and second levels are initially expanded. Levels can be expanded by clicking on the right-facing arrow in a corresponding `by` column.
+The `rollup` method takes three parameters. Only `aggs` is required.
 
-The [`rollup`](../reference/table-operations/create/rollup.md) method takes three arguments. Only `aggs` is required; `by` and `include_constituents` are optional.
+1. `aggs`: The aggregations to compute at each level. Pass one aggregation on its own or several in a list. As with [combined aggregations](./combined-aggregations.md#syntax), you can define the list before the `rollup` call. Pass an empty list (`aggs=[]`) to build the hierarchy without computing any values. See [Supported aggregations](#supported-aggregations).
+2. `by` (optional): The columns that define the table's hierarchy. Each column adds one level, from left to right. For example, with `by=["ColumnOne", "ColumnTwo"]`, each unique value in `ColumnOne` expands to show the `ColumnTwo` values that belong to it. The default, `None`, aggregates all rows into a single root node.
+3. `include_constituents` (optional): Whether to show each leaf node's constituents one level below it. The default is `False`. Not supported when the source is a [blink table](../conceptual/table-types.md#specialization-3-blink).
 
-1. `aggs`: One or more aggregations.
+> [!NOTE]
+> Each level of a rollup table groups by fewer columns than the level below it. On each level, any `by` column that the level doesn't group on shows null values.
 
-The following aggregations are supported:
+### Supported aggregations
+
+`rollup` supports most of the aggregations available to [combined aggregations](./combined-aggregations.md):
 
 | Aggregation                                                                               | Supported by `rollup` |
 | ----------------------------------------------------------------------------------------- | --------------------- |
@@ -63,23 +65,22 @@ The following aggregations are supported:
 | [`weighted_avg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)            | <Check/>              |
 | [`weighted_sum`](../reference/table-operations/group-and-aggregate/AggWSum.md)            | <Check/>              |
 
-`formula` is supported when the formula string names its output and input columns, for example `agg.formula("Total = sum(Value)")`. The deprecated form that uses `formula_param` is not supported.
+`formula` is supported when the formula string names its output and input columns, for example `agg.formula("Total = sum(Value)")`. By default, `rollup` applies the formula to the source rows in each group at every level. To apply the formula to the results of the level below instead, pass `reaggregating=True` to `agg.formula`. Above the lowest level, the formula reads its input from the level below, so the output column must have the same name as the input column. For example, `agg.formula("Value = sum(Value)", reaggregating=True)` sums the source `Value` rows at the lowest level and sums the `Value` results from the level below at each higher level. The deprecated form that uses `formula_param` is not supported.
 
-In the case of a rollup table with a single aggregation, that aggregation can be on its own or in a single-element list. When more than one aggregation is used, the aggregations must be in a list. The aggregation(s) can be defined outside of the `rollup` call just like with [combined aggregations](./combined-aggregations.md#syntax).
-
-2. `by`: (Optional) The set of columns that define the hierarchy of the table. These columns are what you will be able to expand and collapse with the arrows in the UI. The hierarchy is determined in a left-to-right order, so if the columns are specified `["ColumnOne", "ColumnTwo"]`, `ColumnOne` can be expanded to show all values of `ColumnTwo` that belong to each unique value in `ColumnOne`. The default value is `None`, which aggregates all rows into a single root node.
-
-3. `include_constituents`: (Optional) A boolean to indicate whether or not the table will include an additional level at each leaf that displays the rows from the original table that were aggregated. The default value is `False`, so that no rows from the original table will be included in the result.
+If the source is a [blink table](../conceptual/table-types.md#specialization-3-blink), `rollup` doesn't support `first`, `last`, `sorted_first`, `sorted_last`, `group`, `formula`, or `include_constituents=True`. [Convert the blink table to an append-only table](../conceptual/table-types.md#create-an-append-only-table-from-a-blink-table) first.
 
 ## Examples
 
 ### Static data
 
-In our [examples repository](https://github.com/deephaven/examples), we have an [insurance dataset](https://github.com/deephaven/examples/tree/main/Insurance) that can show a simple real-world use case of aggregations and hierarchy.
+This example uses the [insurance dataset](https://github.com/deephaven/examples/tree/main/Insurance) from the Deephaven [examples repository](https://github.com/deephaven/examples), read with [`read_csv`](../reference/data-import-export/CSV/readCsv.md). It creates two rollup tables, both grouped by `region` and then `age`:
 
-In this example, a rollup table calculates an aggregated average of the `bmi` and `expenses` columns, grouped by `region` and `age`. It sets `include_constituents=True` to include the rows from the original table that made up each aggregation.
+- `no_agg_rollup` passes an empty aggregation list, so it builds the hierarchy without computing any values.
+- `insurance_rollup` builds the same hierarchy and averages the `bmi` and `expenses` columns at each level.
 
-```python order=insurance,insurance_rollup
+Both set `include_constituents=True`, so each `age` row expands to show the rows from the original table that it aggregates.
+
+```python order=insurance,no_agg_rollup,insurance_rollup
 from deephaven import read_csv, agg
 
 insurance = read_csv(
@@ -89,6 +90,7 @@ insurance = read_csv(
 agg_list = [agg.avg(cols=["bmi", "expenses"])]
 by_list = ["region", "age"]
 
+no_agg_rollup = insurance.rollup(aggs=[], by=by_list, include_constituents=True)
 insurance_rollup = insurance.rollup(
     aggs=agg_list, by=by_list, include_constituents=True
 )
@@ -96,7 +98,9 @@ insurance_rollup = insurance.rollup(
 
 ### Real-time data
 
-The following example creates ticking source data that simulates groups, subgroups, and values. An aggregated average and standard deviation of all the values is performed for each group and subgroup. The table is rolled up by the `Group` and `Subgroup` columns, respectively.
+The following example uses [`time_table`](../reference/table-operations/create/timeTable.md) to create a ticking table that adds one row per second. Each row gets a random `Group` from 0 to 9 and a random `Subgroup` of `A` or `B`. `Value` is centered on `Group * 10`, with more random spread in subgroup `B` than in subgroup `A`.
+
+The rollup groups by `Group` and then `Subgroup`, and computes the average (`AvgValue`) and standard deviation (`StdValue`) of `Value` at each level. On the `Subgroup` level, once enough rows have ticked in, `StdValue` is typically larger for `B` rows than for `A` rows.
 
 ```python ticking-table order=null
 from deephaven import time_table
@@ -110,50 +114,15 @@ source = time_table("PT1s").update(
     ]
 )
 
-agg_list = [agg.avg(cols="AvgValue=Value"), agg.std(cols="StdValue=Value")]
+agg_list = [agg.avg(cols="AvgValue = Value"), agg.std(cols="StdValue = Value")]
 by_list = ["Group", "Subgroup"]
 
 result = source.rollup(aggs=agg_list, by=by_list)
 ```
 
+In the result, the first `Group` column is the hierarchy column the UI adds. The second is the `Group` column from `source`.
+
 ![Creating a rollup table](../assets/how-to/new-rollup.gif)
-
-Note that rollup tables can only be created from String or primitive columns. Attempting to use a non-primitive type such as `LocalDate` or a Timestamp as a rollup column results in an error:
-
-```python skip-test
-from deephaven import new_table, agg
-from deephaven.column import string_col, int_col, double_col, datetime_col
-from deephaven.time import to_j_instant
-
-t = new_table(
-    [
-        datetime_col(
-            "ExchangeTimestamp",
-            [
-                to_j_instant("2017-08-25T09:30:00 UTC"),
-                to_j_instant("2017-08-25T10:15:00 UTC"),
-                to_j_instant("2017-08-25T11:45:00 UTC"),
-                to_j_instant("2017-08-25T14:20:00 UTC"),
-                to_j_instant("2017-08-25T15:50:00 UTC"),
-            ],
-        ),
-        string_col("Sym", ["AAPL", "AAPL", "GOOGL", "GOOGL", "AAPL"]),
-        double_col("Last", [150.25, 151.50, 920.75, 922.10, 152.00]),
-        int_col("Size", [100, 200, 50, 150, 300]),
-    ]
-)
-
-t = t.update(
-    "LocalExchangeTimestampDate=toLocalDate(ExchangeTimestamp, timeZone(`UTC`))"
-)
-
-agg_list = [agg.avg(cols=["Last", "Size"])]
-by_list = ["LocalExchangeTimestampDate"]
-
-t_rollup = t.rollup(aggs=agg_list, by=by_list, include_constituents=True)
-```
-
-![An error message stating that Deephaven can't parse the LOCAL_DATE data type](../assets/how-to/cant-parse-local-date.png)
 
 ## Related documentation
 
@@ -162,5 +131,5 @@ t_rollup = t.rollup(aggs=agg_list, by=by_list, include_constituents=True)
 - [How to perform combined aggregations](./combined-aggregations.md)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
 - [`rollup`](../reference/table-operations/create/rollup.md)
-- [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [`read_csv`](../reference/data-import-export/CSV/readCsv.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
