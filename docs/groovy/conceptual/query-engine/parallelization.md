@@ -11,14 +11,14 @@ Parallelization is running multiple calculations at the same time on different C
 
 ## Quick reference
 
-| Situation                                                        | Example                                                       | Solution                                                          |
-| ---------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| A formula uses only its own row's values                         | `Total = Price * Quantity`                                    | Default (parallel)                                                |
-| One formula updates shared state or needs rows in order          | A running counter or sequential IDs                           | `withSerial`                                                      |
-| One formula calls something that isn't thread-safe               | Writing to a file or log, or calling an unsynchronized client | `withSerial`                                                      |
-| One column needs another column to finish first                  | Column `B` reads a cache that column `A` fills                | Barriers                                                          |
-| Several columns share the same state or non-thread-safe resource | Two columns that call the same counter closure                | `withSerial` on each, plus barriers                               |
-| Several tables share the same state or non-thread-safe resource  | Two tables whose formulas call the same counter closure       | Thread-safe code, because barriers only work within one operation |
+| Situation                                                        | Example                                                       | Solution                                                                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| A formula uses only its own row's values                         | `Total = Price * Quantity`                                    | Default (parallel)                                                                                   |
+| One formula updates shared state or needs rows in order          | A running counter or sequential IDs                           | [`withSerial`](../../reference/query-language/types/Selectable.md#withserial)                        |
+| One formula calls something that isn't thread-safe               | Writing to a file or log, or calling an unsynchronized client | [`withSerial`](../../reference/query-language/types/Selectable.md#withserial)                        |
+| One column needs another column to finish first                  | Column `B` reads a cache that column `A` fills                | Barriers                                                                                             |
+| Several columns share the same state or non-thread-safe resource | Two columns that call the same counter closure                | [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) on each, plus barriers |
+| Several tables share the same state or non-thread-safe resource  | Two tables whose formulas call the same counter closure       | Thread-safe code, because barriers only work within one operation                                    |
 
 ## How parallelization works
 
@@ -83,7 +83,7 @@ Both pools use all CPU cores by default. See [Configuration](#configuration) to 
 
 ## When parallelization is safe by default
 
-By default, Deephaven parallelizes operations that are **stateless**, meaning each row's result depends only on that row's input values.
+By default, Deephaven safely parallelizes operations that are **stateless**, meaning each row's result depends only on that row's input values.
 
 **An operation is stateless if it**:
 
@@ -121,14 +121,14 @@ Most queries work correctly with automatic parallelization. Some code does not, 
 - **[`Selectable`](../../reference/query-language/types/Selectable.md)**: a column expression, used in [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md).
 - **[`Filter`](../../reference/query-language/types/Filter.md)**: a filter condition, used in [`where`](../../reference/table-operations/filter/where.md).
 
-Concurrency control works the same way for a `Filter` as for a `Selectable`.
+Concurrency control works the same way for a [`Filter`](../../reference/query-language/types/Filter.md) as for a [`Selectable`](../../reference/query-language/types/Selectable.md).
 
 The two controls solve different problems:
 
-- **`withSerial`** processes the rows _within one column_ one at a time, in order. Other columns can still run at the same time.
-- **Barriers** order columns _relative to each other_. One column finishes all its rows before another column starts. Rows within each column can still run in parallel.
+- **[`withSerial`](../../reference/query-language/types/Selectable.md#withserial)** processes the rows _within one column_ one at a time, in order. Other columns can still run at the same time.
+- **[Barriers](#barriers)** order columns _relative to each other_. One column finishes all its rows before another column starts. Rows within each column can still run in parallel.
 
-When columns share state, you often need both. `withSerial` protects the shared state within each column, and a barrier makes one column finish before the other starts.
+When columns share state, you often need both. [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) protects the shared state within each column, and a barrier makes one column finish before the other starts.
 
 ### Serialization
 
@@ -141,12 +141,12 @@ Serialization processes rows one at a time, in order, and never runs a column co
 Without it, parallel execution can produce incorrect results, such as out-of-order values, gaps, or values that don't match what the formula intended.
 
 > [!NOTE]
-> Most queries don't need serial execution. Use `withSerial` only when parallelization causes incorrect results.
+> Most queries don't need serial execution. Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) only when parallelization causes incorrect results.
 
 The [`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface provides the [`withSerial`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](../../reference/query-language/types/Filter.md) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](../../reference/query-language/types/Selectable.md) ([`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
-> You cannot use `withSerial` with [`view`](../../reference/table-operations/select/view.md) or [`updateView`](../../reference/table-operations/select/update-view.md), and [`lazyUpdate`](../../reference/table-operations/select/lazy-update.md) ignores it. These operations compute values on demand, when a cell is read, so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
+> You cannot use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) with [`view`](../../reference/table-operations/select/view.md) or [`updateView`](../../reference/table-operations/select/update-view.md), and [`lazyUpdate`](../../reference/table-operations/select/lazy-update.md) ignores it. These operations compute values on demand, when a cell is read, so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
 
 #### Example: a counter needs serialization
 
@@ -252,12 +252,12 @@ colB = Selectable.parse("B = counter.getAndIncrement()")
 t = emptyTable(10).update([colA, colB])
 ```
 
-Column `A` gets values 0–9. Column `B` gets values 10–19. Without the barrier, there is no guarantee that `A`'s rows claim the lower values, so the two ranges could interleave unpredictably. Without `withSerial`, Deephaven could also evaluate a column's own rows out of row order, which breaks the correspondence between row and counter value even within a single column.
+Column `A` gets values 0–9. Column `B` gets values 10–19. Without the barrier, there is no guarantee that `A`'s rows claim the lower values, so the two ranges could interleave unpredictably. Without [`withSerial`](../../reference/query-language/types/Selectable.md#withserial), Deephaven could also evaluate a column's own rows out of row order, which breaks the correspondence between row and counter value even within a single column.
 
 > [!IMPORTANT]
-> Barriers don't make a column execute serially. If your formula has shared mutable state, you typically need both controls. `withSerial` orders the rows within a column, and a barrier orders the columns relative to each other.
+> Barriers don't make a column execute serially. If your formula has shared mutable state, you typically need both controls. [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) orders the rows within a column, and a barrier orders the columns relative to each other.
 
-A respecting column that only reads what the declaring column wrote does not need `withSerial`. The barrier alone guarantees that the write finished first.
+A respecting column that only reads what the declaring column wrote does not need [`withSerial`](../../reference/query-language/types/Selectable.md#withserial). The barrier alone guarantees that the write finished first.
 
 #### Multiple barriers
 
@@ -296,9 +296,21 @@ Barriers work the same way for [`Filter`](../../reference/query-language/types/F
 
 #### Implicit barriers
 
-An implicit barrier is a barrier that Deephaven adds for you. When the [`QueryTable.serialSelectImplicitBarriers`](../query-table-configuration.md#stateless-by-default) property is on, every column that is not stateless in a [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) waits for all earlier such columns in the same operation to finish. With the default stateless-by-default setting, those are the columns you marked `withSerial`. Each of them behaves as if it declared a barrier that every later one respects, so you get the ordering without creating barrier objects.
+An implicit barrier is a barrier that Deephaven adds for you.
 
-The property is off by default, so serial columns only order their own rows. Two serial columns in the same `update` can still run at the same time, and you add an explicit barrier when one must finish before the other. Turn the property on when many serial columns share state and you would otherwise add a barrier between every pair. See [Configuration](#configuration).
+When the [`QueryTable.serialSelectImplicitBarriers`](../query-table-configuration.md#stateless-by-default) property is on:
+
+- Every column that is not stateless in a [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) waits for all earlier such columns in the same operation to finish.
+- With the default stateless-by-default setting, those are the columns you marked [`withSerial`](../../reference/query-language/types/Selectable.md#withserial).
+- Each of them behaves as if it declared a barrier that every later one respects. You get the ordering without creating barrier objects.
+
+The property is off by default:
+
+- Serial columns only order their own rows.
+- Two serial columns in the same `update` can still run at the same time.
+- You add an explicit barrier when one must finish before the other.
+
+Turn the property on when many serial columns share state and you would otherwise add a barrier between every pair. See [Configuration](#configuration).
 
 ## Configuration
 
@@ -322,10 +334,10 @@ Deephaven automatically parallelizes queries across all available CPU cores. Mos
 
 - Deephaven assumes all formulas can run in parallel by default.
 - Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when a formula has side effects, depends on row order, or calls functions that are not thread-safe.
-- `withSerial` works with `select`, `update`, and `where`. `view` and `updateView` compute values when they are read, so they do not support it, and `lazyUpdate` ignores it.
-- `withSerial` only orders rows within one column. It does not order columns relative to each other.
+- [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) works with [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md). [`view`](../../reference/table-operations/select/view.md) and [`updateView`](../../reference/table-operations/select/update-view.md) compute values when they are read, so they do not support it, and `lazyUpdate` ignores it.
+- [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) only orders rows within one column. It does not order columns relative to each other.
 - Use [barriers](#barriers) when one column must finish before another column starts.
-- When several columns share state, use `withSerial` and barriers together.
+- When several columns share state, use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) and barriers together.
 - When several tables share state, make the shared code itself thread-safe, for example with a lock.
 
 ## Related documentation
