@@ -239,10 +239,10 @@ middleware_factory = CookieMiddlewareFactory()
 
 # Create the client with the middleware
 client = FlightSQLClient(
-    host=host,
+    host="localhost",
     port=10000,
     insecure=True,
-    token=f"io.deephaven.authentication.psk.PskAuthenticationHandler deephaven",
+    token="io.deephaven.authentication.psk.PskAuthenticationHandler deephaven",
     metadata={"x-deephaven-auth-cookie-request": "true"},
     middleware=[middleware_factory],
 )
