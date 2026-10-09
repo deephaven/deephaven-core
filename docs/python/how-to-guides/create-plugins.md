@@ -12,7 +12,7 @@ The plugin example used in this guide can also be found [here](https://github.co
 
 ## Plugin structure
 
-This example creates a plugin called `ExampleService`. You can call your plugin whatever you'd like, but be aware that the name must be consistent across both the server and client. If you change the name as you follow along, update it in both the server and client code.
+This example creates a plugin called `ExampleService`. You can call your plugin whatever you'd like. The name returned by the server plugin's `name` property is the type string a client uses when it builds a `ServerObject` by hand, as shown in [Fetching a shared plugin object](#fetching-a-shared-plugin-object). If you change the name as you follow along, update it there as well.
 
 > [!NOTE]
 > The directory name does not need to match the plugin name. This guide uses `ExampleServicePlugin` for the directory name, but the plugin itself is called `ExampleService`.
@@ -336,11 +336,12 @@ Like with the server-side code, the client-side code will be housed in a single 
 import io
 from typing import Any, List
 from pydeephaven import Table
-from pydeephaven.experimental import plugin_client, server_object
+from pydeephaven.experimental import plugin_client
+from pydeephaven.ticket import ServerObject
 import json
 
 
-class ExampleServiceProxy(server_object.ServerObject):
+class ExampleServiceProxy(ServerObject):
     """
     This class provides a client-side interface to the ExampleService server-side object.
 
@@ -350,8 +351,7 @@ class ExampleServiceProxy(server_object.ServerObject):
     """
 
     def __init__(self, plugin_client: plugin_client.PluginClient):
-        self.type_ = plugin_client.type_
-        self.ticket = plugin_client.ticket
+        super().__init__(type=plugin_client.type, ticket=plugin_client.ticket)
 
         self.plugin_client = plugin_client
 
@@ -419,7 +419,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "example_plugin_client"
 version = "0.0.1"
-dependencies = ["pydeephaven>=0.36.1", "pandas"]
+dependencies = ["pydeephaven>=0.39.1", "pandas"]
 ```
 
 > [!NOTE]
@@ -491,7 +491,7 @@ from deephaven_server import Server
 from example_plugin_server import ExampleService
 
 # Start the Deephaven server
-server = Server(port=10000)
+server = Server(port=10000, jvm_args=["-Dauthentication.psk=YOUR_PASSWORD_HERE"])
 server.start()
 
 example_service = ExampleService()
@@ -532,7 +532,7 @@ python -m pip install ./client
 With that said and done, the following Python script will use the client-side plugin:
 
 > [!IMPORTANT]
-> Replace `YOUR_PASSWORD_HERE` with the pre-shared key set when starting the server if you changed it.
+> Replace `YOUR_PASSWORD_HERE` with the pre-shared key you set when starting the server, either in the Docker Compose file or in the `jvm_args` passed to `Server`.
 
 ```python skip-test
 """
@@ -608,7 +608,8 @@ export_ticket = session.fetch(plugin_client)
 shared_ticket = SharedTicket.random_ticket()
 session.publish(export_ticket, shared_ticket)
 
-# Now other sessions can use this shared_ticket to access the same plugin object
+# Pass these bytes to other sessions so they can access the same plugin object
+shared_ticket_bytes = shared_ticket.bytes
 ```
 
 ### Fetching a shared plugin object
@@ -625,14 +626,11 @@ sub_session = Session(
     auth_token="YOUR_PASSWORD_HERE",
 )
 
-# Use the shared ticket from the publishing session
-# (In practice, you would pass this ticket between sessions)
-shared_ticket = SharedTicket.random_ticket()  # Use the actual shared ticket
+# Use the shared_ticket_bytes value passed from the publishing session
+shared_ticket = SharedTicket(shared_ticket_bytes)
 
 # Create a ServerObject reference with the appropriate type
-server_obj = ServerObject(
-    type="example_plugin_server.ExampleService", ticket=shared_ticket
-)
+server_obj = ServerObject(type="ExampleService", ticket=shared_ticket)
 
 # Create a plugin client to interact with the shared object
 sub_plugin_client = sub_session.plugin_client(server_obj)
