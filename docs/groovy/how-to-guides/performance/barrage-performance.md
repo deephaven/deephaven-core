@@ -143,7 +143,7 @@ The two thresholds answer different questions. The fraction asks whether compact
 
 ## Write to subscribers in parallel
 
-Each time the server propagates an update to a table's subscribers, it writes each subscriber its own view of the update: only the columns, rows, and encoding that subscriber asked for. Writing a message serializes it into the gRPC stream's buffers, which is processor work that does not wait for the client, so when a message goes to more than one subscriber and `BarrageMessageProducer.propagationThreads` is greater than `1`, the server writes to several of them at once rather than one after another.
+Each time the server propagates an update to a table's subscribers, it writes each subscriber its own view of the update, which holds only the columns, rows, and encoding that subscriber asked for. Writing a message serializes it into the gRPC stream's buffers. Serializing is processor work that does not wait for the client, so the server can write to several subscribers at once. The server writes in parallel when a message goes to more than one subscriber and `BarrageMessageProducer.propagationThreads` is greater than `1`.
 
 - `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. Above `1`, the other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` or less writes to subscribers one after another on the propagation thread, and the server makes no pool.
 
