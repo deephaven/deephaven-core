@@ -60,7 +60,7 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 ## Query parallelization
 
-Learn how Deephaven automatically runs queries on multiple CPU cores, which formulas that is safe for, and how to force sequential processing when a formula needs it.
+Learn how Deephaven automatically runs queries on multiple CPU cores, which formulas are safe to run that way, and how to force sequential processing when a formula needs it.
 
 </CoreTutorialCard>
 
