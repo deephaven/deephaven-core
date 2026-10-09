@@ -185,7 +185,7 @@ The following table showcases Deephaven's five selection methods and provides a 
       <td><RedX/></td>
     </tr>
     <tr>
-      <td scope="row" ><a href="../reference/table-operations/select/update-view.md">update_view</a></td>
+      <td scope="row" ><a href="../reference/table-operations/select/update-view.md">updateView</a></td>
       <td><RedX/></td>
       <td><Check/></td>
       <td><RedX/></td>
@@ -193,7 +193,7 @@ The following table showcases Deephaven's five selection methods and provides a 
       <td><RedX/></td>
     </tr>
     <tr>
-      <td scope="row" ><a href="../reference/table-operations/select/lazy-update.md">lazy_update</a></td>
+      <td scope="row" ><a href="../reference/table-operations/select/lazy-update.md">lazyUpdate</a></td>
       <td><RedX/></td>
       <td><Check/></td>
       <td><RedX/></td>
