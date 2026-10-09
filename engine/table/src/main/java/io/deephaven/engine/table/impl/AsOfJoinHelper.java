@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
@@ -18,7 +17,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.asofjoin.ChunkedAjUtils;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
-import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.asofjoin.StaticKeyIdAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.asofjoin.BucketedChunkedAjMergedListener;
@@ -232,18 +231,8 @@ public class AsOfJoinHelper {
         }
         // endregion This block is mostly copied to other entry points
 
-        // the build reserves room for a whole chunk of new entries before each chunk, so the table starts large enough
-        // to hold the first build chunk at the maximum load factor
-        final boolean buildFromLeft = buildParameters.firstBuildFrom() == JoinControl.BuildParameters.From.LeftInput
-                || buildParameters.firstBuildFrom() == JoinControl.BuildParameters.From.LeftDataIndex;
-        final long firstBuildChunkSize =
-                Math.min(JoinControl.CHUNK_SIZE, (buildFromLeft ? leftRowSetToUse : rightRowSetToUse).size());
-        final int hashTableSize = (int) Math.min(JoinControl.MAX_TABLE_SIZE,
-                Math.max(buildParameters.hashTableSize(), MathUtil.roundUpPowerOf2(
-                        (long) Math.ceil(firstBuildChunkSize / control.getMaximumLoadFactor()))));
-        final StaticHashedAsOfJoinStateManager asOfJoinStateManager = TypedHasherFactory.make(
-                StaticAsOfJoinStateManagerTypedBase.class, leftSources, originalLeftSources,
-                hashTableSize, control.getMaximumLoadFactor(), control.getTargetLoadFactor());
+        final StaticHashedAsOfJoinStateManager asOfJoinStateManager = new StaticKeyIdAsOfJoinStateManager(
+                leftSources, originalLeftSources, buildParameters.hashTableSize(), control.getMaximumLoadFactor());
         final IntegerArraySource slots = new IntegerArraySource();
 
         final int slotCount;
@@ -269,7 +258,7 @@ public class AsOfJoinHelper {
             asOfJoinStateManager.convertRightBuildersToRowSet(slots, slotCount);
         }
         final ArrayValuesCache arrayValuesCache = leftTable.isRefreshing()
-                ? new ArrayValuesCache(asOfJoinStateManager.getTableSize())
+                ? new ArrayValuesCache(asOfJoinStateManager.getSlotCapacity())
                 : null;
         final ColumnSource<RowSet> leftDataIndexRowSetColumn = leftDataIndexTable != null
                 ? leftDataIndex.rowSetColumn()

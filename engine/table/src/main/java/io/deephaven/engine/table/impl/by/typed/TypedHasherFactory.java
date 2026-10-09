@@ -15,13 +15,11 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
-import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.join.IncrementalKeyIdHasherTypedBase;
@@ -47,7 +45,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -155,33 +152,6 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("probeChunk", "value", false,
                     TypedKeyValueFactory::probeFound, TypedKeyValueFactory::probeMissing, probeValuesParam(),
                     ParameterSpec.builder(long.class, "missingValue").build()));
-        } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
-            builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
-                    .openAddressedAlternate(false)
-                    .stateType(Object.class).mainStateName("rightRowSetSource")
-                    .emptyStateName("EMPTY_RIGHT_STATE")
-                    .includeOriginalSources(true)
-                    .supportRehash(true)
-                    .moveMainFull(TypedAsOfJoinFactory::staticMoveMainFull)
-                    .alwaysMoveMain(true)
-                    .rehashFullSetup(TypedAsOfJoinFactory::staticRehashSetup);
-
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
-                    true, true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
-                    TypedAsOfJoinFactory::staticBuildLeftInsert));
-
-            builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null, true,
-                    TypedAsOfJoinFactory::staticProbeDecorateLeftFound, null,
-                    ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "hashSlots").build(),
-                    ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build()));
-
-            builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
-                    true, true, true, TypedAsOfJoinFactory::staticBuildRightFound,
-                    TypedAsOfJoinFactory::staticBuildRightInsert));
-
-            builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", null,
-                    true, TypedAsOfJoinFactory::staticProbeDecorateRightFound, null));
-
         } else if (baseClass.equals(RightIncrementalAsOfJoinStateManagerTypedBase.class)) {
             final ParameterSpec sequentialBuilders =
                     ParameterSpec.builder(ObjectArraySource.class, "sequentialBuilders").build();
@@ -403,16 +373,6 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher =
                         (T) io.deephaven.engine.table.impl.join.typed.statickeylongvalue.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
-                                        targetLoadFactor);
-                if (pregeneratedHasher != null) {
-                    return pregeneratedHasher;
-                }
-            } else if (hasherConfig.baseClass
-                    .equals(StaticAsOfJoinStateManagerTypedBase.class)) {
-                // noinspection unchecked
-                T pregeneratedHasher =
-                        (T) io.deephaven.engine.table.impl.asofjoin.typed.staticopen.gen.TypedHashDispatcher
                                 .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
                                         targetLoadFactor);
                 if (pregeneratedHasher != null) {

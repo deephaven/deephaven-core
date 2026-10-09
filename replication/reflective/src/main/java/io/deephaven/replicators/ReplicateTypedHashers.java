@@ -11,7 +11,6 @@ import com.palantir.javapoet.TypeSpec;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
-import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.join.IncrementalKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.join.StaticKeyLongValueHasherTypedBase;
@@ -35,7 +34,6 @@ public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
         generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
-        generatePackage(StaticAsOfJoinStateManagerTypedBase.class, false);
         generatePackage(RightIncrementalAsOfJoinStateManagerTypedBase.class, false);
         generatePackage(UpdateByStateManagerTypedBase.class, true);
         generatePackage(StaticMultiJoinStateManagerTypedBase.class, false);

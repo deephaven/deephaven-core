@@ -28,7 +28,10 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
 
     public abstract void probeRight(RowSequence rightRowSet, ColumnSource<?>[] rightSources);
 
-    public abstract int getTableSize();
+    /**
+     * @return one more than the largest slot a build or probe reports; every slot is in {@code [0, getSlotCapacity())}
+     */
+    public abstract int getSlotCapacity();
 
     public abstract RowSet getLeftRowSet(int slot);
 
