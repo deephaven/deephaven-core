@@ -225,7 +225,7 @@ To drop the `Symbol` column, pass `KafkaTools.Consume.IGNORE` as the key spec in
 
 The following two examples read a Kafka topic called `orders` in JSON format.
 
-This example uses [`jsonSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#jsonSpec(io.deephaven.engine.table.ColumnDefinition%5B%5D)):
+This example uses [`jsonSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#jsonSpec(io.deephaven.engine.table.ColumnDefinition%5B%5D,java.util.Map,com.fasterxml.jackson.databind.ObjectMapper)):
 
 ```groovy docker-config=kafka order=null
 import io.deephaven.engine.table.ColumnDefinition
