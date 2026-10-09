@@ -128,7 +128,8 @@ If the user asked for edits:
    always there. Before pushing a round of fixes, run the claim ledger from
    `deephaven-core-accuracy-check` over each page you changed (sentences next to your edits
    included) and fix what it finds in the same push. Batch the round into one push rather than one
-   per comment, since every push starts another review.
+   per comment, since every push starts another review. Run anything the sweep changes back through steps 3 and 4
+   before you push, so the sweep's own edits get the style and coherence checks.
 6. **Merge conflicts with the base branch.** When the base branch changed the same page, the
    other change is usually a correction that already passed review, often by an engineer who owns
    the code. Treat its facts as authoritative: keep your restructure where it helps, but carry
