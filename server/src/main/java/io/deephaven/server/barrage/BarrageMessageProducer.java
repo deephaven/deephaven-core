@@ -1949,6 +1949,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
 
         if (snapshot != null) {
+            // timed like a delta phase, from building the writer to closing it
+            final long startTm = System.nanoTime();
             try (final BarrageMessageWriter snapshotGenerator =
                     streamGeneratorFactory.newMessageWriter(snapshot, chunkWriters, this::recordWriteMetrics)) {
                 if (log.isDebugEnabled()) {
@@ -1964,11 +1966,10 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                 // Each subscription's snapshot is written independently of the others', so they are written in
                 // parallel; the writer is closed only once every one of them has finished.
-                final long startTm = System.nanoTime();
                 forEachInParallel(snapshotTargets,
                         subscription -> propagateSnapshotForSubscription(subscription, snapshotGenerator));
-                recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
             }
+            recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
         }
 
         if (postSnapshot != null) {
