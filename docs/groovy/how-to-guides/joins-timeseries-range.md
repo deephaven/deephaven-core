@@ -166,7 +166,7 @@ The last entry in the second argument, `columnsToMatch`, is a range match expres
 
 - `rightTable`: The right table, which supplies the data the join adds to the left table.
 - `columnsToMatch`: A `Collection<String>` that holds zero or more exact match columns followed by one range match expression.
-- `aggregations`: The aggregation(s) to perform over each left-table row's responsive range. `rangeJoin` currently supports only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
+- `aggregations` (required): The aggregation(s) to perform over each left-table row's responsive range. `rangeJoin` currently supports only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
 
 The [match expressions](../reference/table-operations/join/range-join.md#match-expressions) section of the reference page describes the full range match syntax, including the optional `<-` marker before the expression and `->` marker after it. Each marker requires `<=` on its side of the range. When no right-table value equals the left-table row's start value, `<-` also includes the closest right-table row before the start. When no right-table value equals the end value, `->` also includes the closest right-table row after the end.
 

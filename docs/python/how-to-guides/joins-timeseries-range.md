@@ -202,7 +202,7 @@ The last entry in `on` is a range match expression of the form `LeftStartColumn 
 
 - `table`: The right table, which supplies the data the join adds to the left table.
 - `on`: Zero or more exact match columns followed by one range match expression.
-- `aggs`: The aggregation(s) to perform over each left-table row's responsive range. `range_join` currently supports only the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
+- `aggs` (required): The aggregation(s) to perform over each left-table row's responsive range. `range_join` currently supports only the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
 
 The [match expressions](../reference/table-operations/join/range-join.md#match-expressions) section of the reference page describes the full range match syntax, including the optional `<-` marker before the expression and `->` marker after it. Each marker requires `<=` on its side of the range. When no right-table value equals the left-table row's start value, `<-` also includes the closest right-table row before the start. When no right-table value equals the end value, `->` also includes the closest right-table row after the end.
 
