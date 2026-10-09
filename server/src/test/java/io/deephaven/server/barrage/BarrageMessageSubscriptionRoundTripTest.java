@@ -66,6 +66,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -427,6 +428,43 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         flushProducerTable();
 
         assertTrue("the removed subscription's stream was not completed", client.dummyObserver.completed);
+    }
+
+    /**
+     * A viewport subscription removed before the producer first runs for it releases the viewport it was given, which
+     * it owned and which nothing else will close.
+     */
+    @Test
+    public void testViewportRemovedBeforeItsFirstRunIsReleased() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(), TableTools.intCol("intCol", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        // subscribed directly, rather than through a RemoteClient, which hands the producer a copy of its viewport
+        final AtomicBoolean completed = new AtomicBoolean();
+        final StreamObserver<BarrageMessageWriter.MessageView> observer = new StreamObserver<>() {
+            @Override
+            public void onNext(final BarrageMessageWriter.MessageView messageView) {}
+
+            @Override
+            public void onError(final Throwable t) {}
+
+            @Override
+            public void onCompleted() {
+                completed.set(true);
+            }
+        };
+        final WritableRowSet viewport = RowSetFactory.fromRange(0, 4);
+        nugget.barrageMessageProducer.addSubscription(
+                observer, BarrageSubscriptionOptions.builder().build(), allCols, viewport, false);
+        nugget.barrageMessageProducer.removeSubscription(observer);
+
+        flushProducerTable();
+
+        assertTrue("the removed subscription's stream was not completed", completed.get());
+        // a closed row set fails on use
+        org.junit.Assert.assertThrows(NullPointerException.class, viewport::size);
     }
 
     @Test

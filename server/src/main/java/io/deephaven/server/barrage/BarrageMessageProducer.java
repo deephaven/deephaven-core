@@ -1584,6 +1584,11 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                 for (final Subscription subscription : updatedSubscriptions) {
                     if (subscription.pendingDelete) {
+                        // its pending changes are dropped with it, so release the viewport it was given
+                        if (subscription.pendingViewport != null) {
+                            subscription.pendingViewport.close();
+                            subscription.pendingViewport = null;
+                        }
                         if (!subscription.isActive) {
                             // removed before it was ever activated; it still needs its stream completed
                             if (deletedSubscriptions == null) {
