@@ -12,7 +12,6 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
-import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
@@ -165,8 +164,7 @@ public abstract class FlightMessageRoundTripTest {
                                     .build()),
                     Executors.newScheduledThreadPool(1,
                             new ThreadFactoryBuilder().setDaemon(true).setNameFormat("test-scheduler-multi-%d")
-                                    .build()),
-                    Clock.system());
+                                    .build()));
         }
 
         @Provides

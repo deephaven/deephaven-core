@@ -11,7 +11,6 @@ import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthContext;
-import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -261,8 +260,7 @@ public class BarrageChunkFactoryTest {
                             new ThreadFactoryBuilder()
                                     .setDaemon(true)
                                     .setNameFormat("test-scheduler-multi-%d")
-                                    .build()),
-                    Clock.system());
+                                    .build()));
         }
 
         @Provides

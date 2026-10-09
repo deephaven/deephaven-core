@@ -5,6 +5,7 @@ package io.deephaven.server.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.rpc.Code;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.MathUtil;
@@ -243,7 +244,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     private final BaseTable<?> parent;
     private final long updateIntervalMs;
-    private volatile long lastUpdateTime = 0;
+    private volatile long lastUpdateTime;
     private volatile long lastScheduledUpdateTime = 0;
 
     private final boolean isBlinkTable;
@@ -378,6 +379,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         this.propagationRowSet = RowSetFactory.empty();
         this.updateIntervalMs = updateIntervalMs;
+        // start one interval back so the first update is not throttled
+        this.lastUpdateTime = -updateIntervalMs;
         this.onGetSnapshot = onGetSnapshot;
 
         this.parentTableSize = parent.size();
@@ -1368,7 +1371,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         // copy lastUpdateTime so we are not duped by the re-read
         final long localLastUpdateTime = lastUpdateTime;
-        final long now = scheduler.currentTimeMillis();
+        final long now = scheduler.monotonicTimeMillis();
         final long msSinceLastUpdate = now - localLastUpdateTime;
         if (lastScheduledUpdateTime != 0 && lastScheduledUpdateTime > lastUpdateTime) {
             // an already scheduled update is coming up
@@ -1443,7 +1446,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
 
         public void scheduleAt(final long nextRunTimeMillis) {
-            scheduler.runAtTime(nextRunTimeMillis, this);
+            scheduler.runAfterDelay(nextRunTimeMillis - scheduler.monotonicTimeMillis(), this);
         }
     }
 
@@ -1489,7 +1492,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      */
 
     private void updateSubscriptionsSnapshotAndPropagate() {
-        lastUpdateTime = scheduler.currentTimeMillis();
+        lastUpdateTime = scheduler.monotonicTimeMillis();
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("Starting update job at " + lastUpdateTime).endl();
         }
@@ -1917,7 +1920,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             updatePropagationJob.scheduleImmediately();
         }
 
-        lastUpdateTime = scheduler.currentTimeMillis();
+        lastUpdateTime = scheduler.monotonicTimeMillis();
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("Completed Propagation: " + lastUpdateTime).endl();
         }
@@ -2597,7 +2600,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             if (!running) {
                 return;
             }
-            final Instant now = scheduler.instantMillis();
+            final Instant now = Clock.system().instantMillis();
             scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
