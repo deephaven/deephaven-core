@@ -42,7 +42,7 @@ The following flowchart walks through the same choices, including the inexact jo
 [`join`](../reference/table-operations/join/join.md), [`exact_join`](../reference/table-operations/join/exact-join.md), and [`natural_join`](../reference/table-operations/join/natural-join.md) are methods of the left table:
 
 ```python syntax
-# Include all non-key columns from the right table
+# Include all right table columns except those sharing a name with a left match column
 result = left_table.join_method(table=right_table, on=["ColumnsToMatch"])
 
 # Include only some non-key columns from the right table
@@ -56,7 +56,7 @@ result = left_table.join_method(
 ```python syntax
 from deephaven.experimental.outer_joins import left_outer_join, full_outer_join
 
-# Include all non-key columns from the right table
+# Include all right table columns except those sharing a name with a left match column
 result = outer_join_function(
     l_table=left_table, r_table=right_table, on=["ColumnsToMatch"]
 )
@@ -73,9 +73,9 @@ result = outer_join_function(
 Besides the two tables, these operations take two main arguments. Each is a column name or expression, or a list of them:
 
 - `on`: The key columns to match. Required for `exact_join` and `natural_join`. Optional for `join` and the outer joins, which pair every left row with every right row when `on` is omitted.
-- `joins` (optional): The columns from the right table to add to the left table. If omitted, the join adds all non-key columns from the right table.
+- `joins` (optional): The columns from the right table to add to the left table. If omitted, the join adds every right table column except those whose names match a left table column in `on`. A right table match column with a different name from its left table match column, such as `DeptID` in `"DeptNumber = DeptID"`, is added.
 
-A key column can be of any data type, but each pair of matched columns in the left and right tables _must_ have the same data type.
+A key column can be of any data type, but each pair of matched columns in the left and right tables _must_ have the same data type. Custom objects used as keys must implement consistent equality and hash codes.
 
 ### Match columns with different names
 
@@ -201,7 +201,7 @@ result = departments.join(table=employees, on=["DeptID"])
 ```
 
 > [!TIP]
-> Because [`join`](../reference/table-operations/join/join.md) includes every matching combination of left and right rows, its output can be much larger than either input. A large result also costs more to maintain on [ticking tables](../conceptual/table-update-model.md), whose rows change over time. If each left row needs at most one right match, use [`natural_join`](../reference/table-operations/join/natural-join.md) instead. It is faster, and its result has the same number of rows as the left table.
+> [`join`](../reference/table-operations/join/join.md) produces a result row for every matching pair of left and right table rows and reserves space in each result row key for the matching right table rows. This makes it slow relative to [`natural_join`](../reference/table-operations/join/natural-join.md). Its result can also be much larger than either input, which costs more to maintain on [ticking tables](../conceptual/table-update-model.md). If each left row needs at most one right match, use [`natural_join`](../reference/table-operations/join/natural-join.md) instead. Its result has the same number of rows as the left table.
 
 ### `left_outer_join`
 

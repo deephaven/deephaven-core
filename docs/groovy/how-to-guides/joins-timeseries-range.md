@@ -2,7 +2,7 @@
 title: Inexact, time-series, and range joins
 ---
 
-This guide covers the joins in Deephaven that don't require an exact match on every key: [`aj`](../reference/table-operations/join/aj.md), [`raj`](../reference/table-operations/join/raj.md), and [`rangeJoin`](../reference/table-operations/join/rangeJoin.md). It shows how to use each one and when to choose it.
+This guide covers the joins in Deephaven that don't require an exact match on every key: [`aj`](../reference/table-operations/join/aj.md), [`raj`](../reference/table-operations/join/raj.md), and [`rangeJoin`](../reference/table-operations/join/range-join.md). It shows how to use each one and when to choose it.
 
 ## Which method should you use?
 
@@ -10,7 +10,7 @@ You typically use the as-of joins, [`aj`](../reference/table-operations/join/aj.
 
 - Use `aj` to find the closest match _before_ or at an event.
 - Use `raj` to find the closest match _after_ or at an event.
-- Use [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) when your tables are static and you want to group the right-table data that falls in a range defined by each left-table row, such as all events in each left-table time window.
+- Use [`rangeJoin`](../reference/table-operations/join/range-join.md) when your tables are static and you want to group the right-table data that falls in a range defined by each left-table row, such as all events in each left-table time window.
 
 The following flowchart helps you choose among the [exact joins](./joins-exact-relational.md), the as-of joins, and the range joins.
 
@@ -141,7 +141,7 @@ result = trades.raj(quotes, "Ticker, Timestamp", "QuoteTime = Timestamp, Bid, As
 
 ## Range joins
 
-[`rangeJoin`](../reference/table-operations/join/rangeJoin.md) creates a new table containing _all_ of the rows and columns of the left table, plus additional columns containing aggregated data from the right table. It is a join plus an aggregation that:
+[`rangeJoin`](../reference/table-operations/join/range-join.md) creates a new table containing _all_ of the rows and columns of the left table, plus additional columns containing aggregated data from the right table. It is a join plus an aggregation that:
 
 - Joins arrays of data from the right table onto the left table.
 - Aggregates over the joined data.
@@ -168,7 +168,7 @@ The last entry in the second argument, `columnsToMatch`, is a range match expres
 - `columnsToMatch`: A `Collection<String>` that holds zero or more exact match columns followed by one range match expression.
 - `aggregations`: The aggregation(s) to perform over each left-table row's responsive range. `rangeJoin` currently supports only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
 
-The [match expressions](../reference/table-operations/join/rangeJoin.md#match-expressions) section of the reference page describes the full range match syntax, including the optional `<-` marker before the expression and `->` marker after it. Each marker requires `<=` on its side of the range. When no right-table value equals the left-table row's start value, `<-` also includes the closest right-table row before the start. When no right-table value equals the end value, `->` also includes the closest right-table row after the end.
+The [match expressions](../reference/table-operations/join/range-join.md#match-expressions) section of the reference page describes the full range match syntax, including the optional `<-` marker before the expression and `->` marker after it. Each marker requires `<=` on its side of the range. When no right-table value equals the left-table row's start value, `<-` also includes the closest right-table row before the start. When no right-table value equals the end value, `->` also includes the closest right-table row after the end.
 
 > [!NOTE]
 > The _right range column_ is the right-table column that the range match compares against. `rangeJoin` has the following restrictions:
@@ -199,7 +199,7 @@ right = emptyTable(20).updateView("X = ii", "RightValue = ii / 0.3", "Y = X % 5"
 result = left.rangeJoin(right, List.of("LeftStartValue < RightValue < LeftEndValue"), List.of(AggGroup("Y")))
 ```
 
-For a similar example that adds an exact-match column, with a row-by-row explanation of its output, see the [`rangeJoin` reference examples](../reference/table-operations/join/rangeJoin.md#examples).
+For a similar example that adds an exact-match column, with a row-by-row explanation of its output, see the [`rangeJoin` reference examples](../reference/table-operations/join/range-join.md#examples).
 
 Queries often follow a `rangeJoin` with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that processes the grouped column. The following code block uses the built-in [`sum`](../reference/query-language/query-library/auto-imported/math.md) function to sum each group in the `result` table from the previous example.
 
@@ -207,20 +207,21 @@ Queries often follow a `rangeJoin` with an [`update`](../reference/table-operati
 resultSummed = result.update("SumY = sum(Y)")
 ```
 
-The following example uses `rangeJoin` with date-time columns as the range columns. This is a common use case, since it groups all of the events that happened in each time window. As in the previous example, the built-in `sum` function then sums each group.
+The following example uses `rangeJoin` with date-time columns as the range columns. This is a common use case, since it groups all of the events that happened in each time window. Both tables have a `Y` column, so the `AggGroup` aggregation names its output `RightY` to avoid replacing the left table's `Y`. As in the previous example, the built-in `sum` function then sums each group.
 
 ```groovy order=resultSummed,result,left,right
 left = emptyTable(20).update(
         "StartTime = '2024-01-01T08:00:00 ET' + i * SECOND",
         "EndTime = StartTime + 5 * SECOND",
         "X = ii",
+        "Y = X % 5"
 )
 
 right = emptyTable(20).update("Timestamp = '2024-01-01T08:00:03 ET' + i * SECOND", "X = ii", "Y = X % 6")
 
-result = left.rangeJoin(right, List.of("StartTime < Timestamp < EndTime"), List.of(AggGroup("Y")))
+result = left.rangeJoin(right, List.of("StartTime < Timestamp < EndTime"), List.of(AggGroup("RightY = Y")))
 
-resultSummed = result.update("SumY = sum(Y)")
+resultSummed = result.update("SumRightY = sum(RightY)")
 ```
 
 ## Related documentation
@@ -228,4 +229,4 @@ resultSummed = result.update("SumY = sum(Y)")
 - [Exact and relational joins](./joins-exact-relational.md)
 - [`aj`](../reference/table-operations/join/aj.md)
 - [`raj`](../reference/table-operations/join/raj.md)
-- [`rangeJoin`](../reference/table-operations/join/rangeJoin.md)
+- [`rangeJoin`](../reference/table-operations/join/range-join.md)

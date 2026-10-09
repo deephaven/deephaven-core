@@ -239,7 +239,7 @@ Queries often follow a `range_join` with an [`update`](../reference/table-operat
 result_summed = result.update(["SumY = sum(Y)"])
 ```
 
-The following example uses `range_join` with date-time columns as the range columns. This is a common use case, since it groups all of the events that happened in each time window. As in the previous example, the built-in `sum` function then sums each group.
+The following example uses `range_join` with date-time columns as the range columns. This is a common use case, since it groups all of the events that happened in each time window. Both tables have a `Y` column, so the `group` aggregation names its output `RightY` to avoid replacing the left table's `Y`. As in the previous example, the built-in `sum` function then sums each group.
 
 ```python order=result_summed,result,left,right
 from deephaven.agg import group
@@ -250,6 +250,7 @@ left = empty_table(20).update(
         "StartTime = '2024-01-01T08:00:00 ET' + i * SECOND",
         "EndTime = StartTime + 5 * SECOND",
         "X = ii",
+        "Y = X % 5",
     ]
 )
 
@@ -258,10 +259,10 @@ right = empty_table(20).update(
 )
 
 result = left.range_join(
-    table=right, on=["StartTime < Timestamp < EndTime"], aggs=group("Y")
+    table=right, on=["StartTime < Timestamp < EndTime"], aggs=group("RightY = Y")
 )
 
-result_summed = result.update(["SumY = sum(Y)"])
+result_summed = result.update(["SumRightY = sum(RightY)"])
 ```
 
 ## Related documentation

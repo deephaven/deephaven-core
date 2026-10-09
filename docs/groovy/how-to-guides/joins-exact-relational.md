@@ -12,7 +12,7 @@ This guide covers exact and relational joins in Deephaven. Both kinds of join co
   - [`leftOuterJoin`](../reference/table-operations/join/left-outer-join.md)
   - [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md)
 
-To join three or more tables on matching key values in one operation, use [`MultiJoinFactory.of`](../reference/table-operations/join/multijoin.md), described in [Join three or more tables](#join-three-or-more-tables). The key columns can have different names in each table.
+To join three or more tables on matching key values in one operation, use [`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md), described in [Join three or more tables](#join-three-or-more-tables). The key columns can have different names in each table.
 
 Exact and relational joins match key values exactly. To match on the nearest value or on a range of values, see [Inexact, time-series, and range joins](./joins-timeseries-range.md).
 
@@ -31,7 +31,7 @@ Answer these questions to choose a join method:
 - Should the result include right-table rows that match nothing in the left table?
   - Only [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md) includes them, with null values in the left table's columns.
 - Are you joining three or more tables on the same keys, even if the key column names differ, with at most one row per key in each table?
-  - Use [`MultiJoinFactory.of`](../reference/table-operations/join/multijoin.md).
+  - Use [`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md).
 
 The following flowchart walks through the same choices, including the inexact joins described in [Inexact, time-series, and range joins](./joins-timeseries-range.md).
 
@@ -42,7 +42,7 @@ The following flowchart walks through the same choices, including the inexact jo
 [`join`](../reference/table-operations/join/join.md), [`exactJoin`](../reference/table-operations/join/exact-join.md), and [`naturalJoin`](../reference/table-operations/join/natural-join.md) are methods of the left table:
 
 ```groovy syntax
-// Include all non-key columns from the right table
+// Include all right table columns except those sharing a name with a left match column
 result = leftTable.joinMethod(rightTable, columnsToMatch)
 
 // Include only some non-key columns from the right table
@@ -54,7 +54,7 @@ result = leftTable.joinMethod(rightTable, columnsToMatch, columnsToAdd)
 ```groovy syntax
 import io.deephaven.engine.util.OuterJoinTools
 
-// Include all non-key columns from the right table
+// Include all right table columns except those sharing a name with a left match column
 result = OuterJoinTools.outerJoinMethod(leftTable, rightTable, columnsToMatch)
 
 // Include only some non-key columns from the right table
@@ -63,10 +63,10 @@ result = OuterJoinTools.outerJoinMethod(leftTable, rightTable, columnsToMatch, c
 
 Besides the two tables, these operations take two main arguments. Each is a `String` of comma-separated column names or expressions:
 
-- `columnsToMatch`: The key columns to match. Required for `exactJoin`, `naturalJoin`, and the outer joins. Optional for `join`, which pairs every left row with every right row when `columnsToMatch` is omitted.
-- `columnsToAdd` (optional): The columns from the right table to add to the left table. If omitted, the join adds all non-key columns from the right table.
+- `columnsToMatch`: The key columns to match. Required for `exactJoin`, `naturalJoin`, and the outer joins. [`join`](../reference/table-operations/join/join.md) can omit it, as in `leftTable.join(rightTable)`, which pairs every left row with every right row. For [`leftOuterJoin`](../reference/table-operations/join/left-outer-join.md) and [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md), an empty string (`""`) has the same effect.
+- `columnsToAdd` (optional): The columns from the right table to add to the left table. If omitted, the join adds every right table column except those whose names match a left table column in `columnsToMatch`. A right table match column with a different name from its left table match column, such as `DeptID` in `"DeptNumber = DeptID"`, is added.
 
-A key column can be of any data type, but each pair of matched columns in the left and right tables _must_ have the same data type.
+A key column can be of any data type, but each pair of matched columns in the left and right tables _must_ have the same data type. Custom objects used as keys must implement consistent `equals` and `hashCode` methods.
 
 ### Match columns with different names
 
@@ -155,7 +155,7 @@ result = departments.join(employees, "DeptID")
 ```
 
 > [!TIP]
-> Because [`join`](../reference/table-operations/join/join.md) includes every matching combination of left and right rows, its output can be much larger than either input. A large result also costs more to maintain on [ticking tables](../conceptual/table-update-model.md), whose rows change over time. If each left row needs at most one right match, use [`naturalJoin`](../reference/table-operations/join/natural-join.md) instead. It is faster, and its result has the same number of rows as the left table.
+> [`join`](../reference/table-operations/join/join.md) produces a result row for every matching pair of left and right table rows and reserves space in each result row key for the matching right table rows. This makes it slow relative to [`naturalJoin`](../reference/table-operations/join/natural-join.md). Its result can also be much larger than either input, which costs more to maintain on [ticking tables](../conceptual/table-update-model.md). If each left row needs at most one right match, use [`naturalJoin`](../reference/table-operations/join/natural-join.md) instead. Its result has the same number of rows as the left table.
 
 ### `leftOuterJoin`
 
@@ -185,7 +185,7 @@ result = OuterJoinTools.fullOuterJoin(departments, employees, "DeptID")
 
 ## Join three or more tables
 
-[`MultiJoinFactory.of`](../reference/table-operations/join/multijoin.md) joins any number of tables on a common set of key columns in a single operation. The result has one row for each distinct key found in any input table. Each input table adds its columns to that row. As with [`naturalJoin`](../reference/table-operations/join/natural-join.md) in its default mode, an input table can have at most one row per key, and `MultiJoinFactory.of` fails if an input has duplicate keys. An input table with no row for a key contributes null values.
+[`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md) joins any number of tables on a common set of key columns in a single operation. The result has one row for each distinct key found in any input table. Each input table adds its columns to that row. As with [`naturalJoin`](../reference/table-operations/join/natural-join.md) in its default mode, an input table can have at most one row per key, and `MultiJoinFactory.of` fails if an input has duplicate keys. An input table with no row for a key contributes null values.
 
 `MultiJoinFactory.of` returns a [`MultiJoinTable`](../reference/table-operations/join/MultiJoinTable.md) object rather than a table. To get the result table, call its `table` method.
 
@@ -272,7 +272,7 @@ result = MultiJoinFactory.of(
 - [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md)
 - [`join`](../reference/table-operations/join/join.md)
 - [`leftOuterJoin`](../reference/table-operations/join/left-outer-join.md)
-- [`MultiJoinFactory.of`](../reference/table-operations/join/multijoin.md)
+- [`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md)
 - [`MultiJoinInput`](../reference/table-operations/join/MultiJoinInput.md)
 - [`MultiJoinTable`](../reference/table-operations/join/MultiJoinTable.md)
 - [`naturalJoin`](../reference/table-operations/join/natural-join.md)
