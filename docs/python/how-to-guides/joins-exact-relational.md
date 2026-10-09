@@ -33,7 +33,7 @@ Answer these questions to choose a join method:
 - Are you joining three or more tables on the same keys, even if the key column names differ, with at most one row per key in each table?
   - Use [`multi_join`](../reference/table-operations/join/multi-join.md).
 
-The following flowchart walks through the same choices for two tables, including the inexact joins described in [Inexact, time-series, and range joins](./joins-timeseries-range.md).
+The following flowchart walks through the same choices, including the inexact joins described in [Inexact, time-series, and range joins](./joins-timeseries-range.md).
 
 <Svg src='../assets/conceptual/joins3.svg' style={{height: 'auto', maxWidth: '100%'}} />
 
