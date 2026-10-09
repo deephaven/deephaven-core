@@ -10,17 +10,15 @@ The `where` method filters rows of data from the source table.
 ## Syntax
 
 ```python syntax
-table.where(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Table
+table.where(filters: Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]] = None) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="filters" type="Union[str, Filter, Sequence[str], Sequence[Filter]]">
+<Param name="filters" type="Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]" Optional>
 
-Formulas for filtering as a list of [Strings](../../query-language/types/strings.md).
-
-Any filter is permitted, as long as it is not refreshing and does not use row position/key variables or arrays.
+Formulas for filtering as a list of [Strings](../../query-language/types/strings.md), or [`Filter`](../../query-language/types/Filter.md) objects, such as a serial filter or one that declares or respects barriers.
 
 </Param>
 </ParamTable>
@@ -74,7 +72,7 @@ source = new_table(
 result = source.where(filters=["Number > 3"])
 ```
 
-The following returns rows where `Color` is `blue` and `Number` is greater than 3.
+The following returns rows where `Color` is `blue` and `Number` is greater than 2.
 
 ```python order=source,result
 from deephaven import new_table
@@ -91,7 +89,7 @@ source = new_table(
         int_col("Code", [12, 14, 11, NULL_INT, 16, 14, NULL_INT]),
     ]
 )
-result = source.where(filters=["Color = `blue`", "Number > 3"])
+result = source.where(filters=["Color = `blue`", "Number > 2"])
 ```
 
 The following returns rows where `Color` is `blue` or `Number` is greater than 3.
@@ -137,7 +135,7 @@ result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn)
 
 By default, Deephaven can parallelize filter evaluation across multiple CPU cores when the input is large enough. For filters with side effects or order dependencies, use [`with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
 
-This filter tracks how many rows it evaluates. Once more than about 131,072 rows reach this filter, it becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and, for a Python-backed filter, a free-threaded Python build; a standard GIL-enabled build never invokes it concurrently. That is current behavior, not a guarantee. Only `with_serial` promises that the filter's rows are evaluated in row-set order, so use it to protect a filter like this regardless of build. The example below uses 100 rows for clarity.
+This filter tracks how many rows it evaluates. Once more than about 131,072 rows reach this filter, it becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and, for a Python-backed filter, a free-threaded Python build; a standard GIL-enabled build never invokes it concurrently. That is current behavior, not a guarantee. Only [`with_serial`](../../query-language/types/Filter.md#with_serial) promises that the filter's rows are evaluated in row-set order, so use it to protect a filter like this regardless of build. The example below uses 100 rows for clarity.
 
 ```python order=source,result
 from deephaven.filters import Filter
@@ -170,10 +168,10 @@ Deephaven applies a filter this way even when filters are configured to be state
 A filter on partitioning columns is not applied this way if:
 
 - It is marked serial with [`with_serial`](../../query-language/types/Filter.md#with_serial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows instead of on whole partitions. Later stateless filters can still be reordered among themselves by cost.
-- It respects a barrier declared by a filter that isn't applied this way.
+- It respects a barrier declared by a filter that is not applied this way.
 - It uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
 
-Mark a filter on partitioning columns serial only when the order in which it's evaluated matters.
+Mark a filter on partitioning columns serial only when the order in which it is evaluated matters.
 
 ## Related documentation
 

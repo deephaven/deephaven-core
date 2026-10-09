@@ -28,7 +28,10 @@ The following aggregations are supported:
 - [`count_`](../group-and-aggregate/AggCount.md)
 - [`count_distinct`](../group-and-aggregate/AggCountDistinct.md)
 - [`count_where`](../group-and-aggregate/AggCountWhere.md)
+- [`distinct`](../group-and-aggregate/AggDistinct.md)
 - [`first`](../group-and-aggregate/AggFirst.md)
+- [`formula`](../group-and-aggregate/AggFormula.md)
+- [`group`](../group-and-aggregate/AggGroup.md)
 - [`last`](../group-and-aggregate/AggLast.md)
 - [`max_`](../group-and-aggregate/AggMax.md)
 - [`min_`](../group-and-aggregate/AggMin.md)
@@ -49,7 +52,7 @@ Zero or more column names to group on and create a hierarchy from. If `None`, no
 </Param>
 <Param name="include_constituents" optional type="bool">
 
-Whether or not to include constituent rows at the leaf level. Default is False.
+Whether or not to include constituent rows at the leaf level. Default is `False`.
 
 </Param>
 </ParamTable>
@@ -58,7 +61,7 @@ Whether or not to include constituent rows at the leaf level. Default is False.
 
 ### Instance
 
-- `with_filters(filters...)` - Create a new rollup table that applies a set of filters to the `groupByColumns` of the rollup table.
+- `with_filters(filters)` - Create a new rollup table that applies a set of filters to the source table before the rollup. Filters may use group-by and constituent columns but not aggregation columns.
 - `with_update_view(columns...)` - Create a new rollup table that applies a set of `update_view` operations to the `groupByColumns` of the rollup table.
 - `node_operation_recorder(nodeType)` - Get a [`recorder`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.RollupNodeOperationsRecorder) for per-node operations to apply during snapshots of the requested [`NodeType`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeType.html).
 - `with_node_operations(recorders...)` - Create a new rollup table that applies the [`recorded`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.RollupNodeOperationsRecorder) operations to nodes when gathering snapshots.
@@ -69,7 +72,7 @@ A rollup table.
 
 ## Examples
 
-The following example creates two rollup tables from a source table of insurance expense data. The first performs no aggregations, but creates a hierarchy from the `region` and `age` columns. The second performs two aggregations: the aggregated average of the `bmi` and `expenses` columns are calculated, then the same `by` columns are given as the first. The optional argument `include_constituents` is set to `True` so that members of the lowest-level nodes (individual cells) can be expanded.
+The following example creates a rollup table from a source table of insurance expense data. The aggregated average of the `bmi` and `expenses` columns is calculated, then the table is rolled up by the `region` and `age` columns.
 
 ```python order=insurance,insurance_rollup
 from deephaven import read_csv, agg
@@ -187,9 +190,9 @@ reaggregated_sum = source.update_view(formulas=["Sum=Value"]).rollup(
 
 If a new row with the key `Delta` is added to the source, `simple_sum` will read all eight rows again to recalculate the sums. However, `reaggregated_sum` will only recalculate the sum for `Delta` and then read the intermediate sums for `Alpha`, `Bravo`, `Charlie`, and `Delta`, not all rows. As the number of keys and the size of the data grow, this difference can significantly impact performance.
 
-In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at each level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`.
+In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at the first level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`.
 
-Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve this discrepancy, the `updateView` method is used before the rollup to rename the `Value` column to `Sum`. If the rename was omitted and the original data was used directly, it would lead to inconsistencies in the results at different rollup levels.
+Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve this discrepancy, the `update_view` method is used before the rollup to rename the `Value` column to `Sum`. If the rename was omitted and the original data was used directly, it would lead to inconsistencies in the results at different rollup levels.
 
 If we ran the same example without the rename:
 
@@ -224,7 +227,7 @@ Exception message         : Cannot find variable or class Value
 
 ### Formula depth and keys
 
-Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) containing the keys of the rows at the current level of the rollup. The following formulas demonstrate the values of depth and keys:
+Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) of `String` containing the names of the group-by columns in effect at the current level of the rollup: empty at the root, `["Key"]` at depth 1, and `["Key", "Key2"]` at depth 2 in the examples below. The following formulas demonstrate the values of depth and keys:
 
 ```python order=depth_and_keys,source
 from deephaven import new_table

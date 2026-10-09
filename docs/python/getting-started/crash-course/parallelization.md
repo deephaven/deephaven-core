@@ -153,7 +153,7 @@ def get_next_id() -> int:
 
 
 # INCORRECT: parallel execution corrupts the counter
-result = empty_table(100).update("ID = get_next_id()")
+result = empty_table(5_000_000).update("ID = get_next_id()")
 ```
 
 The intent is for each row to get a unique ID: 1, 2, 3, and so on. On a free-threaded Python build with a table of millions of rows, Deephaven can split this column across cores, so several cores can call `get_next_id` at the same time. This doesn't throw an error. Instead, it silently produces wrong values like:
@@ -172,7 +172,7 @@ Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both
 
 ### The fix: force sequential processing with `with_serial`
 
-The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula serially: never running concurrently with itself, with rows evaluated one at a time in row-set order:
+The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula serially. The formula never runs concurrently with itself, and its rows are evaluated one at a time, in order:
 
 ```python test-set=serial order=result
 from deephaven import empty_table
@@ -193,17 +193,17 @@ result = empty_table(100).update(col)
 ```
 
 > [!NOTE]
-> With only 100 rows, this example wouldn't show the race even without `with_serial`. Use `with_serial` whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and `with_serial` is what guarantees this formula's rows are processed one at a time, in order.
+> With only 100 rows, this example wouldn't show the race even without [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) is what guarantees this formula's rows are processed one at a time, in order.
 
-`with_serial` keeps one column from running concurrently with itself. If several columns use the same state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). If several tables use it, `with_serial` and barriers can't coordinate them, so make the shared code itself thread-safe (for example, protect it with a lock). `with_serial` works with `update`, `select`, and `where`; `view` and `update_view` compute values when they're read, so they don't support it.
+[`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) keeps one column from running concurrently with itself. If several columns use the same state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). If several tables use it, [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and barriers can't coordinate them, so make the shared code itself thread-safe (for example, protect it with a lock). [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) works with [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), and [`where`](../../reference/table-operations/filter/where.md); [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) compute values when they're read, so they don't support it.
 
-**Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use `with_serial` when your formula requires it for correctness.
+**Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when your formula requires it for correctness.
 
 ## Key takeaways
 
 - Deephaven assumes formulas are safe to run in parallel by default. This is fast but requires stateless code.
 - Shared state or row-order dependencies cause silent errors with parallelization.
-- Use `with_serial` when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need barriers; when several tables do, the shared code must be thread-safe.
+- Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need barriers; when several tables do, the shared code must be thread-safe.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically, with no extra code required.
 

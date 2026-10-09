@@ -2,7 +2,7 @@
 title: Barrier
 ---
 
-A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is a synchronization primitive for coordinating execution order between column calculations and filters. A `Barrier` instance carries no data of its own — it is a unique marker you create once and share between the operations that need to coordinate.
+A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is a synchronization primitive for coordinating execution order between column calculations and filters. A `Barrier` instance carries no data of its own. It is a unique marker you create once and share between the operations that need to coordinate.
 
 ## Why use a barrier?
 
@@ -28,9 +28,9 @@ One operation **declares** the barrier — it goes first. Another operation **re
 - [`with_respected_barriers(barriers)`](./ConcurrencyControl.md#with_respected_barriers) — this operation respects the given barrier(s); it does not start until the operation that declares each barrier has finished.
 
 > [!IMPORTANT]
-> A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
+> A barrier only coordinates expressions passed to the **same** [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
 >
-> For a `Selectable`, a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during `select`/`update` processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `get_and_increment_counter()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated once per row, so it can freely use barriers.
+> For a [`Selectable`](./Selectable.md), a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during [`select`](../../table-operations/select/select.md)/[`update`](../../table-operations/select/update.md) processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `get_and_increment_counter()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated for each row, so it can freely use barriers.
 
 ### Example: coordinating two columns
 
@@ -70,11 +70,11 @@ col_b = (
 t = empty_table(10).update([col_a, col_b])
 ```
 
-`A` gets values 0-9. `B` gets values 10-19. Without the barrier, there is no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without `with_serial`, a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
+`A` gets values 0-9. `B` gets values 10-19. Without the barrier, there is no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without [`with_serial`](./ConcurrencyControl.md#with_serial), a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
 
 ### Example: coordinating two filters
 
-Barriers work the same way for [`Filter`](./Filter.md) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `with_serial`: on the common GIL-enabled build, the GIL already serializes the underlying `dict` writes; on a free-threaded build, `dict`'s own internal per-object locking keeps a simple assignment to a distinct key thread-safe without extra synchronization (free-threaded CPython only requires an explicit lock for compound operations or invariants spanning more than one dict access). Either way, the barrier — not `with_serial` — is what enforces that the cache is fully populated before it is read:
+Barriers work the same way for [`Filter`](./Filter.md) objects in [`where`](../../table-operations/filter/where.md) operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs [`with_serial`](./ConcurrencyControl.md#with_serial): on the common GIL-enabled build, the GIL already serializes the underlying `dict` writes; on a free-threaded build, `dict`'s own internal per-object locking keeps a simple assignment to a distinct key thread-safe without extra synchronization (free-threaded CPython only requires an explicit lock for compound operations or invariants spanning more than one dict access). Either way, the barrier — not [`with_serial`](./ConcurrencyControl.md#with_serial) — is what enforces that the cache is fully populated before it is read:
 
 ```python order=result
 from deephaven.concurrency_control import Barrier
@@ -140,6 +140,7 @@ Execution order:
 
 ## Related documentation
 
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [ConcurrencyControl](./ConcurrencyControl.md)
 - [Selectable](./Selectable.md)
 - [Filter](./Filter.md)

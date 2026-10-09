@@ -20,7 +20,7 @@ A crash course in Deephaven that covers the basics of working with tables and pl
 
 ## Get started
 
-This guide provides a broad - but clear and technically informative - overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
+This guide provides a broad, clear, and technically informative overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
 
 </CoreTutorialCard>
 
@@ -60,7 +60,7 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 ## Query parallelization
 
-Learn how Deephaven automatically uses multiple CPU cores to improve query performance, and how to write queries that leverage parallelization effectively.
+Learn how Deephaven automatically runs queries on multiple CPU cores, which formulas that is safe for, and how to force sequential processing when a formula needs it.
 
 </CoreTutorialCard>
 

@@ -49,7 +49,7 @@ result = emptyTable(10).update([col])
 ```
 
 > [!IMPORTANT]
-> [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md) accept `Selectable` objects, but they compute values on-demand and cannot guarantee processing order. The three concurrency control methods behave differently there: `withRespectedBarriers` throws an error on `view`/`updateView` ("view and updateView cannot respect barriers"), and `withSerial` throws an error on `view`/`updateView` under the default configuration ("A stateful column cannot safely be used in a view or updateView"). `withDeclaredBarriers` on `view`/`updateView`, and all three methods on `lazyUpdate`, are silently unenforced rather than rejected. Use [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) instead when you need serial evaluation or barriers.
+> [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md) accept `Selectable` objects, but they compute values on-demand and cannot guarantee processing order. The three concurrency control methods behave differently there: `withRespectedBarriers` throws an error on `view`/`updateView` ("view and updateView cannot respect barriers"), and [`withSerial`](./ConcurrencyControl.md#withserial) throws an error on `view`/`updateView` under the default configuration ("A stateful column cannot safely be used in a view or updateView"). `withDeclaredBarriers` on `view`/`updateView`, and all three methods on `lazyUpdate`, are accepted and have no effect on evaluation order. The usual barrier validation still applies: a respected barrier must be declared earlier in the same call, each barrier is declared once, and a constant-valued column cannot declare or respect one. Use [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) instead when you need serial evaluation or barriers.
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
@@ -77,13 +77,13 @@ If both of those are true, use string formulas directly. There is no benefit to 
 
 You need a `Selectable` object when parallel execution would produce incorrect results. This happens when your formula is **stateful** — it reads or writes shared state that changes between rows.
 
-**Use `withSerial`** when your formula must process rows in row-set order, not in parallel. Common cases include:
+**Use [`withSerial`](./ConcurrencyControl.md#withserial)** when your formula must process rows in row-set order, not in parallel. Common cases include:
 
 - A counter or accumulator that increments for each row.
 - Logging or file writes that must happen sequentially.
 - Any formula where the result for row N depends on what happened in row N-1.
 
-**Use barriers** when one column must finish all its rows before another column starts. When several columns share state, use barriers together with `withSerial` on each column: a barrier orders the columns, but it doesn't stop a column's own rows from running in parallel. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
+**Use barriers** when one column must finish all its rows before another column starts. When several columns share state, use barriers together with [`withSerial`](./ConcurrencyControl.md#withserial) on each column: a barrier orders the columns, but it does not stop a column's own rows from running in parallel. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
 If you are unsure whether your formula is safe for parallel execution, ask: "Would this produce the same result if the rows were processed in a random order by multiple threads?" If the answer is no, you need a `Selectable`.
 

@@ -21,11 +21,6 @@ table.where(filters...)
 Formulas for filtering as a list of [Strings](../../query-language/types/strings.md).
 
 </Param>
-<Param name="filters" type="Collection">
-
-Collection of formulas for filtering.
-
-</Param>
 <Param name="filter" type="Filter">
 
 A [`Filter`](../../query-language/types/Filter.md) object, such as a serial filter or one that declares or respects barriers.
@@ -65,7 +60,7 @@ source = newTable(
 result = source.where("Number > 3")
 ```
 
-The following returns rows where `Color` is `blue` and `Number` is greater than 3.
+The following returns rows where `Color` is `blue` and `Number` is greater than 2.
 
 ```groovy order=source,result
 source = newTable(
@@ -75,7 +70,7 @@ source = newTable(
     intCol("Code", 12, 13, 11, NULL_INT, 16, 14, NULL_INT),
 )
 
-result = source.where("Color = `blue`", "Number > 3")
+result = source.where("Color = `blue`", "Number > 2")
 ```
 
 The following returns rows where `Color` is `blue` or `Number` is greater than 3.
@@ -94,7 +89,7 @@ source = newTable(
 result = source.where(FilterOr.of(Filter.from("Color = `blue`", "Number > 3")))
 ```
 
-The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required because the query-language compiler can't determine a closure's return type, so it types the call as `Object`. A native method with a declared `boolean` return type does not need the cast.
+The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required because the query-language compiler cannot determine a closure's return type, so it types the call as `Object`. A native method with a declared `boolean` return type does not need the cast.
 
 ```groovy order=source,result_filtered,result_not_filtered
 my_filter = { int a -> a <= 4 }
@@ -111,7 +106,7 @@ result_not_filtered = source.where("!((boolean)my_filter(IntegerColumn))")
 
 By default, Deephaven can parallelize filter evaluation across multiple CPU cores when the input is large enough. For filters with side effects or order dependencies, use [`withSerial`](../../query-language/types/Filter.md#withserial) to force sequential processing.
 
-This filter tracks how many rows it evaluates. Once more than about 131,072 rows reach this filter, it becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and a parallel-capable filter — and the counter could produce incorrect results if it does. The example below uses 100 rows for clarity; use `withSerial` to protect larger inputs:
+This filter tracks how many rows it evaluates. Once more than about 131,072 rows reach this filter, it becomes eligible for parallel evaluation. It is not guaranteed to run in parallel, since that also depends on available worker threads. That is current behavior, not a guarantee. Only [`withSerial`](../../query-language/types/Filter.md#withserial) promises that the filter's rows are evaluated in row-set order, so use it to protect a filter like this regardless of input size. The example below uses 100 rows for clarity:
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
@@ -142,10 +137,10 @@ Deephaven applies a filter this way even when filters are configured to be state
 A filter on partitioning columns is not applied this way if:
 
 - It is marked serial with [`withSerial`](../../query-language/types/Filter.md#withserial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows instead of on whole partitions. Later stateless filters can still be reordered among themselves by cost.
-- It respects a barrier declared by a filter that isn't applied this way.
+- It respects a barrier declared by a filter that is not applied this way.
 - It uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
 
-Mark a filter on partitioning columns serial only when the order in which it's evaluated matters.
+Mark a filter on partitioning columns serial only when the order in which it is evaluated matters.
 
 ## Related documentation
 

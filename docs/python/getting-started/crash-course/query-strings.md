@@ -68,7 +68,7 @@ special_meta = special_vars.meta_table
 ```
 
 > [!NOTE]
-> The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
+> On a refreshing table, the special variables `i` and `ii` can only be used when the table is [append-only](../../conceptual/table-types.md#specialization-1-append-only) or blink. Static tables have no restriction.
 
 Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
@@ -430,7 +430,7 @@ column_as_array = empty_table(10).update(
 )
 ```
 
-This functionality is only supported for static and append-only ticking tables. See [working with arrays](../../how-to-guides/work-with-arrays.md) for more information.
+Column arrays such as `X_` work on static tables and on blink tables. On other refreshing tables, including append-only tables, the engine rejects them, except for constant-offset access such as `X_[ii - 2]`. See [working with arrays](../../how-to-guides/work-with-arrays.md) for more information.
 
 ## Python in query strings
 
@@ -543,7 +543,7 @@ add_vars_class_meta = add_vars_class.meta_table
 
 To learn more about using Python in query strings, see [Python in query strings](../../how-to-guides/query-string-overview.md#python).
 
-Scoping in Deephaven follows Python's [LEGB](https://realpython.com/python-scope-legb-rule/) scoping rules. Functions that return tables or otherwise make use of query strings should pay careful attention to scoping details.
+Query strings resolve variables from the function's local scope and then the global scope, similar to Python's [LEGB](https://realpython.com/python-scope-legb-rule/) rule but without the enclosing scope. Functions that return tables or otherwise use query strings should pay careful attention to scoping details.
 
 ```python test-set=2 order=source,result1,result2
 def f(a, b) -> int:
@@ -564,4 +564,4 @@ For more information, see [scoping rules](../../how-to-guides/query-scope.md).
 
 ### Parallel-safety of query-string functions
 
-When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. Whether a function you call from a query string is safe under that comes down to whether it's **stateless** (output depends only on its inputs, like `x * 2`) or **stateful** (reads or modifies mutable external state that changes between calls, like a counter). See [Query parallelization](./parallelization.md) for the full picture, including a worked example of a stateful function producing corrupted output when parallelized, and how to force sequential execution with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).
+When Deephaven parallelizes a query, it may process rows in any order on several CPU cores. A function you call from a query string is safe to run that way when it is **stateless**: its output depends only on its inputs, like `x * 2`. It is not safe when it is **stateful**: it reads or changes state outside the function that changes between calls, like a counter. See [Query parallelization](./parallelization.md) for a worked example of a stateful function producing corrupted output, and how to force sequential execution with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).

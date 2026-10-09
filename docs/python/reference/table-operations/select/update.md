@@ -7,7 +7,7 @@ The `update` method creates a new table containing a new, in-memory column for e
 When using `update`, the new columns are evaluated and stored in memory. Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
-> The syntax for the `update`, [`update_view`](./update-view.md), and [`lazy_update`](./lazy-update.md) methods is identical, as is the resulting table. `update` is recommended when:
+> `update`, [`update_view`](./update-view.md), and [`lazy_update`](./lazy-update.md) accept the same formula strings and produce a table with the same columns. `update` is recommended when:
 >
 > 1. all the source columns are desired in the result,
 > 2. the formula is expensive to evaluate,
@@ -38,7 +38,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, the new columns (`A`, `X`, and `Y`) allocate memory and are immediately populated with values. Columns `B` and `C` refer to columns in the source table and do not allocate memory.
+In the following example, the new column `Y` allocates memory and is immediately populated with values. `A`, `X`, `B`, and `C` refer to columns in the source table, which are already in memory, so they do not allocate memory.
 
 ```python order=source,result
 from deephaven import new_table
@@ -57,7 +57,7 @@ result = source.update(formulas=["A", "X = B", "Y = sqrt(C)"])
 
 ## Serial execution
 
-By default, Deephaven can parallelize `update` calculations across multiple CPU cores when the input is large enough. If your formula has side effects or depends on row order, use `with_serial` to force sequential processing.
+By default, Deephaven can parallelize `update` calculations across multiple CPU cores when the input is large enough. If your formula has side effects or depends on row order, use [`with_serial`](../../query-language/types/Selectable.md#with_serial) to force sequential processing.
 
 ```python order=result
 from deephaven.table import Selectable

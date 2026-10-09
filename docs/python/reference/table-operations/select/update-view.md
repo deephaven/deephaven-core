@@ -7,7 +7,7 @@ The `update_view` method creates a new table containing a new formula column for
 When using `update_view`, the new columns are not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
 
 > [!NOTE]
-> The syntax for the `update_view`, [`update`](./update.md), and [`lazy_update`](./lazy-update.md) methods is identical, as is the resulting table. `update_view` is recommended when:
+> `update_view`, [`update`](./update.md), and [`lazy_update`](./lazy-update.md) accept the same formula strings and produce a table with the same columns. `update_view` is recommended when:
 >
 > 1. the formula is fast to compute,
 > 2. only a small portion of the data is being accessed,

@@ -14,7 +14,7 @@ from deephaven.table import Selectable
 col = Selectable.parse("NewColumn = ExistingColumn * 2")
 ```
 
-Once created, you can chain concurrency control methods like `with_serial` before passing the `Selectable` to a table operation.
+Once created, you can chain concurrency control methods like [`with_serial`](./ConcurrencyControl.md#with_serial) before passing the `Selectable` to a table operation.
 
 ## Methods
 
@@ -22,7 +22,7 @@ These methods control how Deephaven executes the column calculation. By default,
 
 ### `with_serial`
 
-Forces the column calculation to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula has side effects or depends on row order. With default settings, a calculation becomes eligible for parallel evaluation once it processes about 4.2 million rows or more: the whole table on initialization, or that cycle's added and modified rows on each update of a refreshing table; use `with_serial` to protect calculations that cannot tolerate that. A formula backed by a Python callback, like the one below, is only eligible for that parallel (concurrent) evaluation on a free-threaded Python build — on the standard GIL-enabled build, it is never invoked concurrently. However, that alone doesn't guarantee row-set order the way `with_serial` does: use `with_serial` for any formula with order-dependent side effects, regardless of Python build. The example below uses 10 rows for clarity — well below the parallelization threshold, so it demonstrates correctness rather than an observable speedup difference.
+Forces the column calculation to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula has side effects or depends on row order. With default settings, a calculation becomes eligible for parallel evaluation once it processes about 4.2 million rows or more: the whole table on initialization, or that cycle's added and modified rows on each update of a refreshing table; use [`with_serial`](./ConcurrencyControl.md#with_serial) to protect calculations that cannot tolerate that. A formula backed by a Python callback, like the one below, is only eligible for that parallel (concurrent) evaluation on a free-threaded Python build — on the standard GIL-enabled build, it is never invoked concurrently. However, that alone does not guarantee row-set order the way [`with_serial`](./ConcurrencyControl.md#with_serial) does: use [`with_serial`](./ConcurrencyControl.md#with_serial) for any formula with order-dependent side effects, regardless of Python build. The example below uses 10 rows for clarity — well below the parallelization threshold, so it demonstrates correctness rather than an observable speedup difference.
 
 ```python order=result
 from deephaven.table import Selectable
@@ -70,13 +70,13 @@ If both of those are true, use string formulas directly. There is no benefit to 
 
 You need a `Selectable` object when parallel execution would produce incorrect results. This happens when your formula is **stateful** — it reads or writes shared state that changes between rows.
 
-**Use `with_serial`** when your formula must process rows in row-set order, not in parallel. Common cases include:
+**Use [`with_serial`](./ConcurrencyControl.md#with_serial)** when your formula must process rows in row-set order, not in parallel. Common cases include:
 
 - A counter or accumulator that increments for each row.
 - Logging or file writes that must happen sequentially.
 - Any formula where the result for row N depends on what happened in row N-1.
 
-**Use barriers** when one column must finish all its rows before another column starts. When several columns share state, use barriers together with `with_serial` on each column: a barrier orders the columns, but it doesn't stop a column's own rows from running in parallel. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
+**Use barriers** when one column must finish all its rows before another column starts. When several columns share state, use barriers together with [`with_serial`](./ConcurrencyControl.md#with_serial) on each column: a barrier orders the columns, but it does not stop a column's own rows from running in parallel. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
 If you are unsure whether your formula is safe for parallel execution, ask: "Would this produce the same result if the rows were processed in a random order by multiple threads?" If the answer is no, you need a `Selectable`.
 

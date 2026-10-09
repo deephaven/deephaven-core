@@ -28,9 +28,9 @@ One operation **declares** the barrier — it goes first. Another operation **re
 - [`withRespectedBarriers(barriers)`](./ConcurrencyControl.md#withrespectedbarriers) — this operation respects the given barrier(s); it does not start until the operation that declares each barrier has finished.
 
 > [!IMPORTANT]
-> A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
+> A barrier only coordinates expressions passed to the **same** [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
 >
-> For a `Selectable`, a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during `select`/`update` processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `counter.getAndIncrement()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated once per row, so it can freely use barriers.
+> For a [`Selectable`](./Selectable.md), a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during [`select`](../../table-operations/select/select.md)/[`update`](../../table-operations/select/update.md) processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `counter.getAndIncrement()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated for each row, so it can freely use barriers.
 
 ### Example: coordinating two columns
 
@@ -57,11 +57,11 @@ colB = Selectable.parse("B = counter.getAndIncrement()")
 t = emptyTable(10).update([colA, colB])
 ```
 
-Column `A` gets values 0-9. Column `B` gets values 10-19. Without the barrier, there is no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without `withSerial`, a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
+Column `A` gets values 0-9. Column `B` gets values 10-19. Without the barrier, there is no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without [`withSerial`](./ConcurrencyControl.md#withserial), a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
 
 ### Example: coordinating two filters
 
-Barriers work the same way for [`Filter`](./Filter.md) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `withSerial` — a `ConcurrentHashMap` is already safe for concurrent writes to distinct keys — so the barrier is the only thing enforcing that the cache is fully populated before it is read:
+Barriers work the same way for [`Filter`](./Filter.md) objects in [`where`](../../table-operations/filter/where.md) operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs [`withSerial`](./ConcurrencyControl.md#withserial) — a `ConcurrentHashMap` is already safe for concurrent writes to distinct keys — so the barrier is the only thing enforcing that the cache is fully populated before it is read:
 
 ```groovy order=result
 import io.deephaven.api.filter.Filter
@@ -121,6 +121,7 @@ Execution order:
 
 ## Related documentation
 
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [ConcurrencyControl](./ConcurrencyControl.md)
 - [Selectable](./Selectable.md)
 - [Filter](./Filter.md)

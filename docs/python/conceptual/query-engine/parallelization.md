@@ -60,7 +60,7 @@ Also within a single table, when you compute multiple columns in the same operat
 
 ### What is and isn't parallelized
 
-Deephaven parallelizes work at two levels: across tables and within one operation.
+Deephaven parallelizes work at two levels: across tables ([Concurrent table updates](#concurrent-table-updates)) and within one operation ([Concurrent row calculations](#concurrent-row-calculations) and [Concurrent column calculations](#concurrent-column-calculations)).
 
 **Across tables.** The update graph updates independent tables at the same time, as described in [Concurrent table updates](#concurrent-table-updates). Every operation benefits from this.
 
@@ -73,13 +73,13 @@ Deephaven parallelizes work at two levels: across tables and within one operatio
 - [`range_join`](../../reference/table-operations/join/range-join.md): each group of matching rows.
 - [`transform`](../../reference/table-operations/partitioned-tables/transform.md) and [`proxy`](../../reference/table-operations/partitioned-tables/proxy.md) operations on a [partitioned table](../../how-to-guides/partitioned-tables.md): each constituent table is a separate task.
 
-Joins other than `range_join`, aggregations, [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), [`head`](../../reference/table-operations/filter/head.md), [`tail`](../../reference/table-operations/filter/tail.md), [`merge`](../../reference/table-operations/merge/merge.md), and [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) don't split their own work.
+Joins other than [`range_join`](../../reference/table-operations/join/range-join.md), aggregations, [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), [`head`](../../reference/table-operations/filter/head.md), [`tail`](../../reference/table-operations/filter/tail.md), [`merge`](../../reference/table-operations/merge/merge.md), and [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) don't split their own work.
 
-**What you can control.** [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and [barriers](#barriers) apply only to formulas and filters, which is where your code usually runs. `where_in`, `sort`, `update_by`, and `range_join` run only Deephaven's own code, which is always safe to run in parallel, so they have no per-call control. A `transform` function is your own code, but Deephaven runs it on several constituents at once and offers no per-call control, so make it thread-safe.
+**What you can control.** [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and [barriers](#barriers) apply only to formulas and filters, which is where your code usually runs. [`where_in`](../../reference/table-operations/filter/where-in.md), [`where_not_in`](../../reference/table-operations/filter/where-not-in.md), [`sort`](../../reference/table-operations/sort/sort.md), [`update_by`](../../reference/table-operations/update-by-operations/updateBy.md), and [`range_join`](../../reference/table-operations/join/range-join.md) run only Deephaven's own code, which is always safe to run in parallel, so they have no per-call control. A `transform` function is your own code, but Deephaven runs it on several constituents at once and offers no per-call control, so make it thread-safe.
 
 Two other cases work differently:
 
-- **Deferred evaluation**: [`view`](../../reference/table-operations/select/view.md), [`update_view`](../../reference/table-operations/select/update-view.md), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) don't compute anything when you call them. They store the formula and evaluate it whenever a cell is read, on whichever thread reads it. That evaluation can itself happen in parallel, for example when a downstream `update` that reads the column is split across cores, and a row can be evaluated more than once. This is also why `view` and `update_view` reject [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). There is no single evaluation pass to serialize.
+- **Deferred evaluation**: [`view`](../../reference/table-operations/select/view.md), [`update_view`](../../reference/table-operations/select/update-view.md), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) don't compute anything when you call them. They store the formula and evaluate it whenever a cell is read, on whichever thread reads it. That evaluation can itself happen in parallel, for example when a downstream [`update`](../../reference/table-operations/select/update.md) that reads the column is split across cores, and a row can be evaluated more than once. This is also why `view` and `update_view` reject [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). There is no single evaluation pass to serialize.
 - **Serialization you request**: an expression marked with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) always runs one row at a time. See [Controlling execution order](#controlling-execution-order).
 
 Separately, the update graph never updates a table before the tables it depends on have finished. That ordering is automatic.
@@ -154,7 +154,7 @@ The two controls solve different problems:
 - **[`with_serial`](../../reference/query-language/types/Selectable.md#with_serial)** processes the rows _within one column_ one at a time, in order. Other columns can still run at the same time.
 - **[Barriers](#barriers)** order columns _relative to each other_. One column finishes all its rows before another column starts. Rows within each column can still run in parallel.
 
-When columns share state, you often need both. [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) protects the shared state within each column, and a barrier makes one column finish before the other starts.
+When columns share state, you often need both. [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) protects the shared state within each column, and a [barrier](#barriers) makes one column finish before the other starts.
 
 ### Serialization
 
@@ -169,7 +169,7 @@ Without it, parallel execution can produce incorrect results, such as out-of-ord
 > [!NOTE]
 > Most queries don't need serial execution. Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) only when parallelization causes incorrect results.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`with_serial`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](../../reference/query-language/types/Filter.md) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](../../reference/query-language/types/Selectable.md) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method for [`Filter`](../../reference/query-language/types/Filter.md) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](../../reference/query-language/types/Selectable.md) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
 > You cannot use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) with [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute values on demand, when a cell is read, so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
@@ -227,7 +227,7 @@ col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
 result = empty_table(5_000_000).update(col)
 ```
 
-When a `Selectable` is serial, Deephaven evaluates every row in order, starting with row 0, and never runs the column concurrently with itself. That protects state that only this column uses. If another column uses the same state, add a [barrier](#barriers) as well. Barriers only order columns and filters within one operation, so if another table's formulas use the same state, make the shared code itself thread-safe, for example by protecting it with a lock.
+When a [`Selectable`](../../reference/query-language/types/Selectable.md) is serial, Deephaven evaluates every row in order, starting with row 0, and never runs the column concurrently with itself. That protects state that only this column uses. If another column uses the same state, add a [barrier](#barriers) as well. [Barriers](#barriers) only order columns and filters within one operation, so if another table's formulas use the same state, make the shared code itself thread-safe, for example by protecting it with a lock.
 
 #### Serial filters
 
@@ -266,11 +266,16 @@ A [`Barrier`](../../reference/query-language/types/Barrier.md) is an ordering de
 - One column **declares** the barrier. It runs first.
 - Another column **respects** the barrier. It waits.
 
-Deephaven guarantees that the declaring column finishes all of its rows before the respecting column starts. Only one column can declare a given barrier. Any number of columns can respect it. The declaring column must come before the respecting columns in the argument list. Respecting a barrier that no earlier column declared is an error. A barrier only orders columns and filters within one operation. It cannot order work across tables.
+Barrier rules:
+
+- The declaring column finishes all of its rows before the respecting column starts.
+- Only one column can declare a given barrier. Any number of columns can respect it.
+- The declaring column must come before the respecting columns in the argument list. Respecting a barrier that no earlier column declared is an error.
+- A barrier only orders columns and filters within one operation. It cannot order work across tables.
 
 #### Example: extending the counter with a barrier
 
-This example builds on the counter above. Two columns share the counter. Column `A` should assign IDs 0–9, and column `B` should continue from 10–19. Without a barrier, Deephaven does not promise which column runs first, so the two ranges could interleave or overlap instead of landing as two clean blocks. With a barrier, column `A` runs first and takes 0–9, then column `B` starts where `A` left off and takes 10–19:
+This example builds on the [counter example](#example-a-counter-needs-serialization). Two columns share the counter. Column `A` should assign IDs 0–9, and column `B` should continue from 10–19. Without a barrier, Deephaven does not promise which column runs first, so the two ranges could interleave or overlap instead of landing as two clean blocks. With a barrier, column `A` runs first and takes 0–9, then column `B` starts where `A` left off and takes 10–19:
 
 ```python order=t
 from deephaven.concurrency_control import Barrier
@@ -354,35 +359,35 @@ Barriers work the same way for [`Filter`](../../reference/query-language/types/F
 
 An implicit barrier is a barrier that Deephaven adds for you.
 
-When the [`QueryTable.serialSelectImplicitBarriers`](../query-table-configuration.md#stateless-by-default) property is on:
+When implicit barriers are turned on (see [Configuration](#configuration)):
 
 - Every column that is not stateless in a [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) waits for all earlier such columns in the same operation to finish.
 - With the default stateless-by-default setting, those are the columns you marked [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).
 - Each of them behaves as if it declared a barrier that every later one respects. You get the ordering without creating barrier objects.
 
-The property is off by default:
+They are off by default:
 
 - Serial columns only order their own rows.
-- Two serial columns in the same `update` can still run at the same time.
+- Two serial columns in the same [`update`](../../reference/table-operations/select/update.md) can still run at the same time.
 - You add an explicit barrier when one must finish before the other.
 
-Turn the property on when many serial columns share state and you would otherwise add a barrier between every pair. See [Configuration](#configuration).
+Turn them on when many serial columns share state and you would otherwise add a barrier between every pair. See [Configuration](#configuration).
 
 ## Configuration
 
 Parallelization is enabled by default with reasonable settings. The properties below change those settings. The linked page for each property describes it in full and explains how to set it.
 
-| Property                                                                                                      | Default                                          | What it controls                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| [`OperationInitializationThreadPool.threads`](../../reference/community-questions/manage-thread-pool-size.md) | All CPU cores                                    | Number of threads that compute a new table's initial result.                                                                            |
-| [`PeriodicUpdateGraph.updateThreads`](../../reference/community-questions/manage-thread-pool-size.md)         | All CPU cores                                    | Number of threads that process updates to live tables.                                                                                  |
-| [`QueryTable.minimumParallelSelectRows`](../query-table-configuration.md#parallel-processing-with-select)     | 4,194,304                                        | Minimum rows to process before `select` and `update` split them across cores.                                                           |
-| [`QueryTable.parallelWhereRowsPerSegment`](../query-table-configuration.md#parallel-processing-with-where)    | 65,536                                           | Rows per segment when `where` splits its work. Splitting starts above twice this many rows.                                             |
-| [`QueryTable.parallelSort`](../query-table-configuration.md#parallel-sorting)                                 | `true`                                           | Whether `sort` may run in parallel.                                                                                                     |
-| [`QueryTable.minimumParallelSortRows`](../query-table-configuration.md#parallel-sorting)                      | 1,048,576                                        | Minimum rows before `sort` runs in parallel.                                                                                            |
-| [`QueryTable.statelessSelectByDefault`](../query-table-configuration.md#stateless-by-default)                 | `true`                                           | Whether formulas are assumed safe to run in parallel unless marked serial.                                                              |
-| [`QueryTable.statelessFiltersByDefault`](../query-table-configuration.md#stateless-by-default)                | `true`                                           | Whether filters are assumed safe to run in parallel unless marked serial.                                                               |
-| [`QueryTable.serialSelectImplicitBarriers`](../query-table-configuration.md#stateless-by-default)             | `false` (opposite of `statelessSelectByDefault`) | Whether each serial column in a `select` or `update` waits for the earlier serial columns. See [Implicit barriers](#implicit-barriers). |
+| Property                                                                                                      | Default                                          | What it controls                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`OperationInitializationThreadPool.threads`](../../reference/community-questions/manage-thread-pool-size.md) | All CPU cores                                    | Number of threads that compute a new table's initial result.                                                                                                                                                                                      |
+| [`PeriodicUpdateGraph.updateThreads`](../../reference/community-questions/manage-thread-pool-size.md)         | All CPU cores                                    | Number of threads that process updates to live tables.                                                                                                                                                                                            |
+| [`QueryTable.minimumParallelSelectRows`](../query-table-configuration.md#parallel-processing-with-select)     | 4,194,304                                        | Minimum rows to process before [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md) split them across cores.                                                           |
+| [`QueryTable.parallelWhereRowsPerSegment`](../query-table-configuration.md#parallel-processing-with-where)    | 65,536                                           | Rows per segment when [`where`](../../reference/table-operations/filter/where.md) splits its work. Splitting starts above twice this many rows.                                                                                                   |
+| [`QueryTable.parallelSort`](../query-table-configuration.md#parallel-sorting)                                 | `true`                                           | Whether [`sort`](../../reference/table-operations/sort/sort.md) may run in parallel.                                                                                                                                                              |
+| [`QueryTable.minimumParallelSortRows`](../query-table-configuration.md#parallel-sorting)                      | 1,048,576                                        | Minimum rows before [`sort`](../../reference/table-operations/sort/sort.md) runs in parallel.                                                                                                                                                     |
+| [`QueryTable.statelessSelectByDefault`](../query-table-configuration.md#stateless-by-default)                 | `true`                                           | Whether formulas are assumed safe to run in parallel unless marked serial.                                                                                                                                                                        |
+| [`QueryTable.statelessFiltersByDefault`](../query-table-configuration.md#stateless-by-default)                | `true`                                           | Whether filters are assumed safe to run in parallel unless marked serial.                                                                                                                                                                         |
+| [`QueryTable.serialSelectImplicitBarriers`](../query-table-configuration.md#stateless-by-default)             | `false` (opposite of `statelessSelectByDefault`) | Whether each serial column in a [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) waits for the earlier serial columns. See [Implicit barriers](#implicit-barriers). |
 
 ## Key takeaways
 
@@ -393,7 +398,7 @@ Deephaven automatically parallelizes queries across all available CPU cores. Mos
 - [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) works with [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), [`where`](../../reference/table-operations/filter/where.md), and [`where_one_of`](../../reference/table-operations/filter/where-one-of.md). [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) compute values when they are read, so they do not support it.
 - [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) only orders rows within one column. It does not order columns relative to each other.
 - Use [barriers](#barriers) when one column must finish before another column starts.
-- When several columns share state, use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and barriers together.
+- When several columns share state, use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and [barriers](#barriers) together.
 - When several tables share state, make the shared code itself thread-safe, for example with a lock.
 
 ## Related documentation

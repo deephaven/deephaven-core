@@ -31,7 +31,7 @@ col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
 result = empty_table(10).update(col)
 ```
 
-When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), and the expression never runs concurrently with itself. That protects state that only this expression uses. State shared with other expressions in the same operation also needs barriers. Barriers don't reach across tables, so state shared with another table's formulas needs code that is itself thread-safe.
+When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), and the expression never runs concurrently with itself. That protects state that only this expression uses. State shared with other selectables in the same [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) call also needs barriers. A serial filter already orders itself against every other filter in the same [`where`](../../table-operations/filter/where.md) call, so filters do not. Barriers do not reach across tables, so state shared with another table's formulas needs code that is itself thread-safe.
 
 > [!NOTE]
 > Not running concurrently is not the same guarantee `with_serial` provides — the engine may still evaluate a non-serial expression out of row-set order. Use `with_serial` any time your formula or filter depends on shared state or row order, not just when you expect concurrent execution.
@@ -48,7 +48,7 @@ barrier = Barrier()
 col = Selectable.parse("A = some_function()").with_declared_barriers(barrier)
 ```
 
-Each barrier can only be declared by one expression, and only within the same `select`, `update`, or `where` call as the expression that respects it. For a `Selectable` specifically, a constant-valued expression cannot declare one either — this restriction does not apply to `Filter`. See [Barrier](./Barrier.md) for the full constraints and a complete worked example.
+Each barrier can only be declared by one expression, and only within the same [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call as the expression that respects it. For a [`Selectable`](./Selectable.md) specifically, a constant-valued expression cannot declare one either — this restriction does not apply to [`Filter`](./Filter.md). See [Barrier](./Barrier.md) for the full constraints and a complete worked example.
 
 ### `with_respected_barriers`
 
@@ -68,13 +68,14 @@ Multiple expressions can respect the same barrier, and one expression can respec
 
 These solve different problems:
 
-- **`with_serial`**: Rows _within one_ expression are processed sequentially (row 0, then row 1, etc.). For a **filter**, a serial filter also acts as an absolute ordering barrier against every other filter in the same `where` call — no filter can execute out of order around it. For a **selectable**, `with_serial` gives no such guarantee relative to other _independent_ expressions by default; two expressions that do not reference each other's output can still run at the same time unless you add an explicit barrier. Note that an expression that references another's result column is a different case — the engine already evaluates the referenced column first as an ordinary data dependency, barrier or not.
+- **`with_serial`**: Rows _within one_ expression are processed sequentially (row 0, then row 1, etc.). For a **filter**, a serial filter also acts as an absolute ordering barrier against every other filter in the same [`where`](../../table-operations/filter/where.md) call — no filter can execute out of order around it. For a **selectable**, `with_serial` gives no such guarantee relative to other _independent_ expressions by default; two expressions that do not reference each other's output can still run at the same time unless you add an explicit barrier. Note that an expression that references another's result column is a different case — the engine already evaluates the referenced column first as an ordinary data dependency, barrier or not.
 - **Barriers**: _Between_ expressions, one finishes all its rows before another starts. Rows within each expression can still be parallelized.
 
-When shared state is involved, you often need both: `with_serial` to protect row-level access to the shared state, and — especially for selectables — a barrier to ensure one expression is completely done before another starts.
+When shared state is involved, you often need both: `with_serial` to protect row-level access to the shared state, and, for selectables, a barrier to ensure one expression is completely done before another starts.
 
 ## Related documentation
 
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [Barrier](./Barrier.md)
 - [Query table configuration](../../../conceptual/query-table-configuration.md)
 - [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)

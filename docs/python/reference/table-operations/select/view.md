@@ -7,14 +7,14 @@ The `view` method creates a new formula table that includes one column for each 
 When using `view`, the data being requested is not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
 
 > [!NOTE]
-> The syntax for the `view` and [`select`](./select.md) methods is identical, as is the resulting table. `view` is recommended when:
+> `view` and [`select`](./select.md) accept the same formula strings and produce a table with the same columns. `view` is recommended when:
 >
 > 1. the formula is fast to compute,
 > 2. only a small portion of the data is being accessed,
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`update_view`](./update-view.md), [`update`](./update.md), or [`lazy_update`](./lazy-update.md). These methods have different memory and computation expenses.
+> For other cases, consider using [`select`](./select.md), [`update_view`](./update-view.md), [`update`](./update.md), or [`lazy_update`](./lazy-update.md). These methods have different memory and computation expenses.
 
 > [!CAUTION]
 > When using `view` or [`update_view`](./update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.

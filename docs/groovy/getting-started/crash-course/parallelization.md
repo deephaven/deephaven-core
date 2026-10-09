@@ -141,7 +141,7 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with para
 
 ### The fix: force sequential processing with `withSerial`
 
-The [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) method tells Deephaven to process this formula serially: never running concurrently with itself, with rows evaluated one at a time in row-set order:
+The [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) method tells Deephaven to process this formula serially. The formula never runs concurrently with itself, and its rows are evaluated one at a time, in order:
 
 ```groovy order=result
 import io.deephaven.api.Selectable
@@ -159,17 +159,17 @@ result = emptyTable(100).update([col])
 ```
 
 > [!NOTE]
-> With only 100 rows, this example wouldn't show the race even without `withSerial`. Use `withSerial` whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and `withSerial` is what guarantees this formula's rows are processed one at a time, in order.
+> With only 100 rows, this example wouldn't show the race even without [`withSerial`](../../reference/query-language/types/Selectable.md#withserial). Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) is what guarantees this formula's rows are processed one at a time, in order.
 
-`withSerial` keeps one column from running concurrently with itself. If several columns use the same state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). If several tables use it, `withSerial` and barriers can't coordinate them, so make the shared code itself thread-safe (for example, protect it with a lock). `withSerial` works with `update`, `select`, and `where`; `view` and `updateView` compute values when they're read, so they don't support it.
+[`withSerial`](../../reference/query-language/types/Selectable.md#withserial) keeps one column from running concurrently with itself. If several columns use the same state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). If several tables use it, [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) and barriers can't coordinate them, so make the shared code itself thread-safe (for example, protect it with a lock). [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) works with [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), and [`where`](../../reference/table-operations/filter/where.md); [`view`](../../reference/table-operations/select/view.md) and [`updateView`](../../reference/table-operations/select/update-view.md) compute values when they're read, so they don't support it.
 
-**Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use `withSerial` when your formula requires it for correctness.
+**Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when your formula requires it for correctness.
 
 ## Key takeaways
 
 - Deephaven assumes formulas are safe to run in parallel by default. This is fast but requires stateless code.
 - Shared state or row-order dependencies cause silent errors with parallelization.
-- Use `withSerial` when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need barriers; when several tables do, the shared code must be thread-safe.
+- Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need barriers; when several tables do, the shared code must be thread-safe.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically, with no extra code required.
 

@@ -27,6 +27,7 @@ The following aggregations are supported:
 - [`AggCount`](../group-and-aggregate/AggCount.md)
 - [`AggCountDistinct`](../group-and-aggregate/AggCountDistinct.md)
 - [`AggCountWhere`](../group-and-aggregate/AggCountWhere.md)
+- [`AggDistinct`](../group-and-aggregate/AggDistinct.md)
 - [`AggFirst`](../group-and-aggregate/AggFirst.md)
 - [`AggFormula`](../group-and-aggregate/AggFormula.md)
 - [`AggGroup`](../group-and-aggregate/AggGroup.md)
@@ -45,7 +46,7 @@ The following aggregations are supported:
 </Param>
 <Param name="includeConstituents" optional type="boolean">
 
-Whether or not to include constituent rows at the leaf level. The default value is `False`.
+Whether or not to include constituent rows at the leaf level. The default value is `false`.
 
 </Param>
 <Param name="groupByColumns" type="String...">
@@ -181,7 +182,7 @@ Exception message         : Cannot find variable or class Value
 
 ### Formula depth and keys
 
-Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) containing the keys of the rows at the current level of the rollup. The following formulas demonstrate the values of depth and keys:
+Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) of `String` containing the names of the group-by columns in effect at the current level of the rollup: empty at the root, `["Key"]` at depth 1, and `["Key", "Key2"]` at depth 2 in the examples below. The following formulas demonstrate the values of depth and keys:
 
 ```groovy order=depthAndKeys,source
 source = newTable(
@@ -235,5 +236,5 @@ cappedSum = source.rollup(List.of(AggFormula("Value = __FORMULA_KEYS__.get(__FOR
 - [`emptyTable`](./emptyTable.md)
 - [`join`](../join/join.md)
 - [`timeTable`](./timeTable.md)
-- [`treeTable`](./tree.md)
+- [`tree`](./tree.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.html)

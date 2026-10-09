@@ -58,7 +58,7 @@ These methods control how Deephaven evaluates the filter. By default, Deephaven 
 
 ### `withSerial`
 
-Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, a filter becomes eligible for parallel evaluation once more than about 131,072 rows reach it. That's the rows passed to this filter, not the source's size: later filters see only the rows that survive earlier ones, and on a refreshing table a typical update filters only that cycle's changed rows, though a filter can request a full refilter when its own inputs change. Use `withSerial` to protect filters that cannot tolerate parallel evaluation.
+Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, a filter becomes eligible for parallel evaluation once more than about 131,072 rows reach it. That's the rows passed to this filter, not the source's size: later filters see only the rows that survive earlier ones, and on a refreshing table a typical update filters only that cycle's changed rows, though a filter can request a full refilter when its own inputs change. Use [`withSerial`](./ConcurrencyControl.md#withserial) to protect filters that cannot tolerate parallel evaluation.
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
@@ -78,7 +78,7 @@ result = source.where(myFilter)
 ```
 
 > [!NOTE]
-> Most filters do not need serial execution. Use `withSerial` only when the filter modifies external state or has side effects.
+> Most filters do not need serial execution. Use [`withSerial`](./ConcurrencyControl.md#withserial) only when the filter modifies external state, has side effects, or depends on row order.
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
@@ -106,7 +106,7 @@ If both of those are true, string conditions are usually all you need. The cases
 
 You need a `Filter` object in three situations:
 
-**Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use `withSerial` to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
+**Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use [`withSerial`](./ConcurrencyControl.md#withserial) to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
 
 **Complex boolean logic**: Use `Filter.and` and `Filter.or` to combine filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
 

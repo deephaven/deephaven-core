@@ -43,7 +43,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, the new columns (`A`, `X`, and `Y`) allocate memory and are immediately populated with values. Columns `B` and `C` refer to columns in the source table and do not allocate memory.
+In the following example, the new column `Y` allocates memory and is immediately populated with values. `A`, `X`, `B`, and `C` refer to columns in the source table, which are already in memory, so they do not allocate memory.
 
 ```groovy order=source,result
 source = newTable(
@@ -57,7 +57,7 @@ result = source.update("A", "X = B", "Y = sqrt(C)")
 
 ## Serial execution
 
-By default, Deephaven can parallelize `update` calculations across multiple CPU cores when the input is large enough. If your formula has side effects or depends on row order, use `withSerial` to force sequential processing.
+By default, Deephaven can parallelize `update` calculations across multiple CPU cores when the input is large enough. If your formula has side effects or depends on row order, use [`withSerial`](../../query-language/types/Selectable.md#withserial) to force sequential processing.
 
 ```groovy order=result
 import io.deephaven.api.Selectable
