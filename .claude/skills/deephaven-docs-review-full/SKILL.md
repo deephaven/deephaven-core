@@ -213,8 +213,9 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
 - **Does the traced result teach the concept?** The accuracy check has already traced each
   example's data through the code. Reuse those values and judge whether the output visibly shows
   what the lead-in says it will, to this page's reader. Trace an example the accuracy check skipped.
-- **Do blocks that share a `test-set` have compatible settings?** A block with a `docker-config`
-  sharing a set with one without it will fail or be tested under the wrong setup.
+- **Do blocks that share a `test-set` agree on settings?** `docker-config` needs to appear on only one
+  block in a set; the other blocks inherit it (`docs/snapshotter/README.md`). Flag a block that names a
+  different `docker-config` from the rest of its set, which is an error, but not a block that omits it.
 - **Is it executable and tested?** A `syntax` or `skip-test` block where a runnable one would work
   isn't validated by the docs snapshotter; flag it unless the page has a reason.
 - **Is it readable in one view?** Short enough to follow, with realistic names, and with comments

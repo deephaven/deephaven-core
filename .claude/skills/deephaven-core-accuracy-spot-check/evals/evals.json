@@ -13,6 +13,19 @@
         "The proposed replacement sentence does not inline the property name or exact default into the concept-guide narrative; the precise value goes to a Configuration section or a link to the configuration reference",
         "Does not propose a hedge-laden replacement (e.g. 'in some cases, depending on configuration, ...') in place of a direct sentence"
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "Spot-check the sentence I just rewrote in the deephaven.learn how-to introduction \u2014 details in .claude/skills/deephaven-core-accuracy-spot-check/evals/files/edited-clause.md. Is it right?",
+      "expected_output": "Verifies the rewritten first sentence, and also reports that the unchanged sentence 'These batches are processed in sequence' is unsupported, because learn builds ordinary update formulas that can be evaluated concurrently.",
+      "files": [
+        "evals/files/edited-clause.md"
+      ],
+      "expectations": [
+        "Confirms the rewritten first sentence against source: learn uses a row-key (k) formula, so on ticking tables it needs add-only or blink tables, and the refresh-safety check does not apply to static tables",
+        "Reports that the unchanged sentence saying batches are processed in sequence is not supported by source, even though it is outside the edited sentence, citing that learn builds update formulas around Computer.compute that the engine may evaluate concurrently",
+        "Recommends removing or correcting the sequencing claim rather than leaving it because it was not part of the edit"
+      ]
     }
   ]
 }

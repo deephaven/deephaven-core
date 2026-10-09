@@ -16,7 +16,8 @@
         "Reports style issues as patterns (with examples or counts) rather than one row per instance",
         "Flags the Quick reference rows that prescribe with_serial alone for a shared resource as insufficient when more than one column can touch the resource",
         "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
-        "Includes at least one example-quality finding from the examples pass: an example that doesn't illustrate the concept its lead-in names, or a concept that is described but never shown"
+        "Includes at least one example-quality finding from the examples pass: an example that doesn't illustrate the concept its lead-in names, or a concept that is described but never shown",
+        "The report has a Coverage section stating how many factual or behavioral claims the accuracy pass enumerated, how many were verified against source, and how many are author queries"
       ]
     },
     {
