@@ -37,7 +37,7 @@ List every ticking table the function depends on as a source table.
 
 ### Execution context
 
-[`create`](../reference/table-operations/create/create.md) does not accept an [execution context](../conceptual/execution-context.md). When you call it from a console script, the `tableGenerator` function runs under a fallback execution context whose query scope, query library, query compiler, update graph, and operation initializer are unusable. A `tableGenerator` that needs any of these must open a context itself. For example, the [`update`](../reference/table-operations/select/update.md) formulas in the examples below need the query compiler. The examples below capture the console's context with `defaultCtx = ExecutionContext.getContext()` and open it inside the function with `try (SafeCloseable ignored = defaultCtx.open())`.
+[`create`](../reference/table-operations/create/create.md) does not accept an [execution context](../conceptual/execution-context.md). When you call it from a console script, the `tableGenerator` function runs under a fallback execution context. That context keeps the console's update graph and operation initializer, but its query scope, query library, and query compiler are unusable. A `tableGenerator` that needs any of those three must open a context itself. For example, the [`update`](../reference/table-operations/select/update.md) formulas in the examples below need the query compiler. The examples below capture the console's context with `defaultCtx = ExecutionContext.getContext()` and open it inside the function with `try (SafeCloseable ignored = defaultCtx.open())`.
 
 ### Generate tables with a Groovy function
 
