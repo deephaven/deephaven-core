@@ -47,8 +47,9 @@ public class ShortPercentileTypeMedianHelper extends ShortPercentileTypeHelper {
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
                 // region averageEvenlyDivided
-                return setResult(destination, (((ShortSegmentedSortedMultiset) ssmLo).getMaxShort()
-                        + ((ShortSegmentedSortedMultiset) ssmHi).getMinShort()) / 2.0);
+                return setResult(destination, PercentileAverages.average(
+                        ((ShortSegmentedSortedMultiset) ssmLo).getMaxShort(),
+                        ((ShortSegmentedSortedMultiset) ssmHi).getMinShort()));
                 // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((ShortSegmentedSortedMultiset) ssmLo).getMaxShort());

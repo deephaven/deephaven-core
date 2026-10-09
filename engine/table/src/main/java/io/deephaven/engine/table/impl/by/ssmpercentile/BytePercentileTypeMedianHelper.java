@@ -47,8 +47,9 @@ public class BytePercentileTypeMedianHelper extends BytePercentileTypeHelper {
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
                 // region averageEvenlyDivided
-                return setResult(destination, (((ByteSegmentedSortedMultiset) ssmLo).getMaxByte()
-                        + ((ByteSegmentedSortedMultiset) ssmHi).getMinByte()) / 2.0);
+                return setResult(destination, PercentileAverages.average(
+                        ((ByteSegmentedSortedMultiset) ssmLo).getMaxByte(),
+                        ((ByteSegmentedSortedMultiset) ssmHi).getMinByte()));
                 // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((ByteSegmentedSortedMultiset) ssmLo).getMaxByte());
