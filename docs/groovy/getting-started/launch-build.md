@@ -2,54 +2,46 @@
 title: Build and run Deephaven from source code
 ---
 
-This guide will show you how to build and launch Deephaven Community Core from source code. It provides a starting point for tinkerers and developers who want to dig into configuration or experiment with code changes.
-
-These instructions show how to build on multiple operating systems, including Linux, Windows, and Mac.
+This guide shows you how to build and launch Deephaven Community Core from source code. It provides a starting point for tinkerers and developers who want to dig into configuration or experiment with code changes.
 
 > [!TIP]
-> Launching from source code is recommended for users who wish to tinker with and modify source code. For an easier installation method, see [Launch Deephaven from pre-built images](./docker-install.md).
+> For an easier installation method, see [Install and run with Docker](./docker-install.md).
+
+> [!NOTE]
+> This guide builds and runs Deephaven with Groovy. For Python, see [Build and run Deephaven from source code (Python)](/core/docs/getting-started/launch-build).
 
 ## Supported operating systems
 
-Deephaven is only supported on:
+You can build and run Deephaven from source only on the following operating systems:
 
 - Linux
-- MacOS
-- Windows 10 or 11 (requires [WSL 2 (Windows Subsystem for Linux v2)](https://learn.microsoft.com/en-us/windows/wsl/install))
+- macOS
+- Windows 10 build 20262 or higher, or Windows 11, through [Windows Subsystem for Linux 2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install)
+
+On Windows, run every command in this guide inside a WSL 2 terminal.
 
 > [!WARNING]
-> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven [ticking tables](./crash-course/create-tables.md#ticking-tables), which update live as new data arrives. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
 
 ## Prerequisites
 
+Before you build Deephaven from source, install the following software. Deephaven builds with [Gradle](https://gradle.org/), but you don't need to install it. The repository includes the [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html), a `gradlew` script that downloads and runs the correct version of Gradle automatically.
+
 ### Java
 
-Your Java installation must be version **17** or later.
+You must install a JDK (Java Development Kit) version **21**, not just a JRE (Java Runtime Environment). The JDK includes the Java compiler and other tools the build needs. Your JDK 21 runs the Gradle build, and Gradle does not download it for you.
 
-Deephaven requires a JDK (Java Development Kit), not just a JRE (Java Runtime Environment). The JDK includes the Java compiler and other tools needed for building and running Java applications.
+To compile, test, and run Deephaven, Gradle uses [toolchain auto-provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning) to download any other Java version it needs, so JDK 21 is the only Java version you install.
 
-You can check your Java version with:
-
-```bash
-java --version
-```
-
-> [!NOTE]
-> The Java build process uses [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning) to download and use the appropriate Java version for building and testing.
-
-### Gradle
-
-Deephaven uses [Gradle](https://gradle.org/) as its build tool. You do not need to install Gradle manually — the repository includes the [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) (`gradlew` / `gradlew.bat`), which downloads and runs the correct version of Gradle automatically.
-
-You can verify the wrapper is present after cloning:
+You can check that a JDK 21 is installed with:
 
 ```bash
-ls gradlew
+javac --version
 ```
 
 ### Docker
 
-Building Deephaven from source requires [Docker](https://docs.docker.com/get-docker/) version 20.10.8 or later. The Gradle build uses Docker to build the web UI, so the Docker daemon must be running before you run `./gradlew server-jetty-app:run -Pgroovy`. On Windows, enable Docker's WSL 2 integration.
+Building Deephaven from source requires [Docker](https://docs.docker.com/get-docker/) version 20.10.8 or later. The Gradle build runs some steps in Docker, such as generating the server's gRPC code and packaging the web UI. Start the Docker daemon before you run `./gradlew server-jetty-app:run -Pgroovy`. On Windows, enable Docker's WSL 2 integration.
 
 You can check your Docker version with:
 
@@ -59,17 +51,17 @@ docker version
 
 ### Version control
 
-Deephaven highly recommends using a version control system to clone the [deephaven-core repository](https://github.com/deephaven/deephaven-core). The most popular and common option is [git](https://git-scm.com/); this guide uses it to clone the repository.
+We recommend using a version control system to clone the [deephaven-core repository](https://github.com/deephaven/deephaven-core). The most popular option is [Git](https://git-scm.com/), and this guide uses it to clone the repository.
 
-You can download a ZIP file of the repository from GitHub. However, this is not recommended, as it will be more difficult to stay up-to-date with the latest changes. Additionally, certain files in the repository are managed by [git-lfs](https://git-lfs.com/), which are not included in the ZIP file.
+You can download a ZIP file of the repository from GitHub instead, but we don't recommend it, because a ZIP download is harder to keep up to date.
 
 ## Build and run Deephaven
 
-The following instructions are a condensed version of instructions found in the [deephaven-core repository](https://github.com/deephaven/deephaven-core). For the full instructions with explanations of configuration parameters, SSL, and more, see the [README](https://github.com/deephaven/deephaven-core/blob/main/server/jetty-app/README.md).
+The following steps condense the build instructions in the [deephaven-core repository](https://github.com/deephaven/deephaven-core). For the full instructions with explanations of configuration parameters, SSL, and more, see the [Jetty server README](https://github.com/deephaven/deephaven-core/blob/main/server/jetty-app/README.md).
 
 ### Clone the deephaven-core repository
 
-Once all of the required dependencies are installed and functioning, clone [https://github.com/deephaven/deephaven-core](https://github.com/deephaven/deephaven-core). If you use `git`, clone it like this:
+Once you've installed the [prerequisites](#prerequisites), clone the deephaven-core repository with Git:
 
 ```bash
 git clone https://github.com/deephaven/deephaven-core.git
@@ -81,39 +73,52 @@ Then, `cd` into your cloned repository:
 cd deephaven-core
 ```
 
-## Build and run
+You can verify the Gradle Wrapper is present:
 
-This single command will build and run the Deephaven Groovy server-side API from source.
+```bash
+ls gradlew
+```
+
+### Start the server
+
+This single command builds and runs the Deephaven Groovy server from source.
 
 ```bash
 ./gradlew server-jetty-app:run -Pgroovy
 ```
 
-## Run Deephaven IDE
+The first build can take several minutes. The command keeps running in the foreground for as long as the server is up. When the log shows `Server started on port 10000`, the server is ready. To stop it, press <kbd>Ctrl</kbd> + <kbd>C</kbd> in the terminal where the server is running.
 
-Once Deephaven is running, you can launch a Deephaven IDE in your web browser. Deephaven IDE allows you to interactively analyze data and develop new analytics.
+After you change the server code, stop the server and run `./gradlew server-jetty-app:run -Pgroovy` again. Gradle recompiles the changed code before it starts the server.
+
+## Open the Deephaven IDE
+
+Once Deephaven is running, open the Deephaven IDE in your web browser. The IDE lets you analyze data interactively and develop new analytics.
 
 - If Deephaven is running locally, navigate to [http://localhost:10000/ide/](http://localhost:10000/ide/).
 - If Deephaven is running remotely, navigate to `http://<hostname>:10000/ide/`, where `<hostname>` is the address of the machine Deephaven is running on.
 
+The IDE asks for a pre-shared key before it opens. To skip this prompt, open the URL that the server log prints after `Connect automatically to Web UI with`, which already includes the key. See [Authentication](#authentication) to find the key and the URL.
+
 ### Authentication
 
-Deephaven, by default, uses [pre-shared key authentication](../how-to-guides/authentication/auth-psk.md). If no key is set, a randomly generated key will be used to log into the server each time it starts. The randomly generated key is printed to the server log in the terminal where you ran `./gradlew server-jetty-app:run -Pgroovy`, like this:
+By default, Deephaven uses [pre-shared key authentication](../how-to-guides/authentication/auth-psk.md). If you don't set a key, Deephaven generates a random key each time it starts and prints it to the server log in the terminal where you ran `./gradlew server-jetty-app:run -Pgroovy`, like this:
 
 ![Log readout with randomly generated PSK](../assets/tutorials/default-psk.png)
 
-To set your own pre-shared key, add `-Ppsk=<YourPasswordHere>`:
+To set your own pre-shared key, stop the server and start it again with `-Ppsk=YOUR_PASSWORD_HERE`:
 
 ```bash
 ./gradlew server-jetty-app:run -Pgroovy -Ppsk=YOUR_PASSWORD_HERE
 ```
 
-The pre-shared key is printed to the server log like this:
+Deephaven prints your key to the server log like this:
 
 ![Log readout with user-defined PSK](../assets/how-to/custom-psk2.png)
 
 ## Related documentation
 
-- [Create a new table](../how-to-guides/new-and-empty-table.md#newtable)
-- [Joins: Exact and Relational](../how-to-guides/joins-exact-relational.md)
-- [Joins: Time-Series and Range](../how-to-guides/joins-timeseries-range.md)
+- [Pre-shared key authentication](../how-to-guides/authentication/auth-psk.md)
+- [Install and run with Docker](./docker-install.md)
+- [Install and run the Deephaven production application](./production-application.md)
+- [Quickstart](./quickstart.md)
