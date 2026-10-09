@@ -241,9 +241,9 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
             while (++position < end && keyAt.applyAsLong(position) == runEnd + 1) {
                 ++runEnd;
             }
-            // runEnd + 1 wraps at Long.MAX_VALUE, so a run can absorb a negative key after its nonnegative start.
+            // runEnd + 1 wraps at Long.MAX_VALUE, so a run can absorb a negative key and end before its start.
             Assert.geqZero(runStart, "runStart");
-            Assert.geqZero(runEnd, "runEnd");
+            Assert.leq(runStart, "runStart", runEnd, "runEnd");
             newRangeSafe(runStart, runEnd);
         }
     }
