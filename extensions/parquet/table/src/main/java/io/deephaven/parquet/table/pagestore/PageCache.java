@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * A cache for {@link IntrusivePage IntrusivePages}. This data structure stores pages as {@link SoftReference soft
  * references} and maintains them as an LRU cache. External references to cached pages should be held via
  * {@link WeakReference weak references} so that as memory pressure builds the pages can be evicted from the cache.
+ * Entries may also be partial pages; see {@link SparsePage}.
  */
 public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.IntrusivePage<ATTR>> {
 
@@ -80,9 +81,8 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
     }
 
     /**
-     * Keep every page touched in any page cache strongly reachable until the result is closed, so that the stores' weak
-     * references to it survive. Tests that assert a later read is served from what an earlier read cached need this: a
-     * GC that clears soft references between the reads would make it decode again. Process-wide and not reentrant.
+     * Keep every page touched in any page cache strongly reachable until the result is closed, so that a GC can't clear
+     * them between reads that a test expects to share. Process-wide and not reentrant.
      *
      * @return Closing it unpins the pages
      */

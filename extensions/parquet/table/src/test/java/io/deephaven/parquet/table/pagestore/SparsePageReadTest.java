@@ -233,8 +233,8 @@ public class SparsePageReadTest {
 
     /**
      * Small chunks split each page across many fills. In order, each fill resumes where the previous one stopped.
-     * Reversed, each starts before the previous one on the same context, so only the first reads sparsely; the rest
-     * materialize and cache their pages.
+     * Reversed, each starts before the previous one on the same context, so only each column's first fill reads
+     * sparsely; the rest materialize and cache their pages.
      */
     @Test
     public void testChunkedFills() {
@@ -476,6 +476,86 @@ public class SparsePageReadTest {
         try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
             assertPasses(path, source, filters, reads);
         }
+    }
+
+    /**
+     * A viewport scrolling in file order, with a fresh context per step, returns to the page the previous step ended
+     * on. Those continuations are not misses, so even a limit of one caches no page whole.
+     */
+    @Test
+    public void testForwardScrollIsNotMiss() {
+        final String path = writeTestTable();
+        final Table expected = dense(() -> ParquetTools.readTable(path).select());
+        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+                final RowSet rows = expected.where("ii % 13 == 0").getRowSet().copy()) {
+            final ColumnSource<?> expectedSource = expected.getColumnSource("L");
+            final long[] neverPromoted =
+                    fillSteps(expectedSource, ParquetTools.readTable(path).getColumnSource("L"), rows, 50);
+            ColumnChunkPageStore.setSparseMissesBeforeFullCaching(1);
+            final long[] limitOfOne =
+                    fillSteps(expectedSource, ParquetTools.readTable(path).getColumnSource("L"), rows, 50);
+            // More fills than steps: some steps span two pages, so the next step starts on the page the previous one
+            // ended on.
+            assertTrue("steps should span pages", neverPromoted[0] > (rows.size() + 49) / 50);
+            assertEquals("sparse fills", neverPromoted[0], limitOfOne[0]);
+            assertEquals("sparse hits", neverPromoted[1], limitOfOne[1]);
+        }
+    }
+
+    /**
+     * A fill that starts on a page behind rows requested there is a miss, even after continuations.
+     */
+    @Test
+    public void testReadBehindIsMiss() {
+        final String path = writeTestTable();
+        final Table expected = dense(() -> ParquetTools.readTable(path).select());
+        ColumnChunkPageStore.setSparseMissesBeforeFullCaching(1);
+        final ColumnSource<?> expectedSource = expected.getColumnSource("L");
+        final ColumnSource<?> actual = ParquetTools.readTable(path).getColumnSource("L");
+        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+                final RowSet rows = expected.where("ii % 13 == 0").getRowSet().copy();
+                final RowSet behind = expected.where("ii % 13 == 1").getRowSet().copy()) {
+            // One miss per page.
+            fillSteps(expectedSource, actual, rows, 50);
+            // A single fill, so that only its first page could continue a read, and it starts behind the rows read
+            // there: a second miss per page, which caches every page whole.
+            fillSteps(expectedSource, actual, behind, behind.intSize());
+            final long[] reads = fillSteps(expectedSource, actual, rows, rows.intSize());
+            assertEquals("sparse fills", 0, reads[0]);
+            assertEquals("sparse hits", 0, reads[1]);
+        }
+    }
+
+    /**
+     * Fill {@code rows} in steps of {@code step}, each with a fresh context, as viewport snapshots do, and check them
+     * against {@code expected}.
+     *
+     * @return The sparse fills and hits
+     */
+    private static long[] fillSteps(final ColumnSource<?> expected, final ColumnSource<?> actual, final RowSet rows,
+            final int step) {
+        final long fillsBefore = ColumnChunkPageStore.sparseFillCount();
+        final long hitsBefore = ColumnChunkPageStore.sparseHitCount();
+        try (final WritableChunk<Values> expectedChunk = expected.getChunkType().makeWritableChunk(step);
+                final WritableChunk<Values> actualChunk = actual.getChunkType().makeWritableChunk(step);
+                final RowSequence.Iterator it = rows.getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                final RowSequence stepRows = it.getNextRowSequenceWithLength(step);
+                try (final ChunkSource.FillContext expectedContext = expected.makeFillContext(step);
+                        final ChunkSource.FillContext actualContext = actual.makeFillContext(step)) {
+                    expected.fillChunk(expectedContext, expectedChunk, stepRows);
+                    actual.fillChunk(actualContext, actualChunk, stepRows);
+                }
+                for (int ii = 0; ii < expectedChunk.size(); ++ii) {
+                    final Object expectedValue = ChunkBoxer.boxedGet(expectedChunk, ii);
+                    final Object actualValue = ChunkBoxer.boxedGet(actualChunk, ii);
+                    assertTrue(ii + ": " + expectedValue + " != " + actualValue,
+                            Objects.deepEquals(expectedValue, actualValue));
+                }
+            }
+        }
+        return new long[] {ColumnChunkPageStore.sparseFillCount() - fillsBefore,
+                ColumnChunkPageStore.sparseHitCount() - hitsBefore};
     }
 
     /**

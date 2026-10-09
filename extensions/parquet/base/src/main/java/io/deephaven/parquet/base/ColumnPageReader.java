@@ -58,6 +58,7 @@ public interface ColumnPageReader extends AutoCloseable {
      * Read and decompress this page into {@code cursor}, positioned at its first row. Requires
      * {@link #supportsSparse()}.
      *
+     * @param cursor The cursor to open on this page
      * @param channelContext The channel context to use for reading the parquet file
      */
     default void openSparse(SparsePageCursor cursor, SeekableChannelContext channelContext) throws IOException {

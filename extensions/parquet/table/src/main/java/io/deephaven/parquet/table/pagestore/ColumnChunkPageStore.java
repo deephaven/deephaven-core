@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -65,8 +66,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             .getDoubleForClassWithDefault(ColumnChunkPageStore.class, "sparseReadMaxDensity", 0.125);
 
     /**
-     * The number of sparse misses of a page, each a pass that decodes rows its cached sparse values lack, after which
-     * the page is materialized and cached whole.
+     * The number of sparse misses of a page, each a fill that opens the page to decode rows its cached sparse values
+     * lack, after which the page is materialized and cached whole. A fill that starts on the page past every row
+     * requested there continues an in-order read, such as a viewport scrolling in file order, and is not a miss.
      */
     private static volatile int sparseMissesBeforeFullCaching = Configuration.getInstance()
             .getIntegerForClassWithDefault(ColumnChunkPageStore.class, "sparseMissesBeforeFullCaching", 2);
@@ -129,6 +131,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     static final class SparseState<ATTR extends Any> {
         /** The number of sparse misses of the page; see {@link #sparseMissesBeforeFullCaching}. */
         final AtomicInteger misses = new AtomicInteger();
+        /** The highest page-relative row any sparse fill has requested, or {@code -1}. */
+        final AtomicLong lastRequestedRow = new AtomicLong(-1);
         /** The page's cached sparse values, if any. */
         @Nullable
         volatile WeakReference<SparsePage<ATTR>> pageRef;
@@ -298,7 +302,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     abstract long pageRowCount(int pageNum);
 
     /**
-     * @return Page {@code pageNum} if it is already materialized, else {@code null}
+     * @return Page {@code pageNum} if it is cached, touching it, else {@code null}
      */
     @Nullable
     abstract ChunkPage<ATTR> getCachedPage(int pageNum);
@@ -560,7 +564,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         final long spanFirstKey = isFirstPage ? pageRows.firstRowKey() : pageFirstKey;
         final long spanLastKey = fillContinues ? pageFirstKey + pageRowCount(pageNum) - 1 : pageRows.lastRowKey();
         if (pageRows.size() <= maxDensity * (spanLastKey - spanFirstKey + 1)) {
-            if (fillSparse(contextWrapper, channelContext, destination, pageRows, pageNum, pageFirstKey, maxDensity)) {
+            if (fillSparse(contextWrapper, channelContext, destination, pageRows, pageNum, pageFirstKey, isFirstPage,
+                    maxDensity)) {
                 return null;
             }
             // Cache the page whole. The sparse cursor may already hold its bytes, but this is rare enough to read them
@@ -595,6 +600,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             @NotNull final RowSequence pageRows,
             final int pageNum,
             final long pageFirstKey,
+            final boolean isFirstPage,
             final double maxDensity) throws IOException {
         final SparsePageCursor cursor = contextWrapper.sparseCursor();
         final boolean sameStore = contextWrapper.sparseStore == this;
@@ -610,6 +616,12 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         // Filled rather than viewed: each RowSequence allocates its own ranges chunk, and every fill sees a new one.
         final WritableLongChunk<OrderedRowKeyRanges> requestRanges = contextWrapper.requestRanges(2 * rowCount);
         pageRows.fillRowKeyRangesChunk(requestRanges);
+        // A fill that starts here, past every row requested before, continues an in-order read rather than repeating
+        // one; see sparseMissesBeforeFullCaching.
+        final long previousLastRow = state.lastRequestedRow.getAndAccumulate(
+                requestRanges.get(requestRanges.size() - 1) - pageFirstKey, Math::max);
+        final boolean continuesRead =
+                isFirstPage && previousLastRow >= 0 && requestRanges.get(0) - pageFirstKey > previousLastRow;
         // Page-relative ranges of the rows to decode: the requested rows that have no cached value.
         final WritableLongChunk<OrderedRowKeyRanges> decodeRanges = contextWrapper.decodeRanges(2 * rowCount);
         final int decodeCount;
@@ -653,7 +665,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         // Until this fill completes, the cursor's position is unknown.
         contextWrapper.sparseStore = null;
         if (!onCursorPage) {
-            if (state.misses.incrementAndGet() > sparseMissesBeforeFullCaching) {
+            if (!continuesRead && state.misses.incrementAndGet() > sparseMissesBeforeFullCaching) {
                 // Other passes keep reading this page; cache it for them.
                 return false;
             }
@@ -765,7 +777,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
 
     /**
      * Walks a page's cached rows forward by range, tracking each range's position in the cached values. Steps over
-     * nearby ranges, summing their sizes, and uses {@link RowSet#find} only to skip far: it allocates on every call.
+     * nearby ranges, summing their sizes, and uses {@link RowSet#find} only on the first seek and to skip far: it
+     * allocates on every call.
      */
     private static final class CachedRanges implements SafeCloseable {
         private static final int MAX_STEPS = 16;
