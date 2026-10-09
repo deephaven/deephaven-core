@@ -22,7 +22,7 @@
     },
     {
       "prompt": "I merged main into my docs branch and resolved conflicts with #8798, an engineer's correction to the join guides. The #8798 diff for the two Python how-to pages is .claude/skills/deephaven-docs-address-review-comments/evals/files/merge-8798/pr-8798-python-howto.diff, and my resolved pages are .claude/skills/deephaven-docs-address-review-comments/evals/files/merge-8798/joins-exact-relational-resolved.md and .claude/skills/deephaven-docs-address-review-comments/evals/files/merge-8798/joins-timeseries-range-resolved.md (they stand for docs/python/how-to-guides/joins-exact-relational.md and docs/python/how-to-guides/joins-timeseries-range.md). My branch had restructured both pages. Did I keep all of #8798's corrections? Restore anything I lost by editing the two resolved files directly (they are copies; don't edit anything else), then tell me what you changed.",
-      "expected_output": "Checks each line #8798 added against the resolved pages, finds the two lost corrections (the join TIP no longer says natural_join should be preferred in most places; the range join aggs parameter is no longer marked required), and restores them in the resolved copies in #8798's wording without other changes.",
+      "expected_output": "Checks each line #8798 added against the resolved pages, finds the lost correction (the range join aggs parameter is no longer marked required), and restores it in the resolved copy in #8798's wording without other changes. Leaves the join TIP's closing advice alone: #8798 didn't change that clause, and the branch's rewording of it is the branch's own edit.",
       "files": [
         "evals/files/merge-8798/pr-8798-python-howto.diff",
         "evals/files/merge-8798/joins-exact-relational-resolved.md",
@@ -30,7 +30,7 @@
       ],
       "expectations": [
         "Goes through #8798's added lines (or its corrections) one by one against the resolved pages, rather than spot-checking a few",
-        "Restores the join TIP's conclusion that natural_join should be preferred in most places, in the edited joins-exact-relational-resolved.md",
+        "Control: doesn't treat the join TIP's closing advice as a lost #8798 correction. #8798 changed only the TIP's explanation of how join works; the 'natural_join should be preferred in most places' clause is the same on its - and + lines, and the branch's conditional rewording of it is the branch's own edit",
         "Marks the range_join aggs parameter as required again, in the edited joins-timeseries-range-resolved.md",
         "Uses #8798's wording (or very close to it) for the restored corrections, rather than a free paraphrase",
         "Keeps the edits limited to the lost corrections: doesn't rewrite or reorganize other parts of the resolved pages",

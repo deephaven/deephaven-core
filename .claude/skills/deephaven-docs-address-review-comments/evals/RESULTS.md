@@ -49,3 +49,17 @@ Copilot pointed out that several worked examples in the skills named the exact d
 | 2 | 8/12 | 12/12 | 10/12, then 9/12 |
 
 - Without the example, no run restored the join TIP's lost conclusion. The merged TIP ends with a conditional ("if each left row needs at most one right match, use `natural_join` instead"), which every run judged to have kept #8798's point in substance. Rewording the rule to read the diff's `-` and `+` lines together didn't change that, and one rerun also missed the `aggs` "required" marking. The remaining gain over `main` is in marking `aggs` required and in not rewriting surviving corrections; catching a weakened conclusion still depends on judgment. Not tuned further, to avoid fitting the rule to this one fixture.
+
+### Correction: expectation 2 was wrong
+
+Copilot pointed out, and the fixture diff confirms, that #8798 didn't change the join TIP's closing clause ("so `natural_join` should be preferred in most places"): it appears unchanged on both the `-` and `+` lines, and #8798 changed only the explanation of how `join` works. The branch's conditional rewording ("If each left row needs at most one right match, use `natural_join` instead") is the branch's own edit, so leaving it is correct. Expectation 2 is now a control: don't treat that clause as a lost #8798 correction. Rescored from the graders' recorded reasons (no rerun; each grader said whether the run restored the clause):
+
+| Configuration | Old score | Rescored |
+| --- | --- | --- |
+| `main` (2 runs) | 8/12 | 10/12 |
+| new, examples named the answer (2 runs) | 12/12 | 10/12 |
+| new, general examples (2 runs) | 10/12 | 12/12 |
+| new, general examples, after the `-`/`+` rule (2 runs) | 9/12 | 11/12 |
+
+So the runs that "missed" the TIP handled the merge correctly, and the version whose example named the clause was taught to restore something that wasn't lost. The objective lost correction in this fixture is the `aggs` "required" marking.
+
