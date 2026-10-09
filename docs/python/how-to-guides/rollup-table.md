@@ -2,7 +2,7 @@
 title: Create a hierarchical rollup table programmatically
 ---
 
-<!-- TODO: Link to conceptual guide on hierarchy https://github.com/deephaven/deephaven.io/issues/2079 -->
+<!-- TODO: Link to the hierarchical tables concept guide when it exists (DOC-1977, https://deephaven.atlassian.net/browse/DOC-1977) -->
 
 This guide shows you how to create a hierarchical rollup table programmatically.
 
