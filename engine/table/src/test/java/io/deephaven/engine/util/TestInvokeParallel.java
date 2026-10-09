@@ -111,6 +111,12 @@ public class TestInvokeParallel {
         }
     }
 
+    /** Throws {@code throwable} without declaring it, as Groovy code can throw any Throwable. */
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void throwUnchecked(final Throwable throwable) throws T {
+        throw (T) throwable;
+    }
+
     /**
      * Fails if a fatal report reached {@code thrown}. The unit test reporter throws in place of ending the process, so
      * a report made on the calling thread surfaces among the causes and suppressed exceptions of what is thrown.
@@ -422,6 +428,64 @@ public class TestInvokeParallel {
                 })).isSameAs(error);
 
         assertThat(ran).containsExactly(0, 1);
+    }
+
+    /**
+     * A task on a helper thread that throws a Throwable that is neither an Exception nor an Error, as Groovy code can,
+     * fails the invocation with it wrapped, rather than leaving the caller waiting forever for the helper.
+     */
+    @Test
+    public void testPlainThrowableOnAHelperThreadFailsTheInvocation() throws InterruptedException {
+        final List<Throwable> escaped = Collections.synchronizedList(new ArrayList<>());
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(recordingEscapes(newPool(1), escaped), 2);
+        final Throwable plain = new Throwable("plain throwable");
+        final CountDownLatch helperFailing = new CountDownLatch(1);
+
+        withTimeout(() -> assertThatThrownBy(() -> invoke(scheduler, 2, (context, idx, nec) -> {
+            if (idx == 0) {
+                // the caller's own task holds the caller until the helper has its task, so the helper throws
+                await(helperFailing);
+            } else {
+                helperFailing.countDown();
+                throwUnchecked(plain);
+            }
+        }))
+                .isInstanceOf(UncheckedDeephavenException.class)
+                .satisfies(thrown -> assertThat(thrown.getCause()).isSameAs(plain)));
+    }
+
+    /**
+     * A task on the calling thread that throws a Throwable that is neither an Exception nor an Error is thrown as
+     * itself, as an Error would be, but only once the helper's running task has finished.
+     */
+    @Test
+    public void testPlainThrowableOnTheCallingThreadIsThrownOnceHelpersFinish() {
+        final ExecutorJobScheduler scheduler = newScheduler(1, 2);
+        final Throwable plain = new Throwable("plain throwable");
+        final CountDownLatch helperStarted = new CountDownLatch(1);
+        final AtomicBoolean helperFinished = new AtomicBoolean();
+        final AtomicBoolean helperFinishedWhenThrown = new AtomicBoolean();
+
+        assertThatThrownBy(() -> {
+            try {
+                invoke(scheduler, 2, (context, idx, nec) -> {
+                    if (idx == 0) {
+                        await(helperStarted);
+                        throwUnchecked(plain);
+                    } else {
+                        helperStarted.countDown();
+                        sleep(200);
+                        helperFinished.set(true);
+                    }
+                });
+            } finally {
+                helperFinishedWhenThrown.set(helperFinished.get());
+            }
+        })
+                .isSameAs(plain)
+                .satisfies(TestInvokeParallel::assertNoFatalReport);
+
+        assertThat(helperFinishedWhenThrown.get()).isTrue();
     }
 
     /**
@@ -740,6 +804,40 @@ public class TestInvokeParallel {
     }
 
     /**
+     * A task context that fails to close fails the iteration like any other failure, so a helper that has not started
+     * does not start the task it was made with; the caller closes it instead.
+     */
+    @Test
+    public void testContextCloseFailureStopsTasksNotYetStarted() {
+        final List<Runnable> queued = Collections.synchronizedList(new ArrayList<>());
+        final IllegalStateException closeFailure = new IllegalStateException("close failed");
+        final AtomicInteger made = new AtomicInteger();
+        final List<Integer> ran = Collections.synchronizedList(new ArrayList<>());
+
+        assertThatThrownBy(() -> new ExecutorJobScheduler(queued::add, 2).invokeParallel(
+                ExecutionContext.getContext(), null,
+                () -> {
+                    // the caller's own context, which fails to close once its task is done, then the helper's
+                    final boolean callersOwn = made.incrementAndGet() == 1;
+                    return new JobScheduler.JobThreadContext() {
+                        @Override
+                        public void close() {
+                            if (callersOwn) {
+                                throw closeFailure;
+                            }
+                        }
+                    };
+                }, 0, 2, (context, idx, nec) -> ran.add(idx)))
+                .isSameAs(closeFailure);
+
+        assertThat(ran).containsExactly(0);
+        // the queued job, started late, finds its invoker taken
+        assertThat(queued).hasSize(1);
+        queued.forEach(Runnable::run);
+        assertThat(ran).containsExactly(0);
+    }
+
+    /**
      * An Error on the calling thread after another task has already failed is kept, attached to the failure that is
      * thrown, rather than dropped because some failure was already recorded.
      */
@@ -811,7 +909,6 @@ public class TestInvokeParallel {
         assertThat(ran).containsExactly(0, 1, 2);
     }
 
-    /** A checked exception reaching onError, as nested work may deliver one, is thrown wrapped. */
     /** A failure to start the iteration fails it like any other failure, and is thrown. */
     @Test
     public void testStartFailureIsThrown() {
@@ -864,6 +961,32 @@ public class TestInvokeParallel {
         assertThat(callbacks.cleanupCalls.get()).isZero();
         assertThat(callbacks.error.get()).isInstanceOf(UncheckedDeephavenException.class);
         assertThat(callbacks.error.get().getCause()).isSameAs(factoryError);
+    }
+
+    /**
+     * The callback form ends in onError, rather than never ending, when a task throws a Throwable that is neither an
+     * Exception nor an Error.
+     */
+    @Test
+    public void testCallbackFormPlainThrowableEndsInOnError() {
+        final List<Throwable> escaped = Collections.synchronizedList(new ArrayList<>());
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(recordingEscapes(newPool(1), escaped), 1);
+        final Throwable plain = new Throwable("plain throwable");
+        final Callbacks callbacks = new Callbacks();
+        final CountDownLatch ended = new CountDownLatch(1);
+
+        scheduler.iterateParallel(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 1,
+                (context, idx, nec) -> throwUnchecked(plain),
+                callbacks.onComplete, callbacks.cleanup, e -> {
+                    callbacks.onError.accept(e);
+                    ended.countDown();
+                });
+        await(ended);
+
+        assertThat(callbacks.completeCalls.get()).isZero();
+        assertThat(callbacks.cleanupCalls.get()).isZero();
+        assertThat(callbacks.error.get()).isInstanceOf(UncheckedDeephavenException.class);
+        assertThat(callbacks.error.get().getCause()).isSameAs(plain);
     }
 
     @Test

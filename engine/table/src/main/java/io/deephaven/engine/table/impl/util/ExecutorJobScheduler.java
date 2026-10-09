@@ -16,12 +16,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
  * A {@link JobScheduler} over a plain {@link Executor}. A job the executor refuses with a
  * {@link RejectedExecutionException}, as a bounded pool with no queue does when all of its threads are busy, runs on
- * the submitting thread instead, so no job is ever dropped and no job ever waits in a queue behind another.
+ * the submitting thread instead, so no job is ever dropped; over a pool with no queue, such as {@link #newHelperPool}
+ * makes, no job ever waits in a queue behind another either.
  *
  * <p>
  * It is meant for a pool shaped like {@link #newHelperPool}, which may be small and shared by many callers, and on
@@ -48,6 +50,7 @@ public class ExecutorJobScheduler implements JobScheduler {
     private static final long HELPER_POOL_KEEP_ALIVE_SECONDS = 60;
 
     private final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
+    private final AtomicInteger outstandingJobs = new AtomicInteger(0);
     private final Executor executor;
     private final int threadCount;
 
@@ -82,32 +85,77 @@ public class ExecutorJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
+        outstandingJobs.incrementAndGet();
+        final Thread submitter = Thread.currentThread();
         final AtomicBoolean started = new AtomicBoolean();
         try {
             executor.execute(() -> {
                 started.set(true);
-                final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
-                baseEntry.onBaseEntryStart();
                 try {
-                    JobScheduler.runJob(executionContext, runnable, description, onError);
+                    if (Thread.currentThread() == submitter) {
+                        // A synchronous executor ran it here: the submitting thread's own work, as a refused job is
+                        JobScheduler.runJob(executionContext, runnable, description, onError);
+                        return;
+                    }
+                    final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
+                    baseEntry.onBaseEntryStart();
+                    try {
+                        JobScheduler.runJob(executionContext, runnable, description, onError);
+                    } finally {
+                        baseEntry.onBaseEntryEnd();
+                        accumulatedBaseEntry.accumulate(baseEntry);
+                    }
                 } finally {
-                    baseEntry.onBaseEntryEnd();
-                    accumulatedBaseEntry.accumulate(baseEntry);
+                    decrementOutstandingJobs();
                 }
             });
         } catch (final RejectedExecutionException e) {
             if (started.get()) {
-                // A synchronous executor ran the job, which then threw this itself: the job has run, and must not
-                // run again.
+                // A synchronous executor ran the job, which then threw this itself: the job has run, and released its
+                // count, and must not run again.
                 throw e;
             }
             // Every thread is busy: the job is the submitting thread's own work, and is accounted as such
+            decrementOutstandingJobs();
             JobScheduler.runJob(executionContext, runnable, description, onError);
+        } catch (final Throwable t) {
+            // A job that never started must release its count here, or getAccumulatedPerformance would wait forever
+            // for it, as in OperationInitializerJobScheduler.
+            if (!started.get()) {
+                decrementOutstandingJobs();
+            }
+            throw t;
+        }
+    }
+
+    /**
+     * Decrement the number of outstanding jobs, either because we could not submit the job or because the job
+     * completed.
+     */
+    private void decrementOutstandingJobs() {
+        if (outstandingJobs.decrementAndGet() == 0) {
+            synchronized (outstandingJobs) {
+                outstandingJobs.notifyAll();
+            }
         }
     }
 
     @Override
     public BasePerformanceEntry getAccumulatedPerformance() {
+        boolean interrupted = false;
+        synchronized (outstandingJobs) {
+            while (outstandingJobs.get() > 0) {
+                try {
+                    outstandingJobs.wait();
+                } catch (InterruptedException e) {
+                    // keep waiting, and restore the interrupt for the caller, which may be about to check it
+                    interrupted = true;
+                }
+            }
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
         return accumulatedBaseEntry;
     }
 

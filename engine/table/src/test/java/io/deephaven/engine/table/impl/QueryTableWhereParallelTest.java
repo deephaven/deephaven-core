@@ -4,13 +4,16 @@
 package io.deephaven.engine.table.impl;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import io.deephaven.base.SleepUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -19,13 +22,18 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
 public class QueryTableWhereParallelTest extends QueryTableWhereTest {
@@ -100,5 +108,52 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
 
         // Ensure the table is as expected.
         TstUtils.validate(en);
+    }
+
+    /**
+     * The filter jobs an update runs on the update graph's scheduler are credited to the where listener's performance
+     * entry, once every one of them has added its own.
+     */
+    @Test
+    public void testParallelUpdateWorkIsCreditedToTheListener() throws ReflectiveOperationException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 1_000;
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 2;
+        final long sleepMillis = 50;
+        final RowSetCapturingFilter slowFilter = new RowSetCapturingFilter() {
+            @NotNull
+            @Override
+            public WritableRowSet filter(
+                    @NotNull final RowSet selection,
+                    @NotNull final RowSet fullSet,
+                    @NotNull final Table table,
+                    final boolean usePrev) {
+                SleepUtil.sleep(sleepMillis);
+                return super.filter(selection, fullSet, table, usePrev);
+            }
+        };
+        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking());
+        final Table result = table.where(slowFilter);
+        final PerformanceEntry entry = whereListener(result).getEntry();
+        assertNotNull(entry);
+        slowFilter.reset();
+        final long usageBefore = entry.getUsageNanos();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet added = RowSetFactory.fromRange(10, 4_009);
+            table.getRowSet().writableCast().insert(added);
+            table.notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+
+        final int filterCalls = slowFilter.rowSets().size();
+        assertTrue("the update was split across jobs", filterCalls > 1);
+        assertTrue("the jobs' time is credited to the listener",
+                entry.getUsageNanos() - usageBefore >= filterCalls * TimeUnit.MILLISECONDS.toNanos(sleepMillis));
+    }
+
+    private static MergedListener whereListener(final Table filtered) throws ReflectiveOperationException {
+        final Field field = QueryTable.FilteredTable.class.getDeclaredField("whereListener");
+        field.setAccessible(true);
+        return (MergedListener) field.get(filtered);
     }
 }

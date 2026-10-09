@@ -66,24 +66,28 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
-        final BasePerformanceEntry basePerformanceEntry;
-        if (currentBaseEntry.get() == null) {
-            basePerformanceEntry = new BasePerformanceEntry();
-            basePerformanceEntry.onBaseEntryStart();
-            currentBaseEntry.set(basePerformanceEntry);
-        } else {
-            basePerformanceEntry = null;
-        }
         try {
-            JobScheduler.runJob(executionContext, runnable, description, onError);
-        } finally {
-            if (basePerformanceEntry != null) {
-                Assert.equals(currentBaseEntry.get(), "currentBaseEntry.get()", basePerformanceEntry,
-                        "basePerformanceEntry");
-                currentBaseEntry.remove();
-                basePerformanceEntry.onBaseEntryEnd();
-                accumulatedBaseEntry.accumulate(basePerformanceEntry);
+            final BasePerformanceEntry basePerformanceEntry;
+            if (currentBaseEntry.get() == null) {
+                basePerformanceEntry = new BasePerformanceEntry();
+                basePerformanceEntry.onBaseEntryStart();
+                currentBaseEntry.set(basePerformanceEntry);
+            } else {
+                basePerformanceEntry = null;
             }
+            try {
+                JobScheduler.runJob(executionContext, runnable, description, onError);
+            } finally {
+                if (basePerformanceEntry != null) {
+                    Assert.equals(currentBaseEntry.get(), "currentBaseEntry.get()", basePerformanceEntry,
+                            "basePerformanceEntry");
+                    currentBaseEntry.remove();
+                    basePerformanceEntry.onBaseEntryEnd();
+                    accumulatedBaseEntry.accumulate(basePerformanceEntry);
+                }
+            }
+        } finally {
+            // even if the performance accounting failed, or getAccumulatedPerformance would wait for this job forever
             decrementOutstandingJobs();
         }
     }

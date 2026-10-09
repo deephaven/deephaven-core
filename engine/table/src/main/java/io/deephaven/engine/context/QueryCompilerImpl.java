@@ -537,6 +537,9 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             } catch (Exception e) {
                 // ignore errors here
             }
+            // The tasks are done, but the jobs that ran them may still be adding their performance; this waits for
+            // every submitted job, including the no-op ones whose work this thread took over. It is null only from the
+            // ImmediateJobScheduler, used when the compilation is not parallelized.
             final BasePerformanceEntry perfEntry = jobScheduler.getAccumulatedPerformance();
             if (perfEntry != null) {
                 QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(perfEntry);

@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
@@ -15,6 +16,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -59,6 +61,17 @@ public class TestExecutorJobScheduler {
 
     private static void await(final CountDownLatch latch) throws InterruptedException {
         assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    }
+
+    /** The scheduler's outstanding job count, which nothing else exposes. */
+    private static int outstandingJobs(final ExecutorJobScheduler scheduler) {
+        try {
+            final java.lang.reflect.Field field = ExecutorJobScheduler.class.getDeclaredField("outstandingJobs");
+            field.setAccessible(true);
+            return ((AtomicInteger) field.get(scheduler)).get();
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 
     @Test
@@ -116,6 +129,24 @@ public class TestExecutorJobScheduler {
         });
 
         assertThat(runningThread.get()).isSameAs(Thread.currentThread());
+        // the refused job released its count, and its run here is this thread's own work
+        assertThat(outstandingJobs(scheduler)).isZero();
+        assertThat(scheduler.getAccumulatedPerformance().getUsageNanos()).isZero();
+    }
+
+    /** A submission the executor fails outright releases its count, so that reading the performance does not hang. */
+    @Test
+    public void testFailedSubmissionReleasesItsCount() {
+        final IllegalStateException broken = new IllegalStateException("cannot start a thread");
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(command -> {
+            throw broken;
+        }, 4);
+
+        assertThatThrownBy(() -> scheduler.submit(null, () -> {
+        }, null, e -> {
+        })).isSameAs(broken);
+
+        assertThat(outstandingJobs(scheduler)).isZero();
     }
 
     @Test
@@ -161,6 +192,8 @@ public class TestExecutorJobScheduler {
         })).isSameAs(fromTheJob);
 
         assertThat(runs.get()).isEqualTo(1);
+        // released once, by the job, and not again for the rejection
+        assertThat(outstandingJobs(scheduler)).isZero();
     }
 
     /** Waiting for outstanding jobs keeps going through an interrupt, and restores it for the caller. */
@@ -197,6 +230,89 @@ public class TestExecutorJobScheduler {
 
         assertThat(waiter.isAlive()).isFalse();
         assertThat(interruptedAfter.get()).isTrue();
+    }
+
+    /** Reading the performance waits for a job running on a pool thread to finish and add its own. */
+    @Test
+    public void testPerformanceWaitsForStartedJobs() throws InterruptedException {
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(1), 2);
+        final CountDownLatch running = new CountDownLatch(1);
+        final CountDownLatch release = new CountDownLatch(1);
+        scheduler.submit(null, () -> {
+            running.countDown();
+            try {
+                release.await();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, null, e -> {
+        });
+        await(running);
+
+        final AtomicReference<BasePerformanceEntry> read = new AtomicReference<>();
+        final Thread reader = new Thread(() -> read.set(scheduler.getAccumulatedPerformance()), "performance-reader");
+        reader.setDaemon(true);
+        reader.start();
+        reader.join(200);
+        assertThat(reader.isAlive()).as("still waiting for the running job").isTrue();
+        release.countDown();
+        reader.join(10_000);
+
+        assertThat(reader.isAlive()).isFalse();
+        // the job ran for at least the 200 ms the reader was kept waiting
+        assertThat(read.get().getUsageNanos()).isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(200));
+    }
+
+    /**
+     * The wait covers every job submitted, as {@link OperationInitializerJobScheduler}'s does, including one the
+     * executor has yet to run: after an invocation over a queueing executor, whose caller ran every task itself,
+     * reading the performance waits until the queued jobs, which then do nothing, have run.
+     */
+    @Test
+    public void testPerformanceWaitsForJobsNotYetRun() throws InterruptedException {
+        final List<Runnable> queued = Collections.synchronizedList(new ArrayList<>());
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(queued::add, 4);
+        final AtomicInteger runs = new AtomicInteger();
+        scheduler.invokeParallel(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8,
+                (context, idx, nec) -> runs.incrementAndGet());
+        assertThat(runs.get()).isEqualTo(8);
+        assertThat(queued).hasSize(3);
+
+        final Thread reader = new Thread(scheduler::getAccumulatedPerformance, "performance-reader");
+        reader.setDaemon(true);
+        reader.start();
+        reader.join(200);
+        assertThat(reader.isAlive()).as("still waiting for the queued jobs").isTrue();
+        // the late jobs find their invokers taken, and do nothing
+        queued.forEach(Runnable::run);
+        reader.join(10_000);
+
+        assertThat(reader.isAlive()).isFalse();
+        assertThat(runs.get()).isEqualTo(8);
+    }
+
+    /**
+     * A job a synchronous executor runs on the submitting thread is that thread's own work, as a refused job is, and is
+     * not accounted again by the scheduler.
+     */
+    @Test
+    public void testJobRunOnTheSubmittingThreadIsNotAccounted() {
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(Runnable::run, 2);
+        final AtomicReference<Thread> runningThread = new AtomicReference<>();
+
+        scheduler.submit(null, () -> {
+            runningThread.set(Thread.currentThread());
+            try {
+                Thread.sleep(20);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, null, e -> {
+        });
+
+        assertThat(runningThread.get()).isSameAs(Thread.currentThread());
+        assertThat(outstandingJobs(scheduler)).isZero();
+        assertThat(scheduler.getAccumulatedPerformance().getUsageNanos()).isZero();
     }
 
     @Test
