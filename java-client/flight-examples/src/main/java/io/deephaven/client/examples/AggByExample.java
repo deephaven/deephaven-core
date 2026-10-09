@@ -9,7 +9,7 @@ import io.deephaven.qst.table.TableSpec;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
-@Command(name = "aggby-examples", mixinStandardHelpOptions = true,
+@Command(name = "agg-by", mixinStandardHelpOptions = true,
         description = "Agg by examples", version = "0.1.0")
 class AggByExample extends AggInputBase {
 
@@ -27,7 +27,7 @@ class AggByExample extends AggInputBase {
         builder.putMap("medianBy", base.medianBy(GROUP_KEY.name()).sort(GROUP_KEY.name()));
         builder.putMap("stdBy", base.stdBy(GROUP_KEY.name()).sort(GROUP_KEY.name()));
         builder.putMap("varBy", base.varBy(GROUP_KEY.name()).sort(GROUP_KEY.name()));
-        builder.putMap("absSumBy", base.sumBy(GROUP_KEY.name()).sort(GROUP_KEY.name()));
+        builder.putMap("absSumBy", base.absSumBy(GROUP_KEY.name()).sort(GROUP_KEY.name()));
         return builder.build();
     }
 

@@ -31,7 +31,11 @@ public class TestJoinControl {
         }
     };
 
-    static final JoinControl OVERFLOW_JOIN_CONTROL = new JoinControl() {
+    /**
+     * A small hash table that is nearly full before it grows, so that builds rehash and probes search long runs of
+     * occupied slots.
+     */
+    static final JoinControl SMALL_TABLE_JOIN_CONTROL = new JoinControl() {
         @Override
         public int initialBuildSize() {
             return 16;
@@ -39,16 +43,16 @@ public class TestJoinControl {
 
         @Override
         public double getTargetLoadFactor() {
-            return 19;
+            return 0.9;
         }
 
         @Override
         public double getMaximumLoadFactor() {
-            return 20;
+            return 0.95;
         }
     };
 
-    public static final JoinControl OVERFLOW_BUILD_LEFT = new JoinControl() {
+    public static final JoinControl SMALL_TABLE_BUILD_LEFT = new JoinControl() {
         @Override
         public int initialBuildSize() {
             return 16;
@@ -56,12 +60,12 @@ public class TestJoinControl {
 
         @Override
         public double getTargetLoadFactor() {
-            return 19;
+            return 0.9;
         }
 
         @Override
         public double getMaximumLoadFactor() {
-            return 20;
+            return 0.95;
         }
 
         @Override
@@ -72,7 +76,7 @@ public class TestJoinControl {
         }
     };
 
-    public static final JoinControl OVERFLOW_BUILD_RIGHT = new JoinControl() {
+    public static final JoinControl SMALL_TABLE_BUILD_RIGHT = new JoinControl() {
         @Override
         public int initialBuildSize() {
             return 16;
@@ -80,12 +84,12 @@ public class TestJoinControl {
 
         @Override
         public double getTargetLoadFactor() {
-            return 19;
+            return 0.9;
         }
 
         @Override
         public double getMaximumLoadFactor() {
-            return 20;
+            return 0.95;
         }
 
         @Override

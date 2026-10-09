@@ -1029,6 +1029,10 @@
                 "path": "how-to-guides/configuration/configure-production-application.md"
               },
               {
+                "label": "Run Deephaven from your own Java application",
+                "path": "how-to-guides/configuration/custom-java-application.md"
+              },
+              {
                 "label": "Deephaven configuration files",
                 "path": "how-to-guides/configuration/config-file.md"
               },
@@ -2045,7 +2049,7 @@
                   },
                   {
                     "label": "Multi-join",
-                    "path": "reference/table-operations/join/multijoin.md"
+                    "path": "reference/table-operations/join/multi-join.md"
                   },
                   {
                     "label": "MultiJoinInput",
@@ -2065,7 +2069,7 @@
                   },
                   {
                     "label": "rangeJoin",
-                    "path": "reference/table-operations/join/rangeJoin.md"
+                    "path": "reference/table-operations/join/range-join.md"
                   }
                 ]
               },

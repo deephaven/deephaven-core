@@ -30,15 +30,20 @@ per category.
 - **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions — except individual `reference/community-questions/*` Q&A pages, which are a conversational Q&A format and take the conversational how-to tone instead (identify these by directory and content shape — a single question answered conversationally — not by assuming the question is in any specific front-matter field or that the body opens with it; see `ref-deephaven-doc-categories` for why). `cq-index.md` itself is the exception to that exception — a category-card index page, not a Q&A — and keeps the dry/formal Reference tone (see `ref-deephaven-doc-categories` for the full carve-out).
 - **Sentence case in headings** — not Title Case. Don't include links in headers.
 - **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`“` `”` `‘` `’`).
-- **Em dashes** for parenthetical statements, not hyphens or en dashes. Surround with a single space on either side: `word — word`, not `word—word`.
+- **Em dashes** for parenthetical statements, not hyphens or en dashes. Surround with a single space on either side: `word — word`, not `word—word`. This rule governs how a dash is written, not whether to use one; see **Sentences that need rescuing punctuation** below before putting more than one dash construction in a sentence (a pair of dashes enclosing one aside counts as one construction), or a dash construction together with a colon that doesn't introduce a list or code block.
 - **Link wording.** Always describe what you're linking to; never use "here" or "click here" as link text (e.g., "see the [Input table guide](link)," not "see [here](link)").
 - **One idea per paragraph.** Long paragraphs mixing multiple claims are harder to verify and harder to read; split them.
+- **Sentences that need rescuing punctuation.** A sentence or paragraph that is hard to parse on one read is a readability defect. Punctuation is only a clue to inspect: using a colon, an em dash, a parenthetical, or a semicolon is normal and is not itself a problem, but when a clause only holds together because of one of them, or several pile up in one sentence, the reader has to work out the structure before the meaning. Drafted prose, especially AI-drafted prose, tends to pile this structure up. A short definition that uses a colon and reads easily is not a finding. Read each paragraph once as a reader would; if you have to re-read a sentence to find where it ends, or a clause only works because a dash or semicolon holds it together, flag it. Typical shapes: a definition packed into one sentence with a colon, bold terms, and a semicolon; an opener that ends in a dash and then a colon (`When X is enabled — Y happens:`); a "name: A does this; B does that; C does the other" run; and a paragraph that opens "X needs no Y. These Z tune it; …".
+  - **Fix:** split into short sentences, one claim each. When the sentence enumerates cases, steps, or parallel items, use a bullet list instead of a run-on with semicolons (one bullet per case).
+  - **Not defects:** a colon that introduces a list or a code block; a run-in bold label such as `**Updates**: After initialization, …` when the text after it is plain sentences; a single em dash around a real aside the sentence reads fine without.
+  - **Report it as one pattern** with the two or three clearest examples, then list the remaining locations. Give a proposed rewrite for every flagged paragraph (a flag with no rewrite leaves the author to guess), and don't reintroduce a semicolon, a dash aside, or a parenthetical aside in it; the rewrite is the test.
+- **One idea per bullet.** A bullet states one point. A second sentence that states a different idea (not an elaboration, cause, or consequence of the first) belongs in its own bullet or outside the list. Test: can you give the bullet a short label that covers everything in it? A bullet that explains a rule and then adds "this also works for Y" fails; a bullet that states a cause and then its consequence passes. Apply the same test to "Key takeaways" bullets: split a multi-sentence bullet only when its sentences state different ideas, and leave one that explains or qualifies a single point.
 - **Bullet points get periods** when they're complete sentences; incomplete phrases don't need them. Exception: don't add periods to bullets in the "Related documentation" section.
 
 ## Page structure
 
 - Every published `docs/{python,groovy}` page (except landing pages, overviews, blog articles, a Crash Course tutorial chapter, the four root quickstarts, or an individual `reference/community-questions/*` Q&A page — see `ref-deephaven-doc-categories`) should include a "Related documentation" section at the end. The quickstart and community-questions exemptions reflect actual, established repo convention, verified by corpus count, not an assumption: none of the four root quickstarts (`getting-started/quickstart.md`, `pyclient-quickstart.md`, `jupyter-quickstart.md`) carry the section, and only 9 of the ~99 individual community-questions pages across both languages do — so flagging the other ~90 would mean flagging the repo's own established norm, not a real defect. This rule doesn't apply at all to the out-of-taxonomy contributor-facing tooling docs (`docs/README.md`, `docs/snapshotter/README.md`, `docs/tools/autoimport/README.md`, etc. — see `ref-deephaven-doc-categories`'s "Pages outside the four categories") — none of those carry the section, and that's not a defect to flag. Every exemption here means the section isn't *required* on those pages, not that it's *forbidden* — some exempted pages include one anyway (e.g. `conceptual/table-operations-overview.md`, or the 9 community-questions pages that have one), which is fine; don't flag its presence as a violation of the exemption.
-- When a method is referenced in narrative text, link it to the appropriate reference page if one exists.
+- When a method or type is referenced in narrative text, link it to the appropriate reference page if one exists. Link the **first mention in each `##` section**, not only the first mention in the file: readers reach a section from the table of contents or a heading link, and an identifier that was linked three screens up is bare where they landed. Don't link every later occurrence within the same section, and don't link inside headings, fenced code blocks, or code comments. Don't ask a page to link an identifier to itself: a reference page that documents `view` leaves `view` plain, so skip any identifier whose link target is the page under review. For each bare identifier you flag, give the link target (the reference page path and anchor already used elsewhere on the page, or the page you found by searching), so the author can apply the fix without looking it up. In a Concept guide, check the opening paragraph and bullets of each major section first, because that is where several identifiers (`with_serial`, `select`, `update`, `where`, `Filter`, `Selectable`) tend to appear together and bare.
 
 ## Deephaven proper nouns
 
@@ -102,14 +107,25 @@ required searches, not optional style intuition:
   `where`/`update`/`with_serial`/etc. vs. only isolated dot-prefixed outliers, each traceable to a
   specific bug). Flag every dot-prefixed method reference in prose (e.g. `.with_serial`, `.where`)
   for correction — see **Method names in prose** above.
+- Search for backticked type names too (`PascalCase`, such as `Filter`, `Selectable`, or `Barrier`) and apply the same per-section check to them.
 - Search for backticked method-shaped identifiers (`snake_case` or `camelCase`, especially ones
   matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and, **only for
   those that have an appropriate reference page or pydoc/javadoc anchor to link to** (per the
   Page structure rule above — this check doesn't apply if no suitable target exists), check the
-  **first** occurrence of each in the file, not just whether a link exists anywhere. A doc whose
-  first mention is bare and a later mention is linked still violates "first mention should link,"
-  even though a plain existence check would pass it. Flag any identifier whose first occurrence is
-  bare; the fix is to move the link to that first mention, not to add one anywhere in the file.
+  **first** occurrence of each in the file, and then the first occurrence in each `##` section,
+  not just whether a link exists anywhere. A doc whose first mention is bare and a later mention
+  is linked still violates "first mention should link," even though a plain existence check would
+  pass it, and an identifier linked in the page's introduction but bare in the opening of a later
+  `##` section violates the per-section rule. List each identifier's first mention per section
+  with its line number and whether it is linked; flag the bare ones. The fix is to link that
+  first mention, not to add links to every occurrence.
+- Search for `[Cc]olumns? [A-Z]` and for capitalized single-word names next to "column" or
+  "columns" in prose (for example `column A`, `Column B gets`). Then build a list of the column
+  names the page defines (the left-hand sides of formulas such as `"A = i * 2"`, and explicit
+  labels in code) and search the prose for each of those names used alone or in a coordinated
+  phrase, such as `A and B run in parallel` or `D starts after A finishes`. For every hit outside
+  a fenced code block and outside a heading, check whether the name is backticked; flag the bare
+  ones.
 - Search for a backticked identifier immediately followed by empty `()` outside of a fenced code
   block (e.g. `` `with_serial()` `` in prose) — flag it; empty parentheses add no value in prose.
   However, parentheses *with* arguments (e.g. `` `isNaN(value)` ``) are acceptable when the
@@ -137,7 +153,7 @@ In a small number of cases, method names may differ from the snake_case/camelCas
 
 ## Backticks
 
-Enclose: method names (`naturalJoin`), classes (`SystemTableLogger`), variables (`t`), file paths (`/tmp/etcd.snap`).
+Enclose: method names (`naturalJoin`), classes (`SystemTableLogger`), variables (`t`), file paths (`/tmp/etcd.snap`), and **column names in prose** ("column `A` finishes before column `B`", "the `Price` column"). Corpus count on 2026-10-07 across `docs/python`: about 509 backticked column names in prose (`` column `Name` ``, `` `Name` column ``) against about 59 bare ones, and the bare ones are mostly headings and UI labels, so backticking is the standard. Don't change column names inside fenced code blocks or code comments, and don't backtick the generic word "column".
 
 ## Code example tags
 

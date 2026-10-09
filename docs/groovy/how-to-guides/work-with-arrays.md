@@ -78,7 +78,7 @@ result = source.groupBy("X")
 Certain aggregations create array columns. For example, the following operations create array columns:
 
 - [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)
-- [`rangeJoin`](../reference/table-operations/join/rangeJoin.md)
+- [`rangeJoin`](../reference/table-operations/join/range-join.md)
 
 The following example calls [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create an array column:
 

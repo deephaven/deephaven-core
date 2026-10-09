@@ -524,8 +524,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    protected RollupTableImpl copy() {
-        return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
+    protected RollupTableImpl copy(@NotNull final Map<String, Object> attributes) {
+        return new RollupTableImpl(attributes, source, aggregations, includesConstituents,
+                groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations,
