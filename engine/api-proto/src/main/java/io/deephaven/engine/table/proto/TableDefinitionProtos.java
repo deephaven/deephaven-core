@@ -30,15 +30,17 @@ import java.util.UUID;
 
 /**
  * Persists {@link TableDefinition table definitions} to files, and reads them back, so that a definition written by one
- * process (for example, the producer of a table) can be shared with others (for example, its consumers).
+ * process (for example, the producer of a table) can be shared with others (for example, its consumers). For storage or
+ * transport other than files, {@link #serialize(TableDefinition)} and {@link #deserialize(byte[])} work with the same
+ * format as bytes.
  *
  * <p>
- * The file format is the binary protobuf encoding of an internal (non-RPC) message,
- * {@link PersistedTableDefinitionProto}. Reading is exact: {@code read(path).equals(definition)} after
- * {@code write(path, definition, ...)}, provided every class the definition references can be loaded by the reader.
- * Non-primitive classes are recorded by {@link Class#getName() name}, so the reader needs them on its classpath.
- * Reading is also strict: a file containing fields this version does not know about is rejected rather than partially
- * understood.
+ * The format is the binary protobuf encoding of an internal (non-RPC) message, {@link PersistedTableDefinitionProto}.
+ * Reading is exact: {@code read(path).equals(definition)} after {@code write(path, definition, ...)}, and
+ * {@code deserialize(serialize(definition)).equals(definition)}, provided every class the definition references can be
+ * loaded by the reader. Non-primitive classes are recorded by {@link Class#getName() name}, so the reader needs them on
+ * its classpath. Reading is also strict: a file containing fields this version does not know about is rejected rather
+ * than partially understood.
  */
 public final class TableDefinitionProtos {
 
@@ -120,14 +122,34 @@ public final class TableDefinitionProtos {
         return deserialize(Files.readAllBytes(path));
     }
 
-    static byte[] serialize(@NotNull final TableDefinition definition) {
+    /**
+     * Serializes {@code definition} to bytes, in the same format {@link #write(Path, TableDefinition, CopyOption...)}
+     * writes to files. Use this to store or transmit a definition somewhere other than a file; the bytes can be read
+     * back with {@link #deserialize(byte[])}.
+     *
+     * @param definition the table definition
+     * @return the serialized bytes
+     */
+    public static byte[] serialize(@NotNull final TableDefinition definition) {
         return PersistedTableDefinitionProto.newBuilder()
                 .setTableDefinition(toProto(definition))
                 .build()
                 .toByteArray();
     }
 
-    static TableDefinition deserialize(final byte @NotNull [] bytes) throws InvalidProtocolBufferException {
+    /**
+     * Deserializes a table definition from {@code bytes}, as produced by {@link #serialize(TableDefinition)} or stored
+     * in a file by {@link #write(Path, TableDefinition, CopyOption...)}. Like {@link #read(Path)}, deserialization is
+     * exact and strict. Class names are resolved against the current thread's context class loader, or, if there is
+     * none, the class loader that loaded this class.
+     *
+     * @param bytes the serialized bytes
+     * @return the table definition
+     * @throws InvalidProtocolBufferException if {@code bytes} is not a valid encoding
+     * @throws IllegalArgumentException if {@code bytes} does not describe a valid table definition, has unknown fields,
+     *         or names a class that cannot be found
+     */
+    public static TableDefinition deserialize(final byte @NotNull [] bytes) throws InvalidProtocolBufferException {
         return fromProto(PersistedTableDefinitionProto.parseFrom(bytes), defaultClassLoader());
     }
 
