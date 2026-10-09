@@ -6,7 +6,7 @@ title: Package a Deephaven Python project
 
 A packaged project can work with a Deephaven server in one of two ways:
 
-- **Embedded server:** [`deephaven-server`](https://pypi.org/project/deephaven-server/) starts a Deephaven server and its JVM inside the Python process. The server-side `deephaven` API is available in that same process once the server has started.
+- **Embedded server:** [`deephaven-server`](https://pypi.org/project/deephaven-server/) starts a Deephaven server and its JVM inside the Python process. The server-side `deephaven` API is available in that same process once a `Server` object has been created, which starts the JVM.
 - **Remote client:** [`pydeephaven`](https://pypi.org/project/pydeephaven/) connects a Python process to a Deephaven server that is already running, such as one started with Docker or `pip`-installed `deephaven-server` in another process. The client does not start a server and does not provide the server-side `deephaven` API; it works with tables through a [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session).
 
 The packaging tooling is the same for both. What differs is the dependency you declare and, for the embedded server, the order in which modules are imported. This guide shows a library package and a command-line package for each model.
@@ -36,9 +36,11 @@ my_project/
 
 ## Package code for an embedded server
 
-Use `deephaven-server` when the Python program needs to start a Deephaven server itself. This is the right fit for a self-contained tool, a batch job, or a script that should run without any other infrastructure in place.
+Use `deephaven-server` when the Python program needs to start a Deephaven server itself. This is the right fit for a self-contained tool, a batch job, or a script that should not depend on a separately running Deephaven server.
 
-One rule shapes every embedded-server package: **`deephaven` cannot be imported until a server has started in the same process.** The `deephaven` module binds to a running JVM at import time, so an import that happens too early fails. In practice this means that a library's modules can import `deephaven` freely, because they are only imported after the calling program has started a server, but a package that defines commands must keep `deephaven` out of module scope in `__init__.py` and in the command modules themselves, and import it inside the function that runs after `server.start()`. The examples below show both cases.
+The embedded server runs a JVM, so every machine that runs the package needs Java 17 or later installed, with `JAVA_HOME` set. `pip` cannot install Java, and `pyproject.toml` has no way to declare it as a dependency, so state this requirement in your package's README. See the [pip install prerequisites](../../getting-started/pip-install.md#prerequisites) for details.
+
+One rule shapes every embedded-server package: **`deephaven` cannot be imported until a `deephaven_server.Server` has been constructed in the same process.** Constructing `Server` starts the JVM, and `deephaven` checks for a running JVM when it is imported, so an import that happens any earlier fails. Calling `server.start()` is a separate step that starts the server itself; the import does not depend on it. In practice this means that a library's modules can import `deephaven` freely, because they are only imported after the calling program has created a `Server`, but a package that defines commands must keep `deephaven` out of module scope in `__init__.py` and in the command modules themselves, and import it inside the function, after the `Server` is constructed. The examples below show both cases.
 
 ### Embedded-server library
 
@@ -67,7 +69,7 @@ where = ["src"]
 
 Set the Python version and dependency constraints to versions you test and support. A lower bound such as `deephaven-server>=42` declares compatibility; it does not lock the environment to a repeatable set of versions. If you need that, use a lock file or a pinned requirements file alongside the package. The syntax for these constraints is defined by the [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) and [version specifiers](https://packaging.python.org/en/latest/specifications/version-specifiers/) specifications.
 
-Because a library is only imported after the caller has started a server, its modules can import `deephaven` at the top level. For example, `src/my_dh_library/queries.py` might contain:
+Because a library is only imported after the caller has created a `Server`, its modules can import `deephaven` at the top level. For example, `src/my_dh_library/queries.py` might contain:
 
 ```python skip-test
 from deephaven.table import Table
@@ -78,7 +80,7 @@ def filter_by_threshold(table: Table, column: str, threshold: float) -> Table:
     return table.where([f"{column} > {threshold}"])
 ```
 
-The calling program starts the server, then imports the library:
+The calling program creates and starts the server, then imports the library:
 
 ```python skip-test
 from deephaven_server import Server
@@ -146,10 +148,10 @@ def main(input_file: str, port: int) -> None:
     click.echo(f"Processed {result.size} rows")
 ```
 
-`Server` itself can be imported at any time; only `deephaven` has to wait for `server.start()`. The process owns the server and JVM for as long as it runs. If you want a command that works against a server you already have running, see [Package a remote Deephaven client](#package-a-remote-deephaven-client) instead.
+`Server` itself can be imported at any time; only `deephaven` has to wait until a `Server` has been constructed. The example calls `server.start()` before the import because the command needs a running server anyway, not because the import requires it. The process owns the server and JVM for as long as it runs. If you want a command that works against a server you already have running, see [Package a remote Deephaven client](#package-a-remote-deephaven-client) instead.
 
 > [!NOTE]
-> A package that provides both a library and commands has to be more careful, because the library's own modules import `deephaven`. The repository's [`my_dh_toolkit`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_toolkit) shows that case: its `__init__.py` imports nothing, its commands import the library modules only after starting the server, and Python users import from the submodules (`my_dh_toolkit.queries`) rather than from the package.
+> A package that provides both a library and commands has to be more careful, because the library's own modules import `deephaven`. The repository's [`my_dh_toolkit`](https://github.com/deephaven-examples/deephaven-python-packaging/tree/main/my_dh_toolkit) shows that case: its `__init__.py` imports nothing, its commands import the library modules only after creating the server, and Python users import from the submodules (`my_dh_toolkit.queries`) rather than from the package.
 
 Add a [`__main__.py`](https://docs.python.org/3/library/__main__.html#main-py-in-python-packages) if you also want to support `python -m my_dh_cli`. This is useful when the package is installed but its console script is not on the `PATH`, or when you want to be explicit about which Python interpreter runs the command:
 
