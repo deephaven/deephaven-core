@@ -2,34 +2,28 @@
 title: Read Parquet files into Deephaven tables
 ---
 
-Deephaven integrates seamlessly with Parquet via the [Parquet Python module](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet), making it easy to read Parquet files directly into Deephaven tables. This document covers reading data into tables from single Parquet files, flat Parquet directories, and partitioned key-value Parquet directories. This document also covers reading Parquet files from [S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) into Deephaven tables, a common use case.
-
-> [!NOTE]
-> Much of this document covers reading Parquet files from S3. For the best performance, the Deephaven instance should be running in the same AWS region as the S3 bucket. Additional performance improvements can be made by using directory buckets to localize all data to a single AWS sub-region, and running the Deephaven instance in that same sub-region. See [this article](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en) for more information on S3 directory buckets.
+Deephaven reads Parquet files directly into Deephaven tables with the [Parquet Python module](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet). This document covers reading data into tables from single Parquet files, key-value partitioned Parquet directories, and flat partitioned Parquet directories. This document also covers reading Parquet files from [S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) into Deephaven tables.
 
 ## Read a single Parquet file
 
-Reading a single Parquet file involves loading data from one specific file into a table. This is straightforward and efficient when dealing with a relatively small dataset or when the data is consolidated into one file.
+Read a single Parquet file when one file holds all of the table's data.
 
 ### From local storage
 
-Read single Parquet files into Deephaven tables with [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read). The function takes a single required argument `path`, which gives the full file path of the Parquet file.
+Read single Parquet files into Deephaven tables with [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md). The function takes a single required argument `path`, which gives the full file path of the Parquet file.
 
 ```python test-set=1
 from deephaven import parquet
 
-# pass the path of the local parquet file to `read`
+# pass the path of the local Parquet file to `read`
 grades = parquet.read(path="/data/examples/ParquetExamples/grades/grades.parquet")
 ```
 
 ### From S3
 
-> [!CAUTION]
-> The [`deephaven.experimental.s3`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) integration is currently experimental, so the API is subject to change.
+The [`deephaven.experimental.s3`](/core/pydoc/code/deephaven.experimental.s3.html#module-deephaven.experimental.s3) Python module supports reading from S3. The module is experimental, so its API is subject to change. It contains the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class, which holds the settings Deephaven uses to connect to the S3 instance. Learn more about this class in the [special instructions section of this document](#special-instructions-s3-and-gcs).
 
-Deephaven provides some tooling around reading from S3 with the [`deephaven.experimental.s3`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) Python module. This module contains the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class, which is used to establish communication with the S3 instance. Learn more about this class in the [special instructions section of this document](#special-instructions-s3-only).
-
-Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a single Parquet file from S3, where the `path` argument is provided as the endpoint to the Parquet file on the S3 instance. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance.
+Use [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) to read a single Parquet file from S3, where the `path` argument is the S3 URI of the Parquet file (for example, `s3://bucket/key.parquet`). Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance.
 
 ```python test-set=2 docker-config=rustfs
 from deephaven import parquet
@@ -40,7 +34,7 @@ credentials = s3.Credentials.basic(
     access_key_id="example_username", secret_access_key="example_password"
 )
 
-# Pass the S3 URL as well as instructions on how to talk to the S3 instance
+# Pass the S3 URI as well as instructions on how to talk to the S3 instance
 grades = parquet.read(
     path="s3://example-bucket/grades/grades.parquet",
     special_instructions=s3.S3Instructions(
@@ -51,19 +45,27 @@ grades = parquet.read(
 )
 ```
 
-## Partitioned Parquet directories
+> [!NOTE]
+> When reading from S3, run the Deephaven instance in the same AWS region as the S3 bucket for the best performance. To improve performance further, store the data in a directory bucket in a single AWS Availability Zone, and run the Deephaven instance in that same Availability Zone. For more information, see the [AWS article on S3 Express One Zone directory buckets](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en).
 
-Deephaven supports reading partitioned Parquet directories. A partitioned Parquet directory organizes data into subdirectories based on one or more partition columns. This structure allows for more efficient data querying by pruning irrelevant partitions, leading to faster read times than a single Parquet file. Parquet data can be read into Deephaven tables from a _flat_ partitioned directory or a _key-value_ partitioned directory. Deephaven can also use Parquet metadata files, which boosts performance significantly.
+## Read partitioned Parquet directories
 
-When a partitioned Parquet directory is read, Deephaven returns a single table that contains the data from every file. For a key-value partitioned directory, each partitioning key becomes a column. To work with each partition as a separate table, call [`partition_by`](../../reference/table-operations/group-and-aggregate/partitionBy.md) on the result. See the [guide on partitioned tables](../../how-to-guides/partitioned-tables.md) for more information.
+A partitioned Parquet directory spreads the data for one table across many Parquet files. Deephaven reads two kinds of partitioned directory:
 
-## Read a key-value partitioned Parquet directory
+- A _key-value_ partitioned directory names each subdirectory after a partition column and its value, such as `Year=2024/`.
+- A _flat_ partitioned directory keeps all of its Parquet files in a single directory, with no subdirectories and no partition columns.
 
-Key-value partitioned Parquet directories extend partitioning by organizing data based on key-value pairs in the directory structure. This allows for highly granular and flexible data access patterns, providing efficient querying for complex datasets. The downside is the added complexity in managing and maintaining the key-value pairs, which can be more intricate than other partitioning methods.
+Either kind can also contain the Parquet metadata files `_metadata` and `_common_metadata`, which describe the whole dataset. Reading through these files is faster than reading each Parquet file's own metadata. When Deephaven infers the layout of a directory that contains a `_metadata` file, it uses the metadata files automatically.
 
-### From local storage
+When Deephaven reads a partitioned Parquet directory, it returns a single table that contains the data from every file. For a key-value partitioned directory, each partition column appears as a column in the result. To work with each partition as a separate table, call [`partition_by`](../../reference/table-operations/group-and-aggregate/partitionBy.md) on the result. See the [guide on partitioned tables](../../how-to-guides/partitioned-tables.md) for more information.
 
-Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a key-value partitioned Parquet directory into a Deephaven table. The directory structure may be automatically inferred by [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read). Alternatively, provide the appropriate directory structure to the `file_layout` argument using [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED). Providing this argument will boost performance, as no computation is required to infer the directory layout.
+### Read a key-value partitioned Parquet directory
+
+A key-value partitioned directory stores each partition in a `column=value` subdirectory, such as `Year=2024/`. Compared with a [flat partitioned directory](#read-a-flat-partitioned-parquet-directory), it lets filters on partition columns skip reading the files in non-matching subdirectories, at the cost of a deeper directory tree to maintain.
+
+#### From local storage
+
+Use [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) to read a key-value partitioned Parquet directory into a Deephaven table. `parquet.read` can infer the directory layout. Alternatively, set the `file_layout` argument to [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED). Providing the layout skips only the check for a `_metadata` file. Deephaven still infers the partition columns and schema from the files unless you also pass a schema in the [`table_definition`](#arguments) argument.
 
 ```python test-set=3 order=grades_inferred,grades_provided
 from deephaven import parquet
@@ -71,26 +73,26 @@ from deephaven import parquet
 # directory layout may be inferred
 grades_inferred = parquet.read(path="/data/examples/ParquetExamples/grades_kv/")
 
-# or provided by user, yielding a performance boost
+# or provided by user, skipping the check for a _metadata file
 grades_provided = parquet.read(
     path="/data/examples/ParquetExamples/grades_kv/",
     file_layout=parquet.ParquetFileLayout.KV_PARTITIONED,
 )
 ```
 
-If the key-value partitioned Parquet directory contains `_common_metadata` and `_metadata` files, utilize them by setting the `file_layout` argument to [`parquet.ParquetFileLayout.METADATA_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.METADATA_PARTITIONED). This is the most performant option if the metadata files are available.
+If the key-value partitioned Parquet directory contains `_common_metadata` and `_metadata` files, Deephaven uses them automatically when it infers the layout. To state the layout explicitly, set the `file_layout` argument to [`parquet.ParquetFileLayout.METADATA_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.METADATA_PARTITIONED). Reading through the metadata files is the most performant option when they are available.
 
 ```python test-set=3
-# use metadata files for maximum performance
+# read through the metadata files
 grades_metadata = parquet.read(
     path="/data/examples/ParquetExamples/grades_kv_meta/",
     file_layout=parquet.ParquetFileLayout.METADATA_PARTITIONED,
 )
 ```
 
-### From S3
+#### From S3
 
-Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a key-value partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class, and set the `file_layout` argument to [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED) for maximum performance.
+Use [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) to read a key-value partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. To skip the check for a `_metadata` file, set the `file_layout` argument to [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED). For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3).
 
 ```python test-set=4 order=grades_inferred,grades_provided docker-config=rustfs
 from deephaven import parquet
@@ -122,14 +124,10 @@ grades_provided = parquet.read(
 )
 ```
 
-S3-hosted key-value partitioned Parquet datasets may also have `_common_metadata` and `_metadata` files. Utilize them by setting the `file_layout` argument to [`parquet.ParquetFileLayout.METADATA_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.METADATA_PARTITIONED).
+S3-hosted key-value partitioned Parquet datasets may also have `_common_metadata` and `_metadata` files. Deephaven uses them automatically when it infers the layout. To state the layout explicitly, set the `file_layout` argument to [`parquet.ParquetFileLayout.METADATA_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.METADATA_PARTITIONED).
 
 ```python test-set=4 docker-config=rustfs
-credentials = s3.Credentials.basic(
-    access_key_id="example_username", secret_access_key="example_password"
-)
-
-# use metadata files for maximum performance
+# read through the metadata files
 grades_metadata = parquet.read(
     path="s3://example-bucket/grades_kv_meta/",
     file_layout=parquet.ParquetFileLayout.METADATA_PARTITIONED,
@@ -141,13 +139,13 @@ grades_metadata = parquet.read(
 )
 ```
 
-## Read a flat partitioned Parquet directory
+### Read a flat partitioned Parquet directory
 
-A flat partitioned Parquet directory stores data without nested subdirectories. Each file contains partition information within its filename or as metadata. This approach simplifies directory management compared to hierarchical partitioning but can lead to larger directory listings, which might affect performance with many partitions.
+A flat partitioned Parquet directory is a single directory of Parquet files with no partition subdirectories. Deephaven reads the `.parquet` files in the directory into one table. For a local directory, it skips hidden files whose names start with `.`. A flat layout is simpler to manage than the nested subdirectories of a [key-value partitioned directory](#read-a-key-value-partitioned-parquet-directory). Because a flat directory has no partition columns, filters can't skip its files by partition value the way they can with a key-value partitioned directory.
 
-### From local storage
+#### From local storage
 
-Read local flat partitioned Parquet directories into Deephaven tables with [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read). Set the `file_layout` argument to [`parquet.ParquetFileLayout.FLAT_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.FLAT_PARTITIONED) for maximum performance.
+Read local flat partitioned Parquet directories into Deephaven tables with [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md). `parquet.read` can infer the directory layout. To skip the check for a `_metadata` file, set the `file_layout` argument to [`parquet.ParquetFileLayout.FLAT_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.FLAT_PARTITIONED).
 
 ```python test-set=5 order=grades_inferred,grades_provided
 from deephaven import parquet
@@ -155,16 +153,26 @@ from deephaven import parquet
 # directory layout may be inferred
 grades_inferred = parquet.read(path="/data/examples/ParquetExamples/grades_flat/")
 
-# or provided by user, yielding a performance boost
+# or provided by user, skipping the check for a _metadata file
 grades_provided = parquet.read(
     path="/data/examples/ParquetExamples/grades_flat/",
     file_layout=parquet.ParquetFileLayout.FLAT_PARTITIONED,
 )
 ```
 
-### From S3
+If the flat partitioned directory contains `_common_metadata` and `_metadata` files, Deephaven uses them automatically when it infers the layout. To state the layout explicitly, set the `file_layout` argument to [`parquet.ParquetFileLayout.METADATA_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.METADATA_PARTITIONED).
 
-Use [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) to read a flat partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class, and set the `file_layout` argument to [`parquet.ParquetFileLayout.FLAT_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.FLAT_PARTITIONED) for maximum performance.
+```python test-set=5
+# read through the metadata files
+grades_metadata = parquet.read(
+    path="/data/examples/ParquetExamples/grades_flat_meta/",
+    file_layout=parquet.ParquetFileLayout.METADATA_PARTITIONED,
+)
+```
+
+#### From S3
+
+Use [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) to read a flat partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. To skip the check for a `_metadata` file, set the `file_layout` argument to [`parquet.ParquetFileLayout.FLAT_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.FLAT_PARTITIONED). For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3).
 
 ```python test-set=6 order=grades_inferred,grades_provided docker-config=rustfs
 from deephaven import parquet
@@ -196,14 +204,10 @@ grades_provided = parquet.read(
 )
 ```
 
-If the S3-hosted flat partitioned Parquet dataset has `_common_metadata` and `_metadata` files, utilize them by setting the `file_layout` argument to [`parquet.ParquetFileLayout.METADATA_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.METADATA_PARTITIONED).
+If the S3-hosted flat partitioned Parquet dataset has `_common_metadata` and `_metadata` files, Deephaven uses them automatically when it infers the layout. To state the layout explicitly, set the `file_layout` argument to [`parquet.ParquetFileLayout.METADATA_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.METADATA_PARTITIONED).
 
-```python test-set=6
-credentials = s3.Credentials.basic(
-    access_key_id="example_username", secret_access_key="example_password"
-)
-
-# use metadata files for maximum performance
+```python test-set=6 docker-config=rustfs
+# read through the metadata files
 grades_metadata = parquet.read(
     path="s3://example-bucket/grades_flat_meta/",
     file_layout=parquet.ParquetFileLayout.METADATA_PARTITIONED,
@@ -215,56 +219,62 @@ grades_metadata = parquet.read(
 )
 ```
 
-## Optional arguments
+## Arguments
 
-The [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) function takes many optional arguments, many of which were not included in these examples. Here are all of the arguments that [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) accepts:
+[`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) accepts the following arguments. The examples above use only some of them.
 
-- `path`: The Parquet file or directory to read. This is typically a string containing a local file path or directory, or an endpoint for an S3 bucket.
-- `col_instructions`: Instructions for customizations while reading particular columns, provided as a list of [`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction) objects. The default is `None`, which means no specialization for any column.
-- `is_legacy_parquet`: `True` or `False` indicating if the Parquet data is in legacy Parquet format.
-- `is_refreshing`: `True` or `False` indicating if the Parquet data represents a refreshing source.
-- `file_layout`: The Parquet file or directory layout, provided as a [`ParquetFileLayout`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout). Default is `None`, which means the layout is inferred.
-- `table_definition`: The table definition or schema, provided as a dictionary of string-[`DType`](/core/pydoc/code/deephaven.dtypes.html#deephaven.dtypes.DType) pairs, or as a list of [`ColumnDefinition`](/core/pydoc/code/deephaven.column.html#deephaven.column.ColumnDefinition) instances. When not provided, the column definitions implied by the table(s) are used.
-- `special_instructions`: Special instructions for reading Parquet files, useful when reading files from a non-local S3 instance. These instructions are provided as an instance of [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions). Default is `None`.
-
-## Column instructions and special instructions
+- `path` (required): The Parquet file, metadata file (`_metadata` or `_common_metadata`), or directory to read. This is typically a string containing a local path, an S3 URI, or a Google Cloud Storage (`gs://`) URI.
+- `col_instructions`: Per-column read settings, such as the Parquet column name to read into each Deephaven column, provided as a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) objects. The default is `None`, which means no specialization for any column.
+- `is_legacy_parquet`: `True` or `False` indicating if the Parquet data is in legacy Parquet format. When `True`, Deephaven reads binary columns that have no logical type annotation and no recorded codec as strings rather than as byte arrays. Some older Parquet writers store strings this way. The default is `False`.
+- `is_refreshing`: `True` or `False` indicating if the Parquet data represents a refreshing source. When `True`, Deephaven checks a partitioned directory for new Parquet files and adds their rows to the table, so the result is a [refreshing table](../../conceptual/table-types.md). Refreshing reads aren't supported for a single Parquet file or for a directory read through its metadata files. The default is `False`.
+- `file_layout`: The Parquet file or directory layout, provided as a [`ParquetFileLayout`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout). The default is `None`, which means Deephaven infers the layout.
+- `table_definition`: The table definition or schema, provided as a [`TableDefinition`](/core/pydoc/code/deephaven.table.html#deephaven.table.TableDefinition), a dictionary of string-[`DType`](/core/pydoc/code/deephaven.dtypes.html#deephaven.dtypes.DType) pairs, or a list of [`ColumnDefinition`](/core/pydoc/code/deephaven.column.html#deephaven.column.ColumnDefinition) instances. When not provided, Deephaven infers the definition from the Parquet file(s).
+- `special_instructions`: Special instructions for reading Parquet files from S3, an S3-compatible store, or Google Cloud Storage (`gs://` URIs), provided as an instance of [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions). The default is `None`.
 
 ### Column instructions
 
-The `col_instructions` argument to [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) takes a list of [`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction) objects. Each `ColumnInstruction` maps a column in the Parquet data to a column in the Deephaven table.
+The `col_instructions` argument to [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) takes a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) objects. Each `ColumnInstruction` maps a column in the Parquet data to a column in the Deephaven table.
 
-[`ColumnInstruction`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ColumnInstruction) has the following arguments:
+[`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) has the following arguments:
 
-- `column_name`: The column name in the Deephaven table to apply these instructions.
-- `parquet_column_name`: The name of the corresponding column in the Parquet dataset.
-- `codec_name`: The fully qualified name of an `ObjectCodec` class that serializes the column's values to and from bytes, for types with no language-agnostic Parquet representation (for example, `io.deephaven.util.codec.LocalDateCodec`). This is not a compression codec.
+- `column_name`: The name of the Deephaven table column that these instructions apply to. Required.
+- `parquet_column_name`: The name of the corresponding column in the Parquet dataset. Required when reading.
+- `codec_name`: The fully qualified name of an [`ObjectCodec`](/core/javadoc/io/deephaven/util/codec/ObjectCodec.html) class that serializes the column's values to and from bytes, such as `io.deephaven.util.codec.LocalDateCodec`. Use a codec for types that have no language-agnostic Parquet representation. This is not a compression codec.
 - `codec_args`: An implementation-specific argument string passed to the codec named by `codec_name`.
-- `use_dictionary`: `True` or `False` indicating whether or not to use [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for string columns.
 - `unsigned_long_target`: The Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as, provided as a [`parquet.UnsignedLongTarget`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.UnsignedLongTarget). The default is `None`, which reads such columns as `BigInteger`.
 
-### Special instructions (S3 only)
+The `use_dictionary` argument applies only when writing. See [Parquet export](./parquet-export.md).
 
-The `special_instructions` argument to [`parquet.read`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.read) is relevant when reading from an S3 instance and takes an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. This class specifies details for connecting to the S3 instance.
+### Special instructions (S3 and GCS)
 
-[`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) has the following arguments:
+The `special_instructions` argument to [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) is relevant when reading from S3, an S3-compatible store, or Google Cloud Storage (`gs://` URIs), and takes an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. This class specifies details for connecting to the store.
 
-- `region_name`: The region name of the AWS S3 bucket where the Parquet data exists. If not provided, the region name is picked by the AWS SDK from the 'aws.region' system property, the "AWS_REGION" environment variable, the \{user.home}/.aws/credentials, \{user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from the above chain or the region name derived is incorrect for the bucket accessed, the correct region name will be derived internally, at the cost of one additional request.
-- `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `None`, which uses [`Credentials.resolving`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.resolving).
-- `endpoint_override`: The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs. The default is `None`.
-- `read_ahead_count`: The number of fragments asynchronously read ahead of the current fragment as the current fragment is being read. The default is `32`.
+Deephaven reads an S3 object in fragments, which are byte ranges of the file that it fetches with separate requests. Several of the arguments below tune how Deephaven fetches fragments.
+
+[`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) has the following arguments for reading:
+
+- `region_name`: The AWS region of the S3 bucket that holds the Parquet data. When this is not set, the AWS SDK looks for a region in the following places, in order:
+  - The `aws.region` system property.
+  - The `AWS_REGION` environment variable.
+  - The `{user.home}/.aws/credentials` and `{user.home}/.aws/config` files.
+  - The EC2 metadata service, when Deephaven runs in EC2.
+
+  If none of these gives a region, or the region is wrong for the bucket, Deephaven finds the correct region itself. This costs one extra request.
+
+- `credentials`: A [`Credentials`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) object for authenticating to the S3 instance. The default is `None`, which uses [`Credentials.resolving`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.resolving).
+- `endpoint_override`: The endpoint to connect to. Set it when connecting to a non-AWS, S3-compatible API. Connections to AWS typically don't need it. The default is `None`.
+- `read_ahead_count`: The number of fragments that Deephaven reads asynchronously ahead of the fragment it is currently reading. The default is 32.
 - `fragment_size`: The maximum size of each fragment to read in bytes. The default is 65536 bytes (64 KiB).
-- `read_timeout`: The amount of time it takes to time out while reading a fragment. The default is 2 seconds.
-- `write_timeout`: The amount of time it takes to time out while writing a fragment. The default is 2 seconds.
+- `read_timeout`: The time to wait for a fragment read to complete before timing out. The default is 2 seconds.
 - `max_concurrent_requests`: The maximum number of concurrent requests to make to S3. The default is 256.
-- `connection_timeout`: Time to wait for a successful S3 connection before timing out. The default is 2 seconds.
-- `write_part_size`: The part size when writing to S3. The default is 10 MiB.
-- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently when writing to S3. The default is 64. This value cannot exceed `max_concurrent_requests`.
+- `connection_timeout`: The time to wait for a successful S3 connection before timing out. The default is 2 seconds.
 - `profile_name`: The AWS profile name used to configure the default region, credentials, and so on.
 - `config_file_path`: The path to the AWS configuration file.
 - `credentials_file_path`: The path to the AWS credentials file.
-- `access_key_id`: **Deprecated.** The access key for reading files. Use `credentials=Credentials.basic(access_key_id, secret_access_key)` instead.
-- `secret_access_key`: **Deprecated.** The secret access key for reading files. Use `credentials=Credentials.basic(access_key_id, secret_access_key)` instead.
-- `anonymous_access`: **Deprecated.** `True` or `False` indicating the use of anonymous credentials. The default is `False`. Use `credentials=Credentials.anonymous()` instead.
+
+The `write_timeout`, `write_part_size`, and `num_concurrent_write_parts` arguments apply only when writing to S3. See the [`S3Instructions` pydoc](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) for details.
+
+The `access_key_id`, `secret_access_key`, and `anonymous_access` arguments are deprecated. Use [`Credentials.basic(access_key_id, secret_access_key)`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.basic) or [`Credentials.anonymous()`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.anonymous) for the `credentials` argument instead.
 
 ## Related documentation
 
