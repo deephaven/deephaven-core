@@ -3,7 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
-import elemental2.core.JsArray;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsIgnore;
@@ -29,12 +29,12 @@ public interface JoinableTable {
      *
      * @param baseTable The table to snapshot.
      * @param doInitialSnapshot Whether to create an initial snapshot immediately.
-     * @param stampColumns Optional list of column names to include in the result.
+     * @param stampColumns Optional list of stamp column match pairs to include in the result.
      * @return A promise that resolves to the snapshot table.
      */
     @JsMethod
     Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
-            @JsOptional @JsNullable String[] stampColumns);
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> stampColumns);
 
     /**
      * Joins this table to the provided table, using one of the specified join types:
@@ -63,8 +63,10 @@ public interface JoinableTable {
      */
     @JsMethod
     @Deprecated
-    Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule);
+    Promise<JsTable> join(String joinType, JoinableTable rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable String asOfMatchRule);
 
     /**
      * Performs an inexact timeseries join, where rows in this table will have columns added from the closest matching
@@ -86,8 +88,10 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule);
+    Promise<JsTable> asOfJoin(JoinableTable rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable String asOfMatchRule);
 
     /**
      * A promise that will be resolved with the newly created table holding the results of the specified cross join
@@ -104,8 +108,10 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Double reserveBits);
+    Promise<JsTable> crossJoin(JoinableTable rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable Double reserveBits);
 
     /**
      * A promise that will be resolved with the newly created table holding the results of the specified exact join
@@ -119,8 +125,9 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd);
+    Promise<JsTable> exactJoin(JoinableTable rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd);
 
     /**
      * A promise that will be resolved with the newly created table holding the results of the specified natural join
@@ -134,6 +141,7 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd);
+    Promise<JsTable> naturalJoin(JoinableTable rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd);
 }
