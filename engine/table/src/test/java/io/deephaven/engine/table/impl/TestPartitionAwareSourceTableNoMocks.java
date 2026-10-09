@@ -17,7 +17,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.SortedClockFilter;
+import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
@@ -35,6 +37,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.qst.type.Type;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import org.assertj.core.api.Assertions;
 import org.junit.After;
@@ -528,6 +531,60 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(coalesced.size(), "res0.size()", partitionSize * 2);
     }
 
+    /**
+     * A filter on non-partitioning columns is deferred, and the deferred table asks each filter whether it is
+     * refreshing before the filter has seen its source table. Here the window can still move past the rows, so the
+     * filter is refreshing once it has seen the source.
+     */
+    @Test
+    public void testDeferredTimeSeriesFilter() {
+        // the test locations' timestamps are a few nanoseconds after the epoch, so all of them are in the window
+        final TestClock clock = new TestClock().setNanos(DateTimeUtils.MINUTE);
+        checkDeferredTimeSeriesFilter(clock, false, true, 4 * 128);
+        checkDeferredTimeSeriesFilter(clock, true, true, 0);
+    }
+
+    /**
+     * As {@link #testDeferredTimeSeriesFilter()}, but every row is already outside the window and the source is static,
+     * so once the filter has seen the source it knows that nothing will ever change.
+     */
+    @Test
+    public void testDeferredTimeSeriesFilterStatic() {
+        final TestClock clock = new TestClock().setMillis(Instant.now().toEpochMilli());
+        checkDeferredTimeSeriesFilter(clock, false, false, 0);
+        checkDeferredTimeSeriesFilter(clock, true, false, 4 * 128);
+    }
+
+    private void checkDeferredTimeSeriesFilter(
+            final TestClock clock,
+            final boolean invert,
+            final boolean expectRefreshing,
+            final long expectedSize) {
+        // Coalescing applies copies of the deferred filters, so only the coalesced table, not the filters we hold,
+        // learns whether anything can change.
+        final long partitionSize = 128;
+
+        final WhereFilter timeSeriesFilter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT5m").clock(clock).invert(invert).build();
+        assertTrue(timeSeriesFilter.isRefreshing());
+        final Table bare = testStaticFilterSplit(partitionSize, timeSeriesFilter);
+        assertTrue(bare instanceof DeferredViewTable);
+        final Table bareCoalesced = bare.coalesce();
+        assertEquals(expectedSize, bareCoalesced.size());
+        assertEquals(expectRefreshing, bareCoalesced.isRefreshing());
+
+        final WhereFilter composedTimeSeriesFilter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT5m").clock(clock).invert(invert).build();
+        final WhereFilter composed = DisjunctiveFilter.of(
+                composedTimeSeriesFilter, WhereFilter.of(RawString.of("II < 0"))).withDeclaredBarriers(new Object());
+        assertTrue(composed.isRefreshing());
+        final Table viaComposed = testStaticFilterSplit(partitionSize, composed);
+        assertTrue(viaComposed instanceof DeferredViewTable);
+        final Table composedCoalesced = viaComposed.coalesce();
+        assertEquals(expectedSize, composedCoalesced.size());
+        assertEquals(expectRefreshing, composedCoalesced.isRefreshing());
+    }
+
     @Test
     public void testSortedClockFilterReorderingWithAttribute() {
         final long partitionSize = 128;
@@ -1005,7 +1062,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // A plain copy, a redefinition that keeps the partitioning column, and one that drops it. Each owns its
         // filters, so each can be coalesced without disturbing the others.
-        final Table copied = filteredSource.copy();
+        final Table copied = filteredSource.copy(filteredSource.getAttributes());
         final Table withoutData = filteredSource.dropColumns("II");
         final Table withoutPartition = filteredSource.dropColumns("partition");
 
@@ -1297,5 +1354,35 @@ public class TestPartitionAwareSourceTableNoMocks {
         assertTableEquals(expectedPartitions("B"), result.view("partition"));
         Assert.eq(result.getRowSet().firstRowKey(), "result.getRowSet().firstRowKey()",
                 RegionedColumnSource.getFirstRowKey(0), "first region");
+    }
+
+    @Test
+    public void testPartitionWhereCopiesFilterAttributes() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                locationProvider(tds, "A", "B");
+        final Table source = partitionedSource(locationProvider, "filterAttributes").withAttributes(Map.of(
+                Table.SORTABLE_COLUMNS_ATTRIBUTE, "partition",
+                Table.MERGED_TABLE_ATTRIBUTE, true));
+
+        final Table filtered = source.where("partition in `A`");
+        Assert.eq(filtered.getAttribute(Table.SORTABLE_COLUMNS_ATTRIBUTE), "sortable columns", "partition");
+        Assert.eqFalse(filtered.hasAttribute(Table.MERGED_TABLE_ATTRIBUTE), "has merged attribute");
+    }
+
+    @Test
+    public void testCopyKeepsReplacedColumnSourceManagerAttribute() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final Table source = partitionedSource(locationProvider(tds, "A", "B"), "csmAttributes");
+        final String csmAttribute = source.hasAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE)
+                ? Table.APPEND_ONLY_TABLE_ATTRIBUTE
+                : Table.ADD_ONLY_TABLE_ATTRIBUTE;
+        Assert.equals(source.getAttribute(csmAttribute), "source " + csmAttribute, Boolean.TRUE);
+
+        final Table replaced = source.withAttributes(Map.of(csmAttribute, Boolean.FALSE));
+        Assert.equals(replaced.getAttribute(csmAttribute), "replaced " + csmAttribute, Boolean.FALSE);
+        final Table copied = replaced.withAttributes(Map.of("Other", "o"));
+        Assert.equals(copied.getAttribute(csmAttribute), "copied " + csmAttribute, Boolean.FALSE);
+        Assert.equals(copied.getAttribute("Other"), "copied Other", "o");
     }
 }

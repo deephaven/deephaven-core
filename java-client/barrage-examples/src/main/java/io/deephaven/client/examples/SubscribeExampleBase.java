@@ -22,6 +22,7 @@ import picocli.CommandLine;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 
 abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
@@ -32,6 +33,11 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
     @CommandLine.Option(names = {"--head"}, required = false, description = "Header viewport size")
     long headerSize = 0;
+
+    @CommandLine.Option(names = {"--updates"},
+            description = "The number of table updates to receive before exiting, unlimited if unset; "
+                    + "0 exits after the initial snapshot")
+    Long updates;
 
     static class Mode {
         @CommandLine.Option(names = {"-b", "--batch"}, required = true, description = "Batch mode")
@@ -52,6 +58,8 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
         final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
 
         final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final long updatesToReceive = updates == null ? Long.MAX_VALUE : updates;
+        final AtomicLong updatesReceived = new AtomicLong();
         final TableHandleManager subscriptionManager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
 
@@ -104,9 +112,15 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                 public void onUpdate(final TableUpdate upstream) {
                     System.out.println("Received table update:");
                     System.out.println(upstream);
+                    if (updatesReceived.incrementAndGet() >= updatesToReceive) {
+                        countDownLatch.countDown();
+                    }
                 }
             });
 
+            if (updatesToReceive == 0) {
+                countDownLatch.countDown();
+            }
             countDownLatch.await();
 
             // Note that when the LivenessScope, which is opened in the try-with-resources block, is closed the

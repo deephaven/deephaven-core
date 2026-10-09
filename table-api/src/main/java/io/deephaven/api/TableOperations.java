@@ -409,8 +409,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param rightTable The right side table on the join.
      * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
      *        "columnFoundInBoth")
-     * @return a new table joined according to the specification in columnsToMatch and includes all non-key-columns from
-     *         the right table
+     * @return a new table joined according to the specification in columnsToMatch and includes all columns from the
+     *         right table except those whose names match a left column in columnsToMatch
      * @see #join(Object, Collection, Collection, int)
      */
     TOPS join(TABLE rightTable, String columnsToMatch);

@@ -59,9 +59,9 @@ Just to show that it worked:
 crypto_trades_new = dhpq.read("/data/crypto_trades_new.parquet")
 ```
 
-The example below reads a Parquet file from S3. This example uses [MinIO](https://min.io/) as a local S3-compatible object store. The `s3` module in Deephaven provides a way to specify how to connect to the S3 instance.
+The example below reads a Parquet file from S3. This example uses [RustFS](https://rustfs.com/) as a local S3-compatible object store. The `s3` module in Deephaven provides a way to specify how to connect to the S3 instance.
 
-```python test-set=2 docker-config=minio order=grades
+```python test-set=2 docker-config=rustfs order=grades
 from deephaven import parquet
 from deephaven.experimental import s3
 
@@ -70,7 +70,7 @@ grades = parquet.read(
     path="s3://example-bucket/grades/grades.parquet",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         access_key_id="example_username",
         secret_access_key="example_password",
     ),
@@ -124,13 +124,13 @@ from deephaven.experimental import iceberg
 
 # Configure the Iceberg catalog adapter for a REST catalog.
 iceberg_catalog_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri="http://rest:8181",
     warehouse_location="s3a://warehouse/wh",
     region_name="us-east-1",
     access_key_id="admin",
     secret_access_key="password",
-    end_point_override="http://minio:9000",
+    end_point_override="http://rustfs:9000",
 )
 
 # Load the Iceberg table adapter, assuming 'nyc.taxis' exists.
@@ -155,13 +155,13 @@ from deephaven.column import int_col, string_col
 
 # Configure the Iceberg catalog adapter.
 iceberg_catalog_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri="http://rest:8181",
     warehouse_location="s3a://warehouse/wh",
     region_name="us-east-1",
     access_key_id="admin",
     secret_access_key="password",
-    end_point_override="http://minio:9000",
+    end_point_override="http://rustfs:9000",
 )
 
 # Create a sample Deephaven table.

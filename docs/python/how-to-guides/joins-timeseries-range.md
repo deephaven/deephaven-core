@@ -47,9 +47,9 @@ For [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/ta
 
 - `joins`: The column(s) in the right table to join to the left table. If not specified, all columns are joined.
 
-For [`range_join`](../reference/table-operations/join/range-join.md), the third argument is also optional:
+For [`range_join`](../reference/table-operations/join/range-join.md), the third argument is required:
 
-- `aggs`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. If not specified, no aggregations are performed. Currently, only the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
+- `aggs`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. Currently, only the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
 
 ### Multiple match columns
 
@@ -244,7 +244,7 @@ For columns appended to the left table (joins), cell values equal aggregations o
 > [!NOTE]
 > Reminders: (i) [`range_join`](../reference/table-operations/join/range-join.md) currently only supports static tables, not yet live, real-time data; and (ii) the only aggregation currently supported is the `group` operation.
 
-The following example joins two tables with [`range_join`](../reference/table-operations/join/range-join.md). The `right` table is joined to `left` on the `Y` column. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `result` table's `X` column.
+The following example joins two tables with [`range_join`](../reference/table-operations/join/range-join.md). The example uses no exact match columns, so every `right` row is a candidate for every `left` row. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `Y` values of the matching `right` rows into the `result` table's `Y` column.
 
 ```python test-set=1 order=result,left,right
 from deephaven import empty_table
@@ -260,7 +260,7 @@ result = left.range_join(
 )
 ```
 
-For a detailed explanation of this example, see [`range_join`](../reference/table-operations/join/range-join.md#examples).
+For a detailed explanation of a similar example that also uses an exact match column, see [`range_join`](../reference/table-operations/join/range-join.md#examples).
 
 Queries often follow up a [`range_join`](../reference/table-operations/join/range-join.md) with an [`update`](../reference/table-operations/select/update.md) or [`update_view`](../reference/table-operations/select/update-view.md) that calls a Python function that operates on the result. The following code block updates the `result` table from the previous example with a [Python function](./python-functions.md).
 
@@ -275,7 +275,7 @@ def sum_group(arr) -> int:
 result_summed = result.update(["SumY = sum_group(Y)"])
 ```
 
-The following example uses [`range_join`](../reference/table-operations/join/range-join.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed.
+The following example uses [`range_join`](../reference/table-operations/join/range-join.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed. The grouped output is named `RightY` so that it does not replace the left table's `Y` column.
 
 ```python order=result_summed,result,left,right
 from deephaven.agg import group
@@ -294,7 +294,9 @@ right = empty_table(20).update(
     ["Timestamp = '2024-01-01T08:00:03 ET' + i * SECOND", "X = ii", "Y = X % 6"]
 )
 
-result = left.range_join(right, ["StartTime < Timestamp < EndTime"], group("Y"))
+result = left.range_join(
+    right, ["StartTime < Timestamp < EndTime"], group("RightY = Y")
+)
 
 
 def sum_arr(arr) -> int:
@@ -304,7 +306,7 @@ def sum_arr(arr) -> int:
         return sum(arr)
 
 
-result_summed = result.update("SumY = sum_arr(Y)")
+result_summed = result.update("SumRightY = sum_arr(RightY)")
 ```
 
 ## Which method should you use?

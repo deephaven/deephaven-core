@@ -59,7 +59,7 @@ Just to show that it worked:
 cryptoTradesNew = ParquetTools.readTable("/data/cryptoTradesNew.parquet")
 ```
 
-The example below reads a Parquet file from S3. This example uses [MinIO](https://min.io/) as a local S3-compatible object store. The `S3Instructions` class in Deephaven provides a way to specify how to connect to the S3 instance.
+The example below reads a Parquet file from S3. This example uses [RustFS](https://rustfs.com/) as a local S3-compatible object store. The `S3Instructions` class in Deephaven provides a way to specify how to connect to the S3 instance.
 
 ```groovy skip-test
 import io.deephaven.parquet.table.ParquetTools
@@ -76,7 +76,7 @@ grades = ParquetTools.readTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )
@@ -140,13 +140,13 @@ import io.deephaven.iceberg.util.IcebergUpdateMode
 
 // Configure the Iceberg catalog adapter for a REST catalog.
 icebergCatalogAdapter = IcebergToolsS3.createS3Rest(
-    "minio-iceberg",
+    "rustfs-iceberg",
     "http://rest:8181",
     "s3a://warehouse/wh",
     "us-east-1",
     "admin",
     "password",
-    "http://minio:9000"
+    "http://rustfs:9000"
 )
 
 // Load the Iceberg table adapter, assuming 'nyc.taxis' exists.
@@ -170,13 +170,13 @@ import io.deephaven.iceberg.util.TableParquetWriterOptions
 
 // Configure the Iceberg catalog adapter.
 icebergCatalogAdapter = IcebergToolsS3.createS3Rest(
-    "minio-iceberg",
+    "rustfs-iceberg",
     "http://rest:8181",
     "s3a://warehouse/wh",
     "us-east-1",
     "admin",
     "password",
-    "http://minio:9000"
+    "http://rustfs:9000"
 )
 
 // Create a sample Deephaven table.
