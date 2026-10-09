@@ -49,9 +49,9 @@ public class DoublePercentileTypeMedianHelper extends DoublePercentileTypeHelper
             }
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
-                final double divisor = (double) 2.0;
-                return setResult(destination, (((DoubleSegmentedSortedMultiset) ssmLo).getMaxDouble()
-                        + ((DoubleSegmentedSortedMultiset) ssmHi).getMinDouble()) / divisor);
+                return setResult(destination, PercentileAverages.average(
+                        ((DoubleSegmentedSortedMultiset) ssmLo).getMaxDouble(),
+                        ((DoubleSegmentedSortedMultiset) ssmHi).getMinDouble()));
             } else {
                 return setResult(destination, ((DoubleSegmentedSortedMultiset) ssmLo).getMaxDouble());
             }
