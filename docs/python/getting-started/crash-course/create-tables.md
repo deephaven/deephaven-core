@@ -37,7 +37,7 @@ The two tables hold the same data but are created differently.
 
 ## Ticking tables
 
-You can create ticking tables to get a feel for live data in Deephaven. The [`time_table`](../../reference/table-operations/create/timeTable.md) method creates a ticking table. Unlike [`empty_table`](../../reference/table-operations/create/emptyTable.md), whose columns you add with DQL, `time_table` supplies its own `Timestamp` column and adds a row at a regular interval set by the input argument.
+You can create ticking tables to get a feel for live data in Deephaven. The [`time_table`](../../reference/table-operations/create/timeTable.md) method creates a ticking table. Unlike [`empty_table`](../../reference/table-operations/create/emptyTable.md), whose columns you add with DQL, `time_table` supplies its own `Timestamp` column and adds rows to represent a regular interval set by the input argument.
 
 ```python test-set=2 ticking-table order=null
 from deephaven import time_table
@@ -47,7 +47,7 @@ ticking_table = time_table("PT1s")
 
 ![A GIF showing the creation and updating of a ticking table in Deephaven](../../assets/tutorials/crash-course/crash-course-3.gif)
 
-The `PT1s` argument is an [ISO 8601 duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that sets the period between rows. With `PT1s`, the table adds one row per second.
+The `PT1s` argument is an [ISO 8601 duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that sets the period between rows. With `PT1s`, consecutive rows have `Timestamp` values one second apart, and a delayed update cycle can add several rows at once.
 
 New ticking tables can be derived from existing ones using DQL, just as in the static case.
 

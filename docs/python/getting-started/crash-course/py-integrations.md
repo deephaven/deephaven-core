@@ -170,7 +170,7 @@ To learn more about this workflow, check out the [AI/ML workflows user guide](..
 ## The `deephaven.learn` library
 
 > [!NOTE]
-> `deephaven.learn` works only on add-only and blink tables, because it uses row keys internally. See the [previous section](#listener-based-ai) for another approach to real-time inference.
+> `deephaven.learn` uses row keys internally, so on ticking tables it works only with add-only and blink tables. It works on any static table. See the [previous section](#listener-based-ai) for another approach to real-time inference.
 
 Aimed at ML/AI practitioners, [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) provides a general-purpose framework for efficient data interchange between Deephaven tables and Python objects such as NumPy arrays, Torch tensors, and more. [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) is fundamentally geared towards machine learning applications, as it enables models to be applied to real-time data.
 
