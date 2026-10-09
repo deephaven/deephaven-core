@@ -3,13 +3,14 @@
 //
 package io.deephaven.io.streams;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 
-public class OutputInputStreamTest extends TestCase {
+import static org.junit.Assert.*;
 
+public class OutputInputStreamTest {
 
     private static class SmallByteSink implements ByteBufferSink {
         private final ByteBuffer flushBuffer;
@@ -115,6 +116,7 @@ public class OutputInputStreamTest extends TestCase {
         return 1;
     }
 
+    @Test
     public void testAll() {
         ByteBuffer buffer = ByteBuffer.allocate(102400);
 
@@ -177,7 +179,6 @@ public class OutputInputStreamTest extends TestCase {
         } catch (IOException e) {
             fail(e.getMessage());
         }
-
 
         for (int i = 0; i < 256; ++i) {
             try {

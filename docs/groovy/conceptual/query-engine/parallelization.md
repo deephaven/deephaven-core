@@ -1,6 +1,5 @@
 ---
 title: Parallelizing queries
-sidebar_label: Parallelization
 ---
 
 Deephaven supports using multiple processors to speed up query evaluation. The extent to which Deephaven employs multiple processors depends on both the phase of operation and the query itself.
@@ -145,5 +144,6 @@ Setting either of these properties to `-1` instructs Deephaven to use all availa
 
 ### Related documentation
 
+- [Track processing time](../../how-to-guides/performance/track-processing-time.md)
 - [Deephaven’s Directed-Acyclic-Graph (DAG)](../dag.md)
 - [Multithreading: Synchronization, locks, and snapshots](./engine-locking.md)

@@ -1,5 +1,5 @@
 ---
-sidebar_label: ohlcPlot
+title: ohlcPlot
 ---
 
 The `ohlcPlot` method creates open, high, low, close (OHLC) plots using data from tables.

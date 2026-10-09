@@ -12,6 +12,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
@@ -289,6 +290,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return dataIndexColumns;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * An index is trusted when this location's own file declares it and the index file exists; nothing else about the
+     * index is checked against the file it indexes, and {@link #pushdownDataIndex} treats every row the index does not
+     * place under a matching key as not matching. Every index a file declares must therefore have been written for that
+     * file: a writer that replaces the file, or an index it declares, without the other makes filters silently drop
+     * rows. An index file that no current file declares, such as one left behind when a file is rewritten without
+     * indexes, is ignored. Deephaven's own writers commit a file and the indexes it declares together.
+     */
     @Override
     public boolean hasDataIndex(@NotNull final String... columns) {
         initialize();
@@ -331,12 +342,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return null;
         }
         final RowSet locationRowSet = getRowSet();
-        final Table adjustedTable = locationRowSet.isFlat() ? table
-                : table.updateView(List.of(new FunctionalColumn<>(
-                        INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
-                        INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
-                        (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
-        return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
+        if (locationRowSet.isFlat()) {
+            // Index row positions are row keys, so the index table needs no adjustment.
+            locationRowSet.close();
+            return StandaloneDataIndex.from(table, columns, INDEX_ROW_SET_COLUMN_NAME);
+        }
+        // The adjusted table maps positions to row keys lazily, so it keeps the location's row set for its lifetime.
+        // If the index cannot be built, nothing owns the row set, so close it here.
+        try {
+            final Table adjustedTable = table.updateView(List.of(new FunctionalColumn<>(
+                    INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                    INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                    (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
+            return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
+        } catch (final RuntimeException | Error e) {
+            SafeCloseable.closeAllDuringFailure(e, locationRowSet);
+            throw e;
+        }
     }
 
     private static class IndexFileMetadata {
@@ -662,8 +684,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         if (action == ROW_GROUP_METADATA) {
-            return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(), actionCtx.columnIndices,
-                    input);
+            return pushdownRowGroupMetadata(selection, filterCtx, actionCtx, input);
         }
         if (action == IN_MEMORY_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -724,6 +745,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final Type parquetType = parquetSchema.getType(columnNameInSchema);
         if (!parquetType.isPrimitive()) {
             // Cannot push down filters on group types
+            return false;
+        }
+        if (parquetType.isRepetition(Type.Repetition.REPEATED)) {
+            // A repeated column's statistics describe leaf values rather than rows -- one row spans many of them, and
+            // num_nulls counts leaf nulls, not null rows. Neither can be read as a statement about rows, so decline
+            // rather than interpret them. Deephaven never writes such a column (arrays and vectors are written as
+            // nested LIST groups, which the path check above rejects), but other writers do.
             return false;
         }
         if (parquetType.asPrimitiveType().columnOrder() != ColumnOrder.typeDefined()) {
@@ -855,76 +883,44 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     private PushdownResult pushdownRowGroupMetadata(
             final RowSet selection,
-            final WhereFilter filter,
-            final List<Integer> columnIndices,
+            final RegionedPushdownFilterContext ctx,
+            final ActionContext actionCtx,
             final PushdownResult result) {
+        final WhereFilter filter = ctx.filterForMetadataFiltering();
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
         // Only one column in these filters
-        final Integer columnIndex = columnIndices.get(0);
+        final Integer columnIndex = actionCtx.columnIndices.get(0);
+
+        // Resolve the filter against the column type once, not once per row group. Everything that depends only on
+        // the filter -- unboxing its values into a primitive array, encoding them, deciding whether the type is
+        // supported at all -- happens here, and the loop below is left with just the statistics.
+        //
+        // TODO (DH-19666): Hoist this to the filter context. The evaluator is a pure function of (filter, ctx), and
+        // both are per-filter rather than per-location -- ctx is created once in AbstractFilterExecution and shared
+        // across locations -- so nothing here depends on this location. As written the unboxing and encoding above
+        // are repeated once per location, which for a large match filter over many partitions is a real cost:
+        // encoding 10,000 string values measures around 370us, so 1,000 locations spend a third of a second of CPU
+        // rebuilding identical evaluators. Memoizing the evaluator on the RegionedPushdownFilterContext would build
+        // it once for the whole filter.
+        final StatisticsEvaluator evaluator = StatisticsEvaluator.makeForFilter(filter, ctx);
+        if (evaluator == StatisticsEvaluator.ALWAYS_MAYBE) {
+            // Nothing about this filter can be bounded by statistics, so every row group would be kept.
+            return result.copy();
+        }
+
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
-            final boolean maybeOverlaps;
             // TODO (DH-19666) Right now, the pushdown logic only returns maybeMatch for row group. For the future, we
             // can return "match" for scenarios like filter of {X == 3}, and statistics of {min=3, max=3, num_nulls=0}.
             // Similarly, if filter is {X == null}, and statistics is {hasNonNullValue=false, num_nulls=<row-group
             // size>}, we can return "match" for the row group.
-            if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
-                // We assume it overlaps if we cannot use the statistics.
-                maybeOverlaps = true;
-            } else if (filter instanceof ByteRangeFilter) {
-                maybeOverlaps = BytePushdownHandler.maybeOverlaps((ByteRangeFilter) filter, statistics);
-            } else if (filter instanceof CharRangeFilter) {
-                maybeOverlaps = CharPushdownHandler.maybeOverlaps((CharRangeFilter) filter, statistics);
-            } else if (filter instanceof ShortRangeFilter) {
-                maybeOverlaps = ShortPushdownHandler.maybeOverlaps((ShortRangeFilter) filter, statistics);
-            } else if (filter instanceof IntRangeFilter) {
-                maybeOverlaps = IntPushdownHandler.maybeOverlaps((IntRangeFilter) filter, statistics);
-            } else if (filter instanceof InstantRangeFilter) {
-                maybeOverlaps = InstantPushdownHandler.maybeOverlaps((InstantRangeFilter) filter, statistics);
-            } else if (filter instanceof LongRangeFilter) {
-                maybeOverlaps = LongPushdownHandler.maybeOverlaps((LongRangeFilter) filter, statistics);
-            } else if (filter instanceof FloatRangeFilter) {
-                maybeOverlaps = FloatPushdownHandler.maybeOverlaps((FloatRangeFilter) filter, statistics);
-            } else if (filter instanceof DoubleRangeFilter) {
-                maybeOverlaps = DoublePushdownHandler.maybeOverlaps((DoubleRangeFilter) filter, statistics);
-            } else if (filter instanceof ComparableRangeFilter) {
-                maybeOverlaps = ComparablePushdownHandler.maybeOverlaps((ComparableRangeFilter) filter, statistics);
-            } else if (filter instanceof SingleSidedComparableRangeFilter) {
-                maybeOverlaps = SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                        (SingleSidedComparableRangeFilter) filter, statistics);
-            } else if (filter instanceof MatchFilter) {
-                final MatchFilter matchFilter = (MatchFilter) filter;
-                final Class<?> dhColumnType = matchFilter.getColumnType();
-                if (dhColumnType == null) {
-                    throw new IllegalStateException("Filter not initialized with a column type: " + filter);
-                } else if (dhColumnType == byte.class || dhColumnType == Byte.class) {
-                    maybeOverlaps = BytePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == char.class || dhColumnType == Character.class) {
-                    maybeOverlaps = CharPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == short.class || dhColumnType == Short.class) {
-                    maybeOverlaps = ShortPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == int.class || dhColumnType == Integer.class) {
-                    maybeOverlaps = IntPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == long.class || dhColumnType == Long.class) {
-                    maybeOverlaps = LongPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == float.class || dhColumnType == Float.class) {
-                    maybeOverlaps = FloatPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == double.class || dhColumnType == Double.class) {
-                    maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == String.class && matchFilter.getMatchOptions().caseInsensitive()) {
-                    maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == Instant.class) {
-                    maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else {
-                    maybeOverlaps = ComparablePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                }
-            } else {
-                // Unsupported filter type for push down, so assume it overlaps.
-                maybeOverlaps = true;
-            }
+            //
+            // Statistics this code cannot use keep the row group; the evaluator applies that check itself, so there is
+            // nothing to screen for here. See UsabilityEvaluator.
+            final boolean maybeOverlaps = evaluator.maybeOverlaps(statistics);
             if (maybeOverlaps) {
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());
@@ -1008,6 +1004,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     return;
                 }
 
+                // Filtering the dictionary costs O(dictionary size), might not be worth the overhead.
+                final long threshold = (long) (rs.size() * QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD);
+                if (dictionaryChunk.size() >= threshold) {
+                    maybeBuilder.appendRowSequence(rs);
+                    maybeCount.add(rs.size());
+                    return;
+                }
+
                 // Run the filter on the dictionary to find which dictionary entries satisfy the filter and build an
                 // array of matching dictionary key IDs.
                 final long[] keyMatchArray;
@@ -1043,7 +1047,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 // row group.
                 final long subRegionFirstKey = getSubRegionFirstKey(rgIdx);
                 final int CHUNK_SIZE = 4096;
-                try (final RowSet shiftedRowSet = rs.asRowSet().shift(-subRegionFirstKey);
+                try (final RowSet rowSet = rs.asRowSet();
+                        final RowSet shiftedRowSet = rowSet.shift(-subRegionFirstKey);
                         final RowSequence.Iterator it = shiftedRowSet.getRowSequenceIterator();
                         final ChunkSource.GetContext getContext = valueStore.makeGetContext(CHUNK_SIZE);
                         final WritableLongChunk<OrderedRowKeys> results =
@@ -1075,7 +1080,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Apply the filter to the data index table and return the result.
+     * Apply the filter to the data index table and return the result. When the index is applied, the result has no
+     * maybe matches: rows the index does not place under a matching key are treated as not matching, so the index must
+     * be complete and current for the rows it covers (see {@link #hasDataIndex}). When the selection is too small for
+     * the index, or filtering the index fails for a reason other than cancellation, the result is a copy of
+     * {@code result}.
      */
     @NotNull
     public static PushdownResult pushdownDataIndex(
@@ -1114,10 +1123,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     });
                 }
             } catch (final Exception e) {
-                // TODO: Exception occurs here if we have a data type mismatch between the index and the filter.
-                // When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
-                // to remove the catch block and let any exception propagate. For now, just swallow the exception
-                // and return a copy of the original input, skipping pushdown filtering.
+                // A cancelled query must stop, not carry on filtering without the index.
+                if (CancellationException.isCancellation(e)) {
+                    throw e;
+                }
+                // Filtering the index fails when the read instructions changed the indexed column's type, since the
+                // index is read with the types it was written with (DH-19443). Leave every row to the filter itself.
+                log.warn().append("Skipping data index pushdown for filter ").append(String.valueOf(filter))
+                        .append(": ").append(String.valueOf(e)).endl();
                 return result.copy();
             }
         }

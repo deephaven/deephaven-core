@@ -5,11 +5,15 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Aggregations;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -18,17 +22,26 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import junit.framework.AssertionFailedError;
 
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.vector.IntVector;
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.table.TableFactory.emptyTable;
@@ -61,6 +74,370 @@ public class QueryTableRangeJoinTest {
     public void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
     }
+
+    // region compare-equal object tests
+
+    /**
+     * BigDecimal range values that differ only in scale compare equal, so right rows with 1.0, 1.00, 1.000 and 1 are
+     * one run of equal range values: each range includes all of the run or none of it, whatever the scale of the left
+     * start and end values.
+     */
+    @Test
+    public void testBigDecimalCompareEqualRightRangeValues() {
+        final BigDecimal[] rightValues = {new BigDecimal("0.5"), new BigDecimal("1.0"), new BigDecimal("1.00"),
+                new BigDecimal("1.000"), new BigDecimal("1"), new BigDecimal("2")};
+        final BigDecimal[] leftStarts = {new BigDecimal("1"), new BigDecimal("0.5"), new BigDecimal("1.0"),
+                new BigDecimal("0"), new BigDecimal("1.00"), new BigDecimal("0.7"), new BigDecimal("1.5")};
+        final BigDecimal[] leftEnds = {new BigDecimal("2"), new BigDecimal("1.00"), new BigDecimal("1.000"),
+                new BigDecimal("3"), new BigDecimal("1"), new BigDecimal("1.5"), new BigDecimal("1.7")};
+        final Table right = TableTools.newTable(
+                TableTools.col("RRV", rightValues),
+                TableTools.intCol("Sentinel", 0, 1, 2, 3, 4, 5));
+        final Table left = TableTools.newTable(
+                TableTools.col("LSV", leftStarts),
+                TableTools.col("LEV", leftEnds));
+
+        for (final boolean startInclusive : new boolean[] {false, true}) {
+            for (final boolean endInclusive : new boolean[] {false, true}) {
+                final String match = "LSV " + (startInclusive ? "<=" : "<") + " RRV " + (endInclusive ? "<=" : "<")
+                        + " LEV";
+                final Table result = left.rangeJoin(right, List.of(match), List.of(AggGroup("Sentinel")));
+                for (int li = 0; li < leftStarts.length; ++li) {
+                    final List<Integer> expected = new ArrayList<>();
+                    for (int ri = 0; ri < rightValues.length; ++ri) {
+                        final int startComparison = leftStarts[li].compareTo(rightValues[ri]);
+                        final int endComparison = rightValues[ri].compareTo(leftEnds[li]);
+                        if ((startInclusive ? startComparison <= 0 : startComparison < 0)
+                                && (endInclusive ? endComparison <= 0 : endComparison < 0)) {
+                            expected.add(ri);
+                        }
+                    }
+                    checkSentinels(match + ", left row " + li, expected, result, li);
+                }
+            }
+        }
+
+        final String allowMatch = "<- LSV <= RRV <= LEV";
+        final Table allowResult = left.rangeJoin(right, List.of(allowMatch), List.of(AggGroup("Sentinel")));
+        for (int li = 0; li < leftStarts.length; ++li) {
+            int first = 0;
+            while (first < rightValues.length && rightValues[first].compareTo(leftStarts[li]) < 0) {
+                ++first;
+            }
+            if (first > 0 && (first == rightValues.length || rightValues[first].compareTo(leftStarts[li]) != 0)) {
+                --first;
+            }
+            final List<Integer> expected = new ArrayList<>();
+            for (int ri = first; ri < rightValues.length && rightValues[ri].compareTo(leftEnds[li]) <= 0; ++ri) {
+                expected.add(ri);
+            }
+            checkSentinels(allowMatch + ", left row " + li, expected, allowResult, li);
+        }
+    }
+
+    private static void checkSentinels(final String context, final List<Integer> expected, final Table result,
+            final int rowPosition) {
+        final IntVector actual = (IntVector) result.getColumnSource("Sentinel")
+                .get(result.getRowSet().get(rowPosition));
+        final List<Integer> actualList = new ArrayList<>();
+        if (actual != null) {
+            for (int ii = 0; ii < actual.size(); ++ii) {
+                actualList.add(actual.get(ii));
+            }
+        }
+        assertThat(actualList).as(context).isEqualTo(expected);
+    }
+
+    // endregion compare-equal object tests
+
+    // region allow following tests
+
+    /**
+     * With GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING, a left end value that exactly matches a right value ends its range at
+     * that right value, and a greater left end value with no exact match includes the immediately following right
+     * value, whatever the other left rows in the bucket.
+     */
+    @Test
+    public void testAllowFollowingAfterExactMatch() {
+        final Table rightInts = TableTools.newTable(
+                TableTools.intCol("RRV", 1, 2, 4, 6),
+                TableTools.intCol("Sentinel", 0, 1, 2, 3));
+        final Table leftInts = TableTools.newTable(
+                TableTools.intCol("LSV", 0, 0, 0, 0, 0),
+                TableTools.intCol("LEV", 2, 2, 3, 4, 5));
+        checkAllowFollowingAfterExactMatch(leftInts, rightInts);
+
+        final Table rightStrings = TableTools.newTable(
+                TableTools.stringCol("RRV", "b", "c", "e", "g"),
+                TableTools.intCol("Sentinel", 0, 1, 2, 3));
+        final Table leftStrings = TableTools.newTable(
+                TableTools.stringCol("LSV", "a", "a", "a", "a", "a"),
+                TableTools.stringCol("LEV", "c", "c", "d", "e", "f"));
+        checkAllowFollowingAfterExactMatch(leftStrings, rightStrings);
+    }
+
+    private static void checkAllowFollowingAfterExactMatch(final Table left, final Table right) {
+        final String match = "LSV <= RRV <= LEV ->";
+        final Table result = left.rangeJoin(right, List.of(match), List.of(AggGroup("Sentinel")));
+        checkSentinels(match + ", left row 0", List.of(0, 1), result, 0);
+        checkSentinels(match + ", left row 1", List.of(0, 1), result, 1);
+        checkSentinels(match + ", left row 2", List.of(0, 1, 2), result, 2);
+        checkSentinels(match + ", left row 3", List.of(0, 1, 2), result, 3);
+        checkSentinels(match + ", left row 4", List.of(0, 1, 2, 3), result, 4);
+    }
+
+    // endregion allow following tests
+
+    // region negative zero tests
+
+    /**
+     * Double range values follow Deephaven ordering, where -0.0 and 0.0 are equal, for every range rule.
+     */
+    @Test
+    public void testNegativeZeroDouble() {
+        checkDoubleRange("LSV < RRV < LEV", new double[] {-1.0, 0.0, 1.0}, -0.0, 5.0, List.of(2));
+        checkDoubleRange("LSV <= RRV < LEV", new double[] {-1.0, -0.0, 1.0}, 0.0, 5.0, List.of(1, 2));
+        checkDoubleRange("<- LSV <= RRV < LEV", new double[] {-1.0, -0.0, -0.0, 1.0}, 0.0, 5.0, List.of(1, 2, 3));
+        checkDoubleRange("LSV < RRV < LEV", new double[] {-1.0, -0.0, 1.0}, -5.0, 0.0, List.of(0));
+        checkDoubleRange("LSV < RRV <= LEV", new double[] {-1.0, 0.0, 1.0}, -5.0, -0.0, List.of(0, 1));
+        checkDoubleRange("LSV < RRV <= LEV ->", new double[] {-1.0, 0.0, 1.0}, -5.0, -0.0, List.of(0, 1));
+    }
+
+    /**
+     * Float range values follow Deephaven ordering, where -0.0 and 0.0 are equal.
+     */
+    @Test
+    public void testNegativeZeroFloat() {
+        final Table right = TableTools.newTable(
+                TableTools.floatCol("RRV", -1.0f, 0.0f, 1.0f),
+                TableTools.intCol("Sentinel", 0, 1, 2));
+        final Table left = TableTools.newTable(
+                TableTools.floatCol("LSV", -0.0f),
+                TableTools.floatCol("LEV", 5.0f));
+        final String match = "LSV < RRV < LEV";
+        checkSentinels(match, List.of(2), left.rangeJoin(right, List.of(match), List.of(AggGroup("Sentinel"))), 0);
+    }
+
+    /**
+     * A -0.0 left start or end value gets the same range whatever the position of the equal 0.0 in the right values.
+     */
+    @Test
+    public void testNegativeZeroConsistentAcrossRightPositions() {
+        final double[] smallerValues = {-3.0, -2.0, -1.0};
+        for (int smallerCount = 0; smallerCount <= smallerValues.length; ++smallerCount) {
+            final double[] rightValues = new double[smallerCount + 2];
+            System.arraycopy(smallerValues, smallerValues.length - smallerCount, rightValues, 0, smallerCount);
+            rightValues[smallerCount] = 0.0;
+            rightValues[smallerCount + 1] = 1.0;
+            final List<Integer> throughZero = new ArrayList<>();
+            for (int ri = 0; ri <= smallerCount; ++ri) {
+                throughZero.add(ri);
+            }
+            checkDoubleRange("LSV < RRV < LEV", rightValues, -0.0, 5.0, List.of(smallerCount + 1));
+            checkDoubleRange("LSV <= RRV < LEV", rightValues, -0.0, 5.0, List.of(smallerCount, smallerCount + 1));
+            checkDoubleRange("LSV < RRV < LEV", rightValues, -5.0, -0.0, throughZero.subList(0, smallerCount));
+            checkDoubleRange("LSV < RRV <= LEV", rightValues, -5.0, -0.0, throughZero);
+        }
+    }
+
+    private static void checkDoubleRange(final String match, final double[] rightValues,
+            final double leftStart, final double leftEnd, final List<Integer> expected) {
+        final int[] sentinels = new int[rightValues.length];
+        for (int ri = 0; ri < rightValues.length; ++ri) {
+            sentinels[ri] = ri;
+        }
+        final Table right = TableTools.newTable(
+                TableTools.doubleCol("RRV", rightValues),
+                TableTools.intCol("Sentinel", sentinels));
+        final Table left = TableTools.newTable(
+                TableTools.doubleCol("LSV", leftStart),
+                TableTools.doubleCol("LEV", leftEnd));
+        final Table result = left.rangeJoin(right, List.of(match), List.of(AggGroup("Sentinel")));
+        checkSentinels(String.format("%s, right %s, left (%s, %s)", match, Arrays.toString(rightValues),
+                leftStart, leftEnd), expected, result, 0);
+    }
+
+    // endregion negative zero tests
+
+    // region job lifecycle tests
+
+    private static final long JOB_HOLD_SECONDS = 2;
+    private static final long JOB_TIMEOUT_SECONDS = 30;
+
+    private static volatile CountDownLatch heldJobEntered;
+    private static volatile CountDownLatch heldJobRelease;
+    private static final AtomicInteger HELD_JOB_CALLS = new AtomicInteger();
+    private static final AtomicInteger HELD_JOBS_RUNNING = new AtomicInteger();
+
+    /**
+     * Formula that holds the job evaluating it until {@link #heldJobRelease} is released, which happens at the latest
+     * {@link #JOB_HOLD_SECONDS} after the first hold began.
+     */
+    @SuppressWarnings("unused")
+    public static int holdJob(final long rowKey) {
+        HELD_JOB_CALLS.incrementAndGet();
+        HELD_JOBS_RUNNING.incrementAndGet();
+        try {
+            heldJobEntered.countDown();
+            if (!heldJobRelease.await(JOB_HOLD_SECONDS, TimeUnit.SECONDS)) {
+                heldJobRelease.countDown();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            HELD_JOBS_RUNNING.decrementAndGet();
+        }
+        return 0;
+    }
+
+    /**
+     * Formula that fails once a job is held by {@link #holdJob(long)}.
+     */
+    @SuppressWarnings("unused")
+    public static int failAfterHeldJobEntered(final long rowKey) {
+        try {
+            // noinspection ResultOfMethodCallIgnored
+            heldJobEntered.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        throw new IllegalStateException("right range value failure");
+    }
+
+    /**
+     * When the right table work fails while the left grouping job is running, rangeJoin reports the failure only after
+     * that job has finished.
+     */
+    @Test
+    public void testRightFailureWaitsForLeftGroupingJob() throws InterruptedException {
+        final int heldJobsRunning = runWithHeldJobs(() -> {
+            final Table left = TableTools.emptyTable(10).view(
+                    "K = holdJob(ii)", "LSV = (int) ii", "LEV = (int) ii + 2");
+            final Table right = TableTools.emptyTable(10).view(
+                    "K = (int) 0", "RRV = failAfterHeldJobEntered(ii)", "Sentinel = (int) ii");
+            left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
+        }, null, OperationException.class);
+        assertThat(heldJobsRunning).as("held jobs running when rangeJoin failed").isZero();
+    }
+
+    /**
+     * When the thread waiting for the left grouping job is interrupted, rangeJoin reports the cancellation only after
+     * that job has finished.
+     */
+    @Test
+    public void testInterruptWhileWaitingForLeftGroupingJob() throws InterruptedException {
+        final int heldJobsRunning = runWithHeldJobs(() -> {
+            final Table left = TableTools.emptyTable(10).view(
+                    "K = holdJob(ii)", "LSV = (int) ii", "LEV = (int) ii + 2");
+            final Table right = TableTools.emptyTable(1).view(
+                    "K = (int) 0", "RRV = (int) ii", "Sentinel = (int) ii");
+            left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
+        }, QueryTableRangeJoinTest::isWaitingForLeftGroupingJob, CancellationException.class);
+        assertThat(heldJobsRunning).as("held jobs running when rangeJoin was cancelled").isZero();
+    }
+
+    /**
+     * When the thread waiting for rangeJoin is interrupted, rangeJoin starts no further range search tasks, and reports
+     * the cancellation only after its running range search tasks have finished.
+     */
+    @Test
+    public void testInterruptWaitsForRangeSearchJobs() throws InterruptedException {
+        final int numBuckets = 20;
+        final int heldJobsRunning = runWithHeldJobs(() -> {
+            final Table left = TableTools.emptyTable(numBuckets).view(
+                    "K = (int) ii", "LSV = holdJob(ii)", "LEV = (int) 100");
+            final Table right = TableTools.emptyTable(numBuckets).view(
+                    "K = (int) ii", "RRV = (int) ii", "Sentinel = (int) ii");
+            left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
+        }, operationThread -> true, CancellationException.class);
+        assertThat(heldJobsRunning).as("held jobs running when rangeJoin was cancelled").isZero();
+        assertThat(HELD_JOB_CALLS.get()).as("range search tasks run").isLessThan(numBuckets);
+    }
+
+    /**
+     * Whether {@code operationThread} is parked in the static range join's wait for its left grouping job, which it
+     * enters once the right table work is complete.
+     */
+    private static boolean isWaitingForLeftGroupingJob(@NotNull final Thread operationThread) {
+        if (operationThread.getState() != Thread.State.WAITING) {
+            return false;
+        }
+        for (final StackTraceElement frame : operationThread.getStackTrace()) {
+            if (!frame.getClassName().startsWith("java.") && !frame.getClassName().startsWith("jdk.")) {
+                return frame.getClassName().endsWith("RangeJoinOperation$StaticRangeJoinPhase1")
+                        && frame.getMethodName().equals("start");
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Run {@code operation} with a parallel operation initializer, expecting it to fail with {@code expectedFailure}.
+     * Held jobs are released when {@code operation} returns. If {@code interruptWhen} is non-null, this thread is
+     * interrupted once a job is held and {@code interruptWhen} accepts this thread.
+     *
+     * @return The number of held jobs running when {@code operation} failed
+     */
+    private static int runWithHeldJobs(
+            @NotNull final Runnable operation,
+            @Nullable final Predicate<Thread> interruptWhen,
+            @NotNull final Class<? extends Exception> expectedFailure) throws InterruptedException {
+        heldJobEntered = new CountDownLatch(1);
+        heldJobRelease = new CountDownLatch(1);
+        HELD_JOB_CALLS.set(0);
+        HELD_JOBS_RUNNING.set(0);
+
+        final Thread operationThread = Thread.currentThread();
+        final Thread interrupter = new Thread(() -> {
+            try {
+                if (!heldJobEntered.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                    return;
+                }
+                final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(JOB_TIMEOUT_SECONDS);
+                while (!interruptWhen.test(operationThread)) {
+                    if (System.nanoTime() > deadlineNanos) {
+                        return;
+                    }
+                    Thread.sleep(1);
+                }
+                operationThread.interrupt();
+            } catch (InterruptedException ignored) {
+            }
+        }, "QueryTableRangeJoinTest-interrupter");
+        interrupter.setDaemon(true);
+
+        final OperationInitializationThreadPool threadPool =
+                new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, 4);
+        final ExecutionContext parallelContext = ExecutionContext.getContext().withOperationInitializer(threadPool);
+        int heldJobsRunning = -1;
+        try (final SafeCloseable ignored1 = parallelContext.open();
+                final SafeCloseable ignored2 = threadPool::shutdown) {
+            ExecutionContext.getContext().getQueryLibrary().importStatic(QueryTableRangeJoinTest.class);
+            if (interruptWhen != null) {
+                interrupter.start();
+            }
+            try {
+                operation.run();
+                failBecauseExceptionWasNotThrown(expectedFailure);
+            } catch (RuntimeException expected) {
+                heldJobsRunning = HELD_JOBS_RUNNING.get();
+                assertThat(expected).isInstanceOf(expectedFailure);
+            }
+        } finally {
+            heldJobRelease.countDown();
+            if (interruptWhen != null) {
+                interrupter.join(TimeUnit.SECONDS.toMillis(JOB_TIMEOUT_SECONDS));
+                if (interrupter.isAlive()) {
+                    fail("interrupter thread did not finish");
+                }
+            }
+            // noinspection ResultOfMethodCallIgnored
+            Thread.interrupted();
+        }
+        return heldJobsRunning;
+    }
+
+    // endregion job lifecycle tests
 
     // region validation tests
 
@@ -128,6 +505,32 @@ public class QueryTableRangeJoinTest {
     }
 
     @Test
+    public void testEmptyAggregations() {
+        final Table lt = emptyTable(100).updateView("II=ii", "BB=II % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
+        final Table rt = emptyTable(100).updateView("II=ii", "BB=II % 5", "RRV=ii / 0.3");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"), List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageEndingWith(": Aggregations must not be empty");
+    }
+
+    @Test
+    public void testUnsupportedAggregationsMessage() {
+        final Table lt = emptyTable(100).updateView("II=ii", "BB=II % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
+        final Table rt = emptyTable(100).updateView("II=ii", "BB=II % 5", "RRV=ii / 0.3");
+        final List<Aggregation> aggs = List.of(
+                AggGroup("G1=II"),
+                AggCount("Cnt"),
+                AggGroup("G2=II"),
+                AggSum("S=II"),
+                Aggregations.builder().addAggregations(AggGroup("G3=II"), AggMax("M=II")).build(),
+                Aggregations.builder().addAggregations(AggGroup("G4=II"), AggGroup("G5=II")).build());
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"), aggs))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageEndingWith("unsupported aggregations were requested: " + Strings.ofAggregations(List.of(
+                        aggs.get(1), aggs.get(3), aggs.get(4))));
+    }
+
+    @Test
     public void testInvalidExactMatches() {
         final Table lt = emptyTable(100).updateView("II=ii", "BB=i % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
         final Table rt = emptyTable(100).updateView("II=ii", "BB=i % 5", "RRV=ii / 0.3");
@@ -189,6 +592,39 @@ public class QueryTableRangeJoinTest {
         for (final Runnable test : tests) {
             expectException(test, IllegalArgumentException.class);
         }
+    }
+
+    @Test
+    public void testMissingRangeMatchColumnsNamed() {
+        final Table lt = emptyTable(100).updateView("II=ii", "LSV=ii / 0.7", "LEV=ii / 0.1");
+        final Table rt = emptyTable(100).updateView("II=ii", "RRV=ii / 0.3");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("WRONG < RRV < LEV"), List.of(AggGroup("II"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("left start column WRONG is missing");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("LSV < WRONG < LEV"), List.of(AggGroup("II"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("right range column WRONG is missing");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("LSV < RRV < WRONG"), List.of(AggGroup("II"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("left end column WRONG is missing")
+                .hasMessageNotContaining("left start column");
+    }
+
+    @Test
+    public void testMissingAggregationInputColumns() {
+        final Table lt = emptyTable(100).updateView("II=ii", "BB=II % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
+        final Table rt = emptyTable(100).updateView("II=ii", "BB=II % 5", "RRV=ii / 0.3");
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"),
+                List.of(AggGroup("G1=WRONG1", "II"), AggGroup("G2=WRONG2", "G3=WRONG1"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .isNotInstanceOf(OperationException.class)
+                .hasMessageEndingWith(": Invalid aggregations: right table has no aggregation input columns "
+                        + "[WRONG1, WRONG2], available right columns are [II, BB, RRV]");
+        // Left table columns are not aggregation inputs
+        assertThatThrownBy(() -> lt.rangeJoin(rt, List.of("BB", "LSV < RRV < LEV"), List.of(AggGroup("LSV"))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageEndingWith(": Invalid aggregations: right table has no aggregation input columns [LSV], "
+                        + "available right columns are [II, BB, RRV]");
     }
 
     private static void expectException(
@@ -503,7 +939,7 @@ public class QueryTableRangeJoinTest {
                             final long expectedRangeSize = adjustment + (indexRangeSize - adjustment) * multiplier;
                             assertThat(actualRangeSize).isEqualTo(expectedRangeSize);
                         }
-                    } catch (AssertionFailedError e) {
+                    } catch (AssertionError e) {
                         throw new AssertionError(String.format("Failure for type %s at row position %s",
                                 type, rowPosition), e);
                     }

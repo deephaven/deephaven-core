@@ -3,11 +3,12 @@
 //
 package io.deephaven.engine.util.file;
 
-import io.deephaven.base.testing.BaseCachedJMockTestCase;
+import io.deephaven.base.testing.JMockRule.Expectations;
+import io.deephaven.base.testing.JMockRule;
 import io.deephaven.base.verify.RequirementFailure;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -16,7 +17,13 @@ import java.nio.file.Files;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestTrackedFileHandleFactory {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
 
     private File FILE;
     private static final int CAPACITY = 100;
@@ -29,13 +36,12 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
 
         FILE = Files.createTempFile(TestTrackedFileHandleFactory.class.getName(), ".dat").toFile();
 
-        scheduler = mock(ScheduledExecutorService.class);
+        scheduler = jmock.mock(ScheduledExecutorService.class);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 one(scheduler).scheduleAtFixedRate(
                         with(any(Runnable.class)),
@@ -46,72 +52,71 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
         });
 
         FHCUT = new TrackedFileHandleFactory(scheduler, CAPACITY, TARGET_USAGE_RATIO, 60000);
-        TestCase.assertEquals(scheduler, FHCUT.getScheduler());
-        TestCase.assertEquals(CAPACITY, FHCUT.getCapacity());
-        TestCase.assertEquals(TARGET_USAGE_RATIO, FHCUT.getTargetUsageRatio());
-        TestCase.assertEquals(TARGET_USAGE_THRESHOLD, FHCUT.getTargetUsageThreshold());
-        TestCase.assertEquals(0, FHCUT.getSize());
+        assertEquals(scheduler, FHCUT.getScheduler());
+        assertEquals(CAPACITY, FHCUT.getCapacity());
+        assertEquals(TARGET_USAGE_RATIO, FHCUT.getTargetUsageRatio(), 0.0);
+        assertEquals(TARGET_USAGE_THRESHOLD, FHCUT.getTargetUsageThreshold());
+        assertEquals(0, FHCUT.getSize());
     }
 
     @After
     public void tearDown() throws Exception {
         TestFileHandle.tryToDelete(FILE);
-        super.tearDown();
     }
 
     @Test
     public void testConstructors() {
         try {
             new TrackedFileHandleFactory(scheduler, 0);
-            TestCase.fail();
+            fail();
         } catch (RequirementFailure expected) {
         }
         try {
             new TrackedFileHandleFactory(scheduler, 10, -0.01, 60000L);
-            TestCase.fail();
+            fail();
         } catch (RequirementFailure expected) {
         }
         try {
             new TrackedFileHandleFactory(scheduler, 10, 1.01, 60000L);
-            TestCase.fail();
+            fail();
         } catch (RequirementFailure expected) {
         }
         try {
             new TrackedFileHandleFactory(scheduler, 10, 0.09, 60000L);
-            TestCase.fail();
+            fail();
         } catch (RequirementFailure expected) {
         }
     }
 
     @Test
     public void testCreate() throws IOException {
-        TestCase.assertEquals(0, FHCUT.getSize());
+        assertEquals(0, FHCUT.getSize());
         FileHandle handle = FHCUT.readOnlyHandleCreator.invoke(FILE);
-        TestCase.assertEquals(1, FHCUT.getSize());
+        assertEquals(1, FHCUT.getSize());
 
         handle.close();
-        TestCase.assertFalse(handle.isOpen());
-        TestCase.assertEquals(0, FHCUT.getSize());
+        assertFalse(handle.isOpen());
+        assertEquals(0, FHCUT.getSize());
     }
 
     @Test
     public void testFull() throws IOException {
         FileHandle handles[] = new FileHandle[CAPACITY + 1];
         for (int fhi = 0; fhi < CAPACITY + 1; ++fhi) {
-            TestCase.assertEquals(fhi, FHCUT.getSize());
+            assertEquals(fhi, FHCUT.getSize());
             handles[fhi] = FHCUT.readOnlyHandleCreator.invoke(FILE);
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
         }
         // Synchronous cleanup brings us down to threshold, but the handle that triggered the cleanup is recorded
         // afterwards.
-        TestCase.assertEquals(TARGET_USAGE_THRESHOLD + 1, FHCUT.getSize());
+        assertEquals(TARGET_USAGE_THRESHOLD + 1, FHCUT.getSize());
 
         for (int fhi = 0; fhi < handles.length; ++fhi) {
             FileHandle fh = handles[fhi];
             if (fhi < handles.length - TARGET_USAGE_THRESHOLD - 1) {
-                TestCase.assertFalse(fh.isOpen());
+                assertFalse(fh.isOpen());
             } else {
-                TestCase.assertTrue(fh.isOpen());
+                assertTrue(fh.isOpen());
             }
         }
     }

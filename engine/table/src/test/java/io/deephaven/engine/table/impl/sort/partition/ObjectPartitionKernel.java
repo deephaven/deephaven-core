@@ -8,7 +8,6 @@
 package io.deephaven.engine.table.impl.sort.partition;
 
 import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -21,6 +20,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import java.util.stream.IntStream;
 

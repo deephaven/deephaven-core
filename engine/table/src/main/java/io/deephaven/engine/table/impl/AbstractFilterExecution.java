@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -57,6 +58,7 @@ import static io.deephaven.engine.table.impl.PushdownResult.UNSUPPORTED_ACTION_C
  * initialization case).
  */
 abstract class AbstractFilterExecution {
+
     final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
 
     final QueryTable sourceTable;
@@ -151,6 +153,8 @@ abstract class AbstractFilterExecution {
 
         // noinspection resource
         final WritableRowSet filterResult = RowSetFactory.empty();
+        // Whether filterResult has been handed to onComplete, which owns it from then on, even if it throws.
+        final MutableBoolean filterResultDelivered = new MutableBoolean();
 
         jobScheduler().iterateParallel(
                 ExecutionContext.getContext(),
@@ -166,15 +170,21 @@ abstract class AbstractFilterExecution {
                             final WritableRowSet subset = inputCopy.subSetByPositionRange(startOffSet, endOffset);
                             final WritableRowSet result = filter(filter, subset)) {
                         synchronized (filterResult) {
-                            filterResult.insert(result);
+                            filterResult.subsume(result);
                         }
                     }
                     resume.run();
                 },
-                () -> onComplete.accept(filterResult),
+                () -> {
+                    filterResultDelivered.setTrue();
+                    onComplete.accept(filterResult);
+                },
                 inputCopy::close,
                 exception -> {
                     try (inputCopy) {
+                        if (filterResultDelivered.isFalse()) {
+                            filterResult.close();
+                        }
                         onError.accept(exception);
                     }
                 });
@@ -415,28 +425,34 @@ abstract class AbstractFilterExecution {
             sf.context.updateExecutedFilterCost(costCeiling);
 
             if (pushdownResult.maybeMatch().isEmpty()) {
-                localInput.setValue(pushdownResult.match().copy());
+                try (pushdownResult) {
+                    replace(localInput, pushdownResult.match().copy());
+                }
                 scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.get(),
                         filterComplete, filterNec);
                 return;
             }
+
+            // Store the result for later use by the companion regular filter. The stateless filter owns it from here,
+            // and closes it when the collection completes or fails.
+            if (sf.pushdownResult != null) {
+                sf.pushdownResult.close();
+            }
+            sf.pushdownResult = pushdownResult;
 
             // We still have some maybe rows, sort the filters again, including the current index.
             scheduleAndSortCostEstimates(statelessFilters, filterIdx, localInput.get(), () -> {
                 // If there is a new filter at the current index, need to evaluate it.
                 if (!sf.equals(statelessFilters[filterIdx])) {
                     // Use the union of the match and maybe rows as the input for the next filter.
-                    localInput.setValue(pushdownResult.match().union(pushdownResult.maybeMatch()));
-
-                    // Store the result for later use by the companion regular filter.
-                    sf.pushdownResult = pushdownResult;
+                    replace(localInput, pushdownResult.match().union(pushdownResult.maybeMatch()));
 
                     // Do the next round of filtering with the new filter that bubbled up to the current index.
                     executeStatelessFilter(statelessFilters, filterIdx, localInput, filterComplete, filterNec);
                 } else {
                     // Leverage push-down results to reduce the chunk filter input.
                     final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                        try (final RowSet ignored = rows; final PushdownResult ignored2 = pushdownResult) {
+                        try (final RowSet ignored = rows) {
                             onFilterComplete.accept(rows.union(pushdownResult.match()));
                         }
                     };
@@ -457,7 +473,9 @@ abstract class AbstractFilterExecution {
         if (sf.pushdownResult != null) {
             // Leverage push-down results to reduce the chunk filter input before the final filter.
             final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
+                try (final RowSet ignored = rows) {
+                    onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
+                }
             };
 
             sf.pushdownResult.match().retain(input);
@@ -467,6 +485,49 @@ abstract class AbstractFilterExecution {
             return;
         }
         executeFinalFilter(sf.filter, input, onFilterComplete, filterNec);
+    }
+
+    /**
+     * Build the {@link StatelessFilter} for {@code filter}, including its {@link PushdownFilterMatcher} and
+     * {@link PushdownFilterContext} when one is available.
+     *
+     * <p>
+     * A failure while building the matcher or the context propagates to the caller and fails the operation, like any
+     * other failure during filter execution. The only things that can fail here are broken engine invariants, which
+     * should surface rather than silently degrade the query.
+     * </p>
+     *
+     * @param filterIdx the index of this filter in the collection
+     * @param filter the filter to build for
+     * @param barrierDependencies the inter-barrier dependencies accumulated so far
+     * @return the {@code StatelessFilter}, with a pushdown matcher and context if one is available
+     */
+    private StatelessFilter makePushdownStatelessFilter(
+            final int filterIdx,
+            final WhereFilter filter,
+            final Map<Object, Collection<Object>> barrierDependencies) {
+        final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                .map(sourceTable::getColumnSource)
+                .collect(Collectors.toList());
+
+        PushdownFilterMatcher executor =
+                PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+        // Wrap the executor to add DataIndex support (if applicable).
+        executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
+        // Wrap the executor to add SortedColumn support (if applicable)
+        executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
+        if (executor == null) {
+            return new StatelessFilter(filterIdx, filter, null, null, barrierDependencies);
+        }
+        final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
+        try {
+            return new StatelessFilter(filterIdx, filter, executor, context, barrierDependencies);
+        } catch (final Throwable e) {
+            // The constructor hashes the filter's barriers, which are arbitrary user objects, so it can fail; nothing
+            // owns the context until it returns.
+            SafeCloseable.closeAllDuringFailure(e, context);
+            throw e;
+        }
     }
 
     /**
@@ -506,22 +567,7 @@ abstract class AbstractFilterExecution {
                         || !columnSourceMap.keySet().containsAll(filter.getColumns())) {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
                 } else {
-                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                            .map(sourceTable::getColumnSource)
-                            .collect(Collectors.toList());
-
-                    PushdownFilterMatcher executor =
-                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                    // Wrap the executor to add DataIndex support (if applicable).
-                    executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
-                    // Wrap the executor to add SortedColumn support (if applicable)
-                    executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
-                    if (executor != null) {
-                        final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
-                        statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
-                    } else {
-                        statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
-                    }
+                    statelessFilters[ii] = makePushdownStatelessFilter(ii, filter, barrierDependencies);
                 }
                 for (Object barrier : statelessFilters[ii].declaredBarriers) {
                     if (barrierDependencies.containsKey(barrier)) {
@@ -533,6 +579,10 @@ abstract class AbstractFilterExecution {
         } catch (final Exception ex) {
             informAndCloseAll(collectionNec, ex, statelessFilters);
             return;
+        } catch (final Error err) {
+            // Cleanup before propagating the error.
+            SafeCloseable.closeAllDuringFailure(err, statelessFilters);
+            throw err;
         }
 
         // Sort the filters by cost, with the lowest cost first.

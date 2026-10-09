@@ -815,11 +815,10 @@ class TableTestCase(BaseTestCase):
         with update_graph.shared_lock(t):
             snapshot_hist = self.test_table.snapshot_when(t, history=True)
             self.assertFalse(snapshot_hist.is_failed)
-        self.wait_ticking_table_update(t, row_count=10, timeout=2)
-        # we have not waited for a whole cycle yet, wait for the shared lock to guarantee cycle is over
-        # to ensure snapshot_hist has had the opportunity to process the update we just saw
-        with update_graph.shared_lock(t):
-            self.assertTrue(snapshot_hist.is_failed)
+        # a history snapshot fails when its trigger table is not append-only, but the tail only
+        # begins removing rows after its parent has grown past 10 rows, which takes an unpredictable
+        # number of update cycles
+        self.wait_ticking_table_failure(snapshot_hist, timeout=30)
 
     def test_agg_all_by(self):
         test_table = empty_table(10)
@@ -1263,6 +1262,34 @@ class TableTestCase(BaseTestCase):
         rt_attrs = rt.attributes()
         self.assertEqual(len(attrs), len(rt_attrs) + 1)
         self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
+
+    def test_with_keys(self):
+        rt = self.test_table.with_keys("a")
+        self.assertEqual({"keyColumns": "a"}, rt.attributes())
+        self.assertEqual({}, self.test_table.attributes())
+
+        rt = self.test_table.with_keys(["a", "b"])
+        self.assertEqual({"keyColumns": "a,b"}, rt.attributes())
+
+        with self.assertRaises(DHError):
+            self.test_table.with_keys([])
+
+        with self.assertRaises(DHError):
+            self.test_table.with_keys("NotAColumn")
+
+    def test_with_unique_keys(self):
+        rt = self.test_table.with_unique_keys("a")
+        self.assertEqual({"keyColumns": "a", "uniqueKeys": True}, rt.attributes())
+        self.assertEqual({}, self.test_table.attributes())
+
+        rt = self.test_table.with_unique_keys(["a", "b"])
+        self.assertEqual({"keyColumns": "a,b", "uniqueKeys": True}, rt.attributes())
+
+        with self.assertRaises(DHError):
+            self.test_table.with_unique_keys([])
+
+        with self.assertRaises(DHError):
+            self.test_table.with_unique_keys("NotAColumn")
 
     def test_remove_blink(self):
         t_blink = time_table("PT1s", blink_table=True)

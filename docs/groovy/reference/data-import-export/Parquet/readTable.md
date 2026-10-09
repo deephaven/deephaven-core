@@ -109,7 +109,7 @@ source = readTable("/data/examples/Pems/parquet/pems")
 
 Deephaven current supports reading Parquet files from your local filesystem and [S3 storage](https://aws.amazon.com/s3/). The following code block uses special instructions to read a public Parquet dataset from an S3 bucket.
 
-```groovy docker-config=minio order=drivestats
+```groovy docker-config=rustfs order=drivestats
 import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.extensions.s3.S3Instructions
 import io.deephaven.parquet.table.ParquetTools
@@ -135,6 +135,8 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 ## Related documentation
 
 - [Import Parquet into Deephaven video](https://youtu.be/k4gI6hSZ2Jc)
+- [Parquet instructions](../../../how-to-guides/data-import-export/parquet-instructions.md)
+- [Parquet formats](../../../how-to-guides/data-import-export/parquet-formats.md)
 - [Write Parquet files](./writeTable.md)
 - [Docker data volumes](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))

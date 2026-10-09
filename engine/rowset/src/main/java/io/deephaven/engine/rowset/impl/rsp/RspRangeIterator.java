@@ -126,7 +126,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                 riView.reset();
                 ri = new SingletonContainer.SearchRangeIter(lowBits(singletonValue));
             } else {
-                riView.init(p.arr(), p.arrIdx(), spanInfo, s);
+                riView.init(spanInfo, s);
                 ri = riView.getContainer().getShortRangeIterator(0);
             }
             // ri.hasNext() has to be true by construction; this container can't be empty or it wouldn't be present.
@@ -148,7 +148,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         if (getFullBlockSpanLen(spanInfo, s) > 0) {
             return spanKey;
         }
-        try (SpanView res = workDataPerThread.get().borrowSpanView(p.arr(), p.arrIdx(), spanInfo, s)) {
+        try (SpanView res = workDataPerThread.get().borrowSpanView(spanInfo, s)) {
             return spanKey | (long) res.getContainer().first();
         }
     }
@@ -360,109 +360,4 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         p = null;
     }
 
-    /**
-     * Create a RangeIterator that is a view into this iterator; the returned rangeIterator has current start() -
-     * startOffset as it initial start value (note the iterator needs to have a valid current position at the time of
-     * the call). The returned RangeIterator includes all the ranges until the end parameter (exclusive), and as it
-     * advances it will make the underlying iterator advance. Once the RangeIterator is exhausted, the underlying
-     * iterator will have a current value that is one after the last range returned by the range iterator (not this may
-     * have been truncated to a partial, still valid, range).
-     * 
-     * @param startOffset The resulting range iterator returns ranges offset with this value.
-     * @param rangesEnd boundary (exclusive) on the underlying iterator ranges for the ranges returned.
-     * @return
-     */
-    public RangeIteratorView rangeIteratorView(final long startOffset, final long rangesEnd) {
-        return new RangeIteratorView(this, startOffset, rangesEnd);
-    }
-
-    public static class RangeIteratorView implements SearchRangeIterator {
-        private RspRangeIterator it;
-        private final long offset;
-        private final long rangesEnd;
-        private int start;
-        private int end; // Note RangeIterator uses exclusive ends.
-        private int nextStart;
-        private int nextEnd; // Note RangeIterator uses exclusive ends.
-        private boolean nextValid;
-        private boolean noMore;
-        private boolean itFinished;
-
-        public RangeIteratorView(final RspRangeIterator it, final long offset, final long rangesEnd) {
-            this.it = it;
-            this.offset = offset;
-            this.rangesEnd = rangesEnd;
-            if (it.start() < offset) {
-                nextValid = false;
-                return;
-            }
-            noMore = false;
-            itFinished = false;
-            computeNext();
-        }
-
-        private void setTerminated() {
-            it = null;
-            nextValid = false;
-        }
-
-        private void computeNext() {
-            if (noMore || it.start() >= rangesEnd) {
-                setTerminated();
-                return;
-            }
-            nextValid = true;
-            nextStart = (int) (it.start() - offset);
-            if (it.end() >= rangesEnd) {
-                nextEnd = (int) (rangesEnd - offset);
-                it.postpone(rangesEnd);
-                noMore = true;
-                return;
-            }
-            nextEnd = (int) (it.end() - offset) + 1;
-            if (it.hasNext()) {
-                it.next();
-                noMore = false;
-                return;
-            }
-            itFinished = true;
-            noMore = true;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return nextValid;
-        }
-
-        @Override
-        public int start() {
-            return start;
-        }
-
-        @Override
-        public int end() {
-            return end;
-        }
-
-        @Override
-        public void next() {
-            start = nextStart;
-            end = nextEnd;
-            computeNext();
-        }
-
-        @Override
-        public boolean advance(int v) {
-            throw new UnsupportedOperationException("advance is not supported on RangeIteratorView");
-        }
-
-        @Override
-        public boolean search(final ContainerUtil.TargetComparator comp) {
-            throw new UnsupportedOperationException("search is not supported on RangeIteratorView");
-        }
-
-        public boolean underlyingIterFinished() {
-            return itFinished;
-        }
-    }
 }

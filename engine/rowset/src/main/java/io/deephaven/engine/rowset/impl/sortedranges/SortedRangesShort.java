@@ -103,22 +103,6 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
         super(data, offset, count, cardinality);
     }
 
-    public SortedRangesShort(final SortedRangesLong sa) {
-        super(fromLongArray(sa.data, sa.count), sa.first(), sa.count, sa.cardinality);
-    }
-
-    private static short[] fromLongArray(final long[] longArray, final int count) {
-        final short[] shortArray = new short[longArray.length];
-        shortArray[0] = 0;
-        final long offset = longArray[0];
-        for (int i = 1; i < count; ++i) {
-            final long v = longArray[i];
-            final short iv = (short) (v < 0 ? v + offset : v - offset);
-            shortArray[i] = iv;
-        }
-        return shortArray;
-    }
-
     public SortedRangesShort(final long offset, final SortedRangesInt sa, final int initialCapacity) {
         super(fromIntArray(sa.data, sa.count, sa.offset, offset, initialCapacity),
                 offset, sa.count, sa.cardinality);

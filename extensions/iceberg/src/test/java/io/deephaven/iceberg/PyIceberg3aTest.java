@@ -7,12 +7,14 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,8 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 class PyIceberg3aTest {
     private static final Namespace NAMESPACE = Namespace.of("trading");
 
+    private final EngineCleanup engineCleanup = new EngineCleanup();
+
     private static final TableIdentifier TABLE_ID = TableIdentifier.of(NAMESPACE, "add_non_identity_partition_field");
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
@@ -46,8 +50,14 @@ class PyIceberg3aTest {
     public static final DbResource dbResource = new DbResource();
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        engineCleanup.setUp();
         catalogAdapter = dbResource.openCatalog("pyiceberg-3");
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        engineCleanup.tearDown();
     }
 
     @Test

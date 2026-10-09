@@ -1,5 +1,5 @@
 plugins {
-    id 'com.gradle.develocity' version '4.4.2'
+    id 'com.gradle.develocity' version '4.6.0'
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
@@ -145,6 +145,9 @@ include(':Container')
 include(':codegen')
 
 include(':cpp-client')
+
+include(':csharp-client')
+project(':csharp-client').projectDir = file('csharp/client')
 
 include(':R')
 
@@ -354,6 +357,9 @@ project(':java-client-flight-examples').projectDir = file('java-client/flight-ex
 include(':java-client-barrage-examples')
 project(':java-client-barrage-examples').projectDir = file('java-client/barrage-examples')
 
+include(':java-client-integration-tests')
+project(':java-client-integration-tests').projectDir = file('java-client/integration-tests')
+
 include(':java-client-example-utilities')
 project(':java-client-example-utilities').projectDir = file('java-client/example-utilities')
 
@@ -497,11 +503,6 @@ include ':web-client-api:types'
 project(':web-client-api:types').projectDir = file('web/client-api/types')
 
 
-buildCache {
-    local {
-        removeUnusedEntriesAfterDays = 4
-    }
-}
 
 develocity {
     buildScan {

@@ -1,6 +1,5 @@
 ---
 title: Configure Keycloak for authentication
-sidebar_label: Keycloak
 ---
 
 This guide will show you how to configure and use [Keycloak](https://www.keycloak.org/) with [OpenID Connect (OIDC)](https://openid.net/developers/how-connect-works/) to authenticate users running Deephaven from Docker.

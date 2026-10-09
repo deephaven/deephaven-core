@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.tuple.generated.ByteLongLongTuple;
 import io.deephaven.tuple.generated.ByteLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.ByteFindRunsKernel;
@@ -23,7 +24,6 @@ import io.deephaven.engine.table.impl.sort.partition.BytePartitionKernel;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -32,16 +32,19 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
 public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<ByteLongTuple> getJavaComparator() {
-        return Comparator.comparing(ByteLongTuple::getFirstElement);
+        return Comparator.comparing(ByteLongTuple::getFirstElement, ByteComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<ByteLongLongTuple> getJavaMultiComparator() {
-        return Comparator.comparing(ByteLongLongTuple::getFirstElement).thenComparing(ByteLongLongTuple::getSecondElement);
+        return Comparator.comparing(ByteLongLongTuple::getFirstElement, ByteComparisons::compare).thenComparing(ByteLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -181,7 +184,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Byte.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> ByteComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
@@ -393,12 +396,12 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
         for (int ii = 0; ii < size; ++ii) {
             final byte timSorted = byteChunk.get(ii);
             final byte javaSorted = javaTuples.get(ii).getFirstElement();
-            TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
+            assertEquals("values[" + ii + "]", javaSorted, timSorted);
 
             if (rowKeys != null) {
                 final long timIndex = rowKeys.get(ii);
                 final long javaIndex = javaTuples.get(ii).getSecondElement();
-                TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
+                assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
             }
         }
     }
@@ -414,12 +417,12 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
         // make sure that each partition is a subset of the rowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {
             final RowSet partition = results[ii];
-            TestCase.assertTrue("partition[" + ii + "].subsetOf(source)", partition.subsetOf(source));
-            TestCase.assertFalse("reconstructed[\" + ii + \"]..overlaps(partition)", reconstructed.overlaps(partition));
+            assertTrue("partition[" + ii + "].subsetOf(source)", partition.subsetOf(source));
+            assertFalse("reconstructed[\" + ii + \"]..overlaps(partition)", reconstructed.overlaps(partition));
             reconstructed.insert(partition);
         }
 
-        TestCase.assertEquals(source, reconstructed);
+        assertEquals(source, reconstructed);
 
         // now verify that each partition has keys less than the next larger partition
 
@@ -438,9 +441,9 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
                 final long index = partition.get(jj);
                 final byte value = columnSource.get(index);
                 if (gt(value, expectedPivotValue)) {
-                    TestCase.fail("pivot[" + ii + "] = " + expectedPivotValue + ", " + expectedPivotKey + ": is exceeded by" + value);
+                    fail("pivot[" + ii + "] = " + expectedPivotValue + ", " + expectedPivotKey + ": is exceeded by" + value);
                 } else if (value == expectedPivotValue && index > expectedPivotKey) {
-                    TestCase.fail("pivot[" + ii + "] = " + expectedPivotValue + ", " + expectedPivotKey + ": is exceeded by" + value + ", "  + index);
+                    fail("pivot[" + ii + "] = " + expectedPivotValue + ", " + expectedPivotKey + ": is exceeded by" + value + ", "  + index);
                 }
             }
         }
@@ -469,7 +472,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
                 System.out.println("expectedRowSet.minus(partition): " + expectedRowSet.minus(partition));
             }
 
-            TestCase.assertEquals(expectedRowSet, partition);
+            assertEquals(expectedRowSet, partition);
         }
 
 //
@@ -496,8 +499,8 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
             final long timIndex = rowKeys.get(ii);
             final long javaIndex = javaTuples.get(ii).getThirdElement();
 
-            TestCase.assertEquals("values[" + ii + "]", javaSorted, timSortedPrimary);
-            TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
+            assertEquals("values[" + ii + "]", javaSorted, timSortedPrimary);
+            assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
         }
     }
 
@@ -515,7 +518,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
     // region comparison functions
     private static int doComparison(byte lhs, byte rhs) {
-        return Byte.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

@@ -23,6 +23,16 @@ test {
     useJUnitPlatform()
 }
 
+// Expose the installed distribution to :java-client-integration-tests
+configurations {
+    examplesInstall
+}
+artifacts {
+    examplesInstall(tasks.installDist.destinationDir) {
+        builtBy tasks.installDist
+    }
+}
+
 startScripts.enabled = false
 
 def createApplication = { String name, String mainClass ->
@@ -60,7 +70,9 @@ application.applicationDistribution.into('bin') {
 
     from(createApplication('convert-to-table', 'io.deephaven.client.examples.ConvertToTable'))
 
-    fileMode = 0755
+    filePermissions {
+        unix('0755')
+    }
 }
 
 project.tasks.register("run-add-to-input-table", JavaExec) {

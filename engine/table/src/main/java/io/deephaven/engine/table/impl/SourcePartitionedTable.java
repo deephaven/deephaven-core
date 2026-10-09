@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.*;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.LinkedWeakReferenceManager;
@@ -176,8 +177,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
 
             if (subscribeToTableLocationProvider) {
-                resultLocationStates.startTrackingPrevValues();
-
                 sourceTableLocations = new TableLocationSubscriptionBuffer(tableLocationProvider);
                 manage(sourceTableLocations);
 
@@ -198,6 +197,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         rawResult.getUpdateGraph(),
                         UnderlyingTableMaintainer::unmanageForRemovedLocationStates);
                 processBufferedLocationChanges(false);
+                resultLocationStates.startTrackingPrevValues();
             } else {
                 sourceTableLocations = null;
                 processLocationsUpdateRoot = null;
@@ -214,9 +214,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 tableLocationProvider.getTableLocationKeys(
                         lstlk -> locationStates.add(new LocationState(lstlk)),
                         locationKeyMatcher);
-                try (final RowSet added = sortAndAddLocations(locationStates.stream())) {
+                try (final WritableRowSet added = sortAndAddLocations(locationStates.stream())) {
                     if (added != null) {
-                        resultRows.insert(added);
+                        resultRows.subsume(added);
                     }
                 }
             }
@@ -246,7 +246,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             return result;
         }
 
-        private RowSet sortAndAddLocations(@NotNull final Stream<LocationState> locationStates) {
+        private WritableRowSet sortAndAddLocations(@NotNull final Stream<LocationState> locationStates) {
             final long initialLastRowKey = resultRows.lastRowKey();
             final MutableLong lastInsertedRowKey = new MutableLong(initialLastRowKey);
             locationStates.sorted(Comparator.comparing(LocationState::key)).forEach(ls -> {
@@ -404,7 +404,16 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 return localTable;
             }
 
+            /**
+             * Make the constituent for {@code locationKey}, creating it and its transformed result with the current
+             * thread's systemic marking matching the result table, since constituents may be made on any thread.
+             */
             private Table makeConstituentTable(@NotNull final TableLocationKey locationKey) {
+                return SystemicObjectTracker.executeSystemically(result.isSystemicObject(),
+                        () -> makeConstituentTableSystemically(locationKey));
+            }
+
+            private Table makeConstituentTableSystemically(@NotNull final TableLocationKey locationKey) {
                 final TableLocation tableLocation = tableLocationProvider.getTableLocation(locationKey);
                 final boolean refreshing = subscribeToTableLocations && tableLocation.supportsSubscriptions();
                 try (final SafeCloseable ignored = refreshing ? LivenessScopeStack.open() : null) {
@@ -430,9 +439,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     if (refreshing) {
                         constituent.manage(refreshCombiner);
                     }
-
-                    // Be careful to propagate the systemic attribute properly to child tables
-                    constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
 
                     // Apply the provided transformer
                     final Table transformed = constituentTransformer.apply(constituent);

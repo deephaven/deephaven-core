@@ -28,7 +28,7 @@ The file to load into a table. The file should exist and end with the `.parquet`
 </Param>
 <Param name="col_instructions" type="list[ColumnInstruction]" optional>
 
-One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that provide instructions for how to read particular columns in the file.
+One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that provide instructions for how to read particular columns in the file. Set `unsigned_long_target` on a `ColumnInstruction` to choose the Deephaven type for an unsigned 64-bit integer (`UINT_64`) column.
 
 </Param>
 <Param name="is_legacy_parquet" type="bool" optional>
@@ -195,7 +195,7 @@ shutil.copyfile("/data/grades/part1.parquet", "/data/grades/part3.parquet")
 
 Deephaven currently supports reading Parquet files from your local filesystem and [S3 storage](https://aws.amazon.com/s3/). The following code block uses special instructions to read a public Parquet dataset from an S3 bucket.
 
-```python docker-config=minio order=drivestats
+```python docker-config=rustfs order=drivestats
 from deephaven import parquet
 from deephaven.experimental import s3
 from datetime import timedelta
@@ -232,6 +232,7 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 ## Related documentation
 
 - [Import Parquet files](../../../how-to-guides/data-import-export/parquet-import.md)
+- [Parquet formats](../../../how-to-guides/data-import-export/parquet-formats.md)
 - [Export Parquet files](../../../how-to-guides/data-import-export/parquet-export.md)
 - [`write_table`](./writeTable.md)
 - [Docker data volumes](../../../conceptual/docker-data-volumes.md)

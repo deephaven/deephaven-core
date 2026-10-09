@@ -1,6 +1,5 @@
 ---
 title: Create a hierarchical tree table
-sidebar_label: Tree tables
 ---
 
 This guide will show you how to create a hierarchical tree table. A tree table is a table with an expandable [tree structure](https://en.wikipedia.org/wiki/Tree_(data_structure)), as seen in the diagram below:

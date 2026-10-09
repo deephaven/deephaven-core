@@ -12,8 +12,8 @@ import io.deephaven.engine.util.TableTools;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.*;
+
 
 public class TestCategoryDataSeriesPartitionedTable {
 

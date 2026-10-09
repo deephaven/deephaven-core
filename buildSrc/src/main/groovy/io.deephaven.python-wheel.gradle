@@ -51,7 +51,7 @@ def buildWheel = Docker.registerDockerTask(project, 'buildWheel') { config ->
                       ruff format --check;\\
                       python setup.py bdist_wheel; \\
                       pip freeze | xargs pip uninstall -y; \\
-                      rm -rf .mypy_cache; \\
+                      rm -rf .mypy_cache;
                       '''
     }
     config.parentContainers = [ Docker.registryTask(project, 'python') ]
@@ -65,4 +65,8 @@ artifacts {
     pythonWheel(wheelPath) {
         builtBy buildWheel
     }
+}
+
+tasks.named('assemble').configure {
+    dependsOn buildWheel
 }

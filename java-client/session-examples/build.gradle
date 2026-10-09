@@ -22,6 +22,16 @@ test {
     useJUnitPlatform()
 }
 
+// Expose the installed distribution to :java-client-integration-tests
+configurations {
+    examplesInstall
+}
+artifacts {
+    examplesInstall(tasks.installDist.destinationDir) {
+        builtBy tasks.installDist
+    }
+}
+
 startScripts.enabled = false
 
 def createApplication = { String name, String mainClass ->
@@ -37,8 +47,6 @@ def createApplication = { String name, String mainClass ->
 }
 
 application.applicationDistribution.into('bin') {
-    from(createApplication('publish-tables', 'io.deephaven.client.examples.PublishTables'))
-    from(createApplication('write-qsts', 'io.deephaven.client.examples.WriteExampleQsts'))
     from(createApplication('table-manager', 'io.deephaven.client.examples.TableManagerExample'))
     from(createApplication('execute-script', 'io.deephaven.client.examples.ExecuteScript'))
     from(createApplication('execute-code', 'io.deephaven.client.examples.ExecuteCode'))
@@ -51,7 +59,10 @@ application.applicationDistribution.into('bin') {
     from(createApplication('filter-table', 'io.deephaven.client.examples.FilterTable'))
     from(createApplication('create-shared-id', 'io.deephaven.client.examples.CreateSharedId'))
     from(createApplication('print-configuration-constants', 'io.deephaven.client.examples.PrintConfigurationConstants'))
+    from(createApplication('unreferenceable', 'io.deephaven.client.examples.UnreferenceableTableExample'))
 
-    fileMode = 0755
+    filePermissions {
+        unix('0755')
+    }
 }
 

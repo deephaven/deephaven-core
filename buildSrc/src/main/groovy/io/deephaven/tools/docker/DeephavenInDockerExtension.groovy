@@ -1,6 +1,7 @@
 package io.deephaven.tools.docker
 
 import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerExecContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerLogsContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
@@ -9,6 +10,7 @@ import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.network.DockerCreateNetwork
 import com.bmuschko.gradle.docker.tasks.network.DockerRemoveNetwork
 import com.github.dockerjava.api.command.InspectContainerResponse
+import com.github.dockerjava.api.model.Ports
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -34,6 +36,7 @@ public abstract class DeephavenInDockerExtension {
     final TaskProvider<DockerInspectContainer> portTask
     final TaskProvider<? extends Task> endTask
     final TaskProvider<? extends Task> logTask
+    final TaskProvider<? extends Task> threadDumpTask
 
     final String deephavenServerProject
     final String serverTask
@@ -48,11 +51,32 @@ public abstract class DeephavenInDockerExtension {
     abstract MapProperty<String, String> getEnvVars();
 
     /**
+     * The host on which the exposed port is reachable, available after the "waitForPort" task is
+     * complete. Taken from the port binding docker reports; a wildcard binding is reported as
+     * localhost, see {@link #hostFor}.
+     */
+    abstract Property<String> getHost();
+
+    /**
      * Makes the exposed port available to other docker tasks. Rather than hardcode a particular
      * port, docker will select one (allowing for multiple parallel running instances), and expose
      * it here after the "waitForPort" task is complete.
      */
     abstract Property<Integer> getPort();
+
+    /**
+     * The host a client should connect to for a port binding docker reported. Docker reports a
+     * port published without an explicit address as bound to the wildcard address, 0.0.0.0 or ::,
+     * which is not a destination; those become localhost. A daemon configured with a default bind
+     * address reports that address instead, and it is returned as is.
+     */
+    static String hostFor(Ports.Binding binding) {
+        def hostIp = binding.hostIp
+        if (hostIp == null || hostIp.isEmpty() || hostIp == '0.0.0.0' || hostIp == '::') {
+            return 'localhost'
+        }
+        return hostIp
+    }
 
     /**
      * A condition to test to see if server logs should be printed to the build output.
@@ -61,7 +85,9 @@ public abstract class DeephavenInDockerExtension {
 
     @Inject
     DeephavenInDockerExtension(Project project) {
-        awaitStatusTimeout.set 20
+        // The server is healthy once jpy and the UpdateGraph have started, which takes on the order of 20 seconds on a
+        // loaded CI runner; the container reports 'starting' until then, and this poller only accepts 'healthy'.
+        awaitStatusTimeout.set 60
         checkInterval.set 100
         shouldLog.set Specs.satisfyNone()
 
@@ -109,8 +135,11 @@ public abstract class DeephavenInDockerExtension {
         portTask = project.tasks.register('waitForPort', DockerInspectContainer) {task ->
             task.dependsOn healthyTask
             task.containerId.set containerName.get()
-            task.onNext { InspectContainerResponse inspect ->
-                getPort().set(Integer.parseInt(((InspectContainerResponse) inspect).getNetworkSettings().ports.bindings.values().first()[0].hostPortSpec))
+            task.onNext { Object obj ->
+                def inspect = (InspectContainerResponse) obj
+                def firstBinding = inspect.getNetworkSettings().ports.bindings.values().first()[0]
+                getHost().set(hostFor(firstBinding))
+                getPort().set(Integer.parseInt(firstBinding.hostPortSpec))
             }
         }
 
@@ -128,10 +157,27 @@ public abstract class DeephavenInDockerExtension {
             )
         }
 
+        // Only runs when a task registered via shouldLogIfTaskFails has failed. The container is still up at that
+        // point (stopDeephaven is ordered after this), so even though the client-side test has ended, a server-side
+        // deadlock or stuck thread will still be visible. The server image is a full JDK and its entrypoint execs
+        // java, so jcmd can attach to PID 1; the dump is written to this task's stdout.
+        threadDumpTask = project.tasks.register('threadDumpServer', DockerExecContainer) { task ->
+            task.targetContainerId containerName.get()
+            task.commands.add(['jcmd', '1', 'Thread.print', '-l'] as String[])
+
+            task.onlyIf = Specs.convertClosureToSpec { Task t ->
+                shouldLog.get().isSatisfiedBy(t)
+            }
+        }
+        logTask.configure { Task t ->
+            // cosmetic: print the dump before the (much longer) server logs
+            t.mustRunAfter(threadDumpTask)
+        }
+
         endTask = project.tasks.register('stopDeephaven', DockerRemoveContainer) { task ->
             task.dependsOn createDeephavenGrpcApi
 //            task.dependsOn logTask// this seems to prevent start/healthy task from triggering logs
-            task.mustRunAfter(logTask)
+            task.mustRunAfter(logTask, threadDumpTask)
             task.finalizedBy removeDeephavenGrpcApiNetwork
 
             task.targetContainerId containerName.get()
@@ -148,12 +194,12 @@ public abstract class DeephavenInDockerExtension {
     }
 
     /**
-     * If the given task fails, print server logs to console. This implies that
-     * the log task can't run until after the provided task has ended.
+     * If the given task fails, take a thread dump of the server and print server logs to console. This implies
+     * that the thread dump and log tasks can't run until after the provided task has ended.
      */
     void shouldLogIfTaskFails(TaskProvider<? extends Task> task) {
         task.configure { Task t ->
-            t.finalizedBy logTask
+            t.finalizedBy threadDumpTask, logTask
             shouldLog.set(Specs.convertClosureToSpec({
                 t.state.failure != null
             }))

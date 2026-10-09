@@ -7,9 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.ssa;
 
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -17,6 +14,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.util.compare.ObjectComparisons;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -36,10 +34,10 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
     private static void processEntry(ObjectChunk<Object, Values> leftStampValues, Chunk<RowKeys> leftStampKeys,
             ObjectSegmentedSortedArray ssa, WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
         final int leftSize = leftStampKeys.size();
+        rightKeysForLeft.setSize(leftSize);
         final long rightSize = ssa.size();
         if (rightSize == 0) {
             rightKeysForLeft.fillWithValue(0, leftSize, RowSequence.NULL_ROW_KEY);
-            rightKeysForLeft.setSize(leftSize);
             return;
         }
 
@@ -77,15 +75,15 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
     public void processRemovals(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys,
             WritableLongChunk<RowKeys> priorRedirections, WritableRowRedirection rowRedirection,
-            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+            RestampContext restampContext, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals(leftStampValues.asObjectChunk(), leftStampKeys, rightStampChunk.asObjectChunk(), rightKeys,
-                priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
+                priorRedirections, rowRedirection, restampContext, modifiedBuilder, disallowExactMatch);
     }
 
     private static void processRemovals(ObjectChunk<Object, Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys,
             WritableLongChunk<RowKeys> nextRedirections, WritableRowRedirection rowRedirection,
-            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+            RestampContext restampContext, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key. Binary search
         // in the left for the removed key to find the smallest value geq the removed right. Update all rows
         // with the removed redirection to the previous key.
@@ -99,37 +97,32 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
 
             leftLowIdx = findFirstResponsiveLeft(leftLowIdx, leftStampValues, disallowExactMatch, rightStampValue);
 
-            while (leftLowIdx < leftStampKeys.size()) {
-                final long leftKey = leftStampKeys.get(leftLowIdx);
-                final long leftRedirectionKey = rowRedirection.get(leftKey);
-                if (leftRedirectionKey == rightStampKey) {
-                    modifiedBuilder.addKey(leftKey);
-                    if (newRightStampKey == RowSequence.NULL_ROW_KEY) {
-                        rowRedirection.removeVoid(leftKey);
-                    } else {
-                        rowRedirection.putVoid(leftKey, newRightStampKey);
-                    }
-                    leftLowIdx++;
-                } else {
-                    break;
-                }
+            // the left rows redirected to the removed right row are a run of consecutive positions
+            int leftHighIdx = leftLowIdx;
+            while (leftHighIdx < leftStampKeys.size()
+                    && rowRedirection.get(leftStampKeys.get(leftHighIdx)) == rightStampKey) {
+                leftHighIdx++;
             }
+            restampContext.restamp(rowRedirection, leftStampKeys, leftLowIdx, leftHighIdx, newRightStampKey,
+                    modifiedBuilder);
+            leftLowIdx = leftHighIdx;
         }
     }
 
     @Override
     public void processInsertion(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
-            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
-            boolean disallowExactMatch) {
+            WritableRowRedirection rowRedirection, RestampContext restampContext, RowSetBuilderRandom modifiedBuilder,
+            boolean endsWithLastValue, boolean disallowExactMatch) {
         processInsertion(leftStampValues.asObjectChunk(), leftStampKeys, rightStampChunk.asObjectChunk(), rightKeys,
-                nextRightValue.asObjectChunk(), rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                nextRightValue.asObjectChunk(), rowRedirection, restampContext, modifiedBuilder, endsWithLastValue,
+                disallowExactMatch);
     }
 
     private static void processInsertion(ObjectChunk<Object, Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, ObjectChunk<Object, Values> nextRightValue,
-            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
-            boolean disallowExactMatch) {
+            WritableRowRedirection rowRedirection, RestampContext restampContext, RowSetBuilderRandom modifiedBuilder,
+            boolean endsWithLastValue, boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the
         // rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
@@ -147,27 +140,21 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
 
             final long rightStampKey = rightKeys.get(ii);
 
+            // the left rows restamped by this right row are a run of consecutive positions
+            int leftHighIdx = leftLowIdx;
             if (ii == rightStampChunk.size() - 1 && endsWithLastValue) {
-                while (leftLowIdx < leftStampKeys.size()) {
-                    final long leftKey = leftStampKeys.get(leftLowIdx);
-                    rowRedirection.putVoid(leftKey, rightStampKey);
-                    modifiedBuilder.addKey(leftKey);
-                    leftLowIdx++;
-                }
+                leftHighIdx = leftStampKeys.size();
             } else {
                 final Object nextRight = nextRightValue.get(ii);
-                while (leftLowIdx < leftStampKeys.size()) {
-                    final Object leftValue = leftStampValues.get(leftLowIdx);
-                    if (disallowExactMatch ? leq(leftValue, nextRight) : lt(leftValue, nextRight)) {
-                        final long leftKey = leftStampKeys.get(leftLowIdx);
-                        rowRedirection.putVoid(leftKey, rightStampKey);
-                        modifiedBuilder.addKey(leftKey);
-                        leftLowIdx++;
-                    } else {
-                        break;
-                    }
+                while (leftHighIdx < leftStampKeys.size()
+                        && (disallowExactMatch ? leq(leftStampValues.get(leftHighIdx), nextRight)
+                                : lt(leftStampValues.get(leftHighIdx), nextRight))) {
+                    leftHighIdx++;
                 }
             }
+            restampContext.restamp(rowRedirection, leftStampKeys, leftLowIdx, leftHighIdx, rightStampKey,
+                    modifiedBuilder);
+            leftLowIdx = leftHighIdx;
         }
     }
 
@@ -192,9 +179,9 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
             int checkIdx = leftLowIdx;
             while (checkIdx < leftStampValues.size()
                     && rowRedirection.get(leftStampKeys.get(checkIdx)) == rightStampKey) {
-                modifiedBuilder.addKey(leftStampKeys.get(checkIdx));
                 checkIdx++;
             }
+            modifiedBuilder.addRowKeysChunk(leftStampKeys, leftLowIdx, checkIdx - leftLowIdx);
         }
 
         return leftLowIdx;

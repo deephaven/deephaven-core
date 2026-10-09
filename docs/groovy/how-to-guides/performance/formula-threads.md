@@ -1,6 +1,5 @@
 ---
 title: Threads for formula evaluation
-sidebar_label: Formulas and threads
 ---
 
 The Deephaven query engine executes as a Java process and makes use of multiple threads to process requests. When the Deephaven engine executes a query, it does so with an [`ExecutionContext`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/context/ExecutionContext.html) that controls which variables and methods are available to formulas and provides information about the user and query initialization. The query engine can be used as a library, in which case the application developer is responsible for providing a consistent threading model. This guide describes the standard Deephaven server application, as executed via our Docker containers, the Gradle `server-jetty-app:run` task, or as a Core+ worker in the Deephaven Enterprise system.
@@ -85,5 +84,6 @@ The threads used for formulas that result in a Table are evaluated in exactly th
 
 ## Related documentation
 
+- [Track processing time](track-processing-time.md)
 - [Parallelizing queries](../../conceptual/query-engine/parallelization.md)
 - [Periodic Update Graph](../../conceptual/periodic-update-graph-configuration.md)

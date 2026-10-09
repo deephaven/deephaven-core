@@ -1,0 +1,1 @@
+{"file":"conceptual/deephaven-mental-model.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Y","type":"int"}],"rows":[[{"value":"1"}],[{"value":"2"}],[{"value":"5"}],[{"value":"10"}],[{"value":"17"}],[{"value":"26"}],[{"value":"37"}],[{"value":"50"}],[{"value":"65"}],[{"value":"82"}]]}}}}

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -39,6 +40,41 @@ public interface JobScheduler {
 
     JobThreadContext DEFAULT_CONTEXT = new JobThreadContext() {};
     Supplier<JobThreadContext> DEFAULT_CONTEXT_FACTORY = () -> DEFAULT_CONTEXT;
+
+    /**
+     * Delivered when a job fails with an {@link Error} and even the wrapper for it cannot be allocated, which is to say
+     * when the heap is exhausted — the very failure this path exists for. Allocated once, when this interface is
+     * initialized, so that delivering a failure never depends on being able to allocate.
+     */
+    Exception UNREPORTABLE_JOB_ERROR = new UncheckedDeephavenException(
+            "Scheduled job failed with an Error that could not be wrapped for delivery", null, true, false);
+
+    /**
+     * Convert a Throwable that escaped a scheduled job into something the {@code Consumer<Exception>} error handlers
+     * used throughout the scheduler can accept. Exceptions pass through unchanged; an {@link Error} — an
+     * {@link OutOfMemoryError}, in practice — is wrapped, so that the thread waiting on the job's completion fails with
+     * a diagnostic instead of waiting forever for a completion that cannot happen.
+     *
+     * <p>
+     * This never throws. The wrapper carries no stack trace of its own: filling one in is the largest allocation here,
+     * and the stack that matters belongs to the Error, which is kept as the cause. Should even that allocation fail,
+     * {@link #UNREPORTABLE_JOB_ERROR} is delivered instead — a caller that fails without a diagnostic is still far
+     * better than one that waits forever.
+     * </p>
+     *
+     * @param throwable the Throwable that escaped the job
+     * @return {@code throwable} itself if it is an Exception, otherwise a wrapper holding it as its cause
+     */
+    static Exception asDeliverableException(@NotNull final Throwable throwable) {
+        if (throwable instanceof Exception) {
+            return (Exception) throwable;
+        }
+        try {
+            return new UncheckedDeephavenException("Error thrown by scheduled job", throwable, true, false);
+        } catch (Throwable t) {
+            return UNREPORTABLE_JOB_ERROR;
+        }
+    }
 
     /**
      * Cause runnable to be executed.
@@ -175,8 +211,27 @@ public interface JobScheduler {
                         break;
                     }
                     final TaskInvoker taskInvoker = new TaskInvoker(context, tii, initialTaskIndex);
-                    scheduler.submit(executionContext, taskInvoker::execute, description,
-                            IterationManager::onUnexpectedJobError);
+                    try {
+                        scheduler.submit(executionContext, taskInvoker::execute, description,
+                                IterationManager::onUnexpectedJobError);
+                    } catch (Exception e) {
+                        if (!taskInvoker.failIfNotStarted(e)) {
+                            // The TaskInvoker started before submit threw, so the scheduler runs jobs inline and this
+                            // exception did not refuse the task. A started TaskInvoker owns its own lifecycle: it has
+                            // closed itself, or will when its work completes, so failing it here would close it twice.
+                            // Any task failure was already delivered through its own error path, so this exception
+                            // belongs to the caller, as it did before the submit was guarded.
+                            throw e;
+                        }
+                        // The scheduler refused the task, so nothing else will ever run or close the TaskInvoker. It
+                        // has been failed and closed; stop submitting. The finally releases the initial reference, and
+                        // the iteration ends through onError once any accepted tasks have seen the failure.
+                        break;
+                    } catch (Error e) {
+                        // Deliver before rethrowing, as TaskInvoker.execute does.
+                        taskInvoker.failIfNotStarted(asDeliverableException(e));
+                        throw e;
+                    }
                 }
             } finally {
                 decrementReferenceCount();
@@ -190,7 +245,13 @@ public interface JobScheduler {
         }
 
         private void onTaskError(@NotNull final Exception e) {
-            exception.compareAndSet(null, e);
+            if (!exception.compareAndSet(null, e)) {
+                // The first failure is the one delivered; keep the later ones with it rather than dropping them.
+                final Exception first = exception.get();
+                if (first != e) {
+                    first.addSuppressed(e);
+                }
+            }
         }
 
         @Override
@@ -205,6 +266,10 @@ public interface JobScheduler {
             } catch (Exception e) {
                 invokeOnError(e);
                 return;
+            } catch (Error e) {
+                // Deliver before rethrowing; this is the operation's only notification that the iteration failed.
+                invokeOnError(asDeliverableException(e));
+                throw e;
             }
             try {
                 cleanup.run();
@@ -242,6 +307,7 @@ public interface JobScheduler {
 
             private boolean closed;
             private boolean running;
+            private boolean started;
 
             /**
              * Construct a TaskInvoker which will iteratively reschedule itself to perform parallel tasks as needed.
@@ -263,6 +329,7 @@ public interface JobScheduler {
             }
 
             private synchronized void execute() {
+                started = true;
                 int runningTaskIndex;
                 do {
                     if (exception.get() != null) {
@@ -280,20 +347,32 @@ public interface JobScheduler {
                                 this::reportError,
                                 this::reportTaskCompleteAndResumeIteration);
                     } catch (Exception e) {
-                        if (closed) {
-                            // The task threw an error while trying to deliver another error or complete the iteration.
-                            // We cannot safely deliver this error, but we don't want to allow incorrect operation, so
-                            // we report it to the global error reporter.
-                            onUnexpectedJobError(e);
-                        } else {
-                            // Something went wrong, but no completion or error was delivered yet. Report the error.
-                            reportError(e);
-                        }
+                        deliverTaskFailure(e);
                         return;
+                    } catch (Error e) {
+                        // An Error -- an OutOfMemoryError, in practice -- has to be delivered before it propagates.
+                        // Letting it escape undelivered would skip close(), leaving this TaskInvoker's reference to
+                        // the IterationManager outstanding, so that the reference count never reaches zero and
+                        // neither onComplete nor onError ever runs. Rethrow once it has been delivered, so that the
+                        // scheduler still reports it as fatal and it reaches the thread running this job.
+                        deliverTaskFailure(asDeliverableException(e));
+                        throw e;
                     } finally {
                         running = false;
                     }
                 } while (runningTaskIndex != acquiredTaskIndex && !closed);
+            }
+
+            private void deliverTaskFailure(@NotNull final Exception e) {
+                if (closed) {
+                    // The task threw an error while trying to deliver another error or complete the iteration.
+                    // We cannot safely deliver this error, but we don't want to allow incorrect operation, so
+                    // we report it to the global error reporter.
+                    onUnexpectedJobError(e);
+                } else {
+                    // Something went wrong, but no completion or error was delivered yet. Report the error.
+                    reportError(e);
+                }
             }
 
             private synchronized void reportTaskCompleteAndResumeIteration() {
@@ -311,6 +390,22 @@ public interface JobScheduler {
                 } else if (!running) {
                     execute();
                 }
+            }
+
+            /**
+             * Fail the iteration with {@code e} if this TaskInvoker has not started, as when the scheduler refused to
+             * submit it: nothing else will ever run or close it. A scheduler that runs tasks inline may instead throw
+             * from {@code submit} after this TaskInvoker ran, in which case it has already released its resources.
+             *
+             * @param e the failure
+             * @return whether this TaskInvoker had not started, and so has now been closed
+             */
+            private synchronized boolean failIfNotStarted(@NotNull final Exception e) {
+                if (started) {
+                    return false;
+                }
+                reportError(e);
+                return true;
             }
 
             private synchronized void reportError(@NotNull final Exception e) {

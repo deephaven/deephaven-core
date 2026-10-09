@@ -3,14 +3,17 @@
 //
 package io.deephaven.plot.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RectangularShape;
 import java.util.Arrays;
 
-public class TestShapeUtils extends BaseArrayTestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestShapeUtils {
 
     private final Polygon polygon = new Polygon(new int[] {-1, -1, 1, 1}, new int[] {-1, 1, 1, -1}, 4);
     private final double polygonCenterX = Arrays.stream(polygon.xpoints).sum();
@@ -18,6 +21,7 @@ public class TestShapeUtils extends BaseArrayTestCase {
     private final RectangularShape rectangle = new Rectangle2D.Double(0, 0, 1, 1);
     private static final double DELTA = 0.000001;
 
+    @Test
     public void testResize() {
         Rectangle2D newSize = ShapeUtils.resize(polygon, 2).getBounds2D();
         assertEquals(newSize.getX(), -2.0);
@@ -26,7 +30,6 @@ public class TestShapeUtils extends BaseArrayTestCase {
         assertEquals(newSize.getHeight(), 4.0);
         assertEquals(newSize.getCenterX(), polygonCenterX);
         assertEquals(newSize.getCenterY(), polygonCenterY);
-
 
         newSize = ShapeUtils.resize(rectangle, 2).getBounds2D();
         assertEquals(newSize.getX(), -0.5);
@@ -37,6 +40,7 @@ public class TestShapeUtils extends BaseArrayTestCase {
         assertEquals(newSize.getCenterY(), rectangle.getCenterY());
     }
 
+    @Test
     public void testRotate() {
         Rectangle2D newSize = ShapeUtils.rotate(polygon, Math.PI / 2).getBounds2D();
         assertEquals(newSize.getX(), -1.0);
@@ -45,7 +49,6 @@ public class TestShapeUtils extends BaseArrayTestCase {
         assertEquals(newSize.getHeight(), 2.0);
         assertEquals(newSize.getCenterX(), polygonCenterX);
         assertEquals(newSize.getCenterY(), polygonCenterY);
-
 
         newSize = ShapeUtils.rotate(rectangle, Math.PI / 2).getBounds2D();
         assertEquals(newSize.getX(), 0.0, DELTA);

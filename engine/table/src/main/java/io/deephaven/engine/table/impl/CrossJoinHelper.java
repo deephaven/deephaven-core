@@ -34,8 +34,8 @@ import static io.deephaven.engine.table.impl.MatchPair.matchString;
 
 /**
  * Implementation for chunk-oriented joins that produce multiple RHS rows per-LHS row, including {@link Table#join}
- * (referred to as simply join or "cross join") and a left outer join. The left outer join does not currently have any
- * user visible API.
+ * (referred to as simply join or "cross join") and a left outer join. The left outer join is exposed through
+ * {@link io.deephaven.engine.util.OuterJoinTools}, which also builds its full outer join on it.
  *
  * <p>
  * When there are zero keys, the result table uses {@link BitShiftingColumnSource}s for the columns derived from the
@@ -163,8 +163,6 @@ public class CrossJoinHelper {
                     final StaticChunkedCrossJoinStateManager jsm = new StaticChunkedCrossJoinStateManager(
                             bucketingContext.leftSources, control.initialBuildSize(), control, leftTable,
                             leftOuterJoin);
-                    jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
-                    jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
                     // noinspection resource
                     final WritableRowSet resultRowSet = bucketingContext.buildParameters.firstBuildFrom() == LeftInput
@@ -184,10 +182,8 @@ public class CrossJoinHelper {
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
                         new LeftOnlyIncrementalChunkedCrossJoinStateManager(
-                                bucketingContext.leftSources, control.initialBuildSize(), leftTable,
-                                numRightBitsToReserve, leftOuterJoin);
-                jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
-                jsm.setTargetLoadFactor(control.getTargetLoadFactor());
+                                bucketingContext.leftSources, control.initialBuildSize(),
+                                control.getMaximumLoadFactor(), leftTable, numRightBitsToReserve, leftOuterJoin);
 
                 // noinspection resource
                 final TrackingWritableRowSet resultRowSet =
@@ -273,9 +269,9 @@ public class CrossJoinHelper {
                                 addBuilder.addKey(regionStart);
                             }
                         });
-                        try (final RowSet added = addBuilder.build()) {
+                        try (final WritableRowSet added = addBuilder.build()) {
                             downstream.added().writableCast().insert(added);
-                            resultRowSet.insert(added);
+                            resultRowSet.subsume(added);
                         }
 
                         resultTable.notifyListeners(downstream);
@@ -285,10 +281,8 @@ public class CrossJoinHelper {
             }
 
             final RightIncrementalChunkedCrossJoinStateManager jsm = new RightIncrementalChunkedCrossJoinStateManager(
-                    bucketingContext.leftSources, control.initialBuildSize(), bucketingContext.rightSources, leftTable,
-                    numRightBitsToReserve, leftOuterJoin);
-            jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
-            jsm.setTargetLoadFactor(control.getTargetLoadFactor());
+                    bucketingContext.leftSources, control.initialBuildSize(), control.getMaximumLoadFactor(),
+                    bucketingContext.rightSources, leftTable, numRightBitsToReserve, leftOuterJoin);
 
             // noinspection resource
             final TrackingWritableRowSet resultRowSet = jsm.build(leftTable, rightTable).toTracking();
@@ -419,8 +413,8 @@ public class CrossJoinHelper {
                                             .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftRowKey(ii)));
                                     toRemoveBuilder.appendRowSequenceWithOffset(state.rightRemoved, prevOffset);
                                 });
-                                try (final RowSet toRemove = toRemoveBuilder.build()) {
-                                    downstream.removed().writableCast().insert(toRemove);
+                                try (final WritableRowSet toRemove = toRemoveBuilder.build()) {
+                                    downstream.removed().writableCast().subsume(toRemove);
                                 }
                             }
                         }
@@ -467,8 +461,8 @@ public class CrossJoinHelper {
                                     leftRowsForNullKeyRemoval.forAllRowKeys((key) -> {
                                         toRemoveBuilder.appendKey(key << prevRightBits);
                                     });
-                                    try (final RowSet toRemove = toRemoveBuilder.build()) {
-                                        downstream.removed().writableCast().insert(toRemove);
+                                    try (final WritableRowSet toRemove = toRemoveBuilder.build()) {
+                                        downstream.removed().writableCast().subsume(toRemove);
                                     }
                                 }
                             }
@@ -491,8 +485,8 @@ public class CrossJoinHelper {
                                             .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftRowKey(ii)));
                                     modifiedBuilder.appendRowSequenceWithOffset(state.rightModified, currOffset);
                                 });
-                                try (final RowSet modified = modifiedBuilder.build()) {
-                                    downstream.modified().writableCast().insert(modified);
+                                try (final WritableRowSet modified = modifiedBuilder.build()) {
+                                    downstream.modified().writableCast().subsume(modified);
                                 }
 
                                 mustCloseRowsToShift = leftChanged || !allRowsShift;
@@ -512,8 +506,8 @@ public class CrossJoinHelper {
                                         rmsToVisit.addRowSet(slotState.leftRowSet);
                                     }
                                 });
-                                try (final RowSet leftIndexesToVisitForRm = rmsToVisit.build()) {
-                                    rowsToShift.writableCast().insert(leftIndexesToVisitForRm);
+                                try (final WritableRowSet leftIndexesToVisitForRm = rmsToVisit.build()) {
+                                    rowsToShift.writableCast().subsume(leftIndexesToVisitForRm);
                                 }
                             }
                         } else {
@@ -741,14 +735,14 @@ public class CrossJoinHelper {
                         downstream.shifted = shiftBuilder.build();
 
                         try (final RowSet toRemove = toRemoveFromResultRowSet.build();
-                                final RowSet toInsert = toInsertIntoResultRowSet.build()) {
+                                final WritableRowSet toInsert = toInsertIntoResultRowSet.build()) {
                             if (prevRightBits != currRightBits) {
                                 // every row shifted
                                 resultRowSet.clear();
                             } else {
                                 resultRowSet.remove(toRemove);
                             }
-                            resultRowSet.insert(toInsert);
+                            resultRowSet.subsume(toInsert);
                         }
 
                         if (mustCloseRowsToShift) {
@@ -804,6 +798,7 @@ public class CrossJoinHelper {
 
                         resultTable.notifyListeners(downstream);
 
+                        jsm.releaseEmptySlots(tracker);
                         tracker.clear();
                     }
                 };
@@ -966,8 +961,8 @@ public class CrossJoinHelper {
                                 resultRowSet.remove(remove);
                             }
                         }
-                        try (final RowSet add = addToResultRowSet.build()) {
-                            resultRowSet.insert(add);
+                        try (final WritableRowSet add = addToResultRowSet.build()) {
+                            resultRowSet.subsume(add);
                         }
 
                         if (tracker.clear()) {
@@ -1255,8 +1250,8 @@ public class CrossJoinHelper {
                         }
                     }
 
-                    try (final RowSet newResult = newResultBuilder.build()) {
-                        resultRowSet.insert(newResult);
+                    try (final WritableRowSet newResult = newResultBuilder.build()) {
+                        resultRowSet.subsume(newResult);
                     }
                     downstream.added = addedBuilder.build();
                     downstream.removed = removedBuilder.build();

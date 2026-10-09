@@ -3,12 +3,15 @@
 //
 package io.deephaven.plot.axistransformations;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 
-public class TestAxisTransformLambda extends BaseArrayTestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestAxisTransformLambda {
     private final DoubleUnaryOperator dataToAxis = Math::exp;
     private final DoubleUnaryOperator axisToData = Math::log;
     private final DoublePredicate isVisible = d -> d > 1;
@@ -17,6 +20,7 @@ public class TestAxisTransformLambda extends BaseArrayTestCase {
     private final AxisTransformLambda lambda3 = new AxisTransformLambda();
     private final double delta = 0.00001;
 
+    @Test
     public void testTransform() {
         final double d1 = 3.5;
         final double d2 = 4.2;
@@ -34,7 +38,6 @@ public class TestAxisTransformLambda extends BaseArrayTestCase {
         assertEquals(d4, lambda.inverseTransform(lambda.transform(d4)), delta);
         assertEquals(d5, lambda.inverseTransform(lambda.transform(d5)), delta);
 
-
         assertEquals(lambda2.transform(1.0), Math.E, delta);
         assertEquals(lambda2.inverseTransform(Math.E), 1.0, delta);
         assertTrue(lambda2.isVisible(1.1));
@@ -44,7 +47,6 @@ public class TestAxisTransformLambda extends BaseArrayTestCase {
         assertEquals(d3, lambda2.inverseTransform(lambda2.transform(d3)), delta);
         assertEquals(d4, lambda2.inverseTransform(lambda2.transform(d4)), delta);
         assertEquals(d5, lambda2.inverseTransform(lambda2.transform(d5)), delta);
-
 
         assertEquals(lambda3.transform(1.0), 1.0);
         assertEquals(lambda3.inverseTransform(Math.E), Math.E, delta);

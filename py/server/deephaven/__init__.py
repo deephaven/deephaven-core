@@ -7,6 +7,11 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
+# The deephaven package is split across multiple distributions (e.g. deephaven-core and deephaven-plugin); extend the
+# search path so subpackages installed elsewhere (such as deephaven.plugin) remain importable when this copy shadows
+# site-packages.
+__path__ = __import__("pkgutil").extend_path(__path__, __name__)
+
 import importlib.metadata
 
 from deephaven_internal import jvm

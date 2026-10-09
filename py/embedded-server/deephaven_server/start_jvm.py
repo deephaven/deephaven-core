@@ -7,7 +7,7 @@ import itertools
 import os
 import pathlib
 import types
-from typing import Dict, Generator, List, Optional
+from typing import Dict, Iterator, List, Optional
 
 from deephaven_internal import jvm
 
@@ -26,7 +26,7 @@ def _default_vmoptions() -> pathlib.Path:
     return _jars_path() / "dh-default.vmoptions"
 
 
-def _jars() -> Generator[pathlib.Path, None, None]:
+def _jars() -> Iterator[pathlib.Path]:
     return _jars_path().glob("*.jar")
 
 
@@ -117,6 +117,8 @@ def start_jvm(
         "--add-exports=java.management/sun.management=ALL-UNNAMED",
         # Allow our clock-impl project to access internals
         "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+        # Enable unsafe memory access for Netty 4.2, required as of Arrow 19 on Java 25
+        "-Dio.netty.noUnsafe=false",
     ]
     if jvm_args is None:
         jvm_args = required_jvm_args

@@ -34,8 +34,9 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Random;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 
 public abstract class AbstractBooleanColumnSourceTest {
 

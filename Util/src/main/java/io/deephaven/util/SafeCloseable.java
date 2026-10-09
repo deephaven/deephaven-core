@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -41,6 +42,17 @@ public interface SafeCloseable extends AutoCloseable {
     }
 
     /**
+     * {@link #close() Close} all non-{@code null} {@link AutoCloseable} elements of {@code collection}. The collection
+     * itself is left alone, neither closed nor cleared.
+     *
+     * @param collection The {@link Collection} of {@link AutoCloseable AutoCloseables} to {@link #close() close}
+     * @param <ACT> the auto closable type
+     */
+    static <ACT extends AutoCloseable> void closeAll(@NotNull final Collection<ACT> collection) {
+        closeAll(collection.iterator());
+    }
+
+    /**
      * {@link #close() Close} all non-{@code null} {@link AutoCloseable} elements. Consumes the {@code iterator}.
      *
      * @param iterator The iterator of {@link AutoCloseable AutoCloseables} to {@link #close() close}
@@ -66,6 +78,32 @@ public interface SafeCloseable extends AutoCloseable {
         if (exceptions != null) {
             throw new UncheckedDeephavenException("Exception while closing resources",
                     MultiException.maybeWrapInMultiException("Close exceptions for multiple resources", exceptions));
+        }
+    }
+
+    /**
+     * {@link #close() Close} all non-{@code null} {@link AutoCloseable} arguments while {@code primary} is propagating.
+     * A failure while closing is attached to {@code primary} as {@link Throwable#addSuppressed(Throwable) suppressed},
+     * as try-with-resources does, rather than replacing it, and closing continues with the remaining arguments. A close
+     * that rethrows {@code primary} itself is not attached, since a throwable cannot suppress itself. The caller
+     * rethrows {@code primary}.
+     *
+     * @param primary the failure that is propagating
+     * @param autoCloseables {@link AutoCloseable AutoCloseables} to {@link #close() close}
+     */
+    static void closeAllDuringFailure(@NotNull final Throwable primary,
+            @NotNull final AutoCloseable... autoCloseables) {
+        for (final AutoCloseable autoCloseable : autoCloseables) {
+            if (autoCloseable == null) {
+                continue;
+            }
+            try {
+                autoCloseable.close();
+            } catch (final Throwable closeFailure) {
+                if (closeFailure != primary) {
+                    primary.addSuppressed(closeFailure);
+                }
+            }
         }
     }
 

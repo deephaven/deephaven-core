@@ -85,7 +85,8 @@ public final class BooleanOneOrN {
         }
 
         /**
-         * Clear one block.
+         * Clear one block, if it exists. A block holds no data until one of its rows is written, so a block may be
+         * absent although rows within it were in the output rowset.
          *
          * @param block2Idx the block index to clear
          * @param recycler recycler for lowest level blocks
@@ -97,21 +98,19 @@ public final class BooleanOneOrN {
 
             final Block1 blocks0 = get(block0);
             if (blocks0 == null) {
-                // we should not be asking to clear a block that does not actually exist
-                throw new IllegalStateException();
+                return;
             }
 
             final Block2 blocks1 = blocks0.get(block1);
-            if (blocks1 == null) {
-                // we should not be asking to clear a block that does not actually exist
-                throw new IllegalStateException();
+            if (blocks1 == null || blocks1.get(block2) == null) {
+                return;
             }
 
             blocks1.clearByIndex(block2, recycler);
         }
 
         /**
-         * Clear one block2 structure from a block1 structure.
+         * Clear one block2 structure from a block1 structure, if it exists.
          *
          * @param block1Idx the block index to clear
          * @param recycler recycler for lowest level blocks
@@ -121,16 +120,15 @@ public final class BooleanOneOrN {
             final int block1 = (int) (block1Idx) & BLOCK1_MASK;
 
             final Block1 blocks0 = get(block0);
-            if (blocks0 == null) {
-                // we should not be asking to clear a block that does not actually exist
-                throw new IllegalStateException();
+            if (blocks0 == null || blocks0.get(block1) == null) {
+                return;
             }
 
             blocks0.clearByIndex(block1, recycler);
         }
 
         /**
-         * Clear one block1 structure from a block0 structure.
+         * Clear one block1 structure from a block0 structure, if it exists.
          *
          * <p>The silly underscore in the name is to make replication not append a &lt;T&gt; type in the object case.</p>
          *
@@ -139,6 +137,9 @@ public final class BooleanOneOrN {
          */
         private void clearOneBlock_1(final long block0Idx, final SoftRecycler<Block2[]> recycler1) {
             final int block0 = (int) (block0Idx) & BLOCK0_MASK;
+            if (get(block0) == null) {
+                return;
+            }
             clearByIndex(block0, recycler1);
         }
 

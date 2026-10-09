@@ -1,6 +1,5 @@
 ---
 title: Create static tables
-sidebar_label: Static tables
 ---
 
 Deephaven is often used to read table data from Parquet, Kafka, or other external sources, but it can also generate static or ticking tables from scratch. There are two functions for creating static tables: [`empty_table`](../reference/table-operations/create/emptyTable.md) and [`new_table`](../reference/table-operations/create/newTable.md). This guide will show you how to use these functions to create static tables and columns, and how to add data to those tables.

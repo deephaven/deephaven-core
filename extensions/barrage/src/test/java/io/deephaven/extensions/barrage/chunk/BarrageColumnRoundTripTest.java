@@ -52,6 +52,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInput;
@@ -74,7 +75,10 @@ import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
 import java.util.stream.LongStream;
+
+import static org.junit.Assert.*;
 
 public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
@@ -83,6 +87,14 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG;
     private static final int FIXED_LIST_LEN = 4;
     private static final int MAX_LIST_LEN = 10;
+
+    /**
+     * Rows per round trip. Deliberately more than two 64-element validity words, and not a multiple of 64: the validity
+     * bitmap is packed a word at a time on the write side and walked in runs of valid/null slots on the read side, so a
+     * chunk narrower than a single word would leave every word-boundary transition and the partial trailing word
+     * untested.
+     */
+    private static final int ROUND_TRIP_NUM_ROWS = 133;
 
     private static final BarrageSubscriptionOptions OPT_DEFAULT = BarrageSubscriptionOptions.builder()
             .build();
@@ -116,6 +128,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 .readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, offset, totalRows);
     }
 
+    @Test
     public void testDenseUnionChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -151,6 +164,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSparseUnionChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -186,6 +200,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMapChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -261,6 +276,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testVarLenListChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -299,6 +315,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testFixedLenListChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -380,6 +397,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testCharChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -406,6 +424,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testBooleanChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -432,6 +451,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testBooleanChunkSerializationNonStandardNulls() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(SpecialMode.NONE, opts, boolean.class, (utO) -> {
@@ -461,6 +481,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testByteChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -487,6 +508,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testShortChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -513,6 +535,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testIntChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -539,6 +562,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testLongChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -551,6 +575,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testFloatChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -577,6 +602,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testDoubleChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -603,6 +629,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testInstantChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -615,6 +642,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testZDTAsLongChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -637,73 +665,213 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    /**
+     * Positions at which a run of nulls or of valid values starting there straddles a 64-element validity word
+     * boundary. {@link #ROUND_TRIP_NUM_ROWS} is wide enough for all of them.
+     */
+    private static final int[] BOUNDARY_PIVOTS = {0, 1, 61, 62, 63, 64, 65, 66, 127, 128, 129};
+
+    /**
+     * Round trips a column for each null pattern that turns over on a validity word boundary, plus the all-null and
+     * all-valid extremes. The writer packs the bitmap a word at a time and the reader walks it in runs of valid and
+     * null slots, so these are the transitions where either side can drop or misplace an element; the type-specific
+     * tests above use patterns like {@code i % 7} that do not land on them deliberately.
+     */
+    private static void roundTripEachBoundaryPattern(final BoundaryPatternRunner runner) throws IOException {
+        runner.run("all valid", index -> false);
+        runner.run("all null", index -> true);
+        for (final int pivot : BOUNDARY_PIVOTS) {
+            runner.run("first null at " + pivot, index -> index >= pivot);
+            runner.run("first valid at " + pivot, index -> index < pivot);
+            runner.run("lone null at " + pivot, index -> index == pivot);
+            runner.run("lone valid at " + pivot, index -> index != pivot);
+        }
+    }
+
+    private interface BoundaryPatternRunner {
+        void run(String description, IntPredicate isNull) throws IOException;
+    }
+
+    @Test
+    public void testIntValidityWordBoundaries() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            roundTripEachBoundaryPattern((description, isNull) -> testRoundTripSerialization(
+                    SpecialMode.NONE, opts, int.class,
+                    (utO) -> {
+                        final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, isNull.test(i) ? QueryConstants.NULL_INT : i * 31 + 7);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableIntChunk<Values> original = utO.asWritableIntChunk();
+                        final WritableIntChunk<Values> computed = utC.asWritableIntChunk();
+                        final RowSequence rows =
+                                subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), description,
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    }));
+        }
+    }
+
+    @Test
+    public void testObjectValidityWordBoundaries() throws IOException {
+        // the var-binary path keeps its own offsets buffer alongside the validity bitmap
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            roundTripEachBoundaryPattern((description, isNull) -> testRoundTripSerialization(
+                    SpecialMode.NONE, opts, Object.class,
+                    (utO) -> {
+                        final WritableObjectChunk<String, Values> chunk = utO.asWritableObjectChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, isNull.test(i) ? null : Integer.toString(i));
+                        }
+                    },
+                    new ObjectIdentityValidator<String>()));
+        }
+    }
+
+    /**
+     * The fixed-width payload writers gather values into a {@code BaseChunkWriter#BULK_WRITE_BUFFER_BYTES} window and
+     * flush it with a single write. At the default 4096 bytes that takes 512 doubles, 1024 ints or 4096 bytes, so
+     * {@link #ROUND_TRIP_NUM_ROWS} never fills one and the flush-a-full-window branch goes untaken; real messages fill
+     * it constantly. This covers a full window plus the partial remainder that follows, for the narrowest and widest
+     * elements and one in between.
+     */
+    @Test
+    public void testBulkWritePayloadWindowFlush() throws IOException {
+        final int wideRows = 5000;
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testRoundTripSerialization(SpecialMode.NONE, opts, int.class, wideRows,
+                    (utO) -> {
+                        final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_INT : i * 31 + 7);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableIntChunk<Values> original = utO.asWritableIntChunk();
+                        final WritableIntChunk<Values> computed = utC.asWritableIntChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
+
+            testRoundTripSerialization(SpecialMode.NONE, opts, byte.class, wideRows,
+                    (utO) -> {
+                        final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_BYTE : (byte) (i * 31 + 7));
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableByteChunk<Values> original = utO.asWritableByteChunk();
+                        final WritableByteChunk<Values> computed = utC.asWritableByteChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
+
+            testRoundTripSerialization(SpecialMode.NONE, opts, double.class, wideRows,
+                    (utO) -> {
+                        final WritableDoubleChunk<Values> chunk = utO.asWritableDoubleChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_DOUBLE : i * 2.25);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableDoubleChunk<Values> original = utO.asWritableDoubleChunk();
+                        final WritableDoubleChunk<Values> computed = utC.asWritableDoubleChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
+        }
+    }
+
+    @Test
     public void testObjectSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testStringSerializationDHNulls() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, String.class,
                 initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testStringSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testUniqueToStringSerializationDHNulls() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
+    @Test
     public void testUniqueToStringSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
+    @Test
     public void testStringArrayDHNullsSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, String[].class,
                 BarrageColumnRoundTripTest::initStringArrayChunk, new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testStringArraySerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, String[].class,
                 BarrageColumnRoundTripTest::initStringArrayChunk,
                 new ObjectIdentityValidator<>());
     }
 
+    @Test
     public void testLongArraySerializationDHNulls() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DH_NULLS, long[].class,
                 BarrageColumnRoundTripTest::initLongArrayChunk,
                 new LongArrayIdentityValidator());
     }
 
+    @Test
     public void testLongArraySerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, long[].class,
                 BarrageColumnRoundTripTest::initLongArrayChunk,
                 new LongArrayIdentityValidator());
     }
 
+    @Test
     public void testLongVectorSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LongVector.class,
                 BarrageColumnRoundTripTest::initLongVectorChunk,
                 new LongVectorIdentityValidator());
     }
 
+    @Test
     public void testLocalDateSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalDate.class,
                 BarrageColumnRoundTripTest::initLocalDateChunk,
                 new LocalDateIdentityValidator());
     }
 
+    @Test
     public void testLocalTimeSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, LocalTime.class,
                 BarrageColumnRoundTripTest::initLocalTimeChunk,
                 new LocalTimeIdentityValidator());
     }
 
+    @Test
     public void testDurationSerialization() throws IOException {
         testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Duration.class,
                 BarrageColumnRoundTripTest::initDurationChunk,
@@ -860,6 +1028,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     // ---- REE test methods ----
 
+    @Test
     public void testRunEndEncodedIntSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -905,6 +1074,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
     }
 
+    @Test
     public void testRunEndEncodedLongSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -917,6 +1087,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedShortSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -929,6 +1100,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedByteSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -941,6 +1113,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedCharSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -953,6 +1126,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedFloatSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -965,6 +1139,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedDoubleSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -978,6 +1153,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /** REE float round-trip with NaN, +Inf, and -Inf values. FloatComparisons.eq treats NaN == NaN. */
+    @Test
     public void testRunEndEncodedFloatSpecialValues() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, float.class, (utO) -> {
@@ -997,6 +1173,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /** REE double round-trip with NaN, +Inf, and -Inf values. DoubleComparisons.eq treats NaN == NaN. */
+    @Test
     public void testRunEndEncodedDoubleSpecialValues() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, double.class, (utO) -> {
@@ -1014,6 +1191,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedBooleanSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -1026,6 +1204,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedStringSerialization() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, String.class,
@@ -1034,6 +1213,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedInstantSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -1046,6 +1226,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedLocalDateSerialization() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, LocalDate.class,
@@ -1054,6 +1235,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedLocalTimeSerialization() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, LocalTime.class,
@@ -1062,6 +1244,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRunEndEncodedDurationSerialization() throws IOException {
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(SpecialMode.RUN_END_ENCODED, opts, Duration.class,
@@ -1071,6 +1254,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /** Test that REE works correctly when the run_ends child uses Int16 (16-bit) indexing. */
+    @Test
     public void testRunEndEncodedInt16RunEndsSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -1084,6 +1268,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /** Test that REE works correctly when the run_ends child uses Int64 (64-bit) indexing. */
+    @Test
     public void testRunEndEncodedInt64RunEndsSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
@@ -1097,6 +1282,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /** Int16 run_ends with N > Short.MAX_VALUE must throw INVALID_ARGUMENT. */
+    @Test
     public void testRunEndEncodedOverflowGuardThrows() {
         try {
             RunEndEncodedChunkWriter.checkRunEndsOverflow(Short.MAX_VALUE + 1, ChunkType.Short);
@@ -1118,6 +1304,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
      * <li>drainTo() hasBeenRead guard (second call returns 0 without re-draining)</li>
      * </ul>
      */
+    @Test
     public void testRunEndEncodedDrainToIdempotentAndRawSizeCache() throws IOException {
         // Build a minimal REE int field with Int32 run_ends.
         final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
@@ -1172,6 +1359,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
      * With 1024 identical longs the standard encoding is ~8 KiB (validity + 8 bytes/row). The REE encoding collapses
      * everything to a single run: one Int32 run_end + one Int64 value ≈ 12 bytes.
      */
+    @Test
     public void testRunEndEncodedSizeReductionLong() throws IOException {
         final int numRows = 1024;
 
@@ -1245,6 +1433,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
      * With 1024 identical strings the standard encoding is dominated by offsets (1025 × 4 bytes) plus the repeated
      * payload. The REE encoding stores a single run: one Int32 run_end + one VarBinary entry.
      */
+    @Test
     public void testRunEndEncodedSizeReductionString() throws IOException {
         final int numRows = 1024;
         final String repeatedValue = "hello-world";
@@ -1515,6 +1704,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     // ---- Dictionary-encoded test methods ----
 
+    @Test
     public void testDictionaryEncodedIntSerialization() throws IOException {
         // Int32 index (default)
         for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
@@ -1548,6 +1738,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
     }
 
+    @Test
     public void testDictionaryEncodedInt8OverflowThrows() throws IOException {
         // 129 distinct int values exceed the Int8 dictionary limit of 128 (indices 0..127)
         final int OVERFLOW_SIZE = 129;
@@ -1580,6 +1771,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testDictionaryEncodedInt16OverflowThrows() throws IOException {
         // 32769 distinct int values exceed the Int16 dictionary limit of 32768 (indices 0..32767)
         final int OVERFLOW_SIZE = 32769;
@@ -1612,6 +1804,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testDictionaryEncodedStringSerialization() throws IOException {
         final String[] words = {"cat", "dog", "fish"};
         for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
@@ -1626,6 +1819,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /** Two batches: second batch introduces a new dictionary value (delta append). */
+    @Test
     public void testDictionaryEncodedMultiBatchDelta() throws IOException {
         final int NUM_ROWS = 5;
         final Field writerField = buildDictionaryField(String.class, 32, 0L);
@@ -1731,6 +1925,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
      * Verifies that the Arrow standard path (useDeephavenNulls = false) emits a validity bitmap on the index column
      * when null rows are present, and omits it when there are none.
      */
+    @Test
     public void testDictionaryEncodedIndexValidityBitmap() throws IOException {
         final int NUM_ROWS = 8;
         final Field writerField = buildDictionaryField(int.class, 32, 0L);
@@ -1814,7 +2009,17 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             Class<T> type,
             final Consumer<WritableChunk<Values>> initData,
             final Validator validator) throws IOException {
-        final int NUM_ROWS = 8;
+        testRoundTripSerialization(mode, options, type, ROUND_TRIP_NUM_ROWS, initData, validator);
+    }
+
+    private static <T> void testRoundTripSerialization(
+            final SpecialMode mode,
+            final BarrageSubscriptionOptions options,
+            Class<T> type,
+            final int chunkRows,
+            final Consumer<WritableChunk<Values>> initData,
+            final Validator validator) throws IOException {
+        final int NUM_ROWS = chunkRows;
         final ChunkType chunkType;
         final Class<T> readType;
         if (type == ZonedDateTime.class) {

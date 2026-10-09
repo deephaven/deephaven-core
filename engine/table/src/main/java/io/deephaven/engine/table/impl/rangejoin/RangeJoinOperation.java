@@ -16,7 +16,6 @@ import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
@@ -34,11 +33,14 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.JobScheduler.IterateAction;
@@ -102,6 +104,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 Strings.ofJoinMatches(exactMatches),
                 Strings.of(rangeMatch),
                 Strings.ofAggregations(aggregations));
+        if (aggregations.isEmpty()) {
+            throw new IllegalArgumentException(String.format("%s: Aggregations must not be empty", description));
+        }
         memoizedOperationKey = MemoizedOperationKey.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
 
         if (leftTable.isRefreshing() || rightTable.isRefreshing()) {
@@ -114,6 +119,25 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         validateExactMatchColumns();
         rangeValueType = validateRangeMatchColumns();
         SupportedRangeJoinAggregations.validate(description, aggregations);
+        validateAggregationInputColumns();
+    }
+
+    /**
+     * Validate that the input column for each aggregation exists in the right table.
+     */
+    private void validateAggregationInputColumns() {
+        final TableDefinition rightTableDefinition = rightTable.getDefinition();
+        final List<String> missingInputColumnNames = AggregationPairs.of(aggregations)
+                .map((final Pair groupPair) -> groupPair.input().name())
+                .distinct()
+                .filter((final String inputColumnName) -> rightTableDefinition.getColumn(inputColumnName) == null)
+                .collect(Collectors.toList());
+        if (!missingInputColumnNames.isEmpty()) {
+            throw new IllegalArgumentException(String.format(
+                    "%s: Invalid aggregations: right table has no aggregation input columns %s, "
+                            + "available right columns are %s",
+                    description, missingInputColumnNames, rightTableDefinition.getColumnNames()));
+        }
     }
 
     /**
@@ -173,7 +197,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
         if (leftEndColumnDefinition == null) {
             (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
-                    "left start column %s is missing", Strings.of(rangeMatch.leftEndColumn())));
+                    "left end column %s is missing", Strings.of(rangeMatch.leftEndColumn())));
         }
         if (leftStartColumnDefinition != null && rightRangeColumnDefinition != null) {
             issues = validateMatchCompatibility(issues, rangeMatch.leftStartColumn(), rangeMatch.rightRangeColumn(),
@@ -228,7 +252,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
     }
 
     @Override
-    public boolean snapshotNeeded() {
+    public boolean snapshotNeeded(@NotNull final QueryTable parent) {
         // This operation currently requires the UGP lock when either input table is refreshing, so there's no need to
         // use a snapshot.
         return false;
@@ -276,13 +300,25 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             @NotNull final JobScheduler jobScheduler,
             @NotNull final ExecutionContext executionContext) {
         final CompletableFuture<QueryTable> resultFuture = new CompletableFuture<>();
-        new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
         try {
-            return resultFuture.get();
-        } catch (InterruptedException e) {
-            throw new CancellationException(String.format("%s interrupted", description), e);
-        } catch (Exception e) {
-            throw new OperationException(String.format("%s failed", description), e);
+            new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
+            try {
+                return resultFuture.get();
+            } catch (InterruptedException e) {
+                final CancellationException cancellation =
+                        new CancellationException(String.format("%s interrupted", description), e);
+                // Completing the result stops the range search tasks that have not yet started
+                resultFuture.completeExceptionally(cancellation);
+                throw cancellation;
+            } catch (Exception e) {
+                throw new OperationException(String.format("%s failed", description), e);
+            }
+        } finally {
+            // Wait for all of this operation's jobs to finish, so that none is running when we return or throw
+            final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
+            if (baseEntry != null) {
+                QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
+            }
         }
     }
 
@@ -325,18 +361,17 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             try {
                 rightTableGrouped = filterAndGroupRightTable();
             } catch (Exception e) {
-                // Try to ensure that the group-left-table job is no longer running before re-throwing
-                groupLeftTableFuture.cancel(true);
-                try {
-                    groupLeftTableFuture.get();
-                } catch (Exception ignored) {
-                }
+                // The group-left-table job may still be running; staticRangeJoin waits for it before re-throwing
                 resultFuture.completeExceptionally(e);
                 return;
             }
             final Table leftTableGrouped;
             try {
                 leftTableGrouped = groupLeftTableFuture.get();
+            } catch (InterruptedException e) {
+                // staticRangeJoin observes the restored interrupt in its wait for the result and reports cancellation
+                Thread.currentThread().interrupt();
+                return;
             } catch (Exception e) {
                 resultFuture.completeExceptionally(e);
                 return;
@@ -417,8 +452,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     rightRangeValues.getChunkType(), "rightRangeValues.getChunkType()");
             Assert.eq(valueChunkType, "valueChunkType",
                     leftEndValues.getChunkType(), "leftEndValues.getChunkType()");
-            valueChunkDupCompactKernel = DupCompactKernel.makeDupCompactNaturalOrdering(valueChunkType, false);
-            valueChunkCompactKernel = CompactKernel.makeCompact(valueChunkType);
+            // the dup compact and compact kernels of this join are created with this single decision
+            final boolean valueEqualsConsistent =
+                    BinarySearchKernelHelper.compareConsistentWithEquality(rightRangeValues.getType());
+            valueChunkDupCompactKernel =
+                    DupCompactKernel.makeDupCompactNaturalOrdering(valueChunkType, valueEqualsConsistent, false);
+            valueChunkCompactKernel = CompactKernel.makeCompact(valueChunkType, valueEqualsConsistent);
             rangeSearchKernel = RangeSearchKernel.makeRangeSearchKernel(
                     valueChunkType, rangeMatch.rangeStartRule(), rangeMatch.rangeEndRule());
 
@@ -507,7 +546,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             private ChunkSource.FillContext rightRangeValuesFillContext;
             private WritableChunk<Values> rightRangeValuesChunk;
             private WritableIntChunk<ChunkPositions> rightStartOffsets;
-            private WritableIntChunk<ChunkLengths> rightLengths;
 
             // Output resources, size bounded by leftChunkCapacity
             private ChunkSink.FillFromContext outputSlotsFillFromContext;
@@ -526,7 +564,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     throw new IllegalStateException(String.format(
                             "%s: used %s after close", description, this.getClass()));
                 }
-                if (leftChunkCapacity >= leftGroupSize) {
+                final int requiredLeftChunkCapacity = (int) Math.min(MAX_LEFT_CHUNK_CAPACITY, leftGroupSize);
+                if (leftChunkCapacity >= requiredLeftChunkCapacity) {
                     return;
                 }
                 if (leftChunkCapacity > 0) {
@@ -569,7 +608,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     SafeCloseable.closeAll(toClose);
                 }
 
-                leftChunkCapacity = (int) Math.min(MAX_LEFT_CHUNK_CAPACITY, leftGroupSize);
+                leftChunkCapacity =
+                        Math.min(MAX_LEFT_CHUNK_CAPACITY, 1 << MathUtil.ceilLog2(requiredLeftChunkCapacity));
 
                 if (leftSharedContext == null) { // We can re-use a SharedContext after close(), no need to re-allocate
                     leftSharedContext = SharedContext.makeSharedContext();
@@ -626,8 +666,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     final SafeCloseable[] toClose = new SafeCloseable[] {
                             rightRangeValuesFillContext,
                             rightRangeValuesChunk,
-                            rightStartOffsets,
-                            rightLengths
+                            rightStartOffsets
                     };
 
                     rightChunkCapacity = 0; // Record that we don't want to re-close
@@ -635,7 +674,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     rightRangeValuesFillContext = null;
                     rightRangeValuesChunk = null;
                     rightStartOffsets = null;
-                    rightLengths = null;
 
                     SafeCloseable.closeAll(toClose);
                 }
@@ -645,7 +683,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 rightRangeValuesFillContext = rightRangeValues.makeFillContext(rightChunkCapacity);
                 rightRangeValuesChunk = valueChunkType.makeWritableChunk(rightChunkCapacity);
                 rightStartOffsets = WritableIntChunk.makeWritableChunk(rightChunkCapacity);
-                rightLengths = WritableIntChunk.makeWritableChunk(rightChunkCapacity);
             }
 
             @Override
@@ -669,7 +706,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         rightRangeValuesFillContext,
                         rightRangeValuesChunk,
                         rightStartOffsets,
-                        rightLengths,
                         // Output resources
                         outputSlotsFillFromContext,
                         outputSlotsChunk,
@@ -685,6 +721,10 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 @NotNull final TaskContext tc,
                 final int index,
                 @NotNull final Consumer<Exception> nestedErrorConsumer) {
+            if (resultFuture.isDone()) {
+                // The result is complete before all range search tasks have run only if the operation was cancelled
+                throw new CancellationException(String.format("%s cancelled", description));
+            }
             final RowSet leftRows = leftGroupRowSets.get(index);
             assert leftRows != null;
             tc.ensureLeftCapacity(leftRows.size());

@@ -28,9 +28,9 @@ public class ReplicateSortKernelTests {
         charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/timsort/BaseTestCharTimSortKernel.java");
         charToAllButBoolean(TASK,
-                "engine/benchmark/src/benchmark/java/io/deephaven/benchmark/engine/sort/timsort/CharSortKernelBenchmark.java");
+                "engine/benchmark/src/main/java/io/deephaven/benchmark/engine/sort/timsort/CharSortKernelBenchmark.java");
         charToAllButBoolean(TASK,
-                "engine/benchmark/src/benchmark/java/io/deephaven/benchmark/engine/partition/CharPartitionKernelBenchmark.java");
+                "engine/benchmark/src/main/java/io/deephaven/benchmark/engine/partition/CharPartitionKernelBenchmark.java");
         charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/permute/TestCharPermuteKernel.java");
 
@@ -44,7 +44,7 @@ public class ReplicateSortKernelTests {
         charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/timsort/TestCharTimSortKernel.java");
         charToObject(TASK,
-                "engine/benchmark/src/benchmark/java/io/deephaven/benchmark/engine/sort/timsort/CharSortKernelBenchmark.java");
+                "engine/benchmark/src/main/java/io/deephaven/benchmark/engine/sort/timsort/CharSortKernelBenchmark.java");
 
         final String objectMegaMergePath = charToObject(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/megamerge/TestCharLongMegaMerge.java");
@@ -58,8 +58,7 @@ public class ReplicateSortKernelTests {
         lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<Any>", "ObjectChunk<Object, Any>"))
                 .collect(Collectors.toList());
 
-        lines = fixupTupleColumnSource(ReplicateSortKernel
-                .fixupObjectComparisons(fixupMergesort(fixupGetJavaMultiComparator(fixupGetJavaComparator(lines)))));
+        lines = fixupTupleColumnSource(ReplicateSortKernel.fixupObjectComparisons(lines));
 
         FileUtils.writeLines(objectFile, lines);
     }
@@ -72,32 +71,6 @@ public class ReplicateSortKernelTests {
                 "ObjectArraySource(String.class)", "ObjectChunk<Values>", "ObjectChunk<Object, Values>");
 
         FileUtils.writeLines(objectFile, lines);
-    }
-
-    @NotNull
-    private static List<String> fixupGetJavaComparator(List<String> lines) {
-        return ReplicationUtils.applyFixup(lines, "getJavaComparator",
-                "(.*)Comparator.comparing\\(ObjectLongTuple::getFirstElement\\)(.*)",
-                m -> Arrays.asList("        // noinspection unchecked",
-                        m.group(1) + "Comparator.comparing(x -> (Comparable)x.getFirstElement())" + m.group(2)));
-    }
-
-    @NotNull
-    private static List<String> fixupGetJavaMultiComparator(List<String> lines) {
-        return ReplicationUtils.applyFixup(lines, "getJavaMultiComparator",
-                "(.*)Comparator.comparing\\(ObjectLongLongTuple::getFirstElement\\).thenComparing\\(ObjectLongLongTuple::getSecondElement\\)(.*)",
-                m -> Arrays.asList("        // noinspection unchecked",
-                        m.group(1)
-                                + "Comparator.comparing(x -> (Comparable)((ObjectLongLongTuple)x).getFirstElement()).thenComparing(x -> ((ObjectLongLongTuple)x).getSecondElement())"
-                                + m.group(2)));
-    }
-
-    @NotNull
-    private static List<String> fixupMergesort(List<String> lines) {
-        return ReplicationUtils.applyFixup(lines, "mergesort", "(.*)Object.compare\\((.*), (.*)\\)\\)(.*)",
-                m -> Arrays.asList("            // noinspection unchecked",
-                        m.group(1) + "Objects.compare((Comparable)" + m.group(2) + ", (Comparable)" + m.group(3)
-                                + ", Comparator.naturalOrder()))" + m.group(4)));
     }
 
     @NotNull

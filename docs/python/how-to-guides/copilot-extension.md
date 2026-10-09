@@ -1,6 +1,5 @@
 ---
 title: Deephaven's GitHub Copilot extension
-sidebar_label: Copilot extension
 ---
 
 Deephaven's [GitHub Copilot extension](https://github.com/apps/deephaven) gives users direct access to an AI model trained specifically on Deephaven's documentation and codebase. You can leverage the extension for things like:

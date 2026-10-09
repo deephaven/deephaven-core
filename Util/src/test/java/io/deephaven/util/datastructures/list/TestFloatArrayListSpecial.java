@@ -3,8 +3,9 @@
 //
 package io.deephaven.util.datastructures.list;
 
-import junit.framework.TestCase;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestFloatArrayListSpecial {
 
@@ -12,8 +13,8 @@ public class TestFloatArrayListSpecial {
     public void testAddAndGetNaN() {
         final FloatArrayList list = new FloatArrayList();
         list.add(Float.NaN);
-        TestCase.assertEquals(1, list.size());
-        TestCase.assertTrue(Float.isNaN(list.getFloat(0)));
+        assertEquals(1, list.size());
+        assertTrue(Float.isNaN(list.getFloat(0)));
     }
 
     @Test
@@ -25,10 +26,10 @@ public class TestFloatArrayListSpecial {
         final FloatArrayList b = new FloatArrayList();
         a.add(Float.NaN);
         b.add(Float.NaN);
-        TestCase.assertFalse(a.equals(b));
+        assertFalse(a.equals(b));
 
         // Reflexivity short-circuit still holds: a list equals itself.
-        TestCase.assertEquals(a, a);
+        assertEquals(a, a);
     }
 
     @Test
@@ -41,8 +42,8 @@ public class TestFloatArrayListSpecial {
         final FloatArrayList b = new FloatArrayList();
         a.add(Float.NaN);
         b.add(Float.NaN);
-        TestCase.assertEquals(a.hashCode(), b.hashCode());
-        TestCase.assertEquals(a.hashCode(), a.hashCode());
+        assertEquals(a.hashCode(), b.hashCode());
+        assertEquals(a.hashCode(), a.hashCode());
     }
 
     @Test
@@ -54,7 +55,7 @@ public class TestFloatArrayListSpecial {
         final FloatArrayList negative = new FloatArrayList();
         positive.add(0.0f);
         negative.add(-0.0f);
-        TestCase.assertEquals(positive, negative);
-        TestCase.assertEquals(positive.hashCode(), negative.hashCode());
+        assertEquals(positive, negative);
+        assertEquals(positive.hashCode(), negative.hashCode());
     }
 }

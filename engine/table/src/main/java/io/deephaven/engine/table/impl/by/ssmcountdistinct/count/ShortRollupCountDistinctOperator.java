@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.ssms.ShortSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.ShortCompactKernel;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -107,7 +108,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
             if (newLength > 0) {
                 bucketedContext.counts.ensureCapacityPreserve(currentPos + newLength);
                 bucketedContext.counts.get().setSize(currentPos + newLength);
-                newLength = ShortCompactKernel.compactAndCount(bucketedContext.valueCopy.get().asWritableShortChunk(),
+                newLength = doCompactAndCount(bucketedContext.valueCopy.get().asWritableShortChunk(),
                         bucketedContext.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
@@ -187,7 +188,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
             if (newLength > 0) {
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
-                newLength = ShortCompactKernel.compactAndCount(context.valueCopy.get().asWritableShortChunk(),
+                newLength = doCompactAndCount(context.valueCopy.get().asWritableShortChunk(),
                         context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
@@ -311,7 +312,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
             final int removedRunLength = context.lengthCopy.get(ii);
             final int addedRunLength = context.postLengthCopy.get(ii);
             if (removedRunLength != 0 || addedRunLength != 0) {
-                ShortCompactModifications.compactAndCountModifications(preValueCopy, removedCounts, postValueCopy,
+                doCompactAndCountModifications(preValueCopy, removedCounts, postValueCopy,
                         addedCounts, context.starts.get(ii), removedRunLength, context.postStarts.get(ii),
                         addedRunLength, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
                 final int removed = context.removedSize.get();
@@ -364,7 +365,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
         if (currentPos > 0) {
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
-            ShortCompactKernel.compactAndCount(context.valueCopy.get().asWritableShortChunk(), context.counts.get(),
+            doCompactAndCount(context.valueCopy.get().asWritableShortChunk(), context.counts.get(),
                     countNullNaN, countNullNaN);
         }
         return context;
@@ -416,7 +417,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
         if (currentPos > 0) {
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
-            ShortCompactKernel.compactAndCount(context.valueCopy.get().asWritableShortChunk(), context.counts.get(),
+            doCompactAndCount(context.valueCopy.get().asWritableShortChunk(), context.counts.get(),
                     countNullNaN, countNullNaN);
         }
         return context;
@@ -492,7 +493,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
             return false;
         }
 
-        ShortCompactModifications.compactAndCountModifications(context.valueCopy.get().asWritableShortChunk(),
+        doCompactAndCountModifications(context.valueCopy.get().asWritableShortChunk(),
                 context.counts.get(), context.postValues.get().asWritableShortChunk(), context.postCounts.get(),
                 0, removedTotal, 0, addedTotal, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
         final ShortSegmentedSortedMultiset ssm = ssmForSlot(destination);
@@ -593,4 +594,42 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
     }
 
     // endregion
+
+    /**
+     * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in
+     * {@code counts}; both chunks are resized to the number of distinct values.
+     */
+    private void doCompactAndCount(WritableShortChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, boolean countNull, boolean countNaN) {
+        // region CompactAndCount
+        ShortCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);
+        // endregion CompactAndCount
+    }
+
+    /**
+     * Sorts and compacts the {@code length} values of {@code valueChunk} beginning at {@code start}, setting each
+     * distinct value's count in {@code counts}.
+     *
+     * @return the number of distinct values, which occupy the positions beginning at {@code start}
+     */
+    private int doCompactAndCount(WritableShortChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, int start, int length, boolean countNull, boolean countNaN) {
+        // region CompactAndCountRange
+        return ShortCompactKernel.compactAndCount(valueChunk, counts, start, length, countNull, countNaN);
+        // endregion CompactAndCountRange
+    }
+
+    /**
+     * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
+     * with counts, and sets the surviving lengths in {@code removedSize} and {@code addedSize}.
+     */
+    private void doCompactAndCountModifications(WritableShortChunk<? extends Values> removedValues,
+            WritableIntChunk<ChunkLengths> removedCounts, WritableShortChunk<? extends Values> addedValues,
+            WritableIntChunk<ChunkLengths> addedCounts, int removedStart, int removedLength, int addedStart,
+            int addedLength, boolean countNull, boolean countNaN, MutableInt removedSize, MutableInt addedSize) {
+        // region CompactAndCountModifications
+        ShortCompactModifications.compactAndCountModifications(removedValues, removedCounts, addedValues, addedCounts,
+                removedStart, removedLength, addedStart, addedLength, countNull, countNaN, removedSize, addedSize);
+        // endregion CompactAndCountModifications
+    }
 }

@@ -18,6 +18,13 @@ import java.util.PrimitiveIterator;
  */
 public interface RowSetBuilderRandom {
 
+    /**
+     * Build the {@link WritableRowSet} from the accumulated row keys. Builders are single use: at most one build call
+     * is permitted, and subsequent calls throw {@link IllegalStateException}. The effect of providing further row keys
+     * after building is undefined.
+     *
+     * @return The built RowSet
+     */
     WritableRowSet build();
 
     void addKey(long rowKey);
@@ -46,6 +53,17 @@ public interface RowSetBuilderRandom {
         addKeys(new IntChunkLongIterator(chunk));
     }
 
+    /**
+     * Add the row keys in positions {@code [offset, offset + length)} of {@code chunk}, which may be in any order.
+     *
+     * @param chunk the row keys
+     * @param offset the position of the first key to add
+     * @param length the number of keys to add
+     */
+    default void addRowKeysChunk(final LongChunk<? extends RowKeys> chunk, final int offset, final int length) {
+        addKeys(new LongChunkIterator(chunk, offset, length));
+    }
+
     default void addOrderedRowKeysChunk(final LongChunk<? extends OrderedRowKeys> chunk) {
         addRowKeysChunk(chunk);
     }
@@ -58,17 +76,25 @@ public interface RowSetBuilderRandom {
         addRowKeysChunk(chunk);
     }
 
+    /**
+     * Add every row key in {@code rowSet}.
+     *
+     * @param rowSet The row set to add
+     */
     default void addRowSet(final RowSet rowSet) {
         Helper.add(this, rowSet);
     }
 
     class Helper {
         private static void add(final RowSetBuilderRandom builder, final RowSet rowSet) {
-            final RowSet.RangeIterator it = rowSet.rangeIterator();
-            while (it.hasNext()) {
-                final long start = it.next();
-                final long end = it.currentRangeEnd();
-                builder.addRange(start, end);
+            // Closed explicitly: a walk that reaches the end releases the reference it holds on rowSet by itself, but
+            // a builder that rejects a range stops the walk short.
+            try (final RowSet.RangeIterator it = rowSet.rangeIterator()) {
+                while (it.hasNext()) {
+                    final long start = it.next();
+                    final long end = it.currentRangeEnd();
+                    builder.addRange(start, end);
+                }
             }
         }
     }

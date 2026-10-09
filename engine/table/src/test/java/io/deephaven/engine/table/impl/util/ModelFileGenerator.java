@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.util;
 
-import junit.framework.TestCase;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -11,6 +10,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
+import static org.junit.Assert.*;
 
 public class ModelFileGenerator {
     private final Class classType;
@@ -35,7 +36,7 @@ public class ModelFileGenerator {
         final String processedClassDef = processClassDef(rawClassDef);
         final byte[] encoded = Files.readAllBytes(Paths.get(getPath()));
         final String currentVersion = new String(encoded);
-        TestCase.assertEquals(
+        assertEquals(
                 "Code generation results have changed - if you are comfortable with the change, run generateFile above to update the reference implementation",
                 currentVersion, processedClassDef);
     }

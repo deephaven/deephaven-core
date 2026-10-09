@@ -12,6 +12,9 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
+import java.util.Optional;
+
 /**
  * The standard implementation of an UncoalescedTable.
  *
@@ -31,7 +34,19 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
     private volatile Table coalesced;
 
     protected UncoalescedTableImpl(@NotNull final TableDefinition definition, @NotNull final String description) {
-        super(definition, description);
+        this(definition, description, null);
+    }
+
+    /**
+     * @param definition The definition for this table
+     * @param description A description of this table
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     */
+    protected UncoalescedTableImpl(
+            @NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @Nullable final Map<String, Object> attributes) {
+        super(definition, description, attributes);
     }
 
     /**
@@ -61,6 +76,11 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
                 return coalesced = doCoalesce();
             }
         }
+    }
+
+    @Override
+    public final Optional<Table> coalescedIfAvailable() {
+        return verifyCoalescedForReuse(coalesced);
     }
 
     /**

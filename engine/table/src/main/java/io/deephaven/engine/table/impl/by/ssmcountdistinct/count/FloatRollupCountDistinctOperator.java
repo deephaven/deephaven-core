@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.FloatCompactKernel;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -107,7 +108,7 @@ public class FloatRollupCountDistinctOperator implements IterativeChunkedAggrega
             if (newLength > 0) {
                 bucketedContext.counts.ensureCapacityPreserve(currentPos + newLength);
                 bucketedContext.counts.get().setSize(currentPos + newLength);
-                newLength = FloatCompactKernel.compactAndCount(bucketedContext.valueCopy.get().asWritableFloatChunk(),
+                newLength = doCompactAndCount(bucketedContext.valueCopy.get().asWritableFloatChunk(),
                         bucketedContext.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
@@ -187,7 +188,7 @@ public class FloatRollupCountDistinctOperator implements IterativeChunkedAggrega
             if (newLength > 0) {
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
-                newLength = FloatCompactKernel.compactAndCount(context.valueCopy.get().asWritableFloatChunk(),
+                newLength = doCompactAndCount(context.valueCopy.get().asWritableFloatChunk(),
                         context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
@@ -311,7 +312,7 @@ public class FloatRollupCountDistinctOperator implements IterativeChunkedAggrega
             final int removedRunLength = context.lengthCopy.get(ii);
             final int addedRunLength = context.postLengthCopy.get(ii);
             if (removedRunLength != 0 || addedRunLength != 0) {
-                FloatCompactModifications.compactAndCountModifications(preValueCopy, removedCounts, postValueCopy,
+                doCompactAndCountModifications(preValueCopy, removedCounts, postValueCopy,
                         addedCounts, context.starts.get(ii), removedRunLength, context.postStarts.get(ii),
                         addedRunLength, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
                 final int removed = context.removedSize.get();
@@ -364,7 +365,7 @@ public class FloatRollupCountDistinctOperator implements IterativeChunkedAggrega
         if (currentPos > 0) {
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
-            FloatCompactKernel.compactAndCount(context.valueCopy.get().asWritableFloatChunk(), context.counts.get(),
+            doCompactAndCount(context.valueCopy.get().asWritableFloatChunk(), context.counts.get(),
                     countNullNaN, countNullNaN);
         }
         return context;
@@ -416,7 +417,7 @@ public class FloatRollupCountDistinctOperator implements IterativeChunkedAggrega
         if (currentPos > 0) {
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
-            FloatCompactKernel.compactAndCount(context.valueCopy.get().asWritableFloatChunk(), context.counts.get(),
+            doCompactAndCount(context.valueCopy.get().asWritableFloatChunk(), context.counts.get(),
                     countNullNaN, countNullNaN);
         }
         return context;
@@ -492,7 +493,7 @@ public class FloatRollupCountDistinctOperator implements IterativeChunkedAggrega
             return false;
         }
 
-        FloatCompactModifications.compactAndCountModifications(context.valueCopy.get().asWritableFloatChunk(),
+        doCompactAndCountModifications(context.valueCopy.get().asWritableFloatChunk(),
                 context.counts.get(), context.postValues.get().asWritableFloatChunk(), context.postCounts.get(),
                 0, removedTotal, 0, addedTotal, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
         final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
@@ -593,4 +594,42 @@ public class FloatRollupCountDistinctOperator implements IterativeChunkedAggrega
     }
 
     // endregion
+
+    /**
+     * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in
+     * {@code counts}; both chunks are resized to the number of distinct values.
+     */
+    private void doCompactAndCount(WritableFloatChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, boolean countNull, boolean countNaN) {
+        // region CompactAndCount
+        FloatCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);
+        // endregion CompactAndCount
+    }
+
+    /**
+     * Sorts and compacts the {@code length} values of {@code valueChunk} beginning at {@code start}, setting each
+     * distinct value's count in {@code counts}.
+     *
+     * @return the number of distinct values, which occupy the positions beginning at {@code start}
+     */
+    private int doCompactAndCount(WritableFloatChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts, int start, int length, boolean countNull, boolean countNaN) {
+        // region CompactAndCountRange
+        return FloatCompactKernel.compactAndCount(valueChunk, counts, start, length, countNull, countNaN);
+        // endregion CompactAndCountRange
+    }
+
+    /**
+     * Reduces the removed and added ranges to their net removals and net additions, each compacted to distinct values
+     * with counts, and sets the surviving lengths in {@code removedSize} and {@code addedSize}.
+     */
+    private void doCompactAndCountModifications(WritableFloatChunk<? extends Values> removedValues,
+            WritableIntChunk<ChunkLengths> removedCounts, WritableFloatChunk<? extends Values> addedValues,
+            WritableIntChunk<ChunkLengths> addedCounts, int removedStart, int removedLength, int addedStart,
+            int addedLength, boolean countNull, boolean countNaN, MutableInt removedSize, MutableInt addedSize) {
+        // region CompactAndCountModifications
+        FloatCompactModifications.compactAndCountModifications(removedValues, removedCounts, addedValues, addedCounts,
+                removedStart, removedLength, addedStart, addedLength, countNull, countNaN, removedSize, addedSize);
+        // endregion CompactAndCountModifications
+    }
 }

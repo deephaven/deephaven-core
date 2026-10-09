@@ -1,6 +1,5 @@
 ---
 title: Why aren't my date-time table operations working as expected?
-sidebar_label: Why aren't my date-time table operations working as expected?
 ---
 
 <em>I'm trying to do downstream calculations on a date-time column, but everything I try throws an error. What's going on?</em>

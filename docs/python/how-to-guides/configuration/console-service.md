@@ -1,6 +1,5 @@
 ---
 title: Configure the Deephaven console service
-sidebar_label: Deephaven console service
 ---
 
 The console service is a gRPC service that enables you to execute code and get autocompletion results (see [console.proto](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/console.proto) for more details).

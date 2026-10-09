@@ -14,14 +14,17 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.col;
+import static org.junit.Assert.*;
 
 public class TestSystemicObjectMarking extends RefreshingTableTestCase {
+    @Test
     public void testSystemicObjectMarking() {
         final QueryTable source = TstUtils.testRefreshingTable(col("Str", "a", "b"), col("Str2", "A", "B"));
         final Table updated = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
@@ -61,7 +64,7 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
 
         try {
             updated2.addUpdateListener(new ErrorListener(updated2));
-            TestCase.fail("Should not be allowed to listen to failed table");
+            fail("Should not be allowed to listen to failed table");
         } catch (TableAlreadyFailedException tafe) {
             assertEquals("Can not listen to failed table QueryTable", tafe.getMessage());
         }
@@ -85,7 +88,6 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
 
     }
 
-
     private static boolean isNpe(List<Throwable> throwables) {
         if (1 != throwables.size()) {
             return false;
@@ -97,5 +99,86 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
             return false;
         }
         return throwables.get(0).getCause().getClass().equals(NullPointerException.class);
+    }
+
+    @Test
+    public void testRemoveSystemicAttributeOnSystemicThread() {
+        final Table systemic = SystemicObjectTracker.executeSystemically(true, () -> TableTools.emptyTable(1));
+        assertTrue(systemic.hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+
+        SystemicObjectTracker.executeSystemically(true, () -> {
+            assertFalse(systemic.withoutAttributes(List.of(Table.SYSTEMIC_TABLE_ATTRIBUTE))
+                    .hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertFalse(systemic.retainingAttributes(List.of())
+                    .hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            final Table replaced = systemic.withAttributes(Map.of("Other", "o"),
+                    List.of(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertFalse(replaced.hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertEquals("o", replaced.getAttribute("Other"));
+            return null;
+        });
+    }
+
+    @Test
+    public void testAddNonSystemicAttributeOnSystemicThread() {
+        final Table systemic = SystemicObjectTracker.executeSystemically(true, () -> TableTools.emptyTable(1));
+        assertEquals(Boolean.TRUE, systemic.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+
+        SystemicObjectTracker.executeSystemically(true, () -> {
+            assertEquals(Boolean.FALSE,
+                    systemic.withAttributes(Map.of(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.FALSE))
+                            .getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            final Table replaced = systemic.withAttributes(
+                    Map.of(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.FALSE, "Other", "o"), List.of("Missing"));
+            assertEquals(Boolean.FALSE, replaced.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertEquals("o", replaced.getAttribute("Other"));
+            return null;
+        });
+    }
+
+    @Test
+    public void testSystemicAttributeFollowsThreadWithoutExplicitRequest() {
+        final Table systemic = SystemicObjectTracker.executeSystemically(true,
+                () -> TableTools.emptyTable(1).withAttributes(Map.of("Other", "o")));
+        assertEquals(Boolean.TRUE, systemic.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+        final Table nonSystemic = SystemicObjectTracker.executeSystemically(false,
+                () -> TableTools.emptyTable(1).withAttributes(Map.of("Other", "o")));
+        assertFalse(nonSystemic.hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+
+        SystemicObjectTracker.executeSystemically(false, () -> {
+            assertFalse(((QueryTable) systemic).copy().hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertFalse(systemic.withAttributes(Map.of("Another", "a"))
+                    .hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertFalse(systemic.withoutAttributes(List.of("Other"))
+                    .hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertFalse(systemic.retainingAttributes(List.of(Table.SYSTEMIC_TABLE_ATTRIBUTE))
+                    .hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            return null;
+        });
+
+        SystemicObjectTracker.executeSystemically(true, () -> {
+            assertEquals(Boolean.TRUE,
+                    ((QueryTable) nonSystemic).copy().getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertEquals(Boolean.TRUE, nonSystemic.withAttributes(Map.of("Another", "a"))
+                    .getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertEquals(Boolean.TRUE, nonSystemic.withoutAttributes(List.of("Other"))
+                    .getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            return null;
+        });
+    }
+
+    @Test
+    public void testExplicitSystemicRequestOnNonSystemicThread() {
+        final Table nonSystemic = SystemicObjectTracker.executeSystemically(false, () -> TableTools.emptyTable(1));
+        assertFalse(nonSystemic.hasAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+
+        SystemicObjectTracker.executeSystemically(false, () -> {
+            assertEquals(Boolean.TRUE, nonSystemic.markSystemic().getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            final Table marked = nonSystemic.withAttributes(
+                    Map.of(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE, "Other", "o"), List.of("Missing"));
+            assertEquals(Boolean.TRUE, marked.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE));
+            assertEquals("o", marked.getAttribute("Other"));
+            return null;
+        });
     }
 }

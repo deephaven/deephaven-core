@@ -3,15 +3,17 @@
 //
 package io.deephaven.base.text;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
+import static org.junit.Assert.*;
+
 @SuppressWarnings("UnusedAssignment")
-public class TestConvert extends TestCase {
+public class TestConvert {
 
     StringBuilder sb = new StringBuilder();
 
@@ -38,6 +40,7 @@ public class TestConvert extends TestCase {
     // appendShort
     // ----------------------------------------------------------------------------------------------
 
+    @Test
     public void testAppendShortBuffer() {
         ByteBuffer b = ByteBuffer.allocate(4096);
         b.clear();
@@ -63,6 +66,7 @@ public class TestConvert extends TestCase {
     // appendInt
     // ----------------------------------------------------------------------------------------------
 
+    @Test
     public void testAppendIntBuffer() {
         ByteBuffer b = ByteBuffer.allocate(4096);
         b.clear();
@@ -88,6 +92,7 @@ public class TestConvert extends TestCase {
     // appendLong
     // ----------------------------------------------------------------------------------------------
 
+    @Test
     public void testAppendLongBuffer() {
         ByteBuffer b = ByteBuffer.allocate(4096);
         b.clear();
@@ -113,6 +118,7 @@ public class TestConvert extends TestCase {
     // appendDouble
     // ----------------------------------------------------------------------------------------------
 
+    @Test
     public void testAppendDoubleBuffer() {
         ByteBuffer b = ByteBuffer.allocate(4096);
         b.clear();
@@ -148,6 +154,7 @@ public class TestConvert extends TestCase {
 
     // ################################################################
 
+    @Test
     public void testAppendISO8601Millis() {
         DateTimeFormatter dateFormat =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS").withZone(ZoneId.of("GMT"));
@@ -190,6 +197,7 @@ public class TestConvert extends TestCase {
         assertBufferEqual(byteBuffer, 0, expectedString);
     }
 
+    @Test
     public void testAppendISO8601Micros() {
         DateTimeFormatter dateFormat =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS").withZone(ZoneId.of("GMT"));

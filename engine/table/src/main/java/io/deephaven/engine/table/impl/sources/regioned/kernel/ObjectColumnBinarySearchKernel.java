@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.select.AbstractRangeFilter;
 import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
@@ -71,6 +72,13 @@ public class ObjectColumnBinarySearchKernel {
      * row keys.
      *
      * <p>
+     * Ordering alone decides a match: every row that compares equal to a search value is returned. This is valid for
+     * types whose values compare equal exactly when they are equal, as
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes, and for
+     * {@link java.math.BigDecimal}, whose match filter matches by compareTo; for any other type,
+     * {@link #binarySearchMatchWithGeneralEquality} applies.
+     *
+     * <p>
      * The binary search is performed over the positions defined by {@code selection}. {@link RowSet#get(long)} is used
      * to map positions to row keys, ensuring O(log n) performance even when the row key space is sparse.
      *
@@ -83,7 +91,7 @@ public class ObjectColumnBinarySearchKernel {
      *
      * @return A {@link RowSet} containing the row keys where the sorted keys were found.
      */
-    public static RowSet binarySearchMatch(
+    public static RowSet binarySearchMatchWithConsistentEquality(
             @NotNull final ElementSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
@@ -155,6 +163,33 @@ public class ObjectColumnBinarySearchKernel {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Performs a binary search on a given sorted {@link ColumnSource} to find the row keys from a provided
+     * {@link RowSet} that hold a value equal to one of {@code searchValues}. The method returns the {@link RowSet}
+     * containing the matched row keys.
+     *
+     * <p>
+     * Correct for any {@link Comparable} type: ordering locates the run of rows that compare equal to a search
+     * value, and {@link ObjectComparisons#eq(Object, Object)} selects the rows of that run that match.
+     *
+     * @param source The column source in which the search will be performed.
+     * @param selection The {@link RowSet} defining which rows are populated and the order in which they are searched.
+     * @param sortColumn A {@link SortColumn} object representing the sorting order of the column.
+     * @param searchValues An array of keys to find within the source.
+     * @param usePrev If true, the search will use the previous values instead of current values.
+     *
+     * @return A {@link RowSet} containing the row keys that are equal to one of the search values.
+     */
+    public static RowSet binarySearchMatchWithGeneralEquality(
+            @NotNull final ColumnSource<?> source,
+            @NotNull final RowSet selection,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final Object[] searchValues,
+            final boolean usePrev) {
+        return ObjectColumnBinarySearchMatchHelper.binarySearchMatchWithGeneralEquality(source, selection, sortColumn,
+                searchValues, usePrev);
     }
 
     /**
@@ -334,7 +369,7 @@ public class ObjectColumnBinarySearchKernel {
      * equals {@code min}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code min} is absent from the range, when
      * {@code minInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the insertion point â the leftmost position whose value exceeds {@code min} â or {@code lastPos + 1} if all
+     * the insertion point, i.e. the leftmost position whose value exceeds {@code min}, or {@code lastPos + 1} if all
      * values in the range are &lt;= {@code min}.</li>
      * </ul>
      *
@@ -372,7 +407,7 @@ public class ObjectColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastPos) {
             final Object lowValue = usePrev ? source.getPrev(selection.get(low)) : source.get(selection.get(low));
-            if (ObjectComparisons.eq(lowValue, min)) {
+            if (ObjectComparisons.compareEquals(lowValue, min)) {
                 return low;
             }
         }
@@ -393,7 +428,7 @@ public class ObjectColumnBinarySearchKernel {
      * equals {@code max}. The returned value is the rightmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code max} is absent from the range, when
      * {@code maxInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the first position whose value exceeds {@code max} â or {@code firstPos} if all values in the range are &gt;
+     * the first position whose value exceeds {@code max}, or {@code firstPos} if all values in the range are &gt;
      * {@code max}.</li>
      * </ul>
      *
@@ -433,7 +468,7 @@ public class ObjectColumnBinarySearchKernel {
         if (maxInc && high >= firstPos) {
             final Object highValue =
                     usePrev ? source.getPrev(selection.get(high)) : source.get(selection.get(high));
-            if (ObjectComparisons.eq(highValue, max)) {
+            if (ObjectComparisons.compareEquals(highValue, max)) {
                 return high;
             }
         }
@@ -454,8 +489,8 @@ public class ObjectColumnBinarySearchKernel {
      * equals {@code max}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code max} is absent from the range, when
      * {@code maxInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the insertion point â the leftmost position whose value falls below {@code max} â or {@code lastPos + 1} if all
-     * values in the range are &gt;= {@code max}.</li>
+     * the insertion point, i.e. the leftmost position whose value falls below {@code max}, or {@code lastPos + 1} if
+     * all values in the range are &gt;= {@code max}.</li>
      * </ul>
      *
      * @param source The element source to search.
@@ -492,7 +527,7 @@ public class ObjectColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastPos) {
             final Object lowValue = usePrev ? source.getPrev(selection.get(low)) : source.get(selection.get(low));
-            if (ObjectComparisons.eq(lowValue, max)) {
+            if (ObjectComparisons.compareEquals(lowValue, max)) {
                 return low;
             }
         }
@@ -513,7 +548,7 @@ public class ObjectColumnBinarySearchKernel {
      * equals {@code min}. The returned value is the rightmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code min} is absent from the range, when
      * {@code minInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the first position whose value falls below {@code min} â or {@code firstPos} if all values in the range are &lt;=
+     * the first position whose value falls below {@code min}, or {@code firstPos} if all values in the range are &lt;=
      * {@code min}.</li>
      * </ul>
      *
@@ -553,11 +588,10 @@ public class ObjectColumnBinarySearchKernel {
         if (minInc && high >= firstPos) {
             final Object highValue =
                     usePrev ? source.getPrev(selection.get(high)) : source.get(selection.get(high));
-            if (ObjectComparisons.eq(highValue, min)) {
+            if (ObjectComparisons.compareEquals(highValue, min)) {
                 return high;
             }
         }
         return insertionPoint(low);
     }
 }
-

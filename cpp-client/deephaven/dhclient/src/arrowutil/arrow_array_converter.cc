@@ -253,6 +253,28 @@ struct EncodedChunkDecoder : public arrow::TypeVisitor {
 };
 
 /**
+ * Checks that `index` (a value read from a dictionary-encoded indices array) is actually in range
+ * for `dict`. A well-formed message never produces an out-of-range index: a null index slot should
+ * have its validity bit set, so decoders skip it before ever looking at the raw value. But if some
+ * upstream encoding step gets that validity bit wrong (e.g. writes a null sentinel into the index
+ * buffer without clearing the corresponding bit), the raw "index" can be garbage -- including wildly
+ * negative sentinel values like Deephaven's NULL_INT (INT32_MIN). Passing that straight to
+ * arrow::Array::IsNull()/GetView() is undefined behavior (unchecked pointer arithmetic on the
+ * dictionary's validity bitmap/offsets), so every caller must check this first and fail loudly
+ * instead.
+ */
+template<typename TValueArray>
+void CheckIndexInRange(int64_t index, const TValueArray &dict) {
+  if (index < 0 || index >= dict.length()) {
+    auto message = fmt::format(
+        "Dictionary index {} is out of range for a dictionary of length {}. This indicates a "
+        "corrupt or mismatched dictionary encoding on the wire (for example, a null index whose "
+        "validity bit was not set).", index, dict.length());
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+}
+
+/**
  * Decodes a single DictionaryArray (indices + dictionary values) into a plain array of the
  * dictionary's value type.
  */
@@ -307,11 +329,18 @@ struct DictionaryChunkDecoder final : EncodedChunkDecoder<DictionaryChunkDecoder
     auto length = dict_array_.length();
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Reserve(length)));
     for (int64_t i = 0; i != length; ++i) {
-      if (indices.IsNull(i)) {
+      auto index = static_cast<int64_t>(indices.Value(i));
+      // A dictionary index is by construction never negative, so a negative value is unambiguously
+      // a null marker -- this is Deephaven's useDeephavenNulls wire convention for the index stream:
+      // no validity buffer is sent at all, and a null row's index is simply its type's null-int
+      // sentinel (e.g. INT32_MIN), which is always negative. Arrow-standard mode (validity buffer
+      // present) still writes that same sentinel underneath a cleared validity bit, so checking both
+      // handles either wire convention correctly.
+      if (indices.IsNull(i) || index < 0) {
         OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNull()));
         continue;
       }
-      auto index = static_cast<int64_t>(indices.Value(i));
+      CheckIndexInRange(index, dict);
       // The dictionary itself may contain null entries, distinct from null indices.
       if (dict.IsNull(index)) {
         OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNull()));
@@ -475,11 +504,15 @@ struct RunEndDictionaryChunkDecoder final : EncodedChunkDecoder<RunEndDictionary
         continue;
       }
       // A run is null if its dictionary index is null; otherwise the dictionary entry it points at
-      // may itself be null. Either way the whole run expands to nulls.
-      if (indices.IsNull(run)) {
+      // may itself be null. Either way the whole run expands to nulls. A dictionary index is by
+      // construction never negative, so (as with the plain dictionary case above) a negative value is
+      // unambiguously a null marker -- this is how useDeephavenNulls mode signals a null index without
+      // sending a validity buffer at all.
+      auto index = static_cast<int64_t>(indices.Value(run));
+      if (indices.IsNull(run) || index < 0) {
         OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNulls(count)));
       } else {
-        auto index = static_cast<int64_t>(indices.Value(run));
+        CheckIndexInRange(index, dict);
         if (dict.IsNull(index)) {
           OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNulls(count)));
         } else {

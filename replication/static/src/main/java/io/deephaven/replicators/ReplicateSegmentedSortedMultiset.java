@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
@@ -61,10 +62,13 @@ public class ReplicateSegmentedSortedMultiset {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
                 ReplicateSegmentedSortedMultiset::fixupObjectGeneric,
+                ReplicateSegmentedSortedMultiset::fixupObjectSsmSupertype,
                 ReplicateSegmentedSortedMultiset::fixupObjectHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
+                ReplicateSegmentedSortedMultiset::fixupObjectIterator,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy(TASK, "CharSegmentedSortedMultiset", objectSsm);
 
         final List<String> files = charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
@@ -96,7 +100,8 @@ public class ReplicateSegmentedSortedMultiset {
         fixupObjectSsm(
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java"),
-                ReplicateSegmentedSortedMultiset::fixupNulls);
+                ReplicateSegmentedSortedMultiset::fixupNulls,
+                ReplicateSegmentedSortedMultiset::fixupObjectSetResult);
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
@@ -107,7 +112,8 @@ public class ReplicateSegmentedSortedMultiset {
         fixupObjectSsm(
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
-                ReplicateSegmentedSortedMultiset::fixupNulls);
+                ReplicateSegmentedSortedMultiset::fixupNulls,
+                ReplicateSegmentedSortedMultiset::fixupObjectPercentileTypeHelper);
 
         charToIntegers(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
@@ -121,9 +127,17 @@ public class ReplicateSegmentedSortedMultiset {
         objectSsm = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
         fixupObjectSsm(objectSsm,
+                ReplicateSegmentedSortedMultiset::useAbstractObjectSsm,
                 ReplicateSegmentedSortedMultiset::fixupSourceConstructor,
-                (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
-                        "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType));")));
+                (l) -> replaceRegion(l, "CreateNew", Arrays.asList(
+                        "            ssm = equalsConsistent",
+                        "                    ? new EqualsConsistentObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType)",
+                        "                    : new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType);",
+                        "            underlying.set(key, ssm);")),
+                (l) -> addImport(l,
+                        "import io.deephaven.engine.table.impl.ssms.EqualsConsistentObjectSegmentedSortedMultiset;",
+                        "import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;",
+                        "import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;"));
 
         final String compactModificationsPath =
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/compactmodifications/CharCompactModifications.java";
@@ -135,7 +149,10 @@ public class ReplicateSegmentedSortedMultiset {
                 fixupFloatCompactModifications(compactModification, "Double");
             }
         }
-        fixupObjectCompactModifications(charToObject(TASK, compactModificationsPath));
+        final String objectCompactModifications = charToObject(TASK, compactModificationsPath);
+        fixupObjectCompactModifications(objectCompactModifications);
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy(TASK, "CharCompactModifications",
+                objectCompactModifications);
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");
@@ -264,15 +281,22 @@ public class ReplicateSegmentedSortedMultiset {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = replaceRegion(lines, "Constructor",
-                indent(Collections.singletonList("Class<?> type,"), 12));
+                indent(Arrays.asList("Class<?> type,", "boolean equalsConsistent,"), 12));
         lines = replaceRegion(lines, "SsmCreation",
-                indent(Collections.singletonList("this." + ssmVarName + " = new ObjectSsmBackedSource(type);"), 8));
+                indent(Arrays.asList(
+                        "this.equalsConsistent = equalsConsistent;",
+                        "this." + ssmVarName + " = new ObjectSsmBackedSource(type, equalsConsistent);"), 8));
+        lines = globalReplacements(lines, "^    private final String name;$",
+                "    private final String name;\n    private final boolean equalsConsistent;");
+        lines = useAbstractObjectSsm(lines);
+        lines = dispatchCompaction(lines);
         lines = replaceRegion(lines, "ResultCreation",
                 indent(Collections.singletonList("this.internalResult = new ObjectArraySource(type);"), 8));
         lines = globalReplacements(lines, "\\(WritableObjectChunk<\\? extends Values>\\)",
                 "(WritableObjectChunk<Object, ? extends Values>)");
         // give the typed chunk locals (e.g. the cast-once valueCopy) the two-argument WritableObjectChunk form
         lines = fixupChunkAttributes(lines);
+        lines = ReplicateSortKernel.fixupObjectEquality(lines);
 
         FileUtils.writeLines(objectFile, lines);
     }
@@ -282,7 +306,7 @@ public class ReplicateSegmentedSortedMultiset {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = fixupChunkAttributes(lines);
-        lines = ReplicateSortKernel.fixupObjectComparisons(lines);
+        lines = ReplicateSortKernel.fixupObjectComparisons(lines, true, true);
         lines = replaceRegion(lines, "averageMedian",
                 indent(Collections.singletonList("throw new UnsupportedOperationException();"), 16));
 
@@ -293,6 +317,84 @@ public class ReplicateSegmentedSortedMultiset {
         }
 
         FileUtils.writeLines(objectFile, lines);
+    }
+
+    /**
+     * The Object SSM and its EqualsConsistentObject counterpart share {@code AbstractObjectSegmentedSortedMultiset},
+     * which declares the methods the aggregation operators call.
+     */
+    private static List<String> fixupObjectSsmSupertype(List<String> lines) {
+        return globalReplacements(lines,
+                "public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector<Object> \\{",
+                "public final class ObjectSegmentedSortedMultiset extends AbstractObjectSegmentedSortedMultiset {");
+    }
+
+    /**
+     * Refer to the Object SSMs through {@code AbstractObjectSegmentedSortedMultiset}, so that either implementation
+     * serves without a cast.
+     */
+    private static List<String> useAbstractObjectSsm(List<String> lines) {
+        return globalReplacements(lines, "\\bObjectSegmentedSortedMultiset\\b",
+                "AbstractObjectSegmentedSortedMultiset");
+    }
+
+    /**
+     * Read the minimum and maximum through {@code SegmentedSortedMultiSet}, without a cast to an Object SSM class.
+     */
+    private static List<String> fixupObjectSetResult(List<String> lines) {
+        lines = lines.stream()
+                .filter(line -> !line.equals(
+                        "            final ObjectSegmentedSortedMultiset ObjectSsm = (ObjectSegmentedSortedMultiset) ssm;"))
+                .collect(Collectors.toList());
+        lines = globalReplacements(lines,
+                "ObjectSsm\\.getMinObject\\(\\) : ObjectSsm\\.getMaxObject\\(\\)", "ssm.getMin() : ssm.getMax()");
+        return removeImport(lines, "\\s*import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;");
+    }
+
+    /**
+     * Read the maximum through {@code SegmentedSortedMultiSet}, without a cast to an Object SSM class.
+     */
+    private static List<String> fixupObjectPercentileTypeHelper(List<String> lines) {
+        lines = globalReplacements(lines,
+                "\\(\\(ObjectSegmentedSortedMultiset\\) ssmLo\\)\\.getMaxObject\\(\\)", "ssmLo.getMax()",
+                "final ObjectSegmentedSortedMultiset ssmLo = \\(ObjectSegmentedSortedMultiset\\) segmentedSortedMultiSet;",
+                "final SegmentedSortedMultiSet ssmLo = segmentedSortedMultiSet;",
+                "ssmLo\\.getMaxObject\\(\\)", "ssmLo.getMax()");
+        return removeImport(lines, "\\s*import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;");
+    }
+
+    /**
+     * Fill the compaction helper regions with a choice on the {@code equalsConsistent} field between the
+     * EqualsConsistentObject kernels, which test equality with {@code equals}, and the Object kernels, which test
+     * equality with {@code compareEquals}.
+     */
+    private static List<String> dispatchCompaction(List<String> lines) {
+        lines = replaceRegion(lines, "CompactAndCount", indent(chooseKernel(
+                "ObjectCompactKernel.compactAndCount(valueChunk, counts, countNull, countNaN);"), 8));
+        lines = replaceRegion(lines, "CompactAndCountRuns", indent(chooseKernel(
+                "ObjectCompactKernel.compactAndCount(valueChunk, counts, startPositions, lengths, countNull, countNaN);"),
+                8));
+        lines = replaceRegion(lines, "CompactAndCountRange", indent(Arrays.asList(
+                "return equalsConsistent",
+                "        ? EqualsConsistentObjectCompactKernel.compactAndCount(valueChunk, counts, start, length, countNull, countNaN)",
+                "        : ObjectCompactKernel.compactAndCount(valueChunk, counts, start, length, countNull, countNaN);"),
+                8));
+        lines = replaceRegion(lines, "CompactAndCountModifications", indent(chooseKernel(
+                "ObjectCompactModifications.compactAndCountModifications(removedValues, removedCounts, addedValues, "
+                        + "addedCounts, removedStart, removedLength, addedStart, addedLength, countNull, countNaN, "
+                        + "removedSize, addedSize);"),
+                8));
+        return addImport(lines,
+                "import io.deephaven.engine.table.impl.util.compact.EqualsConsistentObjectCompactKernel;",
+                "import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.EqualsConsistentObjectCompactModifications;");
+    }
+
+    /**
+     * An if statement that makes {@code call} on the EqualsConsistentObject class when {@code equalsConsistent} is
+     * true, and on the Object class otherwise.
+     */
+    private static List<String> chooseKernel(String call) {
+        return Arrays.asList("if (equalsConsistent) {", "    EqualsConsistent" + call, "} else {", "    " + call, "}");
     }
 
     private static List<String> fixupKeyArrayAllocation(List<String> lines) {
@@ -349,6 +451,7 @@ public class ReplicateSegmentedSortedMultiset {
                 "final Object addedValue", "final T addedValue",
                 "final Object value", "final T value");
         lines = fixupNulls(lines);
+        lines = ReplicateSortKernel.fixupObjectEquality(lines);
         FileUtils.writeLines(file, lines);
     }
 
@@ -364,12 +467,23 @@ public class ReplicateSegmentedSortedMultiset {
                 "\\.toObjectArray\\(", ".toArray(");
     }
 
+    private static List<String> fixupObjectIterator(List<String> lines) {
+        // There is no ValueIteratorOfObject; the Object variant iterates as a generic ValueIterator<Object>, whose
+        // element accessor is Iterator.next() rather than the primitive variants' nextObject().
+        return globalReplacements(lines,
+                "ValueIteratorOfObject iterator\\(", "ValueIterator<Object> iterator(",
+                "ValueIteratorOfObject inRangeIterator\\(", "ValueIterator<Object> inRangeIterator(",
+                "new ValueIteratorOfObject\\(\\)", "new ValueIterator<Object>()",
+                "public Object nextObject\\(\\)", "public Object next()",
+                "ValueIteratorOfObject", "ValueIterator");
+    }
+
     private static List<String> fixupSsmConstructor(List<String> lines) {
         return replaceRegion(lines, "Constructor",
                 Collections.singletonList("    private final Class componentType;\n" +
                         "\n" +
                         "    /**\n" +
-                        "     * Create a ObjectSegmentedSortedArray with the given leafSize.\n" +
+                        "     * Create an ObjectSegmentedSortedMultiset with the given leafSize.\n" +
                         "     *\n" +
                         "     * @param leafSize the maximumSize for any leaf\n" +
                         "     * @param componentType the type of the underlying Object\n" +
@@ -393,41 +507,57 @@ public class ReplicateSegmentedSortedMultiset {
 
     private static List<String> fixupSourceConstructor(List<String> lines) {
         return replaceRegion(lines, "Constructor",
-                Collections.singletonList("    public ObjectSsmBackedSource(Class type) {\n" +
-                        "        super(ObjectVector.class, type);\n" +
-                        "        underlying = new ObjectArraySource<>(ObjectSegmentedSortedMultiset.class, type);\n" +
+                Arrays.asList(
+                        "    private final boolean equalsConsistent;",
+                        "",
+                        "    /**",
+                        "     * Create an ObjectSsmBackedSource whose sets hold values of the given type. The underlying source is",
+                        "     * declared over {@link AbstractObjectSegmentedSortedMultiset}, and its {@code getType()} is the",
+                        "     * concrete class of the sets it holds, so an operator that reads these sets learns from that type which",
+                        "     * equality they test.",
+                        "     *",
+                        "     * @param type the component type of the values",
+                        "     * @param equalsConsistent true when values of the type compare equal exactly when they are equal (see",
+                        "     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the",
+                        "     *        EqualsConsistentObject sets that test equality with {@code equals}; when false, the sets test equality",
+                        "     *        with {@link ObjectComparisons#compareEquals(Object, Object)}",
+                        "     */",
+                        "    public ObjectSsmBackedSource(Class type, boolean equalsConsistent) {",
+                        "        super(ObjectVector.class, type);",
+                        "        final Class<? extends AbstractObjectSegmentedSortedMultiset> ssmClass = equalsConsistent",
+                        "                ? EqualsConsistentObjectSegmentedSortedMultiset.class",
+                        "                : ObjectSegmentedSortedMultiset.class;",
+                        "        // noinspection unchecked",
+                        "        underlying = new ObjectArraySource<>((Class<AbstractObjectSegmentedSortedMultiset>) ssmClass, type);",
+                        "        this.equalsConsistent = equalsConsistent;",
                         "    }"));
     }
 
+    /**
+     * The replicated {@code equalsArray} already takes the right parameter type -- {@code CharVector} becomes
+     * {@code ObjectVector}, which is what an Object SSM is -- so only its iteration needs adjusting: there is no
+     * {@code CloseablePrimitiveIteratorOfObject}, and the generic
+     * {@link io.deephaven.engine.primitive.iterator.CloseableIterator} that replaces it is drained with {@code next()}
+     * rather than the primitive variants' {@code nextObject()}.
+     */
     private static List<String> fixupObjectCompare(List<String> lines) {
-        lines = removeRegion(lines, "VectorEquals");
-        // the primitive iterator is only used by the (now removed) primitive-vector equalsArray overload
+        lines = globalReplacements(lines,
+                "equalsArray\\(ObjectVector o\\)", "equalsArray(ObjectVector<?> o)",
+                "equalsArray\\(\\(ObjectVector\\) o\\)", "equalsArray((ObjectVector<?>) o)",
+                "final CloseablePrimitiveIteratorOfObject oit", "final CloseableIterator<?> oit",
+                "oit\\.nextObject\\(\\)", "oit.next()");
         lines = removeImport(lines, "\\s*import .*CloseablePrimitiveIteratorOfObject;");
-        lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
-                "        if(getComponentType() != o.getComponentType()) {\n" +
-                        "            return false;\n" +
-                        "        }"));
-        lines = replaceRegion(lines, "DirObjectEquals",
-                Collections.singletonList(
-                        "                if(!Objects.equals(directoryValues[ii], that.directoryValues[ii])) {\n" +
-                                "                    return false;\n" +
-                                "                }"));
-        lines = replaceRegion(lines, "SingletonEquals",
-                Collections.singletonList(
-                        "            return Objects.equals(get(0), that.get(0));"));
-        return replaceRegion(lines, "LeafObjectEquals",
-                Collections.singletonList(
-                        "                if(!Objects.equals(leafValues[li][ai], that.leafValues[otherLeaf][otherLeafIdx++])) {\n"
-                                +
-                                "                    return false;\n" +
-                                "                }"));
+        return addImport(lines, "import io.deephaven.engine.primitive.iterator.CloseableIterator;");
     }
 
     private static void insertInstantExtensions(String longPath) throws IOException {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
 
+        // the Instant extensions are the only place a primitive SSM deals in ObjectVector, so the template does not
+        // import it
         lines = addImport(lines,
+                "import io.deephaven.vector.ObjectVector;",
                 "import io.deephaven.vector.ObjectVectorDirect;",
                 "import io.deephaven.time.DateTimeUtils;");
         lines = addImport(lines, Instant.class);
@@ -487,52 +617,56 @@ public class ReplicateSegmentedSortedMultiset {
                         "    }",
                         "",
                         "    private Instant[] keyArrayAsInstants() {",
-                        "        return keyArrayAsInstants(0, size()-1);",
+                        "        return keyArrayAsInstants(0, size());",
                         "    }",
                         "",
                         "    /**",
-                        "     * Create an array of the current keys beginning with the first (inclusive) and ending with the last (inclusive)",
-                        "     * @param first",
-                        "     * @param last",
-                        "     * @return",
+                        "     * Create an array of the current keys from {@code fromIndexInclusive} (inclusive) to {@code toIndexExclusive}",
+                        "     * (exclusive). Following the Vector contract, offsets outside {@code [0, size())} are legal and contribute",
+                        "     * {@code null} rather than an error.",
+                        "     *",
+                        "     * @param fromIndexInclusive The first offset to include",
+                        "     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include",
+                        "     * @return An array of the requested keys, of length {@code toIndexExclusive - fromIndexInclusive}",
                         "     */",
-                        "    private Instant[] keyArrayAsInstants(long first, long last) {",
-                        "        if(isEmpty()) {",
+                        "    private Instant[] keyArrayAsInstants(final long fromIndexInclusive, final long toIndexExclusive) {",
+                        "        Require.leq(fromIndexInclusive, \"fromIndexInclusive\", toIndexExclusive, \"toIndexExclusive\");",
+                        "",
+                        "        final int totalSize =",
+                        "                LongSizedDataStructure.intSize(\"keyArrayAsInstants\", toIndexExclusive - fromIndexInclusive);",
+                        "        if (totalSize == 0) {",
                         "            return DateTimeUtils.ZERO_LENGTH_INSTANT_ARRAY;",
                         "        }",
                         "",
-                        "        final int totalSize = (int)(last - first + 1);",
-                        "        final Instant[] keyArray = new Instant[intSize()];",
+                        "        // out-of-range offsets are left as the null elements the fresh array already holds",
+                        "        final Instant[] keyArray = new Instant[totalSize];",
+                        "        final long firstIncluded = Math.max(fromIndexInclusive, 0);",
+                        "        final long lastExcluded = Math.max(Math.min(toIndexExclusive, size), firstIncluded);",
+                        "        final int destOffset = (int)(firstIncluded - fromIndexInclusive);",
+                        "        int remaining = (int)(lastExcluded - firstIncluded);",
+                        "        if (remaining == 0) {",
+                        "            return keyArray;",
+                        "        }",
+                        "",
                         "        if (leafCount == 1) {",
-                        "            for(int ii = 0; ii < totalSize; ii++) {",
-                        "                keyArray[ii] = DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii + (int)first]);",
+                        "            for(int ii = 0; ii < remaining; ii++) {",
+                        "                keyArray[destOffset + ii] = DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii + (int)firstIncluded]);",
                         "            }",
-                        "        } else if (leafCount > 0) {",
-                        "            int offset = 0;",
-                        "            int copied = 0;",
-                        "            int skipped = 0;",
-                        "            for (int li = 0; li < leafCount; ++li) {",
-                        "                if(skipped < first) {",
-                        "                    final int toSkip = (int)first - skipped;",
-                        "                    if(toSkip < leafSizes[li]) {",
-                        "                        final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);",
-                        "                        for(int jj = 0; jj < nToCopy; jj++) {",
-                        "                            keyArray[jj] = DateTimeUtils.epochNanosToInstant(leafValues[li][jj + toSkip]);",
-                        "                        }",
-                        "                        copied = nToCopy;",
-                        "                        offset = copied;",
-                        "                        skipped = (int)first;",
-                        "                    } else {",
-                        "                        skipped += leafSizes[li];",
-                        "                    }",
-                        "                } else {",
-                        "                    int nToCopy = Math.min(leafSizes[li], totalSize - copied);",
-                        "                    for(int jj = 0; jj < nToCopy; jj++) {",
-                        "                        keyArray[jj + offset] = DateTimeUtils.epochNanosToInstant(leafValues[li][jj]);",
-                        "                    }",
-                        "                    offset += leafSizes[li];",
-                        "                    copied += nToCopy;",
+                        "        } else {",
+                        "            int dest = destOffset;",
+                        "            int toSkip = (int)firstIncluded;",
+                        "            for (int li = 0; li < leafCount && remaining > 0; ++li) {",
+                        "                if(toSkip >= leafSizes[li]) {",
+                        "                    toSkip -= leafSizes[li];",
+                        "                    continue;",
                         "                }",
+                        "                final int nToCopy = Math.min(leafSizes[li] - toSkip, remaining);",
+                        "                for(int jj = 0; jj < nToCopy; jj++) {",
+                        "                    keyArray[dest + jj] = DateTimeUtils.epochNanosToInstant(leafValues[li][jj + toSkip]);",
+                        "                }",
+                        "                dest += nToCopy;",
+                        "                remaining -= nToCopy;",
+                        "                toSkip = 0;",
                         "            }",
                         "        }",
                         "        return keyArray;",

@@ -15,8 +15,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
@@ -392,22 +392,16 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     private static RowSet mergeRowSetsSerial(
             @SuppressWarnings("unused") final long unusedRowKey,
             @NotNull final ObjectVector<RowSet> keyRowSets) {
-        final long numRowSets = keyRowSets.size();
-
-        if (numRowSets == 1) {
+        final RowSet[] rowSets = keyRowSets.toArray();
+        if (rowSets.length == 1) {
             // we steal the reference, the input is never used again
-            return keyRowSets.get(0);
+            return rowSets[0];
         }
-
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        try (final CloseableIterator<RowSet> rowSets = keyRowSets.iterator()) {
-            rowSets.forEachRemaining(rs -> {
-                builder.appendRowSequence(rs);
-                rs.close();
-            });
+        try {
+            return RowSetFactory.union(rowSets);
+        } finally {
+            SafeCloseable.closeAll(rowSets);
         }
-
-        return builder.build();
     }
 
     /**
@@ -416,21 +410,19 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     private static RowSet mergeRowSetsParallel(
             @SuppressWarnings("unused") final long unusedRowKey,
             @NotNull final ObjectVector<RowSet> keyRowSets) {
-        final long numRowSets = keyRowSets.size();
-
-        if (numRowSets == 1) {
+        // Reading the row sets out of the vector is what parallelizes; the merge itself, which orders them, is serial.
+        final RowSet[] rowSets = LongStream.range(0, keyRowSets.size()).parallel()
+                .mapToObj(keyRowSets::get)
+                .toArray(RowSet[]::new);
+        if (rowSets.length == 1) {
             // we steal the reference, the input is never used again
-            return keyRowSets.get(0);
+            return rowSets[0];
         }
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-
-        LongStream.range(0, numRowSets).parallel().mapToObj(keyRowSets::get)
-                .sorted(Comparator.comparingLong(RowSet::firstRowKey)).forEachOrdered(rs -> {
-                    builder.appendRowSequence(rs);
-                    rs.close();
-                });
-
-        return builder.build();
+        try {
+            return RowSetFactory.union(rowSets);
+        } finally {
+            SafeCloseable.closeAll(rowSets);
+        }
     }
 
     @Override

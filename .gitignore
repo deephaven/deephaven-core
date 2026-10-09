@@ -60,3 +60,11 @@ node_modules
 
 # Personal workflows (fork-specific)
 .devin/workflows/sync-fork.md
+
+# Devin/Claude plugin artifacts
+skills-lock.json
+.agents/
+.claude/skills/skill-creator
+
+# skill-creator eval run outputs (results are summarized in each skill's evals/RESULTS.md)
+.claude/skills/*-workspace/

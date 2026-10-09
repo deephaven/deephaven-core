@@ -14,6 +14,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sort.timsort.DoubleTimsortDescendingKernel;
 import io.deephaven.engine.table.impl.sort.timsort.DoubleTimsortKernel;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionDouble;
@@ -22,8 +24,71 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRegionBinarySearchKernel {
+    // region binsearchRangeFilter
+    /**
+     * Performs a binary search on a sorted column region using bounds from a {@link DoubleRangeFilter}, returning the row
+     * keys that satisfy the filter.
+     *
+     * @param region The column region to search.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The range filter supplying lower/upper bounds and their inclusive flags.
+     * @return A {@link RowSet} containing the row keys satisfying the filter.
+     */
+    public static RowSet binsearchRangeFilter(
+            @NotNull final ColumnRegionDouble<?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final DoubleRangeFilter filter) {
+        if (filter.getLower() == NULL_DOUBLE && filter.isLowerInclusive()) {
+            return binarySearchMax(region, firstKey, lastKey, sortColumn, filter.getUpper(),
+                    filter.isUpperInclusive());
+        } else if (Double.isNaN(filter.getUpper()) && filter.isUpperInclusive()) {
+            return binarySearchMin(region, firstKey, lastKey, sortColumn, filter.getLower(),
+                    filter.isLowerInclusive());
+        } else {
+            // gt() and geq() build a NaN upper bound that is exclusive, so the common greater-than filters
+            // land here rather than short-circuiting: the trailing NaN block has to be located and excluded,
+            // which needs the upper bound searched as well as the lower.
+            return binarySearchMinMax(region, firstKey, lastKey, sortColumn,
+                    filter.getLower(), filter.getUpper(),
+                    filter.isLowerInclusive(), filter.isUpperInclusive());
+        }
+    }
+    // endregion binsearchRangeFilter
+
+    // region binsearchMatchFilter
+    /**
+     * Performs a binary search on a sorted column region for the values of a {@link MatchFilter}, returning the row
+     * keys that hold one of them. The filter's {@link io.deephaven.engine.table.MatchOptions#inverted() inverted} flag
+     * is not applied here; the caller must invert the result itself.
+     *
+     * @param region The column region to search.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The match filter supplying the values to find.
+     * @return A {@link RowSet} containing the row keys holding one of the filter's values.
+     */
+    public static RowSet binsearchMatchFilter(
+            @NotNull final ColumnRegionDouble<?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final MatchFilter filter) {
+        if (filter.getValues().length == 0) {
+            // Nothing to search for, so nothing matches, and the data need not be touched at all.
+            return RowSetFactory.empty();
+        }
+        return binarySearchMatch(region, firstKey, lastKey, sortColumn, filter.getValues());
+    }
+    // endregion binsearchMatchFilter
+
     /**
      * Performs a binary search on a given column region to find the positions (row keys) of specified keys. The method
      * returns the RowSet containing the matched row keys.
@@ -61,13 +126,13 @@ public class DoubleRegionBinarySearchKernel {
         if (order.isAscending()) {
             for (int idx = 0; idx < unboxed.length && firstKey <= lastKey; ++idx) {
                 final double toFind = unboxed[idx];
-                final int startResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
+                final long startResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
                 if (startResult < 0) {
                     // Advance firstKey since we didn't find the value but eliminated some rows.
                     firstKey = insertionPoint(startResult);
                     continue;
                 }
-                final int endResult = upperBoundAscending(region, startResult, lastKey, toFind, true);
+                final long endResult = upperBoundAscending(region, startResult, lastKey, toFind, true);
                 if (endResult >= 0) {
                     builder.appendRange(startResult, endResult);
                     firstKey = endResult + 1;
@@ -76,13 +141,13 @@ public class DoubleRegionBinarySearchKernel {
         } else {
             for (int searchIndex = 0; searchIndex < unboxed.length && firstKey <= lastKey; ++searchIndex) {
                 final double toFind = unboxed[searchIndex];
-                final int startResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
+                final long startResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
                 if (startResult < 0) {
                     // Advance firstKey since we didn't find the value but eliminated some rows.
                     firstKey = insertionPoint(startResult);
                     continue;
                 }
-                final int endResult = upperBoundDescending(region, startResult, lastKey, toFind, true);
+                final long endResult = upperBoundDescending(region, startResult, lastKey, toFind, true);
                 if (endResult >= 0) {
                     builder.appendRange(startResult, endResult);
                     firstKey = endResult + 1;
@@ -117,30 +182,30 @@ public class DoubleRegionBinarySearchKernel {
             final boolean minInc,
             final boolean maxInc) {
 
-        final int start;
-        final int end;
+        final long start;
+        final long end;
 
         if (sortColumn.isAscending()) {
             // The beginning of the range is the first row that is > or >= min (depends on minInc)
-            final int startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
+            final long startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
             if (start > lastKey) {
                 return RowSetFactory.empty();
             }
             final long offset = Math.max(start, firstKey);
             // The end of the range is the last row that is < or <= max (depends on maxInc)
-            final int endResult = upperBoundAscending(region, offset, lastKey, max, maxInc);
+            final long endResult = upperBoundAscending(region, offset, lastKey, max, maxInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         } else {
             // The beginning of the range is the first row that is < or <= max (depends on maxInc)
-            final int startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
+            final long startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
             if (start > lastKey) {
                 return RowSetFactory.empty();
             }
             final long offset = Math.max(start, firstKey);
             // The end of the range is the last row that is > or >= min (depends on minInc)
-            final int endResult = upperBoundDescending(region, offset, lastKey, min, minInc);
+            final long endResult = upperBoundDescending(region, offset, lastKey, min, minInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         }
 
@@ -172,18 +237,18 @@ public class DoubleRegionBinarySearchKernel {
             final double min,
             final boolean minInc) {
 
-        final int start;
-        final int end;
+        final long start;
+        final long end;
 
         if (sortColumn.isAscending()) {
             // The beginning of the range is the first row that is > or >= min (depends on minInc)
-            final int startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
+            final long startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
-            end = Math.toIntExact(lastKey);
+            end = lastKey;
         } else {
-            start = Math.toIntExact(firstKey);
+            start = firstKey;
             // The end of the range is the last row that is > or >= min (depends on minInc)
-            final int endResult = upperBoundDescending(region, firstKey, lastKey, min, minInc);
+            final long endResult = upperBoundDescending(region, firstKey, lastKey, min, minInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         }
 
@@ -214,19 +279,19 @@ public class DoubleRegionBinarySearchKernel {
             final double max,
             final boolean maxInc) {
 
-        final int start;
-        final int end;
+        final long start;
+        final long end;
 
         if (sortColumn.isAscending()) {
-            start = Math.toIntExact(firstKey);
+            start = firstKey;
             // The end of the range is the last row that is < or <= max (depends on maxInc)
-            final int endResult = upperBoundAscending(region, firstKey, lastKey, max, maxInc);
+            final long endResult = upperBoundAscending(region, firstKey, lastKey, max, maxInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         } else {
             // The beginning of the range is the first row that is < or <= max (depends on maxInc)
-            final int startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
+            final long startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
-            end = Math.toIntExact(lastKey);
+            end = lastKey;
         }
 
         if (start <= end) {
@@ -246,7 +311,7 @@ public class DoubleRegionBinarySearchKernel {
      * <li>A non-negative value is returned only when {@code minInc=true} and the value at the found position exactly
      * equals {@code min}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the insertion
-     * point â the leftmost position whose value exceeds {@code min} â or {@code lastKey + 1} if all values are &lt;=
+     * point, i.e. the leftmost position whose value exceeds {@code min}, or {@code lastKey + 1} if all values are &lt;=
      * {@code min}.</li>
      * </ul>
      *
@@ -259,17 +324,17 @@ public class DoubleRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static int lowerBoundAscending(
+    static long lowerBoundAscending(
             @NotNull final ColumnRegionDouble<?> region,
             final long firstKey,
             final long lastKey,
             final double min,
             final boolean minInc) {
-        int low = (int) firstKey;
-        int high = (int) lastKey;
+        long low = firstKey;
+        long high = lastKey;
 
         while (low <= high) {
-            final int mid = low + (high - low) / 2;
+            final long mid = low + (high - low) / 2;
             final double midValue = region.getDouble(mid);
             if (minInc ? DoubleComparisons.geq(midValue, min) : DoubleComparisons.gt(midValue, min)) {
                 high = mid - 1;
@@ -296,7 +361,7 @@ public class DoubleRegionBinarySearchKernel {
      * <li>A non-negative value is returned only when {@code maxInc=true} and the value at the found position exactly
      * equals {@code max}. The returned value is the rightmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the first
-     * position whose value exceeds {@code max} â or {@code firstKey} if all values are &gt; {@code max}.</li>
+     * position whose value exceeds {@code max}, or {@code firstKey} if all values are &gt; {@code max}.</li>
      * </ul>
      *
      * @param region The column region to search.
@@ -308,17 +373,17 @@ public class DoubleRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value exceeds {@code max}.
      */
-    private static int upperBoundAscending(
+    static long upperBoundAscending(
             @NotNull final ColumnRegionDouble<?> region,
             final long firstKey,
             final long lastKey,
             final double max,
             final boolean maxInc) {
-        int low = (int) firstKey;
-        int high = (int) lastKey;
+        long low = firstKey;
+        long high = lastKey;
 
         while (low <= high) {
-            final int mid = low + (high - low) / 2;
+            final long mid = low + (high - low) / 2;
             final double midValue = region.getDouble(mid);
             if (maxInc ? DoubleComparisons.leq(midValue, max) : DoubleComparisons.lt(midValue, max)) {
                 low = mid + 1;
@@ -346,7 +411,7 @@ public class DoubleRegionBinarySearchKernel {
      * <li>A non-negative value is returned only when {@code maxInc=true} and the value at the found position exactly
      * equals {@code max}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the insertion
-     * point â the leftmost position whose value falls below {@code max} â or {@code lastKey + 1} if all values are
+     * point, i.e. the leftmost position whose value falls below {@code max}, or {@code lastKey + 1} if all values are
      * &gt;= {@code max}.</li>
      * </ul>
      *
@@ -359,17 +424,17 @@ public class DoubleRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static int lowerBoundDescending(
+    static long lowerBoundDescending(
             @NotNull final ColumnRegionDouble<?> region,
             final long firstKey,
             final long lastKey,
             final double max,
             final boolean maxInc) {
-        int low = (int) firstKey;
-        int high = (int) lastKey;
+        long low = firstKey;
+        long high = lastKey;
 
         while (low <= high) {
-            final int mid = low + (high - low) / 2;
+            final long mid = low + (high - low) / 2;
             final double midValue = region.getDouble(mid);
             if (maxInc ? DoubleComparisons.leq(midValue, max) : DoubleComparisons.lt(midValue, max)) {
                 high = mid - 1;
@@ -396,7 +461,7 @@ public class DoubleRegionBinarySearchKernel {
      * <li>A non-negative value is returned only when {@code minInc=true} and the value at the found position exactly
      * equals {@code min}. The returned value is the rightmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the first
-     * position whose value falls below {@code min} â or {@code firstKey} if all values are &gt;= {@code min}.</li>
+     * position whose value falls below {@code min}, or {@code firstKey} if all values are &gt;= {@code min}.</li>
      * </ul>
      *
      * @param region The column region to search.
@@ -408,17 +473,17 @@ public class DoubleRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value falls below {@code min}.
      */
-    private static int upperBoundDescending(
+    static long upperBoundDescending(
             @NotNull final ColumnRegionDouble<?> region,
             final long firstKey,
             final long lastKey,
             final double min,
             final boolean minInc) {
-        int low = (int) firstKey;
-        int high = (int) lastKey;
+        long low = firstKey;
+        long high = lastKey;
 
         while (low <= high) {
-            final int mid = low + (high - low) / 2;
+            final long mid = low + (high - low) / 2;
             final double midValue = region.getDouble(mid);
             if (minInc ? DoubleComparisons.geq(midValue, min) : DoubleComparisons.gt(midValue, min)) {
                 low = mid + 1;
