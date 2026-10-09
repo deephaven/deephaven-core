@@ -512,6 +512,9 @@ public class CrossJoinHelper {
                             }
                         }
 
+                        // right modifications change result rows only in slots that have left rows
+                        boolean rightModifiesResultRows = false;
+
                         // note rows to shift might have no shifts but still need result RowSet updated
                         final RowSet rowsToShift;
                         final boolean mustCloseRowsToShift;
@@ -553,6 +556,7 @@ public class CrossJoinHelper {
 
                             try (final RowSet leftRowsToVisitForAdds = addsToVisit.build();
                                     final RowSet leftRowsToVisitForMods = modsToVisit.build()) {
+                                rightModifiesResultRows = leftRowsToVisitForMods.isNonempty();
                                 downstream.added = addedBuilder.build();
 
                                 leftRowsToVisitForAdds.forAllRowKeys(ii -> {
@@ -874,7 +878,7 @@ public class CrossJoinHelper {
                                 leftTransformer.transform(upstreamLeft.modifiedColumnSet(),
                                         downstream.modifiedColumnSet());
                             }
-                            if (rightChanged && tracker.hasRightModifies) {
+                            if (rightModifiesResultRows) {
                                 rightTransformer.transform(upstreamRight.modifiedColumnSet(),
                                         downstream.modifiedColumnSet());
                             }

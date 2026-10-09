@@ -272,6 +272,78 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     @Test
+    public void testBothTickingModifiedColumnsOfModifiedRowsOnly() {
+        for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+            final String description = "leftOuterJoin=" + leftOuterJoin;
+
+            // left row 1 moves from key 1 to key 2, becoming a remove and an add, while a right modification of key 2
+            // modifies left row 3's result row
+            checkBothTickingModifiedColumns(description + ", left row changes key", leftOuterJoin,
+                    (left, right) -> {
+                        addToTable(left, i(1), intCol("K", 2), intCol("A", 1));
+                        left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                                left.newModifiedColumnSet("K")));
+                        addToTable(right, i(2), intCol("K", 2), intCol("Y", -12));
+                        right.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                                right.newModifiedColumnSet("Y")));
+                    }, i(3L << 10), "Y");
+
+            // a right modification of key 3, which has no left rows, changes no result row
+            checkBothTickingModifiedColumns(description + ", right modify without left rows", leftOuterJoin,
+                    (left, right) -> {
+                        addToTable(left, i(1), intCol("K", 1), intCol("A", -1));
+                        left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                                left.newModifiedColumnSet("A")));
+                        addToTable(right, i(4), intCol("K", 3), intCol("Y", -30));
+                        right.notifyListeners(new TableUpdateImpl(i(), i(), i(4), RowSetShiftData.EMPTY,
+                                right.newModifiedColumnSet("Y")));
+                    }, i(1L << 10), "A");
+
+            // left row 1 is modified while key 1's only right row is replaced, so its result row is removed and added;
+            // left row 3 of key 2 is modified through its right row
+            checkBothTickingModifiedColumns(description + ", left modify with replaced right rows", leftOuterJoin,
+                    (left, right) -> {
+                        addToTable(left, i(1), intCol("K", 1), intCol("A", -1));
+                        left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                                left.newModifiedColumnSet("A")));
+                        removeRows(right, i(0));
+                        addToTable(right, i(1), intCol("K", 1), intCol("Y", 11));
+                        addToTable(right, i(2), intCol("K", 2), intCol("Y", -12));
+                        right.notifyListeners(new TableUpdateImpl(i(1), i(0), i(2), RowSetShiftData.EMPTY,
+                                right.newModifiedColumnSet("Y")));
+                    }, null, "Y");
+        }
+    }
+
+    private void checkBothTickingModifiedColumns(final String description, final boolean leftOuterJoin,
+            final java.util.function.BiConsumer<QueryTable, QueryTable> changes, final RowSet expectedModified,
+            final String... expectedModifiedColumns) {
+        // left rows 1 and 3 have keys 1 and 2; right rows 0, 2 and 4 have keys 1, 2 and 3
+        final QueryTable left = testRefreshingTable(i(1, 3).toTracking(), intCol("K", 1, 2), intCol("A", 1, 3));
+        final QueryTable right = testRefreshingTable(i(0, 2, 4).toTracking(), intCol("K", 1, 2, 3),
+                intCol("Y", 10, 12, 30));
+        final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+        final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+        final QueryTable joined = (QueryTable) (leftOuterJoin
+                ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10));
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(joined);
+        joined.addUpdateListener(listener);
+
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                .runWithinUnitTestCycle(() -> changes.accept(left, right));
+
+        assertEquals(description, 1, listener.getCount());
+        if (expectedModified != null) {
+            assertEquals(description, expectedModified, listener.update.modified());
+        }
+        assertEquals(description, joined.newModifiedColumnSet(expectedModifiedColumns),
+                listener.update.modifiedColumnSet());
+        joined.removeUpdateListener(listener);
+    }
+
+    @Test
     public void testKeyedRightModifyOfColumnNotAdded() {
         for (final boolean leftRefreshing : new boolean[] {false, true}) {
             for (final boolean leftOuterJoin : new boolean[] {false, true}) {
