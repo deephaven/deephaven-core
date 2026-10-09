@@ -300,8 +300,9 @@ Format: AQ1 [heading, para N or line N]: question
 
 ## Coverage
 Factual or behavioral claims in prose, headings, lists, tables, captions, and code comments (the
-accuracy check's claim ledger), how many were verified against source, and how many are author queries. A page with no ledger was not fully
-reviewed.
+accuracy check's claim ledger): how many rows, how many were verified against source, and how many
+are author queries. Include the ledger table itself, one row per claim, so a reader can see which
+sentences were checked. A page with no ledger was not fully reviewed.
 
 ## Strengths
 1–3 specific things that work and should be kept, so a revision doesn't remove them.

@@ -38,8 +38,17 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    a comparison between two things, a status like "legacy" or "recommended"). Mark each one
    verified with a source citation or recorded as an author query. Identifier and signature checks
    do not clear a claim; it has to be traced to the implementation.
-   State the ledger's size and the number of unverified claims in the report so a reader can see
-   the coverage.
+
+   **One row per clause, not per sentence.** A sentence that makes several claims gets several rows:
+   in "X works like Y in that…, It creates a table with just a Timestamp column," the comparison and
+   the column claim are separate rows, and verifying one does not clear the other. Give a comparison
+   a row for each side. Work through the page top to bottom, so no sentence is passed over because
+   it reads as framing.
+
+   **Show the ledger in the report** as a table with one row per claim: location, a few words of
+   the claim, verdict (verified, wrong, or author query), and the source checked. A reader should be
+   able to see which sentences were checked and which were not. State the row count and the number
+   of unverified claims above the table.
 
 4. **Technical accuracy review:**
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.
@@ -148,7 +157,8 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - **Before suggesting any new link:** confirm the target file actually exists in the repo (search/list the directory for it) rather than assuming a path is correct by pattern-matching similar pages.
    - Whether a "Related documentation" section exists at all is `deephaven-writing-style`'s Page-structure rule, not this step's — don't duplicate that check here even though it's link-shaped.
 
-6. Report findings organized by category with specific suggestions for fixes.
+6. Report findings organized by category with specific suggestions for fixes, followed by the
+   claim ledger table from step 3a.
 
 7. **Before applying any fixes:**
    - For each fix, show the reference source (quoted, briefly) that confirms it's correct.

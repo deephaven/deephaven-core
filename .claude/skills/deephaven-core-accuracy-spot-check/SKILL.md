@@ -22,7 +22,9 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    **Verify the whole sentence, not just the changed words.** If the edit rewords one clause of a
    sentence or one sentence of a paragraph, check the claims in the clauses around it too. They are
    not in the diff, but a reader takes the sentence as one claim, and the unchanged clause is often
-   the wrong one.
+   the wrong one. Checking that a neighbor still agrees with your edit is not enough. List each
+   claim the neighboring sentences make and verify it against source on its own, the same way you
+   verify the changed claim, and report any that source does not support.
 
    **Placement gate:** a verified-true fix can still be the wrong fix. This applies only to
    narrative pages: Concept guides (`conceptual/`) and Tutorials (`getting-started/crash-course/`).
