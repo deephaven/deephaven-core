@@ -53,9 +53,8 @@ def full_outer_join(
     try:
         on = ",".join(to_sequence(on))
         joins = ",".join(to_sequence(joins))
-        reserve_bits = (
-            reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-        )
+        if reserve_bits is None:
+            reserve_bits = _default_cross_join_reserve_bits()
         with auto_locking_ctx(l_table, r_table):
             return Table(
                 j_table=_JOuterJoinTools.fullOuterJoin(
@@ -99,9 +98,8 @@ def left_outer_join(
     try:
         on = ",".join(to_sequence(on))
         joins = ",".join(to_sequence(joins))
-        reserve_bits = (
-            reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-        )
+        if reserve_bits is None:
+            reserve_bits = _default_cross_join_reserve_bits()
         with auto_locking_ctx(l_table, r_table):
             return Table(
                 j_table=_JOuterJoinTools.leftOuterJoin(
