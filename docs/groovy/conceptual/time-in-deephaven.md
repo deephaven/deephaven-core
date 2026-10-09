@@ -229,19 +229,21 @@ To see the current date and time on your system, run the following:
 println now()
 ```
 
-This will print out a date and time in the default format, such as `2021-09-09T11:58:41.041000000 ET`. The default format consists of the following fields:
+This prints the current time as an ISO-8601 string in UTC, such as `2021-09-09T15:58:41.041Z`. The format consists of the following fields:
 
-`yyyy-MM-ddThh:mm:ss.ffffff TZ`
+`yyyy-MM-ddTHH:mm:ss[.fff]Z`
 
 - `yyyy` - the year
 - `MM` - the month
 - `dd` - the day
 - `T` - the separator between the date and time
-- `hh` - the hour of the day
+- `HH` - the hour of the day, from 00 to 23
 - `mm` - the minute of the hour
-- `ss` - the second of the minute.
-- `ffffff` - the fraction of a second.
-- `TZ` - the time zone.
+- `ss` - the second of the minute
+- `[.fff]` - the optional fraction of a second, printed with 3, 6, or 9 digits as needed, or omitted when it is zero
+- `Z` - the time zone indicator for UTC
+
+Instants always print in UTC. To show a value in a specific time zone, use [`formatDateTime`](../reference/time/datetime/formatDateTime.md).
 
 Deephaven stores [dates-times](../reference/query-language/types/date-time.md) using the [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) class. Internally, this stores the date-time as a signed 64-bit long, which contains the number of nanoseconds since the Unix epoch (January 1, 1970, 00:00:00 GMT). You can create these directly (like in the code [above](#specific-date-times)) and use dates and times directly in the query language, including adding and subtracting them.
 
@@ -251,13 +253,13 @@ The following example shows the creation of two specific points in time, `time1`
 time1 = parseInstant("2020-08-01T12:00:00 ET")
 time2 = parseInstant("2021-08-01T12:00:00 ET")
 
-timeDiff = diffNanos(time2, time1)
+timeDiff = diffNanos(time1, time2)
 println timeDiff
 ```
 
 ### Periods and Durations
 
-Periods and durations represent spans of time that can be either positive or negative. A period represents a span of time that is greater than one day - lengths of time one would normally count on a calendar. A duration represents a span of time that is less than one day in length - spans of time one would normally count on a clock (but accurate down to the millisecond!). Deephaven uses Java's [`Period`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html) [`Duration`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html) classes.
+Periods and durations represent spans of time that can be either positive or negative. A period is a date-based amount of time, measured in years, months, and days. Periods are the spans you count on a calendar. A duration is a time-based amount of time, measured in hours, minutes, seconds, and fractions of a second down to the nanosecond. Durations are the spans you count on a clock, and a day in a duration is always exactly 24 hours. Deephaven uses Java's [`Period`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html) and [`Duration`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html) classes.
 
 Durations are prefixed by a `PT`, whereas Periods are prefixed by the letter `P`.
 
@@ -320,7 +322,7 @@ println plus(time1, negDuration)
 
 ### Time zones
 
-Deephaven uses Java's [`TimeZone`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/TimeZone.html) class to store time zone information. Time zones in instants use abbreviations, such as `ET` for US Eastern time, `UTC` or `Z` for coordinated universal time (UTC), etc.
+Deephaven uses Java's [`ZoneId`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZoneId.html) class to store time zone information. In addition to standard zone IDs such as `UTC` or `Z` for coordinated universal time (UTC), Deephaven supports time zone aliases such as `ET` for US Eastern time.
 
 ```groovy order=:log
 println timeZone("ET")
@@ -328,7 +330,7 @@ println timeZone("PT")
 println timeZone("UTC")
 ```
 
-By default, Deephaven uses the US East time zone (`"America/New_York"`) as the time zone for database operations. For example, when writing a CSV from a table which includes [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) columns, the New York time zone will be used unless a different time zone is passed in to the [`write_csv`](../reference/data-import-export/CSV/writeCsv.md) call.
+By default, Deephaven uses the JVM's default time zone. To change it, see [How to set the timezone](../reference/community-questions/set-timezone.md). For example, when writing a CSV from a table which includes [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) columns, this time zone is used unless a different time zone is passed to the [`writeCsv`](../reference/data-import-export/CSV/writeCsv.md) call.
 
 The following example prints a time in the Denver time zone and in the New York time zone. The printed values end with `Z` (UTC), so the two-hour difference between the two time zones is apparent.
 
