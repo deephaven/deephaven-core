@@ -121,16 +121,15 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
     @Override
     public void appendRange(final long rangeFirstRowKey, final long rangeLastRowKey) {
-        // Checked on every call: the order check below looks only at the start of the range.
-        if (rangeFirstRowKey < 0 || rangeLastRowKey < 0) {
+        // Checked on every call: the order check below looks only at the start of the range. Together these also keep
+        // the end nonnegative.
+        if (rangeFirstRowKey < 0) {
             throw new IllegalArgumentException("Row keys must be nonnegative: start=" + rangeFirstRowKey + ", end="
                     + rangeLastRowKey);
         }
-        if (RspArray.debug) {
-            if (rangeFirstRowKey > rangeLastRowKey) {
-                throw new IllegalArgumentException(
-                        "start (= " + rangeFirstRowKey + ") > end (= " + rangeLastRowKey + ")");
-            }
+        if (rangeFirstRowKey > rangeLastRowKey) {
+            throw new IllegalArgumentException(
+                    "start (= " + rangeFirstRowKey + ") > end (= " + rangeLastRowKey + ")");
         }
         if (pendingStart != -1) {
             if (check && rangeFirstRowKey <= pendingEnd) {
