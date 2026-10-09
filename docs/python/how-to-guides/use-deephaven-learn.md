@@ -88,7 +88,7 @@ The gather step of [`learn`](/core/pydoc/code/deephaven.learn.html#module-deepha
 
 ### Input table
 
-Real-world applications of AI use data sets that contain information from one or more of a vast array of sources. Sensors, observations, and experimental results cover only a small portion of the data sources that AI models use. In a real application, this data will be contained in a Deephaven table. The static or real-time nature of the data will not affect how [`learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn) is used.
+Real-world applications of AI use data sets that contain information from one or more of a vast array of sources. Sensors, observations, and experimental results cover only a small portion of the data sources that AI models use. In a real application, this data will be contained in a Deephaven table. You call [`learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn) the same way on a static table and on a ticking table, but a ticking table must be add-only or blink.
 
 For our toy problem, we'll create a static table called `source` using [`empty_table`](../reference/table-operations/create/emptyTable.md) and fill it with data using [`update`](../reference/table-operations/select/update.md). `source` serves as our input table.
 
