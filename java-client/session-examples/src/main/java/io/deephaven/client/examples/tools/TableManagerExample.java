@@ -190,10 +190,13 @@ class TableManagerExample implements Callable<Void> {
 
     private void showExpectations() {
         final String stages = oneStage ? "1 stage" : "4 stages";
+        // Batch mode sends one request per stage; serial mode sends one per operation, however it is staged
+        final String batchMessages = oneStage ? "1 message" : "4 messages";
         if (mode == null) {
-            System.out.println("Executing in default mode, in " + stages + ". (1 | 22) messages expected.");
+            System.out.println("Executing in default mode, in " + stages + ". (" + batchMessages
+                    + " | 22 messages) expected.");
         } else if (mode.isBatch()) {
-            System.out.println("Executing in explicit batch mode, in " + stages + ". 1 message expected.");
+            System.out.println("Executing in explicit batch mode, in " + stages + ". " + batchMessages + " expected.");
         } else {
             System.out.println("Executing in explicit serial mode, in " + stages + ". 22 messages expected.");
         }

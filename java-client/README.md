@@ -138,7 +138,7 @@ phrasing.
 The session and flight projects have an `io.deephaven.client.examples.tools` package for commands
 that are worth running but were not written to be read: benchmarks, load generators, and
 walkthroughs of a protocol detail. They follow the same file shape as the examples and, where the
-test server can support them, are covered by the same smoke test, but their javadoc starts with what
+test server can support them, are covered by the same smoke test, but their Javadoc starts with what
 kind of tool they are rather than what they teach.
 
 | tool | project | what it is |
@@ -158,7 +158,7 @@ kind of tool they are rather than what they teach.
 
 One file per example, no abstract base classes. Top to bottom:
 
-1. A class javadoc saying what the example demonstrates, in a sentence or two.
+1. A class Javadoc saying what the example demonstrates, in a sentence or two.
 2. `@Command` with the name the launcher script uses.
 3. The shared option groups: `ConnectOptions`, `AuthenticationOptions`, and where relevant
    `BatchOrSerialOptions`, `ScriptTypeOptions`, `Ticket`, `Path`, `SharedField`.

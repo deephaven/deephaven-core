@@ -101,7 +101,7 @@ class DoExchange implements Callable<Void> {
                     final ArrowBuf data = allocator.buffer(cmd.length);
                     data.writeBytes(cmd);
 
-                    // `putMetadata()` makes the GRPC call
+                    // `putMetadata()` makes the gRPC call
                     erw.getWriter().putMetadata(data);
 
                     // snapshot requests do not need to stay open on the client side

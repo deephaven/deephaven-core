@@ -61,7 +61,7 @@ class SubscribeTable implements Callable<Void> {
     @Option(names = {"--tail"}, description = "Tail viewport size")
     long tailSize = 0;
 
-    @Option(names = {"--head"}, description = "Header viewport size")
+    @Option(names = {"--head"}, description = "Head viewport size")
     long headerSize = 0;
 
     @Option(names = {"--updates"},
