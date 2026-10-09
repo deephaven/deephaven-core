@@ -251,7 +251,7 @@ processed_data = market_data.where(["nyse.isBusinessTime(Timestamp)"]).update(
         "Date = toLocalDate(Timestamp, 'America/New_York')",
         "MinuteOfDay = minuteOfDay(Timestamp, 'ET', true)",
         # The first hour after the 9:30 AM open
-        "IsEarlyTrading = MinuteOfDay <= 630",
+        "IsEarlyTrading = MinuteOfDay < 630",
     ]
 )
 
