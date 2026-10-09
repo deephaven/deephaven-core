@@ -129,6 +129,15 @@ If the user asked for edits:
    `deephaven-core-accuracy-check` over each page you changed (sentences next to your edits
    included) and fix what it finds in the same push. Batch the round into one push rather than one
    per comment, since every push starts another review.
+6. **Merge conflicts with the base branch.** When the base branch changed the same page, the
+   other change is usually a correction that already passed review, often by an engineer who owns
+   the code. Treat its facts as authoritative: keep your restructure where it helps, but carry
+   every one of its corrections into the merged text. After resolving, list every line the other
+   change added (`git show <commit> -- <file>`) and confirm each is in the merged page, word for
+   word or in substance. A line that only changed a link still needs the new link. Restore
+   anything missing before you push, and keep the other author's wording for their corrections
+   rather than paraphrasing it. Also check renamed or moved files from that change: links to the
+   old paths break even when the merge reports no conflict.
 
 ## 4a. Check your own proposed text
 

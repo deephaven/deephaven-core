@@ -65,6 +65,14 @@ page, and the fix-not-rewrite limit above does not apply:
   notes, needed vocabulary, correct code comments, and TODOs for work you didn't do as the author
   wrote them. Every change should trace to a finding or a verified problem, so a reviewer can see
   why it was made.
+- Keep the terms readers search for. A word the API, its parameters, or its developers use (for
+  example "include" for the columns a join adds, or "constituent tables" for a multi-join's inputs)
+  is how readers find the page and match it to the code. Define such a term where it first
+  appears rather than replacing it with a plainer synonym.
+- Edit only the pages in scope. When a wrong claim lives on another page, in a reference page
+  that a different PR or ticket owns, or in source code such as a docstring, don't edit it there:
+  other work may be in flight on that page, and source changes need their own review. List it as
+  labeled follow-up work with the file, the wrong text, and the fix.
 - Treat the recorded findings as a floor, not the scope. The audit missed things; fix what you
   find while working through the page, in the sibling language's page too unless the caller
   limited the task to one language or file.
