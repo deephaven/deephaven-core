@@ -135,10 +135,11 @@ phrasing.
 
 ## Reference tools
 
-Each project has an `io.deephaven.client.examples.tools` package for commands that are worth
-running but were not written to be read: benchmarks, load generators, and walkthroughs of a
-protocol detail. They follow the same file shape as the examples and are covered by the same smoke
-test, but their javadoc starts with what kind of tool they are rather than what they teach.
+The session and flight projects have an `io.deephaven.client.examples.tools` package for commands
+that are worth running but were not written to be read: benchmarks, load generators, and
+walkthroughs of a protocol detail. They follow the same file shape as the examples and, where the
+test server can support them, are covered by the same smoke test, but their javadoc starts with what
+kind of tool they are rather than what they teach.
 
 | tool | project | what it is |
 |---|---|---|

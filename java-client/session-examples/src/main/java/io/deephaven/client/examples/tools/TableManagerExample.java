@@ -189,7 +189,7 @@ class TableManagerExample implements Callable<Void> {
     }
 
     private void showExpectations() {
-        final String stages = oneStage ? "1 stages" : "4 stages";
+        final String stages = oneStage ? "1 stage" : "4 stages";
         if (mode == null) {
             System.out.println("Executing in default mode, in " + stages + ". (1 | 22) messages expected.");
         } else if (mode.isBatch()) {
