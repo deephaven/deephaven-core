@@ -1536,6 +1536,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         boolean firstSubscription = false;
         boolean pendingChanges = false;
+        boolean removedActiveSubscriptions = false;
 
         List<Subscription> deletedSubscriptions = null;
 
@@ -1575,6 +1576,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                     --i;
 
                 }
+                removedActiveSubscriptions = deletedSubscriptions != null;
 
                 // rebuild the viewports since there are pending changes. This function excludes active subscriptions
                 // with pending changes because the snapshot process will add those to the active viewports
@@ -1582,6 +1584,13 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                 for (final Subscription subscription : updatedSubscriptions) {
                     if (subscription.pendingDelete) {
+                        if (!subscription.isActive) {
+                            // removed before it was ever activated; it still needs its stream completed
+                            if (deletedSubscriptions == null) {
+                                deletedSubscriptions = new ArrayList<>();
+                            }
+                            deletedSubscriptions.add(subscription);
+                        }
                         continue;
                     }
                     pendingChanges = true;
@@ -1633,7 +1642,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 }
             }
 
-            if (deletedSubscriptions != null && !pendingChanges) {
+            if (removedActiveSubscriptions && !pendingChanges) {
                 // we have only removed subscriptions; we can update this state immediately.
                 promoteSnapshotToActive();
             }

@@ -408,6 +408,27 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         assertTrue("the removed subscription's stream was not completed", client.dummyObserver.completed);
     }
 
+    /**
+     * A subscription removed before the producer first runs for it is still completed. It was never activated, so the
+     * producer used to drop it with its pending changes without ending the subscriber's stream.
+     */
+    @Test
+    public void testSubscriptionRemovedBeforeItsFirstRunIsCompleted() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(), TableTools.intCol("intCol", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "removed-before-first-run");
+        nugget.barrageMessageProducer.removeSubscription(client.dummyObserver);
+        assertFalse(client.dummyObserver.completed);
+
+        flushProducerTable();
+
+        assertTrue("the removed subscription's stream was not completed", client.dummyObserver.completed);
+    }
+
     @Test
     public void testSimultaneousSubscriptionChanges() {
         for (final int size : new int[] {10, 100, 1000}) {
