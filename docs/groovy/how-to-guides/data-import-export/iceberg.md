@@ -55,7 +55,7 @@ To interact with an Iceberg catalog, you must first create an [`IcebergCatalogAd
 import io.deephaven.iceberg.util.*
 
 restAdapter = IcebergTools.createAdapter(
-    "minio-iceberg",
+    "rustfs-iceberg",
     [
         "type": "rest",
         "uri": catalogUri,
@@ -74,7 +74,7 @@ If you are working with a REST catalog backed by S3 storage, you can use the mor
 import io.deephaven.iceberg.util.*
 
 restAdapter = IcebergToolsS3.createS3Rest(
-    "minio-iceberg",        // catalog name
+    "rustfs-iceberg",        // catalog name
     catalogUri,             // catalog URI
     warehouseLocation,      // warehouse location
     awsRegion,              // region name

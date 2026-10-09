@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -265,6 +266,8 @@ public class TestDynamicWhereFilter {
     private static final class TestSetIndex extends AbstractDataIndex {
         private final ColumnSource<?> indexedColumn;
         private final QueryTable indexTable;
+        /** The options of every index table request. */
+        final List<DataIndexOptions> requests = new CopyOnWriteArrayList<>();
 
         TestSetIndex(@NotNull final QueryTable setTable, @NotNull final QueryTable indexTable) {
             this.indexedColumn = setTable.getColumnSource(KEY);
@@ -294,6 +297,7 @@ public class TestDynamicWhereFilter {
 
         @Override
         public @NotNull Table table(final DataIndexOptions options) {
+            requests.add(options);
             return indexTable;
         }
 
@@ -501,6 +505,8 @@ public class TestDynamicWhereFilter {
         private final Map<Object, Long> indexRowKeyByKey;
         private final Gate gate;
         final AtomicInteger lookups = new AtomicInteger();
+        /** The options of every index table and row key lookup request. */
+        final List<DataIndexOptions> requests = new CopyOnWriteArrayList<>();
 
         private GatedSourceIndex(
                 @NotNull final QueryTable sourceTable,
@@ -535,11 +541,13 @@ public class TestDynamicWhereFilter {
 
         @Override
         public @NotNull Table table(final DataIndexOptions options) {
+            requests.add(options);
             return indexTable;
         }
 
         @Override
         public @NotNull RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
+            requests.add(options);
             return (final Object key, final boolean usePrev) -> {
                 gate.passThrough();
                 lookups.incrementAndGet();
@@ -1095,6 +1103,51 @@ public class TestDynamicWhereFilter {
             assertTableEquals(source, result);
         } finally {
             endCycleIfOpen();
+        }
+    }
+
+    /**
+     * Filtering through a source index reads row sets only for the index rows whose keys are in the set, so every
+     * request it makes of the index is for the partial table. A merged index would otherwise read and merge every key's
+     * row sets from every location.
+     */
+    @Test
+    public void testIndexFilteringRequestsOnlyThePartialIndexTable() {
+        final GatedSourceIndex[] indexOut = new GatedSourceIndex[1];
+        final QueryTable source = indexedSourceTable(indexOut, new Gate());
+        final GatedSourceIndex index = indexOut[0];
+        final QueryTable setTable = TstUtils.testTable(intCol(KEY, 1));
+
+        final Table result = updateGraph.sharedLock().computeLocked(
+                () -> source.where(new DynamicWhereFilter(setTable, true, pairs())));
+
+        assertTrue("where filtered through the index", index.lookups.get() > 0);
+        assertEquals(5, result.size());
+        assertFalse(index.requests.isEmpty());
+        for (final DataIndexOptions options : index.requests) {
+            assertTrue("requested the fully merged index table", options.operationUsesPartialTable());
+        }
+    }
+
+    /**
+     * The set is built from the key columns of the set table's index alone, so it asks only for the partial index
+     * table. A merged index would otherwise read and merge every key's row sets from every location.
+     */
+    @Test
+    public void testSetIndexRequestsOnlyThePartialIndexTable() {
+        final QueryTable setTable = TstUtils.testTable(intCol(KEY, 1, 1, 2));
+        final QueryTable indexTable = TstUtils.testTable(intCol(KEY, 1, 2),
+                col(ROW_SET_COLUMN, (RowSet) RowSetFactory.fromRange(0, 1), (RowSet) RowSetFactory.fromKeys(2)));
+        final TestSetIndex index = new TestSetIndex(setTable, indexTable);
+        DataIndexer.of(setTable.getRowSet()).addDataIndex(index);
+        final QueryTable source = TstUtils.testTable(intCol(KEY, 1, 2, 3, 1));
+
+        final Table result = source.where(new DynamicWhereFilter(setTable, true, pairs()));
+
+        assertEquals(3, result.size());
+        assertFalse(index.requests.isEmpty());
+        for (final DataIndexOptions options : index.requests) {
+            assertTrue("requested the fully merged index table", options.operationUsesPartialTable());
         }
     }
 

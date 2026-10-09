@@ -27,13 +27,28 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
     }
 
     @Override
+    public void subsume(WritableRowSet other) {
+        if (other == this) {
+            throw new IllegalArgumentException("Cannot subsume a RowSet into itself");
+        }
+        final RangeSet otherRangeSet = ((WebRowSetImpl) other).rangeSet;
+        rangeSet.addRangeSet(otherRangeSet);
+        otherRangeSet.clear();
+    }
+
+    @Override
     public boolean isEmpty() {
         return rangeSet.isEmpty();
     }
 
     @Override
+    public long firstRowKey() {
+        return rangeSet.isEmpty() ? NULL_ROW_KEY : rangeSet.getFirstRow();
+    }
+
+    @Override
     public long lastRowKey() {
-        return rangeSet.getLastRow();
+        return rangeSet.isEmpty() ? NULL_ROW_KEY : rangeSet.getLastRow();
     }
 
     @Override

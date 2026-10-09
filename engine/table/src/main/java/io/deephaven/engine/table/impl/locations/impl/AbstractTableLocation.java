@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -340,8 +341,8 @@ public abstract class AbstractTableLocation
 
         // Delegate to TableLocation to determine which of the supported actions applies to this particular location.
         // The list is sorted by filterCost, so the first supported action is the minimum cost.
+        long minCost = PushdownResult.UNSUPPORTED_ACTION_COST;
         try (final RegionedPushdownAction.EstimateContext estimateCtx = makeEstimateContext(filter, filterCtx)) {
-            long minCost = PushdownResult.UNSUPPORTED_ACTION_COST;
             for (final RegionedPushdownAction action : sorted) {
                 final long cost = estimatePushdownAction(action, filter, selection, usePrev, filterCtx, estimateCtx);
                 if (cost != PushdownResult.UNSUPPORTED_ACTION_COST) {
@@ -349,8 +350,11 @@ public abstract class AbstractTableLocation
                     break;
                 }
             }
-            onComplete.accept(minCost);
+        } catch (final Exception e) {
+            onError.accept(e);
+            return;
         }
+        onComplete.accept(minCost);
     }
 
     @Override
@@ -384,23 +388,31 @@ public abstract class AbstractTableLocation
             return;
         }
 
-        // Initialize the pushdown result with the selection rowset as "maybe" rows
-        PushdownResult result = PushdownResult.allMaybeMatch(selection);
-
         // Delegate to TableLocation and perform each supported action..
+        PushdownResult result = null;
         try (final RegionedPushdownAction.ActionContext actionCtx = makeActionContext(filter, filterCtx)) {
+            // Initialize the pushdown result with the selection rowset as "maybe" rows
+            result = PushdownResult.allMaybeMatch(selection);
             for (final RegionedPushdownAction action : sorted) {
-                try (final PushdownResult ignored = result) {
-                    result = performPushdownAction(action, filter, selection, result, usePrev, filterCtx, actionCtx);
+                // Each action's input is closed whether or not the action succeeds. Set result to null so it isn't
+                // closed twice on an exception.
+                final PushdownResult input = result;
+                result = null;
+                try (input) {
+                    result = performPushdownAction(action, filter, selection, input, usePrev, filterCtx, actionCtx);
                 }
                 if (result.maybeMatch().isEmpty()) {
                     // No maybe rows remaining, so no reason to continue filtering.
                     break;
                 }
             }
-            // Return the final result
-            onComplete.accept(result);
+        } catch (final Exception e) {
+            SafeCloseable.closeAllDuringFailure(e, result);
+            onError.accept(e);
+            return;
         }
+        // Return the final result
+        onComplete.accept(result);
     }
 
     @Override

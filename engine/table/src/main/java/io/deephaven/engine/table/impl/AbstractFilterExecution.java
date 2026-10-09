@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -152,6 +153,8 @@ abstract class AbstractFilterExecution {
 
         // noinspection resource
         final WritableRowSet filterResult = RowSetFactory.empty();
+        // Whether filterResult has been handed to onComplete, which owns it from then on, even if it throws.
+        final MutableBoolean filterResultDelivered = new MutableBoolean();
 
         jobScheduler().iterateParallel(
                 ExecutionContext.getContext(),
@@ -172,10 +175,16 @@ abstract class AbstractFilterExecution {
                     }
                     resume.run();
                 },
-                () -> onComplete.accept(filterResult),
+                () -> {
+                    filterResultDelivered.setTrue();
+                    onComplete.accept(filterResult);
+                },
                 inputCopy::close,
                 exception -> {
                     try (inputCopy) {
+                        if (filterResultDelivered.isFalse()) {
+                            filterResult.close();
+                        }
                         onError.accept(exception);
                     }
                 });
@@ -416,28 +425,34 @@ abstract class AbstractFilterExecution {
             sf.context.updateExecutedFilterCost(costCeiling);
 
             if (pushdownResult.maybeMatch().isEmpty()) {
-                localInput.setValue(pushdownResult.match().copy());
+                try (pushdownResult) {
+                    replace(localInput, pushdownResult.match().copy());
+                }
                 scheduleAndSortCostEstimates(statelessFilters, filterIdx + 1, localInput.get(),
                         filterComplete, filterNec);
                 return;
             }
+
+            // Store the result for later use by the companion regular filter. The stateless filter owns it from here,
+            // and closes it when the collection completes or fails.
+            if (sf.pushdownResult != null) {
+                sf.pushdownResult.close();
+            }
+            sf.pushdownResult = pushdownResult;
 
             // We still have some maybe rows, sort the filters again, including the current index.
             scheduleAndSortCostEstimates(statelessFilters, filterIdx, localInput.get(), () -> {
                 // If there is a new filter at the current index, need to evaluate it.
                 if (!sf.equals(statelessFilters[filterIdx])) {
                     // Use the union of the match and maybe rows as the input for the next filter.
-                    localInput.setValue(pushdownResult.match().union(pushdownResult.maybeMatch()));
-
-                    // Store the result for later use by the companion regular filter.
-                    sf.pushdownResult = pushdownResult;
+                    replace(localInput, pushdownResult.match().union(pushdownResult.maybeMatch()));
 
                     // Do the next round of filtering with the new filter that bubbled up to the current index.
                     executeStatelessFilter(statelessFilters, filterIdx, localInput, filterComplete, filterNec);
                 } else {
                     // Leverage push-down results to reduce the chunk filter input.
                     final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                        try (final RowSet ignored = rows; final PushdownResult ignored2 = pushdownResult) {
+                        try (final RowSet ignored = rows) {
                             onFilterComplete.accept(rows.union(pushdownResult.match()));
                         }
                     };
@@ -458,7 +473,9 @@ abstract class AbstractFilterExecution {
         if (sf.pushdownResult != null) {
             // Leverage push-down results to reduce the chunk filter input before the final filter.
             final Consumer<WritableRowSet> localConsumer = (rows) -> {
-                onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
+                try (final RowSet ignored = rows) {
+                    onFilterComplete.accept(rows.union(sf.pushdownResult.match()));
+                }
             };
 
             sf.pushdownResult.match().retain(input);

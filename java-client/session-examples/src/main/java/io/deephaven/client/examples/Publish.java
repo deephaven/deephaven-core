@@ -21,7 +21,10 @@ class Publish extends SingleSessionExampleBase {
 
     @Override
     protected void execute(Session session) throws Exception {
-        session.publish(tickets.get(0), tickets.get(1)).get();
+        // The source is given first on the command line; Session.publish takes the destination first
+        final Ticket source = tickets.get(0);
+        final Ticket destination = tickets.get(1);
+        session.publish(destination, source).get();
     }
 
     public static void main(String[] args) {

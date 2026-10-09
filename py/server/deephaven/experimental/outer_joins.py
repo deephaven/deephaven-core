@@ -29,7 +29,9 @@ def full_outer_join(
     """The full_outer_join function creates a new table containing rows that have matching values in both tables.
     If there are multiple matches between a row from the left table and rows from the right table, all matching
     combinations will be included. Additionally, non-matching rows from both tables will also be included in the new
-    table. If no columns to match (on) are specified, then every combination of left and right table rows is included.
+    table. If no columns to match (on) are specified, then every combination of left and right table rows is included;
+    if one table is empty, each row of the other table is included once with null values in the columns from the empty
+    table.
 
     Args:
         l_table (Table): the left table
@@ -38,7 +40,7 @@ def full_outer_join(
             i.e. "col_a = col_b" for different column names; default is None
         joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
-            the right table
+            the right table except those whose names match a left table column in on
         reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
             meaning the configured value is used, which is 10 bits by default.
 
@@ -74,7 +76,8 @@ def left_outer_join(
     """The left_outer_join function creates a new table containing rows that have matching values in both tables.
     If there are multiple matches between a row from the left table and rows from the right table, all matching
     combinations will be included. Additionally, non-matching rows from the left tables will also be included in the new
-    table. If no columns to match (on) are specified, then every combination of left and right table rows is included.
+    table. If no columns to match (on) are specified, then every combination of left and right table rows is included;
+    if the right table is empty, each left table row is included once with null values in the right table columns.
 
     Args:
         l_table (Table): the left table
@@ -82,7 +85,8 @@ def left_outer_join(
         on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
             i.e. "col_a = col_b" for different column names
         joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
-            table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from the right table
+            table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
+            the right table except those whose names match a left table column in on
         reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
             meaning the configured value is used, which is 10 bits by default.
 

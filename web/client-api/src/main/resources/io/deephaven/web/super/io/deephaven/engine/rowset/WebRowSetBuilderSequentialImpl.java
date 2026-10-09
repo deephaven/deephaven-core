@@ -20,7 +20,7 @@ final class WebRowSetBuilderSequentialImpl implements RowSetBuilderSequential {
         appendRange(first, last);
     }
     @Override
-    public RowSet build() {
+    public WritableRowSet build() {
         return new WebRowSetImpl(rangeSet);
     }
 }

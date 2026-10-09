@@ -582,6 +582,7 @@ class NaturalJoinHelper {
             try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
                 rowRedirection.applyShift(prevRowSet, upstream.shifted());
             }
+            rowRedirection.releaseVacatedStorage(upstream.removed(), upstream.shifted(), leftTable.getRowSet());
 
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
             leftTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
@@ -1119,6 +1120,8 @@ class NaturalJoinHelper {
                         final Context bc =
                                 buildSize == 0 ? null : jsm.makeBuildContext(leftSources, buildSize)) {
                     rowRedirection.removeAll(leftRemoved);
+                    rowRedirection.releaseVacatedStorage(leftRemoved, leftShifted,
+                            leftRecorder.getParent().getRowSet());
                     jsm.removeLeft(pc, leftRemoved, leftSources, modifiedSlotTracker);
 
                     // The rows whose key value changed were removed from their hash slots by removeLeftModifications

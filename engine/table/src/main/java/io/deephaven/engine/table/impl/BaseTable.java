@@ -141,6 +141,12 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private volatile boolean isFailed;
 
     /**
+     * The initial attributes for a table created on a systemic thread without any other attributes.
+     */
+    private static final Map<String, Object> SYSTEMIC_ONLY_ATTRIBUTES =
+            Map.of(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+    /**
      * @param definition The definition for this table
      * @param description A description of this table
      * @param attributes The attributes map to use, or else {@code null} to allocate a new one
@@ -149,19 +155,48 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             @NotNull final TableDefinition definition,
             @NotNull final String description,
             @Nullable final Map<String, Object> attributes) {
-        super(attributes, true);
+        super(adjustSystemicAttribute(attributes), true);
         this.definition = definition;
         this.description = description;
         updateGraph = Require.neqNull(ExecutionContext.getContext().getUpdateGraph(), "UpdateGraph");
         lastNotificationStep = updateGraph.clock().currentStep();
+    }
 
-        // Properly flag this table as systemic or not. Note that we use the initial attributes map, rather than
-        // getAttribute, in order to avoid triggering the "immutable after first access" restrictions of
-        // LiveAttributeMap.
-        if (SystemicObjectTracker.isSystemicThread()
-                && (attributes == null || !Boolean.TRUE.equals(attributes.get(Table.SYSTEMIC_TABLE_ATTRIBUTE)))) {
-            setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
+    /**
+     * Flag a new table as systemic or not according to the thread that creates it. When systemic object marking is
+     * enabled, the result has {@link Table#SYSTEMIC_TABLE_ATTRIBUTE} set to {@code true} on a systemic thread and
+     * absent otherwise, regardless of its value in {@code attributes}. Operations that are asked for a specific value
+     * apply it after construction.
+     *
+     * @param attributes The attributes supplied to the constructor, or {@code null}
+     * @return The initial attributes for the new table, or {@code null} to allocate a new map
+     */
+    @Nullable
+    private static Map<String, Object> adjustSystemicAttribute(@Nullable final Map<String, Object> attributes) {
+        if (!SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
+            return attributes;
         }
+        final Object systemicValue = attributes == null ? null : attributes.get(Table.SYSTEMIC_TABLE_ATTRIBUTE);
+        if (SystemicObjectTracker.isSystemicThread()) {
+            if (Boolean.TRUE.equals(systemicValue)) {
+                return attributes;
+            }
+            if (attributes == null || attributes.size() == (systemicValue == null ? 0 : 1)) {
+                return SYSTEMIC_ONLY_ATTRIBUTES;
+            }
+            final Map<String, Object> result = new HashMap<>(attributes);
+            result.put(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
+            return result;
+        }
+        if (systemicValue == null) {
+            return attributes;
+        }
+        if (attributes.size() == 1) {
+            return null;
+        }
+        final Map<String, Object> result = new HashMap<>(attributes);
+        result.remove(Table.SYSTEMIC_TABLE_ATTRIBUTE);
+        return result;
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -930,6 +965,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         final boolean currentMissingAdds = !update.added().subsetOf(getRowSet());
         final boolean currentMissingModifications = !update.modified().subsetOf(getRowSet());
         final boolean previousMissingRemovals = !update.removed().subsetOf(getRowSet().prev());
+        // an added row did not exist on the previous cycle, so it cannot also be modified
+        final boolean addedOverlapsModified = update.added().overlaps(update.modified());
         final boolean currentContainsRemovals;
 
         if (!update.shifted().empty()) {
@@ -942,7 +979,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         if (!previousMissingRemovals && !currentMissingAdds && !currentMissingModifications &&
-                !currentContainsRemovals) {
+                !addedOverlapsModified && !currentContainsRemovals) {
             return;
         }
 
@@ -986,6 +1023,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         final RowSet addedMinusCurrent = update.added().minus(getRowSet());
         final RowSet removedIntersectCurrent = update.removed().intersect(getRowSet());
         final RowSet modifiedMinusCurrent = update.modified().minus(getRowSet());
+        final RowSet addedIntersectModified = update.added().intersect(update.modified());
 
         // Everything is messed up for this table, print out the indices in an easy-to-understand way
         final LogOutput logOutput = new LogOutputStringImpl()
@@ -998,7 +1036,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 .append(LogOutput::nl).append("\t                shifted=").append(update.shifted().toString())
                 .append(LogOutput::nl).append("\t  removalsMinusPrevious=").append(removalsMinusPrevious)
                 .append(LogOutput::nl).append("\t      addedMinusCurrent=").append(addedMinusCurrent)
-                .append(LogOutput::nl).append("\t   modifiedMinusCurrent=").append(modifiedMinusCurrent);
+                .append(LogOutput::nl).append("\t   modifiedMinusCurrent=").append(modifiedMinusCurrent)
+                .append(LogOutput::nl).append("\t addedIntersectModified=").append(addedIntersectModified);
 
         if (update.shifted().empty()) {
             logOutput.append(LogOutput::nl).append("\tremovedIntersectCurrent=").append(removedIntersectCurrent);
@@ -1013,7 +1052,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
 
         Assert.assertion(false, "!(previousMissingRemovals || currentMissingAdds || " +
-                "currentMissingModifications || (currentContainsRemovals && shifted.empty()))",
+                "currentMissingModifications || addedOverlapsModified || " +
+                "(currentContainsRemovals && shifted.empty()))",
                 indexUpdateErrorMessage);
     }
 

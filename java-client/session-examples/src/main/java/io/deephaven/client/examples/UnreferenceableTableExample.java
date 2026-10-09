@@ -13,7 +13,7 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "tainted", mixinStandardHelpOptions = true,
+@Command(name = "unreferenceable", mixinStandardHelpOptions = true,
         description = "Try to execute an unreferenceable table", version = "0.1.0")
 class UnreferenceableTableExample extends SingleSessionExampleBase {
 

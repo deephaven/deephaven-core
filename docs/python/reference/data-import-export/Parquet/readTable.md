@@ -195,7 +195,7 @@ shutil.copyfile("/data/grades/part1.parquet", "/data/grades/part3.parquet")
 
 Deephaven currently supports reading Parquet files from your local filesystem and [S3 storage](https://aws.amazon.com/s3/). The following code block uses special instructions to read a public Parquet dataset from an S3 bucket.
 
-```python docker-config=minio order=drivestats
+```python docker-config=rustfs order=drivestats
 from deephaven import parquet
 from deephaven.experimental import s3
 from datetime import timedelta
