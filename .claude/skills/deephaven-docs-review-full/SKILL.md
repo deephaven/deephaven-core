@@ -190,9 +190,9 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
 - **Is every major concept shown, not just described?** Flag long conceptual stretches with no
   example, and concepts that would be clearer as a wrong-then-right pair (the unsafe query and its
   corrected form, with both outputs).
-- **Does the data produce what the prose says?** Run the example's input values through the code
-  by hand: window length against row spacing, a filter against the dates it keeps, columns dropped
-  on conversion. An example can run cleanly and demonstrate nothing.
+- **Does the traced result teach the concept?** The accuracy check has already traced each
+  example's data through the code. Reuse those values and judge whether the output visibly shows
+  what the lead-in says it will, to this page's reader. Trace an example the accuracy check skipped.
 - **Do blocks that share a `test-set` have compatible settings?** A block with a `docker-config`
   sharing a set with one without it will fail or be tested under the wrong setup.
 - **Is it executable and tested?** A `syntax` or `skip-test` block where a runnable one would work
