@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
 final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
@@ -34,7 +33,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     private volatile ColumnPageReader[] columnPageReaders;
     private final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
     private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
-    private volatile AtomicInteger[] sparseReads;
+    private volatile SparseState<ATTR>[] sparseStates;
 
     VariablePageSizeColumnChunkPageStore(
             @NotNull final PageCache<ATTR> pageCache,
@@ -53,7 +52,8 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
         // noinspection unchecked
         pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
-        sparseReads = new AtomicInteger[INIT_ARRAY_SIZE];
+        // noinspection unchecked
+        sparseStates = (SparseState<ATTR>[]) new SparseState[INIT_ARRAY_SIZE];
     }
 
     private void extendOnePage(@NotNull final SeekableChannelContext channelContext, final int prevNumPages) {
@@ -74,7 +74,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
                     pageRowOffsets = Arrays.copyOf(pageRowOffsets, newSize + 1);
                     columnPageReaders = Arrays.copyOf(columnPageReaders, newSize);
                     pages = Arrays.copyOf(pages, newSize);
-                    sparseReads = Arrays.copyOf(sparseReads, newSize);
+                    sparseStates = Arrays.copyOf(sparseStates, newSize);
                 }
 
                 final ColumnPageReader columnPageReader = columnPageReaderIterator.next(channelContext);
@@ -96,7 +96,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
                 columnPageReaders[localNumPages] = columnPageReader;
                 pages[localNumPages] = pageRef;
-                sparseReads[localNumPages] = new AtomicInteger();
+                sparseStates[localNumPages] = new SparseState<>();
                 pageRowOffsets[localNumPages + 1] = prevRowOffset + numRows;
                 numPages = localNumPages + 1;
             }
@@ -216,7 +216,8 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     }
 
     @Override
-    int recordSparseRead(final int pageNum) {
-        return sparseReads[pageNum].incrementAndGet();
+    @NotNull
+    SparseState<ATTR> sparseState(final int pageNum) {
+        return sparseStates[pageNum];
     }
 }

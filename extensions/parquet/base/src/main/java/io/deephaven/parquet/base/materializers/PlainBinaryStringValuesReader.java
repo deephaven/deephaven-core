@@ -82,9 +82,9 @@ final class PlainBinaryStringValuesReader extends ValuesReader {
     }
 
     /**
-     * Read a 4-byte little-endian length, bounds-checked. The check is not optional: the page buffer is a reused,
-     * over-allocated cache buffer, so reading past {@code limit} would quietly return stale bytes from the previous
-     * page instead of failing.
+     * Read a 4-byte little-endian length, bounds-checked. The check is not optional: the page buffer is reused and
+     * over-allocated, so reading past {@code limit} would quietly return stale bytes from the previous page instead of
+     * failing.
      */
     private static int readLength(final byte[] array, final int pos, final int limit) {
         if (limit - pos < Integer.BYTES) {

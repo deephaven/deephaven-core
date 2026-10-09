@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
@@ -34,23 +33,20 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
 
     private static final class PageState<ATTR extends Any> {
         private volatile WeakReference<PageCache.IntrusivePage<ATTR>> pageRef;
-        private final AtomicInteger sparseReads = new AtomicInteger();
+        private final SparseState<ATTR> sparseState = new SparseState<>();
 
         PageState() {
             pageRef = null; // Initialized when used for the first time
         }
     }
 
-    private volatile boolean isInitialized; // This class is initialized when reading the first page
+    private volatile boolean isInitialized; // Initialized when first locating a row's page
     private OffsetIndex offsetIndex;
     private int numPages;
     /**
      * Fixed number of rows per page. Set as positive value if first ({@link #numPages}-1) pages have equal number of
-     * rows, else equal to {@value #PAGE_SIZE_NOT_FIXED}. We cannot find the number of rows in the last page size from
-     * offset index, because it only has the first row index of each page. And we don't want to materialize any pages.
-     * So as a workaround, in case first ({@link #numPages}-1) pages have equal size, we can assume all pages to be of
-     * the same size and calculate the page number as {@code row_index / fixed_page_size -> page_number}. If it is
-     * greater than {@link #numPages}, we will infer that the row is coming from last page.
+     * rows, else equal to {@value #PAGE_SIZE_NOT_FIXED}. If it is set, the page number is
+     * {@code row_index / fixed_page_size}; if that is at least {@link #numPages}, the row is in the last page.
      */
     private long fixedPageSize;
     private AtomicReferenceArray<PageState<ATTR>> pageStates;
@@ -159,8 +155,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
     }
 
     @Override
-    int recordSparseRead(final int pageNum) {
-        return pageState(pageNum).sparseReads.incrementAndGet();
+    @NotNull
+    SparseState<ATTR> sparseState(final int pageNum) {
+        return pageState(pageNum).sparseState;
     }
 
     private ChunkPage<ATTR> getPageImpl(@NotNull final SeekableChannelContext channelContext, final int pageNum) {

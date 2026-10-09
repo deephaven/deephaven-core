@@ -47,15 +47,16 @@ public interface ColumnPageReader extends AutoCloseable {
             SeekableChannelContext channelContext) throws IOException;
 
     /**
-     * @return Whether {@link #openSparse} may be used for this page, i.e. the column is neither repeated nor nested
-     *         within an optional group
+     * @return Whether {@link #openSparse} may be used; the same for every page of a column chunk. True when the column
+     *         is neither repeated nor nested optional, so that rows map to values one to one
      */
     default boolean supportsSparse() {
         return false;
     }
 
     /**
-     * Read and decompress this page into {@code cursor}, positioned at its first row.
+     * Read and decompress this page into {@code cursor}, positioned at its first row. Requires
+     * {@link #supportsSparse()}.
      *
      * @param channelContext The channel context to use for reading the parquet file
      */

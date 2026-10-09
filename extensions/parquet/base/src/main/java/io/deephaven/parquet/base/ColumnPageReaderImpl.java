@@ -148,7 +148,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public boolean supportsSparse() {
-        // Nested optional levels are rejected by the dense path; a single definition level maps rows to values 1:1.
+        // The dense path rejects nested optional levels too.
         return path.getMaxRepetitionLevel() == 0 && path.getMaxDefinitionLevel() <= 1;
     }
 
@@ -157,8 +157,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SparsePageCursor cursor,
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         if (!supportsSparse()) {
-            throw new UnsupportedOperationException("Sparse read of a repeated or nested column: " + columnName +
-                    ", uri: " + uri);
+            throw new UnsupportedOperationException(
+                    "Sparse read of a repeated or nested column: " + columnName + ", uri: " + uri);
         }
         cursor.release();
         // The cursor outlives this read, so the page goes into its own buffers rather than the context's.
@@ -282,8 +282,15 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         final ByteBuffer definitionLevels =
                 getCachedBuffer(channelContext, DEFINITION_LEVELS_BUFFER_KEY, definitionLevelsLength);
         readNBytes(in, definitionLevels.array(), definitionLevels.arrayOffset(), definitionLevelsLength);
-        final InputStream decompressed = compressorAdapter.decompress(in, compressedSize, uncompressedSize,
-                getDecompressorHolder(channelContext));
+        // A writer may store a page's values uncompressed, even in a compressed column chunk.
+        if (!header.isIs_compressed() && compressedSize != uncompressedSize) {
+            throw new IOException("Uncompressed DATA_PAGE_V2 values of " + compressedSize + " bytes, expected "
+                    + uncompressedSize + " for column: " + columnName + ", uri: " + uri);
+        }
+        final InputStream decompressed = header.isIs_compressed()
+                ? compressorAdapter.decompress(in, compressedSize, uncompressedSize,
+                        getDecompressorHolder(channelContext))
+                : in;
         return new DataPageV2Partial(repetitionLevels, definitionLevels, decompressed, uncompressedSize);
     }
 

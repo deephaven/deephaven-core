@@ -16,10 +16,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * A resumable sparse read of one data page, opened by {@link ColumnPageReader#openSparse}. Each read decodes only the
- * requested rows and leaves the cursor after the last one, so a later read of rows at or after {@link #nextRow()}
- * continues from there instead of walking the page again. The cursor owns the page's decompressed bytes, and reuses its
- * buffers across pages. Not thread safe.
+ * A forward-only sparse read of one data page, opened by {@link ColumnPageReader#openSparse}: each read resumes at
+ * {@link #nextRow()}. Owns the decompressed page and reuses its buffers across pages. Not thread safe.
  */
 public final class SparsePageCursor {
 
@@ -89,7 +87,7 @@ public final class SparsePageCursor {
     /**
      * Drop the current page, keeping the buffers for reuse.
      */
-    public void release() {
+    void release() {
         factory = null;
         valuesReader = null;
         keyReader = null;
@@ -97,7 +95,8 @@ public final class SparsePageCursor {
     }
 
     /**
-     * @return A little-endian buffer of {@code size} bytes for the decompressed page, valid until the next open
+     * @return A little-endian buffer of {@code size} bytes for the decompressed page, valid until the cursor opens
+     *         another page
      */
     ByteBuffer pageBuffer(final int size) {
         if (pageBytes.length < size) {
@@ -107,7 +106,7 @@ public final class SparsePageCursor {
     }
 
     /**
-     * @return A copy of the remaining bytes of {@code levels}, valid until the next open
+     * @return A copy of the remaining bytes of {@code levels}, valid until the cursor opens another page
      */
     ByteBuffer copyLevels(@NotNull final ByteBuffer levels) {
         final int size = levels.remaining();
@@ -119,8 +118,7 @@ public final class SparsePageCursor {
     }
 
     /**
-     * Position the cursor at the first row of a page whose buffers were filled by {@link #pageBuffer} and
-     * {@link #copyLevels}.
+     * Position the cursor at the first row of the page just read into its buffers.
      */
     void open(
             @NotNull final PageMaterializerFactory factory,
@@ -137,8 +135,8 @@ public final class SparsePageCursor {
     }
 
     /**
-     * Fill a materializer sized to the requested rows. Its indexes are output positions, independent of where
-     * {@code dataReader} is in the page, so unrequested values are skipped rather than decoded.
+     * Fill a materializer sized to the requested rows, at output positions, while {@code dataReader} skips the
+     * unrequested values.
      */
     private Object read(
             final PageMaterializerFactory factory,
@@ -198,8 +196,8 @@ public final class SparsePageCursor {
     }
 
     /**
-     * Consume up to {@code rows} rows of the current definition level run, reading the next run if this one is
-     * exhausted.
+     * Consume up to {@code rows} rows of the current definition level run, reading the next run as needed, and advance
+     * {@link #nextRow}.
      */
     private int nextRun(final long rows) throws IOException {
         while (runRemaining == 0) {
