@@ -66,7 +66,7 @@ Deephaven parallelizes work at two levels: across tables and within one operatio
 - Filters in [`where`](../../reference/table-operations/filter/where.md), and the filters that [`whereIn`](../../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../../reference/table-operations/filter/where-not-in.md) build.
 - [`updateBy`](../../reference/table-operations/update-by-operations/updateBy.md): the calculations for each group of rows that share key values.
 - [`sort`](../../reference/table-operations/sort/sort.md): the first sort of a large table. When a live sorted table updates, Deephaven sorts the changed rows on one thread.
-- [`rangeJoin`](../../reference/table-operations/join/rangeJoin.md): each group of matching rows.
+- [`rangeJoin`](../../reference/table-operations/join/range-join.md): each group of matching rows.
 - [`transform`](../../reference/table-operations/partitioned-tables/transform.md) and [`proxy`](../../reference/table-operations/partitioned-tables/proxy.md) operations on a [partitioned table](../../how-to-guides/partitioned-tables.md): each constituent table is a separate task.
 
 Joins other than `rangeJoin`, aggregations, [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), [`head`](../../reference/table-operations/filter/head.md), [`tail`](../../reference/table-operations/filter/tail.md), [`merge`](../../reference/table-operations/merge/merge.md), and [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) don't split their own work.
