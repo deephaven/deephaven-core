@@ -307,7 +307,7 @@ So, you have a trained AI/ML model and aren't sure which workflow to use. Here a
 
 - A single [table operation](#table-operations) is the simplest way to make predictions with a model. It's done in a single line of code.
   The [listener + publisher](#table-listener-and-publisher) is a more complex workflow, but it offers more flexibility. For instance, it can handle multi-row inputs and outputs and take advantage of vectorization for performance.
-- The [listener + publisher](#table-listener-and-publisher) can handle delayed calculations and can [utilize a thread pool](#workflow-trade-offs) to manage workloads. The [table operations](#table-operations) will hold the UG lock until the work is finished.
+- The [listener + publisher](#table-listener-and-publisher) can handle delayed calculations and can [utilize a thread pool](#utilize-a-thread-pool) to manage workloads. The [table operations](#table-operations) will hold the UG lock until the work is finished.
 
 ## Related documentation
 
