@@ -67,18 +67,4 @@ public class UpdateGraphJobScheduler implements JobScheduler {
     public int threadCount() {
         return updateGraph.parallelismFactor();
     }
-
-    /**
-     * Jobs submitted here run as notifications on the update graph's own threads. A thread that blocked on this
-     * scheduler could be one of them, and if every update thread blocked this way the notifications they wait for could
-     * never run; so no thread may block on it.
-     *
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public void checkInvokeSupported() {
-        throw new UnsupportedOperationException("A thread cannot block on the update graph's job scheduler: its jobs "
-                + "run as notifications on the update graph's own threads, which may be the ones waiting. Use "
-                + "iterateParallel or iterateSerial and continue from its completion callback instead.");
-    }
 }

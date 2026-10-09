@@ -67,20 +67,4 @@ public class ImmediateJobScheduler implements JobScheduler {
     public int threadCount() {
         return 1;
     }
-
-    /**
-     * A thread may not block on this scheduler while it is running the scheduler's jobs: a job submitted during the
-     * wait is queued for that same thread, behind the wait, so a task that hands its completion to one would never
-     * complete.
-     *
-     * @throws UnsupportedOperationException if the calling thread is running this scheduler's jobs
-     */
-    @Override
-    public void checkInvokeSupported() {
-        if (processingThread == Thread.currentThread()) {
-            throw new UnsupportedOperationException("A thread cannot block on the job scheduler whose jobs it is "
-                    + "running: a job submitted while it waits would run only once the wait is over. Invoke on a new "
-                    + "ImmediateJobScheduler instead.");
-        }
-    }
 }

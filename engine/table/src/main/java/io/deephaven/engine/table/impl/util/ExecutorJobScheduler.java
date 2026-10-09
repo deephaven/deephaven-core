@@ -34,10 +34,7 @@ import java.util.function.Consumer;
  * helpers already started. It never waits on a helper that has not started, since it runs any such helper itself, so
  * this holds for any executor. A task that itself calls {@code invokeParallel} is such a caller too, and works through
  * its nested iteration the same way; when the pool has no free thread, its nested helpers run on its own thread and it
- * does not wait at all. The exception is a task that hands its completion to a nested callback-form iteration through
- * {@code resume}: its caller waits for that iteration's jobs without running them, so with an executor that queues,
- * such a task must not run on a thread the queued jobs need. With this pool shape a job either starts at once or runs
- * on its submitter, so that cannot happen.
+ * does not wait at all.
  * </p>
  *
  * <p>

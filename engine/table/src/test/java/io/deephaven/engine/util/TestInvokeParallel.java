@@ -4,12 +4,14 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.engine.updategraph.OperationInitializer;
@@ -48,8 +50,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests of {@link JobScheduler#invokeParallel} and {@link JobScheduler#invokeSerial}: the calling thread takes part,
- * the call returns only once the iteration is over, and a failure is thrown to the caller.
+ * Tests of {@link JobScheduler#invokeParallel}: the calling thread takes part, the call returns only once the iteration
+ * is over, and a failure is thrown to the caller.
  */
 public class TestInvokeParallel {
 
@@ -310,55 +312,6 @@ public class TestInvokeParallel {
                     (innerContext, inner, innerNec) -> innerRuns.incrementAndGet()));
         });
         assertThat(innerRuns.get()).isEqualTo(20);
-    }
-
-    /**
-     * A task may instead start nested asynchronous work, handing it {@code resume} and the nested error consumer, and
-     * return; the thread that finishes the nested work carries the outer iteration on, and the caller waits for all of
-     * it.
-     */
-    @Test
-    public void testNestedAsynchronousIterationCarriesTheOuterIterationOn() throws InterruptedException {
-        final ExecutorJobScheduler scheduler = newScheduler(3, 4);
-        final AtomicInteger innerRuns = new AtomicInteger();
-        final AtomicInteger outerRuns = new AtomicInteger();
-        withTimeout(() -> {
-            scheduler.invokeParallel(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                    0, 12,
-                    (context, outer, nestedErrorConsumer, resume) -> {
-                        outerRuns.incrementAndGet();
-                        scheduler.iterateParallel(ExecutionContext.getContext(), null,
-                                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 5,
-                                (innerContext, inner, innerNec) -> innerRuns.incrementAndGet(),
-                                resume, () -> {
-                                }, nestedErrorConsumer);
-                    });
-        });
-
-        assertThat(outerRuns.get()).isEqualTo(12);
-        assertThat(innerRuns.get()).isEqualTo(60);
-    }
-
-    @Test
-    public void testNestedFailureReportedThroughTheNestedErrorConsumerFailsTheInvocation()
-            throws InterruptedException {
-        final ExecutorJobScheduler scheduler = newScheduler(1, 2);
-        final IllegalStateException failure = new IllegalStateException("nested task failed");
-        withTimeout(() -> {
-            assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
-                    (context, outer, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
-                            ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                            (innerContext, inner, innerNec) -> {
-                                if (outer == 0 && inner == 1) {
-                                    throw failure;
-                                }
-                            },
-                            resume, () -> {
-                            }, nestedErrorConsumer)))
-                    .isSameAs(failure);
-        });
-
     }
 
     @Test
@@ -839,17 +792,6 @@ public class TestInvokeParallel {
     }
 
     /** A checked exception reaching onError, as nested work may deliver one, is thrown wrapped. */
-    @Test
-    public void testCheckedFailureIsThrownWrapped() {
-        final Exception checked = new Exception("checked");
-
-        assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
-                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
-                (context, idx, nestedErrorConsumer, resume) -> nestedErrorConsumer.accept(checked)))
-                .isInstanceOf(UncheckedDeephavenException.class)
-                .hasCause(checked);
-    }
-
     /** A failure to start the iteration fails it like any other failure, and is thrown. */
     @Test
     public void testStartFailureIsThrown() {
@@ -902,24 +844,6 @@ public class TestInvokeParallel {
         assertThat(callbacks.cleanupCalls.get()).isZero();
         assertThat(callbacks.error.get()).isInstanceOf(UncheckedDeephavenException.class);
         assertThat(callbacks.error.get().getCause()).isSameAs(factoryError);
-    }
-
-    @Test
-    public void testUpdateGraphSchedulerRefusesToBlock() {
-        final JobScheduler scheduler =
-                new UpdateGraphJobScheduler(ExecutionContext.getContext().getUpdateGraph());
-        final AtomicInteger runs = new AtomicInteger();
-        final AtomicInteger contexts = new AtomicInteger();
-
-        assertThatThrownBy(() -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
-                () -> {
-                    contexts.incrementAndGet();
-                    return JobScheduler.DEFAULT_CONTEXT;
-                }, 0, 10, (context, idx, nec) -> runs.incrementAndGet()))
-                .isInstanceOf(UnsupportedOperationException.class);
-
-        assertThat(runs.get()).isZero();
-        assertThat(contexts.get()).isZero();
     }
 
     @Test
@@ -1047,138 +971,6 @@ public class TestInvokeParallel {
         assertThat(contexts.stream().mapToInt(context -> context.tasks.get()).sum()).isEqualTo(100);
     }
 
-    @Test
-    public void testInvokeSerialRunsStepsInOrderOnTheCallingThread() {
-        final ExecutorJobScheduler scheduler = newScheduler(3, 4);
-        final List<Integer> order = new ArrayList<>();
-        final Set<Thread> threads = ConcurrentHashMap.newKeySet();
-        final AtomicInteger contexts = new AtomicInteger();
-
-        scheduler.invokeSerial(ExecutionContext.getContext(), null,
-                () -> {
-                    contexts.incrementAndGet();
-                    return JobScheduler.DEFAULT_CONTEXT;
-                }, 0, 10,
-                (context, idx, nestedErrorConsumer, resume) -> {
-                    order.add(idx);
-                    threads.add(Thread.currentThread());
-                    resume.run();
-                });
-
-        assertThat(order).isEqualTo(items(10));
-        assertThat(threads).containsExactly(Thread.currentThread());
-        assertThat(contexts.get()).isEqualTo(1);
-    }
-
-    /**
-     * Each step fans out beneath itself and completes through resume; the steps still run one at a time and in order,
-     * whichever thread finishes a step's nested work runs the next, and the caller waits for the whole chain.
-     */
-    @Test
-    public void testInvokeSerialStepsWithNestedParallelWorkRunOneAtATime() throws InterruptedException {
-        final ExecutorJobScheduler scheduler = newScheduler(3, 4);
-        final List<Integer> order = Collections.synchronizedList(new ArrayList<>());
-        final AtomicInteger activeSteps = new AtomicInteger();
-        final AtomicBoolean stepsOverlapped = new AtomicBoolean();
-        final AtomicInteger innerRuns = new AtomicInteger();
-
-        withTimeout(() -> {
-            scheduler.invokeSerial(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                    0, 6,
-                    (context, step, nestedErrorConsumer, resume) -> {
-                        if (activeSteps.incrementAndGet() != 1) {
-                            stepsOverlapped.set(true);
-                        }
-                        order.add(step);
-                        scheduler.iterateParallel(ExecutionContext.getContext(), null,
-                                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 4,
-                                (innerContext, inner, innerNec) -> {
-                                    sleep(2);
-                                    innerRuns.incrementAndGet();
-                                },
-                                () -> {
-                                    activeSteps.decrementAndGet();
-                                    resume.run();
-                                }, () -> {
-                                }, nestedErrorConsumer);
-                    });
-        });
-
-        assertThat(order).isEqualTo(items(6));
-        assertThat(stepsOverlapped.get()).as("two steps were active at once").isFalse();
-        assertThat(innerRuns.get()).isEqualTo(24);
-    }
-
-    @Test
-    public void testInvokeSerialFailureStopsTheChainAndIsThrown() throws InterruptedException {
-        final ExecutorJobScheduler scheduler = newScheduler(1, 2);
-        final IllegalStateException failure = new IllegalStateException("step failed");
-        final List<Integer> order = Collections.synchronizedList(new ArrayList<>());
-
-        withTimeout(() -> {
-            assertThatThrownBy(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 6,
-                    (context, step, nestedErrorConsumer, resume) -> {
-                        order.add(step);
-                        // the nested work of step 2 fails, and reports it through the nested error consumer
-                        scheduler.iterateParallel(ExecutionContext.getContext(), null,
-                                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                                (innerContext, inner, innerNec) -> {
-                                    if (step == 2 && inner == 1) {
-                                        throw failure;
-                                    }
-                                },
-                                resume, () -> {
-                                }, nestedErrorConsumer);
-                    })).isSameAs(failure);
-        });
-
-        assertThat(order).isEqualTo(items(3));
-    }
-
-    @Test
-    public void testInvokeSerialOnTheUpdateGraphSchedulerIsRefused() {
-        final JobScheduler scheduler =
-                new UpdateGraphJobScheduler(ExecutionContext.getContext().getUpdateGraph());
-        final AtomicInteger runs = new AtomicInteger();
-
-        assertThatThrownBy(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
-                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 10,
-                (context, idx, nestedErrorConsumer, resume) -> {
-                    runs.incrementAndGet();
-                    resume.run();
-                })).isInstanceOf(UnsupportedOperationException.class);
-
-        assertThat(runs.get()).isZero();
-    }
-
-    /**
-     * A step that hands resume and its nested error consumer to a nested iteration that fails to start fails the
-     * invocation with that failure. The nested iteration both throws it and delivers it to its onError, and the second
-     * delivery is the same failure, not a fatal one.
-     */
-    @Test
-    public void testNestedStartFailureIsNotFatal() throws InterruptedException {
-        final ExecutorJobScheduler scheduler = newScheduler(2, 3);
-        final IllegalStateException noContext = new IllegalStateException("nested context factory failed");
-        final AtomicInteger innerRuns = new AtomicInteger();
-
-        withTimeout(() -> assertThatThrownBy(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
-                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                (context, step, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
-                        ExecutionContext.getContext(), null,
-                        () -> {
-                            throw noContext;
-                        }, 0, 4, (innerContext, inner, innerNec) -> innerRuns.incrementAndGet(),
-                        resume, () -> {
-                        }, nestedErrorConsumer)))
-                .isSameAs(noContext)
-                .satisfies(TestInvokeParallel::assertNoFatalReport)
-                .satisfies(thrown -> assertThat(thrown.getSuppressed()).isEmpty()));
-
-        assertThat(innerRuns.get()).isZero();
-    }
-
     /** The same in the callback form, whose step runs on a scheduler thread, which a fatal report would escape. */
     @Test
     public void testNestedStartFailureEndsTheCallbackFormInOnErrorWithoutAFatalReport() throws InterruptedException {
@@ -1214,19 +1006,22 @@ public class TestInvokeParallel {
     /**
      * The other order: the nested start failure is thrown first, failing the step and closing its invoker, while a
      * nested job is still running. That job, finishing, ends the nested iteration in onError, which delivers the same
-     * failure to the closed invoker; that is not fatal either, on the thread that finishes the job.
+     * failure to the closed invoker; that is not fatal either, on the thread that finishes the job, and the outer
+     * iteration ends in onError once.
      */
     @Test
-    public void testNestedFailureDeliveredAfterTheStepFailedIsNotFatal() throws InterruptedException {
-        final ThreadPoolExecutor pool = newPool(1);
+    public void testNestedFailureDeliveredAfterTheStepFailedIsNotFatal() {
+        final ThreadPoolExecutor pool = newPool(2);
         final List<Throwable> escaped = Collections.synchronizedList(new ArrayList<>());
         final IllegalStateException submitFailure = new IllegalStateException("cannot start a thread");
         final CountDownLatch nestedJobStarted = new CountDownLatch(1);
         final CountDownLatch stepClosed = new CountDownLatch(1);
+        final CountDownLatch ended = new CountDownLatch(1);
         final AtomicInteger submissions = new AtomicInteger();
         final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(recordingEscapes(command -> {
-            if (submissions.incrementAndGet() > 1) {
-                // fail only once the first nested job is running, so that it outlasts the failure
+            // the outer step and the first nested job start; the second nested job's submission fails, once the
+            // first is running, so that it outlasts the failure
+            if (submissions.incrementAndGet() > 2) {
                 await(nestedJobStarted);
                 throw submitFailure;
             }
@@ -1238,9 +1033,9 @@ public class TestInvokeParallel {
                 stepClosed.countDown();
             }
         };
+        final Callbacks callbacks = new Callbacks();
 
-        withTimeout(() -> assertThatThrownBy(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
-                stepContext, 0, 1,
+        scheduler.iterateSerial(ExecutionContext.getContext(), null, stepContext, 0, 1,
                 (context, step, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
                         ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 4,
                         (innerContext, inner, innerNec) -> {
@@ -1249,13 +1044,23 @@ public class TestInvokeParallel {
                             await(stepClosed);
                         },
                         resume, () -> {
-                        }, nestedErrorConsumer)))
-                .isSameAs(submitFailure)
-                .satisfies(TestInvokeParallel::assertNoFatalReport));
+                        }, nestedErrorConsumer),
+                callbacks.onComplete, callbacks.cleanup, e -> {
+                    callbacks.onError.accept(e);
+                    ended.countDown();
+                });
+        await(ended);
         // the nested job delivers the failure again as it finishes
         pool.shutdown();
-        assertThat(pool.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+        try {
+            assertThat(pool.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
+        } catch (final InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
+        assertThat(callbacks.error.get()).isSameAs(submitFailure);
+        assertThat(callbacks.completeCalls.get()).isZero();
+        assertThat(callbacks.cleanupCalls.get()).isZero();
         assertThat(escaped).isEmpty();
     }
 
@@ -1268,7 +1073,7 @@ public class TestInvokeParallel {
 
         assertThatThrownBy(() -> new ImmediateJobScheduler().invokeParallel(ExecutionContext.getContext(), null,
                 JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 3,
-                (context, idx, nestedErrorConsumer, resume) -> {
+                (context, idx, nestedErrorConsumer) -> {
                     nestedErrorConsumer.accept(failure);
                     throw failure;
                 }))
@@ -1428,32 +1233,188 @@ public class TestInvokeParallel {
     }
 
     /**
-     * A thread running an immediate scheduler's jobs may not block on that scheduler, since a job submitted while it
-     * waited would be queued behind the wait; it may still invoke on a scheduler of its own.
+     * A task of an immediate scheduler's iteration, which runs as one of that scheduler's jobs, may invoke on the same
+     * scheduler: the invocation submits nothing there and runs every task on that thread. It may invoke on a scheduler
+     * of its own too.
      */
     @Test
-    public void testImmediateSchedulerRefusesToBlockTheThreadRunningItsJobs() throws InterruptedException {
+    public void testInvokeFromAnImmediateSchedulersOwnTaskCompletes() throws InterruptedException {
         final ImmediateJobScheduler scheduler = new ImmediateJobScheduler();
-        final AtomicReference<Throwable> thrown = new AtomicReference<>();
-        final AtomicInteger nestedRuns = new AtomicInteger();
+        final AtomicInteger sameSchedulerRuns = new AtomicInteger();
         final AtomicInteger ownRuns = new AtomicInteger();
+        final Callbacks callbacks = new Callbacks();
 
-        withTimeout(() -> scheduler.submit(ExecutionContext.getContext(), () -> {
-            thrown.set(catchThrowable(() -> scheduler.invokeSerial(ExecutionContext.getContext(), null,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
-                    (context, step, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
-                            ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
-                            (innerContext, inner, innerNec) -> nestedRuns.incrementAndGet(),
-                            resume, () -> {
-                            }, nestedErrorConsumer))));
-            invoke(new ImmediateJobScheduler(), 3, (context, idx, nec) -> ownRuns.incrementAndGet());
-        }, null, e -> {
-            throw new AssertionError("unexpected failure", e);
+        withTimeout(() -> scheduler.iterateParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 2,
+                (context, idx, nec) -> {
+                    invoke(scheduler, 4, (innerContext, inner, innerNec) -> sameSchedulerRuns.incrementAndGet());
+                    invoke(new ImmediateJobScheduler(), 3, (ownContext, own, ownNec) -> ownRuns.incrementAndGet());
+                },
+                callbacks.onComplete, callbacks.cleanup, callbacks.onError));
+
+        assertThat(callbacks.error.get()).isNull();
+        assertThat(callbacks.completeCalls.get()).isEqualTo(1);
+        assertThat(sameSchedulerRuns.get()).isEqualTo(8);
+        assertThat(ownRuns.get()).isEqualTo(6);
+    }
+
+    /** The test's update graph, reset to deliver notifications on {@code updateThreads} threads of its own. */
+    private static ControlledUpdateGraph updateGraphWithUpdateThreads(final int updateThreads) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, updateThreads, 0, 0);
+        return updateGraph;
+    }
+
+    /** Supplies task contexts that count how many were made and how many are still open. */
+    private static final class CountingContexts implements Supplier<JobScheduler.JobThreadContext> {
+        private final AtomicInteger made = new AtomicInteger();
+        private final AtomicInteger open = new AtomicInteger();
+
+        @Override
+        public JobScheduler.JobThreadContext get() {
+            made.incrementAndGet();
+            open.incrementAndGet();
+            return new JobScheduler.JobThreadContext() {
+                @Override
+                public void close() {
+                    open.decrementAndGet();
+                }
+            };
+        }
+    }
+
+    private static void assertEachRanOnce(final AtomicIntegerArray runs) {
+        for (int ii = 0; ii < runs.length(); ++ii) {
+            assertThat(runs.get(ii)).as("runs of task %d", ii).isEqualTo(1);
+        }
+    }
+
+    /**
+     * An invocation may block an update thread. On a pool thread, the refresh thread dispatches its helper to another
+     * pool thread, which works alongside it: the two tasks meet at a barrier, which they can pass only on two threads
+     * at once. Invocations nested in those tasks complete too.
+     */
+    @Test
+    public void testInvokeOnAPoolThreadIsHelpedByAnotherPoolThread() {
+        final ControlledUpdateGraph updateGraph = updateGraphWithUpdateThreads(4);
+        final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+        final CyclicBarrier bothRunning = new CyclicBarrier(2);
+        final Set<Thread> taskThreads = ConcurrentHashMap.newKeySet();
+        final AtomicBoolean offAnUpdateThread = new AtomicBoolean();
+        final AtomicInteger nestedRuns = new AtomicInteger();
+        final CountingContexts contexts = new CountingContexts();
+        final Callbacks callbacks = new Callbacks();
+
+        updateGraph.runWithinUnitTestCycle(() -> scheduler.iterateParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 1,
+                (outerContext, outer, outerNec) -> scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                        contexts, 0, 2,
+                        (context, idx, nec) -> {
+                            if (!updateGraph.currentThreadProcessesUpdates()) {
+                                offAnUpdateThread.set(true);
+                            }
+                            taskThreads.add(Thread.currentThread());
+                            await(bothRunning);
+                            scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 5,
+                                    (innerContext, inner, innerNec) -> nestedRuns.incrementAndGet());
+                        }),
+                callbacks.onComplete, callbacks.cleanup, callbacks.onError));
+
+        assertThat(callbacks.error.get()).isNull();
+        assertThat(callbacks.completeCalls.get()).isEqualTo(1);
+        assertThat(taskThreads).hasSize(2);
+        assertThat(offAnUpdateThread.get()).as("a task ran off the update threads").isFalse();
+        assertThat(nestedRuns.get()).isEqualTo(10);
+        assertThat(contexts.open.get()).isZero();
+    }
+
+    /** With a single update thread an invocation submits nothing, and that thread runs every task itself. */
+    @Test
+    public void testInvokeWithOneUpdateThreadRunsOnThatThread() {
+        final ControlledUpdateGraph updateGraph = updateGraphWithUpdateThreads(1);
+        final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+        final Set<Thread> taskThreads = ConcurrentHashMap.newKeySet();
+        final AtomicReference<Thread> callerThread = new AtomicReference<>();
+        final AtomicIntegerArray runs = new AtomicIntegerArray(8);
+        final Callbacks callbacks = new Callbacks();
+
+        updateGraph.runWithinUnitTestCycle(() -> scheduler.iterateParallel(ExecutionContext.getContext(), null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 1,
+                (outerContext, outer, outerNec) -> {
+                    callerThread.set(Thread.currentThread());
+                    scheduler.invokeParallel(ExecutionContext.getContext(), null,
+                            JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8,
+                            (context, idx, nec) -> {
+                                taskThreads.add(Thread.currentThread());
+                                runs.incrementAndGet(idx);
+                            });
+                },
+                callbacks.onComplete, callbacks.cleanup, callbacks.onError));
+
+        assertThat(callbacks.error.get()).isNull();
+        assertThat(callbacks.completeCalls.get()).isEqualTo(1);
+        assertThat(taskThreads).containsExactly(callerThread.get());
+        assertEachRanOnce(runs);
+    }
+
+    /**
+     * On the refresh thread, which alone dispatches notifications, an invocation's helpers wait undispatched, so the
+     * caller runs every task itself. The helpers, flushed when the cycle completes, find their invokers taken.
+     */
+    @Test
+    public void testInvokeOnTheRefreshThreadRunsEveryTaskItself() {
+        final ControlledUpdateGraph updateGraph = updateGraphWithUpdateThreads(4);
+        final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+        final AtomicReference<Thread> refreshThread = new AtomicReference<>();
+        final AtomicBoolean callerIsAnUpdateThread = new AtomicBoolean();
+        final Set<Thread> taskThreads = ConcurrentHashMap.newKeySet();
+        final AtomicIntegerArray runs = new AtomicIntegerArray(8);
+        final CountingContexts contexts = new CountingContexts();
+
+        updateGraph.runWithinUnitTestCycle(() -> updateGraph.refreshUpdateSourceForUnitTests(() -> {
+            refreshThread.set(Thread.currentThread());
+            callerIsAnUpdateThread.set(updateGraph.currentThreadProcessesUpdates());
+            scheduler.invokeParallel(ExecutionContext.getContext(), null, contexts, 0, 8,
+                    (context, idx, nec) -> {
+                        taskThreads.add(Thread.currentThread());
+                        runs.incrementAndGet(idx);
+                    });
         }));
 
-        assertThat(thrown.get()).isInstanceOf(UnsupportedOperationException.class);
-        assertThat(nestedRuns.get()).isZero();
-        assertThat(ownRuns.get()).isEqualTo(3);
+        assertThat(callerIsAnUpdateThread.get()).isTrue();
+        assertThat(taskThreads).containsExactly(refreshThread.get());
+        assertEachRanOnce(runs);
+        // the caller's own invoker and three helpers, every one closed by the caller
+        assertThat(contexts.made.get()).isEqualTo(4);
+        assertThat(contexts.open.get()).isZero();
+    }
+
+    /**
+     * Outside an update cycle no job may be submitted, so with more than one update thread an invocation fails as it
+     * starts, without running a task or leaving a context open. With a single update thread it submits nothing and runs
+     * every task on the calling thread.
+     */
+    @Test
+    public void testInvokeOutsideACycle() {
+        final CountingContexts contexts = new CountingContexts();
+        final AtomicInteger runs = new AtomicInteger();
+        final JobScheduler pooled = new UpdateGraphJobScheduler(updateGraphWithUpdateThreads(4));
+        assertThatThrownBy(() -> pooled.invokeParallel(ExecutionContext.getContext(), null, contexts, 0, 8,
+                (context, idx, nec) -> runs.incrementAndGet()))
+                .isInstanceOf(AssertionFailure.class);
+        assertThat(runs.get()).isZero();
+        assertThat(contexts.made.get()).isPositive();
+        assertThat(contexts.open.get()).isZero();
+
+        final JobScheduler single = new UpdateGraphJobScheduler(updateGraphWithUpdateThreads(1));
+        final Set<Thread> taskThreads = ConcurrentHashMap.newKeySet();
+        invoke(single, 8, (context, idx, nec) -> {
+            taskThreads.add(Thread.currentThread());
+            runs.incrementAndGet();
+        });
+        assertThat(runs.get()).isEqualTo(8);
+        assertThat(taskThreads).containsExactly(Thread.currentThread());
     }
 
     private static Throwable catchThrowable(final Runnable runnable) {
