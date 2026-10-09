@@ -80,6 +80,7 @@ parquet = "1.18.1"
 picocli = "4.7.7"
 postgresql = "42.7.13"
 protobuf = "4.36.2"
+protobuf-gradle-plugin = "0.10.0"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
 rewrite-java = "8.90.4"
@@ -370,3 +371,6 @@ testcontainers-localstack = { module = "org.testcontainers:localstack", version.
 testcontainers-minio = { module = "org.testcontainers:minio", version.ref = "testcontainers" }
 testcontainers-kafka = { module = "org.testcontainers:kafka", version.ref = "testcontainers" }
 testcontainers-redpanda = { module = "org.testcontainers:redpanda", version.ref = "testcontainers" }
+
+[plugins]
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf-gradle-plugin" }

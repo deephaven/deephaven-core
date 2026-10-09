@@ -4,15 +4,11 @@ plugins {
     alias(libs.plugins.protobuf)
 }
 
-dependencies {
-    api project(':qst-type')
-    api project(':util-function')
-    api libs.protobuf.java
-    implementation project(':engine-query-constants')
-    implementation project(':engine-time')
+description 'Engine API Proto: internal protobuf representations of engine-api types, not intended for RPC'
 
-    compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables.value
+dependencies {
+    api project(':engine-api')
+    api libs.protobuf.java
 
     compileOnly libs.jetbrains.annotations
 
@@ -27,9 +23,6 @@ dependencies {
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
-
-    testCompileOnly libs.autoservice
-    testAnnotationProcessor libs.autoservice.compiler
 }
 
 test {
@@ -39,7 +32,7 @@ test {
 spotless {
     java {
         targetExclude(
-                'build/generated/sources/proto/test/java/**',
+                'build/generated/sources/proto/main/java/**',
         )
     }
 }
