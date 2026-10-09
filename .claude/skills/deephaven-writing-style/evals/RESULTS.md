@@ -120,3 +120,5 @@ Chip's third review of the parallelization concept guide flagged bare API names 
 
 **Correction (expectation 5 of eval 10).** As first written, expectation 5 required flagging "with no Deephaven configuration", but the rule lets a qualifier pass when it states a checkable fact, and the final new runs made exactly that call explicitly. The expectation now accepts either a rewrite/removal or an explicit explanation; silence still fails. Rescored from the graders' recorded reasons (no rerun): `main` 4/12 (neither run mentioned the phrase), new first rule text 8/12 (neither run mentioned it), new with search steps 12/12 (both runs explained why the phrase passes).
 
+**Held-out rerun (eval 10).** Copilot noted that the linking rule's bold-lead-term example was `with_serial`, the exact case eval 10 checks. The example is now `sort_descending`, which the fixture doesn't contain, and the new skill was rerun (2 runs): 10/12. One run met all six expectations; the other missed the **Barriers** lead term and didn't mention the qualifier. This replaces the 12/12 above as the score to cite; `main` stays at 4/12.
+
