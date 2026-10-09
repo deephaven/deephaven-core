@@ -323,7 +323,7 @@ def main(
     click.echo(f"Bound result table '{name}' on {host}:{port}")
 ```
 
-`Session` is a context manager, so the client connection closes when the command finishes. The result table lives on the remote server, not in the client process, and because it is bound in the server's script scope, it remains available under its name after the command exits. Running the command several times does not start additional servers, so there is no port to choose and no conflict with a server already using it. The command starts quickly because there is no JVM to launch, which makes the client model a good fit for small utilities that are run often.
+`Session` is a context manager, so the client connection closes when the command finishes. The result table lives on the remote server, not in the client process, and because it is bound in the server's script scope, it remains available under its name after the command exits. Running the command several times does not start additional servers, so it does not need a separate free local server port. The command starts quickly because there is no JVM to launch, which makes the client model a good fit for small utilities that are run often.
 
 Once installed, run it against a server on the default host and port, or point it elsewhere:
 
