@@ -8,7 +8,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -29,25 +28,21 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Measures the cost of one naturalJoin update cycle for two left-side update shapes that the join listeners handle
- * without any hashing of new keys:
- * <ul>
- * <li>{@link #leftShiftBothRefreshing()}: every left row shifts by one row key (as a sorted or prepended upstream
- * produces) while both sides refresh, so the state manager must move every left row within its key's row set.</li>
- * <li>{@link #leftRowsReplacedStaticRight()}: a block of left rows is removed and re-added at the same row keys against
- * a static right table, so the left listener must probe the new rows and store their redirections.</li>
- * </ul>
+ * Measures the cost of one naturalJoin update cycle in which every left row shifts by one row key (as a sorted or
+ * prepended upstream produces) while both sides refresh, so the state manager must move every left row within its key's
+ * row set without hashing any new key. {@link NaturalJoinLeftReprobeBenchmark} measures left rows that probe a static
+ * right table.
+ * <p>
  * The left table assigns keys round-robin ({@code Key = rowKey % keyCount}), so each key owns a strided set of row keys
  * that the row set implementation stores as a bitmap rather than a range. The left key column computes its value from
- * the row key, so shifting or re-adding left rows costs nothing in the column itself and the measured cycle is the
- * join's own work plus the update graph's bookkeeping.
+ * the row key, so shifting left rows costs nothing in the column itself and the measured cycle is the join's own work
+ * plus the update graph's bookkeeping.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -108,20 +103,12 @@ public class NaturalJoinIncrementalUpdateBenchmark {
     @Param({"1000"})
     private int keyCount;
 
-    /** The number of left rows removed and re-added per cycle by {@link #leftRowsReplacedStaticRight()}. */
-    @Param({"100000"})
-    private int replacedRows;
-
     private ControlledUpdateGraph updateGraph;
 
     private QueryTable shiftLeft;
     private ComputedKeySource shiftLeftKeys;
     private Table shiftResult;
     private long shiftedFirstKey;
-
-    private QueryTable replaceLeft;
-    private Table replaceResult;
-    private WritableRowSet replacedRowSet;
 
     @Setup(Level.Trial)
     public void setupEnv() {
@@ -144,22 +131,6 @@ public class NaturalJoinIncrementalUpdateBenchmark {
                 TableTools.longCol("Key", rightKeys), TableTools.longCol("RS", rightValues));
         shiftResult = updateGraph.sharedLock().computeLocked(() -> shiftLeft.naturalJoin(shiftRight, "Key", "RS"));
         shiftedFirstKey = 0;
-
-        replaceLeft = new QueryTable(RowSetFactory.flat(leftSize).toTracking(),
-                Map.of("Key", new ComputedKeySource(keyCount)));
-        replaceLeft.setRefreshing(true);
-        replaceLeft.setFlat();
-        final Table replaceRight = TableTools.newTable(TableTools.longCol("Key", rightKeys),
-                TableTools.longCol("RS", rightValues));
-        replaceResult =
-                updateGraph.sharedLock().computeLocked(() -> replaceLeft.naturalJoin(replaceRight, "Key", "RS"));
-        // the last rows of the left table, so that the replaced block ends at the table's last row key
-        replacedRowSet = RowSetFactory.fromRange(leftSize - replacedRows, leftSize - 1);
-    }
-
-    @TearDown(Level.Trial)
-    public void tearDownEnv() {
-        replacedRowSet.close();
     }
 
     @Benchmark
@@ -179,14 +150,6 @@ public class NaturalJoinIncrementalUpdateBenchmark {
         shiftLeftKeys.endCycle();
         shiftedFirstKey += shiftDelta;
         return shiftResult;
-    }
-
-    @Benchmark
-    public Table leftRowsReplacedStaticRight() {
-        // the key column is computed from the row key, so removing and re-adding the same rows changes no data
-        updateGraph.runWithinUnitTestCycle(() -> replaceLeft.notifyListeners(replacedRowSet.copy(),
-                replacedRowSet.copy(), RowSetFactory.empty()));
-        return replaceResult;
     }
 
     public static void main(String[] args) {

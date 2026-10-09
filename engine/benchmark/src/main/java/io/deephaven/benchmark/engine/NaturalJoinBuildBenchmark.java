@@ -42,9 +42,10 @@ import java.util.concurrent.TimeUnit;
  * <li>{@link #rightRefreshingBuild}: the right refreshes, so the join keeps the left rows of each key.</li>
  * <li>{@link #bothRefreshingBuild}: both refresh, so the join keeps every key from either side.</li>
  * </ul>
- * The left keys are a scrambled function of the row key modulo {@code keyCount}, so about 88% of the keys occur on the
- * left and each key's left rows are scattered; the right keys are a permutation of {@code [0, keyCount)}. The key
- * columns compute their values, so the measured time is the join's own work rather than reading column data.
+ * The left keys are a scrambled function of the row key modulo {@code keyCount}, so each key's left rows are scattered.
+ * With a million left rows, every key occurs on the left at 100K keys, about 88% of the keys do at 1M, and a tenth of
+ * them at 10M, where each left row has a key of its own. The right keys are a permutation of {@code [0, keyCount)}. The
+ * key columns compute their values, so the measured time is the join's own work rather than reading column data.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -97,7 +98,7 @@ public class NaturalJoinBuildBenchmark {
     @Param({"1000000"})
     private int leftRows;
 
-    @Param({"1000000", "10000"})
+    @Param({"100000", "1000000", "10000000"})
     private int keyCount;
 
     private ControlledUpdateGraph updateGraph;
