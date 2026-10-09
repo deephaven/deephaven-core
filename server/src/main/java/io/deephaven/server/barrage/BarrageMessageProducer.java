@@ -2008,8 +2008,9 @@ public class BarrageMessageProducer extends LivenessArtifact
     /**
      * Runs {@code action} once for each of {@code targets}, in parallel on as many threads as the propagation job
      * scheduler supplies, and returns only once every run has finished, so that the caller may then release what they
-     * were reading. Runs for different subscriptions happen at the same time, so {@code action} must touch only its own
-     * subscription's state. Each run handles its own subscriber's failure; what this throws is a failure none of them
+     * were reading. Runs for different subscriptions happen at the same time, so {@code action} may change only its own
+     * subscription's state and shared state that is thread-safe, such as the {@link SharedWriterDictionary}s that full
+     * subscriptions add to. Each run handles its own subscriber's failure; what this throws is a failure none of them
      * handled, once the runs already started have finished.
      */
     private void forEachInParallel(final List<Subscription> targets, final Consumer<Subscription> action) {
@@ -2037,8 +2038,9 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /**
      * Writes one subscriber's view of {@code bmw}'s message. Writes to different subscribers run at the same time, so
-     * this touches only {@code subscription}'s own state, besides reading the writer and the row sets; a failure is
-     * reported to this subscriber alone, which is then removed.
+     * besides reading the writer and the row sets, this changes only {@code subscription}'s own state and, for a full
+     * subscription, the thread-safe {@link SharedWriterDictionary}s its registry adds to; a failure is reported to this
+     * subscriber alone, which is then removed.
      */
     private void propagateToSubscriber(
             final BarrageMessageWriter bmw,
