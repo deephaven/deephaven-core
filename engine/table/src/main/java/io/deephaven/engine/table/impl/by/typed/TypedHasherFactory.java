@@ -8,6 +8,7 @@ import com.palantir.javapoet.*;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.configuration.Configuration;
@@ -25,7 +26,9 @@ import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.join.IncrementalKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.join.StaticKeyIdHasherTypedBase;
+import io.deephaven.engine.table.impl.join.StaticKeyLongValueHasherTypedBase;
 import io.deephaven.engine.table.impl.join.TypedKeyIdFactory;
+import io.deephaven.engine.table.impl.join.TypedKeyValueFactory;
 import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.multijoin.TypedMultiJoinFactory;
@@ -137,6 +140,21 @@ public class TypedHasherFactory {
 
             builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
                     TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam(), keyStatusesParam()));
+        } else if (baseClass.equals(StaticKeyLongValueHasherTypedBase.class)) {
+            builder.classPrefix("StaticKeyLongValueHasher").packageGroup("join").packageMiddle("statickeylongvalue")
+                    .openAddressedAlternate(false)
+                    .stateType(long.class).mainStateName("mainValue")
+                    .emptyStateName("EMPTY_VALUE")
+                    .includeOriginalSources(false)
+                    .includeRowSequence(false)
+                    .supportRehash(true);
+
+            builder.addBuild(new HasherConfig.BuildSpec("buildChunk", "value", false, false, false,
+                    TypedKeyValueFactory::buildFound, TypedKeyValueFactory::insert, keyValuesParam()));
+
+            builder.addProbe(new HasherConfig.ProbeSpec("probeChunk", "value", false,
+                    TypedKeyValueFactory::probeFound, TypedKeyValueFactory::probeMissing, probeValuesParam(),
+                    ParameterSpec.builder(long.class, "missingValue").build()));
         } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -315,6 +333,18 @@ public class TypedHasherFactory {
                 "statuses").build();
     }
 
+    private static ParameterSpec keyValuesParam() {
+        return ParameterSpec.builder(
+                ParameterizedTypeName.get(ClassName.get(LongChunk.class), WildcardTypeName.subtypeOf(Any.class)),
+                "values").build();
+    }
+
+    private static ParameterSpec probeValuesParam() {
+        return ParameterSpec.builder(
+                ParameterizedTypeName.get(ClassName.get(WritableLongChunk.class), ClassName.get(Values.class)),
+                "values").build();
+    }
+
     private static <T> void configureAggregation(HasherConfig.Builder<T> builder) {
         builder.packageGroup("by");
         builder.stateType(int.class);
@@ -366,6 +396,15 @@ public class TypedHasherFactory {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.join.typed.inckeyid.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass.equals(StaticKeyLongValueHasherTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.join.typed.statickeylongvalue.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
                 }

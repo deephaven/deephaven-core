@@ -7,7 +7,6 @@ import io.deephaven.api.NaturalJoinType;
 import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.JoinControl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.StaticNaturalJoinStateManager;
@@ -19,6 +18,11 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirectionLockFree;
 
 import java.util.function.LongUnaryOperator;
 
+/**
+ * The parts the static natural join state managers share: building a row redirection from a data index table's groups,
+ * and reporting a duplicate right key. {@link StaticKeyIdNaturalJoinStateManager} builds its hash table from the left
+ * table, and {@link StaticKeyLongValueNaturalJoinStateManager} from the right.
+ */
 public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJoinStateManager {
 
     protected StaticHashedNaturalJoinStateManager(
@@ -27,54 +31,6 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
             boolean addOnly) {
         super(keySourcesForErrorMessages, joinType, addOnly);
     }
-
-    public abstract void buildFromLeftSide(
-            final Table leftTable,
-            final ColumnSource<?>[] leftSources,
-            final IntegerArraySource leftHashSlots);
-
-    public abstract void buildFromRightSide(
-            final Table rightTable,
-            final ColumnSource<?>[] rightSources);
-
-    public abstract void decorateLeftSide(
-            final RowSet leftRowSet,
-            final ColumnSource<?>[] leftSources,
-            final LongArraySource leftRedirections);
-
-    /**
-     * Probe the rows of a left data index table, storing one redirection per group. A duplicate right key error names
-     * the key of the offending group's first left row, since {@code keySourcesForErrorMessages} are columns of the left
-     * table rather than of the data index table.
-     *
-     * @param indexTableRowSet the data index table's row set
-     * @param indexSources the data index table's key columns
-     * @param indexRowSets the data index table's row set column, mapping each group to its left rows
-     * @param leftRedirections receives the right row key (or {@link RowSet#NULL_ROW_KEY}) for each group, by position
-     */
-    public abstract void decorateLeftSideIndexed(
-            final RowSet indexTableRowSet,
-            final ColumnSource<?>[] indexSources,
-            final ColumnSource<RowSet> indexRowSets,
-            final LongArraySource leftRedirections);
-
-    public abstract void decorateWithRightSide(
-            final Table rightTable,
-            final ColumnSource<?>[] rightSources);
-
-    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
-            IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
-
-    public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable,
-            LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
-
-    public abstract WritableRowRedirection buildIndexedRowRedirectionFromRedirections(QueryTable leftTable,
-            RowSet indexTableRowSet, LongArraySource leftRedirections,
-            ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
-
-    public abstract WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(QueryTable leftTable,
-            RowSet indexTableRowSet, IntegerArraySource leftHashSlots,
-            ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
     /**
      * @param keySourcesFromLeftTable whether {@code keySourcesForErrorMessages} are columns of the left table (as when
@@ -182,23 +138,4 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
             }
         }
     }
-
-    /**
-     * Throw the duplicate right key error after a build from a left data index; the error key sources are columns of
-     * the data index table.
-     *
-     * @param leftHashSlots the hash slot of each data index table row, by position
-     * @param indexTableRowSet the data index table's row set
-     */
-    public abstract void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, RowSet indexTableRowSet);
-
-    /**
-     * Throw the duplicate right key error after a build from the left table; the error key sources are columns of the
-     * left table.
-     *
-     * @param leftHashSlots the hash slot of each left row, by position
-     * @param size the number of left rows
-     * @param rowSet the left table's row set
-     */
-    public abstract void errorOnDuplicatesSingle(IntegerArraySource leftHashSlots, long size, RowSet rowSet);
 }

@@ -158,7 +158,7 @@ class NaturalJoinHelper {
                 Assert.eq(firstBuildFrom, "firstBuildFrom", RightInput);
 
                 final LongArraySource leftRedirections = new LongArraySource();
-                final StaticHashedNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
+                final StaticKeyLongValueNaturalJoinStateManager jsm = new StaticKeyLongValueNaturalJoinStateManager(
                         bc.leftSources, bc.originalLeftSources, initialHashTableSize, control.getMaximumLoadFactor(),
                         joinType, rightAddOnly);
 
@@ -237,7 +237,7 @@ class NaturalJoinHelper {
 
             if (firstBuildFrom == LeftDataIndex) {
                 Assert.neqNull(bc.leftDataIndexTable, "leftDataIndexTable");
-                final StaticHashedNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
+                final StaticKeyIdNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
                         bc.leftDataIndexSources, bc.originalLeftDataIndexSources, initialHashTableSize,
                         control.getMaximumLoadFactor(), joinType, rightAddOnly);
 
@@ -255,7 +255,7 @@ class NaturalJoinHelper {
             } else if (firstBuildFrom == LeftInput) {
                 // The number of distinct left keys is not known, so the table starts at the initial build size and
                 // doubles as keys are added; a rehash does not move the key id the build records for each left row.
-                final StaticHashedNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
+                final StaticKeyIdNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
                         bc.leftSources, bc.originalLeftSources, initialHashTableSize,
                         control.getMaximumLoadFactor(), joinType, rightAddOnly);
 
@@ -270,7 +270,7 @@ class NaturalJoinHelper {
                         control.getRedirectionType(leftTable));
             } else {
                 final LongArraySource leftRedirections = new LongArraySource();
-                final StaticHashedNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
+                final StaticKeyLongValueNaturalJoinStateManager jsm = new StaticKeyLongValueNaturalJoinStateManager(
                         bc.leftSources, bc.originalLeftSources, initialHashTableSize, control.getMaximumLoadFactor(),
                         joinType, rightAddOnly);
 

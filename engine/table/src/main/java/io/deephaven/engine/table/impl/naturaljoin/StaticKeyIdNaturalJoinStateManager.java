@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.naturaljoin;
 
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
@@ -19,15 +18,14 @@ import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 
-import java.util.function.LongUnaryOperator;
-
 /**
- * The natural join state manager when the right table is static, and the left table is static or refreshing.
+ * The natural join state manager when both tables are static and the hash table is built from the left table, or from
+ * its data index; the right table then decorates the left keys. A table built from the right is managed by
+ * {@link StaticKeyLongValueNaturalJoinStateManager}.
  * <p>
  * Each distinct key has an id from a {@link StaticKeyIdHasherTypedBase}, and its right state is kept by id: the right
  * row key, {@link #NO_RIGHT_STATE_VALUE} for a key with no right row, or {@link #DUPLICATE_RIGHT_STATE} for a key with
- * several. A build from the left records each left row's id rather than a hash slot, so the table may grow while it is
- * built.
+ * several. The build records each left row's id rather than a hash slot, so the table may grow while it is built.
  */
 public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinStateManager {
 
@@ -37,7 +35,7 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
 
     private final StaticKeyIdHasherTypedBase hasher;
 
-    // the right state of each key, by id; one flat array, since the probe of each left row reads it
+    // the right state of each key, by id; one flat array, since building the redirection reads it for each left row
     private final ImmutableLongArraySource rightState = new ImmutableLongArraySource();
 
     /**
@@ -73,7 +71,13 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
         }
     }
 
-    @Override
+    /**
+     * Build the hash table from the left table, or from its data index, recording each row's key id by position.
+     *
+     * @param leftTable the left table, or its data index table
+     * @param leftSources the key sources of {@code leftTable}
+     * @param leftHashSlots receives the key id of each row of {@code leftTable}, by position
+     */
     public void buildFromLeftSide(final Table leftTable, final ColumnSource<?>[] leftSources,
             final IntegerArraySource leftHashSlots) {
         if (leftTable.isEmpty()) {
@@ -99,77 +103,20 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
     }
 
     @Override
-    public void buildFromRightSide(final Table rightTable, final ColumnSource<?>[] rightSources) {
-        if (rightTable.isEmpty()) {
-            hasher.complete();
-            return;
-        }
-        hasher.build(rightTable.getRowSet(), rightSources, (rows, ids, statuses) -> {
-            ensureIdCapacity();
-            final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
-            final int size = ids.size();
-            for (int ii = 0; ii < size; ++ii) {
-                final int id = ids.get(ii);
-                if (statuses.get(ii) == KeyIdHasher.ADDED) {
-                    rightState.set(id, rowKeys.get(ii));
-                } else if (joinType == NaturalJoinType.LAST_MATCH) {
-                    // we are processing sequentially so this is the latest
-                    rightState.set(id, rowKeys.get(ii));
-                } else if (joinType != NaturalJoinType.FIRST_MATCH) {
-                    // a first match join already has its match
-                    rightState.set(id, DUPLICATE_RIGHT_STATE);
-                }
-            }
-        });
-        hasher.complete();
-    }
-
-    @Override
     public void decorateLeftSide(final RowSet leftRowSet, final ColumnSource<?>[] leftSources,
             final LongArraySource leftRedirections) {
-        // the probed rows are left table rows, which is the keyspace of the error message key sources
-        decorateLeftSide(leftRowSet, leftSources, leftRedirections, LongUnaryOperator.identity());
+        // the left rows are built into the table rather than probed; a table built from the right probes them
+        throw new UnsupportedOperationException("A natural join state manager built from the left is not probed");
     }
 
-    @Override
-    public void decorateLeftSideIndexed(final RowSet indexTableRowSet, final ColumnSource<?>[] indexSources,
-            final ColumnSource<RowSet> indexRowSets, final LongArraySource leftRedirections) {
-        // the probed rows are data index table rows, so a duplicate key error is rendered from the first left row of
-        // the offending group
-        decorateLeftSide(indexTableRowSet, indexSources, leftRedirections,
-                (long indexRowKey) -> indexRowSets.get(indexRowKey).firstRowKey());
-    }
-
-    private void decorateLeftSide(final RowSet probeRowSet, final ColumnSource<?>[] probeSources,
-            final LongArraySource leftRedirections, final LongUnaryOperator probedRowKeyToErrorRowKey) {
-        if (probeRowSet.isEmpty()) {
-            return;
-        }
-        leftRedirections.ensureCapacity(probeRowSet.size());
-        final long[] offset = {0};
-        hasher.probe(probeRowSet, probeSources, false, (rows, ids, statuses) -> {
-            final long chunkOffset = offset[0];
-            final int size = ids.size();
-            for (int ii = 0; ii < size; ++ii) {
-                final int id = ids.get(ii);
-                final long rightRowKey;
-                if (id != KeyIdHasher.NULL_ID) {
-                    rightRowKey = rightState.getUnsafe(id);
-                    if (rightRowKey == DUPLICATE_RIGHT_STATE) {
-                        throw new DuplicateRightKeyException("Natural Join found duplicate right key for "
-                                + extractKeyStringFromSourceTable(
-                                        probedRowKeyToErrorRowKey.applyAsLong(rows.asRowKeyChunk().get(ii))));
-                    }
-                } else {
-                    rightRowKey = RowSet.NULL_ROW_KEY;
-                }
-                leftRedirections.set(chunkOffset + ii, rightRowKey);
-            }
-            offset[0] = chunkOffset + size;
-        });
-    }
-
-    @Override
+    /**
+     * Give each left key its right row. A key with several right rows in a join that errors on duplicates throws
+     * {@link DuplicateRightRowDecorationException}, after which {@link #errorOnDuplicatesSingle} or
+     * {@link #errorOnDuplicatesIndexed} reports the left key.
+     *
+     * @param rightTable the right table
+     * @param rightSources the right key sources
+     */
     public void decorateWithRightSide(final Table rightTable, final ColumnSource<?>[] rightSources) {
         if (rightTable.isEmpty()) {
             return;
@@ -197,31 +144,12 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
         });
     }
 
-    @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlot(final QueryTable leftTable,
             final IntegerArraySource leftHashSlots, final JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, position -> rightState.getUnsafe(leftHashSlots.getUnsafe(position)),
                 redirectionType);
     }
 
-    @Override
-    public WritableRowRedirection buildRowRedirectionFromRedirections(final QueryTable leftTable,
-            final LongArraySource leftRedirections, final JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, leftRedirections::getUnsafe, redirectionType);
-    }
-
-    @Override
-    public WritableRowRedirection buildIndexedRowRedirectionFromRedirections(
-            final QueryTable leftTable,
-            final RowSet indexTableRowSet,
-            final LongArraySource leftRedirections,
-            final ColumnSource<RowSet> indexRowSets,
-            final JoinControl.RedirectionType redirectionType) {
-        return buildIndexedRowRedirection(leftTable, indexTableRowSet,
-                leftRedirections::getUnsafe, indexRowSets, redirectionType, true);
-    }
-
-    @Override
     public WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(
             final QueryTable leftTable,
             final RowSet indexTableRowSet,
@@ -233,7 +161,13 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
                 redirectionType, false);
     }
 
-    @Override
+    /**
+     * Throw the duplicate right key error after a build from a left data index; the error key sources are columns of
+     * the data index table.
+     *
+     * @param leftHashSlots the key id of each data index table row, by position
+     * @param indexTableRowSet the data index table's row set
+     */
     public void errorOnDuplicatesIndexed(final IntegerArraySource leftHashSlots, final RowSet indexTableRowSet) {
         // the key sources for error messages are columns of the data index table, so the error row key is the index
         // table row key for the offending group
@@ -242,7 +176,14 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
                 indexTableRowSet::get);
     }
 
-    @Override
+    /**
+     * Throw the duplicate right key error after a build from the left table; the error key sources are columns of the
+     * left table.
+     *
+     * @param leftHashSlots the key id of each left row, by position
+     * @param size the number of left rows
+     * @param rowSet the left table's row set
+     */
     public void errorOnDuplicatesSingle(final IntegerArraySource leftHashSlots, final long size, final RowSet rowSet) {
         errorOnDuplicates(size, (long position) -> rightState.getUnsafe(leftHashSlots.getUnsafe(position)),
                 rowSet::get);
