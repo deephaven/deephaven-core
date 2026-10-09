@@ -88,7 +88,8 @@ page, and the fix-not-rewrite limit above does not apply:
   limited the task to one language or file.
 - When the edits are done, review the finished page, not the diff: run the accuracy, structure,
   examples, and style steps again over the whole page, fix what they find, and repeat until a round finds
-  nothing wrong, misleading, or hard to follow. Then do one adversarial read, assuming problems
+  nothing wrong, misleading, or hard to follow. Apply the minor and style findings from that last
+  round too, without starting another round. Then do one adversarial read, assuming problems
   remain, before handing the page to a human or a bot reviewer.
 
 ## 0. Identify the doc's category
@@ -327,7 +328,8 @@ Format: AQ1 [heading, para N or line N]: question
 Factual or behavioral claims in prose, headings, lists, tables, captions, and code comments (the
 accuracy check's claim ledger): how many rows, how many were verified against source, and how many
 are author queries. Include the ledger table itself, one row per claim, so a reader can see which
-sentences were checked. A page with no ledger was not fully reviewed.
+sentences were checked. A page with no ledger was not fully reviewed. In edit mode, report the ledger for the finished
+page: update it after the edits, so it drops removed claims and includes rewritten ones.
 
 ## Strengths
 1–3 specific things that work and should be kept, so a revision doesn't remove them.

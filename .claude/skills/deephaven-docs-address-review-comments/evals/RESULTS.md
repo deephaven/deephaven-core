@@ -63,3 +63,4 @@ Copilot pointed out, and the fixture diff confirms, that #8798 didn't change the
 
 So the runs that "missed" the TIP handled the merge correctly, and the version whose example named the clause was taught to restore something that wasn't lost. The objective lost correction in this fixture is the `aggs` "required" marking.
 
+- Coverage gap: no eval exercises the pre-push sweep (step 5), where an edit-mode run must catch a pre-existing defect elsewhere on the page that no comment mentions. Copilot flagged this on #8860; it's follow-up work.
