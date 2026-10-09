@@ -91,7 +91,7 @@ The words the examples use without introducing them. The comments in the example
 phrasing.
 
 - **Session**: one authenticated login on a connection. Everything it exports on the server is
-  released when it closes. `Session.close()` blocks until the server has acknowledged that, or
+  released when it closes. `Session.close` blocks until the server has acknowledged that, or
   until the configured close timeout passes, in which case it logs a warning and returns.
 - **Factory**: holds the connection (a gRPC channel) and a scheduler, and opens sessions on it.
   The examples make one factory, open one session, and shut both down in `finally`.
@@ -163,10 +163,10 @@ One file per example, no abstract base classes. Top to bottom:
 3. The shared option groups: `ConnectOptions`, `AuthenticationOptions`, and where relevant
    `BatchOrSerialOptions`, `ScriptTypeOptions`, `Ticket`, `Path`, `SharedField`.
 4. The example's own options and parameters.
-5. `call()`: build the factory, open the session in a try-with-resources, do the interesting thing,
-   shut the channel and scheduler down in `finally`. A Flight or Barrage session's `close()` only
-   starts the close, so those examples wait on `session().closeFuture()` in an inner `finally`
-   before the channel goes away; a plain `Session.close()` waits by itself.
+5. `call`: build the factory, open the session in a try-with-resources, do the interesting thing,
+   shut the channel and scheduler down in `finally`. A Flight or Barrage session's `close` only
+   starts the close, so those examples wait on the session's `closeFuture` in an inner `finally`
+   before the channel goes away; a plain `Session.close` waits by itself.
 6. `main`: `System.exit(new CommandLine(new X()).execute(args))`.
 
 The factory and session setup is about ten lines and is repeated in every file on purpose. It is
@@ -357,7 +357,7 @@ and add a test whose `SSLConfig` carries an `IdentityPrivateKey` for `client.cha
 - The log subscription replays the server's recent history, so `subscribe-to-logs -c 1` returns on
   old messages. Pair `--count` with `--timeout` when the point is to wait for something new.
 - `SessionImpl.publish` rejects names that are not Java identifiers. Derive publish names from
-  constants, not from `toString()` of anything.
+  constants, not from `toString` of anything.
 - A method reference to a generic `create(TableCreator<T>)` is ambiguous between
   `executeLogic(TableCreationLogic)` and the labeled overload; cast it to `TableCreationLogic`.
 - `add-to-input-table` builds its server-side validator through jpy from the Python console,
