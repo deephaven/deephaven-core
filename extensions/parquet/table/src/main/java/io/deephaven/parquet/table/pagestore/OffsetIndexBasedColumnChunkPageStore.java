@@ -33,22 +33,20 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
 
     private static final class PageState<ATTR extends Any> {
         private volatile WeakReference<PageCache.IntrusivePage<ATTR>> pageRef;
+        private final SparseState<ATTR> sparseState = new SparseState<>();
 
         PageState() {
             pageRef = null; // Initialized when used for the first time
         }
     }
 
-    private volatile boolean isInitialized; // This class is initialized when reading the first page
+    private volatile boolean isInitialized; // Initialized when first locating a row's page
     private OffsetIndex offsetIndex;
     private int numPages;
     /**
      * Fixed number of rows per page. Set as positive value if first ({@link #numPages}-1) pages have equal number of
-     * rows, else equal to {@value #PAGE_SIZE_NOT_FIXED}. We cannot find the number of rows in the last page size from
-     * offset index, because it only has the first row index of each page. And we don't want to materialize any pages.
-     * So as a workaround, in case first ({@link #numPages}-1) pages have equal size, we can assume all pages to be of
-     * the same size and calculate the page number as {@code row_index / fixed_page_size -> page_number}. If it is
-     * greater than {@link #numPages}, we will infer that the row is coming from last page.
+     * rows, else equal to {@value #PAGE_SIZE_NOT_FIXED}. If it is set, the page number is
+     * {@code row_index / fixed_page_size}; if that is at least {@link #numPages}, the row is in the last page.
      */
     private long fixedPageSize;
     private AtomicReferenceArray<PageState<ATTR>> pageStates;
@@ -64,7 +62,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         fixedPageSize = PAGE_SIZE_NOT_FIXED;
     }
 
-    private void ensureInitialized(@Nullable final FillContext fillContext) {
+    private void ensureInitialized(@NotNull final SeekableChannelContext channelContext) {
         if (isInitialized) {
             return;
         }
@@ -73,7 +71,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
                 return;
             }
             try (final ContextHolder holder = SeekableChannelContext.ensureContext(
-                    columnChunkReader.getChannelsProvider(), innerFillContext(fillContext))) {
+                    columnChunkReader.getChannelsProvider(), channelContext)) {
                 offsetIndex = columnChunkReader.getOffsetIndex(holder.get());
             }
             Assert.neqNull(offsetIndex, "offsetIndex");
@@ -122,7 +120,27 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         return (low - 1); // 'row' is somewhere in the middle of page
     }
 
-    private ChunkPage<ATTR> getPage(@Nullable final FillContext fillContext, final int pageNum) {
+    @Override
+    @NotNull
+    ChunkPage<ATTR> getPage(@NotNull final SeekableChannelContext channelContext, final int pageNum) {
+        final PageState<ATTR> pageState = pageState(pageNum);
+        PageCache.IntrusivePage<ATTR> page;
+        WeakReference<PageCache.IntrusivePage<ATTR>> localRef;
+        if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
+            synchronized (pageState) {
+                // Make sure no one materialized this page as we waited for the lock
+                if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
+                    page = new IntrusivePage<>(getPageImpl(channelContext, pageNum));
+                    pageState.pageRef = new WeakReference<>(page);
+                }
+            }
+        }
+        pageCache.touch(page);
+        return page.getPage();
+    }
+
+    @NotNull
+    private PageState<ATTR> pageState(final int pageNum) {
         if (pageNum < 0 || pageNum >= numPages) {
             throw new IllegalArgumentException("pageNum " + pageNum + " is out of range [0, " + numPages + ")");
         }
@@ -133,29 +151,54 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
                 break;
             }
         }
-        PageCache.IntrusivePage<ATTR> page;
-        WeakReference<PageCache.IntrusivePage<ATTR>> localRef;
-        if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
-            synchronized (pageState) {
-                // Make sure no one materialized this page as we waited for the lock
-                if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
-                    page = new IntrusivePage<>(getPageImpl(fillContext, pageNum));
-                    pageState.pageRef = new WeakReference<>(page);
-                }
-            }
-        }
-        pageCache.touch(page);
-        return page.getPage();
+        return pageState;
     }
 
-    private ChunkPage<ATTR> getPageImpl(@Nullable FillContext fillContext, int pageNum) {
+    @Override
+    @NotNull
+    SparseState<ATTR> sparseState(final int pageNum) {
+        return pageState(pageNum).sparseState;
+    }
+
+    private ChunkPage<ATTR> getPageImpl(@NotNull final SeekableChannelContext channelContext, final int pageNum) {
         // Use the latest context while reading the page, or create (and close) new one
-        try (final ContextHolder holder = ensureContext(fillContext)) {
+        try (final ContextHolder holder =
+                SeekableChannelContext.ensureContext(columnChunkReader.getChannelsProvider(), channelContext)) {
             final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum, holder.get());
             return toPage(offsetIndex.getFirstRowIndex(pageNum), reader, holder.get());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    @Nullable
+    ChunkPage<ATTR> getCachedPage(final int pageNum) {
+        final PageState<ATTR> pageState = pageStates.get(pageNum);
+        final WeakReference<PageCache.IntrusivePage<ATTR>> localRef;
+        final PageCache.IntrusivePage<ATTR> page;
+        if (pageState == null || (localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
+            return null;
+        }
+        pageCache.touch(page);
+        return page.getPage();
+    }
+
+    @Override
+    @NotNull
+    ColumnPageReader getPageReader(@NotNull final SeekableChannelContext channelContext, final int pageNum) {
+        return columnPageDirectAccessor.getPageReader(pageNum, channelContext);
+    }
+
+    @Override
+    long pageFirstRow(final int pageNum) {
+        return offsetIndex.getFirstRowIndex(pageNum);
+    }
+
+    @Override
+    long pageRowCount(final int pageNum) {
+        final long nextFirstRow = pageNum + 1 < numPages ? offsetIndex.getFirstRowIndex(pageNum + 1) : numRows();
+        return nextFirstRow - offsetIndex.getFirstRowIndex(pageNum);
     }
 
     @Override
@@ -165,33 +208,30 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         // a null FillContext for single-element "get" methods.
         try (final FillContext allocatedFillContext = fillContext != null ? null : makeFillContext(1, null)) {
             final FillContext fillContextToUse = fillContext != null ? fillContext : allocatedFillContext;
-            ensureInitialized(fillContextToUse);
-            return getPageContainingImpl(fillContextToUse, rowKey);
+            final SeekableChannelContext channelContext = innerFillContext(fillContextToUse);
+            return getPage(channelContext, pageNumContaining(channelContext, rowKey & mask()));
         } catch (final RuntimeException e) {
             throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
                     columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
         }
     }
 
-    @NotNull
-    private ChunkPage<ATTR> getPageContainingImpl(@Nullable final FillContext fillContext, long rowKey) {
-        rowKey &= mask();
-        Require.inRange(rowKey, "rowKey", numRows(), "numRows");
+    @Override
+    int pageNumContaining(@NotNull final SeekableChannelContext channelContext, final long row) {
+        ensureInitialized(channelContext);
+        Require.inRange(row, "row", numRows(), "numRows");
 
-        int pageNum;
         if (fixedPageSize == PAGE_SIZE_NOT_FIXED) {
-            pageNum = findPageNumUsingOffsetIndex(offsetIndex, rowKey);
-        } else {
-            pageNum = (int) (rowKey / fixedPageSize);
-            if (pageNum >= numPages) {
-                // This can happen if the last page is larger than rest of the pages, which are all the same size.
-                // We have already checked that row is less than numRows.
-                Assert.geq(rowKey, "row", offsetIndex.getFirstRowIndex(numPages - 1),
-                        "offsetIndex.getFirstRowIndex(numPages - 1)");
-                pageNum = (numPages - 1);
-            }
+            return findPageNumUsingOffsetIndex(offsetIndex, row);
         }
-
-        return getPage(fillContext, pageNum);
+        final int pageNum = (int) (row / fixedPageSize);
+        if (pageNum >= numPages) {
+            // This can happen if the last page is larger than rest of the pages, which are all the same size.
+            // We have already checked that row is less than numRows.
+            Assert.geq(row, "row", offsetIndex.getFirstRowIndex(numPages - 1),
+                    "offsetIndex.getFirstRowIndex(numPages - 1)");
+            return numPages - 1;
+        }
+        return pageNum;
     }
 }
