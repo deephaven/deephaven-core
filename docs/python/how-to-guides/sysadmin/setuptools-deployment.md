@@ -279,6 +279,7 @@ my-dh-client = "my_dh_client.cli:main"
 The command below does the same work as the embedded-server command, but on a server it connects to: it uploads a CSV file, adds a column, and binds the result under a name. The name defaults to the file's stem and must be a valid Python identifier. The command checks the name before it connects and exits with a usage error if the name is invalid, so a file such as `my-scores.csv` needs `--name` to choose a different one. Unlike the embedded-server command, it imports `pydeephaven` at module scope and has no startup step. It uses anonymous authentication by default. For another authentication method, pass its name with `--auth-type`; provide any required token through the `DH_AUTH_TOKEN` environment variable rather than a command-line argument so it does not appear in shell history or process listings.
 
 ```python skip-test
+import keyword
 import os
 from pathlib import Path
 from typing import Optional
@@ -305,7 +306,7 @@ def main(
 ) -> None:
     """Upload a CSV file to a running Deephaven server and process it there."""
     name = name or Path(input_file).stem
-    if not name.isidentifier():
+    if not name.isidentifier() or keyword.iskeyword(name):
         raise click.BadParameter(
             f"'{name}' is not a valid Python identifier", param_hint="--name"
         )
