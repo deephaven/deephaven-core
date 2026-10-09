@@ -38,7 +38,7 @@
       ],
       "expectations": [
         "Flags the sentence saying time_table works similarly to empty_table in that DQL is used to populate the table as wrong, citing TimeTable (it supplies its own Timestamp column and adds rows itself) rather than only confirming that both functions exist",
-        "Flags the i/ii NOTE that says they are only supported in append-only tables, and states the full condition from AbstractFormulaColumn.validateSafeForRefresh: safe on static, append-only, and blink tables; throws on other refreshing tables",
+        "Flags the i/ii NOTE that says they are only supported in append-only tables, and states the full condition from AbstractFormulaColumn.validateSafeForRefresh: safe on static, append-only, and blink tables; throws on other refreshing tables, and that the check is skipped when the allowUnsafeRefreshingFormulas override is set, so the restriction is the default behavior rather than unconditional",
         "Flags the unsourced marketing claims about the Kafka integration (such as first-in-class) as unverifiable rather than accepting them",
         "States how many claims it enumerated and checked, and lists the ones it could not verify as author queries rather than hedging them"
       ]
