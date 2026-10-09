@@ -430,7 +430,7 @@ column_as_array = empty_table(10).update(
 )
 ```
 
-Simple constant-offset access such as `X_[ii-2]` works on all tables. Other uses of column arrays, such as `sum(X_)` or `X_.subVector(i, i+3)`, are supported only for static and blink tables; on other ticking tables, append-only ones included, the engine throws an error. See [working with arrays](../../how-to-guides/work-with-arrays.md) and the [special variables reference](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for more information.
+Simple constant-offset access such as `X_[ii-2]` works on all tables. Other uses of column arrays, such as `sum(X_)` or `X_.subVector(i, i+3)`, are only supported for static and blink tables; on other ticking tables, append-only ones included, the engine throws an error. See [working with arrays](../../how-to-guides/work-with-arrays.md) and the [special variables reference](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for more information.
 
 ## Python in query strings
 
