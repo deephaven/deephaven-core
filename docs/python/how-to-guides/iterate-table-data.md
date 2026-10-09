@@ -14,7 +14,7 @@ Deephaven offers the following table methods to iterate over table data:
 - [`iter_dict`](../reference/data-import-export/iterate/iter-dict.md)
 - [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md)
 - [`iter_chunk_dict`](../reference/data-import-export/iterate/iter-chunk-dict.md)
-- [`iter_tuple_dict`](../reference/data-import-export/iterate/iter-chunk-tuple.md)
+- [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md)
 
 These methods all return generators that yield Python data structures containing table data. Generators are efficient because they minimize copies of data and only load data into memory when needed. A generator can only iterate over a data structure once before it's exhausted.
 
@@ -143,10 +143,9 @@ for x, y in source.iter_tuple():
     print(x, y)
 ```
 
-There are two ways to ensure iteration is tolerant of schema ordering changes:
+To make unpacking in the for statement tolerant of schema ordering changes, use [`view`](../reference/table-operations/select/view.md) to select the desired columns in the desired order before iteration.
 
-- Use [`view`](../reference/table-operations/select/view.md) to limit the table to the desired columns before iteration.
-- Specify columns in the iteration call, as shown in the previous examples.
+Specifying columns in the iteration call does not reorder them. Values are always returned in the table's column order, regardless of the order in which you list the columns. For [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md) and [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md), list the columns in table order. The tuple field names follow the order you list them in, so listing columns in a different order mislabels the values.
 
 ## Performance considerations
 

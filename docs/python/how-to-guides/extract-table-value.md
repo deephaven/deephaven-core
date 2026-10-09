@@ -9,7 +9,7 @@ Deephaven tables have methods to extract values from tables into Python. General
 
 ## to_numpy() (positional index access)
 
-The recommended way to extract values from a table by positional index is using [`to_numpy`](../reference/numpy/to-numpy.md). This converts table columns to NumPy arrays, which provide positional index access.
+The recommended way to extract values from a table by positional index is using [`to_numpy`](../reference/numpy/to-numpy.md). This converts the selected columns into a 2D NumPy array (one column per selected table column), which provides positional index access.
 
 ```python order=result test-set=1
 from deephaven import empty_table
@@ -18,11 +18,11 @@ from deephaven.numpy import to_numpy
 result = empty_table(5).update(["Integers = i + 1"])
 ```
 
-To extract a single value by positional index, convert the column to a NumPy array and access by index:
+To extract a single value by positional index, convert the column to a NumPy array, flatten it to one dimension, and access by index:
 
 ```python order=:log test-set=1
 # Convert column to numpy array
-integers_array = to_numpy(result, cols=["Integers"])
+integers_array = to_numpy(result, cols=["Integers"]).flatten()
 
 # Access value at positional index 1 (second row)
 value = integers_array[1]
@@ -66,8 +66,8 @@ multi_col_table = empty_table(5).update(
 
 ```python order=:log test-set=2
 # Convert numeric columns
-x_array = to_numpy(multi_col_table, cols=["X"])
-y_array = to_numpy(multi_col_table, cols=["Y"])
+x_array = to_numpy(multi_col_table, cols=["X"]).flatten()
+y_array = to_numpy(multi_col_table, cols=["Y"]).flatten()
 
 # Iterate over multiple arrays together
 for x_val, y_val in zip(x_array, y_array):
@@ -114,5 +114,5 @@ Type-specific `ColumnSource` methods:
 
 - [`to_numpy`](../reference/numpy/to-numpy.md)
 - [NumPy integration](./use-numpy.md)
-- [How do row keys and positional indices behave?](https://deephaven.io/core/docs/reference/community-questions/shifts/)
+- [How do row keys and positional indices behave?](../reference/community-questions/shifts.md)
 - [`ColumnSource` Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html)

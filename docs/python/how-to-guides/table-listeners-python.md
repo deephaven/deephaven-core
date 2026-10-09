@@ -190,7 +190,7 @@ def listener_function(update, is_replay):
     data_added_chunks = update.added_chunks(chunk_size=100)
     for idx, chunk in enumerate(data_added_chunks):
         curr_x_chunk = chunk["X"]
-        print(f"Chunk #{idx + 1}: {curr_x_chunk} rows.")
+        print(f"Chunk #{idx + 1}: {len(curr_x_chunk)} rows.")
 
 
 source = time_table("PT0.001s").update("X = i")

@@ -79,7 +79,7 @@ while (iterator.hasNext()) {
 
 - [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html)
 - [Iterate over tables](iterate-table-vectors.md)
-- [How do row keys and positional indices behave?](https://deephaven.io/core/docs/reference/community-questions/shifts/)
+- [How do row keys and positional indices behave?](../reference/community-questions/shifts.md)
 - [`getColumnSource`](../reference/table-operations/metadata/getColumnSource.md)
 - [`columnIterator`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#columnIterator(java.lang.String))
 - [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html)
