@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Spot-check the one sentence I just added to the parallelization concept guide \u2014 details in .claude/skills/deephaven-core-accuracy-spot-check/evals/files/added-sentence.md. Is it right, and what should it say instead?",
+      "prompt": "Spot-check the one sentence I just added to the parallelization concept guide — details in .claude/skills/deephaven-core-accuracy-spot-check/evals/files/added-sentence.md. Is it right, and what should it say instead?",
       "expected_output": "Identifies that the 1 million figure is wrong (default QueryTable.minimumParallelSelectRows is 1L << 22, about 4.2 million, and configurable) and proposes a fix that keeps the property name and default out of the concept-guide sentence.",
       "files": [
         "evals/files/added-sentence.md"
@@ -12,6 +12,45 @@
         "Identifies the '1 million rows' threshold as wrong, citing QueryTable.minimumParallelSelectRows with a default of 1L << 22 (about 4.2 million)",
         "The proposed replacement sentence does not inline the property name or exact default into the concept-guide narrative; the precise value goes to a Configuration section or a link to the configuration reference",
         "Does not propose a hedge-laden replacement (e.g. 'in some cases, depending on configuration, ...') in place of a direct sentence"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Spot-check the sentence I just rewrote in the deephaven.learn how-to introduction — details in .claude/skills/deephaven-core-accuracy-spot-check/evals/files/edited-clause.md. Is it right?",
+      "expected_output": "Verifies the rewritten first sentence, and also reports that the unchanged sentence 'These batches are processed in sequence' is unsupported, because learn builds ordinary update formulas that can be evaluated concurrently.",
+      "files": [
+        "evals/files/edited-clause.md"
+      ],
+      "expectations": [
+        "Confirms the rewritten first sentence against source: learn uses a row-key (k) formula, so on ticking tables it needs add-only or blink tables, and the refresh-safety check does not apply to static tables",
+        "Reports that the unchanged sentence saying batches are processed in sequence is not supported by source, even though it is outside the edited sentence, citing that learn builds update formulas around Computer.compute that the engine may evaluate concurrently",
+        "Recommends removing or correcting the sequencing claim rather than leaving it because it was not part of the edit"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Spot-check the sentence I just rewrote in the introduction to creating tables in the crash course — details in .claude/skills/deephaven-core-accuracy-spot-check/evals/files/edited-clause-2.md. Is it right?",
+      "expected_output": "Verifies the rewritten first sentence, and also finds that the unchanged next sentence is wrong: time_table creates an add-only, append-only table by default, and a blink table only when blink_table=True. In testing, the main-branch skill also catches this in a short two-sentence paragraph, so this eval guards against losing the behavior; it does not by itself show the new rule is needed (see eval 2 for a harder case).",
+      "files": [
+        "evals/files/edited-clause-2.md"
+      ],
+      "expectations": [
+        "Confirms the rewritten sentence against source: empty_table(size) creates a table with that many rows and no columns, citing table_factory.py or TableTools",
+        "Reports that the unchanged sentence calling time_table(\"PT1s\") a blink table is wrong, because by default it is add-only and append-only and only becomes a blink table with blink_table=True, citing TimeTable or table_factory.py, even though that sentence was not part of the edit",
+        "Recommends correcting the unchanged sentence rather than leaving it because it was outside the edit"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Spot-check the paragraph I just added to the rollup how-to guide — details in .claude/skills/deephaven-core-accuracy-spot-check/evals/files/reaggregating-formula.md. Is the fourth sentence right?",
+      "expected_output": "Does not confirm the same-name requirement from reading source alone. Either refutes it (above the lowest level the formula reads the level below's columns, which another aggregation can produce) with source evidence, or marks it unverified and gives a minimal runnable example that would settle it.",
+      "files": [
+        "evals/files/reaggregating-formula.md"
+      ],
+      "expectations": [
+        "Does not report the fourth sentence ('the output column must have the same name as the input column') as verified or correct",
+        "Either explains that above the lowest level the formula's inputs are read from the level below's result table, so an input only has to be a column the rollup produces there (the formula's own output or another aggregation's), citing AggregationProcessor's reaggregated converter; or marks the sentence unverified and gives a minimal example to run that would settle it (for example a sum aggregation producing Value alongside agg.formula('Total = sum(Value)', reaggregating=True))",
+        "Control: confirms the other sentences (reaggregating=True applies the formula to the level below; the default applies it to source rows; the Value = sum(Value) example) rather than flagging them"
       ]
     }
   ]
