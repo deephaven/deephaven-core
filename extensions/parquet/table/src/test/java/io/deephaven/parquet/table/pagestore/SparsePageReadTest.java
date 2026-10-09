@@ -151,7 +151,7 @@ public class SparsePageReadTest {
                         dense(() -> ParquetTools.readTable(path).where(FILTERS[0]).view(column).select());
                 final long before = ColumnChunkPageStore.sparseFillCount();
                 // A fresh read, so that no page is already cached.
-                assertTableEquals(expected, ParquetTools.readTable(path).where(FILTERS[0]).view(column).select());
+                assertTableEquals(expected, ParquetTools.readTable(path).where(FILTERS[0]).view(column));
                 fills[ii] = ColumnChunkPageStore.sparseFillCount() - before;
             }
             assertTrue(pair[0] + " should read sparsely", fills[0] > 0);
@@ -225,7 +225,7 @@ public class SparsePageReadTest {
         try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
             final Table dense = dense(() -> source.select());
             final long before = ColumnChunkPageStore.sparseFillCount();
-            assertTableEquals(dense.where(FILTERS[0]), source.where(FILTERS[0]).select());
+            assertTableEquals(dense.where(FILTERS[0]), source.where(FILTERS[0]));
             assertEquals("pages materialized by the dense read serve the sparse one",
                     before, ColumnChunkPageStore.sparseFillCount());
         }
@@ -590,7 +590,7 @@ public class SparsePageReadTest {
     private static void assertPass(final String name, final Table expected, final Table filtered, final Reads reads) {
         final long fillsBefore = ColumnChunkPageStore.sparseFillCount();
         final long hitsBefore = ColumnChunkPageStore.sparseHitCount();
-        assertTableEquals(expected, filtered.select());
+        assertTableEquals(expected, filtered);
         final long fills = ColumnChunkPageStore.sparseFillCount() - fillsBefore;
         final long hits = ColumnChunkPageStore.sparseHitCount() - hitsBefore;
         final String counts = name + ": " + fills + " sparse fills, " + hits + " hits";
@@ -618,7 +618,7 @@ public class SparsePageReadTest {
         final String hash = "H_ = (ii * 2654435761L) % 1000003L";
         final Table expected = dense(() -> ParquetTools.readTable(path).updateView(hash).sort("H_").select());
         final long before = ColumnChunkPageStore.sparseFillCount();
-        final Table actual = ParquetTools.readTable(path).updateView(hash).sort("H_").select();
+        final Table actual = ParquetTools.readTable(path).updateView(hash).sort("H_");
         assertTableEquals(expected, actual);
         assertTrue("the first chunk should read sparsely", ColumnChunkPageStore.sparseFillCount() > before);
     }
@@ -663,15 +663,20 @@ public class SparsePageReadTest {
             final Table expected = dense(() -> ParquetTools.readTable(path).where(filter).select());
             final long before = ColumnChunkPageStore.sparseFillCount();
             // A fresh read, so that no page is already cached.
-            final Table actual = ParquetTools.readTable(path).where(filter).select();
+            final Table actual = ParquetTools.readTable(path).where(filter);
             assertTableEquals(expected, actual);
-            if (expectSparse && expected.size() > 0) {
+            // A contiguous request may read whole pages: getChunk serves it from the page directly.
+            if (expectSparse && expected.size() > 0 && !expected.getRowSet().isContiguous()) {
                 assertTrue(path + " where " + filter + " should read sparsely",
                         ColumnChunkPageStore.sparseFillCount() > before);
             }
         }
     }
 
+    /**
+     * Run {@code read} with sparse reads disabled. The setting is process-wide, so {@code read} must realize its result
+     * (with {@code select}) before returning: a deferred table would be read later, sparsely.
+     */
     private static <T> T dense(final java.util.function.Supplier<T> read) {
         final double maxDensity = ColumnChunkPageStore.setSparseReadMaxDensity(0);
         try {

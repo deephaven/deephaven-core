@@ -282,15 +282,18 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         final ByteBuffer definitionLevels =
                 getCachedBuffer(channelContext, DEFINITION_LEVELS_BUFFER_KEY, definitionLevelsLength);
         readNBytes(in, definitionLevels.array(), definitionLevels.arrayOffset(), definitionLevelsLength);
-        // A writer may store a page's values uncompressed, even in a compressed column chunk.
-        if (!header.isIs_compressed() && compressedSize != uncompressedSize) {
-            throw new IOException("Uncompressed DATA_PAGE_V2 values of " + compressedSize + " bytes, expected "
-                    + uncompressedSize + " for column: " + columnName + ", uri: " + uri);
+        final InputStream decompressed;
+        if (header.isIs_compressed()) {
+            decompressed = compressorAdapter.decompress(in, compressedSize, uncompressedSize,
+                    getDecompressorHolder(channelContext));
+        } else {
+            // A writer may store a page's values uncompressed, even in a compressed column chunk.
+            if (compressedSize != uncompressedSize) {
+                throw new IOException("Uncompressed DATA_PAGE_V2 values of " + compressedSize + " bytes, expected "
+                        + uncompressedSize + " for column: " + columnName + ", uri: " + uri);
+            }
+            decompressed = in;
         }
-        final InputStream decompressed = header.isIs_compressed()
-                ? compressorAdapter.decompress(in, compressedSize, uncompressedSize,
-                        getDecompressorHolder(channelContext))
-                : in;
         return new DataPageV2Partial(repetitionLevels, definitionLevels, decompressed, uncompressedSize);
     }
 

@@ -3370,7 +3370,7 @@ public final class ParquetTableReadWriteTest {
                 "I = i", "L = ii * 3", "D = ii / 3.0", "Str = `value-` + ii", "Sym = `sym-` + (ii % 50)");
         for (final String name : new String[] {"ReferenceRequiredColumnsV1", "ReferenceRequiredColumnsV2"}) {
             final String path = ParquetTableReadWriteTest.class.getResource("/" + name + ".parquet").getFile();
-            assertTableEquals(expected, readParquetFileFromGitLFS(new File(path)).select());
+            assertTableEquals(expected, readParquetFileFromGitLFS(new File(path)));
         }
     }
 
