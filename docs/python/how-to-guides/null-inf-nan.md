@@ -179,32 +179,37 @@ source = empty_table(10).update(
 
 ### Remove values
 
-[Built-in methods](./built-in-functions.md) can also be used to [filter](./use-filters.md) out null and NaN values. There is no built-in method specifically to remove infinity values.
+[Built-in methods](./built-in-functions.md) can also be used to [filter](./use-filters.md) out null, NaN, and infinite values. Use [`isInf`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isInf(double)) to filter out infinite values, or [`isFinite`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isFinite(double)) to remove null, NaN, and infinite values from a column with a single check.
 
-```python order=source,result_no_nulls,result_no_nans,result_no_nulls_nans
+```python order=source,result_no_nulls,result_no_nans,result_no_nulls_nans,result_no_infs,result_finite
 from deephaven import empty_table
 
 source = empty_table(10).update(
     [
         "HasNulls = (ii % 3 == 0) ? NULL_DOUBLE : randomDouble(0, 1)",
         "HasNaNs = (ii % 4 == 2) ? NAN_DOUBLE : randomDouble(5, 10)",
+        "HasInfs = (ii % 5 == 4) ? POS_INFINITY_DOUBLE : randomDouble(10, 15)",
     ]
 )
 
 result_no_nulls = source.where("!isNull(HasNulls)")
 result_no_nans = source.where("!isNaN(HasNaNs)")
 result_no_nulls_nans = source.where(["!isNull(HasNulls)", "!isNaN(HasNaNs)"])
+result_no_infs = source.where("!isInf(HasInfs)")
+result_finite = source.where(
+    ["isFinite(HasNulls)", "isFinite(HasNaNs)", "isFinite(HasInfs)"]
+)
 ```
 
 ### User-defined functions
 
-When passing null, NaN, or infinity values from tables into Python functions, the [`deephaven.constants`](https://docs.deephaven.io/core/pydoc/code/deephaven.constants.html) module is useful. You can check input values as follows:
+When passing null, NaN, or infinity values from tables into Python functions, the [`deephaven.constants`](https://docs.deephaven.io/core/pydoc/code/deephaven.constants.html) module is useful. Because NaN never equals itself, check for NaN with `math.isnan` instead of comparing against `NAN_DOUBLE`. You can check input values as follows:
 
 ```python order=source,result
+import math
 from deephaven import empty_table
 from deephaven.constants import (
     NULL_DOUBLE,
-    NAN_DOUBLE,
     POS_INFINITY_DOUBLE,
     NEG_INFINITY_DOUBLE,
 )
@@ -213,7 +218,7 @@ from deephaven.constants import (
 def my_func(input_value) -> float:
     if input_value == NULL_DOUBLE:
         return -1
-    elif input_value == NAN_DOUBLE:
+    elif math.isnan(input_value):
         return -2
     elif input_value == POS_INFINITY_DOUBLE:
         return -3
