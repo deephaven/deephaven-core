@@ -249,7 +249,9 @@ public class TailInitializationFilter {
                     source.getColumnSourceMap().values().stream().anyMatch(RegionedColumnSource.class::isInstance);
 
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            if (isRegioned) {
+            if (rowCount <= 0) {
+                // Nothing to keep. Checked up front: lastRow - rowCount + 1 below would wrap at Long.MAX_VALUE.
+            } else if (isRegioned) {
                 try (final RowSequence.Iterator it = source.getRowSet().getRowSequenceIterator()) {
                     while (it.hasMore()) {
                         final long nextRowKey = it.peekNextKey();
@@ -266,10 +268,7 @@ public class TailInitializationFilter {
             } else {
                 source.getRowSet().forEachRowKeyRange((startRow, lastRow) -> {
                     final long firstRow = Math.max(startRow, lastRow - rowCount + 1);
-                    // With rowCount <= 0 the tail is empty, and firstRow lands past lastRow.
-                    if (firstRow <= lastRow) {
-                        builder.appendRange(firstRow, lastRow);
-                    }
+                    builder.appendRange(firstRow, lastRow);
                     return true;
                 });
             }
