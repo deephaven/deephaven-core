@@ -33,11 +33,12 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    ticket is an audit or rewrite, every sentence on the page is in scope. That includes unchanged
    sentences next to an edited one: an edit often rewords one clause and leaves the clause before
    it, which is where the wrong claim sits. Build a claim ledger before verifying. List every
-   sentence that makes a factual or behavioral claim (what an API does, how the engine works, when
-   something is allowed, a comparison between two things, a status like "legacy" or "recommended"),
-   then mark each one verified with a source citation or recorded as an author query. Identifier
-   and signature checks do not clear a sentence; its claim has to be traced to the implementation.
-   State the ledger's size and the number of unverified entries in the report so a reader can see
+   factual or behavioral claim wherever it appears: in prose, headings, list and table entries,
+   captions, and code comments (what an API does, how the engine works, when something is allowed,
+   a comparison between two things, a status like "legacy" or "recommended"). Mark each one
+   verified with a source citation or recorded as an author query. Identifier and signature checks
+   do not clear a claim; it has to be traced to the implementation.
+   State the ledger's size and the number of unverified claims in the report so a reader can see
    the coverage.
 
 4. **Technical accuracy review:**
@@ -101,7 +102,7 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - **Update-cycle framing:** Avoid "instant" or claims of no micro-batching — the update cycle is effectively micro-batching. Avoid a blanket "work proportional to what changed" too: that holds for simple incremental paths, but operations like refilter can force broader or full-table re-evaluation. Frame it per-operation instead of with one universal claim.
    - **How-it-works and comparison sentences:** A sentence of the form "X works similarly to Y in that…", "under the hood Deephaven does Z," or "this is faster because…" makes two claims, one about each side, and neither is checked by confirming the names exist. Read the implementation of both sides.
    - **Restrictions: derive the full condition from the check that enforces it.** For "only works on X" and "can't be used with Y," find the validator or guard and state its whole condition, including static versus refreshing, add-only versus append-only versus blink. A paraphrase that sounds right usually drops one dimension, or states the default behavior as unconditional when a configuration property can turn the check off. Say "by default" and name the override when one exists.
-   - **Deprecated APIs in examples:** For every API an example calls, check the source for `@Deprecated`, a "Deprecated" docstring, or "Use X instead." A deprecated call still runs, so a run-and-see check passes, but the example teaches the superseded way. Check the other language's page for the same call: a deprecation caught in a Python example often has an unflagged Groovy twin, and the reverse. Cases: `S3Instructions` `access_key_id` and `secret_access_key` (use `Credentials.basic`), and the `adapter_s3_rest` and `createS3Rest` helpers (use `adapter` and `createAdapter`).
+   - **Deprecated APIs in examples:** For every API an example calls, check the source for `@Deprecated`, a "Deprecated" docstring, or "Use X instead." A deprecated call still runs, so a run-and-see check passes, but the example teaches the superseded way. Unless the request limits the review to one language or file, check the other language's page for the same call: a deprecation caught in a Python example often has an unflagged Groovy twin, and the reverse. Cases: `S3Instructions` `access_key_id` and `secret_access_key` (use `Credentials.basic`), and the `adapter_s3_rest` and `createS3Rest` helpers (use `adapter` and `createAdapter`).
    - **Counterexamples live on other pages:** For a thesis or universal claim ("queries are indifferent to static or streaming data," "works on real-time tables," "the native plotting library"), search the corpus for a restriction before accepting it: the reference pages for that operation family, restriction tables such as `special-variables.md`, and status notes such as "no longer under active development." The self-contradiction check below covers only the same paragraph; this one covers the whole docs tree. When a rule is stated on more than one page, the pages must agree: grep the corpus for its key terms and use the other pages as evidence. If one outside the requested scope disagrees, list it as follow-up work, clearly labeled, and don't report it as a finding against the page under review.
    - **Trace the example's data against its prose:** When the text says what an example shows (a rolling window, a filter, "early trading," a round trip through pandas), carry the actual input values through the code. Check window length against row spacing, a filter against the dates it keeps (a holiday can empty the output), columns or indexes dropped on conversion, and variable scope (a Groovy closure that assigns an undeclared name writes a global). An example can run cleanly and still show nothing.
    - **Prose against the code next to it:** Compare each sentence that introduces or follows a code block with what the block actually does. "There are several ways to…" followed by one way, "class methods don't support type hints" beside annotated class methods, or a comment that names a different column than the code uses are defects even when the code runs.
@@ -182,7 +183,7 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 - [ ] Claim ledger built for the whole page (unchanged sentences next to edits included), each entry verified with a citation or recorded as an author query, with its size reported
 - [ ] Every "X works like Y" or "under the hood" sentence verified against the implementation of both sides
 - [ ] Every restriction ("only," "can't") traced to the check that enforces it, and its full condition stated
-- [ ] Every API called in an example checked for deprecation, in both the Python and Groovy pages
+- [ ] Every API called in an example checked for deprecation, in the sibling language's page too unless the request limits the scope
 - [ ] Every sentence that introduces or follows a code block compared with what the block does
 - [ ] Every broad quantifier ("all," "every," "only," "inverse," "follows X's rules") verified against source and narrowed or enumerated where needed
 - [ ] Every "use X" recommendation checked against what the project currently recommends

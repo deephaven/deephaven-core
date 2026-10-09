@@ -57,12 +57,14 @@ page, and the fix-not-rewrite limit above does not apply:
   patched in one place and wrong two paragraphs down still sends readers the wrong way, and every
   later reviewer re-finds the open items.
 - Restructure, replace an example, or rewrite a section where the findings cluster or the
-  section can't be made clear by patching. Keep every accurate fact, and run any new or changed
-  example.
+  section can't be made clear by patching. Keep every accurate fact. This skill doesn't run
+  examples: list each new or changed example as needing a snapshot run (`docs/updateSnapshots`), or
+  run it yourself if the caller's environment allows, and fix any failure.
 - Treat the recorded findings as a floor, not the scope. The audit missed things; fix what you
-  find while working through the page, in both the Python and Groovy versions.
+  find while working through the page, in the sibling language's page too unless the caller
+  limited the task to one language or file.
 - When the edits are done, review the finished page, not the diff: run the accuracy, structure,
-  and style steps again over the whole page, fix what they find, and repeat until a round finds
+  examples, and style steps again over the whole page, fix what they find, and repeat until a round finds
   nothing wrong, misleading, or hard to follow. Then do one adversarial read, assuming problems
   remain, before handing the page to a human or a bot reviewer.
 
@@ -296,8 +298,8 @@ Questions the review couldn't resolve from source — mostly technical claims th
 Format: AQ1 [heading, para N or line N]: question
 
 ## Coverage
-Sentences with factual or behavioral claims (the accuracy check's claim ledger), how many were
-verified against source, and how many are author queries. A page with no ledger was not fully
+Factual or behavioral claims in prose, headings, lists, tables, captions, and code comments (the
+accuracy check's claim ledger), how many were verified against source, and how many are author queries. A page with no ledger was not fully
 reviewed.
 
 ## Strengths
