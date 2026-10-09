@@ -2941,8 +2941,8 @@ class Table(JObjectWrapper):
         using one less by column on each level. The column that is no longer part of the aggregation key is
         replaced with null on each level.
 
-        Note some aggregations can not be used in creating a rollup tables, these include: group, partition, median,
-        pct, weighted_avg
+        Note some aggregations can not be used in creating a rollup table, these include: partition, median, pct, and
+        formula when formula_param is provided
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
