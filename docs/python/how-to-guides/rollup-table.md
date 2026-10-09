@@ -1,6 +1,5 @@
 ---
 title: Create a hierarchical rollup table programmatically
-sidebar_label: Rollup tables
 ---
 
 <!-- TODO: Link to conceptual guide on hierarchy https://github.com/deephaven/deephaven.io/issues/2079 -->

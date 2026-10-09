@@ -1,6 +1,5 @@
 ---
 title: Table operations overview
-sidebar_label: Operations overview
 ---
 
 <div className="comment-title">

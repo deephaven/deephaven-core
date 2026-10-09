@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ObjectSsaSsaStamp and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
+// ****** Edit CharSsaSsaStamp and run "./gradlew replicateSegmentedSortedArray" to regenerate
 //
 // @formatter:off
 
@@ -94,72 +94,75 @@ public class ObjectReverseSsaSsaStamp implements SsaSsaStamp {
     @Override
     public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
             LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections,
-            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder,
+            SizedLongChunk<RowKeys> modifiedKeys, boolean disallowExactMatch) {
         processRemovals((ObjectReverseSegmentedSortedArray) leftSsa, rightStampChunk.asObjectChunk(), rightKeys, priorRedirections,
-                rowRedirection, modifiedBuilder, disallowExactMatch);
+                rowRedirection, modifiedBuilder, modifiedKeys, disallowExactMatch);
     }
 
     static private void processRemovals(ObjectReverseSegmentedSortedArray leftSsa, ObjectChunk<Object, ? extends Values> rightStampChunk,
             LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> nextRedirections,
-            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder,
+            SizedLongChunk<RowKeys> modifiedKeys, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key. Binary search
         // in the left for the removed key to find the smallest value geq the removed right. Update all rows
         // with the removed redirection to the previous key.
 
         final ObjectReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
-            int capacity = rightStampChunk.size();
-            modifiedKeys.ensureCapacity(capacity).setSize(capacity);
-            int mks = 0;
+        int capacity = modifiedKeys.ensureCapacity(rightStampChunk.size()).capacity();
+        modifiedKeys.get().setSize(capacity);
+        int mks = 0;
 
-            for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
-                final Object rightStampValue = rightStampChunk.get(ii);
-                final long rightStampKey = rightKeys.get(ii);
-                final long newRightStampKey = nextRedirections.get(ii);
+        for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
+            final Object rightStampValue = rightStampChunk.get(ii);
+            final long rightStampKey = rightKeys.get(ii);
+            final long newRightStampKey = nextRedirections.get(ii);
 
-                leftIt.advanceToBeforeFirst(rightStampValue);
+            leftIt.advanceToBeforeFirst(rightStampValue);
 
-                while (leftIt.hasNext()) {
-                    final long leftKey = leftIt.nextKey();
-                    final long leftRedirectionKey = rowRedirection.get(leftKey);
-                    if (leftRedirectionKey == rightStampKey) {
-                        if (mks == capacity) {
-                            capacity *= 2;
-                            modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
-                        }
-                        modifiedKeys.get().set(mks++, leftKey);
-                        if (newRightStampKey == RowSequence.NULL_ROW_KEY) {
-                            rowRedirection.removeVoid(leftKey);
-                        } else {
-                            rowRedirection.putVoid(leftKey, newRightStampKey);
-                        }
-                        leftIt.next();
-                    } else {
-                        break;
+            while (leftIt.hasNext()) {
+                final long leftKey = leftIt.nextKey();
+                final long leftRedirectionKey = rowRedirection.get(leftKey);
+                if (leftRedirectionKey == rightStampKey) {
+                    if (mks == capacity) {
+                        capacity *= 2;
+                        modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
                     }
+                    modifiedKeys.get().set(mks++, leftKey);
+                    if (newRightStampKey == RowSequence.NULL_ROW_KEY) {
+                        rowRedirection.removeVoid(leftKey);
+                    } else {
+                        rowRedirection.putVoid(leftKey, newRightStampKey);
+                    }
+                    leftIt.next();
+                } else {
+                    break;
                 }
             }
+        }
 
-            if (mks > 0) {
-                modifiedKeys.get().setSize(mks);
-                modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
-            }
+        if (mks > 0) {
+            modifiedKeys.get().setSize(mks);
+            modifiedKeys.get().sort();
+            modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
         }
     }
 
     @Override
     public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
             LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue, WritableRowRedirection rowRedirection,
-            RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+            RowSetBuilderRandom modifiedBuilder, SizedLongChunk<RowKeys> modifiedKeys, boolean endsWithLastValue,
+            boolean disallowExactMatch) {
         processInsertion((ObjectReverseSegmentedSortedArray) leftSsa, rightStampChunk.asObjectChunk(), rightKeys,
-                nextRightValue.asObjectChunk(), rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                nextRightValue.asObjectChunk(), rowRedirection, modifiedBuilder, modifiedKeys, endsWithLastValue,
+                disallowExactMatch);
     }
 
     static private void processInsertion(ObjectReverseSegmentedSortedArray leftSsa, ObjectChunk<Object, ? extends Values> rightStampChunk,
             LongChunk<RowKeys> rightKeys, ObjectChunk<Object, Values> nextRightValue, WritableRowRedirection rowRedirection,
-            RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+            RowSetBuilderRandom modifiedBuilder, SizedLongChunk<RowKeys> modifiedKeys, boolean endsWithLastValue,
+            boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the
         // rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
@@ -170,97 +173,93 @@ public class ObjectReverseSsaSsaStamp implements SsaSsaStamp {
 
         final ObjectReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
-            int capacity = rightStampChunk.size();
-            modifiedKeys.ensureCapacity(capacity).setSize(capacity);
-            int mks = 0;
+        int capacity = modifiedKeys.ensureCapacity(rightStampChunk.size()).capacity();
+        modifiedKeys.get().setSize(capacity);
+        int mks = 0;
 
-            for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
-                final Object rightStampValue = rightStampChunk.get(ii);
+        for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
+            final Object rightStampValue = rightStampChunk.get(ii);
 
-                leftIt.advanceToBeforeFirst(rightStampValue);
+            leftIt.advanceToBeforeFirst(rightStampValue);
 
-                final long rightStampKey = rightKeys.get(ii);
+            final long rightStampKey = rightKeys.get(ii);
 
-                if (ii == rightStampChunk.size() - 1 && endsWithLastValue) {
-                    while (leftIt.hasNext()) {
-                        leftIt.next();
-                        final long leftKey = leftIt.getKey();
+            if (ii == rightStampChunk.size() - 1 && endsWithLastValue) {
+                while (leftIt.hasNext()) {
+                    leftIt.next();
+                    final long leftKey = leftIt.getKey();
+                    rowRedirection.putVoid(leftKey, rightStampKey);
+                    if (mks == capacity) {
+                        capacity *= 2;
+                        modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
+                    }
+                    modifiedKeys.get().set(mks++, leftKey);
+                }
+            } else {
+                final Object nextRight = nextRightValue.get(ii);
+                while (leftIt.hasNext()) {
+                    final Object leftValue = leftIt.nextValue();
+                    if (disallowExactMatch ? leq(leftValue, nextRight) : lt(leftValue, nextRight)) {
+                        final long leftKey = leftIt.nextKey();
                         rowRedirection.putVoid(leftKey, rightStampKey);
                         if (mks == capacity) {
                             capacity *= 2;
                             modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
                         }
                         modifiedKeys.get().set(mks++, leftKey);
-                    }
-                } else {
-                    final Object nextRight = nextRightValue.get(ii);
-                    while (leftIt.hasNext()) {
-                        final Object leftValue = leftIt.nextValue();
-                        if (disallowExactMatch ? leq(leftValue, nextRight) : lt(leftValue, nextRight)) {
-                            final long leftKey = leftIt.nextKey();
-                            rowRedirection.putVoid(leftKey, rightStampKey);
-                            if (mks == capacity) {
-                                capacity *= 2;
-                                modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
-                            }
-                            modifiedKeys.get().set(mks++, leftKey);
-                            leftIt.next();
-                        } else {
-                            break;
-                        }
+                        leftIt.next();
+                    } else {
+                        break;
                     }
                 }
             }
-            if (mks > 0) {
-                modifiedKeys.get().setSize(mks);
-                modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
-            }
+        }
+        if (mks > 0) {
+            modifiedKeys.get().setSize(mks);
+            modifiedKeys.get().sort();
+            modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
         }
     }
 
     @Override
     public void findModified(SegmentedSortedArray leftSsa, RowRedirection rowRedirection,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices,
-            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+            RowSetBuilderRandom modifiedBuilder, SizedLongChunk<RowKeys> modifiedKeys, boolean disallowExactMatch) {
         findModified((ObjectReverseSegmentedSortedArray) leftSsa, rowRedirection, rightStampChunk.asObjectChunk(),
-                rightStampIndices, modifiedBuilder, disallowExactMatch);
+                rightStampIndices, modifiedBuilder, modifiedKeys, disallowExactMatch);
     }
 
     private static void findModified(ObjectReverseSegmentedSortedArray leftSsa, RowRedirection rowRedirection,
             ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices,
-            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+            RowSetBuilderRandom modifiedBuilder, SizedLongChunk<RowKeys> modifiedKeys, boolean disallowExactMatch) {
         final ObjectReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
-            int capacity = rightStampChunk.size();
-            modifiedKeys.ensureCapacity(capacity).setSize(capacity);
-            int mks = 0;
+        int capacity = modifiedKeys.ensureCapacity(rightStampChunk.size()).capacity();
+        modifiedKeys.get().setSize(capacity);
+        int mks = 0;
 
-            for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
-                final Object rightStampValue = rightStampChunk.get(ii);
+        for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
+            final Object rightStampValue = rightStampChunk.get(ii);
 
-                // now find the lowest left value leq (lt) than rightStampValue
-                leftIt.advanceToBeforeFirst(rightStampValue);
+            // now find the lowest left value leq (lt) than rightStampValue
+            leftIt.advanceToBeforeFirst(rightStampValue);
 
-                final long rightStampKey = rightStampIndices.get(ii);
-                while (leftIt.hasNext() && rowRedirection.get(leftIt.nextKey()) == rightStampKey) {
-                    leftIt.next();
+            final long rightStampKey = rightStampIndices.get(ii);
+            while (leftIt.hasNext() && rowRedirection.get(leftIt.nextKey()) == rightStampKey) {
+                leftIt.next();
 
-                    if (mks == capacity) {
-                        capacity *= 2;
-                        modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
-                    }
-                    modifiedKeys.get().set(mks++, leftIt.getKey());
+                if (mks == capacity) {
+                    capacity *= 2;
+                    modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
                 }
+                modifiedKeys.get().set(mks++, leftIt.getKey());
             }
+        }
 
-            if (mks > 0) {
-                modifiedKeys.get().setSize(mks);
-                modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
-            }
+        if (mks > 0) {
+            modifiedKeys.get().setSize(mks);
+            modifiedKeys.get().sort();
+            modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
         }
     }
 

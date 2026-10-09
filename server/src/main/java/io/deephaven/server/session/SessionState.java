@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.QueryState;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -50,7 +49,6 @@ import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
-import java.io.IOException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -320,14 +318,13 @@ public class SessionState {
                     "Export id " + exportId + " refers to a non-export and cannot be requested!");
         }
 
-        // Lock-free when the export exists. Export listeners look exports up from inside their callbacks, while an
-        // export being created notifies those same listeners from under the exportMap monitor; taking that monitor
-        // here would close the cycle.
+        // Lock-free when the export exists; the exportMap monitor is only needed to decide between absent and released.
         final ExportObject<T> found = (ExportObject<T>) exportMap.get(exportId);
         if (found != null) {
             return found;
         }
 
+        final boolean released;
         synchronized (exportMap) {
             // Expired check must be guarded by the lock, and must dominate any existing/released answer.
             throwIfExpired();
@@ -337,18 +334,60 @@ public class SessionState {
                 return existing;
             }
 
-            if (!isReleased(exportId)) {
-                if (exportId > NON_EXPORT_ID) {
-                    // If this a client-side export we'll allow an out-of-order request by creating a new export object.
-                    return (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
-                }
+            released = isReleased(exportId);
+            if (!released && exportId <= NON_EXPORT_ID) {
                 // If this a server-side export then it must already exist or else is a user error.
                 throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "Export id " + exportId + " does not exist and cannot be used out-of-order!");
             }
         }
+        if (released) {
+            return newReleasedExport(exportId);
+        }
 
-        return newReleasedExport(exportId);
+        // If this a client-side export we'll allow an out-of-order request by creating a new export object.
+        final ExportObject<T> created = createExport(exportId);
+        return created != null ? created : newReleasedExport(exportId);
+    }
+
+    /**
+     * Creates the export for {@code exportId}, publishes it in the export map, and tells listeners of it. Both happen
+     * under the new export's monitor, so its UNKNOWN notification is sent once and before any other state, and the
+     * export map's monitor is never held while listeners are notified.
+     *
+     * @param exportId the export id
+     * @param <T> the export type
+     * @return the export now published at {@code exportId}, which is the one another thread published first if there is
+     *         one; null if the id has been released
+     */
+    private <T> ExportObject<T> createExport(final int exportId) {
+        Assert.assertion(!Thread.holdsLock(exportMap), "!Thread.holdsLock(exportMap)");
+        final ExportObject<T> created = new ExportObject<>(errorTransformer, this, exportId);
+        ExportObject<T> published = null;
+        try {
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (created) {
+                synchronized (exportMap) {
+                    // Expired check must be guarded by the lock: once onExpired() has cleared the map nothing may be
+                    // added.
+                    throwIfExpired();
+                    if (!isReleased(exportId)) {
+                        // noinspection unchecked
+                        final ExportObject<T> existing = (ExportObject<T>) exportMap.putIfAbsent(exportId, created);
+                        published = existing == null ? created : existing;
+                    }
+                }
+                if (published == created) {
+                    created.notifyListeners();
+                }
+            }
+        } finally {
+            if (published != created) {
+                // never published, so no one else can reach it
+                created.forceReferenceCountToZero();
+            }
+        }
+        return published;
     }
 
     /**
@@ -362,7 +401,7 @@ public class SessionState {
      */
     @SuppressWarnings("unchecked")
     public <T> ExportObject<T> getExportIfExists(final int exportId) {
-        // see getExport for why the existing case must not take the exportMap monitor
+        // lock-free when the export exists, as in getExport
         throwIfExpired();
         final ExportObject<T> found = (ExportObject<T>) exportMap.get(exportId);
         if (found != null) {
@@ -461,9 +500,9 @@ public class SessionState {
     public <T> ExportObject<T> newServerSideExport(final T export) {
         final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
 
-        // As a new export, the entry is always absent; we'll do the auth check inside the factory function
-        // noinspection unchecked
-        final ExportObject<T> result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+        // As a new export, the id is never in use or released
+        final ExportObject<T> result = createExport(exportId);
+        Assert.neqNull(result, "result");
         result.setResult(export);
         return result;
     }
@@ -477,10 +516,9 @@ public class SessionState {
     public ExportObject<Void> newFailedServerSideExport(final Exception failure) {
         final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
 
-        // As a new export, the entry is always absent; we'll do the auth check inside the factory function
-        // noinspection unchecked
-        final ExportObject<Void> result =
-                (ExportObject<Void>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+        // As a new export, the id is never in use or released
+        final ExportObject<Void> result = createExport(exportId);
+        Assert.neqNull(result, "result");
         result.setCaughtException(failure);
         return result;
     }
@@ -554,6 +592,12 @@ public class SessionState {
      * <p>
      * If called after the session has expired, this will throw, and the close() method on the provided instance will
      * not be called.
+     * <p>
+     * Because of that, this call must be the first side-effecting step of attaching an object to the session: register
+     * first, then publish (add to a map, hand to another observer, create exports). Anything published before a throw
+     * from this method is unreachable by session teardown and must be undone by the caller. The publication must also
+     * be atomic with respect to the callback, for example by holding the monitor the callback takes across both steps;
+     * otherwise an expiry between them runs the callback before there is anything to clean up.
      *
      * @param onClose the callback to invoke at end-of-life
      */
@@ -606,33 +650,43 @@ public class SessionState {
         }
 
         log.debug().append(logPrefix).append("releasing outstanding exports").endl();
-        synchronized (exportMap) {
-            exportMap.forEach(ExportObject::cancel);
-            exportMap.clear();
-            // Safe to release here: the expiration flag is already set above, so any lookup that later takes this
-            // monitor observes expiration and never reads releasedExports.
-            releasedExports.close();
-        }
-
-        log.debug().append(logPrefix).append("outstanding exports released").endl();
-        synchronized (exportListeners) {
-            exportListeners.forEach(ExportListener::onRemove);
-            exportListeners.clear();
-        }
-
-        final List<Closeable> callbacksToClose;
-        synchronized (onCloseCallbacks) {
-            callbacksToClose = new ArrayList<>(onCloseCallbacks.size());
-            onCloseCallbacks.forEach((ref, callback) -> callbacksToClose.add(callback));
-            onCloseCallbacks.clear();
-        }
-        callbacksToClose.forEach(callback -> {
-            try {
-                callback.close();
-            } catch (final IOException e) {
-                log.error().append(logPrefix).append("error during onClose callback: ").append(e).endl();
+        // Internal exceptions thrown by any callbacks or state transitions are reported as fatal errors - these are
+        // intended to be internal apis and must handle their own exceptions.
+        try {
+            // Cancel outside the export map's monitor: cancelling notifies listeners, which may create exports from
+            // their callbacks. Nothing is lost by clearing first; the expiration flag set above makes every later
+            // lookup or creation fail, and markExportReleased() is a no-op once expired.
+            final List<ExportObject<?>> toCancel;
+            synchronized (exportMap) {
+                toCancel = List.copyOf(exportMap.values());
+                exportMap.clear();
+                // Safe to release here: the expiration flag is already set above, so any lookup that later takes
+                // this monitor observes expiration and never reads releasedExports.
+                releasedExports.close();
             }
-        });
+            toCancel.forEach(ExportObject::cancel);
+
+            log.debug().append(logPrefix).append("outstanding exports released").endl();
+            synchronized (exportListeners) {
+                exportListeners.forEach(ExportListener::onRemove);
+                exportListeners.clear();
+            }
+
+            final List<Closeable> callbacksToClose;
+            synchronized (onCloseCallbacks) {
+                callbacksToClose = new ArrayList<>(onCloseCallbacks.size());
+                onCloseCallbacks.forEach((ref, callback) -> callbacksToClose.add(callback));
+                onCloseCallbacks.clear();
+            }
+            for (final Closeable callback : callbacksToClose) {
+                callback.close();
+            }
+        } catch (final Throwable err) {
+            log.error().append(logPrefix).append("unexpected error while expiring session ").append(sessionId)
+                    .append(": ").append(err).endl();
+            ProcessEnvironment.getGlobalFatalErrorReporter().reportAsync(
+                    "Unexpected error while expiring session " + sessionId, err);
+        }
     }
 
     /**
@@ -726,7 +780,9 @@ public class SessionState {
             this.exportId = exportId;
             this.logIdentity =
                     isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
-            setState(ExportNotification.State.UNKNOWN);
+            // Listeners are told of a new export by createExport() once it is published; a non-export is never
+            // announced.
+            this.state = ExportNotification.State.UNKNOWN;
 
             // we retain a reference until a non-export becomes EXPORTED or a regular export becomes RELEASED
             retainReference();
@@ -811,7 +867,13 @@ public class SessionState {
             this.parents = parents;
             dependentCount = parents.size();
             for (final ExportObject<?> parent : parents) {
-                if (parent != null && !tryManage(parent)) {
+                if (parent == null) {
+                    continue;
+                }
+                // A released parent may still be retained by something else, so manage succeeding does not mean it is
+                // usable; reject by state as well. A parent that goes terminal after this point was managed while
+                // live, and its result stays valid for this export.
+                if (!tryManage(parent) || isExportStateTerminal(parent.state)) {
                     // we've failed; let's cleanup already managed parents
                     forceReferenceCountToZero();
                     alreadyDeadParent = parent;
@@ -1003,18 +1065,7 @@ public class SessionState {
             this.state = state;
 
             // Send an export notification before possibly notifying children of our state change.
-            if (exportId != NON_EXPORT_ID) {
-                log.debug().append(session.logPrefix).append("export '").append(logIdentity)
-                        .append("' is ExportState.").append(state.name()).endl();
-
-                final ExportNotification notification = makeExportNotification();
-                exportListenerVersion = session.exportListenerVersion;
-                session.exportListeners.forEach(listener -> listener.notify(notification));
-            } else {
-                log.debug().append(session == null ? "Session " : session.logPrefix)
-                        .append("non-export '").append(logIdentity).append("' is ExportState.")
-                        .append(state.name()).endl();
-            }
+            notifyListeners();
 
             if (isExportStateFailure(state) && errorHandler != null) {
                 maybeAssignErrorId(caughtException, null, state);
@@ -1072,6 +1123,28 @@ public class SessionState {
                 if ((isNowExported && isNonExport()) || isExportStateTerminal(state)) {
                     dropReference();
                 }
+            }
+        }
+
+        /**
+         * Sends this export's current state to the session's export listeners. Called on every state change, and once
+         * by {@link #createExport} when the export is published, since the constructor does not notify.
+         */
+        private synchronized void notifyListeners() {
+            // the export map's monitor is a leaf: never held while taking an export's monitor or running listeners
+            Assert.assertion(session == null || !Thread.holdsLock(session.exportMap),
+                    "session == null || !Thread.holdsLock(session.exportMap)");
+            if (exportId != NON_EXPORT_ID) {
+                log.debug().append(session.logPrefix).append("export '").append(logIdentity)
+                        .append("' is ExportState.").append(state.name()).endl();
+
+                final ExportNotification notification = makeExportNotification();
+                exportListenerVersion = session.exportListenerVersion;
+                session.exportListeners.forEach(listener -> listener.notify(notification));
+            } else {
+                log.debug().append(session == null ? "Session " : session.logPrefix)
+                        .append("non-export '").append(logIdentity).append("' is ExportState.")
+                        .append(state.name()).endl();
             }
         }
 
@@ -1636,15 +1709,24 @@ public class SessionState {
                     // See getExport: expiration may be flagged before teardown acquires this monitor; answer as
                     // expired rather than resurrecting or reporting the id as released.
                     throwIfExpired();
+                    released = isReleased(exportId);
                     // noinspection unchecked
-                    found = isReleased(exportId) ? null
-                            : (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
-                    // a shell that has been released but not yet dropped from the map (see release()) is gone too
-                    released = found == null || found.getState() == ExportNotification.State.RELEASED;
+                    found = released ? null : (ExportObject<T>) exportMap.get(exportId);
+                }
+                final ExportObject<T> export;
+                if (released) {
+                    export = null;
+                } else if (found == null) {
+                    export = createExport(exportId);
+                } else {
+                    export = found;
                 }
                 // Redefining work at a released id must fail cleanly rather than resurrecting the id; hand back a
-                // released marker so submit() reports the failure via the error handler.
-                this.export = released ? newReleasedExport(exportId) : found;
+                // released marker so submit() reports the failure via the error handler. A shell that has been
+                // released but not yet dropped from the map (see release()) is gone too.
+                this.export = export == null || export.getState() == ExportNotification.State.RELEASED
+                        ? newReleasedExport(exportId)
+                        : export;
             }
         }
 
@@ -1889,16 +1971,6 @@ public class SessionState {
                 @Override
                 public int getIntKey(final ExportObject<?> exportObject) {
                     return exportObject.exportId;
-                }
-            };
-
-    private final KeyedIntObjectHash.ValueFactory<ExportObject<?>> EXPORT_OBJECT_VALUE_FACTORY =
-            new KeyedIntObjectHash.ValueFactory.Strict<>() {
-                @Override
-                public ExportObject<?> newValue(final int key) {
-                    throwIfExpired();
-
-                    return new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, key);
                 }
             };
 }

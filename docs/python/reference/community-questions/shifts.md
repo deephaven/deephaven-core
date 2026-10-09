@@ -1,6 +1,5 @@
 ---
 title: How do row keys and positional indices behave during table operations?
-sidebar_label: How do row keys and positional indices behave during table operations?
 ---
 
 _When working with tables in Deephaven, I understand that "shifts" can happen when tables grow beyond their allocated row key slots. How do the row key (k) and positional index (i) attributes change during these shifts, and what impact does this have on downstream operations?_

@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -386,6 +387,18 @@ public class RollingGroupOperator extends UpdateByOperator {
         }
     }
     // endregion Shifts
+
+    @Override
+    protected void collectSparseSources(@NotNull final Consumer<SparseArrayColumnSource<?>> consumer) {
+        super.collectSparseSources(consumer);
+        if (rowRedirection == null) {
+            consumer.accept((SparseArrayColumnSource<?>) groupRowSetSource);
+            if (timestampColumnName != null) {
+                consumer.accept((SparseArrayColumnSource<?>) startSource);
+                consumer.accept((SparseArrayColumnSource<?>) endSource);
+            }
+        }
+    }
 
     // region clear-output
     @Override

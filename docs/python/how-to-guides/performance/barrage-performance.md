@@ -1,6 +1,5 @@
 ---
 title: Barrage metrics for performance monitoring
-sidebar_label: Barrage metrics
 ---
 
 Barrage is the name of Deephaven's IPC table transport. This guide explains what statistics are recorded and how to access them.

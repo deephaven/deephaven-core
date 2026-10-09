@@ -1,6 +1,5 @@
 ---
 title: Time operations cheat sheet
-sidebar_label: Time operations
 ---
 
 ## Formats

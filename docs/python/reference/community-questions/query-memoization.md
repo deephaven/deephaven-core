@@ -1,6 +1,5 @@
 ---
 title: Why do some queries run faster the second time they are run?
-sidebar_label: Why do queries run faster the second time they are run?
 ---
 
 Deephaven utilizes [memoization](https://en.wikipedia.org/wiki/Memoization) for many table operations, such as [`avg_by`](../table-operations/group-and-aggregate/avgBy.md), which stores and recalls previously computed results. This optimization significantly reduces execution time on repeated runs.

@@ -74,7 +74,8 @@ public class ObjectColumnBinarySearchKernel {
      * <p>
      * Ordering alone decides a match: every row that compares equal to a search value is returned. This is valid for
      * types whose values compare equal exactly when they are equal, as
-     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes; for any other type,
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes, and for
+     * {@link java.math.BigDecimal}, whose match filter matches by compareTo; for any other type,
      * {@link #binarySearchMatchWithGeneralEquality} applies.
      *
      * <p>
@@ -406,7 +407,7 @@ public class ObjectColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastPos) {
             final Object lowValue = usePrev ? source.getPrev(selection.get(low)) : source.get(selection.get(low));
-            if (ObjectComparisons.eq(lowValue, min)) {
+            if (ObjectComparisons.compareEquals(lowValue, min)) {
                 return low;
             }
         }
@@ -467,7 +468,7 @@ public class ObjectColumnBinarySearchKernel {
         if (maxInc && high >= firstPos) {
             final Object highValue =
                     usePrev ? source.getPrev(selection.get(high)) : source.get(selection.get(high));
-            if (ObjectComparisons.eq(highValue, max)) {
+            if (ObjectComparisons.compareEquals(highValue, max)) {
                 return high;
             }
         }
@@ -526,7 +527,7 @@ public class ObjectColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastPos) {
             final Object lowValue = usePrev ? source.getPrev(selection.get(low)) : source.get(selection.get(low));
-            if (ObjectComparisons.eq(lowValue, max)) {
+            if (ObjectComparisons.compareEquals(lowValue, max)) {
                 return low;
             }
         }
@@ -587,7 +588,7 @@ public class ObjectColumnBinarySearchKernel {
         if (minInc && high >= firstPos) {
             final Object highValue =
                     usePrev ? source.getPrev(selection.get(high)) : source.get(selection.get(high));
-            if (ObjectComparisons.eq(highValue, min)) {
+            if (ObjectComparisons.compareEquals(highValue, min)) {
                 return high;
             }
         }

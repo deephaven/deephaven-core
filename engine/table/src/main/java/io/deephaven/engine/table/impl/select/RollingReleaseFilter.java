@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -65,8 +64,7 @@ public class RollingReleaseFilter
         }
 
         if (offset + workingSize <= fullSet.size()) {
-            final TrackingWritableRowSet sub =
-                    fullSet.subSetByPositionRange(offset, offset + workingSize).toTracking();
+            final WritableRowSet sub = fullSet.subSetByPositionRange(offset, offset + workingSize);
             sub.retain(selection);
             return sub;
         }

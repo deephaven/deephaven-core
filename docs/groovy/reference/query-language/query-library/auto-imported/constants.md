@@ -1,6 +1,5 @@
 ---
 title: Constants
-sidebar_label: Constants
 ---
 
 Null values, infinity, and numeric limits.

@@ -47,12 +47,14 @@ public class ReplicatePrimitiveInterfaces {
         {
             charToShortAndByte(TASK, CHAR_TO_INT_PATH);
             final String floatToIntPath = charToFloat(TASK, CHAR_TO_INT_PATH, null);
-            intToDouble(TASK, floatToIntPath, null,
+            final String floatToDoublePath = intToDouble(TASK, floatToIntPath, null,
                     "interface",
                     "FunctionalInterface",
                     CHAR_TO_INT_PATH.substring(
                             CHAR_TO_INT_PATH.lastIndexOf('/') + 1,
                             CHAR_TO_INT_PATH.lastIndexOf(".java")));
+            ReplicationUtils.fixupChainedFileHeader(TASK, floatToDoublePath,
+                    ReplicationUtils.className(CHAR_TO_INT_PATH));
             if (!new File(floatToIntPath).delete()) {
                 throw new IOException("Failed to delete extraneous " + floatToIntPath);
             }
@@ -60,6 +62,7 @@ public class ReplicatePrimitiveInterfaces {
         {
             charToShortAndByte(TASK, CHAR_ITERATOR_PATH);
             final String floatPath = charToFloat(TASK, CHAR_ITERATOR_PATH, null);
+            // the float iterator is regenerated in place from itself
             intToDouble(TASK, floatPath, null,
                     "interface",
                     "FunctionalInterface",
@@ -68,6 +71,7 @@ public class ReplicatePrimitiveInterfaces {
                     CHAR_ITERATOR_PATH.substring(
                             CHAR_ITERATOR_PATH.lastIndexOf('/') + 1,
                             CHAR_ITERATOR_PATH.lastIndexOf(".java")));
+            ReplicationUtils.fixupChainedFileHeader(TASK, floatPath, ReplicationUtils.className(CHAR_ITERATOR_PATH));
         }
         {
             intToLong(TASK, INT_ITERATOR_PATH, null,

@@ -1,6 +1,5 @@
 ---
 title: Null, infinity, and NaN values
-sidebar_label: Nulls, infs, and NaNs
 ---
 
 Null, infinity, and not-a-number (NaN) values can unexpectedly appear in your datasets and disrupt calculations if not handled properly. This guide shows you how to detect, filter, and replace these special values to keep your data analysis running smoothly. Not all numeric types support each of these special values.

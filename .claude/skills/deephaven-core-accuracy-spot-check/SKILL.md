@@ -16,9 +16,19 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 2. **Verify each changed claim or code snippet against source.** Use the same source map as
    `deephaven-core-accuracy-check` (engine/server code, `py/server/deephaven/`, configuration
    properties under `Configuration/` and `props/`, gRPC definitions under `proto/`, etc. — see
-   that skill's step 4 ("Technical accuracy review") for the full path list — use the heading, not
-   the step number, since renumbering there has already gone stale once). Search source first;
+   that skill's "Technical accuracy review" step for the full path list). Search source first;
    never correct an example from memory.
+
+   **Placement gate:** a verified-true fix can still be the wrong fix. This applies only to
+   narrative pages: Concept guides (`conceptual/`) and Tutorials (`getting-started/crash-course/`).
+   On Reference pages and configuration pages (such as `conceptual/query-table-configuration.md`),
+   the precise property, default, or threshold is the content, so fix it inline. On a narrative
+   page, if correcting the claim would add a property name, default, or threshold to the
+   narrative, don't paste it inline — propose rewriting the sentence at the section's level of
+   abstraction and putting the precise detail in the page's Configuration section or a link to the
+   configuration reference (see `deephaven-core-accuracy-check`'s **Placement of configuration
+   detail**). A caveat that isn't configuration detail (a version, environment, or platform restriction) stays if the reader needs it at that point, as its own sentence (see `deephaven-writing-style`'s hedging rule); otherwise cut it. If you can't verify the claim, raise an author query rather than
+   hedging the sentence.
 
 3. **Apply basic style to changed lines only.**
    

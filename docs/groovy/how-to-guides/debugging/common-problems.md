@@ -1,7 +1,6 @@
 ---
 id: common-problems
 title: Common problems when debugging Deephaven
-sidebar_label: Common problems
 ---
 
 This guide describes common Deephaven-specific issues you may encounter when debugging Groovy code.

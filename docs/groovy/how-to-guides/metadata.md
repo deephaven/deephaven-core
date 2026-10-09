@@ -1,6 +1,5 @@
 ---
 title: Access table metadata
-sidebar_label: Metadata
 ---
 
 This guide will show you how to use methods and attributes from Deephaven's `Table` class to access the metadata for your table.

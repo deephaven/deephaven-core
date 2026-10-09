@@ -1,6 +1,5 @@
 ---
 title: Performance tables cheat sheet
-sidebar_label: Performance tables
 ---
 
 Deephaven makes several performance log tables available.

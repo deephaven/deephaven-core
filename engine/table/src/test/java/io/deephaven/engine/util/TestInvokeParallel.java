@@ -807,20 +807,20 @@ public class TestInvokeParallel {
     }
 
     /**
-     * The callback form shares the iteration's start: a failure to start it, which it throws to its caller, also ends
-     * it in onError, never in onComplete.
+     * The callback form shares the iteration's start: a failure to start it ends it in onError, never in onComplete,
+     * and reaches the caller only that way.
      */
     @Test
     public void testCallbackFormStartFailureEndsInOnError() {
         final IllegalStateException factoryFailure = new IllegalStateException("no context");
         final Callbacks callbacks = new Callbacks();
 
-        assertThatThrownBy(() -> newScheduler(3, 4).iterateParallel(ExecutionContext.getContext(), null,
+        newScheduler(3, 4).iterateParallel(ExecutionContext.getContext(), null,
                 () -> {
                     throw factoryFailure;
                 }, 0, 10, (context, idx, nec) -> {
                 },
-                callbacks.onComplete, callbacks.cleanup, callbacks.onError)).isSameAs(factoryFailure);
+                callbacks.onComplete, callbacks.cleanup, callbacks.onError);
 
         assertThat(callbacks.completeCalls.get()).isZero();
         assertThat(callbacks.cleanupCalls.get()).isZero();
@@ -971,7 +971,10 @@ public class TestInvokeParallel {
         assertThat(contexts.stream().mapToInt(context -> context.tasks.get()).sum()).isEqualTo(100);
     }
 
-    /** The same in the callback form, whose step runs on a scheduler thread, which a fatal report would escape. */
+    /**
+     * A step that hands resume and its nested error consumer to a nested iteration that fails to start ends the
+     * iteration in onError once, with no fatal report on the scheduler thread running the step.
+     */
     @Test
     public void testNestedStartFailureEndsTheCallbackFormInOnErrorWithoutAFatalReport() throws InterruptedException {
         final ThreadPoolExecutor pool = newPool(2);
@@ -1004,45 +1007,33 @@ public class TestInvokeParallel {
     }
 
     /**
-     * The other order: the nested start failure is thrown first, failing the step and closing its invoker, while a
-     * nested job is still running. That job, finishing, ends the nested iteration in onError, which delivers the same
-     * failure to the closed invoker; that is not fatal either, on the thread that finishes the job, and the outer
-     * iteration ends in onError once.
+     * A nested iteration whose later submission is refused while one of its jobs is still running ends in onError
+     * once that job finishes, and through the step's nested error consumer ends the outer iteration in onError once,
+     * with no fatal report on any thread.
      */
     @Test
-    public void testNestedFailureDeliveredAfterTheStepFailedIsNotFatal() {
+    public void testNestedSubmitRefusalEndsTheOuterIterationInOnErrorOnce() {
         final ThreadPoolExecutor pool = newPool(2);
         final List<Throwable> escaped = Collections.synchronizedList(new ArrayList<>());
         final IllegalStateException submitFailure = new IllegalStateException("cannot start a thread");
-        final CountDownLatch nestedJobStarted = new CountDownLatch(1);
-        final CountDownLatch stepClosed = new CountDownLatch(1);
+        final CountDownLatch refused = new CountDownLatch(1);
         final CountDownLatch ended = new CountDownLatch(1);
         final AtomicInteger submissions = new AtomicInteger();
         final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(recordingEscapes(command -> {
-            // the outer step and the first nested job start; the second nested job's submission fails, once the
-            // first is running, so that it outlasts the failure
+            // the outer step and the first nested job start; the second nested job's submission is refused
             if (submissions.incrementAndGet() > 2) {
-                await(nestedJobStarted);
+                refused.countDown();
                 throw submitFailure;
             }
             pool.execute(command);
         }, escaped), 3);
-        final Supplier<JobScheduler.JobThreadContext> stepContext = () -> new JobScheduler.JobThreadContext() {
-            @Override
-            public void close() {
-                stepClosed.countDown();
-            }
-        };
         final Callbacks callbacks = new Callbacks();
 
-        scheduler.iterateSerial(ExecutionContext.getContext(), null, stepContext, 0, 1,
+        scheduler.iterateSerial(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 1,
                 (context, step, nestedErrorConsumer, resume) -> scheduler.iterateParallel(
                         ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 4,
-                        (innerContext, inner, innerNec) -> {
-                            nestedJobStarted.countDown();
-                            // hold on until the step has failed and closed its invoker
-                            await(stepClosed);
-                        },
+                        // the first nested job outlasts the refusal
+                        (innerContext, inner, innerNec) -> await(refused),
                         resume, () -> {
                         }, nestedErrorConsumer),
                 callbacks.onComplete, callbacks.cleanup, e -> {
@@ -1050,7 +1041,6 @@ public class TestInvokeParallel {
                     ended.countDown();
                 });
         await(ended);
-        // the nested job delivers the failure again as it finishes
         pool.shutdown();
         try {
             assertThat(pool.awaitTermination(30, TimeUnit.SECONDS)).isTrue();

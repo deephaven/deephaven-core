@@ -98,6 +98,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
 
                 final long[] inUse;
                 if (prevBlocks[block] == null) {
@@ -239,15 +244,31 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
     }
 
     @Override
-    final int[] allocateNullFilledBlock(int size) {
+    final int[] allocateBlock(final int size, final boolean nullFilled) {
         final int[] newBlock = new int[size];
-        Arrays.fill(newBlock, NULL_INT);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_INT);
+        }
         return newBlock;
     }
 
+    /** The previous values of blocks allocated null-filled during the current update cycle; never written. */
+    private static final int[] FRESH_NULL_PREV_BLOCK = makeFreshNullPrevBlock();
+    /** The previous values of blocks allocated during the current update cycle without null-filling; never written. */
+    private static final int[] FRESH_DEFAULT_PREV_BLOCK = new int[BLOCK_SIZE];
+
+    private static int[] makeFreshNullPrevBlock() {
+        final int[] block = new int[BLOCK_SIZE];
+        Arrays.fill(block, NULL_INT);
+        return block;
+    }
+
     @Override
-    final int[] allocateBlock(int size) {
-        return new int[size];
+    final int[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
+        return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
     @Override

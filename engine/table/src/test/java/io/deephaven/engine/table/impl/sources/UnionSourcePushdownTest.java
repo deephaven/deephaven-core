@@ -9,6 +9,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.NoPushdownColumnSourceWrapper;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -100,8 +102,66 @@ public class UnionSourcePushdownTest {
         }
     }
 
-    /** Like {@link #pushdownConstituent()}, with {@code Z} backed by the given recording source. */
-    private static Table recordingConstituent(final RecordingSingleValueSource z) {
+    /**
+     * A pushdown-capable source that records the selections it is asked about and the results it hands out, and that
+     * fails every estimate and pushdown if {@code fail} is set.
+     */
+    private static final class ResourceRecordingSingleValueSource extends IntegerSingleValueSource {
+        static final String FAILURE = "injected constituent failure";
+
+        final boolean fail;
+        final List<RowSet> selections = new ArrayList<>();
+        final List<PushdownResult> results = new ArrayList<>();
+
+        ResourceRecordingSingleValueSource(final boolean fail) {
+            this.fail = fail;
+        }
+
+        @Override
+        public void estimatePushdownFilterCost(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            selections.add(selection);
+            if (fail) {
+                onError.accept(new IllegalStateException(FAILURE));
+                return;
+            }
+            super.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+        }
+
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            selections.add(selection);
+            if (fail) {
+                onError.accept(new IllegalStateException(FAILURE));
+                return;
+            }
+            super.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler, result -> {
+                results.add(result);
+                onComplete.accept(result);
+            }, onError);
+        }
+    }
+
+    private static void assertClosed(final String description, final RowSet rowSet) {
+        assertThat(((WritableRowSetImpl) rowSet).getInnerSet()).as(description + " closed").isNull();
+    }
+
+    /** Like {@link #pushdownConstituent()}, with {@code Z} backed by the given source. */
+    private static Table recordingConstituent(final IntegerSingleValueSource z) {
         z.set(42);
         final Table x = TableTools.emptyTable(ROWS_PER_CONSTITUENT).update("X = (int) ii");
         final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
@@ -238,6 +298,48 @@ public class UnionSourcePushdownTest {
         assertThat(z.calls).hasSize(2);
         assertThat(z.calls.get(0)).containsExactly(firstCeiling, 0L);
         assertThat(z.calls.get(1)).containsExactly(Long.MAX_VALUE, firstCeiling);
+    }
+
+    /**
+     * When one constituent fails, the selection copies handed to every constituent and the results of those that
+     * completed must be closed, for estimates and pushdowns alike.
+     */
+    @Test
+    public void constituentFailureClosesConstituentResources() {
+        final ResourceRecordingSingleValueSource succeeding = new ResourceRecordingSingleValueSource(false);
+        final ResourceRecordingSingleValueSource failing = new ResourceRecordingSingleValueSource(true);
+        final Table merged = TableTools.merge(recordingConstituent(succeeding), recordingConstituent(failing));
+        final WhereFilter filter = initializedFilter(merged, UNION_FILTER);
+        final PushdownFilterMatcher matcher = unionMatcher(merged, filter);
+
+        final RowSet full = merged.getRowSet();
+        try (final PushdownFilterContext context =
+                matcher.makePushdownFilterContext(filter, filterSources(merged, filter))) {
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            matcher.estimatePushdownFilterCost(filter, full, false, context, new ImmediateJobScheduler(),
+                    cost -> {
+                        throw new AssertionError("the estimate must fail");
+                    }, error::set);
+            assertThat(error.get()).hasMessage(ResourceRecordingSingleValueSource.FAILURE);
+
+            error.set(null);
+            matcher.pushdownFilter(filter, full, false, context, Long.MAX_VALUE, new ImmediateJobScheduler(),
+                    result -> {
+                        throw new AssertionError("the pushdown must fail");
+                    }, error::set);
+            assertThat(error.get()).hasMessage(ResourceRecordingSingleValueSource.FAILURE);
+        }
+
+        assertThat(succeeding.selections).as("sanity: estimate and pushdown reached the first constituent")
+                .hasSize(2);
+        assertThat(failing.selections).as("sanity: estimate and pushdown reached the second constituent")
+                .hasSize(2);
+        assertThat(succeeding.results).as("sanity: the first constituent's pushdown completed").hasSize(1);
+        for (final ResourceRecordingSingleValueSource source : List.of(succeeding, failing)) {
+            source.selections.forEach(selection -> assertClosed("constituent selection", selection));
+        }
+        assertClosed("completed constituent match", succeeding.results.get(0).match());
+        assertClosed("completed constituent maybeMatch", succeeding.results.get(0).maybeMatch());
     }
 
     /**

@@ -1,6 +1,5 @@
 ---
 title: Initialization and updates
-sidebar_label: Initialization and updates
 ---
 
 This guide covers safe patterns for working with ticking tables in Groovy, particularly during script initialization when external data sources may not have data yet.

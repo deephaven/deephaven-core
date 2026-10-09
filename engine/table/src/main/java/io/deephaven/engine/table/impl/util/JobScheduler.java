@@ -44,8 +44,9 @@ import java.util.function.Supplier;
  * An iteration fails when a task throws or reports a failure through its nested error consumer, when a task context
  * fails to close, or when it cannot be started because the context factory or {@link #submit} throws. No new task
  * starts once it has failed. The callback forms then call {@code onError} with the first failure, and neither
- * {@code onComplete} nor {@code cleanup}; a failure to start is also thrown from the call that started the iteration.
- * {@code invokeParallel} throws the first failure instead, as it describes. Later failures are suppressed on the first.
+ * {@code onComplete} nor {@code cleanup}; a failure to start reaches their caller only that way, unless it is an
+ * {@link Error}, which is also rethrown. {@code invokeParallel} throws the first failure instead, as it describes.
+ * Later failures are suppressed on the first.
  * </p>
  */
 public interface JobScheduler {
@@ -275,10 +276,11 @@ public interface JobScheduler {
          * invoker that has not started.
          *
          * <p>
-         * A failure to start, from the context factory or from a submission the scheduler fails, is recorded as the
-         * iteration's failure before it is thrown, so that the iteration ends in {@code onError} rather than in
-         * {@code onComplete}. Invokers that have not started are closed, and do nothing if the scheduler starts them
-         * later; those already running finish the tasks they hold.
+         * A failure to start, from the context factory or from the scheduler refusing a submission, is recorded as the
+         * iteration's failure, so that the iteration ends in {@code onError} rather than in {@code onComplete}. It is
+         * not thrown, though an {@link Error} is rethrown once recorded. The refused invoker is closed, since nothing
+         * else will run it; see {@link #abandon} for the others. A submission that throws after its job already ran
+         * on this thread did not refuse it, and its exception is the caller's.
          * </p>
          */
         private void startTasks(
@@ -291,6 +293,8 @@ public interface JobScheduler {
             incrementReferenceCount();
             // every invoker made here: the caller's own, when it takes part, then those submitted to the scheduler
             final List<TaskInvoker> invokers = new ArrayList<>();
+            // the invoker being handed to the scheduler, while submit is running
+            TaskInvoker submitting = null;
             try {
                 final int numTaskInvokers = Math.min(maxThreads, scheduler.threadCount());
                 final int numSubmitted = callerParticipates ? numTaskInvokers - 1 : numTaskInvokers;
@@ -308,8 +312,10 @@ public interface JobScheduler {
                         break;
                     }
                     invokers.add(taskInvoker);
+                    submitting = taskInvoker;
                     scheduler.submit(executionContext, taskInvoker::startAndExecute, description,
                             IterationManager::onUnexpectedJobError);
+                    submitting = null;
                 }
                 if (callerParticipates) {
                     // The caller has to wait, might as well do work rather than idling. Will do its own invoker first,
@@ -323,15 +329,21 @@ public interface JobScheduler {
                     }
                 }
             } catch (Exception e) {
+                if (submitting != null && !submitting.tryStart()) {
+                    // The invoker started before submit threw, so the scheduler ran its job inline and did not refuse
+                    // it. A started invoker owns its own lifecycle and delivered any failure of its tasks itself, so
+                    // this exception belongs to the caller.
+                    throw e;
+                }
                 onTaskError(e);
-                abandonUnstarted(invokers);
-                throw e;
+                abandon(submitting, invokers, callerParticipates);
             } catch (Error e) {
                 // a task's Error on this thread, or a context's failure to close, was recorded where it was thrown
                 if (!isRecorded(e)) {
                     onTaskError(asDeliverableException(e));
                 }
-                abandonUnstarted(invokers);
+                abandon(submitting != null && submitting.tryStart() ? submitting : null, invokers,
+                        callerParticipates);
                 throw e;
             } finally {
                 decrementReferenceCount();
@@ -339,20 +351,35 @@ public interface JobScheduler {
         }
 
         /**
-         * After a failure to start the iteration, which has already been recorded: close every invoker made for it that
-         * has not started, releasing its context and its reference, so that the iteration ends without waiting for jobs
-         * a queueing scheduler may start late, or never, if they are queued behind this thread. One that the scheduler
-         * starts later finds itself taken and does nothing.
+         * After a failure to start the iteration, which has already been recorded: close {@code refused}, which nothing
+         * else will run. When the caller takes part, also close every other invoker that has not started, so that the
+         * caller does not wait for jobs a queueing scheduler may start late, or never, if they are queued behind this
+         * thread; one the scheduler starts later finds itself taken and does nothing. Otherwise the scheduler starts
+         * the invokers it accepted, and they find the failure and close.
+         *
+         * @param refused the invoker whose submission the scheduler refused, already taken by this thread, or null
          */
-        private void abandonUnstarted(@NotNull final List<TaskInvoker> invokers) {
-            for (final TaskInvoker taskInvoker : invokers) {
-                if (taskInvoker.tryStart()) {
-                    try {
-                        taskInvoker.closeIfOpen();
-                    } catch (Error e) {
-                        // close() recorded it, and released the reference; the remaining invokers still need closing
+        private void abandon(
+                @Nullable final TaskInvoker refused,
+                @NotNull final List<TaskInvoker> invokers,
+                final boolean callerParticipates) {
+            if (refused != null) {
+                closeAbandoned(refused);
+            }
+            if (callerParticipates) {
+                for (final TaskInvoker taskInvoker : invokers) {
+                    if (taskInvoker.tryStart()) {
+                        closeAbandoned(taskInvoker);
                     }
                 }
+            }
+        }
+
+        private void closeAbandoned(@NotNull final TaskInvoker taskInvoker) {
+            try {
+                taskInvoker.closeIfOpen();
+            } catch (Error e) {
+                // close() recorded it, and released the reference; any other invokers still need closing
             }
         }
 
@@ -503,18 +530,23 @@ public interface JobScheduler {
                         invocation.fail(e);
                         invocation.finish();
                     });
+            Exception notRecorded = null;
             Error error = null;
             try {
                 iterationManager.startTasks(scheduler, executionContext, taskThreadContextFactory, count, true);
             } catch (Exception e) {
-                // startTasks recorded this as the iteration's failure; onError delivers it, after any failure recorded
-                // before it, once the running tasks finish, and it is thrown below
+                // Thrown only by a submission whose job had already run inline, which did not fail the iteration; it
+                // is still the caller's, so it is thrown once the iteration is over.
+                notRecorded = e;
             } catch (Error e) {
                 // The invoker or startTasks has recorded this already, so the iteration will end. Wait for it before
                 // letting the error go: it is about to unwind past whatever the tasks still running are using.
                 error = e;
             }
             invocation.awaitFinished();
+            if (notRecorded != null) {
+                invocation.fail(notRecorded);
+            }
             if (error != null && invocation.failedWith(error)) {
                 // the iteration failed with this Error, which a task threw on this thread
                 invocation.addLaterFailuresTo(error);
@@ -695,8 +727,9 @@ public interface JobScheduler {
                     // we report it to the global error reporter.
                     onUnexpectedJobError(asDeliverableException(failure));
                 }
-                // Otherwise it was delivered before it was thrown: through the nested error consumer, as a nested
-                // iteration that fails to start does, or by close().
+                // Otherwise it was delivered before it was thrown: through the nested error consumer, as a task that
+                // reports a failure and then throws it does, or a nested iteration that fails to start with an Error,
+                // or by close().
             }
 
             private synchronized void reportTaskCompleteAndResumeIteration() {
@@ -719,9 +752,8 @@ public interface JobScheduler {
             private synchronized void reportError(@NotNull final Exception e) {
                 Objects.requireNonNull(e);
                 if (closed) {
-                    // The same failure arriving a second way, as when a nested iteration that failed to start both
-                    // throws it and ends in onError, is dropped; any other means the task reported a failure after it
-                    // had finished.
+                    // A failure the iteration already recorded, arriving a second way, is dropped; any other means
+                    // the task reported a failure after it had finished.
                     if (!isRecorded(e)) {
                         onUnexpectedJobError(e);
                     }

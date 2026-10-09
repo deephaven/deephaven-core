@@ -1,6 +1,5 @@
 ---
 title: Built-in query language variables
-sidebar_label: Built-in variables
 ---
 
 There are three special built-in query language variables worth noting. They correspond to row indices in tables.
@@ -65,7 +64,7 @@ import io.deephaven.iceberg.util.*
 sourceData = emptyTable(20).update("GroupKey = i % 3", "Value = i * 10")
 
 restAdapter = IcebergToolsS3.createS3Rest(
-    "minio-iceberg",
+    "rustfs-iceberg",
     catalogUri,
     warehouseLocation,
     awsRegion,

@@ -1,22 +1,52 @@
 ---
 name: deephaven-docs-review-full
 description: >
-  Run a complete deephaven-core (Community) documentation review — technical accuracy, structural organization, and prose style — in one pass, in the order that keeps one dimension from silently undoing another. **Use this skill when:** someone asks for a "full review" or "comprehensive review" of a doc, asks if a doc "is ready for production," or wants all three dimensions (accuracy + structure + style) checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **Do NOT use for:** single small edits to a doc — a one-line fix, one code snippet, one changed sentence — (use deephaven-core-accuracy-spot-check instead), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
+  Run a complete deephaven-core (Community) documentation review the way a technical-book editor would: a developmental pass (purpose, audience, scope), then accuracy, structure, examples, and style, in an order that keeps one from undoing another, ending in a prioritized editorial report with author queries. **Use this skill when:** someone asks for a "full review," "comprehensive review," or "editorial review" of a doc, asks to "edit this like an O'Reilly editor," asks if a doc "is ready for production," or wants accuracy, structure, and style checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **Do NOT use for:** a single small edit such as a one-line fix or one snippet (use deephaven-core-accuracy-spot-check), working through existing PR or Copilot review comments (use deephaven-docs-address-review-comments), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
 allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(awk *)
 ---
 
 # Full deephaven-core documentation review
 
-This skill doesn't duplicate any checklist — it sequences the three existing review skills so a
-full pass always covers all three dimensions, and so a later step's edits get re-checked against
-the earlier steps rather than assumed still valid.
+This skill sequences the existing review skills so a full pass always covers every dimension,
+and so a later step's edits get re-checked against the earlier steps rather than assumed still
+valid. It owns only what no other skill does: the developmental pass, the examples pass, and the
+prioritized report. Steps are referred to by name elsewhere (e.g. "the re-verify step"), not by
+number, so renumbering here doesn't strand cross-references.
+
+The ordering principle, borrowed from technical-book editing: **a structural problem outranks a
+comma.** Work from the biggest questions to the smallest, and weight the report the same way. A
+page that doesn't tell the reader what they'll be able to do gains little from perfect backticks.
 
 **Report by default; edit only if asked.** Like `deephaven-doc-structure-review`, this skill
 produces one consolidated report unless the user has explicitly asked for fixes to be applied.
 "Review this doc" or "run a full review" means report only — nothing below should be read as
 license to rewrite the document on its own. If the user does ask for fixes, apply them in the
-order below (accuracy, then structure, then style), since that's the order that keeps one
-dimension from undoing another.
+order below (accuracy, then structure, then examples, then style), since that's the order that
+keeps one dimension from undoing another. The developmental pass never edits.
+
+**"Apply the fixes" means fix, not rewrite.** When edits are requested, correct each finding in
+place with the smallest change that makes the page right, and keep the page's existing outline,
+examples, and title. Findings that call for more than that are recommendations, not edits: report
+them and let the author decide. That includes a "needs restructuring" verdict, reordering or
+merging sections, replacing an example with a new one, and retitling the page. Two reasons: an
+author reviewing a PR can check a targeted fix but not a rewrite, and new or replaced examples
+can't be verified without running them. Do the full restructure only if the user explicitly
+asks for one ("restructure," "rewrite," "reorganize this page").
+
+The line is between *repairing* what the page has and *replacing* it:
+
+- **Targeted — apply these:** fixing broken code inside an existing example (a syntax error, an
+  undefined name, a missing import, a wrong method call);
+  adding the one or two lines an existing example needs to do what its own text says (for example, a
+  missing cleanup or close call); correcting a wrong sentence, heading term, or code comment;
+  deleting a duplicated sentence; moving one misplaced paragraph. A reviewer can check each of
+  these against the original in a glance.
+- **Rewrite — recommend, don't apply:** replacing an example with a different scenario or data
+  source, adding a new example section, reordering or merging sections, retitling, or rewriting
+  a section wholesale.
+
+When a fix is targeted, don't defer it just because the example it touches has bigger problems
+too; make the repair, and put the bigger change in the report.
 
 ## 0. Identify the doc's category
 
@@ -25,45 +55,84 @@ that forward — the accuracy, structure, and style skills below all calibrate t
 fits one of the four: check that file's "Pages outside the four categories" section first (the
 site's `intro.md` landing page and contributor-facing tooling docs such as `docs/README.md`) —
 don't assume the doc or the categorization is broken just because it doesn't fit. For an
-out-of-taxonomy page, skip category-specific calibration in every step below (1, 2, and 4) but
-still run all three checks; the generic accuracy, structural, and prose-quality rules that aren't
-category-conditional still apply.
+out-of-taxonomy page, skip category-specific calibration in every step below but still run every
+check; the generic rules that aren't category-conditional still apply.
 
-## 1. Accuracy first
+## 1. Developmental pass (big picture)
 
-Invoke `deephaven-core-accuracy-check` on the doc. Facts before reorganizing: there's no point
-building a clean structure around a wrong claim, and it's easier to verify claims against source
-while they're still in their original location and context. Per the report-by-default rule above,
-this step reports issues; only apply the fixes it finds if the user asked for edits.
+Read the whole page once as its target reader (per its category — for a Concept guide, a
+developer who knows Python or Groovy basics but not this feature) before checking anything
+line by line. Answer, in writing:
+
+- **Purpose:** What will the reader be able to *do* after reading this page? State it in one
+  sentence. If you can't, that's the top finding.
+- **Key message:** What must the reader walk away with, and is it stated plainly and early? A
+  page can be accurate throughout and still never say its main point (e.g. "Deephaven
+  parallelizes queries for you; most queries need no changes — the controls below are for the
+  exceptions").
+- **Mental model:** What model of the system will the reader form from this page, and is it the
+  right one? Write down the page's core claims as the reader would summarize them. Hand that
+  list to the accuracy step as its first targets: a wrong mental model (a whole category of
+  operations classified wrongly) is the most expensive error a page can make, and it's easy to
+  miss by checking sentences one at a time.
+- **Audience fit:** Concepts used before they're introduced; terms the reader won't know;
+  internal jargon; explanations that talk down.
+- **Progression:** Does the page open with motivation, build one idea on the last, and close with
+  a summary or next step? Would a reader know from the headings alone why to read each section?
+- **Scope:** Tangents, implementation notes, or configuration detail that belong on a reference
+  page, in a Configuration section, or on another page.
+
+End with a verdict: **ready for technical review**, **needs revision**, or **needs
+restructuring**. If it's "needs restructuring," still run the accuracy step in full (wrong claims
+matter regardless of structure), but report structure and style findings as patterns with one
+or two examples each rather than line by line — line-level edits on text that's about to be
+reorganized are wasted effort for the author. In edit mode, the verdict doesn't license a
+rewrite: apply the targeted fixes and put the restructuring plan in the report (see **"Apply the
+fixes" means fix, not rewrite** above).
+
+This pass is report-only. It doesn't replace `deephaven-doc-structure-review`: that skill checks
+specific organizational patterns; this pass asks whether the page is doing the right job at all.
+
+## 2. Accuracy
+
+Invoke `deephaven-core-accuracy-check` on the doc, starting from the core claims the
+developmental pass wrote down. Facts before reorganizing: there's no point building a clean
+structure around a wrong claim, and it's easier to verify claims against source while they're
+still in their original location and context. Per the report-by-default rule above, this step
+reports issues; only apply the fixes it finds if the user asked for edits. Claims the accuracy
+check can't verify go into the report's author queries, not into hedged prose.
 
 If a fix is applied and it corrects a shared, substantive claim in the cross-language sibling too
 (`deephaven-core-accuracy-check`'s own cross-language-consistency check may have already edited
-both files) — track that sibling as a second doc in scope. Run steps 2 **through 4** on it as
-well (not just 2 and 4 — a structural edit to the sibling needs the step-3 re-verification just as
-much as the originally-requested file does), not just the originally-requested file; a sibling
+both files) — track that sibling as a second doc in scope. Run every later step on it as
+well (not just structure and style — a structural edit to the sibling needs the re-verify step just
+as much as the originally-requested file does), not just the originally-requested file; a sibling
 edited by the accuracy pass but never structurally or style-reviewed is exactly the kind of
 half-finished pass this skill exists to prevent.
 
-## 2. Structure second
+## 3. Structure
 
 Invoke `deephaven-doc-structure-review` as the middle step of this orchestrator — its own
 instructions know to skip its standalone full accuracy/style re-run in that case and defer to
-this workflow's steps 3-4 instead, so don't expect or trigger that separately here. This step may
-move, merge, cut, reorder, or rename sections that were just verified in step 1 — that's expected
-and fine, but it's exactly why step 3 exists.
+this workflow's re-verify and style steps instead, so don't expect or trigger that separately
+here. In a report, this step may recommend moving, merging, cutting, reordering, or renaming sections.
+When applying fixes, make only the targeted structural fixes allowed under **"Apply the fixes" means
+fix, not rewrite** above (for example, delete a duplicate or move one paragraph), and report larger
+restructuring instead, unless the user asked for a rewrite. Either way, content verified in the accuracy
+step can change here, which is why the re-verify step exists.
 Note everywhere content was moved, merged, cut, reordered, renamed, **or reworded in place**
-(rewritten without changing location) — step 3 needs the complete list, since a rewrite that
+(rewritten without changing location) — the re-verify step needs the complete list, since a rewrite that
 changes a claim without moving its section would otherwise never reach the spot-check, and a
 deleted caveat or a renamed-away section can invalidate an accuracy finding just as easily as a
 literal move can.
 
-## 3. Re-verify what structure touched
+## 4. Re-verify what structure touched
 
-For every section from step 2's list, handle it by what happened to it:
+For every section from the structure step's list, handle it by what happened to it:
 
 - **Moved, merged, or reworded** (surviving prose): re-run `deephaven-core-accuracy-spot-check`
   on it as the middle step of this orchestrator — its own instructions know to skip its local
-  style step in that case and defer to this workflow's step 4 instead, so don't expect or trigger
+  style step in that case and defer to this workflow's style step instead, so don't expect or trigger
   that separately here. Run it per its own scope (one paragraph, one snippet, one changed claim),
   not as a single call covering the whole section. If the section contains more than one claim or paragraph, call
   it once per claim/paragraph rather than handing it the whole section at once; a merge can
@@ -77,18 +146,18 @@ For every section from step 2's list, handle it by what happened to it:
   through the bullet above. Instead check whether the cut section contained a caveat, exception,
   or claim that existed *only* there and is now gone entirely from the doc; that's the next
   bullet's job, not a spot-check call.
-- **Any caveat, exception, or cross-language distinction that was near content step 2 touched**
+- **Any caveat, exception, or cross-language distinction that was near content the structure step touched**
   (moved, merged, cut, or renamed): check the rest of the document first for where it may have
   landed or been restated, and flag it as dropped only if you can't find it after that check. If
   you're still not sure after checking, say so explicitly ("possibly dropped, unconfirmed — verify
   against the pre-edit version") rather than stating it as a confirmed finding — a false "this was
   dropped" claim costs a reviewer real time chasing content that's actually still there.
-- **Links and anchors**: neither the spot check nor step 4's style pass validates that a link's
+- **Links and anchors**: neither the spot check nor the style step validates that a link's
   *target* still resolves or that a heading's *anchor fragment* is still correct after an edit —
   `deephaven-writing-style` checks link wording and first-mention linking, but not target/anchor
   resolution. A heading rename, section move, merge, or cut can silently break an internal link
   or an anchor fragment (`#some-heading`) even when every claim in the doc remains correct. For
-  any section step 2 moved, renamed, merged, or cut (not just moved/renamed): re-check that links
+  any section the structure step moved, renamed, merged, or cut (not just moved/renamed): re-check that links
   *within* it still resolve from wherever it ended up (or, if cut, that nothing else in the doc
   still assumes it exists), and search **all** doc pages — not just this doc and its
   cross-language sibling — for links pointing *to* it, since any page in the corpus can link to
@@ -104,22 +173,110 @@ For every section from step 2's list, handle it by what happened to it:
 Do not skip this step under time pressure. It's the step that catches the compounding defect a
 structural edit introduces into content nobody re-reads afterward.
 
-## 4. Style last
+## 5. Examples
 
-Invoke `deephaven-writing-style` over the whole doc (both files, if step 1 put a cross-language
-sibling in scope). Run it last because both the accuracy fixes (step 1) and the structural moves
-(steps 2-3) introduce or relocate prose that hasn't had a dedicated style pass yet — running style
+For each code example (the structure review's structure map lists them), check what no other
+step does. The accuracy check has verified its API use and claimed behavior against source, but it
+doesn't run snippets. The docs snapshotter runs runnable examples when snapshots are regenerated
+(`docs/README.md`), so an example edited in this review hasn't been run until then — say so in the
+report rather than assuming it works. Blocks marked `syntax` or `skip-test` are never run
+(`docs/snapshotter/README.md`), so nothing will validate them later; check those by reading. Then check:
+
+- **Does it illustrate the concept its lead-in names?** An example introduced as "a formula with
+  side effects" that has none, or a barrier example where the barrier isn't what makes the output
+  correct, teaches the wrong lesson even when it runs. (The accuracy check's **Example-necessity
+  check** covers whether the demonstrated API is load-bearing; this asks whether the example is
+  the right one for the reader.)
+- **Is every major concept shown, not just described?** Flag long conceptual stretches with no
+  example, and concepts that would be clearer as a wrong-then-right pair (the unsafe query and its
+  corrected form, with both outputs).
+- **Is it executable and tested?** A `syntax` or `skip-test` block where a runnable one would work
+  isn't validated by the docs snapshotter; flag it unless the page has a reason.
+- **Is it readable in one view?** Short enough to follow, with realistic names, and with comments
+  that explain *why* rather than restating the code.
+
+If the user asked for edits and you change an example's code or its comments, re-verify the
+changed example with `deephaven-core-accuracy-spot-check` before moving on, as in the re-verify
+step.
+
+## 6. Style last
+
+Invoke `deephaven-writing-style` over the whole doc (both files, if the accuracy step put a
+cross-language sibling in scope). Run it last because both the accuracy fixes and the structural
+moves (plus their re-verification) introduce or relocate prose that hasn't had a dedicated style pass yet — running style
 first would mean re-doing it. Per the report-by-default rule above, this step reports style
 issues; if the user asked for edits to be applied here too, prefer a fix that only changes
 formatting, wording style, or phrasing — if a style fix would also change what a sentence
 technically claims (not just how it's worded), re-verify that reworded claim against source before
-applying it, the same way step 1 would have. A style pass is not exempt from being wrong about
+applying it, the same way the accuracy step would have. A style pass is not exempt from being wrong about
 facts just because it isn't the accuracy step.
 
-## 5. Report
+## Applying fixes: the placement gate
 
-One consolidated list, grouped by dimension (Accuracy / Structure / Style), each finding citing
-which step surfaced it and its location in the doc. Note the doc's category from step 0 at the
-top of the report so a reviewer can sanity-check severity calls (e.g. an orphaned aside flagged
-harder because the doc is a Reference guide). If a cross-language sibling was pulled into scope by
-step 1, report on both files, not just the one the user originally pointed at.
+When the user asked for edits, every fix — from any step — passes one question before it's
+applied: **does this fix belong here, or somewhere else?** A fix that adds a property name, a
+default, or a threshold to Concept-guide or Tutorial narrative is usually true and still wrong for
+the page; put the detail in a Configuration section or behind a reference link, and make the
+narrative sentence correct at its own level of abstraction (see `deephaven-core-accuracy-check`'s
+**Placement of configuration detail**). A hedge or caveat that isn't configuration detail (a
+version, environment, or platform restriction) stays only if the reader needs it at that point, as
+its own sentence; otherwise cut it. This matters most when
+working through an external reviewer's comments over several rounds: each individually-correct
+caveat passes validation while the page as a whole gets harder to read. After each round, re-read
+every section that changed from top to bottom and consolidate what has accumulated. If a
+requested fix is correct but belongs elsewhere, say so in the reply rather than applying it
+inline.
+
+The gate applies to prose you write yourself, not only to fixes a finding suggested. Before
+finishing, read every sentence you added or rewrote and look for asides and caveats of your own:
+em-dash or parenthetical qualifications ("— here, the console session's scope"), "which can
+take…", "usually," "in most cases," "unless something else…". Keep one only if a reader of that
+section would get something wrong without it; otherwise cut it, or move it to where the detail
+belongs. A replacement sentence should be no longer or more qualified than it needs to be to be
+correct.
+
+When the edits come from a set of review comments rather than from this review, triage
+them with `deephaven-docs-address-review-comments` first — it sorts each one into apply,
+redirect, decline, or ask before anything changes.
+
+## 7. Report
+
+Return one review document, prioritized — biggest issue first within every section, not document
+order. Note the doc's category at the top so a reviewer can sanity-check severity calls (e.g. an
+orphaned aside flagged harder because the doc is a Reference guide). If a cross-language sibling
+was pulled into scope by the accuracy step, report on both files.
+
+```
+## Editorial summary
+2–4 sentences: overall assessment, the single biggest issue, and the developmental verdict
+(ready for technical review / needs revision / needs restructuring).
+
+## Developmental notes
+Numbered, highest impact first. Each: what, where, why it matters to the reader, suggested fix.
+
+## Accuracy
+Findings from the accuracy and re-verify steps, highest impact first (a wrong mental model or
+misclassified category before a wrong parameter name).
+
+## Structure
+Findings from the structure step.
+
+## Examples
+Findings from the examples step.
+
+## Style
+Patterns with one or two examples each and a count, not one row per instance. Line-level rows
+only for findings that aren't part of a pattern.
+
+## Author queries
+Questions the review couldn't resolve from source — mostly technical claims that need an SME.
+Format: AQ1 [heading, para N or line N]: question
+
+## Strengths
+1–3 specific things that work and should be kept, so a revision doesn't remove them.
+```
+
+Each finding names the step that surfaced it and its location (heading plus line number). Be
+specific: "unclear" isn't a finding — say what is unclear, and to which reader. Don't rewrite
+whole sections in the report; show one example of the fix and let the author apply the pattern.
+Tone toward the author: collegial and candid.

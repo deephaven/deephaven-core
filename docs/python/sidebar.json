@@ -21,18 +21,18 @@
             "path": "getting-started/quickstart.md"
           },
           {
-            "label": "Jupyter Quickstart",
+            "label": "Jupyter quickstart",
             "path": "getting-started/jupyter-quickstart.md"
           },
           {
-            "label": "Python Client Quickstart",
+            "label": "Python client quickstart",
             "path": "getting-started/pyclient-quickstart.md"
           },
           {
             "label": "A Crash Course in Deephaven",
             "items": [
               {
-                "label": "Crash Course Overview",
+                "label": "Overview",
                 "path": "getting-started/crash-course/overview.md"
               },
               {
@@ -164,7 +164,7 @@
                     "path": "how-to-guides/time-table.md"
                   },
                   {
-                    "label": "Input tables",
+                    "label": "Input Tables",
                     "path": "how-to-guides/input-tables.md"
                   }
                 ]
@@ -195,7 +195,7 @@
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
               },
               {
-                "label": "Arrow/Barrage Schema",
+                "label": "Arrow/Barrage schema",
                 "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
@@ -219,7 +219,7 @@
                     "path": "how-to-guides/data-import-export/html-import.md"
                   },
                   {
-                    "label": "Write HTML files",
+                    "label": "Convert tables to HTML",
                     "path": "how-to-guides/data-import-export/html-export.md"
                   }
                 ]
@@ -232,7 +232,7 @@
                 "label": "Kafka",
                 "items": [
                   {
-                    "label": "Kafka Overview",
+                    "label": "Overview",
                     "path": "how-to-guides/overview-kafka.md"
                   },
                   {
@@ -240,11 +240,11 @@
                     "path": "conceptual/kafka-basic-terms.md"
                   },
                   {
-                    "label": "Connect to a Kafka stream",
+                    "label": "Connect to a stream",
                     "path": "how-to-guides/data-import-export/kafka-stream.md"
                   },
                   {
-                    "label": "Write your own custom parser for Kafka",
+                    "label": "Write a custom parser",
                     "path": "how-to-guides/data-import-export/write-your-own-custom-parser-for-kafka.md"
                   }
                 ]
@@ -253,7 +253,7 @@
                 "label": "Parquet",
                 "items": [
                   {
-                    "label": "Supported Parquet formats",
+                    "label": "Supported formats",
                     "path": "how-to-guides/data-import-export/parquet-formats.md"
                   },
                   {
@@ -288,7 +288,7 @@
             "label": "Work with tables",
             "items": [
               {
-                "label": "Table operations overview",
+                "label": "Overview",
                 "path": "conceptual/table-operations-overview.md"
               },
               {
@@ -365,7 +365,7 @@
                 "label": "Join",
                 "items": [
                   {
-                    "label": "Exact and Relational Joins",
+                    "label": "Exact and relational joins",
                     "path": "how-to-guides/joins-exact-relational.md"
                   },
                   {
@@ -390,12 +390,12 @@
                 "label": "Time",
                 "items": [
                   {
-                    "label": "Work with calendars",
-                    "path": "how-to-guides/business-calendar.md"
-                  },
-                  {
                     "label": "Work with time",
                     "path": "conceptual/time-in-deephaven.md"
+                  },
+                  {
+                    "label": "Work with calendars",
+                    "path": "how-to-guides/business-calendar.md"
                   },
                   {
                     "label": "Downsample data",
@@ -495,15 +495,15 @@
                 "label": "Built-ins",
                 "items": [
                   {
-                    "label": "Built-in constants",
+                    "label": "Constants",
                     "path": "how-to-guides/built-in-constants.md"
                   },
                   {
-                    "label": "Built-in Variables",
+                    "label": "Variables",
                     "path": "how-to-guides/built-in-variables.md"
                   },
                   {
-                    "label": "Built-in functions",
+                    "label": "Functions",
                     "path": "how-to-guides/built-in-functions.md"
                   }
                 ]
@@ -524,7 +524,7 @@
                     "path": "how-to-guides/python-functions.md"
                   },
                   {
-                    "label": "Classes & Objects",
+                    "label": "Classes & objects",
                     "path": "how-to-guides/python-classes.md"
                   },
                   {
@@ -555,7 +555,7 @@
                 "path": "how-to-guides/jupyter.md"
               },
               {
-                "label": "Python library integrations",
+                "label": "Library integrations",
                 "items": [
                   {
                     "label": "jpy",
@@ -591,7 +591,7 @@
                     "path": "how-to-guides/use-pytorch.md"
                   },
                   {
-                    "label": "SciKit-Learn",
+                    "label": "scikit-learn",
                     "path": "how-to-guides/use-scikit-learn.md"
                   },
                   {
@@ -605,14 +605,14 @@
                 ]
               },
               {
-                "label": "Advanced Python topics",
+                "label": "Advanced topics",
                 "items": [
                   {
                     "label": "Execution Context",
                     "path": "conceptual/execution-context.md"
                   },
                   {
-                    "label": "Liveness scope",
+                    "label": "Liveness Scope",
                     "path": "conceptual/liveness-scope-concept.md"
                   },
                   {
@@ -755,7 +755,7 @@
                     "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-ImportTable"
                   },
                   {
-                    "label": "Create input tables",
+                    "label": "Create Input Tables",
                     "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go/pkg/client#example-package-InputTable"
                   },
                   {
@@ -836,7 +836,7 @@
                     "path": "how-to-guides/capture-tables.md"
                   },
                   {
-                    "label": "Stream data with input tables",
+                    "label": "Stream data with Input Tables",
                     "path": "how-to-guides/client-input-tables.md"
                   }
                 ]
@@ -849,7 +849,7 @@
                     "href": "https://deephaven.io/core/client-api/r/index.html"
                   },
                   {
-                    "label": "Building blocks of the Deephaven R client",
+                    "label": "Building blocks",
                     "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#building-blocks-of-the-deephaven-r-client"
                   },
                   {
@@ -937,7 +937,7 @@
                     "path": "how-to-guides/data-indexes.md"
                   },
                   {
-                    "label": "Predicate Pushdown Filtering",
+                    "label": "Predicate Pushdown filtering",
                     "path": "how-to-guides/predicate-pushdown.md"
                   },
                   {
@@ -961,7 +961,7 @@
                     "path": "conceptual/python-java-boundary.md"
                   },
                   {
-                    "label": "Run Garbage Collection",
+                    "label": "Run garbage collection",
                     "path": "how-to-guides/performance/garbage-collection.md"
                   },
                   {
@@ -1007,19 +1007,19 @@
                     "path": "how-to-guides/debugging/debugging-landing.md"
                   },
                   {
-                    "label": "Docker setup",
+                    "label": "Docker",
                     "path": "how-to-guides/debugging/docker-setup.md"
                   },
                   {
-                    "label": "pip setup",
+                    "label": "pip",
                     "path": "how-to-guides/debugging/pip-setup.md"
                   },
                   {
-                    "label": "Source setup",
+                    "label": "Source",
                     "path": "how-to-guides/debugging/source-setup.md"
                   },
                   {
-                    "label": "Embedded server setup",
+                    "label": "Embedded server",
                     "path": "how-to-guides/debugging/embedded-setup.md"
                   },
                   {
@@ -1155,16 +1155,16 @@
                 "path": "how-to-guides/configuration/configuration-properties.md"
               },
               {
-                "label": "Web Defaults",
+                "label": "Web defaults",
                 "path": "how-to-guides/configuration/configure-web.md"
               },
               {
-                "label": "JS plugin configuration",
+                "label": "JS plugins",
                 "path": "how-to-guides/configuration/js-plugins.md"
               },
               {
                 "label": "Custom environment variables",
-                "path": "how-to-guides/custom-environmental-variables.md"
+                "path": "how-to-guides/custom-environment-variables.md"
               },
               {
                 "label": "Periodic Update Graph configuration",
@@ -1178,19 +1178,19 @@
                 "label": "Application Mode",
                 "items": [
                   {
-                    "label": "Application Mode",
+                    "label": "Overview",
                     "path": "how-to-guides/application-mode.md"
                   },
                   {
-                    "label": "Application Mode libraries",
+                    "label": "Libraries",
                     "path": "how-to-guides/application-mode-libraries.md"
                   },
                   {
-                    "label": "Application Mode scripts",
+                    "label": "Scripts",
                     "path": "how-to-guides/application-mode-script.md"
                   },
                   {
-                    "label": "Application Mode configuration",
+                    "label": "Configuration",
                     "path": "reference/app-mode/application-mode-config.md"
                   }
                 ]
@@ -2686,7 +2686,7 @@
             "label": "Imports",
             "items": [
               {
-                "label": "Backend Imports",
+                "label": "Backend imports",
                 "path": "reference/python/backend-imports.md"
               },
               {
@@ -2801,7 +2801,7 @@
             "label": "FAQs",
             "items": [
               {
-                "label": "FAQ Overview",
+                "label": "Overview",
                 "path": "reference/community-questions/cq-index.md"
               },
               {

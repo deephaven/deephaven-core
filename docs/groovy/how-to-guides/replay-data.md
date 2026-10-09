@@ -1,6 +1,5 @@
 ---
 title: Replay data from static tables
-sidebar_label: Replay
 ---
 
 This guide will show you how to replay historical data as if it was live data in Deephaven.

@@ -9,13 +9,17 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.FailureListener;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.input.InputTableStatusListener;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.util.function.ThrowingRunnable;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -24,6 +28,8 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.testRefreshingTable;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.junit.Assert.*;
@@ -177,6 +183,59 @@ public class TestKeyedArrayBackedInputTable {
 
         handleDelayedRefresh(() -> inputTableUpdater.add(input2), kabut);
         assertTableEquals(input2, kabut);
+    }
+
+    @Test
+    public void testDuplicateNewKeyInOneAdd() {
+        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets"));
+
+        final KeyedArrayBackedInputTable kabut = KeyedArrayBackedInputTable.make(input, "Name");
+        final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
+        final FailureListener failureListener = new FailureListener();
+        validator.getResultTable().addUpdateListener(failureListener);
+
+        final MutableInt updates = new MutableInt(0);
+        final InstrumentedTableUpdateListenerAdapter overlapCheck =
+                new InstrumentedTableUpdateListenerAdapter("overlap check", kabut, false) {
+                    @Override
+                    public void onUpdate(final TableUpdate upstream) {
+                        updates.increment();
+                        assertFalse("added and modified overlap: " + upstream,
+                                upstream.added().overlaps(upstream.modified()));
+                    }
+                };
+        kabut.addUpdateListener(overlapCheck);
+
+        final Table cities = testRefreshingTable(i(10).toTracking(),
+                stringCol("Employer", "Spacely Sprockets"), stringCol("City", "Orbit City"));
+        final Table joined = kabut.naturalJoin(cities, "Employer", "City");
+
+        final InputTableUpdater inputTableUpdater = InputTableUpdater.from(kabut);
+        assertNotNull(inputTableUpdater);
+
+        // a new key appears twice in one add; the last copy wins
+        final Table input2 = TableTools.newTable(stringCol("Name", "Randy", "Randy"),
+                stringCol("Employer", "USGS", "Tegridy"));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        kabut.setOnPendingChange(() -> {
+        });
+        try {
+            inputTableUpdater.addAsync(input2, InputTableStatusListener.DEFAULT);
+            updateGraph.runWithinUnitTestCycle(kabut::run);
+        } finally {
+            kabut.setOnPendingChange(null);
+        }
+
+        assertEquals(1, updates.intValue());
+        assertTableEquals(TableTools.newTable(stringCol("Name", "Fred", "George", "Randy"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Tegridy")), kabut);
+        assertTableEquals(TableTools.newTable(stringCol("Name", "Fred", "George", "Randy"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Tegridy"),
+                stringCol("City", null, "Orbit City", null)), joined);
+
+        kabut.removeUpdateListener(overlapCheck);
     }
 
     public static void handleDelayedRefresh(final ThrowingRunnable<IOException> action,

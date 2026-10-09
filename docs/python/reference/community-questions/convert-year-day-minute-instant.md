@@ -1,6 +1,5 @@
 ---
 title: How can I convert year, day, and minute to an Instant?
-sidebar_label: How can I convert year, day, and minute to an Instant?
 ---
 
 _I have a table with columns containing an integer year, month of year, day of month, and minute of day. How can I convert these columns to a single Instant column?_

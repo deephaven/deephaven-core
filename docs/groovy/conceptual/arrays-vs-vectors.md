@@ -1,6 +1,5 @@
 ---
 title: Arrays vs vectors
-sidebar_label: Vectors
 ---
 
 Deephaven tables can store multi-element data in two forms: **Java primitive arrays** and **Deephaven vectors**. While both represent ordered collections of elements, they have important differences that affect how you work with them.
@@ -126,7 +125,7 @@ The following table operations produce vector columns:
 
 - [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md)
 - [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)
-- [`rangeJoin`](../reference/table-operations/join/rangeJoin.md)
+- [`rangeJoin`](../reference/table-operations/join/range-join.md)
 
 ## Related documentation
 

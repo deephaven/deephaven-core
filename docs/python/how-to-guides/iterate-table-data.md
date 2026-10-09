@@ -1,6 +1,5 @@
 ---
 title: Table iterators
-sidebar_label: Table iterators
 ---
 
 This guide will show you how to iterate over table data in Python queries. Deephaven offers several built-in methods on tables to efficiently iterate over table data via native Python objects. These methods return generators, which are efficient for iterating over large data sets, as they minimize copies of data and only load data into memory when needed. Additionally, these methods handle locking to ensure that all data from an iteration is from a consistent table snapshot.

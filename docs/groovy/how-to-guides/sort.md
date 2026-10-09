@@ -1,6 +1,5 @@
 ---
 title: Sort table data
-sidebar_label: Sort
 ---
 
 Sorting is a common operation in data analysis, and Deephaven makes it easy to sort data in a variety of ways. This guide will show you how to sort table data programmatically.

@@ -1,6 +1,5 @@
 ---
 title: How can I manage the number of cores available to the thread pool?
-sidebar_label: How can I manage the number of cores Deephaven can use?
 ---
 
 Deephaven offers two properties to manage the number of cores available to the thread pool:

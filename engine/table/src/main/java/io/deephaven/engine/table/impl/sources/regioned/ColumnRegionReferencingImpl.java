@@ -10,9 +10,11 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.Optional;
 
 public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>
         implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>, Page.WithDefaults<ATTR> {
@@ -37,6 +39,16 @@ public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REG
     @Override
     public long mask() {
         return getReferencedRegion().mask();
+    }
+
+    /**
+     * Exposes the referenced region's location so that location-level pushdown actions, which resolve the filter
+     * against the column's own definition, apply to this column. The referenced region's own pushdown actions are
+     * deliberately not forwarded: they operate on the native type, not on this region's type.
+     */
+    @Override
+    public Optional<ColumnLocation> getColumnLocation() {
+        return referencedColumnRegion.getColumnLocation();
     }
 
     @Override

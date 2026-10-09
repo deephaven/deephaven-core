@@ -9,7 +9,7 @@ a linear merge over one side's ranges even though both representations can binar
 | **Entry points** | `RowSet.overlaps` → `OrderedLongSet.ixOverlaps` → `SortedRanges.overlaps(SortedRanges/RspBitmap/RangeIterator)`, `RspArray.overlaps(RspArray, RspArray)`; `RowSet.subsetOf` → `ixSubsetOf` → `RspBitmap.subsetOf(SortedRanges)` |
 | **The idea** | both cursors seek; a probe that misses reports where the probed side's next candidate begins, and the walked side skips to it |
 | **What decides which side is walked** | array positions for `SortedRanges` x `SortedRanges`, span count for `SortedRanges` x RSP, cardinality against array length for `RspBitmap.subsetOf(SortedRanges)` |
-| **Hot path** | `BaseTable.validateUpdateOverlaps`, on by default, runs three `subsetOf` and one `overlaps` per notification of every ticking table |
+| **Hot path** | `BaseTable.validateUpdateOverlaps`, on by default, runs three `subsetOf` and one or two `overlaps` per notification of every ticking table |
 | **Benchmarks** | `RowSetOverlapsBench`, `RowSetSubsetOfBench` (`jmhRunRowSetOverlaps`, `jmhRunRowSetSubsetOf`), sharing shape generators through `RowSetShapes` |
 | **Tests** | `OverlapsTest`, `SubsetOfTest` (cross-checked against a linear merge **and** against `ixIntersectOnNew` / `ixMinusOnNew`, over every pair of representations and both argument orders) |
 
@@ -17,13 +17,14 @@ a linear merge over one side's ranges even though both representations can binar
 
 These are not occasional operations. `BaseTable.validateUpdateOverlaps` runs from `notifyListeners`, on **every
 notification of every ticking table**, and it is on by default (`BaseTable.validateUpdateOverlaps`, default `true`;
-only `BaseTable.validateUpdateIndices` defaults to `false`). Each call makes three `subsetOf` tests, and when the
-update carries no shifts, one `minus` and one `overlaps` as well:
+only `BaseTable.validateUpdateIndices` defaults to `false`). Each call makes three `subsetOf` tests and one `overlaps`
+between the added and modified sets, and when the update carries no shifts, one `minus` and a second `overlaps` as well:
 
 ```java
 final boolean currentMissingAdds = !update.added().subsetOf(getRowSet());
 final boolean currentMissingModifications = !update.modified().subsetOf(getRowSet());
 final boolean previousMissingRemovals = !update.removed().subsetOf(getRowSet().prev());
+final boolean addedOverlapsModified = update.added().overlaps(update.modified());
 ...
 try (final RowSet removedMinusAdded = update.removed().minus(update.added())) {
     currentContainsRemovals = removedMinusAdded.overlaps(getRowSet());

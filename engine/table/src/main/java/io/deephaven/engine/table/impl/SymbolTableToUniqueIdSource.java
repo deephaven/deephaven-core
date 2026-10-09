@@ -84,7 +84,7 @@ public class SymbolTableToUniqueIdSource extends AbstractColumnSource<Integer>
         final IntegerSparseArraySource symbolMapper = new IntegerSparseArraySource();
         if (symbolTable.size() > 0) {
             final SymbolTableCombiner stc = new SymbolTableCombiner(new ColumnSource<?>[] {keySource},
-                    Integer.highestOneBit(symbolTable.intSize()) << 1);
+                    SymbolTableCombiner.hashTableSize(symbolTable.size()));
             stc.addSymbols(symbolTable, symbolMapper);
         }
 

@@ -88,19 +88,19 @@ public class ReplicateSegmentedSortedArray {
     }
 
     /**
-     * Matches the Object SSA, stamp, checker and dup compact class names (and the SSA test class name), capturing the
-     * optional Test prefix.
+     * Matches the Object SSA, stamp, checker, dup compact, compact, compact modifications and SSM class names (and the
+     * SSA and SSM test class names), capturing the optional Test prefix.
      */
     private static final String OBJECT_CLASS_PATTERN =
-            "\\b(Test)?Object(?=(Reverse)?(SegmentedSortedArray|ChunkSsaStamp|SsaSsaStamp|SsaChecker|DupCompactKernel)\\b)";
+            "\\b(Test)?Object(?=(Reverse)?(SegmentedSortedArray|ChunkSsaStamp|SsaSsaStamp|SsaChecker|DupCompactKernel|CompactKernel|CompactModifications|SegmentedSortedMultiset)\\b)";
     private static final String OBJECT_CLASS_REPLACEMENT = "$1EqualsConsistentObject";
 
     /**
      * Write the EqualsConsistentObject counterpart of a generated Object class, next to it. The Object class tests
      * equality with {@code ObjectComparisons.compareEquals}, which is correct for any Comparable; the counterpart tests
      * equality with {@code ObjectComparisons.eq}, which is correct only for data types whose natural ordering is
-     * consistent with equals. References to the other Object SSA, stamp, checker and dup compact classes become
-     * references to their EqualsConsistentObject counterparts.
+     * consistent with equals. References to the other Object SSA, stamp, checker, dup compact, compact, compact
+     * modifications and SSM classes become references to their EqualsConsistentObject counterparts.
      *
      * @param task the gradle task that regenerates the copy
      * @param sourceClassName the name of the class to edit to change the copy
@@ -114,7 +114,8 @@ public class ReplicateSegmentedSortedArray {
                 objectFile.getName().replaceAll(OBJECT_CLASS_PATTERN, OBJECT_CLASS_REPLACEMENT)).getPath();
         if (copyPath.equals(objectPath)) {
             throw new IllegalArgumentException(
-                    objectPath + " is not an Object SSA, stamp, checker or dup compact class");
+                    objectPath
+                            + " is not an Object SSA, stamp, checker, dup compact, compact, compact modifications or SSM class");
         }
 
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
@@ -143,11 +144,7 @@ public class ReplicateSegmentedSortedArray {
         final File file = new File(path);
 
         List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
-
-        // Skip, re-add file header
-        lines = Stream.concat(
-                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
+        lines = lines.stream().dropWhile(line -> line.startsWith("//")).collect(Collectors.toList());
 
         if (path.contains("ChunkSsaStamp") || path.contains("SsaSsaStamp") || path.contains("SsaChecker")) {
             lines = globalReplacements(lines, "\\BSegmentedSortedArray", "ReverseSegmentedSortedArray");
@@ -156,6 +153,13 @@ public class ReplicateSegmentedSortedArray {
         if (path.contains("SegmentedSortedArray")) {
             lines = globalReplacements(lines, "\\BSsaChecker", "ReverseSsaChecker");
         }
+
+        // the header names the Char class that every variant is replicated from, and follows the class name
+        // replacements because their patterns also match the task name
+        final String charClassName = ReplicationUtils.className(path)
+                .replaceFirst("^(Byte|Short|Int|Long|Float|Double|Object)", "Char");
+        lines = Stream.concat(ReplicationUtils.fileHeaderStream(TASK, charClassName), lines.stream())
+                .collect(Collectors.toList());
 
 
         lines = simpleFixup(lines, "isReversed", "false", "true");
