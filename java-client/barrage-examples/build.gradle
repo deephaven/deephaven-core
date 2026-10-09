@@ -20,6 +20,16 @@ test {
     useJUnitPlatform()
 }
 
+// Expose the installed distribution to :java-client-integration-tests
+configurations {
+    examplesInstall
+}
+artifacts {
+    examplesInstall(tasks.installDist.destinationDir) {
+        builtBy tasks.installDist
+    }
+}
+
 startScripts.enabled = false
 
 def createApplication = { String name, String mainClass ->

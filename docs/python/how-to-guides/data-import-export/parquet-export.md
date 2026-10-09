@@ -11,7 +11,7 @@ By default, Deephaven tables are written to Parquet files using `SNAPPY` compres
 
 First, create some tables that will be used for the examples in this guide.
 
-```python test-set=1 order=grades,math_grades,science_grades,history_grades docker-config=minio
+```python test-set=1 order=grades,math_grades,science_grades,history_grades docker-config=rustfs
 from deephaven import new_table, merge
 from deephaven.column import int_col, double_col, string_col
 
@@ -83,7 +83,7 @@ parquet.write(
     path="s3://example-bucket/grades.parquet",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )
@@ -160,7 +160,7 @@ parquet.write_partitioned(
     destination_dir="s3://example-bucket/partitioned-directory/",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )
@@ -244,7 +244,7 @@ parquet.batch_write(
     ],
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )

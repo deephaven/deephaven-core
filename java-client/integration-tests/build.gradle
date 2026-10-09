@@ -1,0 +1,209 @@
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerLogsContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.github.dockerjava.api.command.InspectContainerResponse
+import io.deephaven.tools.docker.DeephavenInDockerExtension
+import io.deephaven.tools.docker.WaitForHealthyContainer
+
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+    // Arrow needs java.nio opened in the test JVM, and netty's Unsafe buffers kept on where the JDK turns them off
+    id 'io.deephaven.java-open-nio'
+    id 'io.deephaven.java-netty-unsafe'
+}
+
+description = 'Integration tests that run the Java client against a Deephaven server in Docker'
+
+configurations {
+    // The installed example distributions; the smoke test runs their launcher scripts as child processes
+    examples
+}
+
+dependencies {
+    examples project(path: ':java-client-session-examples', configuration: 'examplesInstall')
+    examples project(path: ':java-client-flight-examples', configuration: 'examplesInstall')
+    examples project(path: ':java-client-barrage-examples', configuration: 'examplesInstall')
+
+    // The API-level tests use the three client layers directly over a real netty channel
+    testImplementation project(':java-client-session')
+    testImplementation project(':java-client-flight')
+    testImplementation project(':java-client-barrage')
+    testImplementation project(':ssl-config')
+    // DoExchangeTest builds Barrage flatbuffer messages by hand
+    testImplementation libs.deephaven.barrage.format
+    testImplementation libs.flatbuffers.java
+    testImplementation project(':proto:proto-backplane-grpc-flight')
+    testImplementation platform(libs.grpc.bom)
+    testRuntimeOnly libs.grpc.netty
+    // TransportTest inspects netty directly: the native SSL provider and the buffer leak detector
+    testImplementation platform(libs.netty.bom)
+    testImplementation 'io.netty:netty-handler'
+    // NettyLeakRecorder allocates a buffer to make the leak detector report
+    testImplementation 'io.netty:netty-buffer'
+    // The barrage layer runs a client-side engine, which needs its configuration and logging on the classpath
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    // Compile scope because NettyLeakRecorder is a logback appender
+    testImplementation libs.logback.classic
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+}
+
+// The server is the published jetty image: Python console, anonymous and pre-shared-key auth, as py/client uses.
+// TODO(DH-23820): the example launchers default JAVA_OPTS to dh-default.vmoptions, which carries a flag JDK 25
+// removed, so every spawned example fails to start on 25. Until the launchers select the right options file, skip
+// the examples smoke test there rather than fail the nightly matrix. The API-level, transport, and TLS tests run in
+// the test JVM itself and still run on 25.
+def testRuntimeVersion = Integer.parseInt((String) project.findProperty('testRuntimeVersion') ?: '21')
+def skipExamplesOnThisRuntime = testRuntimeVersion >= 25
+
+String randomSuffix = UUID.randomUUID().toString()
+def serverStartOpts = '-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,' +
+        'io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven'
+deephavenDocker {
+    envVars.set(['START_OPTS': serverStartOpts])
+    containerName.set "dh-server-for-java-client-${randomSuffix}"
+    networkName.set "java-client-test-network-${randomSuffix}"
+}
+def serverImage = project(deephavenDocker.deephavenServerProject).tasks.named(deephavenDocker.serverTask, DockerBuildImage)
+
+test {
+    useJUnitPlatform()
+    // The examples share one server and publish fixed variable names, so run them in one fork, in order
+    maxParallelForks = 1
+
+    // The TLS tests need the TLS server, which testTls below provides
+    exclude '**/*TlsTest*'
+
+    // What the test exercises, so it reruns only when one of these changes
+    inputs.files(configurations.examples)
+    inputs.property('serverImageId', serverImage.flatMap { it.imageId })
+    inputs.property('serverStartOpts', serverStartOpts)
+
+    // These tests are a real client, not an engine test: the client-side engine the barrage tests run uses the same
+    // default configuration a user's process would, rather than the test conventions' dh-tests.prop (which, among
+    // other things, forbids starting the update graph's refresh thread).
+    systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+
+    // Make netty track every buffer and report leaks; TransportTest fails if any are reported
+    systemProperty 'io.netty.leakDetection.level', 'paranoid'
+
+    if (skipExamplesOnThisRuntime) {
+        // TODO(DH-23820): remove once the launchers run on JDK 25
+        exclude '**/ExamplesSmokeTest*'
+    }
+
+    dependsOn deephavenDocker.portTask
+    finalizedBy deephavenDocker.endTask
+    doFirst {
+        // The host port is only known once the container is up
+        systemProperty 'dh.host', deephavenDocker.host.get()
+        systemProperty 'dh.port', deephavenDocker.port.get()
+        configurations.examples.files.each { File install ->
+            systemProperty "dh.examples.${install.name}.bin", new File(install, 'bin').absolutePath
+        }
+    }
+}
+
+deephavenDocker.shouldLogIfTaskFails tasks.named('test')
+
+// A second server, serving TLS with the development certificates and no client-certificate authentication, for the
+// TLS tests. The deephavenDocker extension manages one container per project, so these tasks mirror it by hand:
+// create, start, wait for healthy, read the published port, run the tests, log on failure, remove.
+def devCerts = rootProject.file('server/dev-certs')
+def tlsContainerName = "dh-server-tls-for-java-client-${randomSuffix}"
+def tlsPort = project.objects.property(Integer)
+def tlsHost = project.objects.property(String)
+// http.port is explicit because the server defaults to 443 once an SSL identity is configured
+def tlsStartOpts = serverStartOpts + ' -Dhttp.port=10000 ' +
+        '-Dssl.identity.type=privatekey -Dssl.identity.certChainPath=/dev-certs/server.chain.crt ' +
+        '-Dssl.identity.privateKeyPath=/dev-certs/server.key'
+// The image's health check probes in plaintext; this server only speaks TLS
+def tlsHealthCheck = '/opt/grpc_health_probe/grpc_health_probe -addr=localhost:10000 -tls -tls-no-verify ' +
+        '-connect-timeout=10s || exit 1'
+
+def createTlsServer = tasks.register('createTlsServer', DockerCreateContainer) { t ->
+    t.dependsOn serverImage
+    t.targetImageId serverImage.flatMap { it.imageId }
+    t.containerName.set tlsContainerName
+    t.envVars.set(['START_OPTS': tlsStartOpts])
+    t.hostConfig.binds.set([(devCerts.absolutePath): '/dev-certs'])
+    t.exposePorts('tcp', [10000])
+    t.hostConfig.portBindings.set(['10000'])
+    t.healthCheck.cmd.set([tlsHealthCheck])
+}
+def startTlsServer = tasks.register('startTlsServer', DockerStartContainer) { t ->
+    t.dependsOn createTlsServer
+    t.containerId.set tlsContainerName
+}
+def waitForTlsHealthy = tasks.register('waitForTlsHealthy', WaitForHealthyContainer) { t ->
+    t.dependsOn startTlsServer
+    t.awaitStatusTimeout.set 60
+    t.checkInterval.set 100
+    t.containerId.set tlsContainerName
+}
+def waitForTlsPort = tasks.register('waitForTlsPort', DockerInspectContainer) { t ->
+    t.dependsOn waitForTlsHealthy
+    t.containerId.set tlsContainerName
+    t.onNext { Object obj ->
+        def inspect = (InspectContainerResponse) obj
+        def firstBinding = inspect.networkSettings.ports.bindings.values().first()[0]
+        tlsHost.set(DeephavenInDockerExtension.hostFor(firstBinding))
+        tlsPort.set(Integer.parseInt(firstBinding.hostPortSpec))
+    }
+}
+def writeTlsServerLogs = tasks.register('writeTlsServerLogs', DockerLogsContainer) { t ->
+    t.targetContainerId tlsContainerName
+}
+def stopTlsServer = tasks.register('stopTlsServer', DockerRemoveContainer) { t ->
+    t.dependsOn createTlsServer
+    t.mustRunAfter writeTlsServerLogs
+    t.targetContainerId tlsContainerName
+    t.force.set true
+    t.removeVolumes.set true
+}
+// Whatever happens after the container exists, remove it
+createTlsServer.configure { finalizedBy stopTlsServer }
+
+def testTls = tasks.register('testTls', Test) { t ->
+    t.group = 'verification'
+    t.description = 'Runs the TLS tests against a second server started with the development certificates'
+    t.useJUnitPlatform()
+    t.include '**/*TlsTest*'
+    t.maxParallelForks = 1
+
+    t.inputs.property('serverImageId', serverImage.flatMap { it.imageId })
+    t.inputs.property('tlsStartOpts', tlsStartOpts)
+    t.inputs.property('tlsHealthCheck', tlsHealthCheck)
+    t.inputs.dir(devCerts)
+    t.systemProperty 'dh.devCerts', devCerts.absolutePath
+    t.systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
+    t.systemProperty 'io.netty.leakDetection.level', 'paranoid'
+
+    t.dependsOn waitForTlsPort
+    t.finalizedBy writeTlsServerLogs, stopTlsServer
+    t.doFirst {
+        t.systemProperty 'dh.host', tlsHost.get()
+        t.systemProperty 'dh.tls.port', tlsPort.get()
+    }
+}
+// Print the server log when the tests fail, and also when the server never came up, as the docker extension does
+startTlsServer.configure { finalizedBy writeTlsServerLogs }
+waitForTlsHealthy.configure { finalizedBy writeTlsServerLogs }
+writeTlsServerLogs.configure { t ->
+    t.onlyIf {
+        startTlsServer.get().state.failure != null
+                || waitForTlsHealthy.get().state.failure != null
+                || waitForTlsPort.get().state.failure != null
+                || testTls.get().state.failure != null
+    }
+}
+tasks.named('check') { dependsOn testTls }
