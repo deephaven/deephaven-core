@@ -41,12 +41,12 @@ import java.util.function.Supplier;
  * </p>
  *
  * <p>
- * An iteration fails when a task throws or reports a failure through its nested error consumer, when a task context
- * fails to close, or when it cannot be started because the context factory or {@link #submit} throws. No new task
- * starts once it has failed. The callback forms then call {@code onError} with the first failure, and neither
- * {@code onComplete} nor {@code cleanup}; a failure to start reaches their caller only that way, unless it is an
- * {@link Error}, which is also rethrown. {@code invokeParallel} throws the first failure instead, as it describes.
- * Later failures are suppressed on the first.
+ * An iteration fails when a task throws, when an {@link IterateResumeAction} task reports a failure through its nested
+ * error consumer, when a task context fails to close, or when it cannot be started because the context factory or
+ * {@link #submit} throws. No new task starts once it has failed. The callback forms then call {@code onError} with the
+ * first failure, and neither {@code onComplete} nor {@code cleanup}; a failure to start reaches their caller only that
+ * way, unless it is an {@link Error}, which is also rethrown. {@code invokeParallel} throws the first failure instead,
+ * as it describes. Later failures are suppressed on the first.
  * </p>
  */
 public interface JobScheduler {
