@@ -538,5 +538,5 @@ Because `getElementStateful` is stateful, it must be evaluated in the correct or
 Queries should use stateless functions whenever possible because:
 
 - They minimize side effects when called.
-- They are deterministic.
+- Their result does not depend on the order of evaluation.
 - They can be evaluated in parallel where the engine supports it.
