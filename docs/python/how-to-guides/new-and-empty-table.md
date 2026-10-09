@@ -2,7 +2,7 @@
 title: Create static tables
 ---
 
-Deephaven often reads table data from Parquet, Kafka, or other external sources, but it can also generate tables from scratch. Static tables hold fixed data that does not change after creation. This guide covers two simple functions for creating them: [`empty_table`](../reference/table-operations/create/emptyTable.md) and [`new_table`](../reference/table-operations/create/newTable.md). It shows how to use these functions to create static tables and columns, and how to add data to those tables. To create a table that adds rows over time, see [Create a time table](./time-table.md).
+Deephaven often reads table data from Parquet, Kafka, or other external sources, but it can also generate tables from scratch. Static tables hold fixed data that does not change after creation. This guide covers two simple functions for creating them: [`empty_table`](../reference/table-operations/create/emptyTable.md) and [`new_table`](../reference/table-operations/create/newTable.md). It shows how to use these functions to create static tables and columns, and how to add data to those tables. To create a table that updates in real time, see [Create a time table](./time-table.md), [Write data to an in-memory, real-time table](./table-publisher.md), [Create and use input tables](./input-tables.md), and [Replay data from static tables](./replay-data.md).
 
 ## `empty_table`
 

@@ -19,7 +19,7 @@ The [`table_publisher`](../reference/table-operations/create/TablePublisher.md) 
 
 More sophisticated use cases add steps but follow the same basic formula.
 
-### Example: getting started
+### Example: getting started with a table publisher
 
 The first four arguments of [`table_publisher`](../reference/table-operations/create/TablePublisher.md#parameters) are:
 
@@ -81,7 +81,7 @@ when_done()
 
 ### Example: threading
 
-The [getting started example](#example-getting-started) adds data to its blink table only when you call `add_table` by hand. In most real-world use cases, you want to add data automatically at a regular interval. Python's [threading](https://docs.python.org/3/library/threading.html) module can do this. The following example adds between 5 and 10 rows of data to `my_table` via [`empty_table`](../reference/table-operations/create/emptyTable.md) every second for 5 seconds.
+The [getting started example](#example-getting-started-with-a-table-publisher) adds data to its blink table only when you call `add_table` by hand. In most real-world use cases, you want to add data automatically at a regular interval. Python's [threading](https://docs.python.org/3/library/threading.html) module can do this. The following example adds between 5 and 10 rows of data to `my_table` via [`empty_table`](../reference/table-operations/create/emptyTable.md) every second for 5 seconds.
 
 > [!IMPORTANT]
 > Table operations that run in a separate thread and compile query strings, such as [`update`](../reference/table-operations/select/update.md), need an [execution context](../conceptual/execution-context.md). Without one, they raise an exception. Capture the current context with [`get_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.get_exec_ctx) and open it in the thread with a `with` statement.
@@ -311,7 +311,7 @@ t2, t2_cancel = subscribe_stats(["ETH-USD", "BTC-USDT", "ETH-USDT"])
 
 ![The above `t1` and `t2` tables](../assets/how-to/table-publisher-coinbase.gif)
 
-## DynamicTableWriter
+## `DynamicTableWriter`
 
 [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) writes data into a live, in-memory table whose column names and data types you define. To use it:
 
@@ -320,7 +320,7 @@ t2, t2_cancel = subscribe_stats(["ETH-USD", "BTC-USDT", "ETH-USDT"])
 - Write data to the table, typically from a separate thread so that rows appear while writing continues (see [Data appears on the next update cycle](#data-appears-on-the-next-update-cycle)).
 - Close the writer.
 
-### Example: getting started
+### Example: getting started with `DynamicTableWriter`
 
 The following example creates a table with two columns (`A` and `B`). The columns contain randomly generated integers and strings, respectively. A separate thread adds a new row every second for ten seconds. When the thread finishes writing, it closes the writer with [`close`](../reference/table-operations/create/DynamicTableWriter.md#methods).
 
@@ -413,7 +413,7 @@ The Python script session holds the exclusive [UG lock](../conceptual/query-engi
 
 The following example shows this with a [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md), whose append-only table keeps the rows so you can inspect them afterward. What would you expect the `print` statement below to produce?
 
-```python order=:log,result test-set=3 reset
+```python ticking-table order=:log test-set=3 reset
 from deephaven import DynamicTableWriter
 import deephaven.dtypes as dht
 

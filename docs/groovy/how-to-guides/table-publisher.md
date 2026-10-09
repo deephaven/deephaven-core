@@ -19,7 +19,7 @@ Create a [`TablePublisher`](/core/javadoc/io/deephaven/stream/TablePublisher.htm
 
 More sophisticated use cases add steps but follow the same basic formula.
 
-### Example: getting started
+### Example: getting started with a table publisher
 
 This example uses the four-argument form of [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md#syntax), which takes:
 
@@ -66,7 +66,7 @@ publisher.publishFailure(new RuntimeException("Publisher shut down by user."))
 
 ### Example: threading
 
-The [getting started example](#example-getting-started) adds data to its blink table only when you call [`add`](../reference/table-operations/create/TablePublisher.md#methods) by hand. In most real-world use cases, you want to add data automatically at a regular interval. The following example adds between 5 and 10 rows of new data to the publisher with [`emptyTable`](../reference/table-operations/create/emptyTable.md) every second for 5 seconds in a separate thread.
+The [getting started example](#example-getting-started-with-a-table-publisher) adds data to its blink table only when you call [`add`](../reference/table-operations/create/TablePublisher.md#methods) by hand. In most real-world use cases, you want to add data automatically at a regular interval. The following example adds between 5 and 10 rows of new data to the publisher with [`emptyTable`](../reference/table-operations/create/emptyTable.md) every second for 5 seconds in a separate thread.
 
 > [!IMPORTANT]
 > Table operations that run in a separate thread and compile query strings, such as [`update`](../reference/table-operations/select/update.md), need an [execution context](../conceptual/execution-context.md). Without one, they raise an exception. Capture the current context with [`ExecutionContext.getContext`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.html) and open it in the thread with its `open` method in a try-with-resources block.
@@ -137,7 +137,7 @@ thread.start()
 
 ![The above `myTable`, `myRingTable`, and `myAppendOnlyTable` tables](../assets/how-to/pub-data-history.gif)
 
-## DynamicTableWriter
+## `DynamicTableWriter`
 
 [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) writes data into a live, in-memory table whose column names and data types you define. To use it:
 
@@ -146,7 +146,7 @@ thread.start()
 - Write data to the table, typically from a separate thread so that rows appear while writing continues (see [Data appears on the next update cycle](#data-appears-on-the-next-update-cycle)).
 - Close the writer.
 
-### Example: getting started
+### Example: getting started with `DynamicTableWriter`
 
 The following example creates a table with two columns (`A` and `B`). The columns contain randomly generated integers and characters, respectively. A separate thread adds a new row every second for ten seconds. When the thread finishes writing, it closes the writer with [`close`](../reference/table-operations/create/DynamicTableWriter.md#methods).
 
@@ -253,7 +253,7 @@ The Groovy script session holds the exclusive [UG lock](../conceptual/query-engi
 
 The following example shows this with a [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md), whose append-only table keeps the rows so you can inspect them afterward. What would you expect the `println` statement below to produce?
 
-```groovy order=:log,result test-set=3 reset
+```groovy ticking-table order=:log test-set=3 reset
 import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.table.impl.util.DynamicTableWriter

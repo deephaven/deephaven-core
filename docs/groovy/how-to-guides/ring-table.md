@@ -34,7 +34,7 @@ The following example creates a ring table with a 3-row capacity from an append-
 ```groovy ticking-table order=null
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools
 
-source = timeTable("PT00:00:01")
+source = timeTable("PT00:00:01").update("X = i")
 result = RingTableTools.of(source, 3)
 ```
 
