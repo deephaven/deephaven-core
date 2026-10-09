@@ -7,7 +7,7 @@ This guide covers [function-generated tables](../reference/table-operations/crea
 - One or more trigger tables tick.
 - A refresh interval is reached.
 
-Use a function-generated table to ingest data from external sources into a ticking table. Each refresh replaces the whole result, so when the input is already a Deephaven table, use regular table operations, which update incrementally.
+Use a function-generated table to ingest data from external sources into a ticking table. A refresh that produces a new table replaces the whole result, so when the input is already a Deephaven table, use regular table operations, many of which update incrementally.
 
 ## Usage pattern
 

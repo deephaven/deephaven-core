@@ -178,7 +178,7 @@ from deephaven import new_table
 import asyncio, json, websockets
 from dataclasses import dataclass
 from typing import Callable
-from threading import Thread
+from threading import Thread, Lock
 from concurrent.futures import CancelledError
 
 COINBASE_WSFEED_URL = "wss://ws-feed.exchange.coinbase.com"
@@ -247,13 +247,19 @@ def create_matches(
             c()
 
     my_matches: list[Match] = []
+    # The event loop thread appends while on_flush copies and clears, so both hold this lock
+    my_matches_lock = Lock()
+
+    def add_match(match: Match):
+        with my_matches_lock:
+            my_matches.append(match)
 
     def on_flush(tp: TablePublisher):
-        nonlocal my_matches
-        # We need to take a shallow copy to ensure we don't allow asyncio additions to
-        # my_matches while we are in Java (where we drop the GIL)
-        my_matches_copy = my_matches.copy()
-        my_matches.clear()
+        # Copy and clear under the lock so no match arrives between the two steps.
+        # Converting the copy to a table happens outside the lock, in Java, where the GIL is dropped.
+        with my_matches_lock:
+            my_matches_copy = my_matches.copy()
+            my_matches.clear()
         tp.add(to_table(my_matches_copy))
 
     table, publisher = table_publisher(
@@ -274,7 +280,7 @@ def create_matches(
     )
 
     future = asyncio.run_coroutine_threadsafe(
-        handle_matches(product_ids, my_matches.append), event_loop
+        handle_matches(product_ids, add_match), event_loop
     )
 
     def on_future_done(f):
