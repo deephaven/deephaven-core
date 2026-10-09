@@ -147,7 +147,7 @@ test, but their javadoc starts with what kind of tool they are rather than what 
 | `message-stream-send-receive` | session | plugin: drive a bidirectional object stream such as the echo plugin |
 | `deep-query` | flight | stress: a chain of hundreds of head and tail operations |
 | `sum-benchmark` | flight | benchmark: one aggregation over a large empty table |
-| `agg-by`, `aggregate-all` | flight | load: a key-backed input table with every aggregation published, updated at random |
+| `agg-by`, `aggregate-all` | flight | load: a key-backed input table with a selection of aggregations published, updated at random |
 | `do-put-spray` | flight | operations: copy a table from one server to others |
 | `add-to-input-table` | flight | walkthrough: input table validation metadata and structured errors, through a server test utility |
 

@@ -34,9 +34,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Load tool: creates a key-backed input table, publishes one {@code aggAllBy} of it per {@link AggSpec}, then feeds
- * random updates into the input table so the aggregations tick. Compare {@link AggByExample}, which uses the named
- * convenience methods instead of specs.
+ * Load tool: creates a key-backed input table, publishes one {@code aggAllBy} of it for each of a selection of
+ * {@link AggSpec}s, then feeds random updates into the input table so the aggregations tick. Compare
+ * {@link AggByExample}, which uses the named convenience methods instead of specs.
  */
 @Command(name = "aggregate-all", mixinStandardHelpOptions = true,
         description = "Aggregate all examples", version = "0.1.0")
