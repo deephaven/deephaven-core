@@ -48,7 +48,7 @@ def full_outer_join(
         a new Table
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     try:
         on = ",".join(to_sequence(on))
@@ -94,7 +94,7 @@ def left_outer_join(
         a new Table
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     try:
         on = ",".join(to_sequence(on))

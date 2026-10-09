@@ -164,7 +164,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
             Selectable
 
         Raises:
-            DHError
+            DHError: If unable to create a Selectable.
         """
         try:
             return Selectable(j_selectable=_JSelectable.parse(formula))
@@ -183,7 +183,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
             Selectable
 
         Raises:
-            DHError
+            DHError: If unable to create selectable with declared barriers.
         """
         try:
             barriers = to_sequence(barriers)
@@ -207,7 +207,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
             Selectable
 
         Raises:
-            DHError
+            DHError: If unable to create selectable with respected barriers.
         """
         try:
             barriers = to_sequence(barriers)
@@ -226,7 +226,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
             Selectable
 
         Raises:
-            DHError
+            DHError: If unable to create selectable with serial evaluation.
         """
         try:
             return Selectable(j_selectable=self.j_selectable.withSerial())
@@ -444,7 +444,7 @@ class RollupTable(JObjectWrapper):
             a RollupNodeOperationsRecorder
 
         Raises:
-            DHError
+            DHError: If unable to create a RollupNodeOperationsRecorder.
         """
         try:
             return RollupNodeOperationsRecorder(
@@ -470,7 +470,7 @@ class RollupTable(JObjectWrapper):
             a new RollupTable
 
         Raises:
-            DHError
+            DHError: If with_node_operations on RollupTable fails.
         """
         try:
             return RollupTable(
@@ -497,7 +497,7 @@ class RollupTable(JObjectWrapper):
             a new RollupTable
 
         Raises:
-            DHError
+            DHError: If with_filters operation on RollupTable fails.
         """
         try:
             return RollupTable(
@@ -519,7 +519,7 @@ class RollupTable(JObjectWrapper):
             a new RollupTable
 
         Raises:
-            DHError
+            DHError: If with_update_view operation on RollupTable fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -602,7 +602,7 @@ class TreeTable(JObjectWrapper):
             a new TreeTable
 
         Raises:
-            DHError
+            DHError: If with_node_operations on TreeTable fails.
         """
 
         try:
@@ -629,7 +629,7 @@ class TreeTable(JObjectWrapper):
             a new TreeTable
 
         Raises:
-            DHError
+            DHError: If with_filters operation on TreeTable fails.
         """
 
         try:
@@ -751,7 +751,7 @@ class TableDefinition(JObjectWrapper, Mapping):
             A new TableDefinition
 
         Raises:
-            DHError
+            DHError: If the operation fails.
         """
         self.j_table_definition = TableDefinition._to_j_table_definition(
             table_definition
@@ -926,7 +926,7 @@ class Table(JObjectWrapper):
             A generator that yields a dictionary of column names to scalar values.
 
         Raises:
-            ValueError
+            ValueError: If the argument value is invalid.
         """
         from deephaven._table_reader import (
             _table_reader_row_dict,
@@ -966,7 +966,7 @@ class Table(JObjectWrapper):
             A generator that yields a named tuple for each row in the table
 
         Raises:
-            ValueError
+            ValueError: If the argument value is invalid.
         """
         from deephaven._table_reader import (
             _table_reader_row_tuple,
@@ -1043,7 +1043,7 @@ class Table(JObjectWrapper):
             A generator that yields a named tuple for each row in the table.
 
         Raises:
-            ValueError
+            ValueError: If the argument value is invalid.
         """
         from deephaven._table_reader import (
             _table_reader_chunk_tuple,
@@ -1086,7 +1086,7 @@ class Table(JObjectWrapper):
             a new Table
 
         Raises:
-            DHError
+            DHError: If unable to create a table with attributes.
         """
         try:
             j_map = j_hashmap(attrs)
@@ -1107,7 +1107,7 @@ class Table(JObjectWrapper):
             a new Table
 
         Raises:
-            DHError
+            DHError: If unable to create a table without attributes.
         """
         try:
             j_attrs = j_array_list(to_sequence(attrs))
@@ -1130,7 +1130,7 @@ class Table(JObjectWrapper):
             a new Table
 
         Raises:
-            DHError
+            DHError: If unable to create a table with key columns.
         """
         try:
             cols = to_sequence(cols)
@@ -1149,7 +1149,7 @@ class Table(JObjectWrapper):
             a new Table
 
         Raises:
-            DHError
+            DHError: If unable to create a table with unique key columns.
         """
         try:
             cols = to_sequence(cols)
@@ -1170,7 +1170,7 @@ class Table(JObjectWrapper):
             string
 
         Raises:
-            DHError
+            DHError: If table to_string fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1197,7 +1197,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If the operation fails.
         """
         try:
             with auto_locking_ctx(self):
@@ -1241,7 +1241,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If the operation fails.
         """
         try:
             options = _JSnapshotWhenOptions.of(
@@ -1269,7 +1269,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table drop_columns operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1290,7 +1290,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table move_columns operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1311,7 +1311,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table move_columns_down operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1332,7 +1332,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table move_columns_up operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1353,7 +1353,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table rename_columns operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1374,7 +1374,7 @@ class Table(JObjectWrapper):
             A new table
 
         Raises:
-            DHError
+            DHError: If table update operation fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -1396,7 +1396,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table lazy_update operation fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -1415,7 +1415,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table view operation fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -1434,7 +1434,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table update_view operation fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -1460,7 +1460,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table select operation fails.
         """
         try:
             with query_scope_ctx(), auto_locking_ctx(self):
@@ -1489,7 +1489,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table select_distinct operation fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -1520,7 +1520,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table where operation fails.
         """
         try:
             filters = to_sequence(filters)
@@ -1541,7 +1541,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table where_in operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1563,7 +1563,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table where_not_in operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1586,7 +1586,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table where_one_of operation fails.
         """
         try:
             filters = to_sequence(filters)
@@ -1605,7 +1605,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table head operation fails.
         """
         try:
             return Table(j_table=self.j_table.head(num_rows))
@@ -1622,7 +1622,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table head_pct operation fails.
         """
         try:
             return Table(j_table=self.j_table.headPct(pct))
@@ -1639,7 +1639,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table tail operation fails.
         """
         try:
             return Table(j_table=self.j_table.tail(num_rows))
@@ -1656,7 +1656,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table tail_pct operation fails.
         """
         try:
             return Table(j_table=self.j_table.tailPct(pct))
@@ -1681,7 +1681,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table restrict_sort_to operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -1700,7 +1700,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table sort_descending operation fails.
         """
         try:
             order_by = to_sequence(order_by)
@@ -1715,7 +1715,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table reverse operation fails.
         """
         try:
             return Table(j_table=self.j_table.reverse())
@@ -1738,7 +1738,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table sort operation fails.
         """
 
         try:
@@ -1795,7 +1795,7 @@ class Table(JObjectWrapper):
             a new Table with the sorted-column attribute set.
 
         Raises:
-            DHError
+            DHError: If table with_order_for_column operation fails.
         """
         try:
             return Table(
@@ -1827,7 +1827,7 @@ class Table(JObjectWrapper):
             a new Table with the sorted-column assertion applied.
 
         Raises:
-            DHError
+            DHError: If table assert_sorted operation fails.
         """
         try:
             return Table(
@@ -1870,7 +1870,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table natural_join operation fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -1906,7 +1906,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table exact_join operation fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -1947,7 +1947,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table join operation fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -1992,7 +1992,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table as-of join operation fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -2028,7 +2028,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table reverse-as-of join operation fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -2141,7 +2141,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If the operation fails.
         """
         try:
             on = to_sequence(on)
@@ -2174,7 +2174,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table head_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2196,7 +2196,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table tail_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2216,7 +2216,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table group-by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2239,7 +2239,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table ungroup operation fails.
         """
         try:
             cols = to_sequence(cols)
@@ -2261,7 +2261,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table first_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2282,7 +2282,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table last_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2303,7 +2303,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table sum_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2324,7 +2324,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table asb_sum_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2348,7 +2348,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table weighted_sum_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2369,7 +2369,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table avg_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2393,7 +2393,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table avg_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2418,7 +2418,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table std_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2442,7 +2442,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table var_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2463,7 +2463,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table median_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2484,7 +2484,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table min_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2505,7 +2505,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table max_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2529,7 +2529,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table count_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2569,7 +2569,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table agg_by operation fails.
         """
         try:
             aggs = to_sequence(aggs)
@@ -2630,7 +2630,7 @@ class Table(JObjectWrapper):
             a PartitionedTable
 
         Raises:
-            DHError
+            DHError: If table partitioned_agg_by operation fails.
         """
         try:
             aggs = to_sequence(aggs)
@@ -2665,7 +2665,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table agg_all_by operation fails.
         """
         try:
             by = to_sequence(by)
@@ -2688,7 +2688,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If unable to color format columns.
         """
         try:
             formulas = to_sequence(formulas)
@@ -2710,7 +2710,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If unable to color format column conditionally.
         """
         try:
             with query_scope_ctx():
@@ -2730,7 +2730,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If unable to color format rows conditionally.
         """
         try:
             with query_scope_ctx():
@@ -2772,7 +2772,7 @@ class Table(JObjectWrapper):
             a new table with the layout hints set
 
         Raises:
-            DHError
+            DHError: If unable to create layout hints.
         """
         try:
             _j_layout_hint_builder = _JLayoutHintBuilder.get()
@@ -2823,7 +2823,7 @@ class Table(JObjectWrapper):
             A PartitionedTable containing a sub-table for each group
 
         Raises:
-            DHError
+            DHError: If unable to create a partitioned table.
         """
         try:
             if not isinstance(drop_keys, bool):
@@ -2854,7 +2854,7 @@ class Table(JObjectWrapper):
             a new Table
 
         Raises:
-            DHError
+            DHError: If table update-by operation fails.
         """
         try:
             ops = to_sequence(ops)
@@ -2889,7 +2889,7 @@ class Table(JObjectWrapper):
             a new Table
 
         Raises:
-            DHError
+            DHError: If table slice operation fails.
 
         Examples:
             >>> table.slice(0, 5)    # first 5 rows
@@ -2922,7 +2922,7 @@ class Table(JObjectWrapper):
             a new table
 
         Raises:
-            DHError
+            DHError: If table slice_pct operation fails.
         """
         try:
             return Table(j_table=self.j_table.slicePct(start_pct, end_pct))
@@ -2953,7 +2953,7 @@ class Table(JObjectWrapper):
             a new RollupTable
 
         Raises:
-            DHError
+            DHError: If table rollup operation fails.
         """
         try:
             aggs = to_sequence(aggs)
@@ -3007,7 +3007,7 @@ class Table(JObjectWrapper):
             a new TreeTable organized according to the parent-child relationships expressed by id_col and parent_col
 
         Raises:
-            DHError
+            DHError: If table tree operation fails.
         """
         try:
             if promote_orphans:
@@ -3036,7 +3036,7 @@ class Table(JObjectWrapper):
             True when the table is updated or False when the timeout has been reached.
 
         Raises:
-            DHError
+            DHError: If await_update was interrupted.
         """
         if not self.is_refreshing:
             raise DHError(
@@ -3175,7 +3175,7 @@ class PartitionedTable(JObjectWrapper):
             a PartitionedTable
 
         Raises:
-            DHError
+            DHError: If unable to create a PartitionedTable from constituent tables.
         """
         try:
             if not constituent_table_columns:
@@ -3276,7 +3276,7 @@ class PartitionedTable(JObjectWrapper):
             a Table
 
         Raises:
-            DHError
+            DHError: If unable to merge all the constituent tables.
         """
         try:
             with auto_locking_ctx(self):
@@ -3298,7 +3298,7 @@ class PartitionedTable(JObjectWrapper):
              a PartitionedTable
 
         Raises:
-            DHError
+            DHError: If unable to apply filters to the partitioned table.
         """
         filters = to_sequence(filters)
         if isinstance(filters[0], str):
@@ -3330,7 +3330,7 @@ class PartitionedTable(JObjectWrapper):
             a new PartitionedTable
 
         Raises:
-            DHError
+            DHError: If unable to sort the partitioned table.
         """
 
         try:
@@ -3364,7 +3364,7 @@ class PartitionedTable(JObjectWrapper):
             a Table or None
 
         Raises:
-            DHError
+            DHError: If unable to get constituent table.
         """
         try:
             key_values = to_sequence(key_values)
@@ -3401,7 +3401,7 @@ class PartitionedTable(JObjectWrapper):
             a PartitionedTable
 
         Raises:
-            DHError
+            DHError: If unable to transform the PartitionedTable.
         """
         try:
             j_operator = j_unary_operator(
@@ -3454,7 +3454,7 @@ class PartitionedTable(JObjectWrapper):
             a PartitionedTable
 
         Raises:
-            DHError
+            DHError: If unable to transform the PartitionedTable with another PartitionedTable.
         """
         try:
             j_operator = j_binary_operator(
@@ -3556,7 +3556,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If head operation on the PartitionedTableProxy fails.
         """
         try:
             with auto_locking_ctx(self):
@@ -3578,7 +3578,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If tail operation on the PartitionedTableProxy fails.
         """
         try:
             with auto_locking_ctx(self):
@@ -3597,7 +3597,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If reverse operation on the PartitionedTableProxy fails.
         """
         try:
             with auto_locking_ctx(self):
@@ -3616,7 +3616,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If snapshot operation on the PartitionedTableProxy fails.
         """
         try:
             with auto_locking_ctx(self):
@@ -3659,7 +3659,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If snapshot_when operation on the PartitionedTableProxy fails.
         """
         try:
             options = _JSnapshotWhenOptions.of(
@@ -3694,7 +3694,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If sort operation on the PartitionedTableProxy fails.
         """
         try:
             if not order:
@@ -3740,7 +3740,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If sort_descending operation on the PartitionedTableProxy fails.
         """
         try:
             order_by = to_sequence(order_by)
@@ -3769,7 +3769,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If where operation on the PartitionedTableProxy fails.
         """
         try:
             filters = to_sequence(filters)
@@ -3797,7 +3797,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If where_in operation on the PartitionedTableProxy fails.
         """
         try:
             cols = to_sequence(cols)
@@ -3825,7 +3825,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If where_not_in operation on the PartitionedTableProxy fails.
         """
         try:
             cols = to_sequence(cols)
@@ -3850,7 +3850,7 @@ class PartitionedTableProxy(JObjectWrapper):
             A new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If view operation on the PartitionedTableProxy fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -3873,7 +3873,7 @@ class PartitionedTableProxy(JObjectWrapper):
             A new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If update_view operation on the PartitionedTableProxy fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -3901,7 +3901,7 @@ class PartitionedTableProxy(JObjectWrapper):
             A new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If update operation on the PartitionedTableProxy fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -3937,7 +3937,7 @@ class PartitionedTableProxy(JObjectWrapper):
             A new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If select operation on the PartitionedTableProxy fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -3969,7 +3969,7 @@ class PartitionedTableProxy(JObjectWrapper):
             A new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If select_distinct operation on the PartitionedTableProxy fails.
         """
         try:
             formulas = to_sequence(formulas)
@@ -4006,7 +4006,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If natural_join operation on the PartitionedTableProxy fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -4045,7 +4045,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If exact_join operation on the PartitionedTableProxy fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -4088,7 +4088,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If join operation on the PartitionedTableProxy fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -4132,7 +4132,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If as-of join operation on the PartitionedTableProxy fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -4174,7 +4174,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If reverse as-of join operation on the PartitionedTableProxy fails.
         """
         try:
             on = ",".join(to_sequence(on))
@@ -4205,7 +4205,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If group-by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4238,7 +4238,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If agg_by operation on the PartitionedTableProxy fails.
         """
         try:
             aggs = to_sequence(aggs)
@@ -4274,7 +4274,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If agg_all_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4305,7 +4305,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If count_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4337,7 +4337,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If first_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4367,7 +4367,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If last_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4395,7 +4395,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If min_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4423,7 +4423,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If max_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4451,7 +4451,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If sum_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4479,7 +4479,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If sum_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4511,7 +4511,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If sum_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4543,7 +4543,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If avg_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4573,7 +4573,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If avg_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4603,7 +4603,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If median_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4633,7 +4633,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If std_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4661,7 +4661,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If var_by operation on the PartitionedTableProxy fails.
         """
         try:
             by = to_sequence(by)
@@ -4692,7 +4692,7 @@ class PartitionedTableProxy(JObjectWrapper):
             a new PartitionedTableProxy
 
         Raises:
-            DHError
+            DHError: If update-by operation on the PartitionedTableProxy fails.
         """
         try:
             ops = to_sequence(ops)
@@ -4736,7 +4736,7 @@ class MultiJoinInput(JObjectWrapper):
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Raises:
-            DHError
+            DHError: If unable to build a MultiJoinInput object.
         """
         try:
             self.table = table
@@ -4777,7 +4777,7 @@ class MultiJoinTable(JObjectWrapper):
                 When MultiJoinInput objects are supplied, this parameter must be omitted.
 
         Raises:
-            DHError
+            DHError: If unable to build a MultiJoinTable object.
         """
         try:
             if isinstance(input, Table) or (
@@ -4876,7 +4876,7 @@ def table_diff(
         string
 
     Raises:
-        DHError
+        DHError: If table diff fails.
     """
     try:
         diff_items = []
@@ -4983,7 +4983,7 @@ def keyed_transpose(
         a new table
 
     Raises:
-        DHError
+        DHError: If keyed_transpose operation fails.
     """
     try:
         j_source_table = unwrap(table)
@@ -5039,7 +5039,7 @@ class TailInitializationFilter:
             a new Table
 
         Raises:
-            DHError
+            DHError: If unable to apply tail initialization filter.
         """
         try:
             j_duration = to_j_duration(period)
@@ -5067,7 +5067,7 @@ class TailInitializationFilter:
             a new Table
 
         Raises:
-            DHError
+            DHError: If unable to apply tail initialization filter.
         """
         try:
             with auto_locking_ctx(table):

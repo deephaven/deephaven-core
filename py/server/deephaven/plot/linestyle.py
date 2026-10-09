@@ -77,7 +77,7 @@ class LineStyle(JObjectWrapper):
             dash_pattern (Optional[list[Number]] ): a list of number specifying the dash pattern of the line
 
         Raises:
-            DHError
+            DHError: If unable to create a LineStyle.
         """
         try:
             if dash_pattern:

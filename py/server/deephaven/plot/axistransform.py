@@ -42,7 +42,7 @@ def axis_transform(name: str) -> AxisTransform:
         a AxisTransform
 
     Raises:
-        DHError
+        DHError: If unable to retrieve the named AxisTransform.
     """
     try:
         return AxisTransform(j_axis_transform=_JPlottingConvenience.axisTransform(name))
