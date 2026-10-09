@@ -122,6 +122,71 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
         assertEquals(expected.size(), hasher.size());
     }
 
+    @Test
+    public void testStaticGrowsWhenAnInsertionFillsIt() {
+        // at a load factor of 0.75, a table of 4096 slots holds 3072 keys
+        final StaticKeyIdHasherTypedBase hasher =
+                StaticKeyIdHasherTypedBase.make(sources(newTable(longCol("K"))), 4096, 0.75);
+
+        // one chunk of 4096 rows holding 3072 distinct keys fits, although the chunk has more rows than room
+        final long[] keys = new long[4096];
+        for (int ii = 0; ii < keys.length; ++ii) {
+            keys[ii] = ii % 3072;
+        }
+        try (final KeyIdHasher.Context context = hasher.makeContext(keys.length)) {
+            // noinspection unchecked
+            hasher.build(context, new Chunk[] {LongChunk.chunkWrap(keys)});
+            assertEquals(3072, hasher.size());
+            assertEquals(4096, hasher.tableSize);
+
+            // the next key takes the table past its load factor, so it doubles before another key is probed
+            // noinspection unchecked
+            hasher.build(context, new Chunk[] {LongChunk.chunkWrap(new long[] {3072, 3073, 0})});
+            assertEquals(8192, hasher.tableSize);
+            assertEquals(3072, context.ids().get(0));
+            assertEquals(3073, context.ids().get(1));
+            assertEquals(0, context.ids().get(2));
+            assertEquals(KeyIdHasher.FOUND, context.statuses().get(2));
+        }
+
+        // every key keeps its id across the rehash
+        final long[] all = new long[3074];
+        for (int ii = 0; ii < all.length; ++ii) {
+            all[ii] = ii;
+        }
+        try (final KeyIdHasher.Context context = hasher.makeContext(all.length)) {
+            // noinspection unchecked
+            hasher.probe(context, new Chunk[] {LongChunk.chunkWrap(all)});
+            for (int ii = 0; ii < all.length; ++ii) {
+                assertEquals(ii, context.ids().get(ii));
+            }
+        }
+    }
+
+    @Test
+    public void testCompleteRejectsBuild() {
+        final Table keys = newTable(longCol("K", 5, 6, 5));
+        final StaticKeyIdHasherTypedBase hasher = StaticKeyIdHasherTypedBase.make(sources(keys), 16, 0.75);
+        hasher.build(keys.getRowSet(), sources(keys), (rows, ids, statuses) -> {
+        });
+        hasher.complete();
+
+        // probes are unaffected
+        hasher.probe(keys.getRowSet(), sources(keys), false, (rows, ids, statuses) -> {
+            assertEquals(0, ids.get(0));
+            assertEquals(1, ids.get(1));
+            assertEquals(0, ids.get(2));
+        });
+
+        // a build of no rows changes nothing, so it is allowed; a build of any rows throws
+        final Table none = newTable(longCol("K"));
+        hasher.build(none.getRowSet(), sources(none), (rows, ids, statuses) -> fail());
+        assertThrows(IllegalStateException.class,
+                () -> hasher.build(keys.getRowSet(), sources(keys), (rows, ids, statuses) -> {
+                }));
+        assertEquals(2, hasher.size());
+    }
+
     private static Table singleKeyTable(final Random random, final int step) {
         // later steps draw from more keys, so that the table keeps growing
         final int size = random.nextInt(20_000);

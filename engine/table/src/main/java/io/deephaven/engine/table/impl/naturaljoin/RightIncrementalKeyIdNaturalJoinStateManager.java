@@ -96,6 +96,7 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
     public void buildFromLeftSide(final Table leftTable, final ColumnSource<?>[] leftSources,
             final InitialBuildContext ibc) {
         if (leftTable.isEmpty()) {
+            hasher.complete();
             return;
         }
         hasher.build(leftTable.getRowSet(), leftSources, (rows, ids, statuses) -> {
@@ -114,6 +115,7 @@ public class RightIncrementalKeyIdNaturalJoinStateManager extends RightIncrement
                 }
             }
         });
+        hasher.complete();
     }
 
     @Override

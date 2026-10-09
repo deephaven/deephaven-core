@@ -112,7 +112,7 @@ public class TypedHasherFactory {
                     .supportRehash(true);
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "idValue", false, false, false,
-                    TypedKeyIdFactory::found, TypedKeyIdFactory::insert, keyIdsParam(), keyStatusesParam()));
+                    TypedKeyIdFactory::found, TypedKeyIdFactory::staticInsert, keyIdsParam(), keyStatusesParam()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
                     TypedKeyIdFactory::found, TypedKeyIdFactory::probeMissing, keyIdsParam(), keyStatusesParam()));

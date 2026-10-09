@@ -77,6 +77,7 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
     public void buildFromLeftSide(final Table leftTable, final ColumnSource<?>[] leftSources,
             final IntegerArraySource leftHashSlots) {
         if (leftTable.isEmpty()) {
+            hasher.complete();
             return;
         }
         leftHashSlots.ensureCapacity(leftTable.size());
@@ -94,11 +95,13 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
             }
             offset[0] = chunkOffset + size;
         });
+        hasher.complete();
     }
 
     @Override
     public void buildFromRightSide(final Table rightTable, final ColumnSource<?>[] rightSources) {
         if (rightTable.isEmpty()) {
+            hasher.complete();
             return;
         }
         hasher.build(rightTable.getRowSet(), rightSources, (rows, ids, statuses) -> {
@@ -118,6 +121,7 @@ public class StaticKeyIdNaturalJoinStateManager extends StaticHashedNaturalJoinS
                 }
             }
         });
+        hasher.complete();
     }
 
     @Override

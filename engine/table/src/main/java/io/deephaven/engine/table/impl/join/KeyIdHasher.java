@@ -266,7 +266,8 @@ public abstract class KeyIdHasher {
     public abstract long size();
 
     /**
-     * Make room to insert up to {@code nextChunkSize} keys.
+     * Called before each chunk of {@code nextChunkSize} rows is built: make room to insert them, unless the table grows
+     * as it inserts, and check that a build is allowed.
      */
     protected abstract void prepareForChunk(Context context, int nextChunkSize);
 

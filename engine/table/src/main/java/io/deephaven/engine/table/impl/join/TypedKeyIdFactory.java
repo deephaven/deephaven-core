@@ -23,6 +23,14 @@ public class TypedKeyIdFactory {
         builder.addStatement("statuses.set(chunkPosition, ADDED)");
     }
 
+    /**
+     * The insertion for a {@link StaticKeyIdHasherTypedBase}, which grows as soon as the table is over its load factor.
+     */
+    public static void staticInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
+        insert(hasherConfig, builder);
+        builder.addStatement("growIfFull()");
+    }
+
     public static void probeMissing(CodeBlock.Builder builder) {
         builder.addStatement("ids.set(chunkPosition, NULL_ID)");
         builder.addStatement("statuses.set(chunkPosition, MISSING)");

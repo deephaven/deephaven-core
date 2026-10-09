@@ -54,6 +54,7 @@ class StaticChunkedCrossJoinStateManager
             @NotNull final ColumnSource<?>[] rightKeys) {
         hasher.build(rightTable.getRowSet(), rightKeys,
                 (rows, ids, statuses) -> rightRowSets.add(rows, ids, hasher.idCapacity()));
+        hasher.complete();
         rightRowSets.build(hasher.idCapacity());
 
         // We can now validate key-space after all of our right rows have been aggregated into groups, which determined
@@ -93,6 +94,7 @@ class StaticChunkedCrossJoinStateManager
                 leftRowSetToSlot.put(rowKeys.get(ii), ids.get(ii));
             }
         });
+        hasher.complete();
 
         // only the keys that are on the left need right rows
         hasher.probe(rightTable.getRowSet(), rightKeys, false,

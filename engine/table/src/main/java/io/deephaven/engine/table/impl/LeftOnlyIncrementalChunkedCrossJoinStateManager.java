@@ -88,6 +88,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             @NotNull final ColumnSource<?>[] rightKeys) {
         hasher.build(rightTable.getRowSet(), rightKeys,
                 (rows, slots, statuses) -> rightRowSets.add(rows, slots, hasher.idCapacity()));
+        hasher.complete();
         rightRowSets.build(hasher.idCapacity());
 
         final int numBitsNeeded = CrossJoinShiftState.getMinBits(rightRowSets.maxGroupSize() - 1);

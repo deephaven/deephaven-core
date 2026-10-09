@@ -55,6 +55,7 @@ final class StaticKeyIdHasherChar extends StaticKeyIdHasherTypedBase {
                     mainId.set(tableLocation, id);
                     ids.set(chunkPosition, id);
                     statuses.set(chunkPosition, ADDED);
+                    growIfFull();
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     ids.set(chunkPosition, idValue);
