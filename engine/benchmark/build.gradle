@@ -70,6 +70,8 @@ createJmhTask('jmhRunNaturalJoinIncrementalUpdate', 'NaturalJoinIncrementalUpdat
 createJmhTask('jmhRunNaturalJoinBuild', 'NaturalJoinBuildBenchmark')
 createJmhTask('jmhRunNaturalJoinChurn', 'NaturalJoinChurnBenchmark')
 createJmhTask('jmhRunNaturalJoinLeftReprobe', 'NaturalJoinLeftReprobeBenchmark')
+createJmhTask('jmhRunAsOfJoinBuild', 'AsOfJoinBuildBenchmark')
+createJmhTask('jmhRunAsOfJoinUpdate', 'AsOfJoinUpdateBenchmark')
 createJmhTask('jmhRunCrossJoin', 'CrossJoin.*Benchmark')
 createJmhTask('jmhRunSymbolTableCombiner', 'SymbolTableCombinerBenchmark')
 createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
