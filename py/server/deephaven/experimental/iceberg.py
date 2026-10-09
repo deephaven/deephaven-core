@@ -130,6 +130,7 @@ class IcebergReadInstructions(JObjectWrapper):
         update_mode: Optional[IcebergUpdateMode] = None,
         snapshot_id: Optional[int] = None,
         ignore_resolving_errors: bool = False,
+        pruning_expression: Optional[jpy.JType] = None,
     ):
         """
         Initializes the instructions using the provided parameters.
@@ -147,6 +148,13 @@ class IcebergReadInstructions(JObjectWrapper):
                 null data for columns that can't be resolved in DataFiles where they should be present. These errors may
                 be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
                 `False`.
+            pruning_expression (Optional[jpy.JType]): an `org.apache.iceberg.expressions.Expression` used to prune the
+                Iceberg data files that are read, built via
+                `jpy.get_type("org.apache.iceberg.expressions.Expressions")`. This prunes, it does not filter: the
+                result is a superset of the matching rows, so apply an equivalent Deephaven filter for an exact answer.
+                Field names resolve against the Iceberg schema, not Deephaven column names. Note that jpy narrows
+                Python ints, so numeric and temporal predicates must be built from a typed literal, as in
+                `Expressions.predicate(Operation.EQ, "IntCol", Literal.of(100))`, rather than `Expressions.equal`.
         Raises:
             DHError: If unable to build the instructions object.
         """
@@ -178,6 +186,9 @@ class IcebergReadInstructions(JObjectWrapper):
                 builder.snapshotId(snapshot_id)
 
             builder.ignoreResolvingErrors(ignore_resolving_errors)
+
+            if pruning_expression is not None:
+                builder.pruningExpression(pruning_expression)
 
             self._j_object = builder.build()
         except Exception as e:
@@ -715,6 +726,7 @@ class IcebergTableAdapter(JObjectWrapper):
         update_mode: Optional[IcebergUpdateMode] = None,
         data_instructions: Optional[s3.S3Instructions] = None,
         ignore_resolving_errors: bool = False,
+        pruning_expression: Optional[jpy.JType] = None,
     ) -> IcebergTable:
         """
         Reads the table using the provided instructions.
@@ -731,15 +743,25 @@ class IcebergTableAdapter(JObjectWrapper):
                 null data for columns that can't be resolved in DataFiles where they should be present. These errors may
                 be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
                 `False`.
+            pruning_expression (Optional[jpy.JType]): an `org.apache.iceberg.expressions.Expression` used to prune the
+                Iceberg data files that are read. See
+                :class:`IcebergReadInstructions <IcebergReadInstructions>`; this prunes, it does not filter.
         Returns:
             the table read from the catalog.
         """
-        if snapshot_id or update_mode or data_instructions or ignore_resolving_errors:
+        if (
+            snapshot_id
+            or update_mode
+            or data_instructions
+            or ignore_resolving_errors
+            or pruning_expression is not None
+        ):
             instructions = IcebergReadInstructions(
                 snapshot_id=snapshot_id,
                 update_mode=update_mode,
                 data_instructions=data_instructions,
                 ignore_resolving_errors=ignore_resolving_errors,
+                pruning_expression=pruning_expression,
             )
         elif instructions:
             warn(
