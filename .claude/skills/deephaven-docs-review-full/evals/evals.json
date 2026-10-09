@@ -3,8 +3,8 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
-      "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries — and it catches the view/update_view deferred-evaluation error.",
+      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
+      "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries \u2014 and it catches the view/update_view deferred-evaluation error.",
       "files": [
         "../eval-fixtures/parallelization-pre-review.md"
       ],
@@ -45,13 +45,15 @@
       ]
     },
     {
-      "prompt": "This is a DOC-1560 audit fix: overhaul the Groovy rollup tables how-to guide and apply the fixes. Work on the copy at .claude/skills/deephaven-docs-review-full/evals/files/rollup/groovy-rollup-table.md, which stands for docs/groovy/how-to-guides/rollup-table.md (resolve relative links from that path). Edit only that copy, never the files under docs/. When you're done, tell me what you changed and anything you couldn't resolve.",
+      "prompt": "This is a DOC-1560 audit fix: overhaul the Groovy rollup tables how-to guide and apply the fixes. Work on the copy at .claude/skills/deephaven-docs-review-full/evals/files/rollup/groovy-rollup-table.md, which stands for docs/groovy/how-to-guides/rollup-table.md (resolve relative links from that path). The recorded audit findings for the Python and Groovy rollup pages (from Jira DOC-1620 and DOC-1908) are in .claude/skills/deephaven-docs-review-full/evals/files/rollup-findings/rollup-table-recorded-findings.md. Edit only that copy, never the files under docs/ or the findings file. When you're done, tell me what you changed and anything you couldn't resolve.",
       "expected_output": "Fixes the page's wrong claims, including the aggregations marked unsupported that rollup supports, while keeping accurate content: the TODO (or retargets it), the root node / leaf node / constituent vocabulary, and the null-value NOTE. Lists problems found on other pages, such as the rollup reference page, as follow-up instead of editing them.",
       "files": [
-        "evals/files/rollup/groovy-rollup-table.md"
+        "evals/files/rollup/groovy-rollup-table.md",
+        "evals/files/rollup-findings/rollup-table-recorded-findings.md"
       ],
       "expectations": [
         "Corrects the aggregations table where it marks as unsupported an aggregation rollup supports (for example AggGroup), against source",
+        "Applies the recorded minor and style findings for the Groovy page that hold up against source, not only the wrong ones: for example adds the AggApproxPct row to the table and gives the syntax block a syntax tag",
         "Keeps the TODO comment about a hierarchy concept guide (unchanged, or retargeted to a live ticket), rather than deleting it",
         "Keeps the vocabulary the page defines: root node, leaf nodes, and constituents all still appear and are defined (a corrected definition passes)",
         "Keeps the NOTE that a column no longer part of the aggregation key is replaced with null on each level (verbatim or with the same meaning)",

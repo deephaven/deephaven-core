@@ -66,3 +66,16 @@ Copilot pointed out that several worked examples in the skills named the exact d
 | 3 | 12/12 | 11/12 | 10/12, then 12/12 |
 
 - With general examples, both runs renamed variables and headings or reworded a correct note without a reason. The keep-accurate rule now says not to rename variables, tables, or headings or recast a correct note unless a finding calls for it, and to give a reason for every listed change. The rerun scored 12/12.
+
+### Eval 3 with the recorded findings supplied
+
+The audit exception now requires the caller's list of recorded findings (Copilot noted the skill had no way to get them). Eval 3 now passes the rollup page's real recorded findings (Jira DOC-1620 and DOC-1908) as a fixture and adds an expectation that the recorded minor and style findings that hold up are applied, not only the wrong ones. Both configurations were rerun (2 runs each).
+
+| Eval | main | new |
+| --- | --- | --- |
+| 3 (7 expectations) | 10/14 | 14/14 |
+
+- Both `main` runs applied the recorded finding that said to delete the TODO, which is stale: the hierarchy guide was never written. Both new runs checked it and kept the TODO.
+- Both `main` runs copied the recorded fix wording that replaced "leaf nodes" with "the _leaf_ level", dropping a term the page defines. Both new runs kept it.
+- Every run applied the minor and style findings (the `AggApproxPct` row, the `syntax` tag, tense and voice fixes).
+
