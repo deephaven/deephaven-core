@@ -143,7 +143,8 @@ If the user asked for edits:
    verification: check each restored claim against current source like any other claim (the code may
    have changed since that change merged), and if the source now contradicts it, raise that with the
    other author rather than dropping or rewriting their correction silently. Also check renamed or moved files from that change: links to the
-   old paths break even when the merge reports no conflict.
+   old paths break even when the merge reports no conflict. Resolving conflicts can restore or
+   rewrite text after steps 3–5 ran, so run steps 3–5 again on the merged pages before you push.
 
 ## 4a. Check your own proposed text
 

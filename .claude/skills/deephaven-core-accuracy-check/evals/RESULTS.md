@@ -69,3 +69,5 @@ Copilot pointed out that several worked examples in the skills named the exact d
 | 6 | 5/8 | 8/8 | 8/8 |
 
 - Eval 4: one run still raised the `START_OPTS` concern as a hedged finding with an author query; the other took the console type from the published image's property file.
+
+- Coverage gap: no accuracy-check eval yet exercises the deprecation rule (a runnable but deprecated API, with `@Deprecated` or "Use X instead" as evidence) or checks that the Python and Groovy twins are both reviewed. Copilot flagged this on #8860; it's follow-up work.
