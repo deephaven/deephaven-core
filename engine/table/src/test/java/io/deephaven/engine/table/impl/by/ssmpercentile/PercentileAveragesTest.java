@@ -52,6 +52,29 @@ public class PercentileAveragesTest {
                         doubleCol("D", lowestDouble * 0.75)));
     }
 
+    /**
+     * An infinite value is not halved: averaging it with a finite value gives the infinity, and averaging the two
+     * infinities gives NaN.
+     */
+    @Test
+    public void testAverageOfInfinities() {
+        checkAverages(
+                newTable(floatCol("F", 1.0f, Float.POSITIVE_INFINITY),
+                        doubleCol("D", 1.0, Double.POSITIVE_INFINITY)),
+                newTable(floatCol("F", Float.POSITIVE_INFINITY),
+                        doubleCol("D", Double.POSITIVE_INFINITY)));
+        checkAverages(
+                newTable(floatCol("F", Float.NEGATIVE_INFINITY, 1.0f),
+                        doubleCol("D", Double.NEGATIVE_INFINITY, 1.0)),
+                newTable(floatCol("F", Float.NEGATIVE_INFINITY),
+                        doubleCol("D", Double.NEGATIVE_INFINITY)));
+        checkAverages(
+                newTable(floatCol("F", Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY),
+                        doubleCol("D", Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)),
+                newTable(floatCol("F", Float.NaN),
+                        doubleCol("D", Double.NaN)));
+    }
+
     private static void checkAverages(final Table data, final Table expected) {
         final QueryTable refreshing = new QueryTable(data.getRowSet().copy().toTracking(), data.getColumnSourceMap());
         refreshing.setRefreshing(true);
