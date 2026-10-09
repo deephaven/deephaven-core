@@ -54,7 +54,7 @@ The columns from the right table to add to the left table based on key. The defa
 </Param>
 <Param name="reserve_bits" type="int" optional>
 
-The number of bits of each result row key to reserve for the right table rows that match a left table row. The default value is `None`, which uses the configured value (10 bits unless configured otherwise).
+The number of bits of each result row key to reserve for the right table rows that match a left table row, between 1 and 62 (inclusive). The default value is `None`, which uses the configured value (10 bits unless configured otherwise). A join whose result can never change, such as a join of two static tables, ignores `reserve_bits` and uses just enough bits for its right rows.
 
 </Param>
 </ParamTable>
