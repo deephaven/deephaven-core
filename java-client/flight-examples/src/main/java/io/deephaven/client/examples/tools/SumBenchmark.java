@@ -1,13 +1,19 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.client.examples;
+package io.deephaven.client.examples.tools;
 
+import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.client.examples.AuthenticationOptions;
+import io.deephaven.client.examples.BatchOrSerialOptions;
+import io.deephaven.client.examples.ConnectOptions;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.FlightSessionFactoryConfig;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
-import io.deephaven.qst.table.EmptyTable;
+import io.deephaven.qst.TableCreationLogic;
+import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.memory.BufferAllocator;
@@ -15,19 +21,23 @@ import org.apache.arrow.memory.RootAllocator;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Sends a query, reads the result back over Arrow Flight, and prints it as TSV.
+ * Benchmark tool: sums the integers below a count on the server with a single aggregation, reads the one-row result
+ * back over Arrow Flight, and reports the time taken.
  */
-@Command(name = "get-tsv", mixinStandardHelpOptions = true,
-        description = "Send a QST, get the results, and convert to a TSV", version = "0.1.0")
-class GetTsv implements Callable<Void> {
+@Command(name = "sum-benchmark", mixinStandardHelpOptions = true,
+        description = "Sum up to the count and print out the results",
+        version = "0.1.0")
+class SumBenchmark implements Callable<Void> {
 
     @ArgGroup(exclusive = false)
     ConnectOptions connectOptions;
@@ -38,13 +48,23 @@ class GetTsv implements Callable<Void> {
     @ArgGroup(exclusive = true)
     BatchOrSerialOptions mode;
 
+    @Option(names = {"-c", "--count"}, description = "The number of sums, defaults to 100000000",
+            defaultValue = "100000000")
+    long count;
+
+    /**
+     * The table logic, written against {@link TableOperations} so it can run against any implementation.
+     */
+    <T extends TableOperations<T, T>> T create(TableCreator<T> c) {
+        return c.of(TableSpec.empty(count))
+                .view("I=i")
+                .aggBy(Collections.singleton(Aggregation.AggSum("Sum=I")), Collections.emptyList());
+    }
+
     @Override
     public Void call() throws Exception {
-        // Arrow memory for the data read and written over Flight
         final BufferAllocator allocator = new RootAllocator();
-        // The scheduler runs the client's background work, such as refreshing the session token
         final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-        // The factory holds the connection; each session it opens is one authenticated login on that connection
         final FlightSessionFactoryConfig.Factory factory = FlightSessionFactoryConfig.builder()
                 .clientConfig(ConnectOptions.options(connectOptions).config())
                 .sessionConfig(AuthenticationOptions.sessionConfig(authenticationOptions))
@@ -52,18 +72,12 @@ class GetTsv implements Callable<Void> {
                 .scheduler(scheduler)
                 .build()
                 .factory();
-        // A FlightSession pairs a Session (tables, consoles, publishing) with an Arrow Flight client (bulk data)
         try (final FlightSession flight = factory.newFlightSession()) {
             try {
-                // A TableSpec describes a table; nothing runs until the server executes it
-                final TableSpec table = EmptyTable.of(42).view("I=ii");
-                // Batch sends a whole query as one request; serial sends one operation per request
                 final TableHandleManager manager = BatchOrSerialOptions.manager(mode, flight.session());
                 final long start = System.nanoTime();
-                // Executing the spec returns a TableHandle, a server-side export released when the handle is closed.
-                // DoGet on the handle streams the table's rows back as Arrow record batches.
                 try (
-                        final TableHandle handle = manager.execute(table);
+                        final TableHandle handle = manager.executeLogic((TableCreationLogic) this::create);
                         final FlightStream stream = flight.stream(handle)) {
                     System.out.println(stream.getSchema());
                     while (stream.next()) {
@@ -83,6 +97,6 @@ class GetTsv implements Callable<Void> {
     }
 
     public static void main(String[] args) {
-        System.exit(new CommandLine(new GetTsv()).execute(args));
+        System.exit(new CommandLine(new SumBenchmark()).execute(args));
     }
 }
