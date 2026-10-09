@@ -102,6 +102,24 @@ noAggRollup = insurance.rollup([], true, "region", "age")
 insuranceRollup = insurance.rollup(aggList, true, "region", "age")
 ```
 
+### Weighted averages and grouped values
+
+`rollup` also supports [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md) and [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md). In this example, `AvgPrice` is each group's average price weighted by `Qty`, and `Prices` holds each group's prices as an array. At the `Region` level, both columns cover every store in the region.
+
+```groovy order=sales,salesRollup
+import static io.deephaven.api.agg.Aggregation.AggGroup
+import static io.deephaven.api.agg.Aggregation.AggWAvg
+
+sales = newTable(
+    stringCol("Region", "East", "East", "East", "West", "West"),
+    stringCol("Store", "A", "A", "B", "C", "C"),
+    doubleCol("Price", 10.0, 20.0, 15.0, 12.0, 18.0),
+    intCol("Qty", 1, 3, 2, 4, 1)
+)
+
+salesRollup = sales.rollup([AggWAvg("Qty", "AvgPrice = Price"), AggGroup("Prices = Price")], "Region", "Store")
+```
+
 ### Real-time data
 
 The following example uses [`timeTable`](../reference/table-operations/create/timeTable.md) to create a ticking table that adds one row per second. Each row gets a random `Group` from 0 to 9 and a random `Subgroup` of `A` or `B`. `Value` is centered on `Group * 10`, with more random spread in subgroup `B` than in subgroup `A`.

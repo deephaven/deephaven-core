@@ -96,6 +96,32 @@ insurance_rollup = insurance.rollup(
 )
 ```
 
+### Weighted averages and grouped values
+
+`rollup` also supports [`weighted_avg`](../reference/table-operations/group-and-aggregate/AggWAvg.md) and [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md). In this example, `AvgPrice` is each group's average price weighted by `Qty`, and `Prices` holds each group's prices as an array. At the `Region` level, both columns cover every store in the region.
+
+```python order=sales,sales_rollup
+from deephaven import new_table, agg
+from deephaven.column import string_col, double_col, int_col
+
+sales = new_table(
+    [
+        string_col("Region", ["East", "East", "East", "West", "West"]),
+        string_col("Store", ["A", "A", "B", "C", "C"]),
+        double_col("Price", [10.0, 20.0, 15.0, 12.0, 18.0]),
+        int_col("Qty", [1, 3, 2, 4, 1]),
+    ]
+)
+
+sales_rollup = sales.rollup(
+    aggs=[
+        agg.weighted_avg(wcol="Qty", cols="AvgPrice = Price"),
+        agg.group(cols="Prices = Price"),
+    ],
+    by=["Region", "Store"],
+)
+```
+
 ### Real-time data
 
 The following example uses [`time_table`](../reference/table-operations/create/timeTable.md) to create a ticking table that adds one row per second. Each row gets a random `Group` from 0 to 9 and a random `Subgroup` of `A` or `B`. `Value` is centered on `Group * 10`, with more random spread in subgroup `B` than in subgroup `A`.
