@@ -5,132 +5,150 @@ isort:skip_file
 Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.message
+from collections import abc as _abc
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-@typing.final
-class AuthenticationConstantsRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    def __init__(
-        self,
-    ) -> None: ...
-
-Global___AuthenticationConstantsRequest: typing_extensions.TypeAlias = AuthenticationConstantsRequest
-
-@typing.final
-class ConfigurationConstantsRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class AuthenticationConstantsRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ConfigurationConstantsRequest: typing_extensions.TypeAlias = ConfigurationConstantsRequest
+Global___AuthenticationConstantsRequest: _TypeAlias = AuthenticationConstantsRequest  # noqa: Y015
 
-@typing.final
-class AuthenticationConstantsResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ConfigurationConstantsRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class ConfigValuesEntry(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    def __init__(
+        self,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-        KEY_FIELD_NUMBER: builtins.int
-        VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
-        @property
+Global___ConfigurationConstantsRequest: _TypeAlias = ConfigurationConstantsRequest  # noqa: Y015
+
+@_typing.final
+class AuthenticationConstantsResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    @_typing.final
+    class ConfigValuesEntry(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: _builtins.int
+        VALUE_FIELD_NUMBER: _builtins.int
+        key: _builtins.str
+        @_builtins.property
         def value(self) -> Global___ConfigValue: ...
         def __init__(
             self,
             *,
-            key: builtins.str = ...,
+            key: _builtins.str = ...,
             value: Global___ConfigValue | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["value", b"value"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["key", b"key", "value", b"value"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["value", b"value"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["key", b"key", "value", b"value"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    CONFIG_VALUES_FIELD_NUMBER: builtins.int
-    @property
-    def config_values(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, Global___ConfigValue]: ...
+    CONFIG_VALUES_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def config_values(self) -> _containers.MessageMap[_builtins.str, Global___ConfigValue]: ...
     def __init__(
         self,
         *,
-        config_values: collections.abc.Mapping[builtins.str, Global___ConfigValue] | None = ...,
+        config_values: _abc.Mapping[_builtins.str, Global___ConfigValue] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["config_values", b"config_values"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["config_values", b"config_values"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___AuthenticationConstantsResponse: typing_extensions.TypeAlias = AuthenticationConstantsResponse
+Global___AuthenticationConstantsResponse: _TypeAlias = AuthenticationConstantsResponse  # noqa: Y015
 
-@typing.final
-class ConfigurationConstantsResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ConfigurationConstantsResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class ConfigValuesEntry(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class ConfigValuesEntry(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        KEY_FIELD_NUMBER: builtins.int
-        VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
-        @property
+        KEY_FIELD_NUMBER: _builtins.int
+        VALUE_FIELD_NUMBER: _builtins.int
+        key: _builtins.str
+        @_builtins.property
         def value(self) -> Global___ConfigValue: ...
         def __init__(
             self,
             *,
-            key: builtins.str = ...,
+            key: _builtins.str = ...,
             value: Global___ConfigValue | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["value", b"value"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["key", b"key", "value", b"value"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["value", b"value"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["key", b"key", "value", b"value"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    CONFIG_VALUES_FIELD_NUMBER: builtins.int
-    @property
-    def config_values(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, Global___ConfigValue]: ...
+    CONFIG_VALUES_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def config_values(self) -> _containers.MessageMap[_builtins.str, Global___ConfigValue]: ...
     def __init__(
         self,
         *,
-        config_values: collections.abc.Mapping[builtins.str, Global___ConfigValue] | None = ...,
+        config_values: _abc.Mapping[_builtins.str, Global___ConfigValue] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["config_values", b"config_values"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["config_values", b"config_values"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ConfigurationConstantsResponse: typing_extensions.TypeAlias = ConfigurationConstantsResponse
+Global___ConfigurationConstantsResponse: _TypeAlias = ConfigurationConstantsResponse  # noqa: Y015
 
-@typing.final
-class ConfigValue(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ConfigValue(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    STRING_VALUE_FIELD_NUMBER: builtins.int
-    string_value: builtins.str
+    STRING_VALUE_FIELD_NUMBER: _builtins.int
+    string_value: _builtins.str
     def __init__(
         self,
         *,
-        string_value: builtins.str = ...,
+        string_value: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["kind", b"kind", "string_value", b"string_value"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["kind", b"kind", "string_value", b"string_value"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["kind", b"kind", "string_value", b"string_value"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["kind", b"kind", "string_value", b"string_value"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_kind: typing_extensions.TypeAlias = typing.Literal["string_value"]
-    _WhichOneofArgType_kind: typing_extensions.TypeAlias = typing.Literal["kind", b"kind"]
+    _WhichOneofReturnType_kind: _TypeAlias = _typing.Literal["string_value"]  # noqa: Y015
+    _WhichOneofArgType_kind: _TypeAlias = _typing.Literal["kind", b"kind"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_kind) -> _WhichOneofReturnType_kind | None: ...
 
-Global___ConfigValue: typing_extensions.TypeAlias = ConfigValue
+Global___ConfigValue: _TypeAlias = ConfigValue  # noqa: Y015

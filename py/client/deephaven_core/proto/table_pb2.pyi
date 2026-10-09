@@ -5,34 +5,34 @@ isort:skip_file
 Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import deephaven_core.proto.ticket_pb2
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
+from collections import abc as _abc
+from deephaven_core.proto import ticket_pb2 as _ticket_pb2
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
 if sys.version_info >= (3, 13):
-    from warnings import deprecated
+    from warnings import deprecated as _deprecated
 else:
-    from typing_extensions import deprecated
+    from typing_extensions import deprecated as _deprecated
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
 class _BadDataBehavior:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _BadDataBehaviorEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_BadDataBehavior.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _BadDataBehaviorEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_BadDataBehavior.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     BAD_DATA_BEHAVIOR_NOT_SPECIFIED: _BadDataBehavior.ValueType  # 0
     """When not specified will use the server default."""
     THROW: _BadDataBehavior.ValueType  # 1
@@ -57,14 +57,14 @@ SKIP: BadDataBehavior.ValueType  # 3
 """Skip and do not process the invalid data without changing state."""
 POISON: BadDataBehavior.ValueType  # 4
 """Allow the bad data to poison the result. This is only valid for use with NaN."""
-Global___BadDataBehavior: typing_extensions.TypeAlias = BadDataBehavior
+Global___BadDataBehavior: _TypeAlias = BadDataBehavior  # noqa: Y015
 
 class _UpdateByNullBehavior:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _UpdateByNullBehaviorEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_UpdateByNullBehavior.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _UpdateByNullBehaviorEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_UpdateByNullBehavior.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     NULL_BEHAVIOR_NOT_SPECIFIED: _UpdateByNullBehavior.ValueType  # 0
     """When not specified will use the server default."""
     NULL_DOMINATES: _UpdateByNullBehavior.ValueType  # 1
@@ -85,27 +85,27 @@ VALUE_DOMINATES: UpdateByNullBehavior.ValueType  # 2
 """In the case of Current - null, the current value dominates so Column[i] - null = Column[i]"""
 ZERO_DOMINATES: UpdateByNullBehavior.ValueType  # 3
 """In the case of Current - null, return zero so Column[i] - null = 0"""
-Global___UpdateByNullBehavior: typing_extensions.TypeAlias = UpdateByNullBehavior
+Global___UpdateByNullBehavior: _TypeAlias = UpdateByNullBehavior  # noqa: Y015
 
 class _NullValue:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _NullValueEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_NullValue.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _NullValueEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_NullValue.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     NULL_VALUE: _NullValue.ValueType  # 0
 
 class NullValue(_NullValue, metaclass=_NullValueEnumTypeWrapper): ...
 
 NULL_VALUE: NullValue.ValueType  # 0
-Global___NullValue: typing_extensions.TypeAlias = NullValue
+Global___NullValue: _TypeAlias = NullValue  # noqa: Y015
 
 class _CaseSensitivity:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _CaseSensitivityEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CaseSensitivity.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _CaseSensitivityEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_CaseSensitivity.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     MATCH_CASE: _CaseSensitivity.ValueType  # 0
     IGNORE_CASE: _CaseSensitivity.ValueType  # 1
 
@@ -113,14 +113,14 @@ class CaseSensitivity(_CaseSensitivity, metaclass=_CaseSensitivityEnumTypeWrappe
 
 MATCH_CASE: CaseSensitivity.ValueType  # 0
 IGNORE_CASE: CaseSensitivity.ValueType  # 1
-Global___CaseSensitivity: typing_extensions.TypeAlias = CaseSensitivity
+Global___CaseSensitivity: _TypeAlias = CaseSensitivity  # noqa: Y015
 
 class _MatchType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _MatchTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_MatchType.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _MatchTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_MatchType.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     REGULAR: _MatchType.ValueType  # 0
     INVERTED: _MatchType.ValueType  # 1
 
@@ -128,14 +128,14 @@ class MatchType(_MatchType, metaclass=_MatchTypeEnumTypeWrapper): ...
 
 REGULAR: MatchType.ValueType  # 0
 INVERTED: MatchType.ValueType  # 1
-Global___MatchType: typing_extensions.TypeAlias = MatchType
+Global___MatchType: _TypeAlias = MatchType  # noqa: Y015
 
 class _NanComparison:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _NanComparisonEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_NanComparison.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _NanComparisonEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_NanComparison.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     NAN_COMPARISON_TYPE_NOT_SPECIFIED: _NanComparison.ValueType  # 0
     """defaults to NAN_NOT_EQUALS_NAN"""
     NAN_NOT_EQUALS_NAN: _NanComparison.ValueType  # 1
@@ -152,20 +152,20 @@ NAN_NOT_EQUALS_NAN: NanComparison.ValueType  # 1
 """NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)"""
 NAN_EQUALS_NAN: NanComparison.ValueType  # 2
 """NaN in match list: NaN values will match"""
-Global___NanComparison: typing_extensions.TypeAlias = NanComparison
+Global___NanComparison: _TypeAlias = NanComparison  # noqa: Y015
 
-@typing.final
-class TableReference(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class TableReference(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TICKET_FIELD_NUMBER: builtins.int
-    BATCH_OFFSET_FIELD_NUMBER: builtins.int
-    batch_offset: builtins.int
+    TICKET_FIELD_NUMBER: _builtins.int
+    BATCH_OFFSET_FIELD_NUMBER: _builtins.int
+    batch_offset: _builtins.int
     """An offset into a BatchRequest's ops field, used to reference an intermediate operation which may not have been
     exported. Only valid to set when used in the context of a BatchRequest.
     """
-    @property
-    def ticket(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def ticket(self) -> _ticket_pb2.Ticket:
         """A ticket to resolve to get the table. It's preferable to use export tickets in order to avoid races that are
         possible with tickets controlled by the server, but any ticket type will suffice as long as it resolves to a
         table.
@@ -174,86 +174,88 @@ class TableReference(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        ticket: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        batch_offset: builtins.int = ...,
+        ticket: _ticket_pb2.Ticket | None = ...,
+        batch_offset: _builtins.int = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["batch_offset", b"batch_offset", "ref", b"ref", "ticket", b"ticket"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["batch_offset", b"batch_offset", "ref", b"ref", "ticket", b"ticket"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["batch_offset", b"batch_offset", "ref", b"ref", "ticket", b"ticket"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["batch_offset", b"batch_offset", "ref", b"ref", "ticket", b"ticket"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_ref: typing_extensions.TypeAlias = typing.Literal["ticket", "batch_offset"]
-    _WhichOneofArgType_ref: typing_extensions.TypeAlias = typing.Literal["ref", b"ref"]
+    _WhichOneofReturnType_ref: _TypeAlias = _typing.Literal["ticket", "batch_offset"]  # noqa: Y015
+    _WhichOneofArgType_ref: _TypeAlias = _typing.Literal["ref", b"ref"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_ref) -> _WhichOneofReturnType_ref | None: ...
 
-Global___TableReference: typing_extensions.TypeAlias = TableReference
+Global___TableReference: _TypeAlias = TableReference  # noqa: Y015
 
-@typing.final
-class ExportedTableCreationResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ExportedTableCreationResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SUCCESS_FIELD_NUMBER: builtins.int
-    ERROR_INFO_FIELD_NUMBER: builtins.int
-    SCHEMA_HEADER_FIELD_NUMBER: builtins.int
-    IS_STATIC_FIELD_NUMBER: builtins.int
-    SIZE_FIELD_NUMBER: builtins.int
-    success: builtins.bool
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SUCCESS_FIELD_NUMBER: _builtins.int
+    ERROR_INFO_FIELD_NUMBER: _builtins.int
+    SCHEMA_HEADER_FIELD_NUMBER: _builtins.int
+    IS_STATIC_FIELD_NUMBER: _builtins.int
+    SIZE_FIELD_NUMBER: _builtins.int
+    success: _builtins.bool
     """If this is part of a batch, you may receive creation messages that indicate the sub-operation failed."""
-    error_info: builtins.str
+    error_info: _builtins.str
     """If this is part of a batch, this errorInfo will be the message provided"""
-    schema_header: builtins.bytes
+    schema_header: _builtins.bytes
     """Schema as described in Arrow Message.fbs::Message."""
-    is_static: builtins.bool
+    is_static: _builtins.bool
     """Whether or not this table might change."""
-    size: builtins.int
+    size: _builtins.int
     """The current number of rows for this table. If this is negative, the table isn't coalesced, meaning the
     size isn't known without scanning partitions. Typically, the client should filter the data by the
     partitioning columns first.
     """
-    @property
+    @_builtins.property
     def result_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
         result_id: Global___TableReference | None = ...,
-        success: builtins.bool = ...,
-        error_info: builtins.str = ...,
-        schema_header: builtins.bytes = ...,
-        is_static: builtins.bool = ...,
-        size: builtins.int = ...,
+        success: _builtins.bool = ...,
+        error_info: _builtins.str = ...,
+        schema_header: _builtins.bytes = ...,
+        is_static: _builtins.bool = ...,
+        size: _builtins.int = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["error_info", b"error_info", "is_static", b"is_static", "result_id", b"result_id", "schema_header", b"schema_header", "size", b"size", "success", b"success"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["error_info", b"error_info", "is_static", b"is_static", "result_id", b"result_id", "schema_header", b"schema_header", "size", b"size", "success", b"success"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ExportedTableCreationResponse: typing_extensions.TypeAlias = ExportedTableCreationResponse
+Global___ExportedTableCreationResponse: _TypeAlias = ExportedTableCreationResponse  # noqa: Y015
 
-@typing.final
-class FetchTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class FetchTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    @property
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
         source_id: Global___TableReference | None = ...,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___FetchTableRequest: typing_extensions.TypeAlias = FetchTableRequest
+Global___FetchTableRequest: _TypeAlias = FetchTableRequest  # noqa: Y015
 
-@typing.final
-class ApplyPreviewColumnsRequest(google.protobuf.message.Message):
+@_typing.final
+class ApplyPreviewColumnsRequest(_message.Message):
     """Transforms the source table to avoid complex objects in columns. If no unpreviewed types are defined, this
     defaults to legacy behavior of:
      - Limiting string columns to a server-defined max length
@@ -261,22 +263,22 @@ class ApplyPreviewColumnsRequest(google.protobuf.message.Message):
      - Converting all non-string, non-number, non-date types to their string representation
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    CONVERT_ARRAYS_FIELD_NUMBER: builtins.int
-    UNPREVIEWED_TYPES_FIELD_NUMBER: builtins.int
-    convert_arrays: builtins.bool
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    CONVERT_ARRAYS_FIELD_NUMBER: _builtins.int
+    UNPREVIEWED_TYPES_FIELD_NUMBER: _builtins.int
+    convert_arrays: _builtins.bool
     """True to convert all arrays to strings, limiting to a server-defined max length. Expected to be unset if
     unpreviewed_types is empty.
     """
-    @property
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def unpreviewed_types(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def unpreviewed_types(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
         """Java types to leave unconverted - all other types will be converted to strings. If empty, the server's
         legacy behavior will be used.
         """
@@ -285,177 +287,186 @@ class ApplyPreviewColumnsRequest(google.protobuf.message.Message):
         self,
         *,
         source_id: Global___TableReference | None = ...,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        convert_arrays: builtins.bool = ...,
-        unpreviewed_types: collections.abc.Iterable[builtins.str] | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
+        convert_arrays: _builtins.bool = ...,
+        unpreviewed_types: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["convert_arrays", b"convert_arrays", "result_id", b"result_id", "source_id", b"source_id", "unpreviewed_types", b"unpreviewed_types"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["convert_arrays", b"convert_arrays", "result_id", b"result_id", "source_id", b"source_id", "unpreviewed_types", b"unpreviewed_types"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ApplyPreviewColumnsRequest: typing_extensions.TypeAlias = ApplyPreviewColumnsRequest
+Global___ApplyPreviewColumnsRequest: _TypeAlias = ApplyPreviewColumnsRequest  # noqa: Y015
 
-@typing.final
-class ExportedTableUpdatesRequest(google.protobuf.message.Message):
+@_typing.final
+class ExportedTableUpdatesRequest(_message.Message):
     """Intentionally empty and is here for backwards compatibility should this API change."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ExportedTableUpdatesRequest: typing_extensions.TypeAlias = ExportedTableUpdatesRequest
+Global___ExportedTableUpdatesRequest: _TypeAlias = ExportedTableUpdatesRequest  # noqa: Y015
 
-@typing.final
-class ExportedTableUpdateMessage(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ExportedTableUpdateMessage(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    EXPORT_ID_FIELD_NUMBER: builtins.int
-    SIZE_FIELD_NUMBER: builtins.int
-    UPDATE_FAILURE_MESSAGE_FIELD_NUMBER: builtins.int
-    size: builtins.int
-    update_failure_message: builtins.str
-    @property
-    def export_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    EXPORT_ID_FIELD_NUMBER: _builtins.int
+    SIZE_FIELD_NUMBER: _builtins.int
+    UPDATE_FAILURE_MESSAGE_FIELD_NUMBER: _builtins.int
+    size: _builtins.int
+    update_failure_message: _builtins.str
+    @_builtins.property
+    def export_id(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        export_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        size: builtins.int = ...,
-        update_failure_message: builtins.str = ...,
+        export_id: _ticket_pb2.Ticket | None = ...,
+        size: _builtins.int = ...,
+        update_failure_message: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["export_id", b"export_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["export_id", b"export_id", "size", b"size", "update_failure_message", b"update_failure_message"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["export_id", b"export_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["export_id", b"export_id", "size", b"size", "update_failure_message", b"update_failure_message"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ExportedTableUpdateMessage: typing_extensions.TypeAlias = ExportedTableUpdateMessage
+Global___ExportedTableUpdateMessage: _TypeAlias = ExportedTableUpdateMessage  # noqa: Y015
 
-@typing.final
-class EmptyTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class EmptyTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SIZE_FIELD_NUMBER: builtins.int
-    size: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SIZE_FIELD_NUMBER: _builtins.int
+    size: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        size: builtins.int = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
+        size: _builtins.int = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "size", b"size"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "size", b"size"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___EmptyTableRequest: typing_extensions.TypeAlias = EmptyTableRequest
+Global___EmptyTableRequest: _TypeAlias = EmptyTableRequest  # noqa: Y015
 
-@typing.final
-class TimeTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class TimeTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    START_TIME_NANOS_FIELD_NUMBER: builtins.int
-    START_TIME_STRING_FIELD_NUMBER: builtins.int
-    PERIOD_NANOS_FIELD_NUMBER: builtins.int
-    PERIOD_STRING_FIELD_NUMBER: builtins.int
-    BLINK_TABLE_FIELD_NUMBER: builtins.int
-    start_time_nanos: builtins.int
-    start_time_string: builtins.str
-    period_nanos: builtins.int
-    period_string: builtins.str
-    blink_table: builtins.bool
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    START_TIME_NANOS_FIELD_NUMBER: _builtins.int
+    START_TIME_STRING_FIELD_NUMBER: _builtins.int
+    PERIOD_NANOS_FIELD_NUMBER: _builtins.int
+    PERIOD_STRING_FIELD_NUMBER: _builtins.int
+    BLINK_TABLE_FIELD_NUMBER: _builtins.int
+    start_time_nanos: _builtins.int
+    start_time_string: _builtins.str
+    period_nanos: _builtins.int
+    period_string: _builtins.str
+    blink_table: _builtins.bool
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        start_time_nanos: builtins.int = ...,
-        start_time_string: builtins.str = ...,
-        period_nanos: builtins.int = ...,
-        period_string: builtins.str = ...,
-        blink_table: builtins.bool = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
+        start_time_nanos: _builtins.int = ...,
+        start_time_string: _builtins.str = ...,
+        period_nanos: _builtins.int = ...,
+        period_string: _builtins.str = ...,
+        blink_table: _builtins.bool = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["period", b"period", "period_nanos", b"period_nanos", "period_string", b"period_string", "result_id", b"result_id", "start_time", b"start_time", "start_time_nanos", b"start_time_nanos", "start_time_string", b"start_time_string"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["blink_table", b"blink_table", "period", b"period", "period_nanos", b"period_nanos", "period_string", b"period_string", "result_id", b"result_id", "start_time", b"start_time", "start_time_nanos", b"start_time_nanos", "start_time_string", b"start_time_string"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["period", b"period", "period_nanos", b"period_nanos", "period_string", b"period_string", "result_id", b"result_id", "start_time", b"start_time", "start_time_nanos", b"start_time_nanos", "start_time_string", b"start_time_string"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["blink_table", b"blink_table", "period", b"period", "period_nanos", b"period_nanos", "period_string", b"period_string", "result_id", b"result_id", "start_time", b"start_time", "start_time_nanos", b"start_time_nanos", "start_time_string", b"start_time_string"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_period: typing_extensions.TypeAlias = typing.Literal["period_nanos", "period_string"]
-    _WhichOneofArgType_period: typing_extensions.TypeAlias = typing.Literal["period", b"period"]
-    _WhichOneofReturnType_start_time: typing_extensions.TypeAlias = typing.Literal["start_time_nanos", "start_time_string"]
-    _WhichOneofArgType_start_time: typing_extensions.TypeAlias = typing.Literal["start_time", b"start_time"]
-    @typing.overload
+    _WhichOneofReturnType_period: _TypeAlias = _typing.Literal["period_nanos", "period_string"]  # noqa: Y015
+    _WhichOneofArgType_period: _TypeAlias = _typing.Literal["period", b"period"]  # noqa: Y015
+    _WhichOneofReturnType_start_time: _TypeAlias = _typing.Literal["start_time_nanos", "start_time_string"]  # noqa: Y015
+    _WhichOneofArgType_start_time: _TypeAlias = _typing.Literal["start_time", b"start_time"]  # noqa: Y015
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType_period) -> _WhichOneofReturnType_period | None: ...
-    @typing.overload
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType_start_time) -> _WhichOneofReturnType_start_time | None: ...
 
-Global___TimeTableRequest: typing_extensions.TypeAlias = TimeTableRequest
+Global___TimeTableRequest: _TypeAlias = TimeTableRequest  # noqa: Y015
 
-@typing.final
-class SelectOrUpdateRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SelectOrUpdateRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    COLUMN_SPECS_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    COLUMN_SPECS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def column_specs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def column_specs(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        column_specs: collections.abc.Iterable[builtins.str] | None = ...,
+        column_specs: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_specs", b"column_specs", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["column_specs", b"column_specs", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SelectOrUpdateRequest: typing_extensions.TypeAlias = SelectOrUpdateRequest
+Global___SelectOrUpdateRequest: _TypeAlias = SelectOrUpdateRequest  # noqa: Y015
 
-@typing.final
-class Selectable(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Selectable(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RAW_FIELD_NUMBER: builtins.int
-    raw: builtins.str
+    RAW_FIELD_NUMBER: _builtins.int
+    raw: _builtins.str
     """ColumnExpression column_expression = 2;"""
     def __init__(
         self,
         *,
-        raw: builtins.str = ...,
+        raw: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["raw", b"raw", "type", b"type"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["raw", b"raw", "type", b"type"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["raw", b"raw", "type", b"type"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["raw", b"raw", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_type: typing_extensions.TypeAlias = typing.Literal["raw"]
-    _WhichOneofArgType_type: typing_extensions.TypeAlias = typing.Literal["type", b"type"]
+    _WhichOneofReturnType_type: _TypeAlias = _typing.Literal["raw"]  # noqa: Y015
+    _WhichOneofArgType_type: _TypeAlias = _typing.Literal["type", b"type"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_type) -> _WhichOneofReturnType_type | None: ...
 
-Global___Selectable: typing_extensions.TypeAlias = Selectable
+Global___Selectable: _TypeAlias = Selectable  # noqa: Y015
 
-@typing.final
-class MathContext(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class MathContext(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _RoundingMode:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _RoundingModeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[MathContext._RoundingMode.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _RoundingModeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[MathContext._RoundingMode.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         ROUNDING_MODE_NOT_SPECIFIED: MathContext._RoundingMode.ValueType  # 0
         UP: MathContext._RoundingMode.ValueType  # 1
         DOWN: MathContext._RoundingMode.ValueType  # 2
@@ -477,71 +488,77 @@ class MathContext(google.protobuf.message.Message):
     HALF_EVEN: MathContext.RoundingMode.ValueType  # 7
     UNNECESSARY: MathContext.RoundingMode.ValueType  # 8
 
-    PRECISION_FIELD_NUMBER: builtins.int
-    ROUNDING_MODE_FIELD_NUMBER: builtins.int
-    precision: builtins.int
+    PRECISION_FIELD_NUMBER: _builtins.int
+    ROUNDING_MODE_FIELD_NUMBER: _builtins.int
+    precision: _builtins.int
     rounding_mode: Global___MathContext.RoundingMode.ValueType
     def __init__(
         self,
         *,
-        precision: builtins.int = ...,
+        precision: _builtins.int = ...,
         rounding_mode: Global___MathContext.RoundingMode.ValueType = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["precision", b"precision", "rounding_mode", b"rounding_mode"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["precision", b"precision", "rounding_mode", b"rounding_mode"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MathContext: typing_extensions.TypeAlias = MathContext
+Global___MathContext: _TypeAlias = MathContext  # noqa: Y015
 
-@typing.final
-class UpdateByWindowScale(google.protobuf.message.Message):
+@_typing.final
+class UpdateByWindowScale(_message.Message):
     """Reusable window scale message for the UpdateBy rolling operations."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class UpdateByWindowTicks(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class UpdateByWindowTicks(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        TICKS_FIELD_NUMBER: builtins.int
-        ticks: builtins.float
+        TICKS_FIELD_NUMBER: _builtins.int
+        ticks: _builtins.float
         def __init__(
             self,
             *,
-            ticks: builtins.float = ...,
+            ticks: _builtins.float = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["ticks", b"ticks"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["ticks", b"ticks"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class UpdateByWindowTime(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class UpdateByWindowTime(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COLUMN_FIELD_NUMBER: builtins.int
-        NANOS_FIELD_NUMBER: builtins.int
-        DURATION_STRING_FIELD_NUMBER: builtins.int
-        column: builtins.str
-        nanos: builtins.int
-        duration_string: builtins.str
+        COLUMN_FIELD_NUMBER: _builtins.int
+        NANOS_FIELD_NUMBER: _builtins.int
+        DURATION_STRING_FIELD_NUMBER: _builtins.int
+        column: _builtins.str
+        nanos: _builtins.int
+        duration_string: _builtins.str
         def __init__(
             self,
             *,
-            column: builtins.str = ...,
-            nanos: builtins.int = ...,
-            duration_string: builtins.str = ...,
+            column: _builtins.str = ...,
+            nanos: _builtins.int = ...,
+            duration_string: _builtins.str = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["duration_string", b"duration_string", "nanos", b"nanos", "window", b"window"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column", b"column", "duration_string", b"duration_string", "nanos", b"nanos", "window", b"window"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["duration_string", b"duration_string", "nanos", b"nanos", "window", b"window"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["column", b"column", "duration_string", b"duration_string", "nanos", b"nanos", "window", b"window"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType_window: typing_extensions.TypeAlias = typing.Literal["nanos", "duration_string"]
-        _WhichOneofArgType_window: typing_extensions.TypeAlias = typing.Literal["window", b"window"]
+        _WhichOneofReturnType_window: _TypeAlias = _typing.Literal["nanos", "duration_string"]  # noqa: Y015
+        _WhichOneofArgType_window: _TypeAlias = _typing.Literal["window", b"window"]  # noqa: Y015
         def WhichOneof(self, oneof_group: _WhichOneofArgType_window) -> _WhichOneofReturnType_window | None: ...
 
-    TICKS_FIELD_NUMBER: builtins.int
-    TIME_FIELD_NUMBER: builtins.int
-    @property
+    TICKS_FIELD_NUMBER: _builtins.int
+    TIME_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def ticks(self) -> Global___UpdateByWindowScale.UpdateByWindowTicks: ...
-    @property
+    @_builtins.property
     def time(self) -> Global___UpdateByWindowScale.UpdateByWindowTime: ...
     def __init__(
         self,
@@ -549,34 +566,34 @@ class UpdateByWindowScale(google.protobuf.message.Message):
         ticks: Global___UpdateByWindowScale.UpdateByWindowTicks | None = ...,
         time: Global___UpdateByWindowScale.UpdateByWindowTime | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["ticks", b"ticks", "time", b"time", "type", b"type"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["ticks", b"ticks", "time", b"time", "type", b"type"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["ticks", b"ticks", "time", b"time", "type", b"type"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["ticks", b"ticks", "time", b"time", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_type: typing_extensions.TypeAlias = typing.Literal["ticks", "time"]
-    _WhichOneofArgType_type: typing_extensions.TypeAlias = typing.Literal["type", b"type"]
+    _WhichOneofReturnType_type: _TypeAlias = _typing.Literal["ticks", "time"]  # noqa: Y015
+    _WhichOneofArgType_type: _TypeAlias = _typing.Literal["type", b"type"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_type) -> _WhichOneofReturnType_type | None: ...
 
-Global___UpdateByWindowScale: typing_extensions.TypeAlias = UpdateByWindowScale
+Global___UpdateByWindowScale: _TypeAlias = UpdateByWindowScale  # noqa: Y015
 
-@typing.final
-class UpdateByEmOptions(google.protobuf.message.Message):
+@_typing.final
+class UpdateByEmOptions(_message.Message):
     """Reusable options for the UpdateBy exponential moving operations."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    ON_NULL_VALUE_FIELD_NUMBER: builtins.int
-    ON_NAN_VALUE_FIELD_NUMBER: builtins.int
-    ON_NULL_TIME_FIELD_NUMBER: builtins.int
-    ON_NEGATIVE_DELTA_TIME_FIELD_NUMBER: builtins.int
-    ON_ZERO_DELTA_TIME_FIELD_NUMBER: builtins.int
-    BIG_VALUE_CONTEXT_FIELD_NUMBER: builtins.int
+    ON_NULL_VALUE_FIELD_NUMBER: _builtins.int
+    ON_NAN_VALUE_FIELD_NUMBER: _builtins.int
+    ON_NULL_TIME_FIELD_NUMBER: _builtins.int
+    ON_NEGATIVE_DELTA_TIME_FIELD_NUMBER: _builtins.int
+    ON_ZERO_DELTA_TIME_FIELD_NUMBER: _builtins.int
+    BIG_VALUE_CONTEXT_FIELD_NUMBER: _builtins.int
     on_null_value: Global___BadDataBehavior.ValueType
     on_nan_value: Global___BadDataBehavior.ValueType
     on_null_time: Global___BadDataBehavior.ValueType
     on_negative_delta_time: Global___BadDataBehavior.ValueType
     on_zero_delta_time: Global___BadDataBehavior.ValueType
-    @property
+    @_builtins.property
     def big_value_context(self) -> Global___MathContext: ...
     def __init__(
         self,
@@ -588,183 +605,212 @@ class UpdateByEmOptions(google.protobuf.message.Message):
         on_zero_delta_time: Global___BadDataBehavior.ValueType = ...,
         big_value_context: Global___MathContext | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["big_value_context", b"big_value_context"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["big_value_context", b"big_value_context", "on_nan_value", b"on_nan_value", "on_negative_delta_time", b"on_negative_delta_time", "on_null_time", b"on_null_time", "on_null_value", b"on_null_value", "on_zero_delta_time", b"on_zero_delta_time"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["big_value_context", b"big_value_context"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["big_value_context", b"big_value_context", "on_nan_value", b"on_nan_value", "on_negative_delta_time", b"on_negative_delta_time", "on_null_time", b"on_null_time", "on_null_value", b"on_null_value", "on_zero_delta_time", b"on_zero_delta_time"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___UpdateByEmOptions: typing_extensions.TypeAlias = UpdateByEmOptions
+Global___UpdateByEmOptions: _TypeAlias = UpdateByEmOptions  # noqa: Y015
 
-@typing.final
-class UpdateByDeltaOptions(google.protobuf.message.Message):
+@_typing.final
+class UpdateByDeltaOptions(_message.Message):
     """Reusable options for the UpdateBy delta operation."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    NULL_BEHAVIOR_FIELD_NUMBER: builtins.int
+    NULL_BEHAVIOR_FIELD_NUMBER: _builtins.int
     null_behavior: Global___UpdateByNullBehavior.ValueType
     def __init__(
         self,
         *,
         null_behavior: Global___UpdateByNullBehavior.ValueType = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["null_behavior", b"null_behavior"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["null_behavior", b"null_behavior"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___UpdateByDeltaOptions: typing_extensions.TypeAlias = UpdateByDeltaOptions
+Global___UpdateByDeltaOptions: _TypeAlias = UpdateByDeltaOptions  # noqa: Y015
 
-@typing.final
-class UpdateByRequest(google.protobuf.message.Message):
+@_typing.final
+class UpdateByRequest(_message.Message):
     """Create a table with the same rowset as its parent that will perform the specified set of row
     based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
     capable of processing state between rows. This operation will group the table by the specified set of keys if
     provided before applying the operation.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class UpdateByOptions(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class UpdateByOptions(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        USE_REDIRECTION_FIELD_NUMBER: builtins.int
-        CHUNK_CAPACITY_FIELD_NUMBER: builtins.int
-        MAX_STATIC_SPARSE_MEMORY_OVERHEAD_FIELD_NUMBER: builtins.int
-        INITIAL_HASH_TABLE_SIZE_FIELD_NUMBER: builtins.int
-        MAXIMUM_LOAD_FACTOR_FIELD_NUMBER: builtins.int
-        TARGET_LOAD_FACTOR_FIELD_NUMBER: builtins.int
-        MATH_CONTEXT_FIELD_NUMBER: builtins.int
-        use_redirection: builtins.bool
+        USE_REDIRECTION_FIELD_NUMBER: _builtins.int
+        CHUNK_CAPACITY_FIELD_NUMBER: _builtins.int
+        MAX_STATIC_SPARSE_MEMORY_OVERHEAD_FIELD_NUMBER: _builtins.int
+        INITIAL_HASH_TABLE_SIZE_FIELD_NUMBER: _builtins.int
+        MAXIMUM_LOAD_FACTOR_FIELD_NUMBER: _builtins.int
+        TARGET_LOAD_FACTOR_FIELD_NUMBER: _builtins.int
+        MATH_CONTEXT_FIELD_NUMBER: _builtins.int
+        use_redirection: _builtins.bool
         """If redirections should be used for output sources instead of sparse array sources.
         If unset, defaults to server-provided defaults.
         """
-        chunk_capacity: builtins.int
+        chunk_capacity: _builtins.int
         """The maximum chunk capacity.
         If unset, defaults to server-provided defaults.
         """
-        max_static_sparse_memory_overhead: builtins.float
+        max_static_sparse_memory_overhead: _builtins.float
         """The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
         overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
         value of zero results in never using the sparse structure.
         If unset, defaults to server-provided defaults.
         """
-        initial_hash_table_size: builtins.int
+        initial_hash_table_size: _builtins.int
         """The initial hash table size.
         If unset, defaults to server-provided defaults.
         """
-        maximum_load_factor: builtins.float
+        maximum_load_factor: _builtins.float
         """The maximum load factor for the hash table.
         If unset, defaults to server-provided defaults.
         """
-        target_load_factor: builtins.float
+        target_load_factor: _builtins.float
         """The target load factor for the hash table.
         If unset, defaults to server-provided defaults.
         """
-        @property
+        @_builtins.property
         def math_context(self) -> Global___MathContext:
             """The math context."""
 
         def __init__(
             self,
             *,
-            use_redirection: builtins.bool | None = ...,
-            chunk_capacity: builtins.int | None = ...,
-            max_static_sparse_memory_overhead: builtins.float | None = ...,
-            initial_hash_table_size: builtins.int | None = ...,
-            maximum_load_factor: builtins.float | None = ...,
-            target_load_factor: builtins.float | None = ...,
+            use_redirection: _builtins.bool | None = ...,
+            chunk_capacity: _builtins.int | None = ...,
+            max_static_sparse_memory_overhead: _builtins.float | None = ...,
+            initial_hash_table_size: _builtins.int | None = ...,
+            maximum_load_factor: _builtins.float | None = ...,
+            target_load_factor: _builtins.float | None = ...,
             math_context: Global___MathContext | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_chunk_capacity", b"_chunk_capacity", "_initial_hash_table_size", b"_initial_hash_table_size", "_max_static_sparse_memory_overhead", b"_max_static_sparse_memory_overhead", "_maximum_load_factor", b"_maximum_load_factor", "_target_load_factor", b"_target_load_factor", "_use_redirection", b"_use_redirection", "chunk_capacity", b"chunk_capacity", "initial_hash_table_size", b"initial_hash_table_size", "math_context", b"math_context", "max_static_sparse_memory_overhead", b"max_static_sparse_memory_overhead", "maximum_load_factor", b"maximum_load_factor", "target_load_factor", b"target_load_factor", "use_redirection", b"use_redirection"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_chunk_capacity", b"_chunk_capacity", "_initial_hash_table_size", b"_initial_hash_table_size", "_max_static_sparse_memory_overhead", b"_max_static_sparse_memory_overhead", "_maximum_load_factor", b"_maximum_load_factor", "_target_load_factor", b"_target_load_factor", "_use_redirection", b"_use_redirection", "chunk_capacity", b"chunk_capacity", "initial_hash_table_size", b"initial_hash_table_size", "math_context", b"math_context", "max_static_sparse_memory_overhead", b"max_static_sparse_memory_overhead", "maximum_load_factor", b"maximum_load_factor", "target_load_factor", b"target_load_factor", "use_redirection", b"use_redirection"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["_chunk_capacity", b"_chunk_capacity", "_initial_hash_table_size", b"_initial_hash_table_size", "_max_static_sparse_memory_overhead", b"_max_static_sparse_memory_overhead", "_maximum_load_factor", b"_maximum_load_factor", "_target_load_factor", b"_target_load_factor", "_use_redirection", b"_use_redirection", "chunk_capacity", b"chunk_capacity", "initial_hash_table_size", b"initial_hash_table_size", "math_context", b"math_context", "max_static_sparse_memory_overhead", b"max_static_sparse_memory_overhead", "maximum_load_factor", b"maximum_load_factor", "target_load_factor", b"target_load_factor", "use_redirection", b"use_redirection"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["_chunk_capacity", b"_chunk_capacity", "_initial_hash_table_size", b"_initial_hash_table_size", "_max_static_sparse_memory_overhead", b"_max_static_sparse_memory_overhead", "_maximum_load_factor", b"_maximum_load_factor", "_target_load_factor", b"_target_load_factor", "_use_redirection", b"_use_redirection", "chunk_capacity", b"chunk_capacity", "initial_hash_table_size", b"initial_hash_table_size", "math_context", b"math_context", "max_static_sparse_memory_overhead", b"max_static_sparse_memory_overhead", "maximum_load_factor", b"maximum_load_factor", "target_load_factor", b"target_load_factor", "use_redirection", b"use_redirection"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType__chunk_capacity: typing_extensions.TypeAlias = typing.Literal["chunk_capacity"]
-        _WhichOneofArgType__chunk_capacity: typing_extensions.TypeAlias = typing.Literal["_chunk_capacity", b"_chunk_capacity"]
-        _WhichOneofReturnType__initial_hash_table_size: typing_extensions.TypeAlias = typing.Literal["initial_hash_table_size"]
-        _WhichOneofArgType__initial_hash_table_size: typing_extensions.TypeAlias = typing.Literal["_initial_hash_table_size", b"_initial_hash_table_size"]
-        _WhichOneofReturnType__max_static_sparse_memory_overhead: typing_extensions.TypeAlias = typing.Literal["max_static_sparse_memory_overhead"]
-        _WhichOneofArgType__max_static_sparse_memory_overhead: typing_extensions.TypeAlias = typing.Literal["_max_static_sparse_memory_overhead", b"_max_static_sparse_memory_overhead"]
-        _WhichOneofReturnType__maximum_load_factor: typing_extensions.TypeAlias = typing.Literal["maximum_load_factor"]
-        _WhichOneofArgType__maximum_load_factor: typing_extensions.TypeAlias = typing.Literal["_maximum_load_factor", b"_maximum_load_factor"]
-        _WhichOneofReturnType__target_load_factor: typing_extensions.TypeAlias = typing.Literal["target_load_factor"]
-        _WhichOneofArgType__target_load_factor: typing_extensions.TypeAlias = typing.Literal["_target_load_factor", b"_target_load_factor"]
-        _WhichOneofReturnType__use_redirection: typing_extensions.TypeAlias = typing.Literal["use_redirection"]
-        _WhichOneofArgType__use_redirection: typing_extensions.TypeAlias = typing.Literal["_use_redirection", b"_use_redirection"]
-        @typing.overload
+        _WhichOneofReturnType__chunk_capacity: _TypeAlias = _typing.Literal["chunk_capacity"]  # noqa: Y015
+        _WhichOneofArgType__chunk_capacity: _TypeAlias = _typing.Literal["_chunk_capacity", b"_chunk_capacity"]  # noqa: Y015
+        _WhichOneofReturnType__initial_hash_table_size: _TypeAlias = _typing.Literal["initial_hash_table_size"]  # noqa: Y015
+        _WhichOneofArgType__initial_hash_table_size: _TypeAlias = _typing.Literal["_initial_hash_table_size", b"_initial_hash_table_size"]  # noqa: Y015
+        _WhichOneofReturnType__max_static_sparse_memory_overhead: _TypeAlias = _typing.Literal["max_static_sparse_memory_overhead"]  # noqa: Y015
+        _WhichOneofArgType__max_static_sparse_memory_overhead: _TypeAlias = _typing.Literal["_max_static_sparse_memory_overhead", b"_max_static_sparse_memory_overhead"]  # noqa: Y015
+        _WhichOneofReturnType__maximum_load_factor: _TypeAlias = _typing.Literal["maximum_load_factor"]  # noqa: Y015
+        _WhichOneofArgType__maximum_load_factor: _TypeAlias = _typing.Literal["_maximum_load_factor", b"_maximum_load_factor"]  # noqa: Y015
+        _WhichOneofReturnType__target_load_factor: _TypeAlias = _typing.Literal["target_load_factor"]  # noqa: Y015
+        _WhichOneofArgType__target_load_factor: _TypeAlias = _typing.Literal["_target_load_factor", b"_target_load_factor"]  # noqa: Y015
+        _WhichOneofReturnType__use_redirection: _TypeAlias = _typing.Literal["use_redirection"]  # noqa: Y015
+        _WhichOneofArgType__use_redirection: _TypeAlias = _typing.Literal["_use_redirection", b"_use_redirection"]  # noqa: Y015
+        @_typing.overload
         def WhichOneof(self, oneof_group: _WhichOneofArgType__chunk_capacity) -> _WhichOneofReturnType__chunk_capacity | None: ...
-        @typing.overload
+        @_typing.overload
         def WhichOneof(self, oneof_group: _WhichOneofArgType__initial_hash_table_size) -> _WhichOneofReturnType__initial_hash_table_size | None: ...
-        @typing.overload
+        @_typing.overload
         def WhichOneof(self, oneof_group: _WhichOneofArgType__max_static_sparse_memory_overhead) -> _WhichOneofReturnType__max_static_sparse_memory_overhead | None: ...
-        @typing.overload
+        @_typing.overload
         def WhichOneof(self, oneof_group: _WhichOneofArgType__maximum_load_factor) -> _WhichOneofReturnType__maximum_load_factor | None: ...
-        @typing.overload
+        @_typing.overload
         def WhichOneof(self, oneof_group: _WhichOneofArgType__target_load_factor) -> _WhichOneofReturnType__target_load_factor | None: ...
-        @typing.overload
+        @_typing.overload
         def WhichOneof(self, oneof_group: _WhichOneofArgType__use_redirection) -> _WhichOneofReturnType__use_redirection | None: ...
 
-    @typing.final
-    class UpdateByOperation(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class UpdateByOperation(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        @typing.final
-        class UpdateByColumn(google.protobuf.message.Message):
-            DESCRIPTOR: google.protobuf.descriptor.Descriptor
+        @_typing.final
+        class UpdateByColumn(_message.Message):
+            DESCRIPTOR: _descriptor.Descriptor
 
-            @typing.final
-            class UpdateBySpec(google.protobuf.message.Message):
-                DESCRIPTOR: google.protobuf.descriptor.Descriptor
+            @_typing.final
+            class UpdateBySpec(_message.Message):
+                DESCRIPTOR: _descriptor.Descriptor
 
-                @typing.final
-                class UpdateByCumulativeSum(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-                    def __init__(
-                        self,
-                    ) -> None: ...
-
-                @typing.final
-                class UpdateByCumulativeMin(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByCumulativeSum(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
                     def __init__(
                         self,
                     ) -> None: ...
+                    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByCumulativeMax(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-                    def __init__(
-                        self,
-                    ) -> None: ...
-
-                @typing.final
-                class UpdateByCumulativeProduct(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByCumulativeMin(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
                     def __init__(
                         self,
                     ) -> None: ...
+                    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByFill(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByCumulativeMax(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
                     def __init__(
                         self,
                     ) -> None: ...
+                    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByEma(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByCumulativeProduct(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    OPTIONS_FIELD_NUMBER: builtins.int
-                    WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    def __init__(
+                        self,
+                    ) -> None: ...
+                    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+                @_typing.final
+                class UpdateByFill(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
+
+                    def __init__(
+                        self,
+                    ) -> None: ...
+                    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+                @_typing.final
+                class UpdateByEma(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
+
+                    OPTIONS_FIELD_NUMBER: _builtins.int
+                    WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def options(self) -> Global___UpdateByEmOptions: ...
-                    @property
+                    @_builtins.property
                     def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -772,20 +818,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         options: Global___UpdateByEmOptions | None = ...,
                         window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByEms(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByEms(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    OPTIONS_FIELD_NUMBER: builtins.int
-                    WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    OPTIONS_FIELD_NUMBER: _builtins.int
+                    WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def options(self) -> Global___UpdateByEmOptions: ...
-                    @property
+                    @_builtins.property
                     def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -793,20 +840,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         options: Global___UpdateByEmOptions | None = ...,
                         window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByEmMin(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByEmMin(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    OPTIONS_FIELD_NUMBER: builtins.int
-                    WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    OPTIONS_FIELD_NUMBER: _builtins.int
+                    WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def options(self) -> Global___UpdateByEmOptions: ...
-                    @property
+                    @_builtins.property
                     def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -814,20 +862,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         options: Global___UpdateByEmOptions | None = ...,
                         window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByEmMax(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByEmMax(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    OPTIONS_FIELD_NUMBER: builtins.int
-                    WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    OPTIONS_FIELD_NUMBER: _builtins.int
+                    WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def options(self) -> Global___UpdateByEmOptions: ...
-                    @property
+                    @_builtins.property
                     def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -835,20 +884,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         options: Global___UpdateByEmOptions | None = ...,
                         window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByEmStd(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByEmStd(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    OPTIONS_FIELD_NUMBER: builtins.int
-                    WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    OPTIONS_FIELD_NUMBER: _builtins.int
+                    WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def options(self) -> Global___UpdateByEmOptions: ...
-                    @property
+                    @_builtins.property
                     def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -856,37 +906,39 @@ class UpdateByRequest(google.protobuf.message.Message):
                         options: Global___UpdateByEmOptions | None = ...,
                         window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "window_scale", b"window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "window_scale", b"window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByDelta(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByDelta(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    OPTIONS_FIELD_NUMBER: builtins.int
-                    @property
+                    OPTIONS_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def options(self) -> Global___UpdateByDeltaOptions: ...
                     def __init__(
                         self,
                         *,
                         options: Global___UpdateByDeltaOptions | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["options", b"options"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["options", b"options"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingSum(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingSum(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -894,20 +946,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingGroup(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingGroup(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -915,20 +968,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingAvg(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingAvg(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -936,20 +990,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingMin(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingMin(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -957,20 +1012,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingMax(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingMax(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -978,20 +1034,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingProduct(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingProduct(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -999,20 +1056,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingCount(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingCount(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -1020,20 +1078,21 @@ class UpdateByRequest(google.protobuf.message.Message):
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingStd(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingStd(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
@@ -1041,83 +1100,86 @@ class UpdateByRequest(google.protobuf.message.Message):
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingWAvg(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingWAvg(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    WEIGHT_COLUMN_FIELD_NUMBER: builtins.int
-                    weight_column: builtins.str
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    WEIGHT_COLUMN_FIELD_NUMBER: _builtins.int
+                    weight_column: _builtins.str
                     """Column name for the source of input weights."""
-                    @property
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
-                        weight_column: builtins.str = ...,
+                        weight_column: _builtins.str = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale", "weight_column", b"weight_column"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale", "weight_column", b"weight_column"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingFormula(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingFormula(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORMULA_FIELD_NUMBER: builtins.int
-                    PARAM_TOKEN_FIELD_NUMBER: builtins.int
-                    formula: builtins.str
-                    param_token: builtins.str
-                    @property
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORMULA_FIELD_NUMBER: _builtins.int
+                    PARAM_TOKEN_FIELD_NUMBER: _builtins.int
+                    formula: _builtins.str
+                    param_token: _builtins.str
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
-                        formula: builtins.str = ...,
-                        param_token: builtins.str = ...,
+                        formula: _builtins.str = ...,
+                        param_token: _builtins.str = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["formula", b"formula", "forward_window_scale", b"forward_window_scale", "param_token", b"param_token", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["formula", b"formula", "forward_window_scale", b"forward_window_scale", "param_token", b"param_token", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByRollingCountWhere(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByRollingCountWhere(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
-                    RESULT_COLUMN_FIELD_NUMBER: builtins.int
-                    FILTERS_FIELD_NUMBER: builtins.int
-                    result_column: builtins.str
+                    REVERSE_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    FORWARD_WINDOW_SCALE_FIELD_NUMBER: _builtins.int
+                    RESULT_COLUMN_FIELD_NUMBER: _builtins.int
+                    FILTERS_FIELD_NUMBER: _builtins.int
+                    result_column: _builtins.str
                     """The output column name"""
-                    @property
+                    @_builtins.property
                     def reverse_window_scale(self) -> Global___UpdateByWindowScale:
                         """The reverse window for the rolling operation, may be in ticks or time-based."""
 
-                    @property
+                    @_builtins.property
                     def forward_window_scale(self) -> Global___UpdateByWindowScale:
                         """The forward window for the rolling operation, may be in ticks or time-based."""
 
-                    @property
-                    def filters(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+                    @_builtins.property
+                    def filters(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
                         """The filters tp apply before counting"""
 
                     def __init__(
@@ -1125,103 +1187,107 @@ class UpdateByRequest(google.protobuf.message.Message):
                         *,
                         reverse_window_scale: Global___UpdateByWindowScale | None = ...,
                         forward_window_scale: Global___UpdateByWindowScale | None = ...,
-                        result_column: builtins.str = ...,
-                        filters: collections.abc.Iterable[builtins.str] | None = ...,
+                        result_column: _builtins.str = ...,
+                        filters: _abc.Iterable[_builtins.str] | None = ...,
                     ) -> None: ...
-                    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]
-                    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["filters", b"filters", "forward_window_scale", b"forward_window_scale", "result_column", b"result_column", "reverse_window_scale", b"reverse_window_scale"]
+                    _HasFieldArgType: _TypeAlias = _typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["filters", b"filters", "forward_window_scale", b"forward_window_scale", "result_column", b"result_column", "reverse_window_scale", b"reverse_window_scale"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                @typing.final
-                class UpdateByCumulativeCountWhere(google.protobuf.message.Message):
-                    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+                @_typing.final
+                class UpdateByCumulativeCountWhere(_message.Message):
+                    DESCRIPTOR: _descriptor.Descriptor
 
-                    RESULT_COLUMN_FIELD_NUMBER: builtins.int
-                    FILTERS_FIELD_NUMBER: builtins.int
-                    result_column: builtins.str
+                    RESULT_COLUMN_FIELD_NUMBER: _builtins.int
+                    FILTERS_FIELD_NUMBER: _builtins.int
+                    result_column: _builtins.str
                     """The output column name"""
-                    @property
-                    def filters(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+                    @_builtins.property
+                    def filters(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
                         """The filters tp apply before counting"""
 
                     def __init__(
                         self,
                         *,
-                        result_column: builtins.str = ...,
-                        filters: collections.abc.Iterable[builtins.str] | None = ...,
+                        result_column: _builtins.str = ...,
+                        filters: _abc.Iterable[_builtins.str] | None = ...,
                     ) -> None: ...
-                    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["filters", b"filters", "result_column", b"result_column"]
+                    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+                    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                    _ClearFieldArgType: _TypeAlias = _typing.Literal["filters", b"filters", "result_column", b"result_column"]  # noqa: Y015
                     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+                    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-                SUM_FIELD_NUMBER: builtins.int
-                MIN_FIELD_NUMBER: builtins.int
-                MAX_FIELD_NUMBER: builtins.int
-                PRODUCT_FIELD_NUMBER: builtins.int
-                FILL_FIELD_NUMBER: builtins.int
-                EMA_FIELD_NUMBER: builtins.int
-                ROLLING_SUM_FIELD_NUMBER: builtins.int
-                ROLLING_GROUP_FIELD_NUMBER: builtins.int
-                ROLLING_AVG_FIELD_NUMBER: builtins.int
-                ROLLING_MIN_FIELD_NUMBER: builtins.int
-                ROLLING_MAX_FIELD_NUMBER: builtins.int
-                ROLLING_PRODUCT_FIELD_NUMBER: builtins.int
-                DELTA_FIELD_NUMBER: builtins.int
-                EMS_FIELD_NUMBER: builtins.int
-                EM_MIN_FIELD_NUMBER: builtins.int
-                EM_MAX_FIELD_NUMBER: builtins.int
-                EM_STD_FIELD_NUMBER: builtins.int
-                ROLLING_COUNT_FIELD_NUMBER: builtins.int
-                ROLLING_STD_FIELD_NUMBER: builtins.int
-                ROLLING_WAVG_FIELD_NUMBER: builtins.int
-                ROLLING_FORMULA_FIELD_NUMBER: builtins.int
-                ROLLING_COUNT_WHERE_FIELD_NUMBER: builtins.int
-                COUNT_WHERE_FIELD_NUMBER: builtins.int
-                @property
+                SUM_FIELD_NUMBER: _builtins.int
+                MIN_FIELD_NUMBER: _builtins.int
+                MAX_FIELD_NUMBER: _builtins.int
+                PRODUCT_FIELD_NUMBER: _builtins.int
+                FILL_FIELD_NUMBER: _builtins.int
+                EMA_FIELD_NUMBER: _builtins.int
+                ROLLING_SUM_FIELD_NUMBER: _builtins.int
+                ROLLING_GROUP_FIELD_NUMBER: _builtins.int
+                ROLLING_AVG_FIELD_NUMBER: _builtins.int
+                ROLLING_MIN_FIELD_NUMBER: _builtins.int
+                ROLLING_MAX_FIELD_NUMBER: _builtins.int
+                ROLLING_PRODUCT_FIELD_NUMBER: _builtins.int
+                DELTA_FIELD_NUMBER: _builtins.int
+                EMS_FIELD_NUMBER: _builtins.int
+                EM_MIN_FIELD_NUMBER: _builtins.int
+                EM_MAX_FIELD_NUMBER: _builtins.int
+                EM_STD_FIELD_NUMBER: _builtins.int
+                ROLLING_COUNT_FIELD_NUMBER: _builtins.int
+                ROLLING_STD_FIELD_NUMBER: _builtins.int
+                ROLLING_WAVG_FIELD_NUMBER: _builtins.int
+                ROLLING_FORMULA_FIELD_NUMBER: _builtins.int
+                ROLLING_COUNT_WHERE_FIELD_NUMBER: _builtins.int
+                COUNT_WHERE_FIELD_NUMBER: _builtins.int
+                @_builtins.property
                 def sum(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum: ...
-                @property
+                @_builtins.property
                 def min(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin: ...
-                @property
+                @_builtins.property
                 def max(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax: ...
-                @property
+                @_builtins.property
                 def product(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct: ...
-                @property
+                @_builtins.property
                 def fill(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill: ...
-                @property
+                @_builtins.property
                 def ema(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma: ...
-                @property
+                @_builtins.property
                 def rolling_sum(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum: ...
-                @property
+                @_builtins.property
                 def rolling_group(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup: ...
-                @property
+                @_builtins.property
                 def rolling_avg(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg: ...
-                @property
+                @_builtins.property
                 def rolling_min(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin: ...
-                @property
+                @_builtins.property
                 def rolling_max(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax: ...
-                @property
+                @_builtins.property
                 def rolling_product(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct: ...
-                @property
+                @_builtins.property
                 def delta(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta: ...
-                @property
+                @_builtins.property
                 def ems(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms: ...
-                @property
+                @_builtins.property
                 def em_min(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin: ...
-                @property
+                @_builtins.property
                 def em_max(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax: ...
-                @property
+                @_builtins.property
                 def em_std(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd: ...
-                @property
+                @_builtins.property
                 def rolling_count(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount: ...
-                @property
+                @_builtins.property
                 def rolling_std(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd: ...
-                @property
+                @_builtins.property
                 def rolling_wavg(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg: ...
-                @property
+                @_builtins.property
                 def rolling_formula(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula: ...
-                @property
+                @_builtins.property
                 def rolling_count_where(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCountWhere: ...
-                @property
+                @_builtins.property
                 def count_where(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeCountWhere: ...
                 def __init__(
                     self,
@@ -1250,393 +1316,405 @@ class UpdateByRequest(google.protobuf.message.Message):
                     rolling_count_where: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCountWhere | None = ...,
                     count_where: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeCountWhere | None = ...,
                 ) -> None: ...
-                _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["count_where", b"count_where", "delta", b"delta", "em_max", b"em_max", "em_min", b"em_min", "em_std", b"em_std", "ema", b"ema", "ems", b"ems", "fill", b"fill", "max", b"max", "min", b"min", "product", b"product", "rolling_avg", b"rolling_avg", "rolling_count", b"rolling_count", "rolling_count_where", b"rolling_count_where", "rolling_formula", b"rolling_formula", "rolling_group", b"rolling_group", "rolling_max", b"rolling_max", "rolling_min", b"rolling_min", "rolling_product", b"rolling_product", "rolling_std", b"rolling_std", "rolling_sum", b"rolling_sum", "rolling_wavg", b"rolling_wavg", "sum", b"sum", "type", b"type"]
-                def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-                _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["count_where", b"count_where", "delta", b"delta", "em_max", b"em_max", "em_min", b"em_min", "em_std", b"em_std", "ema", b"ema", "ems", b"ems", "fill", b"fill", "max", b"max", "min", b"min", "product", b"product", "rolling_avg", b"rolling_avg", "rolling_count", b"rolling_count", "rolling_count_where", b"rolling_count_where", "rolling_formula", b"rolling_formula", "rolling_group", b"rolling_group", "rolling_max", b"rolling_max", "rolling_min", b"rolling_min", "rolling_product", b"rolling_product", "rolling_std", b"rolling_std", "rolling_sum", b"rolling_sum", "rolling_wavg", b"rolling_wavg", "sum", b"sum", "type", b"type"]
+                _HasFieldArgType: _TypeAlias = _typing.Literal["count_where", b"count_where", "delta", b"delta", "em_max", b"em_max", "em_min", b"em_min", "em_std", b"em_std", "ema", b"ema", "ems", b"ems", "fill", b"fill", "max", b"max", "min", b"min", "product", b"product", "rolling_avg", b"rolling_avg", "rolling_count", b"rolling_count", "rolling_count_where", b"rolling_count_where", "rolling_formula", b"rolling_formula", "rolling_group", b"rolling_group", "rolling_max", b"rolling_max", "rolling_min", b"rolling_min", "rolling_product", b"rolling_product", "rolling_std", b"rolling_std", "rolling_sum", b"rolling_sum", "rolling_wavg", b"rolling_wavg", "sum", b"sum", "type", b"type"]  # noqa: Y015
+                def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+                _ClearFieldArgType: _TypeAlias = _typing.Literal["count_where", b"count_where", "delta", b"delta", "em_max", b"em_max", "em_min", b"em_min", "em_std", b"em_std", "ema", b"ema", "ems", b"ems", "fill", b"fill", "max", b"max", "min", b"min", "product", b"product", "rolling_avg", b"rolling_avg", "rolling_count", b"rolling_count", "rolling_count_where", b"rolling_count_where", "rolling_formula", b"rolling_formula", "rolling_group", b"rolling_group", "rolling_max", b"rolling_max", "rolling_min", b"rolling_min", "rolling_product", b"rolling_product", "rolling_std", b"rolling_std", "rolling_sum", b"rolling_sum", "rolling_wavg", b"rolling_wavg", "sum", b"sum", "type", b"type"]  # noqa: Y015
                 def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-                _WhichOneofReturnType_type: typing_extensions.TypeAlias = typing.Literal["sum", "min", "max", "product", "fill", "ema", "rolling_sum", "rolling_group", "rolling_avg", "rolling_min", "rolling_max", "rolling_product", "delta", "ems", "em_min", "em_max", "em_std", "rolling_count", "rolling_std", "rolling_wavg", "rolling_formula", "rolling_count_where", "count_where"]
-                _WhichOneofArgType_type: typing_extensions.TypeAlias = typing.Literal["type", b"type"]
+                _WhichOneofReturnType_type: _TypeAlias = _typing.Literal["sum", "min", "max", "product", "fill", "ema", "rolling_sum", "rolling_group", "rolling_avg", "rolling_min", "rolling_max", "rolling_product", "delta", "ems", "em_min", "em_max", "em_std", "rolling_count", "rolling_std", "rolling_wavg", "rolling_formula", "rolling_count_where", "count_where"]  # noqa: Y015
+                _WhichOneofArgType_type: _TypeAlias = _typing.Literal["type", b"type"]  # noqa: Y015
                 def WhichOneof(self, oneof_group: _WhichOneofArgType_type) -> _WhichOneofReturnType_type | None: ...
 
-            SPEC_FIELD_NUMBER: builtins.int
-            MATCH_PAIRS_FIELD_NUMBER: builtins.int
-            @property
+            SPEC_FIELD_NUMBER: _builtins.int
+            MATCH_PAIRS_FIELD_NUMBER: _builtins.int
+            @_builtins.property
             def spec(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec: ...
-            @property
-            def match_pairs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+            @_builtins.property
+            def match_pairs(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
             def __init__(
                 self,
                 *,
                 spec: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec | None = ...,
-                match_pairs: collections.abc.Iterable[builtins.str] | None = ...,
+                match_pairs: _abc.Iterable[_builtins.str] | None = ...,
             ) -> None: ...
-            _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["spec", b"spec"]
-            def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-            _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["match_pairs", b"match_pairs", "spec", b"spec"]
+            _HasFieldArgType: _TypeAlias = _typing.Literal["spec", b"spec"]  # noqa: Y015
+            def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+            _ClearFieldArgType: _TypeAlias = _typing.Literal["match_pairs", b"match_pairs", "spec", b"spec"]  # noqa: Y015
             def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+            def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-        COLUMN_FIELD_NUMBER: builtins.int
-        @property
+        COLUMN_FIELD_NUMBER: _builtins.int
+        @_builtins.property
         def column(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn: ...
         def __init__(
             self,
             *,
             column: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["column", b"column", "type", b"type"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column", b"column", "type", b"type"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["column", b"column", "type", b"type"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["column", b"column", "type", b"type"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType_type: typing_extensions.TypeAlias = typing.Literal["column"]
-        _WhichOneofArgType_type: typing_extensions.TypeAlias = typing.Literal["type", b"type"]
+        _WhichOneofReturnType_type: _TypeAlias = _typing.Literal["column"]  # noqa: Y015
+        _WhichOneofArgType_type: _TypeAlias = _typing.Literal["type", b"type"]  # noqa: Y015
         def WhichOneof(self, oneof_group: _WhichOneofArgType_type) -> _WhichOneofReturnType_type | None: ...
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    OPTIONS_FIELD_NUMBER: builtins.int
-    OPERATIONS_FIELD_NUMBER: builtins.int
-    GROUP_BY_COLUMNS_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    OPTIONS_FIELD_NUMBER: _builtins.int
+    OPERATIONS_FIELD_NUMBER: _builtins.int
+    GROUP_BY_COLUMNS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def options(self) -> Global___UpdateByRequest.UpdateByOptions: ...
-    @property
-    def operations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___UpdateByRequest.UpdateByOperation]: ...
-    @property
-    def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def operations(self) -> _containers.RepeatedCompositeFieldContainer[Global___UpdateByRequest.UpdateByOperation]: ...
+    @_builtins.property
+    def group_by_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
         options: Global___UpdateByRequest.UpdateByOptions | None = ...,
-        operations: collections.abc.Iterable[Global___UpdateByRequest.UpdateByOperation] | None = ...,
-        group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
+        operations: _abc.Iterable[Global___UpdateByRequest.UpdateByOperation] | None = ...,
+        group_by_columns: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["options", b"options", "result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["group_by_columns", b"group_by_columns", "operations", b"operations", "options", b"options", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["options", b"options", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["group_by_columns", b"group_by_columns", "operations", b"operations", "options", b"options", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___UpdateByRequest: typing_extensions.TypeAlias = UpdateByRequest
+Global___UpdateByRequest: _TypeAlias = UpdateByRequest  # noqa: Y015
 
-@typing.final
-class SelectDistinctRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SelectDistinctRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    COLUMN_NAMES_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    COLUMN_NAMES_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def column_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def column_names(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        column_names: collections.abc.Iterable[builtins.str] | None = ...,
+        column_names: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_names", b"column_names", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["column_names", b"column_names", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SelectDistinctRequest: typing_extensions.TypeAlias = SelectDistinctRequest
+Global___SelectDistinctRequest: _TypeAlias = SelectDistinctRequest  # noqa: Y015
 
-@typing.final
-class DropColumnsRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class DropColumnsRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    COLUMN_NAMES_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    COLUMN_NAMES_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def column_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def column_names(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        column_names: collections.abc.Iterable[builtins.str] | None = ...,
+        column_names: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_names", b"column_names", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["column_names", b"column_names", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___DropColumnsRequest: typing_extensions.TypeAlias = DropColumnsRequest
+Global___DropColumnsRequest: _TypeAlias = DropColumnsRequest  # noqa: Y015
 
-@typing.final
-class UnstructuredFilterTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class UnstructuredFilterTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    FILTERS_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    FILTERS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def filters(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def filters(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        filters: collections.abc.Iterable[builtins.str] | None = ...,
+        filters: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["filters", b"filters", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["filters", b"filters", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___UnstructuredFilterTableRequest: typing_extensions.TypeAlias = UnstructuredFilterTableRequest
+Global___UnstructuredFilterTableRequest: _TypeAlias = UnstructuredFilterTableRequest  # noqa: Y015
 
-@typing.final
-class HeadOrTailRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class HeadOrTailRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    NUM_ROWS_FIELD_NUMBER: builtins.int
-    num_rows: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    NUM_ROWS_FIELD_NUMBER: _builtins.int
+    num_rows: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        num_rows: builtins.int = ...,
+        num_rows: _builtins.int = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["num_rows", b"num_rows", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["num_rows", b"num_rows", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HeadOrTailRequest: typing_extensions.TypeAlias = HeadOrTailRequest
+Global___HeadOrTailRequest: _TypeAlias = HeadOrTailRequest  # noqa: Y015
 
-@typing.final
-class HeadOrTailByRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class HeadOrTailByRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    NUM_ROWS_FIELD_NUMBER: builtins.int
-    GROUP_BY_COLUMN_SPECS_FIELD_NUMBER: builtins.int
-    num_rows: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    NUM_ROWS_FIELD_NUMBER: _builtins.int
+    GROUP_BY_COLUMN_SPECS_FIELD_NUMBER: _builtins.int
+    num_rows: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def group_by_column_specs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def group_by_column_specs(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        num_rows: builtins.int = ...,
-        group_by_column_specs: collections.abc.Iterable[builtins.str] | None = ...,
+        num_rows: _builtins.int = ...,
+        group_by_column_specs: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["group_by_column_specs", b"group_by_column_specs", "num_rows", b"num_rows", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["group_by_column_specs", b"group_by_column_specs", "num_rows", b"num_rows", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HeadOrTailByRequest: typing_extensions.TypeAlias = HeadOrTailByRequest
+Global___HeadOrTailByRequest: _TypeAlias = HeadOrTailByRequest  # noqa: Y015
 
-@typing.final
-class UngroupRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class UngroupRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    NULL_FILL_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_UNGROUP_FIELD_NUMBER: builtins.int
-    null_fill: builtins.bool
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    NULL_FILL_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_UNGROUP_FIELD_NUMBER: _builtins.int
+    null_fill: _builtins.bool
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def columns_to_ungroup(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def columns_to_ungroup(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        null_fill: builtins.bool = ...,
-        columns_to_ungroup: collections.abc.Iterable[builtins.str] | None = ...,
+        null_fill: _builtins.bool = ...,
+        columns_to_ungroup: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns_to_ungroup", b"columns_to_ungroup", "null_fill", b"null_fill", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["columns_to_ungroup", b"columns_to_ungroup", "null_fill", b"null_fill", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___UngroupRequest: typing_extensions.TypeAlias = UngroupRequest
+Global___UngroupRequest: _TypeAlias = UngroupRequest  # noqa: Y015
 
-@typing.final
-class MergeTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class MergeTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_IDS_FIELD_NUMBER: builtins.int
-    KEY_COLUMN_FIELD_NUMBER: builtins.int
-    key_column: builtins.str
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_IDS_FIELD_NUMBER: _builtins.int
+    KEY_COLUMN_FIELD_NUMBER: _builtins.int
+    key_column: _builtins.str
     """if specified, the result will be sorted by this column"""
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def source_ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___TableReference]: ...
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def source_ids(self) -> _containers.RepeatedCompositeFieldContainer[Global___TableReference]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_ids: collections.abc.Iterable[Global___TableReference] | None = ...,
-        key_column: builtins.str = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
+        source_ids: _abc.Iterable[Global___TableReference] | None = ...,
+        key_column: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["key_column", b"key_column", "result_id", b"result_id", "source_ids", b"source_ids"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["key_column", b"key_column", "result_id", b"result_id", "source_ids", b"source_ids"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MergeTablesRequest: typing_extensions.TypeAlias = MergeTablesRequest
+Global___MergeTablesRequest: _TypeAlias = MergeTablesRequest  # noqa: Y015
 
-@typing.final
-class SnapshotTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SnapshotTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SnapshotTableRequest: typing_extensions.TypeAlias = SnapshotTableRequest
+Global___SnapshotTableRequest: _TypeAlias = SnapshotTableRequest  # noqa: Y015
 
-@typing.final
-class SnapshotWhenTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SnapshotWhenTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    BASE_ID_FIELD_NUMBER: builtins.int
-    TRIGGER_ID_FIELD_NUMBER: builtins.int
-    INITIAL_FIELD_NUMBER: builtins.int
-    INCREMENTAL_FIELD_NUMBER: builtins.int
-    HISTORY_FIELD_NUMBER: builtins.int
-    STAMP_COLUMNS_FIELD_NUMBER: builtins.int
-    initial: builtins.bool
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    BASE_ID_FIELD_NUMBER: _builtins.int
+    TRIGGER_ID_FIELD_NUMBER: _builtins.int
+    INITIAL_FIELD_NUMBER: _builtins.int
+    INCREMENTAL_FIELD_NUMBER: _builtins.int
+    HISTORY_FIELD_NUMBER: _builtins.int
+    STAMP_COLUMNS_FIELD_NUMBER: _builtins.int
+    initial: _builtins.bool
     """Whether the results should contain an initial snapshot."""
-    incremental: builtins.bool
+    incremental: _builtins.bool
     """Whether the results should be incremental."""
-    history: builtins.bool
+    history: _builtins.bool
     """Whether the results should keep history."""
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def base_id(self) -> Global___TableReference:
         """The base table."""
 
-    @property
+    @_builtins.property
     def trigger_id(self) -> Global___TableReference:
         """The trigger table."""
 
-    @property
-    def stamp_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    @_builtins.property
+    def stamp_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
         """Which columns to stamp from the trigger table. If empty, all columns from the trigger table are stamped. Allows renaming columns."""
 
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         base_id: Global___TableReference | None = ...,
         trigger_id: Global___TableReference | None = ...,
-        initial: builtins.bool = ...,
-        incremental: builtins.bool = ...,
-        history: builtins.bool = ...,
-        stamp_columns: collections.abc.Iterable[builtins.str] | None = ...,
+        initial: _builtins.bool = ...,
+        incremental: _builtins.bool = ...,
+        history: _builtins.bool = ...,
+        stamp_columns: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["base_id", b"base_id", "result_id", b"result_id", "trigger_id", b"trigger_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["base_id", b"base_id", "history", b"history", "incremental", b"incremental", "initial", b"initial", "result_id", b"result_id", "stamp_columns", b"stamp_columns", "trigger_id", b"trigger_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["base_id", b"base_id", "result_id", b"result_id", "trigger_id", b"trigger_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["base_id", b"base_id", "history", b"history", "incremental", b"incremental", "initial", b"initial", "result_id", b"result_id", "stamp_columns", b"stamp_columns", "trigger_id", b"trigger_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SnapshotWhenTableRequest: typing_extensions.TypeAlias = SnapshotWhenTableRequest
+Global___SnapshotWhenTableRequest: _TypeAlias = SnapshotWhenTableRequest  # noqa: Y015
 
-@typing.final
-class CrossJoinTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class CrossJoinTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    LEFT_ID_FIELD_NUMBER: builtins.int
-    RIGHT_ID_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
-    RESERVE_BITS_FIELD_NUMBER: builtins.int
-    reserve_bits: builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    LEFT_ID_FIELD_NUMBER: _builtins.int
+    RIGHT_ID_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_MATCH_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_ADD_FIELD_NUMBER: _builtins.int
+    RESERVE_BITS_FIELD_NUMBER: _builtins.int
+    reserve_bits: _builtins.int
     """the number of bits of key-space to initially reserve per group; default is 10"""
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def left_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def right_id(self) -> Global___TableReference: ...
-    @property
-    def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    @property
-    def columns_to_add(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def columns_to_match(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def columns_to_add(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         left_id: Global___TableReference | None = ...,
         right_id: Global___TableReference | None = ...,
-        columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
-        columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
-        reserve_bits: builtins.int = ...,
+        columns_to_match: _abc.Iterable[_builtins.str] | None = ...,
+        columns_to_add: _abc.Iterable[_builtins.str] | None = ...,
+        reserve_bits: _builtins.int = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "reserve_bits", b"reserve_bits", "result_id", b"result_id", "right_id", b"right_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "reserve_bits", b"reserve_bits", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___CrossJoinTablesRequest: typing_extensions.TypeAlias = CrossJoinTablesRequest
+Global___CrossJoinTablesRequest: _TypeAlias = CrossJoinTablesRequest  # noqa: Y015
 
-@typing.final
-class NaturalJoinTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class NaturalJoinTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _JoinType:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _JoinTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[NaturalJoinTablesRequest._JoinType.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _JoinTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[NaturalJoinTablesRequest._JoinType.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         JOIN_TYPE_NOT_SPECIFIED: NaturalJoinTablesRequest._JoinType.ValueType  # 0
         ERROR_ON_DUPLICATE: NaturalJoinTablesRequest._JoinType.ValueType  # 1
         """Throw an error if a duplicate right hand table row is found."""
@@ -1662,282 +1740,289 @@ class NaturalJoinTablesRequest(google.protobuf.message.Message):
     to an ExactJoinTablesRequest
     """
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    LEFT_ID_FIELD_NUMBER: builtins.int
-    RIGHT_ID_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
-    JOIN_TYPE_FIELD_NUMBER: builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    LEFT_ID_FIELD_NUMBER: _builtins.int
+    RIGHT_ID_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_MATCH_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_ADD_FIELD_NUMBER: _builtins.int
+    JOIN_TYPE_FIELD_NUMBER: _builtins.int
     join_type: Global___NaturalJoinTablesRequest.JoinType.ValueType
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def left_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def right_id(self) -> Global___TableReference: ...
-    @property
-    def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    @property
-    def columns_to_add(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def columns_to_match(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def columns_to_add(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         left_id: Global___TableReference | None = ...,
         right_id: Global___TableReference | None = ...,
-        columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
-        columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
+        columns_to_match: _abc.Iterable[_builtins.str] | None = ...,
+        columns_to_add: _abc.Iterable[_builtins.str] | None = ...,
         join_type: Global___NaturalJoinTablesRequest.JoinType.ValueType = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "join_type", b"join_type", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "join_type", b"join_type", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___NaturalJoinTablesRequest: typing_extensions.TypeAlias = NaturalJoinTablesRequest
+Global___NaturalJoinTablesRequest: _TypeAlias = NaturalJoinTablesRequest  # noqa: Y015
 
-@typing.final
-class ExactJoinTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ExactJoinTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    LEFT_ID_FIELD_NUMBER: builtins.int
-    RIGHT_ID_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    LEFT_ID_FIELD_NUMBER: _builtins.int
+    RIGHT_ID_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_MATCH_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_ADD_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def left_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def right_id(self) -> Global___TableReference: ...
-    @property
-    def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    @property
-    def columns_to_add(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def columns_to_match(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def columns_to_add(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         left_id: Global___TableReference | None = ...,
         right_id: Global___TableReference | None = ...,
-        columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
-        columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
+        columns_to_match: _abc.Iterable[_builtins.str] | None = ...,
+        columns_to_add: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ExactJoinTablesRequest: typing_extensions.TypeAlias = ExactJoinTablesRequest
+Global___ExactJoinTablesRequest: _TypeAlias = ExactJoinTablesRequest  # noqa: Y015
 
-@typing.final
-class LeftJoinTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class LeftJoinTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    LEFT_ID_FIELD_NUMBER: builtins.int
-    RIGHT_ID_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    LEFT_ID_FIELD_NUMBER: _builtins.int
+    RIGHT_ID_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_MATCH_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_ADD_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def left_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def right_id(self) -> Global___TableReference: ...
-    @property
-    def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    @property
-    def columns_to_add(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def columns_to_match(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def columns_to_add(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         left_id: Global___TableReference | None = ...,
         right_id: Global___TableReference | None = ...,
-        columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
-        columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
+        columns_to_match: _abc.Iterable[_builtins.str] | None = ...,
+        columns_to_add: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___LeftJoinTablesRequest: typing_extensions.TypeAlias = LeftJoinTablesRequest
+Global___LeftJoinTablesRequest: _TypeAlias = LeftJoinTablesRequest  # noqa: Y015
 
-@deprecated("""This message has been marked as deprecated using proto message options.""")
-@typing.final
-class AsOfJoinTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_deprecated("""This message has been marked as deprecated using proto message options.""")
+@_typing.final
+class AsOfJoinTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _MatchRule:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _MatchRuleEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[AsOfJoinTablesRequest._MatchRule.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _MatchRuleEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[AsOfJoinTablesRequest._MatchRule.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         LESS_THAN_EQUAL: AsOfJoinTablesRequest._MatchRule.ValueType  # 0
         LESS_THAN: AsOfJoinTablesRequest._MatchRule.ValueType  # 1
         GREATER_THAN_EQUAL: AsOfJoinTablesRequest._MatchRule.ValueType  # 2
         GREATER_THAN: AsOfJoinTablesRequest._MatchRule.ValueType  # 3
 
-    @deprecated("""This enum has been marked as deprecated using proto enum options.""")
+    @_deprecated("""This enum has been marked as deprecated using proto enum options.""")
     class MatchRule(_MatchRule, metaclass=_MatchRuleEnumTypeWrapper): ...
     LESS_THAN_EQUAL: AsOfJoinTablesRequest.MatchRule.ValueType  # 0
     LESS_THAN: AsOfJoinTablesRequest.MatchRule.ValueType  # 1
     GREATER_THAN_EQUAL: AsOfJoinTablesRequest.MatchRule.ValueType  # 2
     GREATER_THAN: AsOfJoinTablesRequest.MatchRule.ValueType  # 3
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    LEFT_ID_FIELD_NUMBER: builtins.int
-    RIGHT_ID_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
-    AS_OF_MATCH_RULE_FIELD_NUMBER: builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    LEFT_ID_FIELD_NUMBER: _builtins.int
+    RIGHT_ID_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_MATCH_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_ADD_FIELD_NUMBER: _builtins.int
+    AS_OF_MATCH_RULE_FIELD_NUMBER: _builtins.int
     as_of_match_rule: Global___AsOfJoinTablesRequest.MatchRule.ValueType
     """Direction to search to find a match. LESS_THAN_EQUAL and LESS_THAN will be used to make a
     Table.aj() call, and GREATER_THAN_EQUAL and GREATER_THAN will be used to make a Table.raj() call.
     """
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def left_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def right_id(self) -> Global___TableReference: ...
-    @property
-    def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    @property
-    def columns_to_add(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def columns_to_match(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def columns_to_add(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         left_id: Global___TableReference | None = ...,
         right_id: Global___TableReference | None = ...,
-        columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
-        columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
+        columns_to_match: _abc.Iterable[_builtins.str] | None = ...,
+        columns_to_add: _abc.Iterable[_builtins.str] | None = ...,
         as_of_match_rule: Global___AsOfJoinTablesRequest.MatchRule.ValueType = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["as_of_match_rule", b"as_of_match_rule", "columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of_match_rule", b"as_of_match_rule", "columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___AsOfJoinTablesRequest: typing_extensions.TypeAlias = AsOfJoinTablesRequest
+Global___AsOfJoinTablesRequest: _TypeAlias = AsOfJoinTablesRequest  # noqa: Y015
 
-@typing.final
-class AjRajTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class AjRajTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    LEFT_ID_FIELD_NUMBER: builtins.int
-    RIGHT_ID_FIELD_NUMBER: builtins.int
-    EXACT_MATCH_COLUMNS_FIELD_NUMBER: builtins.int
-    AS_OF_COLUMN_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
-    as_of_column: builtins.str
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    LEFT_ID_FIELD_NUMBER: _builtins.int
+    RIGHT_ID_FIELD_NUMBER: _builtins.int
+    EXACT_MATCH_COLUMNS_FIELD_NUMBER: _builtins.int
+    AS_OF_COLUMN_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_ADD_FIELD_NUMBER: _builtins.int
+    as_of_column: _builtins.str
     """This is a comparison expression for the inexact as-of join match. In the case of an as-of join (aj), the comparison
     operator can be either ">=" or ">"; for example, "Foo>=Bar" or "Foo>Bar". In the case of a reverse-as-of join (raj),
     the comparison operator can be either "<=" or "<"; for example, "Foo<=Bar" or "Foo<Bar". In the case where the
     column name exists in both tables, the single column name can be used and it will inherit the default comparison
     operator: in the aj case, "Foo" is equivalent to "Foo>=Foo"; in the raj case, "Foo" is equivalent to "Foo<=Foo".
     """
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def left_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def right_id(self) -> Global___TableReference: ...
-    @property
-    def exact_match_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    @property
-    def columns_to_add(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def exact_match_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def columns_to_add(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         left_id: Global___TableReference | None = ...,
         right_id: Global___TableReference | None = ...,
-        exact_match_columns: collections.abc.Iterable[builtins.str] | None = ...,
-        as_of_column: builtins.str = ...,
-        columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
+        exact_match_columns: _abc.Iterable[_builtins.str] | None = ...,
+        as_of_column: _builtins.str = ...,
+        columns_to_add: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["as_of_column", b"as_of_column", "columns_to_add", b"columns_to_add", "exact_match_columns", b"exact_match_columns", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["as_of_column", b"as_of_column", "columns_to_add", b"columns_to_add", "exact_match_columns", b"exact_match_columns", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___AjRajTablesRequest: typing_extensions.TypeAlias = AjRajTablesRequest
+Global___AjRajTablesRequest: _TypeAlias = AjRajTablesRequest  # noqa: Y015
 
-@typing.final
-class MultiJoinInput(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class MultiJoinInput(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
-    @property
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_MATCH_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_ADD_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def source_id(self) -> Global___TableReference:
         """The source table to include in the multi-join output table."""
 
-    @property
-    def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    @_builtins.property
+    def columns_to_match(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
         """The key columns to match; may be renamed to match other source table key columns."""
 
-    @property
-    def columns_to_add(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    @_builtins.property
+    def columns_to_add(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
         """The columns from the source table to include; if not provided, all columns are included."""
 
     def __init__(
         self,
         *,
         source_id: Global___TableReference | None = ...,
-        columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
-        columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
+        columns_to_match: _abc.Iterable[_builtins.str] | None = ...,
+        columns_to_add: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MultiJoinInput: typing_extensions.TypeAlias = MultiJoinInput
+Global___MultiJoinInput: _TypeAlias = MultiJoinInput  # noqa: Y015
 
-@typing.final
-class MultiJoinTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class MultiJoinTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    MULTI_JOIN_INPUTS_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def multi_join_inputs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___MultiJoinInput]:
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    MULTI_JOIN_INPUTS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def multi_join_inputs(self) -> _containers.RepeatedCompositeFieldContainer[Global___MultiJoinInput]:
         """The source table input specifications. One or more must be provided."""
 
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        multi_join_inputs: collections.abc.Iterable[Global___MultiJoinInput] | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
+        multi_join_inputs: _abc.Iterable[Global___MultiJoinInput] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["multi_join_inputs", b"multi_join_inputs", "result_id", b"result_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["multi_join_inputs", b"multi_join_inputs", "result_id", b"result_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MultiJoinTablesRequest: typing_extensions.TypeAlias = MultiJoinTablesRequest
+Global___MultiJoinTablesRequest: _TypeAlias = MultiJoinTablesRequest  # noqa: Y015
 
-@typing.final
-class RangeJoinTablesRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class RangeJoinTablesRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _RangeStartRule:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _RangeStartRuleEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[RangeJoinTablesRequest._RangeStartRule.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _RangeStartRuleEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[RangeJoinTablesRequest._RangeStartRule.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         START_UNSPECIFIED: RangeJoinTablesRequest._RangeStartRule.ValueType  # 0
         LESS_THAN: RangeJoinTablesRequest._RangeStartRule.ValueType  # 1
         LESS_THAN_OR_EQUAL: RangeJoinTablesRequest._RangeStartRule.ValueType  # 2
@@ -1950,11 +2035,11 @@ class RangeJoinTablesRequest(google.protobuf.message.Message):
     LESS_THAN_OR_EQUAL_ALLOW_PRECEDING: RangeJoinTablesRequest.RangeStartRule.ValueType  # 3
 
     class _RangeEndRule:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _RangeEndRuleEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[RangeJoinTablesRequest._RangeEndRule.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _RangeEndRuleEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[RangeJoinTablesRequest._RangeEndRule.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         END_UNSPECIFIED: RangeJoinTablesRequest._RangeEndRule.ValueType  # 0
         GREATER_THAN: RangeJoinTablesRequest._RangeEndRule.ValueType  # 1
         GREATER_THAN_OR_EQUAL: RangeJoinTablesRequest._RangeEndRule.ValueType  # 2
@@ -1966,71 +2051,72 @@ class RangeJoinTablesRequest(google.protobuf.message.Message):
     GREATER_THAN_OR_EQUAL: RangeJoinTablesRequest.RangeEndRule.ValueType  # 2
     GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING: RangeJoinTablesRequest.RangeEndRule.ValueType  # 3
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    LEFT_ID_FIELD_NUMBER: builtins.int
-    RIGHT_ID_FIELD_NUMBER: builtins.int
-    EXACT_MATCH_COLUMNS_FIELD_NUMBER: builtins.int
-    LEFT_START_COLUMN_FIELD_NUMBER: builtins.int
-    RANGE_START_RULE_FIELD_NUMBER: builtins.int
-    RIGHT_RANGE_COLUMN_FIELD_NUMBER: builtins.int
-    RANGE_END_RULE_FIELD_NUMBER: builtins.int
-    LEFT_END_COLUMN_FIELD_NUMBER: builtins.int
-    AGGREGATIONS_FIELD_NUMBER: builtins.int
-    RANGE_MATCH_FIELD_NUMBER: builtins.int
-    left_start_column: builtins.str
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    LEFT_ID_FIELD_NUMBER: _builtins.int
+    RIGHT_ID_FIELD_NUMBER: _builtins.int
+    EXACT_MATCH_COLUMNS_FIELD_NUMBER: _builtins.int
+    LEFT_START_COLUMN_FIELD_NUMBER: _builtins.int
+    RANGE_START_RULE_FIELD_NUMBER: _builtins.int
+    RIGHT_RANGE_COLUMN_FIELD_NUMBER: _builtins.int
+    RANGE_END_RULE_FIELD_NUMBER: _builtins.int
+    LEFT_END_COLUMN_FIELD_NUMBER: _builtins.int
+    AGGREGATIONS_FIELD_NUMBER: _builtins.int
+    RANGE_MATCH_FIELD_NUMBER: _builtins.int
+    left_start_column: _builtins.str
     """Provide detailed range match parameters for the range join (alternative to providing `range_match`)"""
     range_start_rule: Global___RangeJoinTablesRequest.RangeStartRule.ValueType
-    right_range_column: builtins.str
+    right_range_column: _builtins.str
     range_end_rule: Global___RangeJoinTablesRequest.RangeEndRule.ValueType
-    left_end_column: builtins.str
-    range_match: builtins.str
+    left_end_column: _builtins.str
+    range_match: _builtins.str
     """Specifies the range match parameters as a parseable string. Providing `range_match` in the GRPC call is the
     alternative to detailed range match parameters provided in the `left_start_column`, `range_start_rule`,
     `right_range_column`, `range_end_rule`, and `left_end_column` fields.
     """
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def left_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def right_id(self) -> Global___TableReference: ...
-    @property
-    def exact_match_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
-    @property
-    def aggregations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Aggregation]: ...
+    @_builtins.property
+    def exact_match_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def aggregations(self) -> _containers.RepeatedCompositeFieldContainer[Global___Aggregation]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         left_id: Global___TableReference | None = ...,
         right_id: Global___TableReference | None = ...,
-        exact_match_columns: collections.abc.Iterable[builtins.str] | None = ...,
-        left_start_column: builtins.str = ...,
+        exact_match_columns: _abc.Iterable[_builtins.str] | None = ...,
+        left_start_column: _builtins.str = ...,
         range_start_rule: Global___RangeJoinTablesRequest.RangeStartRule.ValueType = ...,
-        right_range_column: builtins.str = ...,
+        right_range_column: _builtins.str = ...,
         range_end_rule: Global___RangeJoinTablesRequest.RangeEndRule.ValueType = ...,
-        left_end_column: builtins.str = ...,
-        aggregations: collections.abc.Iterable[Global___Aggregation] | None = ...,
-        range_match: builtins.str = ...,
+        left_end_column: _builtins.str = ...,
+        aggregations: _abc.Iterable[Global___Aggregation] | None = ...,
+        range_match: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["aggregations", b"aggregations", "exact_match_columns", b"exact_match_columns", "left_end_column", b"left_end_column", "left_id", b"left_id", "left_start_column", b"left_start_column", "range_end_rule", b"range_end_rule", "range_match", b"range_match", "range_start_rule", b"range_start_rule", "result_id", b"result_id", "right_id", b"right_id", "right_range_column", b"right_range_column"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["aggregations", b"aggregations", "exact_match_columns", b"exact_match_columns", "left_end_column", b"left_end_column", "left_id", b"left_id", "left_start_column", b"left_start_column", "range_end_rule", b"range_end_rule", "range_match", b"range_match", "range_start_rule", b"range_start_rule", "result_id", b"result_id", "right_id", b"right_id", "right_range_column", b"right_range_column"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___RangeJoinTablesRequest: typing_extensions.TypeAlias = RangeJoinTablesRequest
+Global___RangeJoinTablesRequest: _TypeAlias = RangeJoinTablesRequest  # noqa: Y015
 
-@deprecated("""This message has been marked as deprecated using proto message options.""")
-@typing.final
-class ComboAggregateRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_deprecated("""This message has been marked as deprecated using proto message options.""")
+@_typing.final
+class ComboAggregateRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _AggType:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _AggTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[ComboAggregateRequest._AggType.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _AggTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[ComboAggregateRequest._AggType.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         SUM: ComboAggregateRequest._AggType.ValueType  # 0
         ABS_SUM: ComboAggregateRequest._AggType.ValueType  # 1
         GROUP: ComboAggregateRequest._AggType.ValueType  # 2
@@ -2062,320 +2148,347 @@ class ComboAggregateRequest(google.protobuf.message.Message):
     VAR: ComboAggregateRequest.AggType.ValueType  # 12
     WEIGHTED_AVG: ComboAggregateRequest.AggType.ValueType  # 13
 
-    @typing.final
-    class Aggregate(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class Aggregate(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        TYPE_FIELD_NUMBER: builtins.int
-        MATCH_PAIRS_FIELD_NUMBER: builtins.int
-        COLUMN_NAME_FIELD_NUMBER: builtins.int
-        PERCENTILE_FIELD_NUMBER: builtins.int
-        AVG_MEDIAN_FIELD_NUMBER: builtins.int
+        TYPE_FIELD_NUMBER: _builtins.int
+        MATCH_PAIRS_FIELD_NUMBER: _builtins.int
+        COLUMN_NAME_FIELD_NUMBER: _builtins.int
+        PERCENTILE_FIELD_NUMBER: _builtins.int
+        AVG_MEDIAN_FIELD_NUMBER: _builtins.int
         type: Global___ComboAggregateRequest.AggType.ValueType
-        column_name: builtins.str
+        column_name: _builtins.str
         """countBy result (output) column OR weighted avg weight (input) column, otherwise unused"""
-        percentile: builtins.float
+        percentile: _builtins.float
         """required by percentileBy aggregates, otherwise unused"""
-        avg_median: builtins.bool
+        avg_median: _builtins.bool
         """used in percentileBy only"""
-        @property
-        def match_pairs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+        @_builtins.property
+        def match_pairs(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
             """used in all aggregates except countBy"""
 
         def __init__(
             self,
             *,
             type: Global___ComboAggregateRequest.AggType.ValueType = ...,
-            match_pairs: collections.abc.Iterable[builtins.str] | None = ...,
-            column_name: builtins.str = ...,
-            percentile: builtins.float = ...,
-            avg_median: builtins.bool = ...,
+            match_pairs: _abc.Iterable[_builtins.str] | None = ...,
+            column_name: _builtins.str = ...,
+            percentile: _builtins.float = ...,
+            avg_median: _builtins.bool = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["avg_median", b"avg_median", "column_name", b"column_name", "match_pairs", b"match_pairs", "percentile", b"percentile", "type", b"type"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["avg_median", b"avg_median", "column_name", b"column_name", "match_pairs", b"match_pairs", "percentile", b"percentile", "type", b"type"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    AGGREGATES_FIELD_NUMBER: builtins.int
-    GROUP_BY_COLUMNS_FIELD_NUMBER: builtins.int
-    FORCE_COMBO_FIELD_NUMBER: builtins.int
-    force_combo: builtins.bool
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    AGGREGATES_FIELD_NUMBER: _builtins.int
+    GROUP_BY_COLUMNS_FIELD_NUMBER: _builtins.int
+    FORCE_COMBO_FIELD_NUMBER: _builtins.int
+    force_combo: _builtins.bool
     """don't use direct single-aggregate table operations even if there is only a single aggregate"""
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def aggregates(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___ComboAggregateRequest.Aggregate]: ...
-    @property
-    def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def aggregates(self) -> _containers.RepeatedCompositeFieldContainer[Global___ComboAggregateRequest.Aggregate]: ...
+    @_builtins.property
+    def group_by_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        aggregates: collections.abc.Iterable[Global___ComboAggregateRequest.Aggregate] | None = ...,
-        group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
-        force_combo: builtins.bool = ...,
+        aggregates: _abc.Iterable[Global___ComboAggregateRequest.Aggregate] | None = ...,
+        group_by_columns: _abc.Iterable[_builtins.str] | None = ...,
+        force_combo: _builtins.bool = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["aggregates", b"aggregates", "force_combo", b"force_combo", "group_by_columns", b"group_by_columns", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["aggregates", b"aggregates", "force_combo", b"force_combo", "group_by_columns", b"group_by_columns", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ComboAggregateRequest: typing_extensions.TypeAlias = ComboAggregateRequest
+Global___ComboAggregateRequest: _TypeAlias = ComboAggregateRequest  # noqa: Y015
 
-@typing.final
-class AggregateAllRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class AggregateAllRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    SPEC_FIELD_NUMBER: builtins.int
-    GROUP_BY_COLUMNS_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    SPEC_FIELD_NUMBER: _builtins.int
+    GROUP_BY_COLUMNS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def spec(self) -> Global___AggSpec: ...
-    @property
-    def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def group_by_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
         spec: Global___AggSpec | None = ...,
-        group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
+        group_by_columns: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id", "spec", b"spec"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["group_by_columns", b"group_by_columns", "result_id", b"result_id", "source_id", b"source_id", "spec", b"spec"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id", "spec", b"spec"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["group_by_columns", b"group_by_columns", "result_id", b"result_id", "source_id", b"source_id", "spec", b"spec"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___AggregateAllRequest: typing_extensions.TypeAlias = AggregateAllRequest
+Global___AggregateAllRequest: _TypeAlias = AggregateAllRequest  # noqa: Y015
 
-@typing.final
-class AggSpec(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class AggSpec(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class AggSpecApproximatePercentile(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecApproximatePercentile(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        PERCENTILE_FIELD_NUMBER: builtins.int
-        COMPRESSION_FIELD_NUMBER: builtins.int
-        percentile: builtins.float
+        PERCENTILE_FIELD_NUMBER: _builtins.int
+        COMPRESSION_FIELD_NUMBER: _builtins.int
+        percentile: _builtins.float
         """Percentile. Must be in range [0.0, 1.0]."""
-        compression: builtins.float
+        compression: _builtins.float
         """T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
         When not specified, the server will choose a compression value.
         """
         def __init__(
             self,
             *,
-            percentile: builtins.float = ...,
-            compression: builtins.float | None = ...,
+            percentile: _builtins.float = ...,
+            compression: _builtins.float | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_compression", b"_compression", "compression", b"compression"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_compression", b"_compression", "compression", b"compression", "percentile", b"percentile"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["_compression", b"_compression", "compression", b"compression"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["_compression", b"_compression", "compression", b"compression", "percentile", b"percentile"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType__compression: typing_extensions.TypeAlias = typing.Literal["compression"]
-        _WhichOneofArgType__compression: typing_extensions.TypeAlias = typing.Literal["_compression", b"_compression"]
+        _WhichOneofReturnType__compression: _TypeAlias = _typing.Literal["compression"]  # noqa: Y015
+        _WhichOneofArgType__compression: _TypeAlias = _typing.Literal["_compression", b"_compression"]  # noqa: Y015
         def WhichOneof(self, oneof_group: _WhichOneofArgType__compression) -> _WhichOneofReturnType__compression | None: ...
 
-    @typing.final
-    class AggSpecCountDistinct(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecCountDistinct(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COUNT_NULLS_FIELD_NUMBER: builtins.int
-        count_nulls: builtins.bool
+        COUNT_NULLS_FIELD_NUMBER: _builtins.int
+        count_nulls: _builtins.bool
         """Whether null input values should be included when counting the distinct input values."""
         def __init__(
             self,
             *,
-            count_nulls: builtins.bool = ...,
+            count_nulls: _builtins.bool = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["count_nulls", b"count_nulls"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["count_nulls", b"count_nulls"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecDistinct(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecDistinct(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        INCLUDE_NULLS_FIELD_NUMBER: builtins.int
-        include_nulls: builtins.bool
+        INCLUDE_NULLS_FIELD_NUMBER: _builtins.int
+        include_nulls: _builtins.bool
         """Whether null input values should be included in the distinct output values."""
         def __init__(
             self,
             *,
-            include_nulls: builtins.bool = ...,
+            include_nulls: _builtins.bool = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["include_nulls", b"include_nulls"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["include_nulls", b"include_nulls"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecFormula(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecFormula(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        FORMULA_FIELD_NUMBER: builtins.int
-        PARAM_TOKEN_FIELD_NUMBER: builtins.int
-        formula: builtins.str
+        FORMULA_FIELD_NUMBER: _builtins.int
+        PARAM_TOKEN_FIELD_NUMBER: _builtins.int
+        formula: _builtins.str
         """The formula to use to calculate output values from grouped input values."""
-        param_token: builtins.str
+        param_token: _builtins.str
         """The formula parameter token to be replaced with the input column name for evaluation."""
         def __init__(
             self,
             *,
-            formula: builtins.str = ...,
-            param_token: builtins.str = ...,
+            formula: _builtins.str = ...,
+            param_token: _builtins.str = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["formula", b"formula", "param_token", b"param_token"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["formula", b"formula", "param_token", b"param_token"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecMedian(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecMedian(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        AVERAGE_EVENLY_DIVIDED_FIELD_NUMBER: builtins.int
-        average_evenly_divided: builtins.bool
+        AVERAGE_EVENLY_DIVIDED_FIELD_NUMBER: _builtins.int
+        average_evenly_divided: _builtins.bool
         """Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and high-bucket
         are of equal size. Only applies to numeric types.
         """
         def __init__(
             self,
             *,
-            average_evenly_divided: builtins.bool = ...,
+            average_evenly_divided: _builtins.bool = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["average_evenly_divided", b"average_evenly_divided"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["average_evenly_divided", b"average_evenly_divided"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecPercentile(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecPercentile(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        PERCENTILE_FIELD_NUMBER: builtins.int
-        AVERAGE_EVENLY_DIVIDED_FIELD_NUMBER: builtins.int
-        percentile: builtins.float
+        PERCENTILE_FIELD_NUMBER: _builtins.int
+        AVERAGE_EVENLY_DIVIDED_FIELD_NUMBER: _builtins.int
+        percentile: _builtins.float
         """The percentile to calculate. Must be in the range [0.0, 1.0]."""
-        average_evenly_divided: builtins.bool
+        average_evenly_divided: _builtins.bool
         """Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and high-bucket
         are of equal size. Only applies to numeric types.
         """
         def __init__(
             self,
             *,
-            percentile: builtins.float = ...,
-            average_evenly_divided: builtins.bool = ...,
+            percentile: _builtins.float = ...,
+            average_evenly_divided: _builtins.bool = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["average_evenly_divided", b"average_evenly_divided", "percentile", b"percentile"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["average_evenly_divided", b"average_evenly_divided", "percentile", b"percentile"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecSorted(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecSorted(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COLUMNS_FIELD_NUMBER: builtins.int
-        @property
-        def columns(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___AggSpec.AggSpecSortedColumn]:
+        COLUMNS_FIELD_NUMBER: _builtins.int
+        @_builtins.property
+        def columns(self) -> _containers.RepeatedCompositeFieldContainer[Global___AggSpec.AggSpecSortedColumn]:
             """Using a message instead of string to support backwards-compatibility in the future"""
 
         def __init__(
             self,
             *,
-            columns: collections.abc.Iterable[Global___AggSpec.AggSpecSortedColumn] | None = ...,
+            columns: _abc.Iterable[Global___AggSpec.AggSpecSortedColumn] | None = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns", b"columns"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["columns", b"columns"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecSortedColumn(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecSortedColumn(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COLUMN_NAME_FIELD_NUMBER: builtins.int
-        column_name: builtins.str
+        COLUMN_NAME_FIELD_NUMBER: _builtins.int
+        column_name: _builtins.str
         """TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction"""
         def __init__(
             self,
             *,
-            column_name: builtins.str = ...,
+            column_name: _builtins.str = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_name", b"column_name"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["column_name", b"column_name"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecTDigest(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecTDigest(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COMPRESSION_FIELD_NUMBER: builtins.int
-        compression: builtins.float
+        COMPRESSION_FIELD_NUMBER: _builtins.int
+        compression: _builtins.float
         """T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
         When not specified, the server will choose a compression value.
         """
         def __init__(
             self,
             *,
-            compression: builtins.float | None = ...,
+            compression: _builtins.float | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_compression", b"_compression", "compression", b"compression"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_compression", b"_compression", "compression", b"compression"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["_compression", b"_compression", "compression", b"compression"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["_compression", b"_compression", "compression", b"compression"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType__compression: typing_extensions.TypeAlias = typing.Literal["compression"]
-        _WhichOneofArgType__compression: typing_extensions.TypeAlias = typing.Literal["_compression", b"_compression"]
+        _WhichOneofReturnType__compression: _TypeAlias = _typing.Literal["compression"]  # noqa: Y015
+        _WhichOneofArgType__compression: _TypeAlias = _typing.Literal["_compression", b"_compression"]  # noqa: Y015
         def WhichOneof(self, oneof_group: _WhichOneofArgType__compression) -> _WhichOneofReturnType__compression | None: ...
 
-    @typing.final
-    class AggSpecUnique(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecUnique(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        INCLUDE_NULLS_FIELD_NUMBER: builtins.int
-        NON_UNIQUE_SENTINEL_FIELD_NUMBER: builtins.int
-        include_nulls: builtins.bool
+        INCLUDE_NULLS_FIELD_NUMBER: _builtins.int
+        NON_UNIQUE_SENTINEL_FIELD_NUMBER: _builtins.int
+        include_nulls: _builtins.bool
         """Whether to include null values as a distinct value for determining if there is only one unique value to output"""
-        @property
+        @_builtins.property
         def non_unique_sentinel(self) -> Global___AggSpec.AggSpecNonUniqueSentinel:
             """The output value to use for groups that don't have a single unique input value"""
 
         def __init__(
             self,
             *,
-            include_nulls: builtins.bool = ...,
+            include_nulls: _builtins.bool = ...,
             non_unique_sentinel: Global___AggSpec.AggSpecNonUniqueSentinel | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["non_unique_sentinel", b"non_unique_sentinel"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["include_nulls", b"include_nulls", "non_unique_sentinel", b"non_unique_sentinel"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["non_unique_sentinel", b"non_unique_sentinel"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["include_nulls", b"include_nulls", "non_unique_sentinel", b"non_unique_sentinel"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecNonUniqueSentinel(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecNonUniqueSentinel(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        NULL_VALUE_FIELD_NUMBER: builtins.int
-        STRING_VALUE_FIELD_NUMBER: builtins.int
-        INT_VALUE_FIELD_NUMBER: builtins.int
-        LONG_VALUE_FIELD_NUMBER: builtins.int
-        FLOAT_VALUE_FIELD_NUMBER: builtins.int
-        DOUBLE_VALUE_FIELD_NUMBER: builtins.int
-        BOOL_VALUE_FIELD_NUMBER: builtins.int
-        BYTE_VALUE_FIELD_NUMBER: builtins.int
-        SHORT_VALUE_FIELD_NUMBER: builtins.int
-        CHAR_VALUE_FIELD_NUMBER: builtins.int
+        NULL_VALUE_FIELD_NUMBER: _builtins.int
+        STRING_VALUE_FIELD_NUMBER: _builtins.int
+        INT_VALUE_FIELD_NUMBER: _builtins.int
+        LONG_VALUE_FIELD_NUMBER: _builtins.int
+        FLOAT_VALUE_FIELD_NUMBER: _builtins.int
+        DOUBLE_VALUE_FIELD_NUMBER: _builtins.int
+        BOOL_VALUE_FIELD_NUMBER: _builtins.int
+        BYTE_VALUE_FIELD_NUMBER: _builtins.int
+        SHORT_VALUE_FIELD_NUMBER: _builtins.int
+        CHAR_VALUE_FIELD_NUMBER: _builtins.int
         null_value: Global___NullValue.ValueType
-        string_value: builtins.str
-        int_value: builtins.int
-        long_value: builtins.int
-        float_value: builtins.float
-        double_value: builtins.float
-        bool_value: builtins.bool
-        byte_value: builtins.int
+        string_value: _builtins.str
+        int_value: _builtins.int
+        long_value: _builtins.int
+        float_value: _builtins.float
+        double_value: _builtins.float
+        bool_value: _builtins.bool
+        byte_value: _builtins.int
         """Expected to be in range [Byte.MIN_VALUE, Byte.MAX_VALUE]"""
-        short_value: builtins.int
+        short_value: _builtins.int
         """Expected to be in range [Short.MIN_VALUE, Short.MAX_VALUE]"""
-        char_value: builtins.int
+        char_value: _builtins.int
         """Expected to be in range [0x0000, 0xFFFF]
         TODO(deephaven-core#3212): Expand AggSpecNonUniqueSentinel types
         """
@@ -2383,195 +2496,253 @@ class AggSpec(google.protobuf.message.Message):
             self,
             *,
             null_value: Global___NullValue.ValueType = ...,
-            string_value: builtins.str = ...,
-            int_value: builtins.int = ...,
-            long_value: builtins.int = ...,
-            float_value: builtins.float = ...,
-            double_value: builtins.float = ...,
-            bool_value: builtins.bool = ...,
-            byte_value: builtins.int = ...,
-            short_value: builtins.int = ...,
-            char_value: builtins.int = ...,
+            string_value: _builtins.str = ...,
+            int_value: _builtins.int = ...,
+            long_value: _builtins.int = ...,
+            float_value: _builtins.float = ...,
+            double_value: _builtins.float = ...,
+            bool_value: _builtins.bool = ...,
+            byte_value: _builtins.int = ...,
+            short_value: _builtins.int = ...,
+            char_value: _builtins.int = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["bool_value", b"bool_value", "byte_value", b"byte_value", "char_value", b"char_value", "double_value", b"double_value", "float_value", b"float_value", "int_value", b"int_value", "long_value", b"long_value", "null_value", b"null_value", "short_value", b"short_value", "string_value", b"string_value", "type", b"type"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["bool_value", b"bool_value", "byte_value", b"byte_value", "char_value", b"char_value", "double_value", b"double_value", "float_value", b"float_value", "int_value", b"int_value", "long_value", b"long_value", "null_value", b"null_value", "short_value", b"short_value", "string_value", b"string_value", "type", b"type"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["bool_value", b"bool_value", "byte_value", b"byte_value", "char_value", b"char_value", "double_value", b"double_value", "float_value", b"float_value", "int_value", b"int_value", "long_value", b"long_value", "null_value", b"null_value", "short_value", b"short_value", "string_value", b"string_value", "type", b"type"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["bool_value", b"bool_value", "byte_value", b"byte_value", "char_value", b"char_value", "double_value", b"double_value", "float_value", b"float_value", "int_value", b"int_value", "long_value", b"long_value", "null_value", b"null_value", "short_value", b"short_value", "string_value", b"string_value", "type", b"type"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType_type: typing_extensions.TypeAlias = typing.Literal["null_value", "string_value", "int_value", "long_value", "float_value", "double_value", "bool_value", "byte_value", "short_value", "char_value"]
-        _WhichOneofArgType_type: typing_extensions.TypeAlias = typing.Literal["type", b"type"]
+        _WhichOneofReturnType_type: _TypeAlias = _typing.Literal["null_value", "string_value", "int_value", "long_value", "float_value", "double_value", "bool_value", "byte_value", "short_value", "char_value"]  # noqa: Y015
+        _WhichOneofArgType_type: _TypeAlias = _typing.Literal["type", b"type"]  # noqa: Y015
         def WhichOneof(self, oneof_group: _WhichOneofArgType_type) -> _WhichOneofReturnType_type | None: ...
 
-    @typing.final
-    class AggSpecWeighted(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecWeighted(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        WEIGHT_COLUMN_FIELD_NUMBER: builtins.int
-        weight_column: builtins.str
+        WEIGHT_COLUMN_FIELD_NUMBER: _builtins.int
+        weight_column: _builtins.str
         """Column name for the source of input weights."""
         def __init__(
             self,
             *,
-            weight_column: builtins.str = ...,
+            weight_column: _builtins.str = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["weight_column", b"weight_column"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["weight_column", b"weight_column"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecAbsSum(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        def __init__(
-            self,
-        ) -> None: ...
-
-    @typing.final
-    class AggSpecAvg(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecAbsSum(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
         def __init__(
             self,
         ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecFirst(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        def __init__(
-            self,
-        ) -> None: ...
-
-    @typing.final
-    class AggSpecFreeze(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecAvg(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
         def __init__(
             self,
         ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecGroup(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        def __init__(
-            self,
-        ) -> None: ...
-
-    @typing.final
-    class AggSpecLast(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecFirst(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
         def __init__(
             self,
         ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecMax(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        def __init__(
-            self,
-        ) -> None: ...
-
-    @typing.final
-    class AggSpecMin(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecFreeze(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
         def __init__(
             self,
         ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecStd(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        def __init__(
-            self,
-        ) -> None: ...
-
-    @typing.final
-    class AggSpecSum(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecGroup(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
         def __init__(
             self,
         ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggSpecVar(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggSpecLast(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
         def __init__(
             self,
         ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    ABS_SUM_FIELD_NUMBER: builtins.int
-    APPROXIMATE_PERCENTILE_FIELD_NUMBER: builtins.int
-    AVG_FIELD_NUMBER: builtins.int
-    COUNT_DISTINCT_FIELD_NUMBER: builtins.int
-    DISTINCT_FIELD_NUMBER: builtins.int
-    FIRST_FIELD_NUMBER: builtins.int
-    FORMULA_FIELD_NUMBER: builtins.int
-    FREEZE_FIELD_NUMBER: builtins.int
-    GROUP_FIELD_NUMBER: builtins.int
-    LAST_FIELD_NUMBER: builtins.int
-    MAX_FIELD_NUMBER: builtins.int
-    MEDIAN_FIELD_NUMBER: builtins.int
-    MIN_FIELD_NUMBER: builtins.int
-    PERCENTILE_FIELD_NUMBER: builtins.int
-    SORTED_FIRST_FIELD_NUMBER: builtins.int
-    SORTED_LAST_FIELD_NUMBER: builtins.int
-    STD_FIELD_NUMBER: builtins.int
-    SUM_FIELD_NUMBER: builtins.int
-    T_DIGEST_FIELD_NUMBER: builtins.int
-    UNIQUE_FIELD_NUMBER: builtins.int
-    WEIGHTED_AVG_FIELD_NUMBER: builtins.int
-    WEIGHTED_SUM_FIELD_NUMBER: builtins.int
-    VAR_FIELD_NUMBER: builtins.int
-    @property
+    @_typing.final
+    class AggSpecMax(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        def __init__(
+            self,
+        ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+    @_typing.final
+    class AggSpecMin(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        def __init__(
+            self,
+        ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+    @_typing.final
+    class AggSpecStd(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        def __init__(
+            self,
+        ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+    @_typing.final
+    class AggSpecSum(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        def __init__(
+            self,
+        ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+    @_typing.final
+    class AggSpecVar(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        def __init__(
+            self,
+        ) -> None: ...
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+    ABS_SUM_FIELD_NUMBER: _builtins.int
+    APPROXIMATE_PERCENTILE_FIELD_NUMBER: _builtins.int
+    AVG_FIELD_NUMBER: _builtins.int
+    COUNT_DISTINCT_FIELD_NUMBER: _builtins.int
+    DISTINCT_FIELD_NUMBER: _builtins.int
+    FIRST_FIELD_NUMBER: _builtins.int
+    FORMULA_FIELD_NUMBER: _builtins.int
+    FREEZE_FIELD_NUMBER: _builtins.int
+    GROUP_FIELD_NUMBER: _builtins.int
+    LAST_FIELD_NUMBER: _builtins.int
+    MAX_FIELD_NUMBER: _builtins.int
+    MEDIAN_FIELD_NUMBER: _builtins.int
+    MIN_FIELD_NUMBER: _builtins.int
+    PERCENTILE_FIELD_NUMBER: _builtins.int
+    SORTED_FIRST_FIELD_NUMBER: _builtins.int
+    SORTED_LAST_FIELD_NUMBER: _builtins.int
+    STD_FIELD_NUMBER: _builtins.int
+    SUM_FIELD_NUMBER: _builtins.int
+    T_DIGEST_FIELD_NUMBER: _builtins.int
+    UNIQUE_FIELD_NUMBER: _builtins.int
+    WEIGHTED_AVG_FIELD_NUMBER: _builtins.int
+    WEIGHTED_SUM_FIELD_NUMBER: _builtins.int
+    VAR_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def abs_sum(self) -> Global___AggSpec.AggSpecAbsSum: ...
-    @property
+    @_builtins.property
     def approximate_percentile(self) -> Global___AggSpec.AggSpecApproximatePercentile: ...
-    @property
+    @_builtins.property
     def avg(self) -> Global___AggSpec.AggSpecAvg: ...
-    @property
+    @_builtins.property
     def count_distinct(self) -> Global___AggSpec.AggSpecCountDistinct: ...
-    @property
+    @_builtins.property
     def distinct(self) -> Global___AggSpec.AggSpecDistinct: ...
-    @property
+    @_builtins.property
     def first(self) -> Global___AggSpec.AggSpecFirst: ...
-    @property
+    @_builtins.property
     def formula(self) -> Global___AggSpec.AggSpecFormula: ...
-    @property
+    @_builtins.property
     def freeze(self) -> Global___AggSpec.AggSpecFreeze: ...
-    @property
+    @_builtins.property
     def group(self) -> Global___AggSpec.AggSpecGroup: ...
-    @property
+    @_builtins.property
     def last(self) -> Global___AggSpec.AggSpecLast: ...
-    @property
+    @_builtins.property
     def max(self) -> Global___AggSpec.AggSpecMax: ...
-    @property
+    @_builtins.property
     def median(self) -> Global___AggSpec.AggSpecMedian: ...
-    @property
+    @_builtins.property
     def min(self) -> Global___AggSpec.AggSpecMin: ...
-    @property
+    @_builtins.property
     def percentile(self) -> Global___AggSpec.AggSpecPercentile: ...
-    @property
+    @_builtins.property
     def sorted_first(self) -> Global___AggSpec.AggSpecSorted: ...
-    @property
+    @_builtins.property
     def sorted_last(self) -> Global___AggSpec.AggSpecSorted: ...
-    @property
+    @_builtins.property
     def std(self) -> Global___AggSpec.AggSpecStd: ...
-    @property
+    @_builtins.property
     def sum(self) -> Global___AggSpec.AggSpecSum: ...
-    @property
+    @_builtins.property
     def t_digest(self) -> Global___AggSpec.AggSpecTDigest: ...
-    @property
+    @_builtins.property
     def unique(self) -> Global___AggSpec.AggSpecUnique: ...
-    @property
+    @_builtins.property
     def weighted_avg(self) -> Global___AggSpec.AggSpecWeighted: ...
-    @property
+    @_builtins.property
     def weighted_sum(self) -> Global___AggSpec.AggSpecWeighted: ...
-    @property
+    @_builtins.property
     def var(self) -> Global___AggSpec.AggSpecVar: ...
     def __init__(
         self,
@@ -2600,35 +2771,35 @@ class AggSpec(google.protobuf.message.Message):
         weighted_sum: Global___AggSpec.AggSpecWeighted | None = ...,
         var: Global___AggSpec.AggSpecVar | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["abs_sum", b"abs_sum", "approximate_percentile", b"approximate_percentile", "avg", b"avg", "count_distinct", b"count_distinct", "distinct", b"distinct", "first", b"first", "formula", b"formula", "freeze", b"freeze", "group", b"group", "last", b"last", "max", b"max", "median", b"median", "min", b"min", "percentile", b"percentile", "sorted_first", b"sorted_first", "sorted_last", b"sorted_last", "std", b"std", "sum", b"sum", "t_digest", b"t_digest", "type", b"type", "unique", b"unique", "var", b"var", "weighted_avg", b"weighted_avg", "weighted_sum", b"weighted_sum"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["abs_sum", b"abs_sum", "approximate_percentile", b"approximate_percentile", "avg", b"avg", "count_distinct", b"count_distinct", "distinct", b"distinct", "first", b"first", "formula", b"formula", "freeze", b"freeze", "group", b"group", "last", b"last", "max", b"max", "median", b"median", "min", b"min", "percentile", b"percentile", "sorted_first", b"sorted_first", "sorted_last", b"sorted_last", "std", b"std", "sum", b"sum", "t_digest", b"t_digest", "type", b"type", "unique", b"unique", "var", b"var", "weighted_avg", b"weighted_avg", "weighted_sum", b"weighted_sum"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["abs_sum", b"abs_sum", "approximate_percentile", b"approximate_percentile", "avg", b"avg", "count_distinct", b"count_distinct", "distinct", b"distinct", "first", b"first", "formula", b"formula", "freeze", b"freeze", "group", b"group", "last", b"last", "max", b"max", "median", b"median", "min", b"min", "percentile", b"percentile", "sorted_first", b"sorted_first", "sorted_last", b"sorted_last", "std", b"std", "sum", b"sum", "t_digest", b"t_digest", "type", b"type", "unique", b"unique", "var", b"var", "weighted_avg", b"weighted_avg", "weighted_sum", b"weighted_sum"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["abs_sum", b"abs_sum", "approximate_percentile", b"approximate_percentile", "avg", b"avg", "count_distinct", b"count_distinct", "distinct", b"distinct", "first", b"first", "formula", b"formula", "freeze", b"freeze", "group", b"group", "last", b"last", "max", b"max", "median", b"median", "min", b"min", "percentile", b"percentile", "sorted_first", b"sorted_first", "sorted_last", b"sorted_last", "std", b"std", "sum", b"sum", "t_digest", b"t_digest", "type", b"type", "unique", b"unique", "var", b"var", "weighted_avg", b"weighted_avg", "weighted_sum", b"weighted_sum"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_type: typing_extensions.TypeAlias = typing.Literal["abs_sum", "approximate_percentile", "avg", "count_distinct", "distinct", "first", "formula", "freeze", "group", "last", "max", "median", "min", "percentile", "sorted_first", "sorted_last", "std", "sum", "t_digest", "unique", "weighted_avg", "weighted_sum", "var"]
-    _WhichOneofArgType_type: typing_extensions.TypeAlias = typing.Literal["type", b"type"]
+    _WhichOneofReturnType_type: _TypeAlias = _typing.Literal["abs_sum", "approximate_percentile", "avg", "count_distinct", "distinct", "first", "formula", "freeze", "group", "last", "max", "median", "min", "percentile", "sorted_first", "sorted_last", "std", "sum", "t_digest", "unique", "weighted_avg", "weighted_sum", "var"]  # noqa: Y015
+    _WhichOneofArgType_type: _TypeAlias = _typing.Literal["type", b"type"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_type) -> _WhichOneofReturnType_type | None: ...
 
-Global___AggSpec: typing_extensions.TypeAlias = AggSpec
+Global___AggSpec: _TypeAlias = AggSpec  # noqa: Y015
 
-@typing.final
-class AggregateRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class AggregateRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    INITIAL_GROUPS_ID_FIELD_NUMBER: builtins.int
-    PRESERVE_EMPTY_FIELD_NUMBER: builtins.int
-    AGGREGATIONS_FIELD_NUMBER: builtins.int
-    GROUP_BY_COLUMNS_FIELD_NUMBER: builtins.int
-    preserve_empty: builtins.bool
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    INITIAL_GROUPS_ID_FIELD_NUMBER: _builtins.int
+    PRESERVE_EMPTY_FIELD_NUMBER: _builtins.int
+    AGGREGATIONS_FIELD_NUMBER: _builtins.int
+    GROUP_BY_COLUMNS_FIELD_NUMBER: _builtins.int
+    preserve_empty: _builtins.bool
     """Whether to keep result rows for groups that are initially empty or become empty as a result
     of updates. Each aggregation operator defines its own value for empty groups.
     """
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def initial_groups_id(self) -> Global___TableReference:
         """A table whose distinct combinations of values for the group_by_columns should be used
         to create an initial set of aggregation groups. All other columns are ignored. This is useful in
@@ -2639,154 +2810,169 @@ class AggregateRequest(google.protobuf.message.Message):
         initial_groups_id is not present, the result will be the same as if a table with no rows was supplied.
         """
 
-    @property
-    def aggregations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Aggregation]: ...
-    @property
-    def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def aggregations(self) -> _containers.RepeatedCompositeFieldContainer[Global___Aggregation]: ...
+    @_builtins.property
+    def group_by_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
         initial_groups_id: Global___TableReference | None = ...,
-        preserve_empty: builtins.bool = ...,
-        aggregations: collections.abc.Iterable[Global___Aggregation] | None = ...,
-        group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
+        preserve_empty: _builtins.bool = ...,
+        aggregations: _abc.Iterable[Global___Aggregation] | None = ...,
+        group_by_columns: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["initial_groups_id", b"initial_groups_id", "result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["aggregations", b"aggregations", "group_by_columns", b"group_by_columns", "initial_groups_id", b"initial_groups_id", "preserve_empty", b"preserve_empty", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["initial_groups_id", b"initial_groups_id", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["aggregations", b"aggregations", "group_by_columns", b"group_by_columns", "initial_groups_id", b"initial_groups_id", "preserve_empty", b"preserve_empty", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___AggregateRequest: typing_extensions.TypeAlias = AggregateRequest
+Global___AggregateRequest: _TypeAlias = AggregateRequest  # noqa: Y015
 
-@typing.final
-class Aggregation(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Aggregation(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class AggregationColumns(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggregationColumns(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        SPEC_FIELD_NUMBER: builtins.int
-        MATCH_PAIRS_FIELD_NUMBER: builtins.int
-        @property
+        SPEC_FIELD_NUMBER: _builtins.int
+        MATCH_PAIRS_FIELD_NUMBER: _builtins.int
+        @_builtins.property
         def spec(self) -> Global___AggSpec: ...
-        @property
-        def match_pairs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+        @_builtins.property
+        def match_pairs(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
         def __init__(
             self,
             *,
             spec: Global___AggSpec | None = ...,
-            match_pairs: collections.abc.Iterable[builtins.str] | None = ...,
+            match_pairs: _abc.Iterable[_builtins.str] | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["spec", b"spec"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["match_pairs", b"match_pairs", "spec", b"spec"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["spec", b"spec"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["match_pairs", b"match_pairs", "spec", b"spec"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggregationCount(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggregationCount(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COLUMN_NAME_FIELD_NUMBER: builtins.int
-        column_name: builtins.str
+        COLUMN_NAME_FIELD_NUMBER: _builtins.int
+        column_name: _builtins.str
         """The output column name"""
         def __init__(
             self,
             *,
-            column_name: builtins.str = ...,
+            column_name: _builtins.str = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_name", b"column_name"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["column_name", b"column_name"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggregationCountWhere(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggregationCountWhere(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COLUMN_NAME_FIELD_NUMBER: builtins.int
-        FILTERS_FIELD_NUMBER: builtins.int
-        column_name: builtins.str
+        COLUMN_NAME_FIELD_NUMBER: _builtins.int
+        FILTERS_FIELD_NUMBER: _builtins.int
+        column_name: _builtins.str
         """The output column name"""
-        @property
-        def filters(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+        @_builtins.property
+        def filters(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
         def __init__(
             self,
             *,
-            column_name: builtins.str = ...,
-            filters: collections.abc.Iterable[builtins.str] | None = ...,
+            column_name: _builtins.str = ...,
+            filters: _abc.Iterable[_builtins.str] | None = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_name", b"column_name", "filters", b"filters"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["column_name", b"column_name", "filters", b"filters"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggregationRowKey(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggregationRowKey(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COLUMN_NAME_FIELD_NUMBER: builtins.int
-        column_name: builtins.str
+        COLUMN_NAME_FIELD_NUMBER: _builtins.int
+        column_name: _builtins.str
         def __init__(
             self,
             *,
-            column_name: builtins.str = ...,
+            column_name: _builtins.str = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_name", b"column_name"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["column_name", b"column_name"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggregationPartition(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggregationPartition(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        COLUMN_NAME_FIELD_NUMBER: builtins.int
-        INCLUDE_GROUP_BY_COLUMNS_FIELD_NUMBER: builtins.int
-        column_name: builtins.str
-        include_group_by_columns: builtins.bool
+        COLUMN_NAME_FIELD_NUMBER: _builtins.int
+        INCLUDE_GROUP_BY_COLUMNS_FIELD_NUMBER: _builtins.int
+        column_name: _builtins.str
+        include_group_by_columns: _builtins.bool
         def __init__(
             self,
             *,
-            column_name: builtins.str = ...,
-            include_group_by_columns: builtins.bool = ...,
+            column_name: _builtins.str = ...,
+            include_group_by_columns: _builtins.bool = ...,
         ) -> None: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_name", b"column_name", "include_group_by_columns", b"include_group_by_columns"]
+        _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["column_name", b"column_name", "include_group_by_columns", b"include_group_by_columns"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    @typing.final
-    class AggregationFormula(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class AggregationFormula(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        SELECTABLE_FIELD_NUMBER: builtins.int
-        @property
+        SELECTABLE_FIELD_NUMBER: _builtins.int
+        @_builtins.property
         def selectable(self) -> Global___Selectable: ...
         def __init__(
             self,
             *,
             selectable: Global___Selectable | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["selectable", b"selectable"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["selectable", b"selectable"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["selectable", b"selectable"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["selectable", b"selectable"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    COLUMNS_FIELD_NUMBER: builtins.int
-    COUNT_FIELD_NUMBER: builtins.int
-    FIRST_ROW_KEY_FIELD_NUMBER: builtins.int
-    LAST_ROW_KEY_FIELD_NUMBER: builtins.int
-    PARTITION_FIELD_NUMBER: builtins.int
-    FORMULA_FIELD_NUMBER: builtins.int
-    COUNT_WHERE_FIELD_NUMBER: builtins.int
-    @property
+    COLUMNS_FIELD_NUMBER: _builtins.int
+    COUNT_FIELD_NUMBER: _builtins.int
+    FIRST_ROW_KEY_FIELD_NUMBER: _builtins.int
+    LAST_ROW_KEY_FIELD_NUMBER: _builtins.int
+    PARTITION_FIELD_NUMBER: _builtins.int
+    FORMULA_FIELD_NUMBER: _builtins.int
+    COUNT_WHERE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def columns(self) -> Global___Aggregation.AggregationColumns: ...
-    @property
+    @_builtins.property
     def count(self) -> Global___Aggregation.AggregationCount: ...
-    @property
+    @_builtins.property
     def first_row_key(self) -> Global___Aggregation.AggregationRowKey: ...
-    @property
+    @_builtins.property
     def last_row_key(self) -> Global___Aggregation.AggregationRowKey: ...
-    @property
+    @_builtins.property
     def partition(self) -> Global___Aggregation.AggregationPartition: ...
-    @property
+    @_builtins.property
     def formula(self) -> Global___Aggregation.AggregationFormula: ...
-    @property
+    @_builtins.property
     def count_where(self) -> Global___Aggregation.AggregationCountWhere: ...
     def __init__(
         self,
@@ -2799,26 +2985,26 @@ class Aggregation(google.protobuf.message.Message):
         formula: Global___Aggregation.AggregationFormula | None = ...,
         count_where: Global___Aggregation.AggregationCountWhere | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns", b"columns", "count", b"count", "count_where", b"count_where", "first_row_key", b"first_row_key", "formula", b"formula", "last_row_key", b"last_row_key", "partition", b"partition", "type", b"type"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns", b"columns", "count", b"count", "count_where", b"count_where", "first_row_key", b"first_row_key", "formula", b"formula", "last_row_key", b"last_row_key", "partition", b"partition", "type", b"type"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["columns", b"columns", "count", b"count", "count_where", b"count_where", "first_row_key", b"first_row_key", "formula", b"formula", "last_row_key", b"last_row_key", "partition", b"partition", "type", b"type"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["columns", b"columns", "count", b"count", "count_where", b"count_where", "first_row_key", b"first_row_key", "formula", b"formula", "last_row_key", b"last_row_key", "partition", b"partition", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_type: typing_extensions.TypeAlias = typing.Literal["columns", "count", "first_row_key", "last_row_key", "partition", "formula", "count_where"]
-    _WhichOneofArgType_type: typing_extensions.TypeAlias = typing.Literal["type", b"type"]
+    _WhichOneofReturnType_type: _TypeAlias = _typing.Literal["columns", "count", "first_row_key", "last_row_key", "partition", "formula", "count_where"]  # noqa: Y015
+    _WhichOneofArgType_type: _TypeAlias = _typing.Literal["type", b"type"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_type) -> _WhichOneofReturnType_type | None: ...
 
-Global___Aggregation: typing_extensions.TypeAlias = Aggregation
+Global___Aggregation: _TypeAlias = Aggregation  # noqa: Y015
 
-@typing.final
-class SortDescriptor(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SortDescriptor(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _SortDirection:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _SortDirectionEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[SortDescriptor._SortDirection.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _SortDirectionEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[SortDescriptor._SortDirection.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         UNKNOWN: SortDescriptor._SortDirection.ValueType  # 0
         DESCENDING: SortDescriptor._SortDirection.ValueType  # -1
         ASCENDING: SortDescriptor._SortDirection.ValueType  # 1
@@ -2830,193 +3016,205 @@ class SortDescriptor(google.protobuf.message.Message):
     ASCENDING: SortDescriptor.SortDirection.ValueType  # 1
     REVERSE: SortDescriptor.SortDirection.ValueType  # 2
 
-    COLUMN_NAME_FIELD_NUMBER: builtins.int
-    IS_ABSOLUTE_FIELD_NUMBER: builtins.int
-    DIRECTION_FIELD_NUMBER: builtins.int
-    column_name: builtins.str
-    is_absolute: builtins.bool
+    COLUMN_NAME_FIELD_NUMBER: _builtins.int
+    IS_ABSOLUTE_FIELD_NUMBER: _builtins.int
+    DIRECTION_FIELD_NUMBER: _builtins.int
+    column_name: _builtins.str
+    is_absolute: _builtins.bool
     direction: Global___SortDescriptor.SortDirection.ValueType
     def __init__(
         self,
         *,
-        column_name: builtins.str = ...,
-        is_absolute: builtins.bool = ...,
+        column_name: _builtins.str = ...,
+        is_absolute: _builtins.bool = ...,
         direction: Global___SortDescriptor.SortDirection.ValueType = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_name", b"column_name", "direction", b"direction", "is_absolute", b"is_absolute"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["column_name", b"column_name", "direction", b"direction", "is_absolute", b"is_absolute"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SortDescriptor: typing_extensions.TypeAlias = SortDescriptor
+Global___SortDescriptor: _TypeAlias = SortDescriptor  # noqa: Y015
 
-@typing.final
-class SortTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SortTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    SORTS_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    SORTS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def sorts(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___SortDescriptor]: ...
+    @_builtins.property
+    def sorts(self) -> _containers.RepeatedCompositeFieldContainer[Global___SortDescriptor]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        sorts: collections.abc.Iterable[Global___SortDescriptor] | None = ...,
+        sorts: _abc.Iterable[Global___SortDescriptor] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "sorts", b"sorts", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "sorts", b"sorts", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SortTableRequest: typing_extensions.TypeAlias = SortTableRequest
+Global___SortTableRequest: _TypeAlias = SortTableRequest  # noqa: Y015
 
-@typing.final
-class FilterTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class FilterTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    FILTERS_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    FILTERS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
-    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
+    @_builtins.property
+    def filters(self) -> _containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        filters: collections.abc.Iterable[Global___Condition] | None = ...,
+        filters: _abc.Iterable[Global___Condition] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["filters", b"filters", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["filters", b"filters", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___FilterTableRequest: typing_extensions.TypeAlias = FilterTableRequest
+Global___FilterTableRequest: _TypeAlias = FilterTableRequest  # noqa: Y015
 
-@typing.final
-class SeekRowRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SeekRowRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    STARTING_ROW_FIELD_NUMBER: builtins.int
-    COLUMN_NAME_FIELD_NUMBER: builtins.int
-    SEEK_VALUE_FIELD_NUMBER: builtins.int
-    INSENSITIVE_FIELD_NUMBER: builtins.int
-    CONTAINS_FIELD_NUMBER: builtins.int
-    IS_BACKWARD_FIELD_NUMBER: builtins.int
-    starting_row: builtins.int
-    column_name: builtins.str
-    insensitive: builtins.bool
-    contains: builtins.bool
-    is_backward: builtins.bool
-    @property
-    def source_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    STARTING_ROW_FIELD_NUMBER: _builtins.int
+    COLUMN_NAME_FIELD_NUMBER: _builtins.int
+    SEEK_VALUE_FIELD_NUMBER: _builtins.int
+    INSENSITIVE_FIELD_NUMBER: _builtins.int
+    CONTAINS_FIELD_NUMBER: _builtins.int
+    IS_BACKWARD_FIELD_NUMBER: _builtins.int
+    starting_row: _builtins.int
+    column_name: _builtins.str
+    insensitive: _builtins.bool
+    contains: _builtins.bool
+    is_backward: _builtins.bool
+    @_builtins.property
+    def source_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def seek_value(self) -> Global___Literal: ...
     def __init__(
         self,
         *,
-        source_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        starting_row: builtins.int = ...,
-        column_name: builtins.str = ...,
+        source_id: _ticket_pb2.Ticket | None = ...,
+        starting_row: _builtins.int = ...,
+        column_name: _builtins.str = ...,
         seek_value: Global___Literal | None = ...,
-        insensitive: builtins.bool = ...,
-        contains: builtins.bool = ...,
-        is_backward: builtins.bool = ...,
+        insensitive: _builtins.bool = ...,
+        contains: _builtins.bool = ...,
+        is_backward: _builtins.bool = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["seek_value", b"seek_value", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_name", b"column_name", "contains", b"contains", "insensitive", b"insensitive", "is_backward", b"is_backward", "seek_value", b"seek_value", "source_id", b"source_id", "starting_row", b"starting_row"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["seek_value", b"seek_value", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["column_name", b"column_name", "contains", b"contains", "insensitive", b"insensitive", "is_backward", b"is_backward", "seek_value", b"seek_value", "source_id", b"source_id", "starting_row", b"starting_row"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SeekRowRequest: typing_extensions.TypeAlias = SeekRowRequest
+Global___SeekRowRequest: _TypeAlias = SeekRowRequest  # noqa: Y015
 
-@typing.final
-class SeekRowResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SeekRowResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ROW_FIELD_NUMBER: builtins.int
-    result_row: builtins.int
+    RESULT_ROW_FIELD_NUMBER: _builtins.int
+    result_row: _builtins.int
     def __init__(
         self,
         *,
-        result_row: builtins.int = ...,
+        result_row: _builtins.int = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_row", b"result_row"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_row", b"result_row"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SeekRowResponse: typing_extensions.TypeAlias = SeekRowResponse
+Global___SeekRowResponse: _TypeAlias = SeekRowResponse  # noqa: Y015
 
-@typing.final
-class Reference(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Reference(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    COLUMN_NAME_FIELD_NUMBER: builtins.int
-    column_name: builtins.str
+    COLUMN_NAME_FIELD_NUMBER: _builtins.int
+    column_name: _builtins.str
     def __init__(
         self,
         *,
-        column_name: builtins.str = ...,
+        column_name: _builtins.str = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_name", b"column_name"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["column_name", b"column_name"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___Reference: typing_extensions.TypeAlias = Reference
+Global___Reference: _TypeAlias = Reference  # noqa: Y015
 
-@typing.final
-class Literal(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Literal(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    STRING_VALUE_FIELD_NUMBER: builtins.int
-    DOUBLE_VALUE_FIELD_NUMBER: builtins.int
-    BOOL_VALUE_FIELD_NUMBER: builtins.int
-    LONG_VALUE_FIELD_NUMBER: builtins.int
-    NANO_TIME_VALUE_FIELD_NUMBER: builtins.int
-    string_value: builtins.str
-    double_value: builtins.float
-    bool_value: builtins.bool
-    long_value: builtins.int
-    nano_time_value: builtins.int
+    STRING_VALUE_FIELD_NUMBER: _builtins.int
+    DOUBLE_VALUE_FIELD_NUMBER: _builtins.int
+    BOOL_VALUE_FIELD_NUMBER: _builtins.int
+    LONG_VALUE_FIELD_NUMBER: _builtins.int
+    NANO_TIME_VALUE_FIELD_NUMBER: _builtins.int
+    string_value: _builtins.str
+    double_value: _builtins.float
+    bool_value: _builtins.bool
+    long_value: _builtins.int
+    nano_time_value: _builtins.int
     """nanos since the epoch"""
     def __init__(
         self,
         *,
-        string_value: builtins.str = ...,
-        double_value: builtins.float = ...,
-        bool_value: builtins.bool = ...,
-        long_value: builtins.int = ...,
-        nano_time_value: builtins.int = ...,
+        string_value: _builtins.str = ...,
+        double_value: _builtins.float = ...,
+        bool_value: _builtins.bool = ...,
+        long_value: _builtins.int = ...,
+        nano_time_value: _builtins.int = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["bool_value", b"bool_value", "double_value", b"double_value", "long_value", b"long_value", "nano_time_value", b"nano_time_value", "string_value", b"string_value", "value", b"value"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["bool_value", b"bool_value", "double_value", b"double_value", "long_value", b"long_value", "nano_time_value", b"nano_time_value", "string_value", b"string_value", "value", b"value"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["bool_value", b"bool_value", "double_value", b"double_value", "long_value", b"long_value", "nano_time_value", b"nano_time_value", "string_value", b"string_value", "value", b"value"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["bool_value", b"bool_value", "double_value", b"double_value", "long_value", b"long_value", "nano_time_value", b"nano_time_value", "string_value", b"string_value", "value", b"value"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_value: typing_extensions.TypeAlias = typing.Literal["string_value", "double_value", "bool_value", "long_value", "nano_time_value"]
-    _WhichOneofArgType_value: typing_extensions.TypeAlias = typing.Literal["value", b"value"]
+    _WhichOneofReturnType_value: _TypeAlias = _typing.Literal["string_value", "double_value", "bool_value", "long_value", "nano_time_value"]  # noqa: Y015
+    _WhichOneofArgType_value: _TypeAlias = _typing.Literal["value", b"value"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_value) -> _WhichOneofReturnType_value | None: ...
 
-Global___Literal: typing_extensions.TypeAlias = Literal
+Global___Literal: _TypeAlias = Literal  # noqa: Y015
 
-@typing.final
-class Value(google.protobuf.message.Message):
+@_typing.final
+class Value(_message.Message):
     """could also inline this to each place that uses it"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REFERENCE_FIELD_NUMBER: builtins.int
-    LITERAL_FIELD_NUMBER: builtins.int
-    @property
+    REFERENCE_FIELD_NUMBER: _builtins.int
+    LITERAL_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def reference(self) -> Global___Reference: ...
-    @property
+    @_builtins.property
     def literal(self) -> Global___Literal: ...
     def __init__(
         self,
@@ -3024,44 +3222,44 @@ class Value(google.protobuf.message.Message):
         reference: Global___Reference | None = ...,
         literal: Global___Literal | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["data", b"data", "literal", b"literal", "reference", b"reference"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["data", b"data", "literal", b"literal", "reference", b"reference"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["data", b"data", "literal", b"literal", "reference", b"reference"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["data", b"data", "literal", b"literal", "reference", b"reference"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_data: typing_extensions.TypeAlias = typing.Literal["reference", "literal"]
-    _WhichOneofArgType_data: typing_extensions.TypeAlias = typing.Literal["data", b"data"]
+    _WhichOneofReturnType_data: _TypeAlias = _typing.Literal["reference", "literal"]  # noqa: Y015
+    _WhichOneofArgType_data: _TypeAlias = _typing.Literal["data", b"data"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_data) -> _WhichOneofReturnType_data | None: ...
 
-Global___Value: typing_extensions.TypeAlias = Value
+Global___Value: _TypeAlias = Value  # noqa: Y015
 
-@typing.final
-class Condition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Condition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    AND_FIELD_NUMBER: builtins.int
-    OR_FIELD_NUMBER: builtins.int
-    NOT_FIELD_NUMBER: builtins.int
-    COMPARE_FIELD_NUMBER: builtins.int
-    IN_FIELD_NUMBER: builtins.int
-    INVOKE_FIELD_NUMBER: builtins.int
-    IS_NULL_FIELD_NUMBER: builtins.int
-    MATCHES_FIELD_NUMBER: builtins.int
-    CONTAINS_FIELD_NUMBER: builtins.int
-    SEARCH_FIELD_NUMBER: builtins.int
-    IS_NAN_FIELD_NUMBER: builtins.int
-    @property
+    AND_FIELD_NUMBER: _builtins.int
+    OR_FIELD_NUMBER: _builtins.int
+    NOT_FIELD_NUMBER: _builtins.int
+    COMPARE_FIELD_NUMBER: _builtins.int
+    IN_FIELD_NUMBER: _builtins.int
+    INVOKE_FIELD_NUMBER: _builtins.int
+    IS_NULL_FIELD_NUMBER: _builtins.int
+    MATCHES_FIELD_NUMBER: _builtins.int
+    CONTAINS_FIELD_NUMBER: _builtins.int
+    SEARCH_FIELD_NUMBER: _builtins.int
+    IS_NAN_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def compare(self) -> Global___CompareCondition: ...
-    @property
+    @_builtins.property
     def invoke(self) -> Global___InvokeCondition: ...
-    @property
+    @_builtins.property
     def is_null(self) -> Global___IsNullCondition: ...
-    @property
+    @_builtins.property
     def matches(self) -> Global___MatchesCondition: ...
-    @property
+    @_builtins.property
     def contains(self) -> Global___ContainsCondition: ...
-    @property
+    @_builtins.property
     def search(self) -> Global___SearchCondition: ...
-    @property
+    @_builtins.property
     def is_nan(self) -> Global___IsNaNCondition: ...
     def __init__(
         self,
@@ -3074,81 +3272,88 @@ class Condition(google.protobuf.message.Message):
         search: Global___SearchCondition | None = ...,
         is_nan: Global___IsNaNCondition | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_data: typing_extensions.TypeAlias = typing.Literal["and", "or", "not", "compare", "in", "invoke", "is_null", "matches", "contains", "search", "is_nan"]
-    _WhichOneofArgType_data: typing_extensions.TypeAlias = typing.Literal["data", b"data"]
+    _WhichOneofReturnType_data: _TypeAlias = _typing.Literal["and", "or", "not", "compare", "in", "invoke", "is_null", "matches", "contains", "search", "is_nan"]  # noqa: Y015
+    _WhichOneofArgType_data: _TypeAlias = _typing.Literal["data", b"data"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_data) -> _WhichOneofReturnType_data | None: ...
 
-Global___Condition: typing_extensions.TypeAlias = Condition
+Global___Condition: _TypeAlias = Condition  # noqa: Y015
 
-@typing.final
-class AndCondition(google.protobuf.message.Message):
+@_typing.final
+class AndCondition(_message.Message):
     """merge AND and OR into one and give them an "operation"?"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    FILTERS_FIELD_NUMBER: builtins.int
-    @property
-    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
+    FILTERS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def filters(self) -> _containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
     def __init__(
         self,
         *,
-        filters: collections.abc.Iterable[Global___Condition] | None = ...,
+        filters: _abc.Iterable[Global___Condition] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["filters", b"filters"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["filters", b"filters"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___AndCondition: typing_extensions.TypeAlias = AndCondition
+Global___AndCondition: _TypeAlias = AndCondition  # noqa: Y015
 
-@typing.final
-class OrCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class OrCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    FILTERS_FIELD_NUMBER: builtins.int
-    @property
-    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
+    FILTERS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def filters(self) -> _containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
     def __init__(
         self,
         *,
-        filters: collections.abc.Iterable[Global___Condition] | None = ...,
+        filters: _abc.Iterable[Global___Condition] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["filters", b"filters"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["filters", b"filters"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___OrCondition: typing_extensions.TypeAlias = OrCondition
+Global___OrCondition: _TypeAlias = OrCondition  # noqa: Y015
 
-@typing.final
-class NotCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class NotCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    FILTER_FIELD_NUMBER: builtins.int
-    @property
+    FILTER_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def filter(self) -> Global___Condition: ...
     def __init__(
         self,
         *,
         filter: Global___Condition | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["filter", b"filter"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["filter", b"filter"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["filter", b"filter"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["filter", b"filter"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___NotCondition: typing_extensions.TypeAlias = NotCondition
+Global___NotCondition: _TypeAlias = NotCondition  # noqa: Y015
 
-@typing.final
-class CompareCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class CompareCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _CompareOperation:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _CompareOperationEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[CompareCondition._CompareOperation.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _CompareOperationEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[CompareCondition._CompareOperation.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         LESS_THAN: CompareCondition._CompareOperation.ValueType  # 0
         LESS_THAN_OR_EQUAL: CompareCondition._CompareOperation.ValueType  # 1
         GREATER_THAN: CompareCondition._CompareOperation.ValueType  # 2
@@ -3164,15 +3369,15 @@ class CompareCondition(google.protobuf.message.Message):
     EQUALS: CompareCondition.CompareOperation.ValueType  # 4
     NOT_EQUALS: CompareCondition.CompareOperation.ValueType  # 5
 
-    OPERATION_FIELD_NUMBER: builtins.int
-    CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
-    LHS_FIELD_NUMBER: builtins.int
-    RHS_FIELD_NUMBER: builtins.int
+    OPERATION_FIELD_NUMBER: _builtins.int
+    CASE_SENSITIVITY_FIELD_NUMBER: _builtins.int
+    LHS_FIELD_NUMBER: _builtins.int
+    RHS_FIELD_NUMBER: _builtins.int
     operation: Global___CompareCondition.CompareOperation.ValueType
     case_sensitivity: Global___CaseSensitivity.ValueType
-    @property
+    @_builtins.property
     def lhs(self) -> Global___Value: ...
-    @property
+    @_builtins.property
     def rhs(self) -> Global___Value: ...
     def __init__(
         self,
@@ -3182,348 +3387,374 @@ class CompareCondition(google.protobuf.message.Message):
         lhs: Global___Value | None = ...,
         rhs: Global___Value | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["lhs", b"lhs", "rhs", b"rhs"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["case_sensitivity", b"case_sensitivity", "lhs", b"lhs", "operation", b"operation", "rhs", b"rhs"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["lhs", b"lhs", "rhs", b"rhs"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["case_sensitivity", b"case_sensitivity", "lhs", b"lhs", "operation", b"operation", "rhs", b"rhs"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___CompareCondition: typing_extensions.TypeAlias = CompareCondition
+Global___CompareCondition: _TypeAlias = CompareCondition  # noqa: Y015
 
-@typing.final
-class InCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class InCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TARGET_FIELD_NUMBER: builtins.int
-    CANDIDATES_FIELD_NUMBER: builtins.int
-    CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
-    MATCH_TYPE_FIELD_NUMBER: builtins.int
-    NAN_COMPARISON_FIELD_NUMBER: builtins.int
+    TARGET_FIELD_NUMBER: _builtins.int
+    CANDIDATES_FIELD_NUMBER: _builtins.int
+    CASE_SENSITIVITY_FIELD_NUMBER: _builtins.int
+    MATCH_TYPE_FIELD_NUMBER: _builtins.int
+    NAN_COMPARISON_FIELD_NUMBER: _builtins.int
     case_sensitivity: Global___CaseSensitivity.ValueType
     match_type: Global___MatchType.ValueType
     nan_comparison: Global___NanComparison.ValueType
-    @property
+    @_builtins.property
     def target(self) -> Global___Value: ...
-    @property
-    def candidates(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Value]: ...
+    @_builtins.property
+    def candidates(self) -> _containers.RepeatedCompositeFieldContainer[Global___Value]: ...
     def __init__(
         self,
         *,
         target: Global___Value | None = ...,
-        candidates: collections.abc.Iterable[Global___Value] | None = ...,
+        candidates: _abc.Iterable[Global___Value] | None = ...,
         case_sensitivity: Global___CaseSensitivity.ValueType = ...,
         match_type: Global___MatchType.ValueType = ...,
         nan_comparison: Global___NanComparison.ValueType = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["target", b"target"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["candidates", b"candidates", "case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "nan_comparison", b"nan_comparison", "target", b"target"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["target", b"target"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["candidates", b"candidates", "case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "nan_comparison", b"nan_comparison", "target", b"target"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___InCondition: typing_extensions.TypeAlias = InCondition
+Global___InCondition: _TypeAlias = InCondition  # noqa: Y015
 
-@typing.final
-class InvokeCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class InvokeCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    METHOD_FIELD_NUMBER: builtins.int
-    TARGET_FIELD_NUMBER: builtins.int
-    ARGUMENTS_FIELD_NUMBER: builtins.int
-    method: builtins.str
-    @property
+    METHOD_FIELD_NUMBER: _builtins.int
+    TARGET_FIELD_NUMBER: _builtins.int
+    ARGUMENTS_FIELD_NUMBER: _builtins.int
+    method: _builtins.str
+    @_builtins.property
     def target(self) -> Global___Value: ...
-    @property
-    def arguments(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Value]: ...
+    @_builtins.property
+    def arguments(self) -> _containers.RepeatedCompositeFieldContainer[Global___Value]: ...
     def __init__(
         self,
         *,
-        method: builtins.str = ...,
+        method: _builtins.str = ...,
         target: Global___Value | None = ...,
-        arguments: collections.abc.Iterable[Global___Value] | None = ...,
+        arguments: _abc.Iterable[Global___Value] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["target", b"target"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["arguments", b"arguments", "method", b"method", "target", b"target"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["target", b"target"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["arguments", b"arguments", "method", b"method", "target", b"target"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___InvokeCondition: typing_extensions.TypeAlias = InvokeCondition
+Global___InvokeCondition: _TypeAlias = InvokeCondition  # noqa: Y015
 
-@typing.final
-class IsNullCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class IsNullCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REFERENCE_FIELD_NUMBER: builtins.int
-    @property
+    REFERENCE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def reference(self) -> Global___Reference: ...
     def __init__(
         self,
         *,
         reference: Global___Reference | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["reference", b"reference"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["reference", b"reference"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["reference", b"reference"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["reference", b"reference"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___IsNullCondition: typing_extensions.TypeAlias = IsNullCondition
+Global___IsNullCondition: _TypeAlias = IsNullCondition  # noqa: Y015
 
-@typing.final
-class IsNaNCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class IsNaNCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REFERENCE_FIELD_NUMBER: builtins.int
-    @property
+    REFERENCE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def reference(self) -> Global___Reference: ...
     def __init__(
         self,
         *,
         reference: Global___Reference | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["reference", b"reference"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["reference", b"reference"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["reference", b"reference"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["reference", b"reference"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___IsNaNCondition: typing_extensions.TypeAlias = IsNaNCondition
+Global___IsNaNCondition: _TypeAlias = IsNaNCondition  # noqa: Y015
 
-@typing.final
-class MatchesCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class MatchesCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REFERENCE_FIELD_NUMBER: builtins.int
-    REGEX_FIELD_NUMBER: builtins.int
-    CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
-    MATCH_TYPE_FIELD_NUMBER: builtins.int
-    regex: builtins.str
+    REFERENCE_FIELD_NUMBER: _builtins.int
+    REGEX_FIELD_NUMBER: _builtins.int
+    CASE_SENSITIVITY_FIELD_NUMBER: _builtins.int
+    MATCH_TYPE_FIELD_NUMBER: _builtins.int
+    regex: _builtins.str
     case_sensitivity: Global___CaseSensitivity.ValueType
     match_type: Global___MatchType.ValueType
-    @property
+    @_builtins.property
     def reference(self) -> Global___Reference: ...
     def __init__(
         self,
         *,
         reference: Global___Reference | None = ...,
-        regex: builtins.str = ...,
+        regex: _builtins.str = ...,
         case_sensitivity: Global___CaseSensitivity.ValueType = ...,
         match_type: Global___MatchType.ValueType = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["reference", b"reference"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "reference", b"reference", "regex", b"regex"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["reference", b"reference"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "reference", b"reference", "regex", b"regex"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MatchesCondition: typing_extensions.TypeAlias = MatchesCondition
+Global___MatchesCondition: _TypeAlias = MatchesCondition  # noqa: Y015
 
-@typing.final
-class ContainsCondition(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ContainsCondition(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REFERENCE_FIELD_NUMBER: builtins.int
-    SEARCH_STRING_FIELD_NUMBER: builtins.int
-    CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
-    MATCH_TYPE_FIELD_NUMBER: builtins.int
-    search_string: builtins.str
+    REFERENCE_FIELD_NUMBER: _builtins.int
+    SEARCH_STRING_FIELD_NUMBER: _builtins.int
+    CASE_SENSITIVITY_FIELD_NUMBER: _builtins.int
+    MATCH_TYPE_FIELD_NUMBER: _builtins.int
+    search_string: _builtins.str
     case_sensitivity: Global___CaseSensitivity.ValueType
     match_type: Global___MatchType.ValueType
-    @property
+    @_builtins.property
     def reference(self) -> Global___Reference: ...
     def __init__(
         self,
         *,
         reference: Global___Reference | None = ...,
-        search_string: builtins.str = ...,
+        search_string: _builtins.str = ...,
         case_sensitivity: Global___CaseSensitivity.ValueType = ...,
         match_type: Global___MatchType.ValueType = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["reference", b"reference"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "reference", b"reference", "search_string", b"search_string"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["reference", b"reference"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "reference", b"reference", "search_string", b"search_string"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ContainsCondition: typing_extensions.TypeAlias = ContainsCondition
+Global___ContainsCondition: _TypeAlias = ContainsCondition  # noqa: Y015
 
-@typing.final
-class SearchCondition(google.protobuf.message.Message):
+@_typing.final
+class SearchCondition(_message.Message):
     """search"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SEARCH_STRING_FIELD_NUMBER: builtins.int
-    OPTIONAL_REFERENCES_FIELD_NUMBER: builtins.int
-    search_string: builtins.str
-    @property
-    def optional_references(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Reference]: ...
+    SEARCH_STRING_FIELD_NUMBER: _builtins.int
+    OPTIONAL_REFERENCES_FIELD_NUMBER: _builtins.int
+    search_string: _builtins.str
+    @_builtins.property
+    def optional_references(self) -> _containers.RepeatedCompositeFieldContainer[Global___Reference]: ...
     def __init__(
         self,
         *,
-        search_string: builtins.str = ...,
-        optional_references: collections.abc.Iterable[Global___Reference] | None = ...,
+        search_string: _builtins.str = ...,
+        optional_references: _abc.Iterable[Global___Reference] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["optional_references", b"optional_references", "search_string", b"search_string"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["optional_references", b"optional_references", "search_string", b"search_string"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SearchCondition: typing_extensions.TypeAlias = SearchCondition
+Global___SearchCondition: _TypeAlias = SearchCondition  # noqa: Y015
 
-@typing.final
-class FlattenRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class FlattenRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___FlattenRequest: typing_extensions.TypeAlias = FlattenRequest
+Global___FlattenRequest: _TypeAlias = FlattenRequest  # noqa: Y015
 
-@typing.final
-class MetaTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class MetaTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MetaTableRequest: typing_extensions.TypeAlias = MetaTableRequest
+Global___MetaTableRequest: _TypeAlias = MetaTableRequest  # noqa: Y015
 
-@typing.final
-class RunChartDownsampleRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class RunChartDownsampleRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class ZoomRange(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class ZoomRange(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        MIN_DATE_NANOS_FIELD_NUMBER: builtins.int
-        MAX_DATE_NANOS_FIELD_NUMBER: builtins.int
-        min_date_nanos: builtins.int
-        max_date_nanos: builtins.int
+        MIN_DATE_NANOS_FIELD_NUMBER: _builtins.int
+        MAX_DATE_NANOS_FIELD_NUMBER: _builtins.int
+        min_date_nanos: _builtins.int
+        max_date_nanos: _builtins.int
         def __init__(
             self,
             *,
-            min_date_nanos: builtins.int | None = ...,
-            max_date_nanos: builtins.int | None = ...,
+            min_date_nanos: _builtins.int | None = ...,
+            max_date_nanos: _builtins.int | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_date_nanos", b"_max_date_nanos", "_min_date_nanos", b"_min_date_nanos", "max_date_nanos", b"max_date_nanos", "min_date_nanos", b"min_date_nanos"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_date_nanos", b"_max_date_nanos", "_min_date_nanos", b"_min_date_nanos", "max_date_nanos", b"max_date_nanos", "min_date_nanos", b"min_date_nanos"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["_max_date_nanos", b"_max_date_nanos", "_min_date_nanos", b"_min_date_nanos", "max_date_nanos", b"max_date_nanos", "min_date_nanos", b"min_date_nanos"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["_max_date_nanos", b"_max_date_nanos", "_min_date_nanos", b"_min_date_nanos", "max_date_nanos", b"max_date_nanos", "min_date_nanos", b"min_date_nanos"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType__max_date_nanos: typing_extensions.TypeAlias = typing.Literal["max_date_nanos"]
-        _WhichOneofArgType__max_date_nanos: typing_extensions.TypeAlias = typing.Literal["_max_date_nanos", b"_max_date_nanos"]
-        _WhichOneofReturnType__min_date_nanos: typing_extensions.TypeAlias = typing.Literal["min_date_nanos"]
-        _WhichOneofArgType__min_date_nanos: typing_extensions.TypeAlias = typing.Literal["_min_date_nanos", b"_min_date_nanos"]
-        @typing.overload
+        _WhichOneofReturnType__max_date_nanos: _TypeAlias = _typing.Literal["max_date_nanos"]  # noqa: Y015
+        _WhichOneofArgType__max_date_nanos: _TypeAlias = _typing.Literal["_max_date_nanos", b"_max_date_nanos"]  # noqa: Y015
+        _WhichOneofReturnType__min_date_nanos: _TypeAlias = _typing.Literal["min_date_nanos"]  # noqa: Y015
+        _WhichOneofArgType__min_date_nanos: _TypeAlias = _typing.Literal["_min_date_nanos", b"_min_date_nanos"]  # noqa: Y015
+        @_typing.overload
         def WhichOneof(self, oneof_group: _WhichOneofArgType__max_date_nanos) -> _WhichOneofReturnType__max_date_nanos | None: ...
-        @typing.overload
+        @_typing.overload
         def WhichOneof(self, oneof_group: _WhichOneofArgType__min_date_nanos) -> _WhichOneofReturnType__min_date_nanos | None: ...
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    PIXEL_COUNT_FIELD_NUMBER: builtins.int
-    ZOOM_RANGE_FIELD_NUMBER: builtins.int
-    X_COLUMN_NAME_FIELD_NUMBER: builtins.int
-    Y_COLUMN_NAMES_FIELD_NUMBER: builtins.int
-    pixel_count: builtins.int
-    x_column_name: builtins.str
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    PIXEL_COUNT_FIELD_NUMBER: _builtins.int
+    ZOOM_RANGE_FIELD_NUMBER: _builtins.int
+    X_COLUMN_NAME_FIELD_NUMBER: _builtins.int
+    Y_COLUMN_NAMES_FIELD_NUMBER: _builtins.int
+    pixel_count: _builtins.int
+    x_column_name: _builtins.str
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def zoom_range(self) -> Global___RunChartDownsampleRequest.ZoomRange: ...
-    @property
-    def y_column_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def y_column_names(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        pixel_count: builtins.int = ...,
+        pixel_count: _builtins.int = ...,
         zoom_range: Global___RunChartDownsampleRequest.ZoomRange | None = ...,
-        x_column_name: builtins.str = ...,
-        y_column_names: collections.abc.Iterable[builtins.str] | None = ...,
+        x_column_name: _builtins.str = ...,
+        y_column_names: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id", "zoom_range", b"zoom_range"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["pixel_count", b"pixel_count", "result_id", b"result_id", "source_id", b"source_id", "x_column_name", b"x_column_name", "y_column_names", b"y_column_names", "zoom_range", b"zoom_range"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id", "zoom_range", b"zoom_range"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["pixel_count", b"pixel_count", "result_id", b"result_id", "source_id", b"source_id", "x_column_name", b"x_column_name", "y_column_names", b"y_column_names", "zoom_range", b"zoom_range"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___RunChartDownsampleRequest: typing_extensions.TypeAlias = RunChartDownsampleRequest
+Global___RunChartDownsampleRequest: _TypeAlias = RunChartDownsampleRequest  # noqa: Y015
 
-@typing.final
-class CreateInputTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class CreateInputTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class InputTableKind(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class InputTableKind(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        @typing.final
-        class InMemoryAppendOnly(google.protobuf.message.Message):
+        @_typing.final
+        class InMemoryAppendOnly(_message.Message):
             """Creates an in-memory append-only table - rows cannot be modified or deleted."""
 
-            DESCRIPTOR: google.protobuf.descriptor.Descriptor
+            DESCRIPTOR: _descriptor.Descriptor
 
             def __init__(
                 self,
             ) -> None: ...
+            _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+            def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+            _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+            def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+            def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-        @typing.final
-        class InMemoryKeyBacked(google.protobuf.message.Message):
+        @_typing.final
+        class InMemoryKeyBacked(_message.Message):
             """Creates an in-memory table that supports updates and deletes by keys."""
 
-            DESCRIPTOR: google.protobuf.descriptor.Descriptor
+            DESCRIPTOR: _descriptor.Descriptor
 
-            KEY_COLUMNS_FIELD_NUMBER: builtins.int
-            @property
-            def key_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+            KEY_COLUMNS_FIELD_NUMBER: _builtins.int
+            @_builtins.property
+            def key_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
             def __init__(
                 self,
                 *,
-                key_columns: collections.abc.Iterable[builtins.str] | None = ...,
+                key_columns: _abc.Iterable[_builtins.str] | None = ...,
             ) -> None: ...
-            _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["key_columns", b"key_columns"]
+            _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+            def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+            _ClearFieldArgType: _TypeAlias = _typing.Literal["key_columns", b"key_columns"]  # noqa: Y015
             def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+            def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-        @typing.final
-        class Blink(google.protobuf.message.Message):
-            DESCRIPTOR: google.protobuf.descriptor.Descriptor
+        @_typing.final
+        class Blink(_message.Message):
+            DESCRIPTOR: _descriptor.Descriptor
 
             def __init__(
                 self,
             ) -> None: ...
+            _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+            def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+            _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+            def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+            def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-        IN_MEMORY_APPEND_ONLY_FIELD_NUMBER: builtins.int
-        IN_MEMORY_KEY_BACKED_FIELD_NUMBER: builtins.int
-        BLINK_FIELD_NUMBER: builtins.int
-        @property
+        IN_MEMORY_APPEND_ONLY_FIELD_NUMBER: _builtins.int
+        IN_MEMORY_KEY_BACKED_FIELD_NUMBER: _builtins.int
+        BLINK_FIELD_NUMBER: _builtins.int
+        @_builtins.property
         def in_memory_append_only(self) -> Global___CreateInputTableRequest.InputTableKind.InMemoryAppendOnly: ...
-        @property
+        @_builtins.property
         def in_memory_key_backed(self) -> Global___CreateInputTableRequest.InputTableKind.InMemoryKeyBacked: ...
-        @property
+        @_builtins.property
         def blink(self) -> Global___CreateInputTableRequest.InputTableKind.Blink: ...
         def __init__(
             self,
@@ -3532,281 +3763,284 @@ class CreateInputTableRequest(google.protobuf.message.Message):
             in_memory_key_backed: Global___CreateInputTableRequest.InputTableKind.InMemoryKeyBacked | None = ...,
             blink: Global___CreateInputTableRequest.InputTableKind.Blink | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["blink", b"blink", "in_memory_append_only", b"in_memory_append_only", "in_memory_key_backed", b"in_memory_key_backed", "kind", b"kind"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["blink", b"blink", "in_memory_append_only", b"in_memory_append_only", "in_memory_key_backed", b"in_memory_key_backed", "kind", b"kind"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["blink", b"blink", "in_memory_append_only", b"in_memory_append_only", "in_memory_key_backed", b"in_memory_key_backed", "kind", b"kind"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["blink", b"blink", "in_memory_append_only", b"in_memory_append_only", "in_memory_key_backed", b"in_memory_key_backed", "kind", b"kind"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType_kind: typing_extensions.TypeAlias = typing.Literal["in_memory_append_only", "in_memory_key_backed", "blink"]
-        _WhichOneofArgType_kind: typing_extensions.TypeAlias = typing.Literal["kind", b"kind"]
+        _WhichOneofReturnType_kind: _TypeAlias = _typing.Literal["in_memory_append_only", "in_memory_key_backed", "blink"]  # noqa: Y015
+        _WhichOneofArgType_kind: _TypeAlias = _typing.Literal["kind", b"kind"]  # noqa: Y015
         def WhichOneof(self, oneof_group: _WhichOneofArgType_kind) -> _WhichOneofReturnType_kind | None: ...
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_TABLE_ID_FIELD_NUMBER: builtins.int
-    SCHEMA_FIELD_NUMBER: builtins.int
-    KIND_FIELD_NUMBER: builtins.int
-    schema: builtins.bytes
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_TABLE_ID_FIELD_NUMBER: _builtins.int
+    SCHEMA_FIELD_NUMBER: _builtins.int
+    KIND_FIELD_NUMBER: _builtins.int
+    schema: _builtins.bytes
     """Schema as described in Arrow Message.fbs::Message. Optional, either this or source_table_id must be specified."""
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_table_id(self) -> Global___TableReference:
         """Optional, either this or schema must be specified, not both."""
 
-    @property
+    @_builtins.property
     def kind(self) -> Global___CreateInputTableRequest.InputTableKind:
         """Specifies what type of input table to create."""
 
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_table_id: Global___TableReference | None = ...,
-        schema: builtins.bytes = ...,
+        schema: _builtins.bytes = ...,
         kind: Global___CreateInputTableRequest.InputTableKind | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["definition", b"definition", "kind", b"kind", "result_id", b"result_id", "schema", b"schema", "source_table_id", b"source_table_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["definition", b"definition", "kind", b"kind", "result_id", b"result_id", "schema", b"schema", "source_table_id", b"source_table_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["definition", b"definition", "kind", b"kind", "result_id", b"result_id", "schema", b"schema", "source_table_id", b"source_table_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["definition", b"definition", "kind", b"kind", "result_id", b"result_id", "schema", b"schema", "source_table_id", b"source_table_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_definition: typing_extensions.TypeAlias = typing.Literal["source_table_id", "schema"]
-    _WhichOneofArgType_definition: typing_extensions.TypeAlias = typing.Literal["definition", b"definition"]
+    _WhichOneofReturnType_definition: _TypeAlias = _typing.Literal["source_table_id", "schema"]  # noqa: Y015
+    _WhichOneofArgType_definition: _TypeAlias = _typing.Literal["definition", b"definition"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_definition) -> _WhichOneofReturnType_definition | None: ...
 
-Global___CreateInputTableRequest: typing_extensions.TypeAlias = CreateInputTableRequest
+Global___CreateInputTableRequest: _TypeAlias = CreateInputTableRequest  # noqa: Y015
 
-@typing.final
-class WhereInRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class WhereInRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    LEFT_ID_FIELD_NUMBER: builtins.int
-    RIGHT_ID_FIELD_NUMBER: builtins.int
-    INVERTED_FIELD_NUMBER: builtins.int
-    COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
-    inverted: builtins.bool
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    LEFT_ID_FIELD_NUMBER: _builtins.int
+    RIGHT_ID_FIELD_NUMBER: _builtins.int
+    INVERTED_FIELD_NUMBER: _builtins.int
+    COLUMNS_TO_MATCH_FIELD_NUMBER: _builtins.int
+    inverted: _builtins.bool
     """When true, becomes a "where not in" request"""
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def left_id(self) -> Global___TableReference: ...
-    @property
+    @_builtins.property
     def right_id(self) -> Global___TableReference: ...
-    @property
-    def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @_builtins.property
+    def columns_to_match(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         left_id: Global___TableReference | None = ...,
         right_id: Global___TableReference | None = ...,
-        inverted: builtins.bool = ...,
-        columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
+        inverted: _builtins.bool = ...,
+        columns_to_match: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["columns_to_match", b"columns_to_match", "inverted", b"inverted", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["columns_to_match", b"columns_to_match", "inverted", b"inverted", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___WhereInRequest: typing_extensions.TypeAlias = WhereInRequest
+Global___WhereInRequest: _TypeAlias = WhereInRequest  # noqa: Y015
 
-@typing.final
-class ColumnStatisticsRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ColumnStatisticsRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    COLUMN_NAME_FIELD_NUMBER: builtins.int
-    UNIQUE_VALUE_LIMIT_FIELD_NUMBER: builtins.int
-    column_name: builtins.str
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    COLUMN_NAME_FIELD_NUMBER: _builtins.int
+    UNIQUE_VALUE_LIMIT_FIELD_NUMBER: _builtins.int
+    column_name: _builtins.str
     """The name of the column in the source table to read when generating statistics."""
-    unique_value_limit: builtins.int
+    unique_value_limit: _builtins.int
     """For non-numeric, non-date types, specify the max number of unique values to return, sorted by popularity.
     Leave unset to use server default, specify zero to skip.
     """
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        column_name: builtins.str = ...,
-        unique_value_limit: builtins.int | None = ...,
+        column_name: _builtins.str = ...,
+        unique_value_limit: _builtins.int | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_unique_value_limit", b"_unique_value_limit", "result_id", b"result_id", "source_id", b"source_id", "unique_value_limit", b"unique_value_limit"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_unique_value_limit", b"_unique_value_limit", "column_name", b"column_name", "result_id", b"result_id", "source_id", b"source_id", "unique_value_limit", b"unique_value_limit"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_unique_value_limit", b"_unique_value_limit", "result_id", b"result_id", "source_id", b"source_id", "unique_value_limit", b"unique_value_limit"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_unique_value_limit", b"_unique_value_limit", "column_name", b"column_name", "result_id", b"result_id", "source_id", b"source_id", "unique_value_limit", b"unique_value_limit"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__unique_value_limit: typing_extensions.TypeAlias = typing.Literal["unique_value_limit"]
-    _WhichOneofArgType__unique_value_limit: typing_extensions.TypeAlias = typing.Literal["_unique_value_limit", b"_unique_value_limit"]
+    _WhichOneofReturnType__unique_value_limit: _TypeAlias = _typing.Literal["unique_value_limit"]  # noqa: Y015
+    _WhichOneofArgType__unique_value_limit: _TypeAlias = _typing.Literal["_unique_value_limit", b"_unique_value_limit"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__unique_value_limit) -> _WhichOneofReturnType__unique_value_limit | None: ...
 
-Global___ColumnStatisticsRequest: typing_extensions.TypeAlias = ColumnStatisticsRequest
+Global___ColumnStatisticsRequest: _TypeAlias = ColumnStatisticsRequest  # noqa: Y015
 
-@typing.final
-class SliceRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SliceRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    FIRST_POSITION_INCLUSIVE_FIELD_NUMBER: builtins.int
-    LAST_POSITION_EXCLUSIVE_FIELD_NUMBER: builtins.int
-    first_position_inclusive: builtins.int
-    last_position_exclusive: builtins.int
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    FIRST_POSITION_INCLUSIVE_FIELD_NUMBER: _builtins.int
+    LAST_POSITION_EXCLUSIVE_FIELD_NUMBER: _builtins.int
+    first_position_inclusive: _builtins.int
+    last_position_exclusive: _builtins.int
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
     def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         source_id: Global___TableReference | None = ...,
-        first_position_inclusive: builtins.int = ...,
-        last_position_exclusive: builtins.int = ...,
+        first_position_inclusive: _builtins.int = ...,
+        last_position_exclusive: _builtins.int = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["first_position_inclusive", b"first_position_inclusive", "last_position_exclusive", b"last_position_exclusive", "result_id", b"result_id", "source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["first_position_inclusive", b"first_position_inclusive", "last_position_exclusive", b"last_position_exclusive", "result_id", b"result_id", "source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SliceRequest: typing_extensions.TypeAlias = SliceRequest
+Global___SliceRequest: _TypeAlias = SliceRequest  # noqa: Y015
 
-@typing.final
-class BatchTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class BatchTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class Operation(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class Operation(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        EMPTY_TABLE_FIELD_NUMBER: builtins.int
-        TIME_TABLE_FIELD_NUMBER: builtins.int
-        DROP_COLUMNS_FIELD_NUMBER: builtins.int
-        UPDATE_FIELD_NUMBER: builtins.int
-        LAZY_UPDATE_FIELD_NUMBER: builtins.int
-        VIEW_FIELD_NUMBER: builtins.int
-        UPDATE_VIEW_FIELD_NUMBER: builtins.int
-        SELECT_FIELD_NUMBER: builtins.int
-        SELECT_DISTINCT_FIELD_NUMBER: builtins.int
-        FILTER_FIELD_NUMBER: builtins.int
-        UNSTRUCTURED_FILTER_FIELD_NUMBER: builtins.int
-        SORT_FIELD_NUMBER: builtins.int
-        HEAD_FIELD_NUMBER: builtins.int
-        TAIL_FIELD_NUMBER: builtins.int
-        HEAD_BY_FIELD_NUMBER: builtins.int
-        TAIL_BY_FIELD_NUMBER: builtins.int
-        UNGROUP_FIELD_NUMBER: builtins.int
-        MERGE_FIELD_NUMBER: builtins.int
-        COMBO_AGGREGATE_FIELD_NUMBER: builtins.int
-        FLATTEN_FIELD_NUMBER: builtins.int
-        RUN_CHART_DOWNSAMPLE_FIELD_NUMBER: builtins.int
-        CROSS_JOIN_FIELD_NUMBER: builtins.int
-        NATURAL_JOIN_FIELD_NUMBER: builtins.int
-        EXACT_JOIN_FIELD_NUMBER: builtins.int
-        LEFT_JOIN_FIELD_NUMBER: builtins.int
-        AS_OF_JOIN_FIELD_NUMBER: builtins.int
-        FETCH_TABLE_FIELD_NUMBER: builtins.int
-        APPLY_PREVIEW_COLUMNS_FIELD_NUMBER: builtins.int
-        CREATE_INPUT_TABLE_FIELD_NUMBER: builtins.int
-        UPDATE_BY_FIELD_NUMBER: builtins.int
-        WHERE_IN_FIELD_NUMBER: builtins.int
-        AGGREGATE_ALL_FIELD_NUMBER: builtins.int
-        AGGREGATE_FIELD_NUMBER: builtins.int
-        SNAPSHOT_FIELD_NUMBER: builtins.int
-        SNAPSHOT_WHEN_FIELD_NUMBER: builtins.int
-        META_TABLE_FIELD_NUMBER: builtins.int
-        RANGE_JOIN_FIELD_NUMBER: builtins.int
-        AJ_FIELD_NUMBER: builtins.int
-        RAJ_FIELD_NUMBER: builtins.int
-        COLUMN_STATISTICS_FIELD_NUMBER: builtins.int
-        MULTI_JOIN_FIELD_NUMBER: builtins.int
-        SLICE_FIELD_NUMBER: builtins.int
-        @property
+        EMPTY_TABLE_FIELD_NUMBER: _builtins.int
+        TIME_TABLE_FIELD_NUMBER: _builtins.int
+        DROP_COLUMNS_FIELD_NUMBER: _builtins.int
+        UPDATE_FIELD_NUMBER: _builtins.int
+        LAZY_UPDATE_FIELD_NUMBER: _builtins.int
+        VIEW_FIELD_NUMBER: _builtins.int
+        UPDATE_VIEW_FIELD_NUMBER: _builtins.int
+        SELECT_FIELD_NUMBER: _builtins.int
+        SELECT_DISTINCT_FIELD_NUMBER: _builtins.int
+        FILTER_FIELD_NUMBER: _builtins.int
+        UNSTRUCTURED_FILTER_FIELD_NUMBER: _builtins.int
+        SORT_FIELD_NUMBER: _builtins.int
+        HEAD_FIELD_NUMBER: _builtins.int
+        TAIL_FIELD_NUMBER: _builtins.int
+        HEAD_BY_FIELD_NUMBER: _builtins.int
+        TAIL_BY_FIELD_NUMBER: _builtins.int
+        UNGROUP_FIELD_NUMBER: _builtins.int
+        MERGE_FIELD_NUMBER: _builtins.int
+        COMBO_AGGREGATE_FIELD_NUMBER: _builtins.int
+        FLATTEN_FIELD_NUMBER: _builtins.int
+        RUN_CHART_DOWNSAMPLE_FIELD_NUMBER: _builtins.int
+        CROSS_JOIN_FIELD_NUMBER: _builtins.int
+        NATURAL_JOIN_FIELD_NUMBER: _builtins.int
+        EXACT_JOIN_FIELD_NUMBER: _builtins.int
+        LEFT_JOIN_FIELD_NUMBER: _builtins.int
+        AS_OF_JOIN_FIELD_NUMBER: _builtins.int
+        FETCH_TABLE_FIELD_NUMBER: _builtins.int
+        APPLY_PREVIEW_COLUMNS_FIELD_NUMBER: _builtins.int
+        CREATE_INPUT_TABLE_FIELD_NUMBER: _builtins.int
+        UPDATE_BY_FIELD_NUMBER: _builtins.int
+        WHERE_IN_FIELD_NUMBER: _builtins.int
+        AGGREGATE_ALL_FIELD_NUMBER: _builtins.int
+        AGGREGATE_FIELD_NUMBER: _builtins.int
+        SNAPSHOT_FIELD_NUMBER: _builtins.int
+        SNAPSHOT_WHEN_FIELD_NUMBER: _builtins.int
+        META_TABLE_FIELD_NUMBER: _builtins.int
+        RANGE_JOIN_FIELD_NUMBER: _builtins.int
+        AJ_FIELD_NUMBER: _builtins.int
+        RAJ_FIELD_NUMBER: _builtins.int
+        COLUMN_STATISTICS_FIELD_NUMBER: _builtins.int
+        MULTI_JOIN_FIELD_NUMBER: _builtins.int
+        SLICE_FIELD_NUMBER: _builtins.int
+        @_builtins.property
         def empty_table(self) -> Global___EmptyTableRequest: ...
-        @property
+        @_builtins.property
         def time_table(self) -> Global___TimeTableRequest: ...
-        @property
+        @_builtins.property
         def drop_columns(self) -> Global___DropColumnsRequest: ...
-        @property
+        @_builtins.property
         def update(self) -> Global___SelectOrUpdateRequest: ...
-        @property
+        @_builtins.property
         def lazy_update(self) -> Global___SelectOrUpdateRequest: ...
-        @property
+        @_builtins.property
         def view(self) -> Global___SelectOrUpdateRequest: ...
-        @property
+        @_builtins.property
         def update_view(self) -> Global___SelectOrUpdateRequest: ...
-        @property
+        @_builtins.property
         def select(self) -> Global___SelectOrUpdateRequest: ...
-        @property
+        @_builtins.property
         def select_distinct(self) -> Global___SelectDistinctRequest: ...
-        @property
+        @_builtins.property
         def filter(self) -> Global___FilterTableRequest: ...
-        @property
+        @_builtins.property
         def unstructured_filter(self) -> Global___UnstructuredFilterTableRequest: ...
-        @property
+        @_builtins.property
         def sort(self) -> Global___SortTableRequest: ...
-        @property
+        @_builtins.property
         def head(self) -> Global___HeadOrTailRequest: ...
-        @property
+        @_builtins.property
         def tail(self) -> Global___HeadOrTailRequest: ...
-        @property
+        @_builtins.property
         def head_by(self) -> Global___HeadOrTailByRequest: ...
-        @property
+        @_builtins.property
         def tail_by(self) -> Global___HeadOrTailByRequest: ...
-        @property
+        @_builtins.property
         def ungroup(self) -> Global___UngroupRequest: ...
-        @property
+        @_builtins.property
         def merge(self) -> Global___MergeTablesRequest: ...
-        @property
+        @_builtins.property
         def combo_aggregate(self) -> Global___ComboAggregateRequest: ...
-        @property
+        @_builtins.property
         def flatten(self) -> Global___FlattenRequest: ...
-        @property
+        @_builtins.property
         def run_chart_downsample(self) -> Global___RunChartDownsampleRequest: ...
-        @property
+        @_builtins.property
         def cross_join(self) -> Global___CrossJoinTablesRequest: ...
-        @property
+        @_builtins.property
         def natural_join(self) -> Global___NaturalJoinTablesRequest: ...
-        @property
+        @_builtins.property
         def exact_join(self) -> Global___ExactJoinTablesRequest: ...
-        @property
+        @_builtins.property
         def left_join(self) -> Global___LeftJoinTablesRequest: ...
-        @property
+        @_builtins.property
+        @_deprecated("""This field has been marked as deprecated using proto field options.""")
         def as_of_join(self) -> Global___AsOfJoinTablesRequest: ...
-        @property
+        @_builtins.property
         def fetch_table(self) -> Global___FetchTableRequest: ...
-        @property
+        @_builtins.property
         def apply_preview_columns(self) -> Global___ApplyPreviewColumnsRequest: ...
-        @property
+        @_builtins.property
         def create_input_table(self) -> Global___CreateInputTableRequest: ...
-        @property
+        @_builtins.property
         def update_by(self) -> Global___UpdateByRequest: ...
-        @property
+        @_builtins.property
         def where_in(self) -> Global___WhereInRequest: ...
-        @property
+        @_builtins.property
         def aggregate_all(self) -> Global___AggregateAllRequest: ...
-        @property
+        @_builtins.property
         def aggregate(self) -> Global___AggregateRequest: ...
-        @property
+        @_builtins.property
         def snapshot(self) -> Global___SnapshotTableRequest: ...
-        @property
+        @_builtins.property
         def snapshot_when(self) -> Global___SnapshotWhenTableRequest: ...
-        @property
+        @_builtins.property
         def meta_table(self) -> Global___MetaTableRequest: ...
-        @property
+        @_builtins.property
         def range_join(self) -> Global___RangeJoinTablesRequest: ...
-        @property
+        @_builtins.property
         def aj(self) -> Global___AjRajTablesRequest: ...
-        @property
+        @_builtins.property
         def raj(self) -> Global___AjRajTablesRequest: ...
-        @property
+        @_builtins.property
         def column_statistics(self) -> Global___ColumnStatisticsRequest: ...
-        @property
+        @_builtins.property
         def multi_join(self) -> Global___MultiJoinTablesRequest: ...
-        @property
+        @_builtins.property
         def slice(self) -> Global___SliceRequest: ...
         def __init__(
             self,
@@ -3854,23 +4088,26 @@ class BatchTableRequest(google.protobuf.message.Message):
             multi_join: Global___MultiJoinTablesRequest | None = ...,
             slice: Global___SliceRequest | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["aggregate", b"aggregate", "aggregate_all", b"aggregate_all", "aj", b"aj", "apply_preview_columns", b"apply_preview_columns", "as_of_join", b"as_of_join", "column_statistics", b"column_statistics", "combo_aggregate", b"combo_aggregate", "create_input_table", b"create_input_table", "cross_join", b"cross_join", "drop_columns", b"drop_columns", "empty_table", b"empty_table", "exact_join", b"exact_join", "fetch_table", b"fetch_table", "filter", b"filter", "flatten", b"flatten", "head", b"head", "head_by", b"head_by", "lazy_update", b"lazy_update", "left_join", b"left_join", "merge", b"merge", "meta_table", b"meta_table", "multi_join", b"multi_join", "natural_join", b"natural_join", "op", b"op", "raj", b"raj", "range_join", b"range_join", "run_chart_downsample", b"run_chart_downsample", "select", b"select", "select_distinct", b"select_distinct", "slice", b"slice", "snapshot", b"snapshot", "snapshot_when", b"snapshot_when", "sort", b"sort", "tail", b"tail", "tail_by", b"tail_by", "time_table", b"time_table", "ungroup", b"ungroup", "unstructured_filter", b"unstructured_filter", "update", b"update", "update_by", b"update_by", "update_view", b"update_view", "view", b"view", "where_in", b"where_in"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["aggregate", b"aggregate", "aggregate_all", b"aggregate_all", "aj", b"aj", "apply_preview_columns", b"apply_preview_columns", "as_of_join", b"as_of_join", "column_statistics", b"column_statistics", "combo_aggregate", b"combo_aggregate", "create_input_table", b"create_input_table", "cross_join", b"cross_join", "drop_columns", b"drop_columns", "empty_table", b"empty_table", "exact_join", b"exact_join", "fetch_table", b"fetch_table", "filter", b"filter", "flatten", b"flatten", "head", b"head", "head_by", b"head_by", "lazy_update", b"lazy_update", "left_join", b"left_join", "merge", b"merge", "meta_table", b"meta_table", "multi_join", b"multi_join", "natural_join", b"natural_join", "op", b"op", "raj", b"raj", "range_join", b"range_join", "run_chart_downsample", b"run_chart_downsample", "select", b"select", "select_distinct", b"select_distinct", "slice", b"slice", "snapshot", b"snapshot", "snapshot_when", b"snapshot_when", "sort", b"sort", "tail", b"tail", "tail_by", b"tail_by", "time_table", b"time_table", "ungroup", b"ungroup", "unstructured_filter", b"unstructured_filter", "update", b"update", "update_by", b"update_by", "update_view", b"update_view", "view", b"view", "where_in", b"where_in"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["aggregate", b"aggregate", "aggregate_all", b"aggregate_all", "aj", b"aj", "apply_preview_columns", b"apply_preview_columns", "as_of_join", b"as_of_join", "column_statistics", b"column_statistics", "combo_aggregate", b"combo_aggregate", "create_input_table", b"create_input_table", "cross_join", b"cross_join", "drop_columns", b"drop_columns", "empty_table", b"empty_table", "exact_join", b"exact_join", "fetch_table", b"fetch_table", "filter", b"filter", "flatten", b"flatten", "head", b"head", "head_by", b"head_by", "lazy_update", b"lazy_update", "left_join", b"left_join", "merge", b"merge", "meta_table", b"meta_table", "multi_join", b"multi_join", "natural_join", b"natural_join", "op", b"op", "raj", b"raj", "range_join", b"range_join", "run_chart_downsample", b"run_chart_downsample", "select", b"select", "select_distinct", b"select_distinct", "slice", b"slice", "snapshot", b"snapshot", "snapshot_when", b"snapshot_when", "sort", b"sort", "tail", b"tail", "tail_by", b"tail_by", "time_table", b"time_table", "ungroup", b"ungroup", "unstructured_filter", b"unstructured_filter", "update", b"update", "update_by", b"update_by", "update_view", b"update_view", "view", b"view", "where_in", b"where_in"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["aggregate", b"aggregate", "aggregate_all", b"aggregate_all", "aj", b"aj", "apply_preview_columns", b"apply_preview_columns", "as_of_join", b"as_of_join", "column_statistics", b"column_statistics", "combo_aggregate", b"combo_aggregate", "create_input_table", b"create_input_table", "cross_join", b"cross_join", "drop_columns", b"drop_columns", "empty_table", b"empty_table", "exact_join", b"exact_join", "fetch_table", b"fetch_table", "filter", b"filter", "flatten", b"flatten", "head", b"head", "head_by", b"head_by", "lazy_update", b"lazy_update", "left_join", b"left_join", "merge", b"merge", "meta_table", b"meta_table", "multi_join", b"multi_join", "natural_join", b"natural_join", "op", b"op", "raj", b"raj", "range_join", b"range_join", "run_chart_downsample", b"run_chart_downsample", "select", b"select", "select_distinct", b"select_distinct", "slice", b"slice", "snapshot", b"snapshot", "snapshot_when", b"snapshot_when", "sort", b"sort", "tail", b"tail", "tail_by", b"tail_by", "time_table", b"time_table", "ungroup", b"ungroup", "unstructured_filter", b"unstructured_filter", "update", b"update", "update_by", b"update_by", "update_view", b"update_view", "view", b"view", "where_in", b"where_in"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-        _WhichOneofReturnType_op: typing_extensions.TypeAlias = typing.Literal["empty_table", "time_table", "drop_columns", "update", "lazy_update", "view", "update_view", "select", "select_distinct", "filter", "unstructured_filter", "sort", "head", "tail", "head_by", "tail_by", "ungroup", "merge", "combo_aggregate", "flatten", "run_chart_downsample", "cross_join", "natural_join", "exact_join", "left_join", "as_of_join", "fetch_table", "apply_preview_columns", "create_input_table", "update_by", "where_in", "aggregate_all", "aggregate", "snapshot", "snapshot_when", "meta_table", "range_join", "aj", "raj", "column_statistics", "multi_join", "slice"]
-        _WhichOneofArgType_op: typing_extensions.TypeAlias = typing.Literal["op", b"op"]
+        _WhichOneofReturnType_op: _TypeAlias = _typing.Literal["empty_table", "time_table", "drop_columns", "update", "lazy_update", "view", "update_view", "select", "select_distinct", "filter", "unstructured_filter", "sort", "head", "tail", "head_by", "tail_by", "ungroup", "merge", "combo_aggregate", "flatten", "run_chart_downsample", "cross_join", "natural_join", "exact_join", "left_join", "as_of_join", "fetch_table", "apply_preview_columns", "create_input_table", "update_by", "where_in", "aggregate_all", "aggregate", "snapshot", "snapshot_when", "meta_table", "range_join", "aj", "raj", "column_statistics", "multi_join", "slice"]  # noqa: Y015
+        _WhichOneofArgType_op: _TypeAlias = _typing.Literal["op", b"op"]  # noqa: Y015
         def WhichOneof(self, oneof_group: _WhichOneofArgType_op) -> _WhichOneofReturnType_op | None: ...
 
-    OPS_FIELD_NUMBER: builtins.int
-    @property
-    def ops(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___BatchTableRequest.Operation]: ...
+    OPS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def ops(self) -> _containers.RepeatedCompositeFieldContainer[Global___BatchTableRequest.Operation]: ...
     def __init__(
         self,
         *,
-        ops: collections.abc.Iterable[Global___BatchTableRequest.Operation] | None = ...,
+        ops: _abc.Iterable[Global___BatchTableRequest.Operation] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["ops", b"ops"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["ops", b"ops"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___BatchTableRequest: typing_extensions.TypeAlias = BatchTableRequest
+Global___BatchTableRequest: _TypeAlias = BatchTableRequest  # noqa: Y015
