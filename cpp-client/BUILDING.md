@@ -1,4 +1,4 @@
-# Building the C++ client on Ubuntu 20.04 / 22.04
+# Building the C++ client on Ubuntu 22.04 / 24.04 / 26.04
 
 These instructions show how to install and run the Deephaven C++ client, its
 dependencies, its unit tests on Linux. If you are looking for Windows instructions,
@@ -7,8 +7,10 @@ see the file README-windows.md.
 For an index of the C++ client's documentation see [`README.md`](README.md); for how the client is
 implemented see [`DESIGN.md`](DESIGN.md).
 
-We have tested these instructions in Ubuntu 22.04 with the default
-C++ compiler and tool suite (cmake etc).
+We have tested these instructions in Ubuntu 22.04, 24.04 and 26.04 with the default
+C++ compiler and tool suite (cmake etc), on x86-64. Other architectures such as
+arm64 are unvalidated: nothing here deliberately excludes them, but we do not
+test them.
 We have used the instructions in the past to build
 for older Ubuntu versions (20.04) and for some Fedora versions, but we don't regularly test
 on them anymore so we do not guarantee they are current for those platforms.
@@ -29,14 +31,35 @@ You can build and install client libraries, tests, and examples
 without having a server installed. However you will eventually need to
 connect to a server when you want to run them.
 
-# Building the C++ client on Ubuntu 22.04
+# Building the C++ client on Ubuntu 22.04 / 24.04 / 26.04
 
-1. Start with an Ubuntu 22.04 install
+1. Start with an Ubuntu 22.04, 24.04 or 26.04 install
 
 2. Get build tools
    ```
    sudo apt update
    sudo apt install curl git g++ cmake make build-essential zlib1g-dev libbz2-dev libssl-dev pkg-config
+   ```
+
+   Arrow requires CMake 3.25 or newer. Check what you have:
+   ```
+   cmake --version
+   ```
+   Ubuntu 24.04's packaged CMake (3.28) is fine as is. Ubuntu 26.04's (4.2)
+   is fine too, except that CMake 4 refuses to configure two of the older
+   dependencies unless told to treat them as CMake 3.5 projects; on 26.04,
+   set this in the shell you build in (step 5 below inherits it):
+   ```
+   export CMAKE_POLICY_VERSION_MINIMUM=3.5
+   ```
+   Ubuntu 22.04's (3.22) is too old: there, install CMake 3.31 from Kitware's
+   binary release instead; it goes under `/usr/local`, which takes precedence
+   over the packaged one:
+   ```
+   curl -LO https://github.com/Kitware/CMake/releases/download/v3.31.12/cmake-3.31.12-linux-$(uname -m).sh
+   sudo sh cmake-3.31.12-linux-$(uname -m).sh --skip-license --prefix=/usr/local
+   hash -r           # make this shell forget where it last found cmake
+   cmake --version   # should now report 3.31.12
    ```
 
    See the notes at the end of this document if you need the equivalent packages for Fedora.
@@ -125,7 +148,7 @@ connect to a server when you want to run them.
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    cmake -S . -B build \
        -DCMAKE_INSTALL_LIBDIR=lib \
-       -DCMAKE_CXX_STANDARD=17 \
+       -DCMAKE_CXX_STANDARD=20 \
        -DCMAKE_INSTALL_PREFIX=${DHCPP} \
        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
        -DBUILD_SHARED_LIBS=ON \
@@ -190,9 +213,10 @@ connect to a server when you want to run them.
      to the list of arguments to `cmake`.
 
    * Some platforms combining old versions of GCC and cmake may fail
-     to set the cmake C++ standard to 17 without explicitly adding
-     `-DCMAKE_CXX_STANDARD=17` to the list of arguments to `cmake`.
-     Note the default mode for C++ is `-std=gnu++17` for GCC 11.
+     to set the cmake C++ standard to 20 without explicitly adding
+     `-DCMAKE_CXX_STANDARD=20` to the list of arguments to `cmake`.
+     Note the default mode for C++ is `-std=gnu++17` for GCC 11 through 13,
+     so the explicit setting matters.
 
 Notes
   (1) The standard assumptions for `Debug` and `Release` apply here.
