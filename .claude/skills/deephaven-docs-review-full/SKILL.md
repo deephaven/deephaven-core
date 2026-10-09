@@ -48,6 +48,24 @@ The line is between *repairing* what the page has and *replacing* it:
 When a fix is targeted, don't defer it just because the example it touches has bigger problems
 too; make the repair, and put the bigger change in the report.
 
+**Audit and overhaul fixes are the explicit exception.** When the task is to fix a page from a
+docs audit (for example a DOC-1560 page issue) or to overhaul a page, the request covers the whole
+page, and the fix-not-rewrite limit above does not apply:
+
+- Apply every recorded finding, of every severity: wrong, misleading, hard to follow, minor, and
+  readability. Don't fix one severity now and leave the rest for a later pass; a page that is
+  patched in one place and wrong two paragraphs down still sends readers the wrong way, and every
+  later reviewer re-finds the open items.
+- Restructure, replace an example, or rewrite a section where the findings cluster or the
+  section can't be made clear by patching. Keep every accurate fact, and run any new or changed
+  example.
+- Treat the recorded findings as a floor, not the scope. The audit missed things; fix what you
+  find while working through the page, in both the Python and Groovy versions.
+- When the edits are done, review the finished page, not the diff: run the accuracy, structure,
+  and style steps again over the whole page, fix what they find, and repeat until a round finds
+  nothing wrong, misleading, or hard to follow. Then do one adversarial read, assuming problems
+  remain, before handing the page to a human or a bot reviewer.
+
 ## 0. Identify the doc's category
 
 Read `ref-deephaven-doc-categories` and determine which of the four categories this doc is. Carry
