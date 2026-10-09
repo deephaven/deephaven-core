@@ -116,7 +116,7 @@ The code above also calls the Groovy closure `secs` inside column expressions. B
 
 `SecondsInDay` and `DayOfWeek` use the time zone `tz`, rounded to the 10-second sampling period, so a sample keeps the same keys at the same local time on either side of a daylight saving time change. The baseline and the live data later use the same keys.
 
-Filtering this new table and graphing the results confirms the seasonality. Holidays are the exception, because their daily pattern resembles a Sunday's. A production model would need to account for holidays, but this example ignores them.
+Filtering this new table and graphing the results confirms the seasonality. Holidays are the exception, because their daily pattern resembles the one for Sundays. A production model would need to account for holidays, but this example ignores them.
 
 To isolate the seasonality effects and more clearly observe the overall trend over time, we create an aggregation by week for the whole series:
 
@@ -138,9 +138,13 @@ Creating this table involves doing [aggregations](./combined-aggregations.md) an
 import io.deephaven.time.DateTimeUtils
 import static io.deephaven.api.agg.Aggregation.AggAvg
 
-lastMidnightSecs = secs(DateTimeUtils.atMidnight(DateTimeUtils.now(), tz))
+lastMidnight = DateTimeUtils.atMidnight(DateTimeUtils.now(), tz)
+// Midnight 28 days earlier on the local calendar, so a daylight saving time change doesn't shift the window
+windowStart = lastMidnight.atZone(tz).minusDays(28).toInstant()
+lastMidnightSecs = secs(lastMidnight)
+windowStartSecs = secs(windowStart)
 svcUseLast4Weeks = svcUseDecorated.where(
-    "Secs >= lastMidnightSecs - 4 * 7 * 24 * 60 * 60",
+    "Secs >= windowStartSecs",
     "Secs < lastMidnightSecs"
 )
 
