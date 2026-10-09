@@ -118,3 +118,5 @@ Chip's third review of the parallelization concept guide flagged bare API names 
 - The wall-of-text check passed in 1 of 2 runs before its search step and 2 of 2 after.
 - No run, in either configuration, flagged "with no Deephaven configuration". After the search step, both new runs found the phrase and judged it a checkable fact ("there is no property to set"), which is what the rule asks for; Chip read it as unclear. This stays a judgment call; not tuned further.
 
+**Correction (expectation 5 of eval 10).** As first written, expectation 5 required flagging "with no Deephaven configuration", but the rule lets a qualifier pass when it states a checkable fact, and the final new runs made exactly that call explicitly. The expectation now accepts either a rewrite/removal or an explicit explanation; silence still fails. Rescored from the graders' recorded reasons (no rerun): `main` 4/12 (neither run mentioned the phrase), new first rule text 8/12 (neither run mentioned it), new with search steps 12/12 (both runs explained why the phrase passes).
+

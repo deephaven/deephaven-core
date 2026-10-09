@@ -122,7 +122,7 @@ required searches, not optional style intuition:
   with its line number and whether it is linked; flag the bare ones. The fix is to link that
   mention, not every occurrence within the same paragraph.
 - Search for qualifier phrases that may name nothing: `with no `, `without any`, `no additional`, `out of the box`, `seamless`, `automatically`, `simply`, `just works`. For each hit, ask what concrete fact it states (see **Qualifiers with no concrete referent**); flag it if the answer is nothing a reader could check, and give the fact to state instead or say to cut the phrase.
-- For each `###` or `####` subsection, count the sentences in each paragraph. Flag any run of two or more consecutive paragraphs with three or more sentences that explain how something works (see **Walls of text**), and propose the definition-plus-lists structure in the fix.
+- For each `##` section and each `###` or `####` subsection, count the sentences in each paragraph. Flag any run of two or more consecutive paragraphs with three or more sentences that explain how something works (see **Walls of text**), and propose the definition-plus-lists structure in the fix.
 - Search for `[Cc]olumns? [A-Z]` and for capitalized single-word names next to "column" or
   "columns" in prose (for example `column A`, `Column B gets`). Then build a list of the column
   names the page defines (the left-hand sides of formulas such as `"A = i * 2"`, and explicit

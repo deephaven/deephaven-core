@@ -139,7 +139,7 @@
     {
       "id": 10,
       "prompt": "Do a style review of this deephaven-core concept guide, focusing on links to reference pages and readability: .claude/skills/eval-fixtures/parallelization-bf29-chip-round3.md. Treat it as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
-      "expected_output": "Flags the bare API mentions a reviewer flagged on this text: Filter and Selectable in the 'works the same way' sentence, with_serial and Barriers as bold lead terms in the contrast bullets, and select/update/where/view/update_view (and bare with_serial) in Key takeaways, each with a link target. Flags the Implicit barriers section as a wall of text and proposes a definition plus short lists. Flags 'with no Deephaven configuration' as a qualifier with no concrete meaning.",
+      "expected_output": "Flags the bare API mentions a reviewer flagged on this text: Filter and Selectable in the 'works the same way' sentence, with_serial and Barriers as bold lead terms in the contrast bullets, and select/update/where/view/update_view (and bare with_serial) in Key takeaways, each with a link target. Flags the Implicit barriers section as a wall of text and proposes a definition plus short lists. Addresses 'with no Deephaven configuration': either flags it as a qualifier with no concrete meaning or explains that it states a checkable fact.",
       "files": [
         "../eval-fixtures/parallelization-bf29-chip-round3.md"
       ],
@@ -148,7 +148,7 @@
         "Flags `with_serial` and Barriers as unlinked bold lead terms in the bullets that contrast the two controls (around lines 143-144), and gives link targets (Selectable.md#with_serial and the #barriers anchor or equivalent)",
         "Flags the bare `select`, `update`, `where`, `view`, and `update_view` in the Key takeaways bullets (around line 370) as needing links, with their reference-page targets",
         "Flags the Implicit barriers section (around lines 342-346) as hard to read as dense prose (a wall of text), and proposes restructuring it, for example a one-sentence definition followed by short lists",
-        "Flags 'with no Deephaven configuration' (around line 93) as vague or unclear, and proposes stating the concrete fact or removing the phrase",
+        "Addresses 'with no Deephaven configuration' (around line 93): either flags it as vague and proposes the concrete fact or removing it, or explicitly explains that it already states a checkable fact (no property to set). Silence about the phrase fails",
         "Control: does not ask for links inside headings or fenced code blocks, and does not ask for an identifier to be linked more than once within the same sentence"
       ]
     }
