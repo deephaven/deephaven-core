@@ -32,7 +32,7 @@ resultCombined = source.aggBy(AggSum("SumValue=Value"), "Key")
 
 A windowed aggregation is one that only calculates aggregated values over a subset of the table. This subset is defined by a window, which can be specified in terms of rows (ticks) or time. For example, a windowed sum may calculate the aggregated sum over the previous 10 rows in the table. When a new row ticks in, the aggregated value is updated to reflect the new row and the oldest row that is no longer in the window.
 
-To illustrate this, consider the following example, which calculates a cumulative sum and a rolling sum with [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). The rolling sum is applied over the previous 3 rows, so the `SumValue` column differs from its cumulative counterpart:
+To illustrate this, consider the following example, which calculates a cumulative sum and a rolling sum with [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). The rolling sum is applied over the previous 3 rows, so the `RollingSumValue` column differs from `CumSumValue`:
 
 ```groovy order=result,source
 source = emptyTable(6).update("Value = ii")
@@ -181,16 +181,16 @@ Windowed aggregations are similar to cumulative aggregations but operate on a fi
 - `revTicks = 10, fwdTicks = 10` - Contains the previous 9 rows, the current row and the 10 rows following.
 - `revTicks = 10, fwdTicks = -5` - Contains 5 rows, beginning at 9 rows before, ending at 5 rows before the current row (inclusive).
 - `revTicks = 11, fwdTicks = -1` - Contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive).
-- `revTicks = -5, fwdTicks = 10` - Contains 5 rows, beginning 5 rows following, ending at 10 rows following the current row (inclusive).
+- `revTicks = -5, fwdTicks = 10` - Contains 5 rows, beginning 6 rows following, ending at 10 rows following the current row (inclusive).
 
 **Time-based windows** aggregate values over time durations with variable window sizes defined by `revTime` and `fwdTime` parameters:
 
-- `revTime = "PT00:00:00", fwdTime = "PT00:00:00"` - Contains rows that exactly match the current timestamp.
-- `revTime = "PT00:10:00", fwdTime = "PT00:00:00"` - Contains rows from 10m earlier through the current timestamp (inclusive).
-- `revTime = "PT00:00:00", fwdTime = "PT00:10:00"` - Contains rows from the current timestamp through 10m following the current row timestamp (inclusive).
-- `revTime = int(60e9), fwdTime = int(60e9)` - Contains rows from 1m earlier through 1m following the current timestamp (inclusive).
-- `revTime = "PT00:10:00", fwdTime = "-PT00:05:00"` - Contains rows from 10m earlier through 5m before the current timestamp (inclusive). This is a purely backward-looking window.
-- `revTime = int(-5e9), fwdTime = int(10e9)` - Contains rows from 5s following through 10s following the current timestamp (inclusive). This is a purely forward-looking window.
+- `revTime = parseDuration("PT0s"), fwdTime = parseDuration("PT0s")` - Contains rows that exactly match the current timestamp.
+- `revTime = parseDuration("PT10m"), fwdTime = parseDuration("PT0s")` - Contains rows from 10m earlier through the current timestamp (inclusive).
+- `revTime = parseDuration("PT0s"), fwdTime = parseDuration("PT10m")` - Contains rows from the current timestamp through 10m following the current row timestamp (inclusive).
+- `revTime = 60_000_000_000L, fwdTime = 60_000_000_000L` - Contains rows from 1m earlier through 1m following the current timestamp (inclusive).
+- `revTime = parseDuration("PT10m"), fwdTime = parseDuration("-PT5m")` - Contains rows from 10m earlier through 5m before the current timestamp (inclusive). This is a purely backward-looking window.
+- `revTime = -5_000_000_000L, fwdTime = 10_000_000_000L` - Contains rows from 5s following through 10s following the current timestamp (inclusive). This is a purely forward-looking window.
 
 Cumulative operators like [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) are special cases of tick-based operators, where the window begins at the first table row and continues through to the current row.
 
@@ -198,16 +198,16 @@ Cumulative operators like [`CumSum`](../reference/table-operations/update-by-ope
 
 Simple moving (or rolling) aggregations are statistics computed over a finite, moving window of data. These operations weigh each data point in the window equally, regardless of its distance from the current row. The following simple moving statistics are supported:
 
-| Simple moving statistic | Tick-based                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| Count                   | [`RollingCount`](../reference/table-operations/update-by-operations/rolling-count.md)  |
-| Minimum                 | [`RollingMin`](../reference/table-operations/update-by-operations/rolling-min.md)      |
-| Maximum                 | [`RollingMax`](../reference/table-operations/update-by-operations/rolling-max.md)      |
-| Sum                     | [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md)      |
-| Product                 | [`RollingProd`](../reference/table-operations/update-by-operations/rolling-product.md) |
-| Average                 | [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md)      |
-| Weighted Average        | [`RollingWavg`](../reference/table-operations/update-by-operations/rolling-wavg.md)    |
-| Standard Deviation      | [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md)      |
+| Simple moving statistic | Tick-based                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| Count                   | [`RollingCount`](../reference/table-operations/update-by-operations/rolling-count.md)     |
+| Minimum                 | [`RollingMin`](../reference/table-operations/update-by-operations/rolling-min.md)         |
+| Maximum                 | [`RollingMax`](../reference/table-operations/update-by-operations/rolling-max.md)         |
+| Sum                     | [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md)         |
+| Product                 | [`RollingProduct`](../reference/table-operations/update-by-operations/rolling-product.md) |
+| Average                 | [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md)         |
+| Weighted Average        | [`RollingWAvg`](../reference/table-operations/update-by-operations/rolling-wavg.md)       |
+| Standard Deviation      | [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md)         |
 
 #### Additional rolling operations
 
@@ -305,7 +305,7 @@ source = emptyTable(10).update(
 
 sma2sec = RollingAvg("Timestamp", parseDuration("PT00:00:02"), "AvgX2Sec=X")
 sma3sec = RollingAvg("Timestamp", parseDuration("PT3s"), "AvgX3Sec=X")
-sma5sec = RollingAvg("Timestamp", parseDuration("PT3s"), "AvgX5Sec=X")
+sma5sec = RollingAvg("Timestamp", parseDuration("PT5s"), "AvgX5Sec=X")
 
 result = source.updateBy([sma2sec, sma3sec, sma5sec], "Letter")
 ```
@@ -325,9 +325,6 @@ sma10sec = RollingAvg("Timestamp", parseDuration("PT5s"), parseDuration("PT5s"),
 
 result = source.updateBy([sma2sec, sma5sec, sma10sec], "Letter")
 ```
-
-> [!NOTE]
-> In tick-based operations, windows are calculated per-group (each group maintains its own window of rows). In time-based operations, windows are defined by timestamps across the entire table regardless of grouping.
 
 ### Exponential moving aggregations
 
@@ -380,8 +377,8 @@ result = source.updateBy([ema2, ema3, ema5], "Letter")
 **Time-based decay** (`decayTime`):
 
 - Controls how quickly older data loses influence over time.
-- `decayTime="PT1s"`: Data from 1 second ago has ~37% weight.
-- `decayTime="PT10s"`: Data from 10 seconds ago has ~37% weight.
+- `decayTime = parseDuration("PT1s")`: Data from 1 second ago has ~37% weight.
+- `decayTime = parseDuration("PT10s")`: Data from 10 seconds ago has ~37% weight.
 - Longer decay times create more stable, less responsive averages.
 
 The same example can be modified to use time-based windows instead of tick-based windows:
@@ -394,17 +391,17 @@ source = emptyTable(50).update(
 )
 
 ema2sec = Ema("Timestamp", parseDuration("PT2s"), "EmaX2Sec=X")
-ema3sec = Ema("Timestamp", parseDuration("PT00:00:03"), "EmaX3=X")
-ema5sec = Ema("Timestamp", parseDuration("PT5s"), "EmaX5=X",)
+ema4sec = Ema("Timestamp", parseDuration("PT4s"), "EmaX4Sec=X")
+ema6sec = Ema("Timestamp", parseDuration("PT6s"), "EmaX6Sec=X")
 
-result = source.updateBy([ema2sec, ema3sec, ema5sec], "Letter")
+result = source.updateBy([ema2sec, ema4sec, ema6sec], "Letter")
 ```
 
 In this time-based example:
 
-- `decayTime="PT2s"`: Creates a fast-responding average where data loses ~63% influence after 2 seconds.
-- `decayTime="PT4s"`: Medium responsiveness, data loses ~63% influence after 4 seconds.
-- `decayTime="PT6s"`: Slower response, data loses ~63% influence after 6 seconds.
+- `decayTime = parseDuration("PT2s")`: Creates a fast-responding average where data loses ~63% influence after 2 seconds.
+- `decayTime = parseDuration("PT4s")`: Medium responsiveness, data loses ~63% influence after 4 seconds.
+- `decayTime = parseDuration("PT6s")`: Slower response, data loses ~63% influence after 6 seconds.
 
 ## Bollinger Bands
 
@@ -439,7 +436,7 @@ w = 2
 result = source.updateBy(
     [
         RollingAvg(revTicks, "AvgPrice=Price"),
-        RollingAvg(revTicks, "StdPrice=Price"),
+        RollingStd(revTicks, "StdPrice=Price"),
     ],
     "Ticker",
 ).update("Upper = AvgPrice + w*StdPrice", "Lower = AvgPrice - w*StdPrice")
@@ -448,12 +445,11 @@ result = source.updateBy(
 
 def plotBollinger = { t, ticker ->
     d = t.where("Ticker=`${ticker}`")
-    plot = plot("Price", d, "Timestamp", "Price")
+    return plot("Price", d, "Timestamp", "Price")
         .plot("AvgPrice", d, "Timestamp", "AvgPrice")
         .plot("Upper", d, "Timestamp", "Upper")
         .plot("Lower", d, "Timestamp", "Lower")
         .show()
-    return d
 }
 
 
@@ -492,12 +488,11 @@ result = source.updateBy(
 
 def plotBollinger = { t, ticker ->
     d = t.where("Ticker=`${ticker}`")
-    plot = plot("Price", d, "Timestamp", "Price")
+    return plot("Price", d, "Timestamp", "Price")
         .plot("AvgPrice", d, "Timestamp", "AvgPrice")
         .plot("Upper", d, "Timestamp", "Upper")
         .plot("Lower", d, "Timestamp", "Lower")
         .show()
-    return d
 }
 
 fAbc = plotBollinger(result, "ABC")
@@ -535,12 +530,11 @@ result = source.updateBy(
 
 def plotBollinger = { t, ticker ->
     d = t.where("Ticker=`${ticker}`")
-    plot = plot("Price", d, "Timestamp", "Price")
+    return plot("Price", d, "Timestamp", "Price")
         .plot("AvgPrice", d, "Timestamp", "EmaPrice")
         .plot("Upper", d, "Timestamp", "Upper")
         .plot("Lower", d, "Timestamp", "Lower")
         .show()
-    return d
 }
 
 fAbc = plotBollinger(result, "ABC")
@@ -570,7 +564,7 @@ w = 2
 result = source.updateBy(
     [
         Ema("Timestamp", parseDuration(decayTime), "EmaPrice=Price"),
-        Ema("Timestamp", parseDuration(decayTime), "StdPrice=Price"),
+        EmStd("Timestamp", parseDuration(decayTime), "StdPrice=Price"),
     ],
     "Ticker",
 ).update("Upper = EmaPrice + w*StdPrice", "Lower = EmaPrice - w*StdPrice")
@@ -579,12 +573,11 @@ result = source.updateBy(
 
 def plotBollinger = { t, ticker ->
     d = t.where("Ticker=`${ticker}`")
-    plot = plot("Price", d, "Timestamp", "Price")
+    return plot("Price", d, "Timestamp", "Price")
         .plot("AvgPrice", d, "Timestamp", "EmaPrice")
         .plot("Upper", d, "Timestamp", "Upper")
         .plot("Lower", d, "Timestamp", "Lower")
         .show()
-    return d
 }
 
 
@@ -623,7 +616,7 @@ source = emptyTable(100).update(
 )
 
 result = source.updateBy(
-    RollingFormula("Timestamp", 5_000_000, "pow(product(x), 1/count(x))", "x", "GeomMeanX=X"),
+    RollingFormula("Timestamp", parseDuration("PT5s"), "pow(product(x), 1/count(x))", "x", "GeomMeanX=X"),
     "Letter"
 )
 ```
@@ -875,7 +868,6 @@ For more information on splitting temporal data into buckets of time, see [Downs
 ### Performance considerations
 
 - Rolling aggregations are more performant than rolling groups followed by calculations.
-- Tick-based operations maintain separate windows per group, while time-based operations use timestamps across the entire table.
 - Exponential moving aggregations use all historical data but weight recent observations more heavily.
 
 ## Handling erroneous data

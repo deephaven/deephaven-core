@@ -24,7 +24,7 @@ import static io.deephaven.api.agg.Aggregation.AggLast
 
 aggList = [
     AggAvg(sourceColumns),                 // first aggregation
-    AggLast("inputColumn = outputColumn")  // second aggregation
+    AggLast("outputColumn = inputColumn")  // second aggregation
 ]
 
 result = source.aggBy(aggList, groupingColumns...) // apply the aggregations to data
@@ -50,7 +50,7 @@ A number of built-in aggregations are available:
 - [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md) - Creates partition for the aggregation group.
 - [`AggPct`](../reference/table-operations/group-and-aggregate/AggPct.md) - Percentile of values for each group.
 - [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md) - Sorts in ascending order, then computes the first value for each group.
-- [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) - Sorts in descending order, then computes the last value for each group.
+- [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) - Sorts in ascending order, then computes the last value for each group.
 - [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md) - Sample standard deviation for each group.
 - [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md) - Sum of values for each group.
 - [`AggUnique`](../reference/table-operations/group-and-aggregate/AggUnique.md) - Returns one single value for a column, or a default.

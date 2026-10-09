@@ -23,7 +23,7 @@ from deephaven import agg
 
 agg_list = [
     agg.avg(cols="SourceColumns..."),  # first aggregation
-    agg.last(cols=["InputColumn = OutputColumn"]),  # second aggregation
+    agg.last(cols=["OutputColumn = InputColumn"]),  # second aggregation
 ]
 
 result = source.agg_by(
@@ -51,7 +51,7 @@ A number of built-in aggregations are available:
 - [`agg.partition`](../reference/table-operations/group-and-aggregate/AggPartition.md) - Creates partition for the aggregation group.
 - [`agg.pct`](../reference/table-operations/group-and-aggregate/AggPct.md) - Percentile of values for each group.
 - [`agg.sorted_first`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md) - Sorts in ascending order, then computes the first value for each group.
-- [`agg.sorted_last`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) - Sorts in descending order, then computes the last value for each group.
+- [`agg.sorted_last`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) - Sorts in ascending order, then computes the last value for each group.
 - [`agg.std`](../reference/table-operations/group-and-aggregate/AggStd.md) - Sample standard deviation for each group.
 - [`agg.sum_`](../reference/table-operations/group-and-aggregate/AggSum.md) - Sum of values for each group.
 - [`agg.unique`](../reference/table-operations/group-and-aggregate/AggUnique.md) - Returns one single value for a column, or a default.
