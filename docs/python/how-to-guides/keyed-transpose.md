@@ -8,20 +8,19 @@ This guide shows you how to use [`keyed_transpose`](../reference/table-operation
 
 Use [`keyed_transpose`](../reference/table-operations/format/keyed-transpose.md) when you need to:
 
-- **Create cross-tabulations**: Build summary tables with one aggregated value per row and category.
-- **Reshape time-series data**: Give each metric or series its own column, with one row per timestamp.
-- **Prepare data for reports**: Build tables for reports or charts that expect one column per category.
+- **Pivot data from long to wide format**: Convert rows of categorical data into columns.
+- **Create cross-tabulations**: Build summary tables with aggregated values.
+- **Reshape time-series data**: Transform data where categories are in rows into a format where they become columns.
+- **Prepare data for visualization**: Many charts require data in wide format.
 
 ## Basic usage
 
-A keyed transpose takes four required arguments:
+The simplest use case involves specifying:
 
 1. A source table.
 2. One or more aggregations to apply.
-3. The row-by columns (`row_by_cols`). Each unique combination of their values becomes a row in the result.
-4. The column-by columns (`col_by_cols`). Each unique combination of their values becomes a column in the result.
-
-Two optional arguments matter mainly for ticking sources: `initial_groups` creates result rows and columns before the source has data for them, and `new_column_behavior` controls what happens when a new column-by value arrives. `new_column_behavior` has no effect on a static source. See [Ticking tables and initial groups](#ticking-tables-and-initial-groups).
+3. Columns to use as row keys (`row_by_cols`).
+4. Columns whose values become new column names (`col_by_cols`).
 
 ```python order=result,source
 from deephaven import agg, new_table
@@ -101,7 +100,7 @@ The resulting columns are `TotalSales_North`, `AvgRevenue_North`, `TotalSales_So
 
 The [`keyed_transpose`](../reference/table-operations/format/keyed-transpose.md) operation builds each output column name from the values in the `col_by_cols` columns. It first builds a base name from those values and the aggregations, as shown in the first three rows of the following table. It then cleans up the name by applying the remaining rules in order:
 
-| Rule                                                                    | Column naming pattern                                         | Example                                         |
+| Scenario                                                                | Column naming pattern                                         | Example                                         |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------- |
 | Single aggregation, single column-by                                    | Value from the column-by column                               | `INFO`, `WARN`                                  |
 | Multiple column-by columns                                              | Values joined with underscores                                | `INFO_10`, `WARN_20`                            |
@@ -164,7 +163,7 @@ scenario3 = keyed_transpose(
     source, [agg.sum_(["Value"])], ["RowKey"], ["Category", "NodeId"]
 )
 
-# Combine the three results into one table
+# Combined example showing all scenarios together
 result = scenario1.natural_join(scenario2, ["RowKey"]).natural_join(
     scenario3, ["RowKey"]
 )

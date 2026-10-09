@@ -54,7 +54,7 @@ result = source.tree(id_col="ID", parent_col="Parent")
 
 ### Real-time data
 
-Tree tables work with [ticking](../conceptual/table-types.md) data the same way they work with static data, except that `tree` doesn't support [blink tables](../conceptual/table-types.md#specialization-3-blink). The following example builds the same kind of `ID`/`Parent` hierarchy as the [static data example](#static-data), with 10,000 rows. Each row's `Parent` is its `ID` divided by 10, rounded down.
+Tree tables work with [ticking](../conceptual/table-types.md) data the same way they work with static data, except that [`tree`](../reference/table-operations/create/tree.md) doesn't support [blink tables](../conceptual/table-types.md#specialization-3-blink). The following example builds the same kind of `ID`/`Parent` hierarchy as the [static data example](#static-data), with 10,000 rows. Each row's `Parent` is its `ID` divided by 10, rounded down.
 
 It then creates a [time table](../reference/table-operations/create/timeTable.md) that adds one new `I` value every 10 milliseconds. After all 10,000 values have appeared, `I` wraps back to 0, and [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) keeps only the latest row for each `I`. [Joining](../reference/table-operations/join/join.md) the first table to the time table produces `source`, which contains only the rows whose `ID` matches an `I` value from the time table, so the tree grows as rows arrive. After the wrap, the tree updates in place instead of growing.
 

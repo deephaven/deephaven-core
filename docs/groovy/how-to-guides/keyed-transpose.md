@@ -8,20 +8,19 @@ This guide shows you how to use [`keyedTranspose`](../reference/table-operations
 
 Use [`keyedTranspose`](../reference/table-operations/format/keyedTranspose.md) when you need to:
 
-- **Create cross-tabulations**: Build summary tables with one aggregated value per row and category.
-- **Reshape time-series data**: Give each metric or series its own column, with one row per timestamp.
-- **Prepare data for reports**: Build tables for reports or charts that expect one column per category.
+- **Pivot data from long to wide format**: Convert rows of categorical data into columns.
+- **Create cross-tabulations**: Build summary tables with aggregated values.
+- **Reshape time-series data**: Transform data where categories are in rows into a format where they become columns.
+- **Prepare data for visualization**: Many charts require data in wide format.
 
 ## Basic usage
 
-[`keyedTranspose`](../reference/table-operations/format/keyedTranspose.md) is a static method of the [`KeyedTranspose`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/KeyedTranspose.html) class, which you import from `io.deephaven.engine.table.impl.util`. Its basic form takes four arguments:
+The simplest use case involves specifying:
 
 1. A source table.
-2. A list of one or more aggregations to apply.
-3. The row-by columns (`rowByColumns`), as [`ColumnName`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) objects built with `ColumnName.from("Col1", ...)`. Each unique combination of their values becomes a row in the result.
-4. The column-by columns (`columnByColumns`), also built with `ColumnName.from`. Each unique combination of their values becomes a column in the result.
-
-Overloads that also take an `initialGroups` table and a [`NewColumnBehavior`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/KeyedTranspose.NewColumnBehavior.html) matter mainly for ticking sources: `initialGroups` creates result rows and columns before the source has data for them, and `NewColumnBehavior` controls what happens when a new column-by value arrives. `NewColumnBehavior` has no effect on a static source. See [Ticking tables and initial groups](#ticking-tables-and-initial-groups).
+2. One or more aggregations to apply.
+3. Columns to use as row keys (`rowByColumns`).
+4. Columns whose values become new column names (`columnByColumns`).
 
 ```groovy order=result,source
 import io.deephaven.engine.table.impl.util.KeyedTranspose
@@ -100,7 +99,7 @@ The resulting columns are `TotalSales_North`, `AvgRevenue_North`, `TotalSales_So
 
 The [`keyedTranspose`](../reference/table-operations/format/keyedTranspose.md) operation builds each output column name from the values in the `columnByColumns` columns. It first builds a base name from those values and the aggregations, as shown in the first three rows of the following table. It then cleans up the name by applying the remaining rules in order:
 
-| Rule                                                                    | Column naming pattern                                         | Example                                         |
+| Scenario                                                                | Column naming pattern                                         | Example                                         |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------- |
 | Single aggregation, single column-by                                    | Value from the column-by column                               | `INFO`, `WARN`                                  |
 | Multiple column-by columns                                              | Values joined with underscores                                | `INFO_10`, `WARN_20`                            |
@@ -155,7 +154,7 @@ scenario3 = KeyedTranspose.keyedTranspose(
     ColumnName.from("Category", "NodeId")
 )
 
-// Combine the three results into one table
+// Combined example showing all scenarios together
 result = scenario1.naturalJoin(scenario2, "RowKey").naturalJoin(scenario3, "RowKey")
 ```
 

@@ -2,19 +2,22 @@
 title: Create a hierarchical rollup table programmatically
 ---
 
-This guide shows you how to create a hierarchical rollup table programmatically.
+<!-- TODO: Link to conceptual guide on hierarchy https://github.com/deephaven/deephaven.io/issues/2079 -->
 
-A rollup table combines Deephaven's aggregations with a hierarchical structure: it aggregates values using increasing levels of grouping and shows the value of each aggregation at each level. For example, the `insurance_rollup` table from the [Static data](#static-data) example groups data by `region` and then by `age`:
-
-![A rollup table grouped by region and age](../assets/how-to/rollup-example.png)
-
-The web UI adds a `Group` column that shows the rollup table's hierarchy. Click the right-facing arrow in the `Group` column to expand a row, and the down-facing arrow to collapse it.
-
-The topmost row, which aggregates all rows, is the _root node_. The rows at the lowest aggregated level are the _leaf nodes_. The original source rows that each leaf node aggregates are its _constituents_. If you set `include_constituents=True`, the constituents appear one level below the leaf node.
+This guide shows you how to create a hierarchical rollup table programmatically. A rollup table combines Deephaven's aggregations with an easy-to-navigate hierarchical structure.
 
 ![A diagram displaying the structure of a rollup table](../assets/how-to/rollup-diagram.png)
 
-In this diagram, `Root` is the root node, the `A` rows are the first level of grouping, and the `B` rows are the leaf nodes.
+A rollup table aggregates values using increasing levels of grouping to produce a hierarchical table that shows the value for each aggregation at each level. For example, the `insurance_rollup` table from the [Static data](#static-data) example groups data by `region`, and then by `age`:
+
+![A rollup table grouped by region and age](../assets/how-to/rollup-example.png)
+
+The `Group` column contains the rollup table's hierarchy and has UI controls for expanding and collapsing individual groups. Click the right-facing arrow to expand a row, and the down-facing arrow to collapse it.
+
+The topmost row, which contains all of the groups, is known as the _root node_. The lowest-level nodes are known as _leaf nodes_. The rows from the source table that each leaf node aggregates are known as _constituents_. If you set `include_constituents=True`, the constituents appear one level below each leaf node.
+
+> [!NOTE]
+> A column that is no longer part of the aggregation key is replaced with a null value on each level.
 
 If each row instead names its parent row by ID, and you want to show that parent/child hierarchy rather than aggregate groups of rows, use a [tree table](./tree-table.md).
 
@@ -31,9 +34,6 @@ The `rollup` method takes three parameters. Only `aggs` is required.
 1. `aggs`: The aggregations to compute at each level. Pass one aggregation on its own or several in a list. As with [combined aggregations](./combined-aggregations.md#syntax), you can define the list before the `rollup` call. Pass an empty list (`aggs=[]`) to build the hierarchy without computing any values. See [Supported aggregations](#supported-aggregations).
 2. `by` (optional): The columns that define the table's hierarchy. Each column adds one level, from left to right. For example, with `by=["ColumnOne", "ColumnTwo"]`, each unique value in `ColumnOne` expands to show the `ColumnTwo` values that belong to it. The default, `None`, aggregates all rows into a single root node.
 3. `include_constituents` (optional): Whether to show each leaf node's constituents one level below it. The default is `False`. Not supported when the source is a [blink table](../conceptual/table-types.md#specialization-3-blink).
-
-> [!NOTE]
-> Each level of a rollup table groups by fewer columns than the level below it. On each level, any `by` column that the level doesn't group on shows null values.
 
 ### Supported aggregations
 
