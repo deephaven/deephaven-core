@@ -22,7 +22,7 @@ binding over `dhclient`, and `py/client-ticking` is a Cython binding over `dhcor
 
 | Document | What it is |
 |----------|------------|
-| [`BUILDING.md`](BUILDING.md) | How to build and install the client and its dependencies on Linux. **Start here.** |
+| [`BUILDING.md`](BUILDING.md) | How to build and install the client and its dependencies on Linux — the one-command Docker/Gradle build, and the manual native build. **Start here.** |
 | [`README-windows.md`](README-windows.md) | How to build the C++ and Python clients on Windows 10/11. |
 | [`DESIGN.md`](DESIGN.md) | Design and implementation of the client — architecture, code layout, the ticking pipeline, conventions, and per-file summaries. Written for engineers and coding agents who need to *change* the code. |
 | [`doc/`](doc) | Source for the user-facing API reference (Sphinx + Doxygen), published at <https://docs.deephaven.io/core/client-api/cpp/>. |

@@ -1,6 +1,6 @@
 project(read_table_with_arrow_flight)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 add_executable(read_table_with_arrow_flight main.cc)
 

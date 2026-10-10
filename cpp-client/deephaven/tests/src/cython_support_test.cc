@@ -27,6 +27,7 @@ using deephaven::dhcore::chunk::ContainerBaseChunk;
 using deephaven::dhcore::chunk::GenericChunk;
 using deephaven::dhcore::chunk::Int64Chunk;
 using deephaven::dhcore::column::ColumnSource;
+using deephaven::dhcore::column::GenericArrayColumnSource;
 using deephaven::dhcore::column::Int32ArrayColumnSource;
 using deephaven::dhcore::column::StringArrayColumnSource;
 using deephaven::dhcore::container::Container;
@@ -251,5 +252,39 @@ TEST_CASE("ColumnSourceToString", "[cython]") {
 
   const char *expected = "[[a,b,c],null,[],[d,e,f,null,g]]";
   CHECK(expected == actual_string);
+}
+
+// char16_t values print as UTF-8; control characters and surrogates print as
+// 0xABCD. See StreamValue in cython_support.cc.
+TEST_CASE("ColumnSourceToString char16_t", "[cython]") {
+  // a, e-acute (2-byte UTF-8), U+65E5 (3-byte UTF-8), lone high surrogate,
+  // tab (C0 control), U+0085 NEL (C1 control), null
+  std::vector<std::optional<char16_t>> elements = {
+    u'a', u'\u00e9', u'\u65e5', char16_t(0xD83D), u'\t', u'\u0085', {}
+  };
+  auto elements_size = elements.size();
+
+  auto scalar_cs = VectorToColumnSource<GenericArrayColumnSource<char16_t>>(
+    ElementType::Of(ElementTypeId::kChar), elements);
+  auto scalar_string = CythonSupport::ColumnSourceToString(*scalar_cs, elements_size);
+  const char *expected_scalar = "a\n\xC3\xA9\n\xE6\x97\xA5\n0xD83D\n0x0009\n0x0085\n(null)";
+  CHECK(expected_scalar == scalar_string);
+
+  // The same elements as nested containers:
+  //   [a, e-acute, U+65E5]
+  //   null  # null list
+  //   []  # empty list
+  //   [0xD83D, 0x0009, 0x0085, null]
+  std::vector<std::optional<int32_t>> slice_lengths = {3, {}, 0, 4};
+  auto slice_lengths_size = slice_lengths.size();
+  auto elements_cs = VectorToColumnSource<GenericArrayColumnSource<char16_t>>(
+    ElementType::Of(ElementTypeId::kChar), std::move(elements));
+  auto slice_lengths_cs = VectorToColumnSource<Int32ArrayColumnSource>(
+    ElementType::Of(ElementTypeId::kInt32), std::move(slice_lengths));
+  auto container_cs = CythonSupport::SlicesToColumnSource(*elements_cs, elements_size,
+    *slice_lengths_cs, slice_lengths_size);
+  auto container_string = CythonSupport::ColumnSourceToString(*container_cs, slice_lengths_size);
+  const char *expected_container = "[[a,\xC3\xA9,\xE6\x97\xA5],null,[],[0xD83D,0x0009,0x0085,null]]";
+  CHECK(expected_container == container_string);
 }
 }  // namespace deephaven::client::tests
