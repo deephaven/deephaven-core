@@ -132,11 +132,11 @@ Most queries work correctly with automatic parallelization. Some code does not, 
 - **[`Selectable`](../../reference/query-language/types/Selectable.md)**: a column expression, used in [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md).
 - **[`Filter`](../../reference/query-language/types/Filter.md)**: a filter condition, used in [`where`](../../reference/table-operations/filter/where.md).
 
-Concurrency control works the same way for a [`Filter`](../../reference/query-language/types/Filter.md) as for a [`Selectable`](../../reference/query-language/types/Selectable.md).
+The same methods apply to a [`Filter`](../../reference/query-language/types/Filter.md) as to a [`Selectable`](../../reference/query-language/types/Selectable.md).
 
 The two controls solve different problems:
 
-- **[`withSerial`](../../reference/query-language/types/Selectable.md#withserial)** processes the rows _within one column_ one at a time, in order. Other columns can still run at the same time.
+- **[`withSerial`](../../reference/query-language/types/Selectable.md#withserial)** processes the rows _within one column_ one at a time, in order. Other columns can still run at the same time. A serial filter also keeps its place among the other filters in the same [`where`](../../reference/table-operations/filter/where.md).
 - **[Barriers](#barriers)** order columns _relative to each other_. One column finishes all its rows before another column starts. Rows within each column can still run in parallel.
 
 When columns share state, you often need both. [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) protects the shared state within each column, and a [barrier](#barriers) makes one column finish before the other starts.

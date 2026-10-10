@@ -66,7 +66,7 @@ For the full reference, constraints, and worked examples, see [Barrier](./Barrie
 
 ### Do you need a Selectable at all?
 
-Most of the time, no. When you pass a string formula to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md), Deephaven creates a `Selectable` internally and parallelizes the computation across multiple cores. This is the default behavior and it works well for any formula that:
+Most of the time, no. When you pass a string formula to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md), Deephaven creates a `Selectable` internally and can parallelize the computation across multiple cores. This is the default behavior and it works well for any formula that:
 
 - Only uses values from the current row (e.g., `"Total = Price * Quantity"`).
 - Has no side effects — it does not modify global variables, write to files, or depend on processing order.

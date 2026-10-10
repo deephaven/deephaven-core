@@ -94,7 +94,7 @@ For the full reference, constraints, and worked examples, see [Barrier](./Barrie
 
 ### Do you need a Filter object at all?
 
-Most of the time, no. When you pass a string condition to [`where`](../../table-operations/filter/where.md), Deephaven creates a `Filter` internally and parallelizes its evaluation across multiple cores. This works well for any condition that:
+Most of the time, no. When you pass a string condition to [`where`](../../table-operations/filter/where.md), Deephaven creates a `Filter` internally and can parallelize its evaluation across multiple cores. This works well for any condition that:
 
 - Only examines values in the current row (e.g., `"Price > 100"`).
 - Has no side effects — it does not modify global variables, write to files, or depend on evaluation order.
