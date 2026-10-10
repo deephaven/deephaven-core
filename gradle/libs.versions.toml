@@ -86,7 +86,7 @@ rewrite-java = "8.90.4"
 # When bumping selenium, also bump the docker image in docker/registry/selenium/gradle.properties to the same version
 selenium = "4.49.0"
 slf4j = "2.0.20"
-snappy = "1.1.10.8"
+snappy = "1.1.10.11"
 javapoet = "0.20.0"
 ayza = "10.1.0"
 tdunning = "3.3"
