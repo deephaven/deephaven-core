@@ -100,7 +100,7 @@ client_session.bind_table("t_from_local", t_from_local_ref)
 As described in section 2, [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) objects have methods that mirror Deephaven table operations. In this way, table references can often be used _as if_ they were tables.
 
 > [!NOTE]
-> The table operations here are not intended to demonstrate a broad overview of what Deephaven offers. They are only for demonstrating how such operations are used in the Python client context. For a brief overview of table operations, check out the [Quickstart](./quickstart.md#4-working-with-deephaven-tables). For more details, visit the [table operations section of the Crash Course](./crash-course/table-ops.md).
+> The table operations here are not intended to demonstrate a broad overview of what Deephaven offers. They are only for demonstrating how such operations are used in the Python client context. For a brief overview of table operations, check out the [Quickstart](./quickstart.md#4-work-with-deephaven-tables). For more details, visit the [table operations section of the Crash Course](./crash-course/table-ops.md).
 
 All of the methods that have been implemented can be found in the [Pydocs](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table). These include basic table operations like [`update`](../reference/table-operations/select/update.md), [`view`](../reference/table-operations/select/view.md), [`where`](../reference/table-operations/filter/where.md), and [`sort`](../reference/table-operations/sort/sort.md):
 

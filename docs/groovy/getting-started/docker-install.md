@@ -2,59 +2,77 @@
 title: Install and run with Docker
 ---
 
-## Run Deephaven from Docker
-
-Deephaven can be run from pre-built Docker images and requires only Docker. This guide will teach you how to run Deephaven from Docker, choose a deployment, and customize it for your applications.
+You can run Deephaven from pre-built Docker images without installing Java or Python yourself. This guide shows you how to run Deephaven from Docker, choose a deployment, and customize it for your applications.
 
 > [!NOTE]
-> Docker isn't the only way to run Deephaven. Developers interested in tinkering with and modifying source code should [build Deephaven from source](../getting-started/launch-build.md). Users who wish to run from build artifacts without Docker should use the [Deephaven production application](./production-application.md)
+> Docker isn't the only way to run Deephaven. Developers interested in tinkering with and modifying source code should [build Deephaven from source](./launch-build.md). Users who wish to run from build artifacts without Docker should [install and run the Deephaven production application](./production-application.md).
 
 ## Supported operating systems
 
-Deephaven is only supported on:
+Deephaven's Docker images run on the following operating systems:
 
 - Linux
-- MacOS
-- Windows 10 or 11 (requires [WSL 2 (Windows Subsystem for Linux v2)](https://learn.microsoft.com/en-us/windows/wsl/install))
+- macOS
+- Windows 10 or 11 with [Windows Subsystem for Linux 2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install)
 
 > [!WARNING]
-> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven [ticking tables](./crash-course/create-tables.md#ticking-tables). Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
 
 ## Prerequisites
 
-Running Deephaven from Docker requires [`docker`](https://docs.docker.com/reference/cli/docker/) >= 20.10.8.
+Running Deephaven from Docker requires [`docker`](https://docs.docker.com/reference/cli/docker/) version 20.10.8 or later.
 
-[Docker Compose](https://docs.docker.com/compose/) is recomended for customized deployments, especially those that require multiple containers.
+To run the `docker-compose.yml` files on this page, you also need [Docker Compose](https://docs.docker.com/compose/).
 
 ## The simplest possible installation
 
-The following shell command downloads and runs the `server` image:
+The following shell command downloads and runs the `server-slim` image (Deephaven with Groovy):
 
 ```sh
 docker run --name deephaven -p 10000:10000 ghcr.io/deephaven/server-slim:latest
 ```
 
-> [!WARNING]
-> [`docker run`](https://docs.docker.com/reference/cli/docker/container/run/) creates a new container from an image every time it's called. To reuse a container created from [`docker run`](https://docs.docker.com/reference/cli/docker/container/run/), use [`docker start`](https://docs.docker.com/reference/cli/docker/container/start/).
+Once the container is running, [open the Deephaven IDE](#open-the-deephaven-ide) and log in with the [pre-shared key](../how-to-guides/authentication/auth-psk.md) that Deephaven prints to the Docker logs. To set your own key, see [Set a pre-shared key](#set-a-pre-shared-key).
 
-> [!NOTE]
-> This default configuration uses a [pre-shared key](../how-to-guides/authentication/auth-psk.md) to authenticate users. If not explicitly set, a randomly generated key gets printed to the Docker logs. See [set a pre-shared key](#set-a-pre-shared-key) for how to set your own key.
+> [!WARNING]
+> [`docker run`](https://docs.docker.com/reference/cli/docker/container/run/) creates a new container from an image every time you call it. To reuse a container that `docker run` created, use [`docker start`](https://docs.docker.com/reference/cli/docker/container/start/).
+
+## Choose a deployment
+
+The Groovy examples on this page use the `server-slim` image, which runs Deephaven with a Groovy console. Deephaven's other pre-built images, such as `server`, run a Python console.
+
+Deephaven also has pre-built `docker-compose.yml` files in the [`containers` directory of the deephaven-core repository](https://github.com/deephaven/deephaven-core/tree/main/containers). The Groovy files run `server-slim`:
+
+- `groovy` runs `server-slim` alone.
+- `groovy-examples` adds [example data](https://github.com/deephaven/examples).
+- `groovy-redpanda` adds [Redpanda](https://redpanda.com/).
+- `groovy-examples-redpanda` adds both.
+
+To use one, save its `docker-compose.yml` to an empty directory and [start the application](#start-the-application).
 
 ## Image versions
 
-The `latest` version is used in the examples below. This corresponds to the most recent release number (e.g. `0.33.3`, `0.33.0`, etc.). While it's recommended to stay up-to-date with recent releases, Deephaven has many [releases](https://github.com/deephaven/deephaven-core/releases) that can be used if desired. Versions can be any of the following:
+The examples below use the `latest` version. Deephaven recommends staying up to date, but you can pin an earlier image version if needed. The version can be any of the following:
 
 - `latest` (default): The most recent release.
-- A specific release tag: `0.32.0`, `0.33.3`, etc.
-- `edge`: An image published nightly and contains unreleased features.
+- A release tag, such as `41.7` or `42.6`: That specific release.
+- `edge`: A nightly build that contains unreleased features.
+
+Not every Deephaven release has a Docker image. To see which versions are available, check the [image tags on GitHub](https://github.com/deephaven/deephaven-core/pkgs/container/server-slim).
+
+To use a different version, replace `latest` in the image name. For example, `ghcr.io/deephaven/server-slim:42.6` runs release 42.6.
+
+Most `docker-compose.yml` examples on this page read the `VERSION` environment variable, which sets the image version and defaults to `latest`. For example, `VERSION=42.6 docker compose up` runs release 42.6.
+
+The `groovy-examples` file also runs a second image, `ghcr.io/deephaven/examples`, which downloads the example data from GitHub into `./data/examples` the first time it runs. That image reads `VERSION` too, but its tags don't match Deephaven release numbers. To pin a Deephaven release with that file, edit the Deephaven `image:` line instead of setting `VERSION`.
 
 ## Modify the deployment
 
-The Deephaven deployment can be modified through [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). The subsections below present ways to modify the deployment using both. Deephaven recommends the use of [Docker Compose](https://docs.docker.com/compose/) when creating custom deployments. See [Key benefits of Docker Compose](https://docs.docker.com/compose/intro/features-uses/#key-benefits-of-docker-compose) for more information on why.
+You can modify the Deephaven deployment with [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). Most subsections below show both ways. [Add a second image](#add-a-second-image) and [Build a custom image](#build-a-custom-image) use Docker Compose only. Deephaven recommends Docker Compose for custom deployments. To learn why, see [Key benefits of Docker Compose](https://docs.docker.com/compose/intro/features-uses/#key-benefits-of-docker-compose).
 
-Modifying the deployment with [Docker](https://www.docker.com/) should be done with [`docker create`](https://docs.docker.com/reference/cli/docker/container/create/). [`docker run`](https://docs.docker.com/reference/cli/docker/container/run/) will _always_ create a new container from an image. To run a pre-existing container, use [`docker start`](https://docs.docker.com/reference/cli/docker/container/start/).
+To modify the deployment with Docker alone, create the container with [`docker create`](https://docs.docker.com/reference/cli/docker/container/create/), and then run it with [`docker start`](https://docs.docker.com/reference/cli/docker/container/start/). Don't use `docker run` here (see the warning under [The simplest possible installation](#the-simplest-possible-installation)). Each `docker create` example below names the container `deephaven`. If a container with that name already exists, such as the one from [The simplest possible installation](#the-simplest-possible-installation), remove it first with `docker rm -f deephaven`, or pass a different `--name`.
 
-Modifying the deployment with [Docker Compose](https://docs.docker.com/compose/) requires updating the `docker-compose.yml` file used to build the container. The examples below will modify the following `docker-compose.yaml` file.
+To modify the deployment with Docker Compose, edit the `docker-compose.yml` file that creates the container. The examples below modify the following `docker-compose.yml` file. Save it in an empty directory.
 
 <details>
 <summary>docker-compose.yml</summary>
@@ -73,11 +91,17 @@ services:
 
 </details>
 
+The `START_OPTS` environment variable passes JVM options to the Deephaven server. In this file, `-Xmx4g` sets the maximum heap size to 4GB. Some subsections below change this variable. Separate multiple options with spaces. The `docker create` examples set only the option they demonstrate, so add `-Xmx4g` to them if you want the same heap size as the Compose file.
+
+`DEEPHAVEN_PORT` sets the host port and defaults to `10000`. [Change the port](#change-the-port) shows how to use it. `VERSION` sets the image version, as described in [Image versions](#image-versions).
+
+After you run a `docker create` command or edit the file, see [Start the application](#start-the-application) to launch Deephaven.
+
 ### Set a pre-shared key
 
-Deephaven, by default uses a [pre-shared key](../how-to-guides/authentication/auth-psk.md) to authenticate users looking to access Deephaven. If the key isn't set, Deephaven uses a randomly generated key that gets printed to the Docker logs.
+By default, Deephaven uses a [pre-shared key](../how-to-guides/authentication/auth-psk.md) to authenticate users. If you don't set a key, Deephaven generates a random one and prints it to the Docker logs.
 
-The following deployment set the pre-shared key to `YOUR_PASSWORD_HERE`.
+The following deployment sets the pre-shared key to `YOUR_PASSWORD_HERE`.
 
 ```sh
 docker create --name deephaven -p 10000:10000 --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-slim:latest
@@ -117,7 +141,7 @@ services:
 
 ### Add more memory
 
-The following deployment tell the server to allocate 8GB of heap memory instead of the default of 4GB.
+The following deployment sets the server's maximum heap size to 8GB.
 
 ```sh
 docker create --name deephaven -p 10000:10000 --env START_OPTS=-Xmx8g ghcr.io/deephaven/server-slim:latest
@@ -137,7 +161,7 @@ services:
 
 ### Change the port
 
-The following deployment tell Deephaven to expose port `9999` for the user to connect to via their web browser.
+The following deployment maps port `9999` on the host to Deephaven's port `10000` in the container, so you connect to Deephaven from your web browser on port `9999`.
 
 ```sh
 docker create --name deephaven -p 9999:10000 ghcr.io/deephaven/server-slim:latest
@@ -155,12 +179,14 @@ services:
       - START_OPTS=-Xmx4g
 ```
 
+The example `docker-compose.yml` file from [Modify the deployment](#modify-the-deployment) reads the host port from the `DEEPHAVEN_PORT` environment variable, which defaults to `10000`. Instead of editing the file, you can keep it unchanged and run `DEEPHAVEN_PORT=9999 docker compose up`.
+
 ### Add a second volume
 
-Deephaven, by default, comes with a single `data` volume. The following deployment mounts a second `specialty` volume:
+The example `docker-compose.yml` file mounts a local `data` directory at `/data` in the container. The following examples mount a local `specialty` directory at `/specialty`. The Compose version keeps the `data` mount as well:
 
 ```sh
-docker create --name deephaven -p 10000:10000 -v ./specialty:/specialty ghcr.io/deephaven/server-slim:latest
+docker create --name deephaven -p 10000:10000 -v "$(pwd)/specialty:/specialty" ghcr.io/deephaven/server-slim:latest
 ```
 
 ```yaml
@@ -176,9 +202,46 @@ services:
       - START_OPTS=-Xmx4g
 ```
 
+### Import custom JARs
+
+You can make your own Java classes and third-party libraries available to queries by placing their JARs under `/apps/libs`. The images add `/apps/libs/*` to the JVM classpath at startup. For more ways to add JARs, see [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md).
+
+First, copy your JARs into a local `jars` directory:
+
+```sh
+mkdir -p jars
+cp /path/to/<custom>.jar jars/
+```
+
+Then mount that directory at `/apps/libs`:
+
+```sh
+docker create --name deephaven -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/server-slim:latest
+```
+
+```yaml
+services:
+  deephaven:
+    image: ghcr.io/deephaven/server-slim:${VERSION:-latest}
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
+    volumes:
+      - ./data:/data
+      - ./jars:/apps/libs
+    environment:
+      - START_OPTS=-Xmx4g
+```
+
+Now you can run queries that use your custom JARs. For example, if you have a class `org.example.MathFns` with a static method `square(long x)`, you can run the following query:
+
+```groovy skip-test
+// Example usage (requires custom JAR with org.example.MathFns class)
+table = emptyTable(5).update("Squares = org.example.MathFns.square(i)")
+```
+
 ### Add a second image
 
-[Docker Compose](https://docs.docker.com/compose/) specializes in running multi-container applications. In fact, Deephaven used to run in four separate containers before being reduced to one. Adding a second image to a Docker application should _always_ be done with [Docker Compose](https://docs.docker.com/compose/). The following YAML file runs Deephaven with [Redpanda](https://redpanda.com/).
+Docker Compose specializes in running multi-container applications, so Deephaven recommends it for running a second image alongside Deephaven. The following YAML file runs Deephaven with [Redpanda](https://redpanda.com/).
 
 ```yaml
 services:
@@ -211,28 +274,29 @@ services:
 
 ### Build a custom image
 
-Custom Docker deployments often require things that cannot be done in a YAML file or Docker command. For instance, it is not possible to install a Python package this way. Such deployments typically extend a Docker image using both a [Dockerfile](https://docs.docker.com/reference/dockerfile/) and a [docker-compose.yml](https://docs.docker.com/compose/) file.
+Some deployments are easier to manage as a custom image. For example, instead of mounting a `jars` directory as in [Import custom JARs](#import-custom-jars), you can build the JARs into the image so that every container started from it can use them without an extra volume mount. These deployments typically extend a Docker image with both a [Dockerfile](https://docs.docker.com/reference/dockerfile/) and a `docker-compose.yml` file.
 
-The following subsections build a custom Deephaven application through Docker with several Python packages installed that do not ship with official Deephaven Docker images.
+The following subsections build a custom Deephaven image that adds Java libraries the official Deephaven images don't include.
 
 > [!NOTE]
-> This example uses a flat directory structure - all files are placed in the same directory.
+> Put the `jars` directory in the same directory as the `Dockerfile` and `docker-compose.yml`.
 
 #### Dockerfile
 
-A [Dockerfile](https://docs.docker.com/reference/dockerfile/) dictates which Docker images to build containers from and what else distinguishes these containers from their standard counterparts.
+A Dockerfile defines how to build a Docker image: the base image to start from and the steps that customize it.
 
-The following Dockerfile takes the latest Deephaven `server` image and installs the Python packages defined in `requirements.txt` into the container created from it.
+The following Dockerfile takes the latest Deephaven `server-slim` image and copies the JARs in the local `jars` directory into `/apps/libs`, which the image adds to the JVM classpath at startup.
 
 ```Dockerfile
 FROM ghcr.io/deephaven/server-slim:latest
-COPY requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt && rm /requirements.txt
+COPY jars/ /apps/libs/
 ```
+
+To build on a specific release, replace `latest` in the `FROM` line with that release tag, such as `42.6`. The `VERSION` variable described in [Image versions](#image-versions) doesn't apply to an image you build yourself.
 
 #### docker-compose.yml
 
-[Docker Compose](https://docs.docker.com/compose/) can be told to build a Docker image from a local Dockerfile. The following YAML file builds a Docker container from a Dockerfile named `Dockerfile` in the same directory.
+Docker Compose can build a Docker image from a local Dockerfile. The following YAML file builds a Docker image from a Dockerfile named `Dockerfile` in the same directory and runs a container from it.
 
 ```yaml
 services:
@@ -246,45 +310,6 @@ services:
       - START_OPTS=-Xmx4g
 ```
 
-#### Import custom JARs
-
-You can make your own Java classes (and third-party libraries) available to queries by placing JARs under `/apps/libs`. The images add `/apps/libs/*` to the JVM classpath at startup.
-
-<details>
-<summary>Option A - Bind mount</summary>
-
-```bash
-$ mkdir -p jars
-$ cp /path/to/<custom>.jar jars/
-$ docker run --rm -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/server:latest
-```
-
-</details>
-
-<details>
-<summary>Option B - Docker Compose</summary>
-
-```yaml title="docker-compose.yml"
-services:
-  deephaven:
-    image: ghcr.io/deephaven/server:latest
-    ports:
-      - "10000:10000"
-    volumes:
-      - ./jars:/apps/libs
-```
-
-</details>
-
-Now you can run queries that use your custom JARs. For example, if you have a class `org.example.MathFns` with a static method `square(long x)`, you can run the following query:
-
-```python skip-test
-# Example usage (requires custom JAR with org.example.MathFns class)
-from deephaven import empty_table
-
-table = empty_table(5).update("squares = org.example.MathFns.square(i)")
-```
-
 ## Start the application
 
 To start a Deephaven application built from a `docker-compose.yml` file, run:
@@ -293,36 +318,46 @@ To start a Deephaven application built from a `docker-compose.yml` file, run:
 docker compose up --build
 ```
 
-The `--build` flag tells Docker to build the services specified by the `docker-compose.yml` file. The `Dockerfile` defines the custom installation process of the service.
+If your `docker-compose.yml` uses `build:`, as in [Build a custom image](#build-a-custom-image), the `--build` flag first rebuilds the image from your `Dockerfile`. If the file uses a pre-built `image:` instead, the flag has no effect.
 
 > [!NOTE]
-> If you've previously run `docker compose up`, add `--pull` to the command above to ensure you have the latest version of the Docker images.
+> If you've pulled a Deephaven image on this machine before, for example with `docker run` or an earlier [`docker compose up`](https://docs.docker.com/reference/cli/docker/compose/up/), run `docker compose up --build --pull always` instead so that you get the latest Docker images. Before running `docker create`, run `docker pull ghcr.io/deephaven/server-slim:latest` for the same reason.
 
-## Run Deephaven IDE
+To start a container you created with [`docker create`](https://docs.docker.com/reference/cli/docker/container/create/), run [`docker start`](https://docs.docker.com/reference/cli/docker/container/start/) with the container's name:
 
-Once Deephaven is running, you can launch a Deephaven IDE in your web browser. The Deephaven IDE allows you to interactively analyze data and develop new analytics.
+```sh
+docker start deephaven
+```
+
+## Open the Deephaven IDE
+
+Once Deephaven is running, you can open the Deephaven IDE in your web browser. The Deephaven IDE allows you to interactively analyze data and develop new analytics.
 
 - If Deephaven is running locally, navigate to [http://localhost:10000/ide/](http://localhost:10000/ide/).
 - If Deephaven is running remotely, navigate to `http://<hostname>:10000/ide/`, where `<hostname>` is the address of the machine Deephaven is running on.
 
+If you [changed the port](#change-the-port), replace `10000` with that port.
+
+Unless you [disabled authentication](#disable-authentication), the IDE asks for a key when it opens. Enter the [pre-shared key](#set-a-pre-shared-key) you set. If you didn't set one, use the key that Deephaven prints to the container's logs. To see the logs, run [`docker logs deephaven`](https://docs.docker.com/reference/cli/docker/container/logs/), or [`docker compose logs`](https://docs.docker.com/reference/cli/docker/compose/logs/) for a Compose deployment.
+
 ![The Deephaven IDE upon startup](../assets/tutorials/launch/ide_startup.png)
 
-## Manage example data
+## Find example data
 
-The [Deephaven examples repository](https://github.com/deephaven/examples) contains data sets to help learn how to use Deephaven. Deephaven's documentation uses these data sets extensively, and they are needed to run some examples.
+The [Deephaven examples repository](https://github.com/deephaven/examples) contains datasets that help you learn Deephaven. Deephaven's documentation uses these datasets extensively, and some examples require them.
 
-If you have chosen a deployment with example data, the example data sets will be downloaded to `data/examples` within your Deephaven folder, which translates to `/data/examples` within the Deephaven Docker container. See [Docker data volumes](../conceptual/docker-data-volumes.md) for more information on how files get mounted in Docker.
+If you chose a [deployment](#choose-a-deployment) with example data, the example datasets appear in a `data/examples` directory next to your `docker-compose.yml` file. Inside the container, the same files are at `/data/examples`. See [Docker data volumes](../conceptual/docker-data-volumes.md) for more information on how Docker mounts files.
 
-## What to do next?
+## Next steps
 
 import { TutorialCTA } from '@theme/deephaven/CTA';
 
 <div className="row">
-<TutorialCTA to="/core/groovy/docs/getting-started/crash-course/architecture-overview" />
+<TutorialCTA to="/core/groovy/docs/getting-started/crash-course/overview" />
 </div>
 
 ## Related documentation
 
 - [Pre-shared key authentication](../how-to-guides/authentication/auth-psk.md)
 - [Docker data volumes](../conceptual/docker-data-volumes.md)
-- [Build and launch Deephaven from source code](../getting-started/launch-build.md)
+- [Build and launch Deephaven from source code](./launch-build.md)
